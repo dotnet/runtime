@@ -12,8 +12,8 @@ namespace System.IO.Ports.Tests
     public class ErrorEvent : PortsTest
     {
         //Maximum time to wait for all of the expected events to be firered
-        static readonly int MAX_TIME_WAIT = 5000;
-        static readonly int NUM_TRYS = 5;
+        private const int MAX_TIME_WAIT = 5000;
+        private const int NUM_TRYS = 5;
 
         #region Test Cases
         /*	

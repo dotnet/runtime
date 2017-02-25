@@ -14,7 +14,7 @@ namespace System.IO.Ports.Tests
     {
         #region Test Cases
 
-       [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(nameof(HasNullModem))]
         public void EndReadAfterClose()
         {
             using (var com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -29,10 +29,8 @@ namespace System.IO.Ports.Tests
                 IAsyncResult asyncResult = com1.BaseStream.BeginRead(new byte[8], 0, 8, null, null);
 
                 com2.Write(new byte[16], 0, 16);
-                while (com1.BytesToRead == 0)
-                {
-                    Thread.Sleep(50);
-                }
+
+                TCSupport.WaitForReadBufferToLoad(com1, 1);
 
                 com1.Close();
 
@@ -57,10 +55,8 @@ namespace System.IO.Ports.Tests
                 IAsyncResult asyncResult = com1.BaseStream.BeginRead(new byte[8], 0, 8, null, null);
 
                 com2.Write(new byte[16], 0, 16);
-                while (com1.BytesToRead == 0)
-                {
-                    Thread.Sleep(50);
-                }
+
+                TCSupport.WaitForReadBufferToLoad(com1, 1);
 
                 com1.BaseStream.Close();
 
@@ -142,8 +138,7 @@ namespace System.IO.Ports.Tests
 
                 com2.Write(new byte[totalBytesToRead], 0, totalBytesToRead);
 
-                while (totalBytesToRead > com1.BytesToRead)
-                    Thread.Sleep(50);
+                TCSupport.WaitForReadBufferToLoad(com1, totalBytesToRead);
 
                 IAsyncResult readAsyncResult1 = com1.BaseStream.BeginRead(new byte[numBytesToRead1], 0, numBytesToRead1, null, null);
                 IAsyncResult readAsyncResult2 = com1.BaseStream.BeginRead(new byte[numBytesToRead2], 0, numBytesToRead2, null, null);
@@ -178,7 +173,6 @@ namespace System.IO.Ports.Tests
             using (var com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             using (var com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))
             {
-
                 int endReadReturnValue;
                 int numBytesToRead1 = 8, numBytesToRead2 = 16, numBytesToRead3 = 10;
                 int totalBytesToRead = numBytesToRead1 + numBytesToRead2 + numBytesToRead3;
@@ -191,8 +185,7 @@ namespace System.IO.Ports.Tests
 
                 com2.Write(new byte[totalBytesToRead], 0, totalBytesToRead);
 
-                while (totalBytesToRead > com1.BytesToRead)
-                    Thread.Sleep(50);
+                TCSupport.WaitForReadBufferToLoad(com1, totalBytesToRead);
 
                 IAsyncResult readAsyncResult1 = com1.BaseStream.BeginRead(new byte[numBytesToRead1], 0, numBytesToRead1, null, null);
                 IAsyncResult readAsyncResult2 = com1.BaseStream.BeginRead(new byte[numBytesToRead2], 0, numBytesToRead2, null, null);

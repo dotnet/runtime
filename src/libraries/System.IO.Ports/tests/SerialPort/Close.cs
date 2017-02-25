@@ -13,8 +13,8 @@ namespace System.IO.Ports.Tests
     public class Close : PortsTest
     {
         // The number of the bytes that should read/write buffers
-        static readonly int numReadBytes = 32;
-        static readonly int numWriteBytes = TCSupport.MinimumBlockingByteCount;
+        private const int numReadBytes = 32;
+        private static readonly int s_numWriteBytes = TCSupport.MinimumBlockingByteCount;
 
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void CloseWithoutOpen()
@@ -37,7 +37,7 @@ namespace System.IO.Ports.Tests
         public void OpenClose()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
-            { 
+            {
                 SerialPortProperties serPortProp = new SerialPortProperties();
 
                 Debug.WriteLine("Calling Close() after calling Open()");
@@ -68,12 +68,12 @@ namespace System.IO.Ports.Tests
                 com2.Open();
 
                 // BeginWrite is used so we can fill the read buffer then go onto to verify
-                com1.BaseStream.BeginWrite(new byte[numWriteBytes], 0, numWriteBytes, null, null);
+                com1.BaseStream.BeginWrite(new byte[s_numWriteBytes], 0, s_numWriteBytes, null, null);
                 com2.Write(new byte[numReadBytes], 0, numReadBytes);
                 Thread.Sleep(500);
 
                 serPortProp.SetProperty("Handshake", Handshake.RequestToSend);
-                serPortProp.SetProperty("BytesToWrite", numWriteBytes-TCSupport.HardwareTransmitBufferSize);
+                serPortProp.SetProperty("BytesToWrite", s_numWriteBytes - TCSupport.HardwareTransmitBufferSize);
                 serPortProp.SetProperty("BytesToRead", numReadBytes);
 
                 Debug.WriteLine("Verifying properties after port is open and buffers have been filled");

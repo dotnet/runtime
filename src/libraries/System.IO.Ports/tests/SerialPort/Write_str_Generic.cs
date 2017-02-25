@@ -4,9 +4,11 @@
 
 using System.Diagnostics;
 using System.IO.PortsTests;
+using System.Text;
 using System.Threading;
 using Legacy.Support;
 using Xunit;
+using ThreadState = System.Threading.ThreadState;
 
 namespace System.IO.Ports.Tests
 {
@@ -14,26 +16,26 @@ namespace System.IO.Ports.Tests
     {
         //Set bounds fore random timeout values.
         //If the min is to low write will not timeout accurately and the testcase will fail
-        public static int minRandomTimeout = 250;
+        private const int minRandomTimeout = 250;
 
         //If the max is to large then the testcase will take forever to run
-        public static int maxRandomTimeout = 2000;
+        private const int maxRandomTimeout = 2000;
 
         //If the percentage difference between the expected timeout and the actual timeout
         //found through Stopwatch is greater then 10% then the timeout value was not correctly
         //to the write method and the testcase fails.
-        public static double maxPercentageDifference = .15;
+        private const double maxPercentageDifference = .15;
 
         //The string used when we expect the ReadCall to throw an exception for something other
         //then the contents of the string itself
-        public static readonly string DEFAULT_STRING = "DEFAULT_STRING";
+        private const string DEFAULT_STRING = "DEFAULT_STRING";
 
         //The string size used when verifying BytesToWrite 
-        public static readonly int STRING_SIZE_BYTES_TO_WRITE = 2*TCSupport.MinimumBlockingByteCount;
+        private static readonly int s_STRING_SIZE_BYTES_TO_WRITE = 2 * TCSupport.MinimumBlockingByteCount;
 
         //The string size used when verifying Handshake 
-        public static readonly int STRING_SIZE_HANDSHAKE = 8;
-        public static readonly int NUM_TRYS = 5;
+        private const int STRING_SIZE_HANDSHAKE = 8;
+        private const int NUM_TRYS = 5;
 
         #region Test Cases
 
@@ -111,11 +113,11 @@ namespace System.IO.Ports.Tests
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             {
                 Random rndGen = new Random(-55);
-        
+
                 com.WriteTimeout = rndGen.Next(minRandomTimeout, maxRandomTimeout);
                 com.Handshake = Handshake.RequestToSendXOnXOff;
                 //		com.Encoding = new System.Text.UTF7Encoding();
-                com.Encoding = System.Text.Encoding.Unicode;
+                com.Encoding = Encoding.Unicode;
 
                 Debug.WriteLine("Verifying WriteTimeout={0} with successive call to write method", com.WriteTimeout);
                 com.Open();
@@ -141,11 +143,11 @@ namespace System.IO.Ports.Tests
                 AsyncEnableRts asyncEnableRts = new AsyncEnableRts();
                 Thread t = new Thread(asyncEnableRts.EnableRTS);
 
-                int waitTime = 0;
+                int waitTime;
 
                 com1.WriteTimeout = rndGen.Next(minRandomTimeout, maxRandomTimeout);
                 com1.Handshake = Handshake.RequestToSend;
-                com1.Encoding = new System.Text.UTF8Encoding();
+                com1.Encoding = new UTF8Encoding();
 
                 Debug.WriteLine(
                     "Verifying WriteTimeout={0} with successive call to write method with the write succeeding sometime before its timeout",
@@ -157,7 +159,7 @@ namespace System.IO.Ports.Tests
                 t.Start();
                 waitTime = 0;
 
-                while (t.ThreadState == System.Threading.ThreadState.Unstarted && waitTime < 2000)
+                while (t.ThreadState == ThreadState.Unstarted && waitTime < 2000)
                 {
                     //Wait for the thread to start
                     Thread.Sleep(50);
@@ -171,7 +173,7 @@ namespace System.IO.Ports.Tests
                 catch (TimeoutException)
                 {
                 }
-         
+
                 asyncEnableRts.Stop();
 
                 while (t.IsAlive)
@@ -186,10 +188,10 @@ namespace System.IO.Ports.Tests
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             {
-                AsyncWriteRndStr asyncWriteRndStr = new AsyncWriteRndStr(com, STRING_SIZE_BYTES_TO_WRITE);
+                AsyncWriteRndStr asyncWriteRndStr = new AsyncWriteRndStr(com, s_STRING_SIZE_BYTES_TO_WRITE);
                 Thread t = new Thread(asyncWriteRndStr.WriteRndStr);
 
-                int waitTime = 0;
+                int waitTime;
 
                 Debug.WriteLine("Verifying BytesToWrite with one call to Write");
                 com.Handshake = Handshake.RequestToSend;
@@ -200,14 +202,14 @@ namespace System.IO.Ports.Tests
                 t.Start();
                 waitTime = 0;
 
-                while (t.ThreadState == System.Threading.ThreadState.Unstarted && waitTime < 2000)
+                while (t.ThreadState == ThreadState.Unstarted && waitTime < 2000)
                 {
                     //Wait for the thread to start
                     Thread.Sleep(50);
                     waitTime += 50;
                 }
 
-                TCSupport.WaitForWriteBufferToLoad(com, STRING_SIZE_BYTES_TO_WRITE);
+                TCSupport.WaitForWriteBufferToLoad(com, s_STRING_SIZE_BYTES_TO_WRITE);
 
                 //Wait for write method to timeout
                 while (t.IsAlive)
@@ -220,11 +222,11 @@ namespace System.IO.Ports.Tests
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             {
-                AsyncWriteRndStr asyncWriteRndStr = new AsyncWriteRndStr(com, STRING_SIZE_BYTES_TO_WRITE);
+                AsyncWriteRndStr asyncWriteRndStr = new AsyncWriteRndStr(com, s_STRING_SIZE_BYTES_TO_WRITE);
                 var t1 = new Thread(asyncWriteRndStr.WriteRndStr);
                 var t2 = new Thread(asyncWriteRndStr.WriteRndStr);
 
-                int waitTime = 0;
+                int waitTime;
 
                 Debug.WriteLine("Verifying BytesToWrite with successive calls to Write");
                 com.Handshake = Handshake.RequestToSend;
@@ -235,28 +237,28 @@ namespace System.IO.Ports.Tests
                 t1.Start();
                 waitTime = 0;
 
-                while (t1.ThreadState == System.Threading.ThreadState.Unstarted && waitTime < 2000)
+                while (t1.ThreadState == ThreadState.Unstarted && waitTime < 2000)
                 {
                     //Wait for the thread to start
                     Thread.Sleep(50);
                     waitTime += 50;
                 }
 
-                TCSupport.WaitForWriteBufferToLoad(com, STRING_SIZE_BYTES_TO_WRITE);
+                TCSupport.WaitForWriteBufferToLoad(com, s_STRING_SIZE_BYTES_TO_WRITE);
 
                 //Write a random string asynchronously so we can verify some things while the write call is blocking
                 t2.Start();
                 waitTime = 0;
 
-                while (t2.ThreadState == System.Threading.ThreadState.Unstarted && waitTime < 2000)
+                while (t2.ThreadState == ThreadState.Unstarted && waitTime < 2000)
                 {
                     //Wait for the thread to start
                     Thread.Sleep(50);
                     waitTime += 50;
                 }
 
-                TCSupport.WaitForWriteBufferToLoad(com, STRING_SIZE_BYTES_TO_WRITE*2);
-            
+                TCSupport.WaitForWriteBufferToLoad(com, s_STRING_SIZE_BYTES_TO_WRITE * 2);
+
                 //Wait for both write methods to timeout
                 while (t1.IsAlive || t2.IsAlive)
                     Thread.Sleep(100);
@@ -270,8 +272,8 @@ namespace System.IO.Ports.Tests
             {
                 AsyncWriteRndStr asyncWriteRndStr = new AsyncWriteRndStr(com, STRING_SIZE_HANDSHAKE);
                 Thread t = new Thread(asyncWriteRndStr.WriteRndStr);
-        
-                int waitTime = 0;
+
+                int waitTime;
 
                 //Write a random string asynchronously so we can verify some things while the write call is blocking
                 Debug.WriteLine("Verifying Handshake=None");
@@ -280,7 +282,7 @@ namespace System.IO.Ports.Tests
                 t.Start();
                 waitTime = 0;
 
-                while (t.ThreadState == System.Threading.ThreadState.Unstarted && waitTime < 2000)
+                while (t.ThreadState == ThreadState.Unstarted && waitTime < 2000)
                 { //Wait for the thread to start
                     Thread.Sleep(50);
                     waitTime += 50;
@@ -314,7 +316,7 @@ namespace System.IO.Ports.Tests
 
         private class AsyncEnableRts
         {
-            private bool _stop = false;
+            private bool _stop;
 
 
             public void EnableRTS()
@@ -356,8 +358,8 @@ namespace System.IO.Ports.Tests
 
         public class AsyncWriteRndStr
         {
-            private SerialPort _com;
-            private int _strSize;
+            private readonly SerialPort _com;
+            private readonly int _strSize;
 
 
             public AsyncWriteRndStr(SerialPort com, int strSize)
@@ -394,7 +396,7 @@ namespace System.IO.Ports.Tests
             int expectedTime = com.WriteTimeout;
             int actualTime = 0;
             double percentageDifference;
-        
+
             try
             {
                 com.Write(DEFAULT_STRING); //Warm up write method
@@ -439,7 +441,7 @@ namespace System.IO.Ports.Tests
 
                 byte[] XOffBuffer = new byte[1];
                 byte[] XOnBuffer = new byte[1];
-                int waitTime = 0;
+                int waitTime;
 
                 XOffBuffer[0] = 19;
                 XOnBuffer[0] = 17;
@@ -466,25 +468,14 @@ namespace System.IO.Ports.Tests
                 t.Start();
                 waitTime = 0;
 
-                while (t.ThreadState == System.Threading.ThreadState.Unstarted && waitTime < 2000)
+                while (t.ThreadState == ThreadState.Unstarted && waitTime < 2000)
                 {
                     //Wait for the thread to start
                     Thread.Sleep(50);
                     waitTime += 50;
                 }
 
-                waitTime = 0;
-                while (STRING_SIZE_HANDSHAKE > com1.BytesToWrite && waitTime < 500)
-                {
-                    Thread.Sleep(50);
-                    waitTime += 50;
-                }
-
-                //Verify that the correct number of bytes are in the buffer
-                if (STRING_SIZE_HANDSHAKE != com1.BytesToWrite)
-                {
-                    Fail("ERROR!!! Expcted BytesToWrite={0} actual {1}", STRING_SIZE_HANDSHAKE, com1.BytesToWrite);
-                }
+                TCSupport.WaitForExactWriteBufferLoad(com1, STRING_SIZE_HANDSHAKE);
 
                 //Verify that CtsHolding is false if the RequestToSend or RequestToSendXOnXOff handshake method is used
                 if ((Handshake.RequestToSend == handshake || Handshake.RequestToSendXOnXOff == handshake) && com1.CtsHolding)

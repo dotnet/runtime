@@ -4,15 +4,17 @@
 
 using System.Diagnostics;
 using System.IO.PortsTests;
+using System.Text;
 using Legacy.Support;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.IO.Ports.Tests
 {
     public class ctor_str_int : PortsTest
     {
         private enum ThrowAt { Set, Open };
-    
+
         [Fact]
         public void COM1_9600()
         {
@@ -72,7 +74,7 @@ namespace System.IO.Ports.Tests
 
             VerifyCtor(portName, baudRate, typeof(ArgumentException), ThrowAt.Set);
         }
-    
+
         [Fact]
         public void Null_14400()
         {
@@ -97,8 +99,8 @@ namespace System.IO.Ports.Tests
             string portName;
             int baudRate = 9600;
             string fileName = portName = "PortNameEqualToFileName.txt";
-            System.IO.FileStream testFile = System.IO.File.Open(fileName, System.IO.FileMode.Create);
-            System.Text.ASCIIEncoding asciiEncd = new System.Text.ASCIIEncoding();
+            FileStream testFile = File.Open(fileName, FileMode.Create);
+            ASCIIEncoding asciiEncd = new ASCIIEncoding();
             string testStr = "Hello World";
 
             testFile.Write(asciiEncd.GetBytes(testStr), 0, asciiEncd.GetByteCount(testStr));
@@ -113,7 +115,7 @@ namespace System.IO.Ports.Tests
             }
             finally
             {
-                System.IO.File.Delete(fileName);
+                File.Delete(fileName);
             }
         }
 
@@ -197,7 +199,7 @@ namespace System.IO.Ports.Tests
                     serPortProp.VerifyPropertiesAndPrint(com);
                 }
             }
-            catch (Xunit.Sdk.TrueException)
+            catch (TrueException)
             {
                 // This is an inner failure
                 throw;

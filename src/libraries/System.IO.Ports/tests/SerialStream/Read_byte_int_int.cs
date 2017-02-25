@@ -13,23 +13,23 @@ namespace System.IO.Ports.Tests
     public class SerialStream_Read_byte_int_int : PortsTest
     {
         // The number of random bytes to receive for read method testing
-        private static readonly int numRndBytesToRead = 16;
+        private const int numRndBytesToRead = 16;
 
         // The number of random bytes to receive for large input buffer testing
-        private static readonly int largeNumRndBytesToRead = 2048;
+        private const int largeNumRndBytesToRead = 2048;
 
         // When we test Read and do not care about actually reading anything we must still
         // create an byte array to pass into the method the following is the size of the 
         // byte array used in this situation
-        private static readonly int defaultByteArraySize = 1;
-        private static readonly int defaultByteOffset = 0;
-        private static readonly int defaultByteCount = 1;
+        private const int defaultByteArraySize = 1;
+        private const int defaultByteOffset = 0;
+        private const int defaultByteCount = 1;
 
         // The maximum buffer size when a exception occurs
-        private static readonly int maxBufferSizeForException = 255;
+        private const int maxBufferSizeForException = 255;
 
         // The maximum buffer size when a exception is not expected
-        private static readonly int maxBufferSize = 8;
+        private const int maxBufferSize = 8;
 
         #region Test Cases
 
@@ -271,7 +271,7 @@ namespace System.IO.Ports.Tests
 
                 VerifyBuffer(rcvBuffer, oldRcvBuffer, offset, bytesRead);
 
-                    Array.Copy(rcvBuffer, offset, buffer, totalBytesRead, bytesRead);
+                Array.Copy(rcvBuffer, offset, buffer, totalBytesRead, bytesRead);
                 totalBytesRead += bytesRead;
 
                 if (bytesToWrite.Length - totalBytesRead != com1.BytesToRead)

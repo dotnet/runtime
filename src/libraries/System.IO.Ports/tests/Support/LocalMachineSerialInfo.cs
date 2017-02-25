@@ -3,17 +3,16 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Diagnostics;
 
 namespace Legacy.Support
 {
     [Serializable()]
     public class LocalMachineSerialInfo
     {
-        private string _firstAvailablePortName;
-        private string _secondAvailablePortName;
-        private bool _nullModemPresent;
-        private string _loopbackPortName;
+        private readonly string _firstAvailablePortName;
+        private readonly string _secondAvailablePortName;
+        private readonly bool _nullModemPresent;
+        private readonly string _loopbackPortName;
 
         public LocalMachineSerialInfo(string firstAvailablePortName, string secondAvailablePortName, string loopBackPortName, bool nullModemPresent)
         {
@@ -21,10 +20,6 @@ namespace Legacy.Support
             _secondAvailablePortName = secondAvailablePortName;
             _loopbackPortName = loopBackPortName;
             _nullModemPresent = nullModemPresent;
-            Debug.WriteLine("First available port name  : " + firstAvailablePortName);
-            Debug.WriteLine("Second available port name : " + secondAvailablePortName);
-            Debug.WriteLine("Loopback port name         : " + loopBackPortName);
-            Debug.WriteLine("NullModem present          : " + nullModemPresent);
         }
 
         public string FirstAvailablePortName

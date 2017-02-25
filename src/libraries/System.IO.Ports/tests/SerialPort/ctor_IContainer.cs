@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO.PortsTests;
 using Legacy.Support;
@@ -15,7 +16,7 @@ namespace System.IO.Ports.Tests
         public void Verify()
         {
             SerialPortProperties serPortProp = new SerialPortProperties();
-            System.ComponentModel.Container container = new System.ComponentModel.Container();
+            Container container = new Container();
             using (SerialPort com = new SerialPort(container))
             {
                 Assert.Equal(1, container.Components.Count);

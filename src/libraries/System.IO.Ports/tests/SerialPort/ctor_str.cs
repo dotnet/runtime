@@ -7,6 +7,7 @@ using System.IO.PortsTests;
 using System.Text;
 using Legacy.Support;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.IO.Ports.Tests
 {
@@ -128,7 +129,7 @@ namespace System.IO.Ports.Tests
                     serPortProp.VerifyPropertiesAndPrint(com);
                 }
             }
-            catch (Xunit.Sdk.TrueException)
+            catch (TrueException)
             {
                 // This is an inner failure
                 throw;

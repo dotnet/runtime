@@ -14,7 +14,7 @@ namespace System.IO.Ports.Tests
         #region Test Cases
 
         [Fact]
-        private void  OpenEveryPortName()
+        private void OpenEveryPortName()
         {
             string[] portNames = SerialPort.GetPortNames();
 

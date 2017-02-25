@@ -12,7 +12,7 @@ namespace System.IO.Ports.Tests
     public class Event_Close_Stress : PortsTest
     {
         //Maximum time to wait for all of the expected events to be firered
-        private static readonly TimeSpan TestDuration = TCSupport.RunShortStressTests ? TimeSpan.FromSeconds(10) : TimeSpan.FromMinutes(3);
+        private static readonly TimeSpan s_testDuration = TCSupport.RunShortStressTests ? TimeSpan.FromSeconds(10) : TimeSpan.FromMinutes(3);
 
         #region Test Cases
 
@@ -30,7 +30,7 @@ namespace System.IO.Ports.Tests
                 com2.Open();
 
                 stopwatch.Start();
-                while (count % 100 != 0 || stopwatch.ElapsedMilliseconds < TestDuration.TotalMilliseconds)
+                while (count % 100 != 0 || stopwatch.ElapsedMilliseconds < s_testDuration.TotalMilliseconds)
                 {
                     com1.Open();
 
@@ -62,7 +62,7 @@ namespace System.IO.Ports.Tests
                 com2.Open();
 
                 stopwatch.Start();
-                while (count % 100 != 0 || stopwatch.ElapsedMilliseconds < TestDuration.TotalMilliseconds)
+                while (count % 100 != 0 || stopwatch.ElapsedMilliseconds < s_testDuration.TotalMilliseconds)
                 {
                     com1.Open();
 
@@ -79,7 +79,6 @@ namespace System.IO.Ports.Tests
                 com2.Close();
 
                 Debug.WriteLine("DataReceived={0}", dataReceivedCount);
-
             }
         }
 
@@ -105,7 +104,7 @@ namespace System.IO.Ports.Tests
                 frameErrorBytes[0] = 0x01;
 
                 stopwatch.Start();
-                while (count % 100 != 0 || stopwatch.ElapsedMilliseconds < TestDuration.TotalMilliseconds)
+                while (count % 100 != 0 || stopwatch.ElapsedMilliseconds < s_testDuration.TotalMilliseconds)
                 {
                     com1.Open();
 

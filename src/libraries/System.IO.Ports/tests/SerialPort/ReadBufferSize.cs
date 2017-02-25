@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.IO.PortsTests;
 using System.Linq;
+using System.Threading;
 using Legacy.Support;
 using Xunit;
 
@@ -12,8 +13,8 @@ namespace System.IO.Ports.Tests
 {
     public class ReadBufferSize_Property : PortsTest
     {
-        private static readonly int MAX_RANDOM_BUFFER_SIZE = 1024 * 16;
-        private static readonly int LARGE_BUFFER_SIZE = 1024 * 128;
+        private const int MAX_RANDOM_BUFFER_SIZE = 1024 * 16;
+        private const int LARGE_BUFFER_SIZE = 1024 * 128;
 
         #region Test Cases
 
@@ -257,7 +258,7 @@ namespace System.IO.Ports.Tests
 
                     TCSupport.WaitForReadBufferToLoad(com1, newBytesToRead);
 
-                    System.Threading.Thread.Sleep(250);
+                    Thread.Sleep(250);
                     //This is to wait for the bytes to be received after the buffer is full
 
                     serPortProp.SetProperty("BytesToRead", newBytesToRead);
@@ -328,7 +329,7 @@ namespace System.IO.Ports.Tests
 
                 TCSupport.WaitForReadBufferToLoad(com1, bytesToRead);
 
-                System.Threading.Thread.Sleep(250); //This is to wait for the bytes to be received after the buffer is full
+                Thread.Sleep(250); //This is to wait for the bytes to be received after the buffer is full
 
                 var rcvBytes = new byte[(int)(bytesToRead * 1.5)];
                 if (bytesToRead != (bytesRead = com1.Read(rcvBytes, 0, rcvBytes.Length)))

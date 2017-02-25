@@ -13,7 +13,7 @@ namespace System.IO.Ports.Tests
     public class SerialStream_EndWrite : PortsTest
     {
         #region Test Cases
-        
+
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void EndWriteAfterClose()
         {
@@ -78,12 +78,11 @@ namespace System.IO.Ports.Tests
 
                 IAsyncResult readAsyncResult = com.BaseStream.BeginRead(new byte[8], 0, 8, null, null);
                 VerifyEndWriteException(com.BaseStream, readAsyncResult, typeof(ArgumentException));
-
             }
             // Give the port time to finish closing since we have an unclosed BeginRead/BeginWrite
             Thread.Sleep(200);
         }
-        
+
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void AsyncResult_MultipleSameResult()
         {

@@ -33,7 +33,7 @@ namespace System.IO.Ports.Tests
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             {
                 SerialPortProperties serPortProp = new SerialPortProperties();
-        
+
                 Debug.WriteLine("Verifying BaseStream after Open() has been called");
                 serPortProp.SetAllPropertiesToOpenDefaults();
                 serPortProp.SetProperty("PortName", TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);

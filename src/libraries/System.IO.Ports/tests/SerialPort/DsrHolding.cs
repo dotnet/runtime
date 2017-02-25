@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.IO.PortsTests;
+using System.Threading;
 using Legacy.Support;
 using Xunit;
 
@@ -19,7 +20,7 @@ namespace System.IO.Ports.Tests
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             {
                 SerialPortProperties serPortProp = new SerialPortProperties();
-            
+
                 Debug.WriteLine("Verifying default DsrHolding before Open");
 
                 serPortProp.SetAllPropertiesToDefaults();
@@ -156,7 +157,7 @@ namespace System.IO.Ports.Tests
                 if (com2.IsOpen)
                     com2.Close();
 
-                System.Threading.Thread.Sleep(100);
+                Thread.Sleep(100);
 
                 serPortProp.SetProperty("DsrHolding", false);
                 serPortProp.SetProperty("CDHolding", com1.CDHolding);

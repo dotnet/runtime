@@ -14,42 +14,42 @@ namespace System.IO.Ports.Tests
     public class SerialStream_WriteTimeout_Property : PortsTest
     {
         // The default number of bytes to write with when testing timeout with Write(byte[], int, int)
-        private static readonly int DEFAULT_WRITE_BYTE_ARRAY_SIZE = TCSupport.MinimumBlockingByteCount;
+        private static readonly int s_DEFAULT_WRITE_BYTE_ARRAY_SIZE = TCSupport.MinimumBlockingByteCount;
 
         // The large number of bytes to write with when testing timeout with Write(byte[], int, int)
         // This needs to be large enough for Write timeout
-        private static readonly int DEFAULT_WRITE_BYTE_LARGE_ARRAY_SIZE = 1024 * 100;
+        private const int DEFAULT_WRITE_BYTE_LARGE_ARRAY_SIZE = 1024 * 100;
 
         // The BaudRate to use to make Write timeout when writing DEFAULT_WRITE_BYTE_LARGE_ARRAY_SIZE bytes 
-        private static readonly int LARGEWRITE_BAUDRATE = 1200;
+        private const int LARGEWRITE_BAUDRATE = 1200;
 
         // The timeout to use to make Write timeout when writing DEFAULT_WRITE_BYTE_LARGE_ARRAY_SIZE
-        private static readonly int LARGEWRITE_TIMEOUT = 750;
+        private const int LARGEWRITE_TIMEOUT = 750;
 
         // The default byte to call with WriteByte
-        private static readonly byte DEFAULT_WRITE_BYTE = 33;
+        private const byte DEFAULT_WRITE_BYTE = 33;
 
         // The amount of time to wait when expecting an long timeout
-        private static readonly int DEFAULT_WAIT_LONG_TIMEOUT = 250;
+        private const int DEFAULT_WAIT_LONG_TIMEOUT = 250;
 
         // The maximum acceptable time allowed when a write method should timeout immediately
-        private static readonly int MAX_ACCEPTABLE_ZERO_TIMEOUT = 100;
+        private const int MAX_ACCEPTABLE_ZERO_TIMEOUT = 100;
 
         // The maximum acceptable time allowed when a write method should timeout immediately when it is called for the first time
-        private static readonly int MAX_ACCEPTABLE_WARMUP_ZERO_TIMEOUT = 1000;
+        private const int MAX_ACCEPTABLE_WARMUP_ZERO_TIMEOUT = 1000;
 
         // The maximum acceptable percentage difference allowed when a write method is called for the first time
-        private static readonly double MAX_ACCEPTABLE_WARMUP_PERCENTAGE_DIFFERENCE = .5;
+        private const double MAX_ACCEPTABLE_WARMUP_PERCENTAGE_DIFFERENCE = .5;
 
         // The maximum acceptable percentage difference allowed
-        private static readonly double MAX_ACCEPTABLE_PERCENTAGE_DIFFERENCE = .15;
+        private const double MAX_ACCEPTABLE_PERCENTAGE_DIFFERENCE = .15;
 
-        private static readonly int SUCCESSIVE_WriteTimeout_SOMEDATA = 950;
+        private const int SUCCESSIVE_WriteTimeout_SOMEDATA = 950;
 
-        private static readonly int NUM_TRYS = 5;
+        private const int NUM_TRYS = 5;
 
         private delegate void WriteMethodDelegate(Stream stream);
-        
+
         #region Test Cases
 
         [ConditionalFact(nameof(HasOneSerialPort))]
@@ -66,7 +66,6 @@ namespace System.IO.Ports.Tests
                     string.Format(
                         "Err_1707azhpbn Verifying the default value of WriteTimeout Expected={0} Actual={1} FAILED", -1,
                         stream.WriteTimeout));
-
             }
         }
 
@@ -181,7 +180,7 @@ namespace System.IO.Ports.Tests
 
                 Debug.WriteLine("Verifying WriteTimeout={0} with successive call to Write(byte[], int, int) and no data", stream.WriteTimeout);
 
-                Assert.Throws<TimeoutException>(() => stream.Write(new byte[DEFAULT_WRITE_BYTE_ARRAY_SIZE], 0, DEFAULT_WRITE_BYTE_ARRAY_SIZE));
+                Assert.Throws<TimeoutException>(() => stream.Write(new byte[s_DEFAULT_WRITE_BYTE_ARRAY_SIZE], 0, s_DEFAULT_WRITE_BYTE_ARRAY_SIZE));
 
                 VerifyTimeout(Write_byte_int_int, stream);
             }
@@ -220,7 +219,7 @@ namespace System.IO.Ports.Tests
 
                 try
                 {
-                    stream.Write(new byte[DEFAULT_WRITE_BYTE_ARRAY_SIZE], 0, DEFAULT_WRITE_BYTE_ARRAY_SIZE);
+                    stream.Write(new byte[s_DEFAULT_WRITE_BYTE_ARRAY_SIZE], 0, s_DEFAULT_WRITE_BYTE_ARRAY_SIZE);
                 }
                 catch (TimeoutException)
                 {
@@ -240,7 +239,7 @@ namespace System.IO.Ports.Tests
         }
 
         [OuterLoop("Slow test")]
-        [ConditionalFact(nameof(HasOneSerialPort), nameof(HasHardwareFlowControl))]
+        [ConditionalFact(nameof(HasOneSerialPort), nameof(HasSingleByteTransmitBlocking))]
         public void SuccessiveWriteTimeoutNoData_WriteByte()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -257,7 +256,6 @@ namespace System.IO.Ports.Tests
 
                 VerifyTimeout(WriteByte, stream);
             }
-
         }
 
         [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
@@ -368,7 +366,7 @@ namespace System.IO.Ports.Tests
                     }
                 }
             }
-            
+
             public void Stop()
             {
                 lock (this)
@@ -393,7 +391,7 @@ namespace System.IO.Ports.Tests
                 com1.Handshake = Handshake.RequestToSend;
                 com1.BaseStream.ReadTimeout = 1;
 
-                Assert.Equal(-1,com1.BaseStream.WriteTimeout);
+                Assert.Equal(-1, com1.BaseStream.WriteTimeout);
 
                 VerifyLongTimeout(writeMethod, com1);
             }
@@ -420,7 +418,7 @@ namespace System.IO.Ports.Tests
         {
             var writeThread = new WriteDelegateThread(com1.BaseStream, writeMethod);
             var t = new Thread(writeThread.CallWrite);
-            
+
             t.Start();
             Thread.Sleep(DEFAULT_WAIT_LONG_TIMEOUT);
             Assert.True(t.IsAlive,
@@ -428,7 +426,6 @@ namespace System.IO.Ports.Tests
             com1.Handshake = Handshake.None;
             while (t.IsAlive)
                 Thread.Sleep(10);
-            
         }
 
         private void VerifyTimeout(WriteMethodDelegate writeMethod, int WriteTimeout)
@@ -455,7 +452,7 @@ namespace System.IO.Ports.Tests
             int expectedTime = stream.WriteTimeout;
             int actualTime;
             double percentageDifference;
-            
+
 
             // Warmup the write method. When called for the first time the write method seems to take much longer then subsequent calls
             timer.Start();
@@ -497,8 +494,6 @@ namespace System.IO.Ports.Tests
             // Verify that the percentage difference between the expected and actual timeout is less then maxPercentageDifference
             Assert.True(percentageDifference <= MAX_ACCEPTABLE_PERCENTAGE_DIFFERENCE,
                 string.Format("Err_56485ahpbz!!!: The write method timedout in {0} expected {1} percentage difference: {2}", actualTime, expectedTime, percentageDifference));
-
-            
         }
 
         private void Verify0Timeout(WriteMethodDelegate writeMethod)
@@ -516,7 +511,6 @@ namespace System.IO.Ports.Tests
                 Assert.Equal(1, com1.BaseStream.WriteTimeout);
 
                 Verify0Timeout(writeMethod, com1.BaseStream);
-
             }
         }
 
@@ -583,7 +577,6 @@ namespace System.IO.Ports.Tests
                 com.Close();
 
                 VerifyException(stream, readTimeout, expectedExceptionAfterClose);
-
             }
         }
 
@@ -605,7 +598,7 @@ namespace System.IO.Ports.Tests
 
         private void Write_byte_int_int(Stream stream)
         {
-            stream.Write(new byte[DEFAULT_WRITE_BYTE_ARRAY_SIZE], 0, DEFAULT_WRITE_BYTE_ARRAY_SIZE);
+            stream.Write(new byte[s_DEFAULT_WRITE_BYTE_ARRAY_SIZE], 0, s_DEFAULT_WRITE_BYTE_ARRAY_SIZE);
         }
 
         private void Write_byte_int_int_Large(Stream stream)

@@ -11,9 +11,9 @@ namespace System.IO.Ports.Tests
 {
     public class SerialStream_SetLength : PortsTest
     {
-        private static readonly int DEFAULT_VALUE = 0;
-        private static readonly int BAD_VALUE = -1;
-        
+        private const int DEFAULT_VALUE = 0;
+        private const int BAD_VALUE = -1;
+
         #region Test Cases
 
         [ConditionalFact(nameof(HasOneSerialPort))]
@@ -51,7 +51,6 @@ namespace System.IO.Ports.Tests
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             {
-
                 com.Open();
                 Debug.WriteLine("Verifying SetLength method throws exception after a call to Open()");
 
@@ -74,7 +73,7 @@ namespace System.IO.Ports.Tests
 
         #endregion
 
-            #region Verification for Test Cases
+        #region Verification for Test Cases
 
         #endregion
     }

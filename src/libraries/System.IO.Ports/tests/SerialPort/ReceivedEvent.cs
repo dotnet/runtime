@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
 using System.Diagnostics;
 using System.IO.PortsTests;
+using System.Threading;
 using Legacy.Support;
 using Xunit;
 
@@ -11,17 +13,9 @@ namespace System.IO.Ports.Tests
 {
     public class ReceivedEvent : PortsTest
     {
-        //Maximum random value to use for ReceivedBytesThreshold
-        public static readonly int MAX_RND_THRESHOLD = 16;
-
-        //Minimum random value to use for ReceivedBytesThreshold
-        public static readonly int MIN_RND_THRESHOLD = 2;
-
         //Maximum time to wait for all of the expected events to be firered
-        public static readonly int MAX_TIME_WAIT = 500;
-        public static readonly int ITERATION_TIME_WAIT = 10;
-        public static readonly int NUM_TRYS = 5;
-
+        private const int MAX_TIME_WAIT = 500;
+        private const int NUM_TRYS = 5;
 
         #region Test Cases
         [ConditionalFact(nameof(HasNullModem))]
@@ -207,9 +201,9 @@ namespace System.IO.Ports.Tests
         #region Verification for Test Cases
         public class ReceivedEventHandler
         {
-            public System.Collections.ArrayList EventType;
-            public System.Collections.ArrayList BytesToRead;
-            public System.Collections.ArrayList Source;
+            public ArrayList EventType;
+            public ArrayList BytesToRead;
+            public ArrayList Source;
             public int NumEventsHandled;
             protected SerialPort com;
 
@@ -218,9 +212,9 @@ namespace System.IO.Ports.Tests
                 this.com = com;
                 NumEventsHandled = 0;
 
-                EventType = new System.Collections.ArrayList();
-                BytesToRead = new System.Collections.ArrayList();
-                Source = new System.Collections.ArrayList();
+                EventType = new ArrayList();
+                BytesToRead = new ArrayList();
+                Source = new ArrayList();
             }
 
             public void HandleEvent(object source, SerialDataReceivedEventArgs e)
@@ -235,7 +229,7 @@ namespace System.IO.Ports.Tests
 
                     NumEventsHandled++;
 
-                    System.Threading.Monitor.Pulse(this);
+                    Monitor.Pulse(this);
                 }
             }
 
@@ -262,10 +256,10 @@ namespace System.IO.Ports.Tests
 
                     while (maxMilliseconds > sw.ElapsedMilliseconds && NumEventsHandled < totalNumberOfEvents)
                     {
-                        System.Threading.Monitor.Wait(this, (int)(maxMilliseconds - sw.ElapsedMilliseconds));
+                        Monitor.Wait(this, (int)(maxMilliseconds - sw.ElapsedMilliseconds));
                     }
 
-                    Assert.Equal(totalNumberOfEvents,NumEventsHandled);
+                    Assert.Equal(totalNumberOfEvents, NumEventsHandled);
                 }
             }
 
@@ -279,7 +273,7 @@ namespace System.IO.Ports.Tests
 
                     while (maxMilliseconds > sw.ElapsedMilliseconds)
                     {
-                        System.Threading.Monitor.Wait(this, (int)(maxMilliseconds - sw.ElapsedMilliseconds));
+                        Monitor.Wait(this, (int)(maxMilliseconds - sw.ElapsedMilliseconds));
 
                         for (int i = 0; i < EventType.Count; i++)
                         {
@@ -365,7 +359,7 @@ namespace System.IO.Ports.Tests
                 }
             }
 
-            new public void HandleEvent(object source, SerialDataReceivedEventArgs e)
+            public new void HandleEvent(object source, SerialDataReceivedEventArgs e)
             {
                 base.HandleEvent(source, e);
 

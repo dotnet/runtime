@@ -13,12 +13,12 @@ namespace System.IO.Ports.Tests
     public class SerialStream_Flush : PortsTest
     {
         // The string used with Write(str) to fill the input buffer
-        private static readonly int DEFAULT_BUFFER_SIZE = 32;
-        private static readonly int MAX_WAIT_TIME = 500;
+        private const int DEFAULT_BUFFER_SIZE = 32;
+        private const int MAX_WAIT_TIME = 500;
 
         // The buffer lenght used whe filling the ouput buffer
-        private static readonly int DEFAULT_BUFFER_LENGTH = 8;
-        
+        private const int DEFAULT_BUFFER_LENGTH = 8;
+
         #region Test Cases
 
         [ConditionalFact(nameof(HasOneSerialPort))]
@@ -57,7 +57,6 @@ namespace System.IO.Ports.Tests
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             using (SerialPort com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))
             {
-                int elapsedTime = 0;
                 byte[] xmitBytes = new byte[DEFAULT_BUFFER_SIZE];
 
                 Debug.WriteLine("Verifying Flush method after input buffer has been filled");
@@ -68,11 +67,7 @@ namespace System.IO.Ports.Tests
 
                 com2.Write(xmitBytes, 0, xmitBytes.Length);
 
-                while (com1.BytesToRead < DEFAULT_BUFFER_SIZE && elapsedTime < MAX_WAIT_TIME)
-                {
-                    Thread.Sleep(50);
-                    elapsedTime += 50;
-                }
+                TCSupport.WaitForReadBufferToLoad(com1, DEFAULT_BUFFER_SIZE);
 
                 VerifyFlush(com1);
             }
@@ -84,7 +79,6 @@ namespace System.IO.Ports.Tests
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             using (SerialPort com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))
             {
-                int elapsedTime = 0;
                 byte[] xmitBytes = new byte[DEFAULT_BUFFER_SIZE];
 
                 Debug.WriteLine("Verifying call Flush method several times after input buffer has been filled");
@@ -95,11 +89,7 @@ namespace System.IO.Ports.Tests
 
                 com2.Write(xmitBytes, 0, xmitBytes.Length);
 
-                while (com1.BytesToRead < DEFAULT_BUFFER_SIZE && elapsedTime < MAX_WAIT_TIME)
-                {
-                    Thread.Sleep(50);
-                    elapsedTime += 50;
-                }
+                TCSupport.WaitForReadBufferToLoad(com1, DEFAULT_BUFFER_SIZE);
 
                 VerifyFlush(com1);
                 VerifyFlush(com1);
@@ -113,8 +103,6 @@ namespace System.IO.Ports.Tests
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             using (SerialPort com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))
             {
-
-                int elapsedTime = 0;
                 byte[] xmitBytes = new byte[DEFAULT_BUFFER_SIZE];
 
                 Debug.WriteLine(
@@ -127,22 +115,13 @@ namespace System.IO.Ports.Tests
 
                 com2.Write(xmitBytes, 0, xmitBytes.Length);
 
-                while (com1.BytesToRead < DEFAULT_BUFFER_SIZE && elapsedTime < MAX_WAIT_TIME)
-                {
-                    Thread.Sleep(50);
-                    elapsedTime += 50;
-                }
+                TCSupport.WaitForReadBufferToLoad(com1, DEFAULT_BUFFER_SIZE);
 
                 VerifyFlush(com1);
 
                 com2.Write(xmitBytes, 0, xmitBytes.Length);
-                elapsedTime = 0;
 
-                while (com1.BytesToRead < DEFAULT_BUFFER_SIZE * 2 && elapsedTime < MAX_WAIT_TIME)
-                {
-                    Thread.Sleep(50);
-                    elapsedTime += 50;
-                }
+                TCSupport.WaitForReadBufferToLoad(com1, DEFAULT_BUFFER_SIZE);
 
                 VerifyFlush(com1);
             }
@@ -156,8 +135,6 @@ namespace System.IO.Ports.Tests
                 AsyncWriteRndByteArray asyncWriteRndByteArray = new AsyncWriteRndByteArray(com1, DEFAULT_BUFFER_SIZE);
                 Thread t = new Thread(asyncWriteRndByteArray.WriteRndByteArray);
 
-                int elapsedTime;
-
                 Debug.WriteLine("Verifying Flush method after output buffer has been filled");
 
                 com1.Open();
@@ -165,13 +142,8 @@ namespace System.IO.Ports.Tests
                 com1.Handshake = Handshake.RequestToSend;
 
                 t.Start();
-                elapsedTime = 0;
 
-                while (com1.BytesToWrite < DEFAULT_BUFFER_LENGTH && elapsedTime < MAX_WAIT_TIME)
-                {
-                    Thread.Sleep(50);
-                    elapsedTime += 50;
-                }
+                TCSupport.WaitForWriteBufferToLoad(com1, DEFAULT_BUFFER_LENGTH);
 
                 VerifyFlush(com1);
 
@@ -189,8 +161,6 @@ namespace System.IO.Ports.Tests
                 AsyncWriteRndByteArray asyncWriteRndByteArray = new AsyncWriteRndByteArray(com1, DEFAULT_BUFFER_SIZE);
                 Thread t = new Thread(asyncWriteRndByteArray.WriteRndByteArray);
 
-                int elapsedTime;
-
                 Debug.WriteLine("Verifying call Flush method several times after output buffer has been filled");
 
                 com1.Open();
@@ -198,13 +168,8 @@ namespace System.IO.Ports.Tests
                 com1.Handshake = Handshake.RequestToSend;
 
                 t.Start();
-                elapsedTime = 0;
 
-                while (com1.BytesToWrite < DEFAULT_BUFFER_LENGTH && elapsedTime < MAX_WAIT_TIME)
-                {
-                    Thread.Sleep(50);
-                    elapsedTime += 50;
-                }
+                TCSupport.WaitForWriteBufferToLoad(com1, DEFAULT_BUFFER_LENGTH);
 
                 VerifyFlush(com1);
                 VerifyFlush(com1);
@@ -250,16 +215,11 @@ namespace System.IO.Ports.Tests
                     Thread.Sleep(100);
 
                 t2.Start();
-                elapsedTime = 0;
 
-                while (com1.BytesToWrite < DEFAULT_BUFFER_LENGTH && elapsedTime < MAX_WAIT_TIME)
-                {
-                    Thread.Sleep(50);
-                    elapsedTime += 50;
-                }
+                TCSupport.WaitForWriteBufferToLoad(com1, DEFAULT_BUFFER_LENGTH);
 
                 VerifyFlush(com1);
-                
+
                 // Wait for write method to timeout
                 while (t2.IsAlive)
                     Thread.Sleep(100);
@@ -275,7 +235,6 @@ namespace System.IO.Ports.Tests
                 AsyncWriteRndByteArray asyncWriteRndByteArray = new AsyncWriteRndByteArray(com1, DEFAULT_BUFFER_SIZE);
                 Thread t = new Thread(asyncWriteRndByteArray.WriteRndByteArray);
 
-                int elapsedTime = 0;
                 byte[] xmitBytes = new byte[DEFAULT_BUFFER_SIZE];
 
                 Debug.WriteLine("Verifying Flush method after input and output buffer has been filled");
@@ -289,20 +248,11 @@ namespace System.IO.Ports.Tests
 
                 com2.Write(xmitBytes, 0, xmitBytes.Length);
 
-                while (com1.BytesToRead < DEFAULT_BUFFER_SIZE && elapsedTime < MAX_WAIT_TIME)
-                {
-                    Thread.Sleep(50);
-                    elapsedTime += 50;
-                }
+                TCSupport.WaitForReadBufferToLoad(com1, DEFAULT_BUFFER_SIZE);
 
                 t.Start();
-                elapsedTime = 0;
 
-                while (com1.BytesToWrite < DEFAULT_BUFFER_LENGTH && elapsedTime < MAX_WAIT_TIME)
-                {
-                    Thread.Sleep(50);
-                    elapsedTime += 50;
-                }
+                TCSupport.WaitForWriteBufferToLoad(com1, DEFAULT_BUFFER_LENGTH);
 
                 VerifyFlush(com1);
 
@@ -336,11 +286,7 @@ namespace System.IO.Ports.Tests
 
                 com2.Write(xmitBytes, 0, xmitBytes.Length);
 
-                while (com1.BytesToRead < DEFAULT_BUFFER_SIZE && elapsedTime < MAX_WAIT_TIME)
-                {
-                    Thread.Sleep(50);
-                    elapsedTime += 50;
-                }
+                TCSupport.WaitForReadBufferToLoad(com1, DEFAULT_BUFFER_SIZE);
 
                 t.Start();
                 elapsedTime = 0;
@@ -371,7 +317,6 @@ namespace System.IO.Ports.Tests
                 Thread t1 = new Thread(asyncWriteRndByteArray.WriteRndByteArray);
                 Thread t2 = new Thread(asyncWriteRndByteArray.WriteRndByteArray);
 
-                int elapsedTime = 0;
                 byte[] xmitBytes = new byte[DEFAULT_BUFFER_SIZE];
 
                 Debug.WriteLine(
@@ -386,20 +331,11 @@ namespace System.IO.Ports.Tests
 
                 com2.Write(xmitBytes, 0, xmitBytes.Length);
 
-                while (com1.BytesToRead < DEFAULT_BUFFER_SIZE && elapsedTime < MAX_WAIT_TIME)
-                {
-                    Thread.Sleep(50);
-                    elapsedTime += 50;
-                }
+                TCSupport.WaitForReadBufferToLoad(com1, DEFAULT_BUFFER_SIZE);
 
                 t1.Start();
-                elapsedTime = 0;
 
-                while (com1.BytesToWrite < DEFAULT_BUFFER_LENGTH && elapsedTime < MAX_WAIT_TIME)
-                {
-                    Thread.Sleep(50);
-                    elapsedTime += 50;
-                }
+                TCSupport.WaitForWriteBufferToLoad(com1, DEFAULT_BUFFER_LENGTH);
 
                 VerifyFlush(com1);
 
@@ -408,22 +344,12 @@ namespace System.IO.Ports.Tests
                     Thread.Sleep(100);
 
                 t2.Start();
-                elapsedTime = 0;
 
-                while (com1.BytesToWrite < DEFAULT_BUFFER_LENGTH && elapsedTime < MAX_WAIT_TIME)
-                {
-                    Thread.Sleep(50);
-                    elapsedTime += 50;
-                }
+                TCSupport.WaitForWriteBufferToLoad(com1, DEFAULT_BUFFER_LENGTH);
 
                 com2.Write(xmitBytes, 0, xmitBytes.Length);
-                elapsedTime = 0;
 
-                while (com1.BytesToRead < DEFAULT_BUFFER_SIZE && elapsedTime < MAX_WAIT_TIME)
-                {
-                    Thread.Sleep(50);
-                    elapsedTime += 50;
-                }
+                TCSupport.WaitForReadBufferToLoad(com1, DEFAULT_BUFFER_SIZE);
 
                 VerifyFlush(com1);
 
@@ -478,7 +404,6 @@ namespace System.IO.Ports.Tests
 
         private void VerifyFlush(SerialPort com)
         {
-
             int origBytesToRead = com.BytesToRead;
             int i = 0;
 
@@ -523,8 +448,6 @@ namespace System.IO.Ports.Tests
                     Fail("Err_09778asdh Expected to read {0} bytes actually read {1}", DEFAULT_BUFFER_SIZE, i);
                 }
             }
-
-
         }
         #endregion
     }

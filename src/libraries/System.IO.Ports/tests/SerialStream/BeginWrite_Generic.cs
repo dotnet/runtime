@@ -15,10 +15,10 @@ namespace System.IO.Ports.Tests
     {
         // Set bounds fore random timeout values.
         // If the min is to low write will not timeout accurately and the testcase will fail
-        public static int minRandomTimeout = 250;
+        private const int minRandomTimeout = 250;
 
         // If the max is to large then the testcase will take forever to run
-        public static int maxRandomTimeout = 2000;
+        private const int maxRandomTimeout = 2000;
 
         // If the percentage difference between the expected timeout and the actual timeout
         // found through Stopwatch is greater then 10% then the timeout value was not correctly
@@ -26,19 +26,19 @@ namespace System.IO.Ports.Tests
         public static double maxPercentageDifference = .15;
 
         // The byte size used when veryifying exceptions that write will throw 
-        public static readonly int BYTE_SIZE_EXCEPTION = 4;
+        private const int BYTE_SIZE_EXCEPTION = 4;
 
         // The byte size used when veryifying timeout 
-        public static readonly int BYTE_SIZE_TIMEOUT = 4;
+        private const int BYTE_SIZE_TIMEOUT = 4;
 
         // The byte size used when veryifying BytesToWrite 
-        public static readonly int BYTE_SIZE_BYTES_TO_WRITE = 4;
+        private const int BYTE_SIZE_BYTES_TO_WRITE = 4;
 
         // The bytes size used when veryifying Handshake 
-        public static readonly int BYTE_SIZE_HANDSHAKE = 8;
-        public static readonly int MAX_WAIT = 250;
-        public static readonly int ITERATION_WAIT = 50;
-        public static readonly int NUM_TRYS = 5;
+        private const int BYTE_SIZE_HANDSHAKE = 8;
+        private const int MAX_WAIT = 250;
+        private const int ITERATION_WAIT = 50;
+        private const int NUM_TRYS = 5;
 
         private const int MAX_WAIT_THREAD = 1000;
 
@@ -112,7 +112,6 @@ namespace System.IO.Ports.Tests
 
                 if (elapsedTime >= MAX_WAIT)
                 {
-
                     Fail("Err_2257asap!!! Expcted BytesToWrite={0} actual {1} after first write",
                                             BYTE_SIZE_BYTES_TO_WRITE, com1.BytesToWrite);
                 }
@@ -353,7 +352,6 @@ namespace System.IO.Ports.Tests
             using (var com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             using (var com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))
             {
-
                 var XOffBuffer = new byte[1];
                 var XOnBuffer = new byte[1];
                 var waitTime = 0;
@@ -390,7 +388,6 @@ namespace System.IO.Ports.Tests
                 // Verify that the correct number of bytes are in the buffer
                 if (BYTE_SIZE_HANDSHAKE != com1.BytesToWrite)
                 {
-
                     Fail("ERROR!!! Expcted BytesToWrite={0} actual {1}", BYTE_SIZE_HANDSHAKE,
                         com1.BytesToWrite);
                 }
@@ -399,7 +396,6 @@ namespace System.IO.Ports.Tests
                 if ((Handshake.RequestToSend == handshake || Handshake.RequestToSendXOnXOff == handshake) &&
                     com1.CtsHolding)
                 {
-
                     Fail("ERROR!!! Expcted CtsHolding={0} actual {1}", false, com1.CtsHolding);
                 }
 
@@ -421,7 +417,6 @@ namespace System.IO.Ports.Tests
                 // Verify that the correct number of bytes are in the buffer
                 if (0 != com1.BytesToWrite)
                 {
-
                     Fail("ERROR!!! Expcted BytesToWrite=0 actual {0}", com1.BytesToWrite);
                 }
 
@@ -429,12 +424,9 @@ namespace System.IO.Ports.Tests
                 if ((Handshake.RequestToSend == handshake || Handshake.RequestToSendXOnXOff == handshake) &&
                     !com1.CtsHolding)
                 {
-
                     Fail("ERROR!!! Expcted CtsHolding={0} actual {1}", true, com1.CtsHolding);
                 }
-
             }
-
         }
 
         private class AsyncWrite

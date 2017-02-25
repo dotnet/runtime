@@ -54,7 +54,7 @@ namespace System.IO.Ports.Tests
                 VerifyExceptionAfterOpen(com, newLine, expectedException);
             }
         }
-    
+
         private void VerifyExceptionAtOpen(SerialPort com, string newLine, Type expectedException)
         {
             string origNewLine = com.NewLine;

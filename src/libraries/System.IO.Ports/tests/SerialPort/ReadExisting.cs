@@ -4,6 +4,8 @@
 
 using System.Diagnostics;
 using System.IO.PortsTests;
+using System.Text;
+using System.Threading;
 using Legacy.Support;
 using Xunit;
 
@@ -12,55 +14,45 @@ namespace System.IO.Ports.Tests
     public class ReadExisting : PortsTest
     {
         //The number of random bytes to receive for read method testing
-        public static readonly int numRndBytesToRead = 8;
+        private const int numRndBytesToRead = 8;
 
         //The number of random bytes to receive for large input buffer testing
-        public static readonly int largeNumRndBytesToRead = 2048;
+        private const int largeNumRndBytesToRead = 2048;
 
-        //When we test Read and do not care about actually reading anything we must still
-        //create an byte array to pass into the method the following is the size of the 
-        //byte array used in this situation
-        public static readonly int defaultCharArraySize = 1;
-        public static readonly int defaultCharOffset = 0;
-        public static readonly int defaultCharCount = 1;
-
-        //The maximum buffer size when a exception is not expected
-        public static readonly int maxBufferSize = 8;
-
-        public enum ReadDataFromEnum { NonBuffered, Buffered, BufferedAndNonBuffered };
+        private enum ReadDataFromEnum { NonBuffered, Buffered, BufferedAndNonBuffered };
 
         #region Test Cases
 
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
         private void ASCIIEncoding()
         {
-            VerifyRead(new System.Text.ASCIIEncoding());
+            VerifyRead(new ASCIIEncoding());
         }
 
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
         private void UTF8Encoding()
         {
-            VerifyRead(new System.Text.UTF8Encoding());
+            VerifyRead(new UTF8Encoding());
         }
 
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
         private void UTF32Encoding()
         {
-            VerifyRead(new System.Text.UTF32Encoding());
+            VerifyRead(new UTF32Encoding());
         }
 
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
         private void SerialPort_ReadBufferedData()
         {
             int numberOfBytesToRead = 32;
-            VerifyRead(System.Text.Encoding.ASCII, numberOfBytesToRead, ReadDataFromEnum.Buffered);
+            VerifyRead(Encoding.ASCII, numberOfBytesToRead, ReadDataFromEnum.Buffered);
         }
 
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
         private void SerialPort_IterativeReadBufferedData()
         {
             int numberOfBytesToRead = 32;
-            VerifyRead(System.Text.Encoding.ASCII, numberOfBytesToRead, ReadDataFromEnum.Buffered);
+            VerifyRead(Encoding.ASCII, numberOfBytesToRead, ReadDataFromEnum.Buffered);
         }
 
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
@@ -68,7 +60,7 @@ namespace System.IO.Ports.Tests
         {
             int numberOfBytesToRead = 64;
 
-            VerifyRead(System.Text.Encoding.ASCII, numberOfBytesToRead, ReadDataFromEnum.BufferedAndNonBuffered);
+            VerifyRead(Encoding.ASCII, numberOfBytesToRead, ReadDataFromEnum.BufferedAndNonBuffered);
         }
 
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
@@ -76,7 +68,7 @@ namespace System.IO.Ports.Tests
         {
             int numberOfBytesToRead = 3;
 
-            VerifyRead(System.Text.Encoding.ASCII, numberOfBytesToRead, ReadDataFromEnum.BufferedAndNonBuffered);
+            VerifyRead(Encoding.ASCII, numberOfBytesToRead, ReadDataFromEnum.BufferedAndNonBuffered);
         }
 
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
@@ -88,7 +80,7 @@ namespace System.IO.Ports.Tests
                 char[] charXmitBuffer = TCSupport.GetRandomChars(128, true);
                 byte[] byteXmitBuffer = new byte[1024];
                 char utf32Char = TCSupport.GenerateRandomCharNonSurrogate();
-                byte[] utf32CharBytes = System.Text.Encoding.UTF32.GetBytes(new[] {utf32Char});
+                byte[] utf32CharBytes = Encoding.UTF32.GetBytes(new[] { utf32Char });
                 int numBytes;
 
                 Debug.WriteLine("Verifying that ReadExisting() will read everything from internal buffer and drivers buffer");
@@ -104,8 +96,7 @@ namespace System.IO.Ports.Tests
 
                 com2.Write(byteXmitBuffer, 0, byteXmitBuffer.Length);
 
-                while (com1.BytesToRead < byteXmitBuffer.Length)
-                    System.Threading.Thread.Sleep(50);
+                TCSupport.WaitForReadBufferToLoad(com1, byteXmitBuffer.Length);
 
                 //Read Every Byte except the last one. The last bye should be left in the last position of SerialPort's
                 //internal buffer. When we try to read this char as UTF32 the buffer should have to be resized so 
@@ -114,25 +105,22 @@ namespace System.IO.Ports.Tests
 
                 Assert.Equal(1, com1.BytesToRead);
 
-                com1.Encoding = System.Text.Encoding.UTF32;
-                com2.Encoding = System.Text.Encoding.UTF32;
+                com1.Encoding = Encoding.UTF32;
+                com2.Encoding = Encoding.UTF32;
 
                 com2.Write(utf32CharBytes, 1, 3);
                 com2.Write(charXmitBuffer, 0, charXmitBuffer.Length);
 
-                numBytes = System.Text.Encoding.UTF32.GetByteCount(charXmitBuffer);
+                numBytes = Encoding.UTF32.GetByteCount(charXmitBuffer);
 
-                byte[] byteBuffer = System.Text.Encoding.UTF32.GetBytes(charXmitBuffer);
+                byte[] byteBuffer = Encoding.UTF32.GetBytes(charXmitBuffer);
 
-                var expectedChars = new char[1 + System.Text.Encoding.UTF32.GetCharCount(byteBuffer)];
+                var expectedChars = new char[1 + Encoding.UTF32.GetCharCount(byteBuffer)];
                 expectedChars[0] = utf32Char;
 
-                System.Text.Encoding.UTF32.GetChars(byteBuffer, 0, byteBuffer.Length, expectedChars, 1);
+                Encoding.UTF32.GetChars(byteBuffer, 0, byteBuffer.Length, expectedChars, 1);
 
-                while (com1.BytesToRead < 4 + numBytes)
-                {
-                    System.Threading.Thread.Sleep(50);
-                }
+                TCSupport.WaitForReadBufferToLoad(com1, 4 + numBytes);
 
                 string rcvString = com1.ReadExisting();
 
@@ -157,25 +145,25 @@ namespace System.IO.Ports.Tests
 
         private void VerifyRead()
         {
-            VerifyRead(new System.Text.ASCIIEncoding(), numRndBytesToRead);
+            VerifyRead(new ASCIIEncoding(), numRndBytesToRead);
         }
 
         private void VerifyRead(int numberOfBytesToRead)
         {
-            VerifyRead(new System.Text.ASCIIEncoding(), numberOfBytesToRead);
+            VerifyRead(new ASCIIEncoding(), numberOfBytesToRead);
         }
 
-        private void VerifyRead(System.Text.Encoding encoding)
+        private void VerifyRead(Encoding encoding)
         {
             VerifyRead(encoding, numRndBytesToRead);
         }
 
-        private void VerifyRead(System.Text.Encoding encoding, int numberOfBytesToRead)
+        private void VerifyRead(Encoding encoding, int numberOfBytesToRead)
         {
             VerifyRead(encoding, numberOfBytesToRead, ReadDataFromEnum.NonBuffered);
         }
 
-        private void VerifyRead(System.Text.Encoding encoding, int numberOfBytesToRead, ReadDataFromEnum readDataFrom)
+        private void VerifyRead(Encoding encoding, int numberOfBytesToRead, ReadDataFromEnum readDataFrom)
         {
             using (SerialPort com1 = TCSupport.InitFirstSerialPort())
             using (SerialPort com2 = TCSupport.InitSecondSerialPort(com1))
@@ -198,7 +186,7 @@ namespace System.IO.Ports.Tests
                 com1.ReadTimeout = 500;
                 com1.Encoding = encoding;
 
-                TCSupport.SetHighSpeed(com1,com2);
+                TCSupport.SetHighSpeed(com1, com2);
 
                 com1.Open();
 
@@ -259,10 +247,7 @@ namespace System.IO.Ports.Tests
             com2.Write(bytesToWrite, 0, 1); // Write one byte at the begining because we are going to read this to buffer the rest of the data
             com2.Write(bytesToWrite, 0, bytesToWrite.Length);
 
-            while (com1.BytesToRead < bytesToWrite.Length)
-            {
-                System.Threading.Thread.Sleep(50);
-            }
+            TCSupport.WaitForReadBufferToLoad(com1, bytesToWrite.Length);
 
             com1.Read(new char[1], 0, 1); // This should put the rest of the bytes in SerialPorts own internal buffer
 
@@ -273,7 +258,7 @@ namespace System.IO.Ports.Tests
         {
             com2.Write(bytesToWrite, 0, bytesToWrite.Length);
             com1.ReadTimeout = 500;
-            System.Threading.Thread.Sleep((int)(((bytesToWrite.Length * 10.0) / com1.BaudRate) * 1000) + 250);
+            Thread.Sleep((int)(((bytesToWrite.Length * 10.0) / com1.BaudRate) * 1000) + 250);
             PerformReadOnCom1FromCom2(com1, com2, expectedChars);
         }
 

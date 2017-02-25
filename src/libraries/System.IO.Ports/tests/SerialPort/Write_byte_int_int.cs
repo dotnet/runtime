@@ -4,6 +4,8 @@
 
 using System.Diagnostics;
 using System.IO.PortsTests;
+using System.Text;
+using System.Threading;
 using Legacy.Support;
 using Xunit;
 
@@ -11,27 +13,24 @@ namespace System.IO.Ports.Tests
 {
     public class Write_byte_int_int : PortsTest
     {
-        //The string size used when veryifying encoding 
-        public static readonly int ENCODING_BUFFER_SIZE = 4;
-
         //The string size used for large byte array testing
-        public static readonly int LARGE_BUFFER_SIZE = 2048;
+        private const int LARGE_BUFFER_SIZE = 2048;
 
         //When we test Write and do not care about actually writing anything we must still
         //create an byte array to pass into the method the following is the size of the 
         //byte array used in this situation
-        public static readonly int DEFAULT_BUFFER_SIZE = 1;
-        public static readonly int DEFAULT_BUFFER_OFFSET = 0;
-        public static readonly int DEFAULT_BUFFER_COUNT = 1;
+        private const int DEFAULT_BUFFER_SIZE = 1;
+        private const int DEFAULT_BUFFER_OFFSET = 0;
+        private const int DEFAULT_BUFFER_COUNT = 1;
 
         //The maximum buffer size when a exception occurs
-        public static readonly int MAX_BUFFER_SIZE_FOR_EXCEPTION = 255;
+        private const int MAX_BUFFER_SIZE_FOR_EXCEPTION = 255;
 
         //The maximum buffer size when a exception is not expected
-        public static readonly int MAX_BUFFER_SIZE = 8;
+        private const int MAX_BUFFER_SIZE = 8;
 
         //The default number of times the write method is called when verifying write
-        public static readonly int DEFAULT_NUM_WRITES = 3;
+        private const int DEFAULT_NUM_WRITES = 3;
 
         #region Test Cases
 
@@ -183,7 +182,7 @@ namespace System.IO.Ports.Tests
             int offset = rndGen.Next(0, bufferLength - 1);
             int count = rndGen.Next(1, bufferLength - offset);
 
-            VerifyWrite(new byte[bufferLength], offset, count, new System.Text.ASCIIEncoding());
+            VerifyWrite(new byte[bufferLength], offset, count, new ASCIIEncoding());
         }
 
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
@@ -194,7 +193,7 @@ namespace System.IO.Ports.Tests
             int offset = rndGen.Next(0, bufferLength - 1);
             int count = rndGen.Next(1, bufferLength - offset);
 
-            VerifyWrite(new byte[bufferLength], offset, count, new System.Text.UTF8Encoding());
+            VerifyWrite(new byte[bufferLength], offset, count, new UTF8Encoding());
         }
 
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
@@ -205,7 +204,7 @@ namespace System.IO.Ports.Tests
             int offset = rndGen.Next(0, bufferLength - 1);
             int count = rndGen.Next(1, bufferLength - offset);
 
-            VerifyWrite(new byte[bufferLength], offset, count, new System.Text.UTF32Encoding());
+            VerifyWrite(new byte[bufferLength], offset, count, new UTF32Encoding());
         }
 
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
@@ -216,7 +215,7 @@ namespace System.IO.Ports.Tests
             int offset = rndGen.Next(0, bufferLength - 1);
             int count = rndGen.Next(1, bufferLength - offset);
 
-            VerifyWrite(new byte[bufferLength], offset, count, new System.Text.UnicodeEncoding());
+            VerifyWrite(new byte[bufferLength], offset, count, new UnicodeEncoding());
         }
 
 
@@ -259,28 +258,27 @@ namespace System.IO.Ports.Tests
 
         private void VerifyWrite(byte[] buffer, int offset, int count)
         {
-            VerifyWrite(buffer, offset, count, new System.Text.ASCIIEncoding());
+            VerifyWrite(buffer, offset, count, new ASCIIEncoding());
         }
 
 
         private void VerifyWrite(byte[] buffer, int offset, int count, int numWrites)
         {
-            VerifyWrite(buffer, offset, count, new System.Text.ASCIIEncoding(), numWrites);
+            VerifyWrite(buffer, offset, count, new ASCIIEncoding(), numWrites);
         }
 
 
-        private void VerifyWrite(byte[] buffer, int offset, int count, System.Text.Encoding encoding)
+        private void VerifyWrite(byte[] buffer, int offset, int count, Encoding encoding)
         {
             VerifyWrite(buffer, offset, count, encoding, DEFAULT_NUM_WRITES);
         }
 
 
-        private void VerifyWrite(byte[] buffer, int offset, int count, System.Text.Encoding encoding, int numWrites)
+        private void VerifyWrite(byte[] buffer, int offset, int count, Encoding encoding, int numWrites)
         {
             using (SerialPort com1 = TCSupport.InitFirstSerialPort())
             using (SerialPort com2 = TCSupport.InitSecondSerialPort(com1))
             {
-
                 Random rndGen = new Random(-55);
 
                 Debug.WriteLine("Verifying write method buffer.Lenght={0}, offset={1}, count={2}, endocing={3}",
@@ -330,7 +328,7 @@ namespace System.IO.Ports.Tests
             }
 
             com2.ReadTimeout = 500;
-            System.Threading.Thread.Sleep((int)(((expectedBytes.Length * numWrites * 10.0) / com1.BaudRate) * 1000) + 250);
+            Thread.Sleep((int)(((expectedBytes.Length * numWrites * 10.0) / com1.BaudRate) * 1000) + 250);
 
             //Make sure buffer was not altered during the write call
             for (int i = 0; i < buffer.Length; i++)

@@ -74,4 +74,10 @@ namespace Legacy.Support
             return ports.ToArray();
         }
     }
+
+    public static class XOnOff
+    {
+        public const byte XOFF = 19;
+        public const byte XON = 17;
+    }
 }

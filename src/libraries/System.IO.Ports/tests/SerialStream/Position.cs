@@ -11,8 +11,8 @@ namespace System.IO.Ports.Tests
 {
     public class SerialStream_Position : PortsTest
     {
-        private static readonly int DEFAULT_VALUE = 0;
-        private static readonly int BAD_VALUE = -1;
+        private const int DEFAULT_VALUE = 0;
+        private const int BAD_VALUE = -1;
 
         #region Test Cases
 
@@ -64,7 +64,6 @@ namespace System.IO.Ports.Tests
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             {
-
                 com.Open();
                 Debug.WriteLine("Verifying Position property throws exception with a bad value after a call to Open()");
 

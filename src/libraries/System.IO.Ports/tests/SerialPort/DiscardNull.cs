@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
 using System.Diagnostics;
 using System.IO.PortsTests;
+using System.Text;
 using Legacy.Support;
 using Xunit;
 
@@ -12,19 +14,16 @@ namespace System.IO.Ports.Tests
     public class DiscardNull_Property : PortsTest
     {
         //The default number of bytes to read/write to verify the DiscardNull
-        public static readonly int DEFAULT_NUM_CHARS_TO_WRITE = 8;
+        private const int DEFAULT_NUM_CHARS_TO_WRITE = 8;
 
         //The default number of null characters to be inserted into the characters written  
-        public static readonly int DEFUALT_NUM_NULL_CHAR = 1;
+        private const int DEFUALT_NUM_NULL_CHAR = 1;
 
         //The default number of chars to write with when testing timeout with Read(char[], int, int)
-        public static readonly int DEFAULT_READ_CHAR_ARRAY_SIZE = 8;
+        private const int DEFAULT_READ_CHAR_ARRAY_SIZE = 8;
 
         //The default number of bytes to write with when testing timeout with Read(byte[], int, int)
-        public static readonly int DEFAULT_READ_BYTE_ARRAY_SIZE = 8;
-
-        //The maximum time to wait for an event to occur
-        public static readonly int MAX_WAIT_TIME = 750;
+        private const int DEFAULT_READ_BYTE_ARRAY_SIZE = 8;
 
         private delegate char[] ReadMethodDelegate(SerialPort com);
 
@@ -175,7 +174,7 @@ namespace System.IO.Ports.Tests
             Debug.WriteLine("Verifying true DiscardNull with ReadChar after open");
             VerifyDiscardNullAfterOpen(true, ReadChar, false);
         }
-    
+
         [ConditionalFact(nameof(HasNullModem))]
         public void DiscardNull_true_ReadLine_Before()
         {
@@ -363,13 +362,7 @@ namespace System.IO.Ports.Tests
                 com2.Open();
                 com2.Write(xmitBytes, 0, xmitBytes.Length);
 
-                int timeElapsed = 0;
-
-                while (expectedBytes.Length > com1.BytesToRead && timeElapsed < MAX_WAIT_TIME)
-                {
-                    System.Threading.Thread.Sleep(50);
-                    timeElapsed += 50;
-                }
+                TCSupport.WaitForReadBufferToLoad(com1, expectedBytes.Length);
 
                 if (sendNewLine)
                     com2.WriteLine("");
@@ -387,7 +380,7 @@ namespace System.IO.Ports.Tests
 
         private char[] Read_byte_int_int(SerialPort com)
         {
-            System.Collections.ArrayList receivedBytes = new System.Collections.ArrayList();
+            ArrayList receivedBytes = new ArrayList();
             byte[] buffer = new byte[DEFAULT_READ_BYTE_ARRAY_SIZE];
             int totalBytesRead = 0;
             int numBytes;
@@ -416,7 +409,7 @@ namespace System.IO.Ports.Tests
 
         private char[] Read_char_int_int(SerialPort com)
         {
-            System.Collections.ArrayList receivedChars = new System.Collections.ArrayList();
+            ArrayList receivedChars = new ArrayList();
             char[] buffer = new char[DEFAULT_READ_CHAR_ARRAY_SIZE];
             int totalCharsRead = 0;
             int numChars;
@@ -445,7 +438,7 @@ namespace System.IO.Ports.Tests
 
         private char[] ReadByte(SerialPort com)
         {
-            System.Collections.ArrayList receivedBytes = new System.Collections.ArrayList();
+            ArrayList receivedBytes = new ArrayList();
             int rcvByte;
 
             while (true)
@@ -468,7 +461,7 @@ namespace System.IO.Ports.Tests
 
         private char[] ReadChar(SerialPort com)
         {
-            System.Collections.ArrayList receivedChars = new System.Collections.ArrayList();
+            ArrayList receivedChars = new ArrayList();
             int rcvChar;
 
             while (true)
@@ -490,7 +483,7 @@ namespace System.IO.Ports.Tests
 
         private char[] ReadLine(SerialPort com)
         {
-            System.Text.StringBuilder rcvStringBuilder = new System.Text.StringBuilder();
+            StringBuilder rcvStringBuilder = new StringBuilder();
             string rcvString;
 
             while (true)
@@ -513,7 +506,7 @@ namespace System.IO.Ports.Tests
 
         private char[] ReadTo(SerialPort com)
         {
-            System.Text.StringBuilder rcvStringBuilder = new System.Text.StringBuilder();
+            StringBuilder rcvStringBuilder = new StringBuilder();
             string rcvString;
 
             while (true)

@@ -11,10 +11,10 @@ namespace System.IO.Ports.Tests
 {
     public class SerialStream_Seek : PortsTest
     {
-        private static readonly int DEFAULT_OFFSET = 0;
-        private static readonly int DEFAULT_ORIGIN = (int)SeekOrigin.Begin;
-        private static readonly int BAD_OFFSET = -1;
-        private static readonly int BAD_ORIGIN = -1;
+        private const int DEFAULT_OFFSET = 0;
+        private const int DEFAULT_ORIGIN = (int)SeekOrigin.Begin;
+        private const int BAD_OFFSET = -1;
+        private const int BAD_ORIGIN = -1;
 
         #region Test Cases
 

@@ -20,22 +20,22 @@ namespace Legacy.Support
         // here then the property can never be set in this class and will never be 
         // used for verification.
 
-        public static readonly int defaultBaudRate = 9600;
+        private const int defaultBaudRate = 9600;
         public static readonly string defaultPortName = "COM1";
-        public static readonly int defaultDataBits = 8;
+        private const int defaultDataBits = 8;
         public static readonly StopBits defaultStopBits = StopBits.One;
         public static readonly Parity defaultParity = Parity.None;
         public static readonly Handshake defaultHandshake = Handshake.None;
         public static readonly Encoding defaultEncoding = new ASCIIEncoding();
         public static readonly bool defaultDtrEnable = false;
         public static readonly bool defaultRtsEnable = false;
-        public static readonly int defaultReadTimeout = -1;
-        public static readonly int defaultWriteTimeout = -1;
+        private const int defaultReadTimeout = -1;
+        private const int defaultWriteTimeout = -1;
         public static readonly Type defaultBytesToRead = typeof(InvalidOperationException);
         public static readonly Type defaultBytesToWrite = typeof(InvalidOperationException);
         public static readonly bool defaultIsOpen = false;
         public static readonly Type defaultBaseStream = typeof(InvalidOperationException);
-        public static readonly int defaultReceivedBytesThreshold = 1;
+        private const int defaultReceivedBytesThreshold = 1;
         public static readonly bool defaultDiscardNull = false;
         public static readonly byte defaultParityReplace = (byte)'?';
         public static readonly Type defaultCDHolding = typeof(InvalidOperationException);
@@ -43,29 +43,29 @@ namespace Legacy.Support
         public static readonly Type defaultDsrHolding = typeof(InvalidOperationException);
         public static readonly string defaultNewLine = "\n";
         public static readonly Type defaultBreakState = typeof(InvalidOperationException);
-        public static readonly int defaultReadBufferSize = 4 * 1024;
-        public static readonly int defaultWriteBufferSize = 2 * 1024;
+        private const int defaultReadBufferSize = 4 * 1024;
+        private const int defaultWriteBufferSize = 2 * 1024;
 
         // All of the following properties are the defualts of SerialPort when the
         // serial port connection is open. The names of the data members here must
         // begin with openDefault followed by the EXACT(case sensitive) name of
         // the property in SerialPort class.
 
-        public static readonly int openDefaultBaudRate = 9600;
+        private const int openDefaultBaudRate = 9600;
         public static readonly string openDefaultPortName = "COM1";
-        public static readonly int openDefaultDataBits = 8;
+        private const int openDefaultDataBits = 8;
         public static readonly StopBits openDefaultStopBits = StopBits.One;
         public static readonly Parity openDefaultParity = Parity.None;
         public static readonly Handshake openDefaultHandshake = Handshake.None;
         public static readonly Encoding openDefaultEncoding = new ASCIIEncoding();
         public static readonly bool openDefaultDtrEnable = false;
         public static readonly bool openDefaultRtsEnable = false;
-        public static readonly int openDefaultReadTimeout = -1;
-        public static readonly int openDefaultWriteTimeout = -1;
-        public static readonly int openDefaultBytesToRead = 0;
-        public static readonly int openDefaultBytesToWrite = 0;
+        private const int openDefaultReadTimeout = -1;
+        private const int openDefaultWriteTimeout = -1;
+        private const int openDefaultBytesToRead = 0;
+        private const int openDefaultBytesToWrite = 0;
         public static readonly bool openDefaultIsOpen = true;
-        public static readonly int openDefaultReceivedBytesThreshold = 1;
+        private const int openDefaultReceivedBytesThreshold = 1;
         public static readonly bool openDefaultDiscardNull = false;
         public static readonly byte openDefaultParityReplace = (byte)'?';
 
@@ -79,8 +79,8 @@ namespace Legacy.Support
 
         public static readonly string openDefaultNewLine = "\n";
         public static readonly bool openDefaultBreakState = false;
-        public static readonly int openReadBufferSize = 4 * 1024;
-        public static readonly int openWriteBufferSize = 2 * 1024;
+        private const int openReadBufferSize = 4 * 1024;
+        private const int openWriteBufferSize = 2 * 1024;
 
         private Hashtable _properties;
         private Hashtable _openDefaultProperties;

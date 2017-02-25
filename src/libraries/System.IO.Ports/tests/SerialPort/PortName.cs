@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.IO.PortsTests;
+using System.Text;
 using Legacy.Support;
 using Xunit;
 
@@ -12,7 +13,7 @@ namespace System.IO.Ports.Tests
     public class PortName_Property : PortsTest
     {
         //Determines how long the randomly generated PortName is
-        public static readonly int rndPortNameSize = 255;
+        private const int rndPortNameSize = 255;
 
         private enum ThrowAt { Set, Open };
 
@@ -69,7 +70,7 @@ namespace System.IO.Ports.Tests
         public void PortName_RND()
         {
             Random rndGen = new Random();
-            System.Text.StringBuilder rndStrBuf = new System.Text.StringBuilder();
+            StringBuilder rndStrBuf = new StringBuilder();
 
             for (int i = 0; i < rndPortNameSize; i++)
             {
@@ -84,8 +85,8 @@ namespace System.IO.Ports.Tests
         public void PortName_FileName()
         {
             string fileName = "PortNameEqualToFileName.txt";
-            System.IO.FileStream testFile = System.IO.File.Open(fileName, System.IO.FileMode.Create);
-            System.Text.ASCIIEncoding asciiEncd = new System.Text.ASCIIEncoding();
+            FileStream testFile = File.Open(fileName, FileMode.Create);
+            ASCIIEncoding asciiEncd = new ASCIIEncoding();
             string testStr = "Hello World";
 
             testFile.Write(asciiEncd.GetBytes(testStr), 0, asciiEncd.GetByteCount(testStr));
@@ -94,27 +95,27 @@ namespace System.IO.Ports.Tests
             Debug.WriteLine("Verifying setting PortName={0}", fileName);
 
             VerifyException(fileName, ThrowAt.Open, typeof(ArgumentException), typeof(InvalidOperationException));
-        
+
             Debug.WriteLine("Verifying setting PortName={0}", Environment.CurrentDirectory + fileName);
 
             VerifyException(Environment.CurrentDirectory + fileName, ThrowAt.Open, typeof(ArgumentException),
                 typeof(InvalidOperationException));
 
-            System.IO.File.Delete(fileName);
+            File.Delete(fileName);
         }
 
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void PortName_COM257()
         {
             Debug.WriteLine("Verifying setting PortName=COM257");
-            VerifyException("COM257", ThrowAt.Open, typeof(System.IO.IOException), typeof(InvalidOperationException));
+            VerifyException("COM257", ThrowAt.Open, typeof(IOException), typeof(InvalidOperationException));
         }
 
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void PortName_LPT()
         {
             Type expectedException = _dosDevices.CommonNameExists("LPT") ? typeof(ArgumentException) : typeof(ArgumentException);
-        
+
             Debug.WriteLine("Verifying setting PortName=LPT");
             VerifyException("LPT", ThrowAt.Open, expectedException, typeof(InvalidOperationException));
         }
@@ -152,7 +153,7 @@ namespace System.IO.Ports.Tests
         {
             Debug.WriteLine("Verifying setting PortName=C:");
 
-            VerifyException("C:", ThrowAt.Open, new[] {typeof(ArgumentException), typeof(ArgumentException)}, typeof(InvalidOperationException));
+            VerifyException("C:", ThrowAt.Open, new[] { typeof(ArgumentException), typeof(ArgumentException) }, typeof(InvalidOperationException));
         }
 
         [ConditionalFact(nameof(HasOneSerialPort))]
@@ -163,7 +164,7 @@ namespace System.IO.Ports.Tests
 
             if (!string.IsNullOrEmpty(portName))
             {
-                VerifyException(portName, ThrowAt.Open, new[] {typeof(ArgumentException)}, typeof(InvalidOperationException));
+                VerifyException(portName, ThrowAt.Open, new[] { typeof(ArgumentException) }, typeof(InvalidOperationException));
             }
         }
         #endregion
@@ -197,7 +198,7 @@ namespace System.IO.Ports.Tests
         private void VerifyExceptionAtOpen(SerialPort com, string portName, ThrowAt throwAt, Type[] expectedExceptions)
         {
             string origPortName = com.PortName;
-        
+
             SerialPortProperties serPortProp = new SerialPortProperties();
 
             if (null != expectedExceptions && 0 < expectedExceptions.Length)
@@ -226,7 +227,6 @@ namespace System.IO.Ports.Tests
                     Fail("ERROR!!! Expected Open() to throw ");
                     for (int i = 0; i < expectedExceptions.Length; ++i) Console.Write(expectedExceptions[i] + " ");
                     Debug.WriteLine(" and nothing was thrown");
-                
                 }
             }
             catch (Exception e)

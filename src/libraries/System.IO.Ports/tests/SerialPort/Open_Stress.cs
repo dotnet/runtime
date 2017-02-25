@@ -76,7 +76,7 @@ namespace System.IO.Ports.Tests
 
                 for (int i = 0; i < xmitBytes.Length; ++i)
                     xmitBytes[i] = (byte)i;
-            
+
                 try
                 {
                     int iterationCount = TCSupport.RunShortStressTests ? 10 : 1000;
@@ -102,7 +102,7 @@ namespace System.IO.Ports.Tests
         }
 
 
-        void OpenReceiveDataAndRTS_WorkerThread(object token)
+        private void OpenReceiveDataAndRTS_WorkerThread(object token)
         {
             CancellationToken ct = (CancellationToken)token;
             try

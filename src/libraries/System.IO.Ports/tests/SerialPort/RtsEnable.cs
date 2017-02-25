@@ -280,7 +280,7 @@ namespace System.IO.Ports.Tests
                 SerialPortProperties serPortProp = new SerialPortProperties();
                 Handshake originalHandshake;
                 bool expetectedRtsEnable;
-        
+
                 serPortProp.SetAllPropertiesToOpenDefaults();
                 serPortProp.SetProperty("PortName", TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
 

@@ -14,10 +14,10 @@ namespace System.IO.Ports.Tests
     public class SerialStream_WriteByte : PortsTest
     {
         // The large number of times the write method is called when verifying write
-        private static readonly int LARGE_NUM_WRITES = 2048;
+        private const int LARGE_NUM_WRITES = 2048;
 
         // The default number of times the write method is called when verifying write
-        private static readonly int DEFAULT_NUM_WRITES = 8;
+        private const int DEFAULT_NUM_WRITES = 8;
 
         #region Test Cases
 

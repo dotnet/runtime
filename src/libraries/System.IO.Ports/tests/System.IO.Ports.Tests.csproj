@@ -113,7 +113,6 @@
     <Compile Include="Support\SerialPortConnection.cs" />
     <Compile Include="Support\SerialPortProperties.cs" />
     <Compile Include="Support\TCSupport.cs" />
-    <Compile Include="Support\TestDelegate.cs" />
     <Compile Include="Support\PortsTest.cs" />
     <Compile Include="Support\TestEventHandler.cs" />
   </ItemGroup>

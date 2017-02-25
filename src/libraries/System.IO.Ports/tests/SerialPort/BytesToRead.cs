@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.IO.PortsTests;
+using System.Threading;
 using Legacy.Support;
 using Xunit;
 
@@ -11,12 +12,9 @@ namespace System.IO.Ports.Tests
 {
     public class BytesToRead_Property : PortsTest
     {
-        static readonly int DEFAULT_NUM_RND_BYTES = 8;
+        private const int DEFAULT_NUM_RND_BYTES = 8;
 
-        delegate void ReadMethodDelegate(SerialPort com, int bufferSize);
-
-        //The default new lint to read from when testing timeout with ReadTo(str)
-        public static readonly string DEFAULT_READ_TO_STRING = "\r\n";
+        private delegate void ReadMethodDelegate(SerialPort com, int bufferSize);
 
         #region Test Cases
 
@@ -26,7 +24,7 @@ namespace System.IO.Ports.Tests
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             {
                 SerialPortProperties serPortProp = new SerialPortProperties();
-        
+
                 Debug.WriteLine("Verifying default BytesToRead");
 
                 serPortProp.SetAllPropertiesToOpenDefaults();
@@ -56,7 +54,7 @@ namespace System.IO.Ports.Tests
                 com2.Write(new byte[DEFAULT_NUM_RND_BYTES], 0, DEFAULT_NUM_RND_BYTES);
 
                 serPortProp.SetProperty("BytesToRead", DEFAULT_NUM_RND_BYTES);
-                System.Threading.Thread.Sleep(100); //Wait for com1 to get all of the bytes
+                Thread.Sleep(100); //Wait for com1 to get all of the bytes
 
                 serPortProp.VerifyPropertiesAndPrint(com1);
             }
@@ -139,11 +137,10 @@ namespace System.IO.Ports.Tests
                 }
 
                 while (bufferSize + numNewLineBytes > com1.BytesToRead)
-                    System.Threading.Thread.Sleep(10);
+                    Thread.Sleep(10);
 
                 readMethod(com1, bufferSize + numNewLineBytes);
                 serPortProp.VerifyPropertiesAndPrint(com1);
-
             }
         }
 

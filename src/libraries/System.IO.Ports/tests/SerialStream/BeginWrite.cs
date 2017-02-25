@@ -14,26 +14,26 @@ namespace System.IO.Ports.Tests
     public class SerialStream_BeginWrite : PortsTest
     {
         // The string size used for large byte array testing
-        private static readonly int LARGE_BUFFER_SIZE = 2048;
+        private const int LARGE_BUFFER_SIZE = 2048;
 
         // When we test Write and do not care about actually writing anything we must still
         // create an byte array to pass into the method the following is the size of the 
         // byte array used in this situation
-        private static readonly int DEFAULT_BUFFER_SIZE = 1;
-        private static readonly int DEFAULT_BUFFER_OFFSET = 0;
-        private static readonly int DEFAULT_BUFFER_COUNT = 1;
+        private const int DEFAULT_BUFFER_SIZE = 1;
+        private const int DEFAULT_BUFFER_OFFSET = 0;
+        private const int DEFAULT_BUFFER_COUNT = 1;
 
         // The maximum buffer size when a exception occurs
-        private static readonly int MAX_BUFFER_SIZE_FOR_EXCEPTION = 255;
+        private const int MAX_BUFFER_SIZE_FOR_EXCEPTION = 255;
 
         // The maximum buffer size when a exception is not expected
-        private static readonly int MAX_BUFFER_SIZE = 8;
+        private const int MAX_BUFFER_SIZE = 8;
 
         // The default number of times the write method is called when verifying write
-        private static readonly int DEFAULT_NUM_WRITES = 3;
+        private const int DEFAULT_NUM_WRITES = 3;
 
         // The default number of bytes to write
-        private static readonly int DEFAULT_NUM_BYTES_TO_WRITE = 128;
+        private const int DEFAULT_NUM_BYTES_TO_WRITE = 128;
 
         // Maximum time to wait for processing the read command to complete
         private const int MAX_WAIT_WRITE_COMPLETE = 1000;
@@ -151,7 +151,7 @@ namespace System.IO.Ports.Tests
             int bufferLength = rndGen.Next(1, MAX_BUFFER_SIZE);
             int offset = bufferLength - 1;
             int count = 1;
-            
+
             VerifyWrite(new byte[bufferLength], offset, count);
         }
 
@@ -162,7 +162,7 @@ namespace System.IO.Ports.Tests
             int bufferLength = rndGen.Next(1, MAX_BUFFER_SIZE);
             int offset = 0;
             int count = bufferLength;
-            
+
             VerifyWrite(new byte[bufferLength], offset, count);
         }
 
@@ -406,7 +406,6 @@ namespace System.IO.Ports.Tests
                 Assert.Equal(this, writeAsyncResult.AsyncState);
                 Assert.False(writeAsyncResult.CompletedSynchronously, "Should not have completed sync (write)");
                 Assert.True(writeAsyncResult.IsCompleted, "Should have completed (write)");
-
             }
 
             com2.ReadTimeout = 500;
@@ -459,7 +458,6 @@ namespace System.IO.Ports.Tests
                     }
                 }
             }
-
         }
 
         private class CallbackHandler

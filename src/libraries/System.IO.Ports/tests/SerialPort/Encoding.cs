@@ -4,6 +4,8 @@
 
 using System.Diagnostics;
 using System.IO.PortsTests;
+using System.Text;
+using System.Threading;
 using Legacy.Support;
 using Xunit;
 
@@ -13,10 +15,10 @@ namespace System.IO.Ports.Tests
     {
         //The default number of bytes to read/write to verify the speed of the port
         //and that the bytes were transfered successfully
-        public static readonly int DEFAULT_CHAR_ARRAY_SIZE = 8;
+        private const int DEFAULT_CHAR_ARRAY_SIZE = 8;
 
         //The maximum time we will wait for all of encoded bytes to be received
-        public static readonly int MAX_WAIT_TIME = 1250;
+        private const int MAX_WAIT_TIME = 1250;
 
         private enum ThrowAt { Set, Open };
 
@@ -46,70 +48,70 @@ namespace System.IO.Ports.Tests
         public void Encoding_ASCIIEncoding_BeforeOpen()
         {
             Debug.WriteLine("Verifying ASCIIEncoding Encoding before open");
-            VerifyEncodingBeforeOpen(new System.Text.ASCIIEncoding());
+            VerifyEncodingBeforeOpen(new ASCIIEncoding());
         }
-    
+
         [ConditionalFact(nameof(HasNullModem))]
         public void Encoding_UTF8Encoding_BeforeOpen()
         {
             Debug.WriteLine("Verifying UTF8Encoding Encoding before open");
-            VerifyEncodingBeforeOpen(new System.Text.UTF8Encoding());
+            VerifyEncodingBeforeOpen(new UTF8Encoding());
         }
 
         [ConditionalFact(nameof(HasNullModem))]
         public void Encoding_UTF32Encoding_BeforeOpen()
         {
             Debug.WriteLine("Verifying UTF32Encoding Encoding before open");
-            VerifyEncodingBeforeOpen(new System.Text.UTF32Encoding());
+            VerifyEncodingBeforeOpen(new UTF32Encoding());
         }
-    
+
         [ConditionalFact(nameof(HasNullModem))]
         public void Encoding_UnicodeEncoding_BeforeOpen()
         {
             Debug.WriteLine("Verifying UnicodeEncoding Encoding before open");
-            VerifyEncodingBeforeOpen(new System.Text.UnicodeEncoding());
+            VerifyEncodingBeforeOpen(new UnicodeEncoding());
         }
-    
+
         [ConditionalFact(nameof(HasNullModem))]
         public void Encoding_ASCIIEncoding_AfterOpen()
         {
             Debug.WriteLine("Verifying ASCIIEncoding Encoding after open");
-            VerifyEncodingAfterOpen(new System.Text.ASCIIEncoding());
+            VerifyEncodingAfterOpen(new ASCIIEncoding());
         }
-    
+
         [ConditionalFact(nameof(HasNullModem))]
         public void Encoding_UTF8Encoding_AfterOpen()
         {
             Debug.WriteLine("Verifying UTF8Encoding Encoding after open");
-            VerifyEncodingAfterOpen(new System.Text.UTF8Encoding());
+            VerifyEncodingAfterOpen(new UTF8Encoding());
         }
-    
+
         [ConditionalFact(nameof(HasNullModem))]
         public void Encoding_UTF32Encoding_AfterOpen()
         {
             Debug.WriteLine("Verifying UTF32Encoding Encoding after open");
-            VerifyEncodingAfterOpen(new System.Text.UTF32Encoding());
+            VerifyEncodingAfterOpen(new UTF32Encoding());
         }
-    
+
         [ConditionalFact(nameof(HasNullModem))]
         public void Encoding_UnicodeEncoding_AfterOpen()
         {
             Debug.WriteLine("Verifying UnicodeEncoding Encoding after open");
-            VerifyEncodingAfterOpen(new System.Text.UnicodeEncoding());
+            VerifyEncodingAfterOpen(new UnicodeEncoding());
         }
-    
+
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void Encoding_ISCIIAssemese()
         {
             Debug.WriteLine("Verifying ISCIIAssemese Encoding");
-            VerifyException(System.Text.Encoding.GetEncoding(57006), ThrowAt.Set, typeof(ArgumentException));
+            VerifyException(Encoding.GetEncoding(57006), ThrowAt.Set, typeof(ArgumentException));
         }
 
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void Encoding_UTF7()
         {
             Debug.WriteLine("Verifying UTF7Encoding Encoding");
-            VerifyException(System.Text.Encoding.UTF7, ThrowAt.Set, typeof(ArgumentException));
+            VerifyException(Encoding.UTF7, ThrowAt.Set, typeof(ArgumentException));
         }
 
         [ConditionalFact(nameof(HasOneSerialPort))]
@@ -123,27 +125,27 @@ namespace System.IO.Ports.Tests
         public void Encoding_IBM_Latin1()
         {
             Debug.WriteLine("Verifying IBM Latin-1 Encoding before open");
-            VerifyEncodingBeforeOpen(System.Text.Encoding.GetEncoding(1047));
+            VerifyEncodingBeforeOpen(Encoding.GetEncoding(1047));
         }
 
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void Encoding_Japanese_JIS()
         {
             Debug.WriteLine("Verifying Japanese (JIS) Encoding before open");
-            VerifyException(System.Text.Encoding.GetEncoding(50220), ThrowAt.Set, typeof(ArgumentException));
+            VerifyException(Encoding.GetEncoding(50220), ThrowAt.Set, typeof(ArgumentException));
         }
 
         [ConditionalFact(nameof(HasNullModem))]
         public void Encoding_ChineseSimplified_GB18030()
         {
             Debug.WriteLine("Verifying Chinese Simplified (GB18030) Encoding before open");
-            VerifyEncodingBeforeOpen(System.Text.Encoding.GetEncoding(54936));
+            VerifyEncodingBeforeOpen(Encoding.GetEncoding(54936));
         }
 
         #endregion
 
         #region Verification for Test Cases
-        private void VerifyException(System.Text.Encoding encoding, ThrowAt throwAt, Type expectedException)
+        private void VerifyException(Encoding encoding, ThrowAt throwAt, Type expectedException)
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             {
@@ -156,9 +158,9 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        private void VerifyExceptionAtOpen(SerialPort com, System.Text.Encoding encoding, ThrowAt throwAt, Type expectedException)
+        private void VerifyExceptionAtOpen(SerialPort com, Encoding encoding, ThrowAt throwAt, Type expectedException)
         {
-            System.Text.Encoding origEncoding = com.Encoding;
+            Encoding origEncoding = com.Encoding;
             SerialPortProperties serPortProp = new SerialPortProperties();
 
             serPortProp.SetAllPropertiesToDefaults();
@@ -198,8 +200,8 @@ namespace System.IO.Ports.Tests
             serPortProp.VerifyPropertiesAndPrint(com);
             com.Encoding = origEncoding;
         }
-    
-        private void VerifyExceptionAfterOpen(SerialPort com, System.Text.Encoding encoding, Type expectedException)
+
+        private void VerifyExceptionAfterOpen(SerialPort com, Encoding encoding, Type expectedException)
         {
             SerialPortProperties serPortProp = new SerialPortProperties();
 
@@ -232,7 +234,7 @@ namespace System.IO.Ports.Tests
         }
 
 
-        private void VerifyEncodingBeforeOpen(System.Text.Encoding encoding)
+        private void VerifyEncodingBeforeOpen(Encoding encoding)
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             {
@@ -250,8 +252,8 @@ namespace System.IO.Ports.Tests
                 serPortProp.VerifyPropertiesAndPrint(com1);
             }
         }
-    
-        private void VerifyEncodingAfterOpen(System.Text.Encoding encoding)
+
+        private void VerifyEncodingAfterOpen(Encoding encoding)
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             {
@@ -295,7 +297,7 @@ namespace System.IO.Ports.Tests
 
                 while (com1.BytesToRead < xmitBytes.Length)
                 {
-                    System.Threading.Thread.Sleep(50);
+                    Thread.Sleep(50);
                     waitTime += 50;
 
                     if (MAX_WAIT_TIME < waitTime)

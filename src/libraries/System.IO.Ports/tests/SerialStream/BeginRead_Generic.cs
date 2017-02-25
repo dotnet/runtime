@@ -16,31 +16,31 @@ namespace System.IO.Ports.Tests
     {
         // Set bounds fore random timeout values.
         // If the min is to low read will not timeout accurately and the testcase will fail
-        public static readonly int minRandomTimeout = 250;
+        private const int minRandomTimeout = 250;
 
         // If the max is to large then the testcase will take forever to run
-        public static readonly int maxRandomTimeout = 2000;
+        private const int maxRandomTimeout = 2000;
 
         // If the percentage difference between the expected timeout and the actual timeout
         // found through Stopwatch is greater then 10% then the timeout value was not correctly
         // to the read method and the testcase fails.
-        public static readonly double maxPercentageDifference = .15;
+        public const double maxPercentageDifference = .15;
 
         // The number of random bytes to receive for parity testing
-        public static readonly int numRndBytesPairty = 8;
+        private const int numRndBytesPairty = 8;
 
         // The number of characters to read at a time for parity testing
-        public static readonly int numBytesReadPairty = 2;
+        private const int numBytesReadPairty = 2;
 
         // The number of random bytes to receive for BytesToRead testing
-        public static readonly int numRndBytesToRead = 16;
+        private const int numRndBytesToRead = 16;
 
         // When we test Read and do not care about actually reading anything we must still
         // create an byte array to pass into the method the following is the size of the 
         // byte array used in this situation
-        public static readonly int defaultByteArraySize = 1;
+        private const int defaultByteArraySize = 1;
 
-        public static readonly int NUM_TRYS = 5;
+        private const int NUM_TRYS = 5;
 
         private const int MAX_WAIT_THREAD = 1000;
 
@@ -144,7 +144,6 @@ namespace System.IO.Ports.Tests
                 var expectedBytes = new byte[numRndBytesPairty];
                 var actualBytes = new byte[numRndBytesPairty + 1];
 
-                int waitTime;
                 IAsyncResult readAsyncResult;
 
                 /* 1 Additional character gets added to the input buffer when the parity error occurs on the last byte of a stream
@@ -175,13 +174,7 @@ namespace System.IO.Ports.Tests
                 readAsyncResult = com2.BaseStream.BeginWrite(bytesToWrite, 0, bytesToWrite.Length, null, null);
                 readAsyncResult.AsyncWaitHandle.WaitOne();
 
-                waitTime = 0;
-
-                while (bytesToWrite.Length + 1 > com1.BytesToRead && waitTime < 500)
-                {
-                    Thread.Sleep(50);
-                    waitTime += 50;
-                }
+                TCSupport.WaitForReadBufferToLoad(com1, bytesToWrite.Length + 1);
 
                 com1.Read(actualBytes, 0, actualBytes.Length);
 
@@ -207,7 +200,6 @@ namespace System.IO.Ports.Tests
 
                 VerifyRead(com1, com2, bytesToWrite, expectedBytes, expectedBytes.Length / 2);
             }
-
         }
 
 
@@ -243,7 +235,6 @@ namespace System.IO.Ports.Tests
             using (var com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             using (var com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))
             {
-
                 IAsyncResult readAsyncResult;
 
                 var asyncRead = new AsyncRead(com1);
@@ -432,15 +423,11 @@ namespace System.IO.Ports.Tests
             var buffer = new byte[bytesToWrite.Length];
             int totalBytesRead;
             int bytesToRead;
-            var waitTime = 0;
 
             com2.Write(bytesToWrite, 0, bytesToWrite.Length);
             com1.ReadTimeout = 250;
-            while (com1.BytesToRead < bytesToWrite.Length && waitTime < 500)
-            {
-                Thread.Sleep(50);
-                waitTime += 50;
-            }
+
+            TCSupport.WaitForReadBufferToLoad(com1, bytesToWrite.Length);
 
             totalBytesRead = 0;
             bytesToRead = com1.BytesToRead;

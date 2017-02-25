@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.IO.PortsTests;
+using System.Threading;
 using Legacy.Support;
 using Xunit;
 
@@ -13,16 +14,16 @@ namespace System.IO.Ports.Tests
     {
         //The default number of bytes to read/write to verify the speed of the port
         //and that the bytes were transfered successfully
-        public static readonly int DEFAULT_BYTE_SIZE = 512;
+        private const int DEFAULT_BYTE_SIZE = 512;
 
         //If the percentage difference between the expected time to transfer with the specified parity
         //and the actual time found through Stopwatch is greater then 10% then the Parity value was not correctly
         //set and the testcase fails.
-        public static readonly double MAX_ACCEPTABEL_PERCENTAGE_DIFFERENCE = .10;
+        private const double MAX_ACCEPTABEL_PERCENTAGE_DIFFERENCE = .10;
 
         //The default number of databits to use when testing Parity
-        public static readonly int DEFUALT_DATABITS = 8;
-        public static readonly int NUM_TRYS = 3;
+        private const int DEFUALT_DATABITS = 8;
+        private const int NUM_TRYS = 3;
 
         private enum ThrowAt { Set, Open };
 
@@ -53,7 +54,7 @@ namespace System.IO.Ports.Tests
             Debug.WriteLine("Verifying None Parity before open");
             VerifyParityBeforeOpen((int)Parity.None, DEFAULT_BYTE_SIZE);
         }
-    
+
         [ConditionalFact(nameof(HasNullModem))]
         public void Parity_Even_BeforeOpen()
         {
@@ -145,7 +146,7 @@ namespace System.IO.Ports.Tests
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             {
                 SerialPortProperties serPortProp = new SerialPortProperties();
-        
+
                 Debug.WriteLine("Verifying Parity Even and then Odd");
 
                 serPortProp.SetAllPropertiesToOpenDefaults();
@@ -454,7 +455,6 @@ namespace System.IO.Ports.Tests
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             using (SerialPort com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))
             {
-
                 //Generate some random bytes to read/write for this Parity setting
                 for (int i = 0; i < xmitBytes.Length; i++)
                 {
@@ -480,7 +480,7 @@ namespace System.IO.Ports.Tests
         private void PerformWriteRead(SerialPort com1, SerialPort com2, byte[] xmitBytes, byte[] expectedBytes)
         {
             byte[] rcvBytes = new byte[expectedBytes.Length * 4];
-            System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
+            Stopwatch sw = new Stopwatch();
             double expectedTime, actualTime, percentageDifference;
             int numParityBits = (Parity)com1.Parity == Parity.None ? 0 : 1;
             double numStopBits = GetNumberOfStopBits(com1);
@@ -490,7 +490,7 @@ namespace System.IO.Ports.Tests
             // TODO: Consider removing all of the code to check the time it takes to transfer the bytes. 
             // This was likely just a copy and paste from another test case
             actualTime = 0;
-            System.Threading.Thread.CurrentThread.Priority = System.Threading.ThreadPriority.Highest;
+            Thread.CurrentThread.Priority = ThreadPriority.Highest;
             for (int i = 0; i < NUM_TRYS; i++)
             {
                 com2.DiscardInBuffer();
@@ -500,7 +500,9 @@ namespace System.IO.Ports.Tests
                 while (0 == com2.BytesToRead) ;
 
                 sw.Start();
-                while (length > com2.BytesToRead) ; //Wait for all of the bytes to reach the input buffer of com2
+
+                // Wait for all of the bytes to reach the input buffer of com2
+                TCSupport.WaitForReadBufferToLoad(com2, length);
 
                 sw.Stop();
                 actualTime += sw.ElapsedMilliseconds;
@@ -508,7 +510,7 @@ namespace System.IO.Ports.Tests
                 sw.Reset();
             }
 
-            System.Threading.Thread.CurrentThread.Priority = System.Threading.ThreadPriority.Normal;
+            Thread.CurrentThread.Priority = ThreadPriority.Normal;
             actualTime /= NUM_TRYS;
             expectedTime = ((xmitBytes.Length * (1 + numStopBits + com1.DataBits + numParityBits)) / com1.BaudRate) * 1000;
             percentageDifference = Math.Abs((expectedTime - actualTime) / expectedTime);

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
@@ -22,7 +23,7 @@ namespace System.IO.Ports.Tests
             return _dosDevices.GetEnumerator();
         }
 
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        IEnumerator IEnumerable.GetEnumerator()
         {
             return _dosDevices.GetEnumerator();
         }
@@ -39,7 +40,7 @@ namespace System.IO.Ports.Tests
 
         public bool InternalNameContains(string internalName)
         {
-            foreach (String value in _dosDevices.Values)
+            foreach (string value in _dosDevices.Values)
             {
                 if (-1 != value.IndexOf(internalName))
                     return true;
@@ -77,7 +78,7 @@ namespace System.IO.Ports.Tests
                 {
                     // We now have an MS-DOS name (the common name). We call QueryDosDevice again with
                     // this name to get the underlying system name mapped to the MS-DOS name. 
-                    string currentName = TrimTrailingNull((new String(buffer, start, i - start)).Trim());
+                    string currentName = TrimTrailingNull((new string(buffer, start, i - start)).Trim());
                     int nameSize;
                     char[] nameBuffer = CallQueryDosDevice(currentName, out nameSize);
 
@@ -93,7 +94,7 @@ namespace System.IO.Ports.Tests
                     }
                     else
                     {
-                        _dosDevices.Add(currentName, String.Empty);
+                        _dosDevices.Add(currentName, string.Empty);
                     }
                 }
                 i++;
