@@ -455,8 +455,8 @@ def buildArchConfiguration = ['Debug': 'x86',
 [true, false].each { isPR ->
     ['netcoreapp'].each { targetGroup ->
         ['Debug', 'Release'].each { configurationGroup ->
-            ['Ubuntu', 'Ubuntu16.04', 'Tizen'].each { osName ->
-                if (osName == "Ubuntu") {
+            ['Ubuntu14.04', 'Ubuntu16.04', 'Tizen'].each { osName ->
+                if (osName == "Ubuntu14.04") {
                     linuxCodeName="trusty"
                     abi = "arm"
                 }
