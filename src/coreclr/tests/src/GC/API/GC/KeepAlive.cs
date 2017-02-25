@@ -47,23 +47,16 @@ public class Test
     }
 
 
-    public static void RunTest2()
-    {
-        Dummy2 obj2 = new Dummy2();
-        obj2 = null;
-    }
-
-
     public static void RunTest()
     {
         Dummy obj = new Dummy();
-
-        RunTest2();
+        Dummy2 obj2 = new Dummy2();
 
         // *uncomment the for loop to make test fail with complus_jitminops set
         // by design as per briansul
 
         //for (int i=0; i<5; i++) {
+        obj2 = null;
         GC.Collect();
         GC.WaitForPendingFinalizers();
         //}
