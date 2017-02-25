@@ -2169,7 +2169,8 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         buildCommands += "unzip -q -o ./bin/tests/tests.zip -d ./bin/tests/Windows_NT.x64.${configuration} || exit 0"
 
                         // Unpack the corefx binaries
-                        buildCommands += "tar -xf ./bin/build.tar.gz"
+                        buildCommands += "mkdir ./bin/CoreFxBinDir"
+                        buildCommands += "tar -xf ./bin/build.tar.gz -C ./bin/CoreFxBinDir"
 
                         // Call the ARM emulator build script to cross build and test using the ARM emulator rootfs
                         buildCommands += """./tests/scripts/arm32_ci_script.sh \\
