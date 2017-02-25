@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <TargetsWindows Condition="'$(TargetsWindows)' != 'true'">false</TargetsWindows>
+    <TargetsUnix Condition="'$(TargetsUnix)' != 'true'">false</TargetsUnix>
+    <TargetsOSX Condition="'$(TargetsOSX)' != 'true'">false</TargetsOSX>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)\System\Buffers\ArrayPool.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\System\Buffers\ArrayPoolEventSource.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\System\Buffers\ConfigurableArrayPool.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\System\Buffers\TlsOverPerCoreLockedStacksArrayPool.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\System\Buffers\Utilities.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\System\IO\Error.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\System\IO\FileStream.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\System\IO\Path.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\System\IO\PathInternal.cs"/>
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetsWindows)">
+    <Compile Include="$(MSBuildThisFileDirectory)\System\IO\FileStream.Win32.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\System\IO\FileStreamCompletionSource.Win32.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\System\IO\Path.Win32.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\System\IO\Path.Windows.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\System\IO\PathHelper.Windows.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\System\IO\PathInternal.Windows.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\System\IO\PathInternal.Windows.StringBuffer.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\System\IO\Win32Marshal.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Microsoft\Win32\SafeHandles\SafeFileHandle.Windows.cs"/>
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetsUnix)">
+    <Compile Include="$(MSBuildThisFileDirectory)\System\IO\FileStream.Unix.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\System\IO\Path.Unix.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\System\IO\PathInternal.Unix.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs"/>
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetsUnix) and $(TargetsOSX)">
+    <Compile Include="$(MSBuildThisFileDirectory)\System\IO\FileStream.OSX.cs"/>
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetsUnix) and !$(TargetsOSX)">
+    <Compile Include="$(MSBuildThisFileDirectory)\System\IO\FileStream.Linux.cs"/>
+  </ItemGroup>
+</Project>

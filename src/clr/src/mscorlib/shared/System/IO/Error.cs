@@ -16,6 +16,11 @@ namespace System.IO
     [Pure]
     internal static class Error
     {
+        internal static Exception GetStreamIsClosed()
+        {
+            return new ObjectDisposedException(null, SR.ObjectDisposed_StreamIsClosed);
+        }
+
         internal static Exception GetEndOfFile()
         {
             return new EndOfStreamException(SR.IO_EOF_ReadBeyondEOF);
