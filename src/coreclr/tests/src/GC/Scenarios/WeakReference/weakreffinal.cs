@@ -22,11 +22,6 @@ namespace DefaultNamespace {
         public bool RunTest(int iObj,int iSwitch)
         {
             DeleteObj(iObj,iSwitch);
-
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
-
             bool result = CheckResult(iObj,iSwitch);
             return result;
         }
@@ -53,6 +48,11 @@ namespace DefaultNamespace {
             {
                 rgNode[i] = null;
             }
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+
         }
 
         public bool CheckResult(int iObj,int iSwitch)

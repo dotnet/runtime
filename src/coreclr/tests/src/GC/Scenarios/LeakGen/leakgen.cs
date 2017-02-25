@@ -62,10 +62,6 @@ namespace LGen {
                 MakeLeak(iObj);
             }
 
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
-
             Console.WriteLine("~LeakObject() was called {0} times.", LeakObject.icFinal);
             return (LeakObject.icFinal == iObj*iRep);
         }
@@ -83,6 +79,12 @@ namespace LGen {
                 mem[0] = 1;
                 mem[mem.Length-1] = 1;
             }
+
+            Mv_Obj = null;
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
 
         }
 
