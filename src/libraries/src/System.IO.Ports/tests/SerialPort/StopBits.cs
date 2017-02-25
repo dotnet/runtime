@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.IO.PortsTests;
+using System.Threading;
 using Legacy.Support;
 using Xunit;
 
@@ -13,19 +14,19 @@ namespace System.IO.Ports.Tests
     {
         //The default ammount of time the a transfer should take at any given baud rate and stop bits combination. 
         //The bytes sent should be adjusted to take this ammount of time to transfer at the specified baud rate and stop bits combination.
-        public static readonly int DEFAULT_TIME = 750;
+        private const int DEFAULT_TIME = 750;
 
         //If the percentage difference between the expected time to transfer with the specified stopBits
         //and the actual time found through Stopwatch is greater then 5% then the StopBits value was not correctly
         //set and the testcase fails.
-        public static readonly double MAX_ACCEPTABEL_PERCENTAGE_DIFFERENCE = .07;
+        private const double MAX_ACCEPTABEL_PERCENTAGE_DIFFERENCE = .07;
 
         //The default number of databits to use when testing StopBits
-        public static readonly int DEFAULT_DATABITS = 8;
-        public static readonly int NUM_TRYS = 5;
+        private const int DEFAULT_DATABITS = 8;
+        private const int NUM_TRYS = 5;
 
         private enum ThrowAt { Set, Open };
-    
+
         #region Test Cases
         [ConditionalFact(nameof(HasNullModem))]
         public void StopBits_Default()
@@ -307,7 +308,7 @@ namespace System.IO.Ports.Tests
                 com2.Open();
                 actualTime = 0;
 
-                System.Threading.Thread.CurrentThread.Priority = System.Threading.ThreadPriority.Highest;
+                Thread.CurrentThread.Priority = ThreadPriority.Highest;
 
                 int initialNumBytes;
 
@@ -320,7 +321,7 @@ namespace System.IO.Ports.Tests
                     { }
 
                     sw.Start();
-                    while (numBytesToSend > com2.BytesToRead) ; //Wait for all of the bytes to reach the input buffer of com2
+                    TCSupport.WaitForReadBufferToLoad(com2, numBytesToSend);
                     sw.Stop();
 
                     actualTime += sw.ElapsedMilliseconds;
@@ -330,7 +331,7 @@ namespace System.IO.Ports.Tests
                     sw.Reset();
                 }
 
-                System.Threading.Thread.CurrentThread.Priority = System.Threading.ThreadPriority.Normal;
+                Thread.CurrentThread.Priority = ThreadPriority.Normal;
                 actualTime /= NUM_TRYS;
                 expectedTime = ((xmitBytes.Length * (stopBits + com1.DataBits + 1)) / com1.BaudRate) * 1000;
                 percentageDifference = Math.Abs((expectedTime - actualTime) / expectedTime);

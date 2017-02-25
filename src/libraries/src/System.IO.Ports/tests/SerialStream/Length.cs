@@ -50,7 +50,6 @@ namespace System.IO.Ports.Tests
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             {
-
                 com.Open();
 
                 Debug.WriteLine("Verifying Length property throws exception after a call to Open()");

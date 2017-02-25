@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.IO.PortsTests;
+using System.Threading;
 using Legacy.Support;
 using Xunit;
 
@@ -13,14 +14,14 @@ namespace System.IO.Ports.Tests
     {
         //The default ammount of time the a transfer should take at any given baud rate. 
         //The bytes sent should be adjusted to take this ammount of time to transfer at the specified baud rate.
-        public static readonly int DEFAULT_TIME = 750;
+        private const int DEFAULT_TIME = 750;
 
         //If the percentage difference between the expected BaudRate and the actual baudrate
         //found through Stopwatch is greater then 5% then the BaudRate value was not correctly
         //set and the testcase fails.
-        public static readonly double MAX_ACCEPTABLE_PERCENTAGE_DIFFERENCE = .07;
+        private const double MAX_ACCEPTABLE_PERCENTAGE_DIFFERENCE = .07;
 
-        public static readonly int NUM_TRYS = 5;
+        private const int NUM_TRYS = 5;
 
         private enum ThrowAt { Set, Open };
 
@@ -31,7 +32,7 @@ namespace System.IO.Ports.Tests
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             {
                 SerialPortProperties serPortProp = new SerialPortProperties();
-            
+
                 Debug.WriteLine("Verifying default BaudRate");
 
                 serPortProp.SetAllPropertiesToOpenDefaults();
@@ -270,13 +271,13 @@ namespace System.IO.Ports.Tests
                 // get all the data buffered so you can't read it back
                 // At 115200 we were seeing numBytesToSend = 8640, however, we only get 8627 waiting in the input buffer
                 // this might be an FTDI bug, but it's not a System.Io.SerialPort bug
-                com2.ReadBufferSize = numBytesToSend+16;
+                com2.ReadBufferSize = numBytesToSend + 16;
                 com2.BaudRate = com1.BaudRate;
                 com2.Open();
 
                 actualTime = 0;
 
-                System.Threading.Thread.CurrentThread.Priority = System.Threading.ThreadPriority.Highest;
+                Thread.CurrentThread.Priority = ThreadPriority.Highest;
 
                 for (int i = 0; i < NUM_TRYS; i++)
                 {
@@ -290,7 +291,7 @@ namespace System.IO.Ports.Tests
                     }
 
                     sw.Start();
-                    while (numBytesToSend > com2.BytesToRead) 
+                    while (numBytesToSend > com2.BytesToRead)
                     {
                         //Wait for all of the bytes to reach the input buffer of com2
                     }
@@ -302,7 +303,7 @@ namespace System.IO.Ports.Tests
                     sw.Reset();
                 }
 
-                System.Threading.Thread.CurrentThread.Priority = System.Threading.ThreadPriority.Normal;
+                Thread.CurrentThread.Priority = ThreadPriority.Normal;
 
                 expectedTime = ((xmitBytes.Length * 10.0) / com1.BaudRate) * 1000;
                 actualTime /= NUM_TRYS;

@@ -4,6 +4,8 @@
 
 using System.Diagnostics;
 using System.IO.PortsTests;
+using System.Text;
+using System.Threading;
 using Legacy.Support;
 using Xunit;
 
@@ -12,47 +14,47 @@ namespace System.IO.Ports.Tests
     public class WriteLine : PortsTest
     {
         //The string size used when verifying NewLine
-        public static readonly int NEWLINE_TESTING_STRING_SIZE = 4;
+        private const int NEWLINE_TESTING_STRING_SIZE = 4;
 
         //The string size used when veryifying encoding 
-        public static readonly int ENCODING_STRING_SIZE = 4;
+        private const int ENCODING_STRING_SIZE = 4;
 
         //The string size used for large string testing
-        public static readonly int LARGE_STRING_SIZE = 2048;
+        private const int LARGE_STRING_SIZE = 2048;
 
         //The default number of times the write method is called when verifying write
-        public static readonly int DEFAULT_NUM_WRITES = 3;
-        public static readonly string DEFAULT_NEW_LINE = "\n";
-        public static readonly int MIN_NUM_NEWLINE_CHARS = 1;
-        public static readonly int MAX_NUM_NEWLINE_CHARS = 5;
+        private const int DEFAULT_NUM_WRITES = 3;
+        private const string DEFAULT_NEW_LINE = "\n";
+        private const int MIN_NUM_NEWLINE_CHARS = 1;
+        private const int MAX_NUM_NEWLINE_CHARS = 5;
 
         #region Test Cases
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
         private void ASCIIEncoding()
         {
             Debug.WriteLine("Verifying write method with ASCIIEncoding");
-            VerifyWrite(new System.Text.ASCIIEncoding(), ENCODING_STRING_SIZE, GenRandomNewLine(true));
+            VerifyWrite(new ASCIIEncoding(), ENCODING_STRING_SIZE, GenRandomNewLine(true));
         }
 
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
         private void UTF8Encoding()
         {
             Debug.WriteLine("Verifying write method with UTF8Encoding");
-            VerifyWrite(new System.Text.UTF8Encoding(), ENCODING_STRING_SIZE, GenRandomNewLine(false));
+            VerifyWrite(new UTF8Encoding(), ENCODING_STRING_SIZE, GenRandomNewLine(false));
         }
 
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
         private void UTF32Encoding()
         {
             Debug.WriteLine("Verifying write method with UTF32Encoding");
-            VerifyWrite(new System.Text.UTF32Encoding(), ENCODING_STRING_SIZE, GenRandomNewLine(false));
+            VerifyWrite(new UTF32Encoding(), ENCODING_STRING_SIZE, GenRandomNewLine(false));
         }
 
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
         private void UnicodeEncoding()
         {
             Debug.WriteLine("Verifying write method with UnicodeEncoding");
-            VerifyWrite(new System.Text.UnicodeEncoding(), ENCODING_STRING_SIZE, GenRandomNewLine(false));
+            VerifyWrite(new UnicodeEncoding(), ENCODING_STRING_SIZE, GenRandomNewLine(false));
         }
 
         [ConditionalFact(nameof(HasOneSerialPort))]
@@ -89,7 +91,7 @@ namespace System.IO.Ports.Tests
                 VerifyWriteLine(com1, com2, "");
             }
         }
-    
+
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
         private void String_Null_Char()
         {
@@ -112,7 +114,7 @@ namespace System.IO.Ports.Tests
         private void LargeString()
         {
             Debug.WriteLine("Verifying write method with a large string size");
-            VerifyWrite(new System.Text.UnicodeEncoding(), LARGE_STRING_SIZE, DEFAULT_NEW_LINE, 1);
+            VerifyWrite(new UnicodeEncoding(), LARGE_STRING_SIZE, DEFAULT_NEW_LINE, 1);
         }
 
 
@@ -123,7 +125,7 @@ namespace System.IO.Ports.Tests
             using (SerialPort com2 = TCSupport.InitSecondSerialPort(com1))
             {
                 Random rndGen = new Random(-55);
-                System.Text.StringBuilder strBldrToWrite = TCSupport.GetRandomStringBuilder(NEWLINE_TESTING_STRING_SIZE,
+                StringBuilder strBldrToWrite = TCSupport.GetRandomStringBuilder(NEWLINE_TESTING_STRING_SIZE,
                     TCSupport.CharacterOptions.None);
 
                 string newLine = GenRandomNewLine(true);
@@ -150,7 +152,7 @@ namespace System.IO.Ports.Tests
             using (SerialPort com2 = TCSupport.InitSecondSerialPort(com1))
             {
                 Random rndGen = new Random(-55);
-                System.Text.StringBuilder strBldrToWrite = TCSupport.GetRandomStringBuilder(NEWLINE_TESTING_STRING_SIZE,
+                StringBuilder strBldrToWrite = TCSupport.GetRandomStringBuilder(NEWLINE_TESTING_STRING_SIZE,
                     TCSupport.CharacterOptions.None);
 
                 string newLine = "\r\n";
@@ -169,7 +171,7 @@ namespace System.IO.Ports.Tests
                 VerifyWriteLine(com1, com2, strBldrToWrite.ToString());
             }
         }
-    
+
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
         private void StrContains_NewLine_null()
         {
@@ -177,7 +179,7 @@ namespace System.IO.Ports.Tests
             using (SerialPort com2 = TCSupport.InitSecondSerialPort(com1))
             {
                 Random rndGen = new Random(-55);
-                System.Text.StringBuilder strBldrToWrite = TCSupport.GetRandomStringBuilder(NEWLINE_TESTING_STRING_SIZE,
+                StringBuilder strBldrToWrite = TCSupport.GetRandomStringBuilder(NEWLINE_TESTING_STRING_SIZE,
                     TCSupport.CharacterOptions.None);
 
                 string newLine = "\0";
@@ -200,19 +202,19 @@ namespace System.IO.Ports.Tests
 
         #region Verification for Test Cases
 
-        private void VerifyWrite(System.Text.Encoding encoding, int strSize, string newLine)
+        private void VerifyWrite(Encoding encoding, int strSize, string newLine)
         {
             VerifyWrite(encoding, strSize, newLine, DEFAULT_NUM_WRITES);
         }
 
-        private void VerifyWrite(System.Text.Encoding encoding, int strSize, string newLine, int numWrites)
+        private void VerifyWrite(Encoding encoding, int strSize, string newLine, int numWrites)
         {
             using (SerialPort com1 = TCSupport.InitFirstSerialPort())
             using (SerialPort com2 = TCSupport.InitSecondSerialPort(com1))
             {
-                string stringToWrite = TCSupport.GetRandomString(NEWLINE_TESTING_STRING_SIZE,TCSupport.CharacterOptions.None);
+                string stringToWrite = TCSupport.GetRandomString(NEWLINE_TESTING_STRING_SIZE, TCSupport.CharacterOptions.None);
 
-                TCSupport.SetHighSpeed(com1,com2);
+                TCSupport.SetHighSpeed(com1, com2);
 
                 com1.Encoding = encoding;
                 com1.Open();
@@ -239,7 +241,7 @@ namespace System.IO.Ports.Tests
             int index = 0;
             int numNewLineBytes;
             char[] newLineChars = com1.NewLine.ToCharArray();
-            System.Text.StringBuilder expectedStrBldr = new System.Text.StringBuilder();
+            StringBuilder expectedStrBldr = new StringBuilder();
             string expectedString;
 
             expectedBytes = com1.Encoding.GetBytes(stringToWrite.ToCharArray());
@@ -259,7 +261,7 @@ namespace System.IO.Ports.Tests
 
             com2.ReadTimeout = 500;
 
-            System.Threading.Thread.Sleep((int)(((expectedBytes.Length * 10.0) / com1.BaudRate) * 1000) + 250);
+            Thread.Sleep((int)(((expectedBytes.Length * 10.0) / com1.BaudRate) * 1000) + 250);
 
             while (true)
             {

@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.IO.PortsTests;
+using System.Threading;
 using Legacy.Support;
 using Xunit;
 
@@ -12,7 +13,7 @@ namespace System.IO.Ports.Tests
     public class BreakState_Property : PortsTest
     {
         //The maximum time we will wait for the pin changed event to get firered for the break state
-        static readonly int MAX_WAIT_FOR_BREAK = 800;
+        private const int MAX_WAIT_FOR_BREAK = 800;
 
         #region Test Cases
 
@@ -39,7 +40,7 @@ namespace System.IO.Ports.Tests
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             {
                 SerialPortProperties serPortProp = new SerialPortProperties();
- 
+
                 Debug.WriteLine("Verifying setting BreakState before open");
                 serPortProp.SetAllPropertiesToDefaults();
                 serPortProp.SetProperty("PortName", TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
@@ -122,7 +123,6 @@ namespace System.IO.Ports.Tests
             }
 
             Assert.False(GetCurrentBreakState());
-
         }
 
 
@@ -132,7 +132,7 @@ namespace System.IO.Ports.Tests
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             {
                 SerialPortProperties serPortProp = new SerialPortProperties();
-        
+
                 Debug.WriteLine("Verifying setting BreakState to true then false then true again");
 
                 serPortProp.SetAllPropertiesToOpenDefaults();
@@ -200,7 +200,7 @@ namespace System.IO.Ports.Tests
                     if (SerialPinChange.Break == e.EventType)
                     {
                         _breakOccurred = true;
-                        System.Threading.Monitor.Pulse(this);
+                        Monitor.Pulse(this);
                     }
                 }
             }
@@ -211,7 +211,7 @@ namespace System.IO.Ports.Tests
                 {
                     if (!_breakOccurred)
                     {
-                        System.Threading.Monitor.Wait(this);
+                        Monitor.Wait(this);
                     }
                 }
             }
@@ -223,7 +223,7 @@ namespace System.IO.Ports.Tests
                 {
                     if (!_breakOccurred)
                     {
-                        return System.Threading.Monitor.Wait(this, timeout);
+                        return Monitor.Wait(this, timeout);
                     }
                     return true;
                 }

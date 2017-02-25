@@ -13,9 +13,9 @@ namespace System.IO.Ports.Tests
     public class SerialStream_Close : PortsTest
     {
         // The number of the bytes that should read/write buffers
-        private static readonly int numReadBytes = 32;
-        private static readonly int numWriteBytes = 32;
-        
+        private const int numReadBytes = 32;
+        private const int numWriteBytes = 32;
+
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void OpenClose_WriteMethods()
         {
@@ -40,7 +40,7 @@ namespace System.IO.Ports.Tests
                 catch (InvalidOperationException)
                 {
                 }
-              
+
                 try
                 {
                     com.Write("A");
@@ -48,7 +48,7 @@ namespace System.IO.Ports.Tests
                 catch (InvalidOperationException)
                 {
                 }
-              
+
                 try
                 {
                     com.WriteLine("A");
@@ -58,7 +58,7 @@ namespace System.IO.Ports.Tests
                 }
             }
         }
-        
+
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void OpenClose_ReadMethods()
         {
@@ -117,7 +117,7 @@ namespace System.IO.Ports.Tests
                 }
             }
         }
-        
+
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void OpenClose_DiscardMethods()
         {
@@ -134,7 +134,7 @@ namespace System.IO.Ports.Tests
                 catch (InvalidOperationException)
                 {
                 }
-        
+
                 try
                 {
                     com.DiscardOutBuffer();
@@ -145,7 +145,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        
+
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void OpenClose_OpenClose()
         {
@@ -164,7 +164,7 @@ namespace System.IO.Ports.Tests
                 }
 
                 com.Open();
-        
+
                 try
                 {
                     if (com.IsOpen)
@@ -193,11 +193,11 @@ namespace System.IO.Ports.Tests
                 serPortProp.VerifyPropertiesAndPrint(com);
             }
         }
-        
+
         [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
         public void OpenFillBuffersClose()
         {
-            using(var com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
+            using (var com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             using (var com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))
             {
                 SerialPortProperties serPortProp = new SerialPortProperties();
@@ -232,7 +232,7 @@ namespace System.IO.Ports.Tests
                 serPortProp.VerifyPropertiesAndPrint(com1);
 
                 com1.Open();
-                
+
                 serPortProp.SetAllPropertiesToOpenDefaults();
                 serPortProp.SetProperty("PortName", TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
 
@@ -251,14 +251,14 @@ namespace System.IO.Ports.Tests
             // Give the port time to finish closing since we potentially have an unclosed BeginRead/BeginWrite
             Thread.Sleep(200);
         }
-        
+
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void OpenCloseNewInstanceOpen()
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             {
                 SerialPortProperties serPortProp = new SerialPortProperties();
-                
+
                 Debug.WriteLine(
                     "Calling Close() after calling Open() then create a new instance of SerialPort and call Open() again");
                 com.Open();
@@ -289,7 +289,7 @@ namespace System.IO.Ports.Tests
                 }
             }
         }
-        
+
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void Open_BaseStreamClose_Open()
         {
@@ -308,7 +308,7 @@ namespace System.IO.Ports.Tests
                 serPortProp.VerifyPropertiesAndPrint(com);
             }
         }
-        
+
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void Open_BaseStreamClose_Close()
         {
@@ -334,7 +334,6 @@ namespace System.IO.Ports.Tests
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             {
-
                 SerialPortProperties serPortProp = new SerialPortProperties();
 
                 Debug.WriteLine("Verifying Properites after calling Open(), BaseStream.Close() multiple times");

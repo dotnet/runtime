@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.IO.PortsTests;
+using System.Threading;
 using System.Threading.Tasks;
 using Legacy.Support;
 using Xunit;
@@ -12,19 +13,19 @@ namespace System.IO.Ports.Tests
 {
     public class BytesToWrite_Property : PortsTest
     {
-        static readonly int DEFAULT_NUM_RND_BYTES = TCSupport.MinimumBlockingByteCount;
+        private static readonly int s_DEFAULT_NUM_RND_BYTES = TCSupport.MinimumBlockingByteCount;
 
         //The default number of chars to write with when testing timeout with Write(char[], int, int)
-        static readonly int DEFAULT_WRITE_CHAR_ARRAY_SIZE = TCSupport.MinimumBlockingByteCount;
+        private static readonly int s_DEFAULT_WRITE_CHAR_ARRAY_SIZE = TCSupport.MinimumBlockingByteCount;
 
         //The default number of bytes to write with when testing timeout with Write(byte[], int, int)
-        static readonly int DEFAULT_WRITE_BYTE_ARRAY_SIZE = TCSupport.MinimumBlockingByteCount;
+        private static readonly int s_DEFAULT_WRITE_BYTE_ARRAY_SIZE = TCSupport.MinimumBlockingByteCount;
 
         //The default string to write with when testing timeout with Write(str)
-        static readonly string DEFAULT_STRING_TO_WRITE = new string('H', TCSupport.MinimumBlockingByteCount);
+        private static readonly string s_DEFAULT_STRING_TO_WRITE = new string('H', TCSupport.MinimumBlockingByteCount);
 
         //Delegate to start asynchronous write on the SerialPort com with buffer of size bufferLength
-        delegate int WriteMethodDelegate(SerialPort com, int bufferSize);
+        private delegate int WriteMethodDelegate(SerialPort com, int bufferSize);
 
         #region Test Cases
 
@@ -48,14 +49,14 @@ namespace System.IO.Ports.Tests
         public void BytesToWrite_Write_byte_int_int()
         {
             Debug.WriteLine("Verifying BytesToWrite with Write(byte[] buffer, int offset, int count)");
-            VerifyBytesToWrite(Write_byte_int_int, DEFAULT_NUM_RND_BYTES, false);
+            VerifyBytesToWrite(Write_byte_int_int, s_DEFAULT_NUM_RND_BYTES, false);
         }
 
         [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
         public void BytesToWrite_Write_char_int_int()
         {
             Debug.WriteLine("Verifying BytesToWrite with Write(char[] buffer, int offset, int count)");
-            VerifyBytesToWrite(Write_char_int_int, DEFAULT_NUM_RND_BYTES, false);
+            VerifyBytesToWrite(Write_char_int_int, s_DEFAULT_NUM_RND_BYTES, false);
         }
 
         [ConditionalFact(nameof(HasNullModem), nameof(HasHardwareFlowControl))]
@@ -69,7 +70,7 @@ namespace System.IO.Ports.Tests
         public void BytesToWrite_WriteLine()
         {
             Debug.WriteLine("Verifying BytesToWrite with WriteLine()");
-            VerifyBytesToWrite(WriteLine, DEFAULT_NUM_RND_BYTES, true);
+            VerifyBytesToWrite(WriteLine, s_DEFAULT_NUM_RND_BYTES, true);
         }
         #endregion
 
@@ -94,7 +95,7 @@ namespace System.IO.Ports.Tests
 
                 Task<int> task = Task.Run(() => writeMethod(com1, bufferSize));
 
-                System.Threading.Thread.Sleep(200);
+                Thread.Sleep(200);
 
                 actualBytesToWrite = com1.BytesToWrite;
                 expectedBytesToWrite = task.Result - TCSupport.HardwareTransmitBufferSize;
@@ -106,7 +107,6 @@ namespace System.IO.Ports.Tests
 
                 com2.RtsEnable = false;
                 serPortProp.VerifyPropertiesAndPrint(com1);
-
             }
         }
 
@@ -115,7 +115,7 @@ namespace System.IO.Ports.Tests
         {
             try
             {
-                com.Write(new byte[DEFAULT_WRITE_BYTE_ARRAY_SIZE], 0, DEFAULT_WRITE_BYTE_ARRAY_SIZE);
+                com.Write(new byte[s_DEFAULT_WRITE_BYTE_ARRAY_SIZE], 0, s_DEFAULT_WRITE_BYTE_ARRAY_SIZE);
             }
             catch (TimeoutException)
             {
@@ -126,7 +126,7 @@ namespace System.IO.Ports.Tests
 
         private int Write_char_int_int(SerialPort com, int bufferSize)
         {
-            char[] charsToWrite = new char[DEFAULT_WRITE_CHAR_ARRAY_SIZE];
+            char[] charsToWrite = new char[s_DEFAULT_WRITE_CHAR_ARRAY_SIZE];
 
             try
             {
@@ -143,12 +143,12 @@ namespace System.IO.Ports.Tests
         {
             try
             {
-                com.Write(DEFAULT_STRING_TO_WRITE);
+                com.Write(s_DEFAULT_STRING_TO_WRITE);
             }
             catch (TimeoutException)
             {
             }
-            return com.Encoding.GetByteCount(DEFAULT_STRING_TO_WRITE.ToCharArray());
+            return com.Encoding.GetByteCount(s_DEFAULT_STRING_TO_WRITE.ToCharArray());
         }
 
 
@@ -156,12 +156,12 @@ namespace System.IO.Ports.Tests
         {
             try
             {
-                com.WriteLine(DEFAULT_STRING_TO_WRITE);
+                com.WriteLine(s_DEFAULT_STRING_TO_WRITE);
             }
             catch (TimeoutException)
             {
             }
-            return com.Encoding.GetByteCount(DEFAULT_STRING_TO_WRITE.ToCharArray()) + com.Encoding.GetByteCount(com.NewLine.ToCharArray());
+            return com.Encoding.GetByteCount(s_DEFAULT_STRING_TO_WRITE.ToCharArray()) + com.Encoding.GetByteCount(com.NewLine.ToCharArray());
         }
         #endregion
     }

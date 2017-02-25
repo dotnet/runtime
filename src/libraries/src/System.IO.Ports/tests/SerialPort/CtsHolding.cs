@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.IO.PortsTests;
+using System.Threading;
 using Legacy.Support;
 using Xunit;
 
@@ -118,7 +119,6 @@ namespace System.IO.Ports.Tests
                 serPortProp.SetAllPropertiesToDefaults();
                 serPortProp.SetProperty("PortName", TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
                 serPortProp.VerifyPropertiesAndPrint(com1);
-
             }
         }
 
@@ -146,7 +146,7 @@ namespace System.IO.Ports.Tests
                 if (com2.IsOpen)
                     com2.Close();
 
-                System.Threading.Thread.Sleep(100);
+                Thread.Sleep(100);
                 serPortProp.SetProperty("CtsHolding", false);
                 serPortProp.VerifyPropertiesAndPrint(com1);
             }

@@ -13,11 +13,11 @@ namespace System.IO.Ports.Tests
     public class DiscardOutBuffer : PortsTest
     {
         //The string used with Write(str) to fill the input buffer
-        private static readonly string DEFAULT_STRING = new string('H', TCSupport.MinimumBlockingByteCount);
+        private static readonly string s_DEFAULT_STRING = new string('H', TCSupport.MinimumBlockingByteCount);
 
         //The buffer length used whe filling the output buffer
         // This was set to 8, but the TX Fifo on a UART can swallow that completely, so you can't then tell if the data has been sent or not.
-        private static readonly int DEFAULT_BUFFER_LENGTH = TCSupport.MinimumBlockingByteCount;
+        private static readonly int s_DEFAULT_BUFFER_LENGTH = TCSupport.MinimumBlockingByteCount;
 
         #region Test Cases
 
@@ -31,9 +31,9 @@ namespace System.IO.Ports.Tests
                 com1.WriteTimeout = 500;
                 com1.Handshake = Handshake.RequestToSend;
 
-                Task task = Task.Run(() => WriteRndByteArray(com1, DEFAULT_BUFFER_LENGTH));
+                Task task = Task.Run(() => WriteRndByteArray(com1, s_DEFAULT_BUFFER_LENGTH));
 
-                TCSupport.WaitForWriteBufferToLoad(com1, DEFAULT_BUFFER_LENGTH);
+                TCSupport.WaitForWriteBufferToLoad(com1, s_DEFAULT_BUFFER_LENGTH);
 
                 VerifyDiscard(com1);
 
@@ -54,9 +54,9 @@ namespace System.IO.Ports.Tests
                 com1.WriteTimeout = 500;
                 com1.Handshake = Handshake.RequestToSend;
 
-                Task task = Task.Run(() => WriteRndByteArray(com1, DEFAULT_BUFFER_LENGTH));
+                Task task = Task.Run(() => WriteRndByteArray(com1, s_DEFAULT_BUFFER_LENGTH));
 
-                TCSupport.WaitForWriteBufferToLoad(com1, DEFAULT_BUFFER_LENGTH);
+                TCSupport.WaitForWriteBufferToLoad(com1, s_DEFAULT_BUFFER_LENGTH);
 
                 VerifyDiscard(com1);
                 VerifyDiscard(com1);
@@ -80,9 +80,9 @@ namespace System.IO.Ports.Tests
                 com1.WriteTimeout = 500;
                 com1.Handshake = Handshake.RequestToSend;
 
-                Task task = Task.Run(() => WriteRndByteArray(com1, DEFAULT_BUFFER_LENGTH));
+                Task task = Task.Run(() => WriteRndByteArray(com1, s_DEFAULT_BUFFER_LENGTH));
 
-                TCSupport.WaitForWriteBufferToLoad(com1, DEFAULT_BUFFER_LENGTH);
+                TCSupport.WaitForWriteBufferToLoad(com1, s_DEFAULT_BUFFER_LENGTH);
 
                 VerifyDiscard(com1);
 
@@ -90,9 +90,9 @@ namespace System.IO.Ports.Tests
                 Assert.Throws<AggregateException>(() => task.Wait(2000));
                 Assert.IsType<IOException>(task.Exception.InnerException);
 
-                Task task2 = Task.Run(() => WriteRndByteArray(com1, DEFAULT_BUFFER_LENGTH));
+                Task task2 = Task.Run(() => WriteRndByteArray(com1, s_DEFAULT_BUFFER_LENGTH));
 
-                TCSupport.WaitForWriteBufferToLoad(com1, DEFAULT_BUFFER_LENGTH);
+                TCSupport.WaitForWriteBufferToLoad(com1, s_DEFAULT_BUFFER_LENGTH);
 
                 VerifyDiscard(com1);
 
@@ -115,19 +115,19 @@ namespace System.IO.Ports.Tests
                 com1.WriteTimeout = 500;
 
                 com1.Handshake = Handshake.RequestToSend;
-                com2.Write(DEFAULT_STRING);
+                com2.Write(s_DEFAULT_STRING);
 
                 // Wait for the data to pass from COM2 to com1
-                TCSupport.WaitForReadBufferToLoad(com1, DEFAULT_STRING.Length);
+                TCSupport.WaitForReadBufferToLoad(com1, s_DEFAULT_STRING.Length);
 
-                Task task = Task.Run(() => WriteRndByteArray(com1, DEFAULT_BUFFER_LENGTH));
+                Task task = Task.Run(() => WriteRndByteArray(com1, s_DEFAULT_BUFFER_LENGTH));
                 int origBytesToRead = com1.BytesToRead;
 
-                TCSupport.WaitForWriteBufferToLoad(com1, DEFAULT_BUFFER_LENGTH);
+                TCSupport.WaitForWriteBufferToLoad(com1, s_DEFAULT_BUFFER_LENGTH);
 
                 VerifyDiscard(com1);
 
-                Assert.Equal(origBytesToRead,com1.BytesToRead);
+                Assert.Equal(origBytesToRead, com1.BytesToRead);
 
                 // Wait for write method to fail with IOException
                 Assert.Throws<AggregateException>(() => task.Wait(2000));
@@ -159,6 +159,6 @@ namespace System.IO.Ports.Tests
         }
         #endregion
 
- 
+
     }
 }

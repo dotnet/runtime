@@ -4,6 +4,8 @@
 
 using System.Diagnostics;
 using System.IO.PortsTests;
+using System.Text;
+using System.Threading;
 using Legacy.Support;
 using Xunit;
 
@@ -12,54 +14,54 @@ namespace System.IO.Ports.Tests
     public class ReadByte : PortsTest
     {
         //The number of random bytes to receive
-        static int numRndByte = 8;
+        private const int numRndByte = 8;
 
-        enum ReadDataFromEnum { NonBuffered, Buffered, BufferedAndNonBuffered };
+        private enum ReadDataFromEnum { NonBuffered, Buffered, BufferedAndNonBuffered };
 
         #region Test Cases
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
         public void ASCIIEncoding()
         {
             Debug.WriteLine("Verifying read with bytes encoded with ASCIIEncoding");
-            VerifyRead(new System.Text.ASCIIEncoding());
+            VerifyRead(new ASCIIEncoding());
         }
 
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
         public void UTF8Encoding()
         {
             Debug.WriteLine("Verifying read with bytes encoded with UTF8Encoding");
-            VerifyRead(new System.Text.UTF8Encoding());
+            VerifyRead(new UTF8Encoding());
         }
 
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
         public void UTF32Encoding()
         {
             Debug.WriteLine("Verifying read with bytes encoded with UTF32Encoding");
-            VerifyRead(new System.Text.UTF32Encoding());
+            VerifyRead(new UTF32Encoding());
         }
 
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
         public void SerialPort_ReadBufferedData()
         {
-            VerifyRead(System.Text.Encoding.ASCII, ReadDataFromEnum.Buffered);
+            VerifyRead(Encoding.ASCII, ReadDataFromEnum.Buffered);
         }
 
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
         public void SerialPort_IterativeReadBufferedData()
         {
-            VerifyRead(System.Text.Encoding.ASCII, ReadDataFromEnum.Buffered);
+            VerifyRead(Encoding.ASCII, ReadDataFromEnum.Buffered);
         }
 
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
         public void SerialPort_ReadBufferedAndNonBufferedData()
         {
-            VerifyRead(System.Text.Encoding.ASCII, ReadDataFromEnum.BufferedAndNonBuffered);
+            VerifyRead(Encoding.ASCII, ReadDataFromEnum.BufferedAndNonBuffered);
         }
 
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
         public void SerialPort_IterativeReadBufferedAndNonBufferedData()
         {
-            VerifyRead(System.Text.Encoding.ASCII, ReadDataFromEnum.BufferedAndNonBuffered);
+            VerifyRead(Encoding.ASCII, ReadDataFromEnum.BufferedAndNonBuffered);
         }
 
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
@@ -71,13 +73,13 @@ namespace System.IO.Ports.Tests
                 byte[] byteXmitBuffer = TCSupport.GetRandomBytes(512);
                 byte[] byteRcvBuffer = new byte[byteXmitBuffer.Length];
                 ASyncRead asyncRead = new ASyncRead(com1);
-                System.Threading.Thread asyncReadThread = new System.Threading.Thread(asyncRead.Read);
+                Thread asyncReadThread = new Thread(asyncRead.Read);
 
                 Debug.WriteLine(
                     "Verifying that ReadByte() will read bytes that have been received after the call to Read was made");
 
-                com1.Encoding = System.Text.Encoding.UTF8;
-                com2.Encoding = System.Text.Encoding.UTF8;
+                com1.Encoding = Encoding.UTF8;
+                com2.Encoding = Encoding.UTF8;
                 com1.ReadTimeout = 20000; // 20 seconds
 
                 com1.Open();
@@ -88,7 +90,7 @@ namespace System.IO.Ports.Tests
                 asyncReadThread.Start();
                 asyncRead.ReadStartedEvent.WaitOne();
                 //This only tells us that the thread has started to execute code in the method
-                System.Threading.Thread.Sleep(2000); //We need to wait to guarentee that we are executing code in SerialPort
+                Thread.Sleep(2000); //We need to wait to guarentee that we are executing code in SerialPort
                 com2.Write(byteXmitBuffer, 0, byteXmitBuffer.Length);
 
                 asyncRead.ReadCompletedEvent.WaitOne();
@@ -103,7 +105,7 @@ namespace System.IO.Ports.Tests
                 }
                 else
                 {
-                    System.Threading.Thread.Sleep(1000); //We need to wait for all of the bytes to be received
+                    Thread.Sleep(1000); //We need to wait for all of the bytes to be received
                     byteRcvBuffer[0] = (byte)asyncRead.Result;
                     int readResult = com1.Read(byteRcvBuffer, 1, byteRcvBuffer.Length - 1);
 
@@ -130,13 +132,13 @@ namespace System.IO.Ports.Tests
         #endregion
 
         #region Verification for Test Cases
-        private void VerifyRead(System.Text.Encoding encoding)
+        private void VerifyRead(Encoding encoding)
         {
             VerifyRead(encoding, ReadDataFromEnum.NonBuffered);
         }
 
 
-        private void VerifyRead(System.Text.Encoding encoding, ReadDataFromEnum readDataFrom)
+        private void VerifyRead(Encoding encoding, ReadDataFromEnum readDataFrom)
         {
             using (SerialPort com1 = TCSupport.InitFirstSerialPort())
             using (SerialPort com2 = TCSupport.InitSecondSerialPort(com1))
@@ -212,10 +214,7 @@ namespace System.IO.Ports.Tests
             com2.Write(bytesToWrite, 0, 1); // Write one byte at the begining because we are going to read this to buffer the rest of the data
             com2.Write(bytesToWrite, 0, bytesToWrite.Length);
 
-            while (com1.BytesToRead < bytesToWrite.Length)
-            {
-                System.Threading.Thread.Sleep(50);
-            }
+            TCSupport.WaitForReadBufferToLoad(com1, bytesToWrite.Length);
 
             com1.Read(new char[1], 0, 1); // This should put the rest of the bytes in SerialPorts own internal buffer
 
@@ -230,7 +229,7 @@ namespace System.IO.Ports.Tests
             com2.Write(bytesToWrite, 0, bytesToWrite.Length);
             com1.ReadTimeout = 500;
 
-            System.Threading.Thread.Sleep((int)(((bytesToWrite.Length * 10.0) / com1.BaudRate) * 1000) + 250);
+            Thread.Sleep((int)(((bytesToWrite.Length * 10.0) / com1.BaudRate) * 1000) + 250);
 
             PerformReadOnCom1FromCom2(com1, com2, expectedBytes);
         }
@@ -291,11 +290,11 @@ namespace System.IO.Ports.Tests
 
         public class ASyncRead
         {
-            private SerialPort _com;
+            private readonly SerialPort _com;
             private int _result;
 
-            private System.Threading.AutoResetEvent _readCompletedEvent;
-            private System.Threading.AutoResetEvent _readStartedEvent;
+            private readonly AutoResetEvent _readCompletedEvent;
+            private readonly AutoResetEvent _readStartedEvent;
 
             private Exception _exception;
 
@@ -304,8 +303,8 @@ namespace System.IO.Ports.Tests
                 _com = com;
                 _result = int.MinValue;
 
-                _readCompletedEvent = new System.Threading.AutoResetEvent(false);
-                _readStartedEvent = new System.Threading.AutoResetEvent(false);
+                _readCompletedEvent = new AutoResetEvent(false);
+                _readStartedEvent = new AutoResetEvent(false);
 
                 _exception = null;
             }
@@ -327,7 +326,7 @@ namespace System.IO.Ports.Tests
                 }
             }
 
-            public System.Threading.AutoResetEvent ReadStartedEvent
+            public AutoResetEvent ReadStartedEvent
             {
                 get
                 {
@@ -335,7 +334,7 @@ namespace System.IO.Ports.Tests
                 }
             }
 
-            public System.Threading.AutoResetEvent ReadCompletedEvent
+            public AutoResetEvent ReadCompletedEvent
             {
                 get
                 {

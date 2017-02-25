@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.IO.PortsTests;
+using System.Threading;
 using Legacy.Support;
 using Xunit;
 
@@ -13,14 +14,14 @@ namespace System.IO.Ports.Tests
     {
         //The default number of bytes to read/write to verify the speed of the port
         //and that the bytes were transfered successfully
-        public static readonly int DEFAULT_BYTE_SIZE = 256;
+        private const int DEFAULT_BYTE_SIZE = 256;
 
         //If the percentage difference between the expected time to transfer with the specified dataBits
         //and the actual time found through Stopwatch is greater then 5% then the DataBits value was not correctly
         //set and the testcase fails.
-        public static readonly double MAX_ACCEPTABLE_PERCENTAGE_DIFFERENCE = .05;
+        private const double MAX_ACCEPTABLE_PERCENTAGE_DIFFERENCE = .05;
 
-        public static readonly int NUM_TRYS = 5;
+        private const int NUM_TRYS = 5;
 
         private enum ThrowAt { Set, Open };
 
@@ -116,7 +117,7 @@ namespace System.IO.Ports.Tests
             Debug.WriteLine("Verifying 4 DataBits");
             VerifyException(4, ThrowAt.Set, typeof(ArgumentOutOfRangeException));
         }
-    
+
         [ConditionalFact(nameof(HasOneSerialPort))]
         public void DataBits_9()
         {
@@ -130,7 +131,7 @@ namespace System.IO.Ports.Tests
             Debug.WriteLine("Verifying Int32.MaxValue DataBits");
             VerifyException(int.MaxValue, ThrowAt.Set, typeof(ArgumentOutOfRangeException));
         }
-    
+
         #endregion
 
         #region Verification for Test Cases
@@ -186,7 +187,7 @@ namespace System.IO.Ports.Tests
         }
 
 
-        private void  VerifyExceptionAfterOpen(SerialPort com, int dataBits, Type expectedException)
+        private void VerifyExceptionAfterOpen(SerialPort com, int dataBits, Type expectedException)
         {
             SerialPortProperties serPortProp = new SerialPortProperties();
 
@@ -286,7 +287,7 @@ namespace System.IO.Ports.Tests
 
                 actualTime = 0;
 
-                System.Threading.Thread.CurrentThread.Priority = System.Threading.ThreadPriority.Highest;
+                Thread.CurrentThread.Priority = ThreadPriority.Highest;
 
                 for (int i = 0; i < NUM_TRYS; i++)
                 {
@@ -297,7 +298,6 @@ namespace System.IO.Ports.Tests
                     beginWriteResult = com1.BaseStream.BeginWrite(xmitBytes, 0, xmitBytes.Length, null, null);
                     while (0 == (bytesToRead = com2.BytesToRead))
                     {
-                
                     }
 
                     sw.Start();
@@ -313,7 +313,7 @@ namespace System.IO.Ports.Tests
                     sw.Reset();
                 }
 
-                System.Threading.Thread.CurrentThread.Priority = System.Threading.ThreadPriority.Normal;
+                Thread.CurrentThread.Priority = ThreadPriority.Normal;
 
                 expectedTime = ((xmitBytes.Length * (2.0 + com1.DataBits)) / com1.BaudRate) * 1000;
                 actualTime /= NUM_TRYS;

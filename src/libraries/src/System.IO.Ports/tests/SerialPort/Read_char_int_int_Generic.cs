@@ -4,6 +4,8 @@
 
 using System.Diagnostics;
 using System.IO.PortsTests;
+using System.Text;
+using System.Threading;
 using Legacy.Support;
 using Xunit;
 
@@ -13,30 +15,30 @@ namespace System.IO.Ports.Tests
     {
         //Set bounds fore random timeout values.
         //If the min is to low read will not timeout accurately and the testcase will fail
-        public static readonly int minRandomTimeout = 250;
+        private const int minRandomTimeout = 250;
 
         //If the max is to large then the testcase will take forever to run
-        public static readonly int maxRandomTimeout = 2000;
+        private const int maxRandomTimeout = 2000;
 
         //If the percentage difference between the expected timeout and the actual timeout
         //found through Stopwatch is greater then 10% then the timeout value was not correctly
         //to the read method and the testcase fails.
-        public static readonly double maxPercentageDifference = .15;
+        private const double maxPercentageDifference = .15;
 
         //The number of random bytes to receive for parity testing
-        public static readonly int numRndBytesPairty = 8;
+        private const int numRndBytesPairty = 8;
 
         //The number of characters to read at a time for parity testing
-        public static readonly int numBytesReadPairty = 2;
+        private const int numBytesReadPairty = 2;
 
         //The number of random bytes to receive for BytesToRead testing
-        public static readonly int numRndBytesToRead = 16;
+        private const int numRndBytesToRead = 16;
 
         //When we test Read and do not care about actually reading anything we must still
         //create an byte array to pass into the method the following is the size of the 
         //byte array used in this situation
-        public static readonly int defaultCharArraySize = 1;
-        public static readonly int NUM_TRYS = 5;
+        private const int defaultCharArraySize = 1;
+        private const int NUM_TRYS = 5;
 
         #region Test Cases
 
@@ -103,11 +105,11 @@ namespace System.IO.Ports.Tests
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             {
                 Random rndGen = new Random(-55);
-        
+
 
                 com.ReadTimeout = rndGen.Next(minRandomTimeout, maxRandomTimeout);
                 //		com.Encoding = new System.Text.UTF7Encoding();
-                com.Encoding = System.Text.Encoding.Unicode;
+                com.Encoding = Encoding.Unicode;
 
                 Debug.WriteLine("Verifying ReadTimeout={0} with successive call to read method and no data", com.ReadTimeout);
                 com.Open();
@@ -124,10 +126,10 @@ namespace System.IO.Ports.Tests
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             {
                 Random rndGen = new Random(-55);
-                System.Threading.Thread t = new System.Threading.Thread(WriteToCom1);
+                Thread t = new Thread(WriteToCom1);
 
                 com1.ReadTimeout = rndGen.Next(minRandomTimeout, maxRandomTimeout);
-                com1.Encoding = new System.Text.UTF8Encoding();
+                com1.Encoding = new UTF8Encoding();
 
                 Debug.WriteLine("Verifying ReadTimeout={0} with successive call to read method and some data being received in the first call", com1.ReadTimeout);
                 com1.Open();
@@ -146,7 +148,7 @@ namespace System.IO.Ports.Tests
 
                 //Wait for the thread to finish
                 while (t.IsAlive)
-                    System.Threading.Thread.Sleep(50);
+                    Thread.Sleep(50);
 
                 //Make sure there is no bytes in the buffer so the next call to read will timeout
                 com1.DiscardInBuffer();
@@ -163,7 +165,7 @@ namespace System.IO.Ports.Tests
                 int sleepPeriod = rndGen.Next(minRandomTimeout, maxRandomTimeout / 2);
 
                 //Sleep some random period with of a maximum duration of half the largest possible timeout value for a read method on COM1
-                System.Threading.Thread.Sleep(sleepPeriod);
+                Thread.Sleep(sleepPeriod);
                 com2.Open();
                 com2.Write(xmitBuffer, 0, xmitBuffer.Length);
             }
@@ -202,8 +204,6 @@ namespace System.IO.Ports.Tests
                 char[] expectedChars = new char[numRndBytesPairty];
                 char[] actualChars = new char[numRndBytesPairty + 1];
 
-                int waitTime;
-
                 /* 1 Additional character gets added to the input buffer when the parity error occurs on the last byte of a stream
                  We are verifying that besides this everything gets read in correctly. See NDP Whidbey: 24216 for more info on this */
                 Debug.WriteLine("Verifying default ParityReplace byte with a parity errro on the last byte");
@@ -230,13 +230,7 @@ namespace System.IO.Ports.Tests
                 com2.Open();
                 com2.Write(bytesToWrite, 0, bytesToWrite.Length);
 
-                waitTime = 0;
-
-                while (bytesToWrite.Length + 1 > com1.BytesToRead && waitTime < 500)
-                {
-                    System.Threading.Thread.Sleep(50);
-                    waitTime += 50;
-                }
+                TCSupport.WaitForReadBufferToLoad(com1, bytesToWrite.Length + 1);
 
                 com1.Read(actualChars, 0, actualChars.Length);
 
@@ -296,7 +290,7 @@ namespace System.IO.Ports.Tests
             //Warm up read method
             Assert.Throws<TimeoutException>(() => com.Read(new char[defaultCharArraySize], 0, defaultCharArraySize));
 
-            System.Threading.Thread.CurrentThread.Priority = System.Threading.ThreadPriority.Highest;
+            Thread.CurrentThread.Priority = ThreadPriority.Highest;
             for (int i = 0; i < NUM_TRYS; i++)
             {
                 timer.Start();
@@ -309,7 +303,7 @@ namespace System.IO.Ports.Tests
                 timer.Reset();
             }
 
-            System.Threading.Thread.CurrentThread.Priority = System.Threading.ThreadPriority.Normal;
+            Thread.CurrentThread.Priority = ThreadPriority.Normal;
             actualTime /= NUM_TRYS;
             percentageDifference = Math.Abs((expectedTime - actualTime) / (double)expectedTime);
 
@@ -386,7 +380,7 @@ namespace System.IO.Ports.Tests
                 Random rndGen = new Random(-55);
                 byte[] bytesToWrite = new byte[numRndBytesToRead];
                 char[] expectedChars;
-                System.Text.ASCIIEncoding encoding = new System.Text.ASCIIEncoding();
+                ASCIIEncoding encoding = new ASCIIEncoding();
 
                 //Genrate random characters
                 for (int i = 0; i < bytesToWrite.Length; i++)
@@ -414,15 +408,11 @@ namespace System.IO.Ports.Tests
             int totalBytesRead;
             int totalCharsRead;
             int bytesToRead;
-            int waitTime = 0;
 
             com2.Write(bytesToWrite, 0, bytesToWrite.Length);
             com1.ReadTimeout = 250;
-            while (com1.BytesToRead < bytesToWrite.Length && waitTime < 500)
-            {
-                System.Threading.Thread.Sleep(50);
-                waitTime += 50;
-            }
+
+            TCSupport.WaitForReadBufferToLoad(com1, bytesToWrite.Length);
 
             totalBytesRead = 0;
             totalCharsRead = 0;

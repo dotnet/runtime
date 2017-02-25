@@ -15,31 +15,31 @@ namespace System.IO.Ports.Tests
     {
         // Set bounds fore random timeout values.
         // If the min is to low read will not timeout accurately and the testcase will fail
-        private static readonly int minRandomTimeout = 250;
+        private const int minRandomTimeout = 250;
 
         // If the max is to large then the testcase will take forever to run
-        private static readonly int maxRandomTimeout = 2000;
+        private const int maxRandomTimeout = 2000;
 
         // If the percentage difference between the expected timeout and the actual timeout
         // found through Stopwatch is greater then 10% then the timeout value was not correctly
         // to the read method and the testcase fails.
-        private static readonly double maxPercentageDifference = .15;
+        private const double maxPercentageDifference = .15;
 
         // The number of random bytes to receive for parity testing
-        private static readonly int numRndBytesPairty = 8;
+        private const int numRndBytesPairty = 8;
 
         // The number of characters to read at a time for parity testing
-        private static readonly int numBytesReadPairty = 2;
+        private const int numBytesReadPairty = 2;
 
         // The number of random bytes to receive for BytesToRead testing
-        private static readonly int numRndBytesToRead = 16;
+        private const int numRndBytesToRead = 16;
 
         // When we test Read and do not care about actually reading anything we must still
         // create an byte array to pass into the method the following is the size of the 
         // byte array used in this situation
-        private static readonly int defaultByteArraySize = 1;
+        private const int defaultByteArraySize = 1;
 
-        private static readonly int NUM_TRYS = 5;
+        private const int NUM_TRYS = 5;
 
         #region Test Cases
 
@@ -117,7 +117,7 @@ namespace System.IO.Ports.Tests
             {
                 var rndGen = new Random(-55);
                 var t = new Thread(WriteToCom1);
-                
+
                 com1.ReadTimeout = rndGen.Next(minRandomTimeout, maxRandomTimeout);
                 com1.Encoding = new UTF8Encoding();
 
@@ -176,7 +176,7 @@ namespace System.IO.Ports.Tests
 
             VerifyParityReplaceByte('\0', rndGen.Next(0, numRndBytesPairty - 1), Encoding.UTF32);
         }
-        
+
         [ConditionalFact(nameof(HasNullModem))]
         public void RNDParityReplaceByte()
         {
@@ -195,8 +195,6 @@ namespace System.IO.Ports.Tests
                 var bytesToWrite = new byte[numRndBytesPairty];
                 var expectedBytes = new byte[numRndBytesPairty];
                 var actualBytes = new byte[numRndBytesPairty + 1];
-
-                int waitTime;
 
                 /* 1 Additional character gets added to the input buffer when the parity error occurs on the last byte of a stream
            We are verifying that besides this everything gets read in correctly. See NDP Whidbey: 24216 for more info on this */
@@ -224,13 +222,8 @@ namespace System.IO.Ports.Tests
                 com2.Open();
 
                 com2.Write(bytesToWrite, 0, bytesToWrite.Length);
-                waitTime = 0;
 
-                while (bytesToWrite.Length + 1 > com1.BytesToRead && waitTime < 500)
-                {
-                    Thread.Sleep(50);
-                    waitTime += 50;
-                }
+                TCSupport.WaitForReadBufferToLoad(com1, bytesToWrite.Length + 1);
 
                 com1.BaseStream.Read(actualBytes, 0, actualBytes.Length);
 
@@ -257,7 +250,7 @@ namespace System.IO.Ports.Tests
                 VerifyRead(com1, com2, bytesToWrite, expectedBytes, expectedBytes.Length / 2);
             }
         }
-        
+
         [ConditionalFact(nameof(HasNullModem))]
         public void BytesToRead_RND_Buffer_Size()
         {
@@ -325,8 +318,6 @@ namespace System.IO.Ports.Tests
 
             if (com.IsOpen)
                 com.Close();
-
-
         }
 
 
@@ -429,21 +420,15 @@ namespace System.IO.Ports.Tests
 
         private void VerifyRead(SerialPort com1, SerialPort com2, byte[] bytesToWrite, byte[] expectedBytes, int rcvBufferSize)
         {
-
             var rcvBuffer = new byte[rcvBufferSize];
             var buffer = new byte[bytesToWrite.Length];
             int totalBytesRead;
             int bytesToRead;
-            var waitTime = 0;
 
             com2.Write(bytesToWrite, 0, bytesToWrite.Length);
             com1.ReadTimeout = 250;
 
-            while (com1.BytesToRead < bytesToWrite.Length && waitTime < 500)
-            {
-                Thread.Sleep(50);
-                waitTime += 50;
-            }
+            TCSupport.WaitForReadBufferToLoad(com1, bytesToWrite.Length);
 
             totalBytesRead = 0;
             bytesToRead = com1.BytesToRead;

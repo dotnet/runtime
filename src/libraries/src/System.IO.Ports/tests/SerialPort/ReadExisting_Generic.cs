@@ -5,6 +5,8 @@
 using System.Diagnostics;
 using System.IO.PortsTests;
 using System.Linq;
+using System.Text;
+using System.Threading;
 using Legacy.Support;
 using Xunit;
 
@@ -14,18 +16,18 @@ namespace System.IO.Ports.Tests
     {
         //Set bounds fore random timeout values.
         //If the min is to low read will not timeout accurately and the testcase will fail
-        public static int minRandomTimeout = 250;
+        private const int minRandomTimeout = 250;
 
         //If the max is to large then the testcase will take forever to run
-        public static int maxRandomTimeout = 2000;
+        private const int maxRandomTimeout = 2000;
 
         //Since ReadExisting should return immediately this is the maximum time in ms that ReadExisting should take
         //before we consider ReadExisting to be blocking and cause the test case to fail
-        public static double maxTimeout = 50;
+        private const double maxTimeout = 50;
 
         //The number of random characters to receive
-        public static int numRndChar = 8;
-        public static readonly int NUM_TRYS = 5;
+        private const int numRndChar = 8;
+        private const int NUM_TRYS = 5;
 
         #region Test Cases
 
@@ -100,7 +102,7 @@ namespace System.IO.Ports.Tests
                 Random rndGen = new Random(-55);
 
                 com.ReadTimeout = rndGen.Next(minRandomTimeout, maxRandomTimeout);
-                com.Encoding = System.Text.Encoding.Unicode;
+                com.Encoding = Encoding.Unicode;
 
                 Debug.WriteLine("Verifying ReadTimeout={0} with successive call to read method and no data", com.ReadTimeout);
                 com.Open();
@@ -141,8 +143,6 @@ namespace System.IO.Ports.Tests
                 byte[] bytesToWrite = new byte[numRndChar];
                 char[] expectedChars = new char[numRndChar];
 
-                int waitTime;
-
                 /* 1 Additional character gets added to the input buffer when the parity error occurs on the last byte of a stream
                  We are verifying that besides this everything gets read in correctly. See NDP Whidbey: 24216 for more info on this */
                 Debug.WriteLine("Verifying default ParityReplace byte with a parity errro on the last byte");
@@ -170,13 +170,7 @@ namespace System.IO.Ports.Tests
 
                 com2.Write(bytesToWrite, 0, bytesToWrite.Length);
 
-                waitTime = 0;
-
-                while (bytesToWrite.Length + 2 > com1.BytesToRead && waitTime < 500)
-                {
-                    System.Threading.Thread.Sleep(50);
-                    waitTime += 50;
-                }
+                TCSupport.WaitForReadBufferToLoad(com1, bytesToWrite.Length);
 
                 char[] actualChars = (com1.ReadExisting()).ToCharArray();
 
@@ -209,7 +203,7 @@ namespace System.IO.Ports.Tests
 
             Assert.Equal("", strReadReturn);
 
-            System.Threading.Thread.CurrentThread.Priority = System.Threading.ThreadPriority.Highest;
+            Thread.CurrentThread.Priority = ThreadPriority.Highest;
 
             for (int i = 0; i < NUM_TRYS; i++)
             {
@@ -223,7 +217,7 @@ namespace System.IO.Ports.Tests
                 timer.Reset();
             }
 
-            System.Threading.Thread.CurrentThread.Priority = System.Threading.ThreadPriority.Normal;
+            Thread.CurrentThread.Priority = ThreadPriority.Normal;
             actualTime /= NUM_TRYS;
 
             //Verify that the percentage difference between the expected and actual timeout is less then maxPercentageDifference
@@ -297,19 +291,16 @@ namespace System.IO.Ports.Tests
             char[] buffer = new char[expectedChars.Length];
             int totalBytesRead;
             int totalCharsRead;
-            int waitTime = 0;
 
             com2.Write(bytesToWrite, 0, bytesToWrite.Length);
             com1.ReadTimeout = 250;
 
-            while (com1.BytesToRead < bytesToWrite.Length && waitTime < 500)
-            {
-                System.Threading.Thread.Sleep(50);
-                waitTime += 50;
-            }
+            TCSupport.WaitForReadBufferToLoad(com1, bytesToWrite.Length);
 
             totalBytesRead = 0;
             totalCharsRead = 0;
+
+            Stopwatch sw = Stopwatch.StartNew();
 
             while (0 != com1.BytesToRead)
             {
@@ -336,6 +327,8 @@ namespace System.IO.Ports.Tests
                     Fail("ERROR!!!: Expected BytesToRead={0} actual={1}", bytesToWrite.Length - totalBytesRead,
                         com1.BytesToRead);
                 }
+
+                Assert.True(sw.ElapsedMilliseconds < 5000, "Timeout waiting for read data");
             }
 
             //Compare the chars that were written with the ones we expected to read

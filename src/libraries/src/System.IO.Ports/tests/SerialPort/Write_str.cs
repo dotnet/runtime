@@ -4,6 +4,8 @@
 
 using System.Diagnostics;
 using System.IO.PortsTests;
+using System.Text;
+using System.Threading;
 using Legacy.Support;
 using Xunit;
 
@@ -12,15 +14,15 @@ namespace System.IO.Ports.Tests
     public class Write_str : PortsTest
     {
         // The string size used when verifying encoding 
-        public static readonly int ENCODING_STRING_SIZE = 4;
+        private const int ENCODING_STRING_SIZE = 4;
 
         // The string size used for large string testing
         // This has been reduced from 2048 to 2000 because the associated byte buffer size (i.e. 4096 bytes) is too large
         // to allow single read/write transactions on a FTDI USB-Serial device
-        public static readonly int LARGE_STRING_SIZE = 2000;
+        private const int LARGE_STRING_SIZE = 2000;
 
         //The default number of times the write method is called when verifying write
-        public static readonly int DEFAULT_NUM_WRITES = 3;
+        private const int DEFAULT_NUM_WRITES = 3;
 
         #region Test Cases
 
@@ -28,14 +30,14 @@ namespace System.IO.Ports.Tests
         public void ASCIIEncoding()
         {
             Debug.WriteLine("Verifying write method with ASCIIEncoding");
-            VerifyWrite(new System.Text.ASCIIEncoding(), ENCODING_STRING_SIZE);
+            VerifyWrite(new ASCIIEncoding(), ENCODING_STRING_SIZE);
         }
 
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
         public void UTF8Encoding()
         {
             Debug.WriteLine("Verifying write method with UTF8Encoding");
-            VerifyWrite(new System.Text.UTF8Encoding(), ENCODING_STRING_SIZE);
+            VerifyWrite(new UTF8Encoding(), ENCODING_STRING_SIZE);
         }
 
 
@@ -43,14 +45,14 @@ namespace System.IO.Ports.Tests
         public void UTF32Encoding()
         {
             Debug.WriteLine("Verifying write method with UTF32Encoding");
-            VerifyWrite(new System.Text.UTF32Encoding(), ENCODING_STRING_SIZE);
+            VerifyWrite(new UTF32Encoding(), ENCODING_STRING_SIZE);
         }
 
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
         public void UnicodeEncoding()
         {
             Debug.WriteLine("Verifying write method with UnicodeEncoding");
-            VerifyWrite(new System.Text.UnicodeEncoding(), ENCODING_STRING_SIZE);
+            VerifyWrite(new UnicodeEncoding(), ENCODING_STRING_SIZE);
         }
 
         [ConditionalFact(nameof(HasOneSerialPort))]
@@ -94,7 +96,6 @@ namespace System.IO.Ports.Tests
             using (SerialPort com1 = TCSupport.InitFirstSerialPort())
             using (SerialPort com2 = TCSupport.InitSecondSerialPort(com1))
             {
-
                 Debug.WriteLine("Verifying Write with an string containing only the null character");
 
                 com1.Open();
@@ -110,18 +111,18 @@ namespace System.IO.Ports.Tests
         public void LargeString()
         {
             Debug.WriteLine("Verifying write method with a large string size");
-            VerifyWrite(new System.Text.UnicodeEncoding(), LARGE_STRING_SIZE, 1);
+            VerifyWrite(new UnicodeEncoding(), LARGE_STRING_SIZE, 1);
         }
         #endregion
 
         #region Verification for Test Cases
 
-        public void VerifyWrite(System.Text.Encoding encoding, int strSize)
+        public void VerifyWrite(Encoding encoding, int strSize)
         {
             VerifyWrite(encoding, strSize, DEFAULT_NUM_WRITES);
         }
 
-        public void VerifyWrite(System.Text.Encoding encoding, int strSize, int numWrites)
+        public void VerifyWrite(Encoding encoding, int strSize, int numWrites)
         {
             using (SerialPort com1 = TCSupport.InitFirstSerialPort())
             using (SerialPort com2 = TCSupport.InitSecondSerialPort(com1))
@@ -142,7 +143,7 @@ namespace System.IO.Ports.Tests
         {
             VerifyWriteStr(com1, com2, stringToWrite, DEFAULT_NUM_WRITES);
         }
-    
+
         public void VerifyWriteStr(SerialPort com1, SerialPort com2, string stringToWrite, int numWrites)
         {
             char[] actualChars;
@@ -162,7 +163,7 @@ namespace System.IO.Ports.Tests
             com2.ReadTimeout = 500;
 
             //com2.Encoding = com1.Encoding;
-            System.Threading.Thread.Sleep((int)(((expectedBytes.Length * 10.0) / com1.BaudRate) * 1000) + 250);
+            Thread.Sleep((int)(((expectedBytes.Length * 10.0) / com1.BaudRate) * 1000) + 250);
 
             while (true)
             {

@@ -14,23 +14,23 @@ namespace System.IO.Ports.Tests
     public class SerialStream_BeginRead : PortsTest
     {
         // The number of random bytes to receive for read method testing
-        private static readonly int numRndBytesToRead = 16;
+        private const int numRndBytesToRead = 16;
 
         // The number of random bytes to receive for large input buffer testing
-        private static readonly int largeNumRndBytesToRead = 2048;
+        private const int largeNumRndBytesToRead = 2048;
 
         // When we test Read and do not care about actually reading anything we must still
         // create an byte array to pass into the method the following is the size of the 
         // byte array used in this situation
-        private static readonly int defaultByteArraySize = 1;
-        private static readonly int defaultByteOffset = 0;
-        private static readonly int defaultByteCount = 1;
+        private const int defaultByteArraySize = 1;
+        private const int defaultByteOffset = 0;
+        private const int defaultByteCount = 1;
 
         // The maximum buffer size when a exception occurs
-        private static readonly int maxBufferSizeForException = 255;
+        private const int maxBufferSizeForException = 255;
 
         // The maximum buffer size when a exception is not expected
-        private static readonly int maxBufferSize = 8;
+        private const int maxBufferSize = 8;
 
         // Maximum time to wait for processing the read command to complete
         private const int MAX_WAIT_READ_COMPLETE = 1000;
@@ -131,7 +131,7 @@ namespace System.IO.Ports.Tests
 
             VerifyReadException(new byte[bufferLength], offset, count, expectedException);
         }
-        
+
         [ConditionalFact(nameof(HasNullModem))]
         public void OffsetCount_EQ_Length()
         {
@@ -139,7 +139,7 @@ namespace System.IO.Ports.Tests
             int bufferLength = rndGen.Next(1, maxBufferSize);
             int offset = rndGen.Next(0, bufferLength - 1);
             int count = bufferLength - offset;
-            
+
             VerifyRead(new byte[bufferLength], offset, count);
         }
 
@@ -197,7 +197,7 @@ namespace System.IO.Ports.Tests
                 Assert.Equal(null, readAsyncResult.AsyncState);
                 Assert.False(readAsyncResult.CompletedSynchronously, "Should not have completed sync (read)");
                 Assert.False(readAsyncResult.IsCompleted, "Should not have completed yet");
-                
+
                 com2.Write(new byte[numRndBytesToRead], 0, numRndBytesToRead);
 
                 // callbackHandler.ReadAsyncResult  guarantees that the callback has been calledhowever it does not gauarentee that 
@@ -218,10 +218,9 @@ namespace System.IO.Ports.Tests
                 Assert.Equal(null, readAsyncResult.AsyncState);
                 Assert.False(readAsyncResult.CompletedSynchronously, "Should not have completed sync (read)");
                 Assert.True(readAsyncResult.IsCompleted, "Should have completed (read)");
-
             }
         }
-        
+
         [ConditionalFact(nameof(HasNullModem))]
         public void Callback_EndReadonCallback()
         {
@@ -427,7 +426,7 @@ namespace System.IO.Ports.Tests
             // Compare the bytes that were written with the ones we read
             Assert.Equal(bytesToWrite, buffer.Take(bytesToWrite.Length).ToArray());
         }
-        
+
         private void VerifyBuffer(byte[] actualBuffer, byte[] expectedBuffer, int offset, int count)
         {
             // Verify all character before the offset

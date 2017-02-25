@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.IO.PortsTests;
+using System.Text;
 using Legacy.Support;
 using Xunit;
 
@@ -206,7 +207,7 @@ namespace System.IO.Ports.Tests
 
             VerifyCtor(portName, baudRate, parity, dataBits, stopBits);
         }
-    
+
         [Fact]
         public void Filename_9600_Space_8_1()
         {
@@ -216,8 +217,8 @@ namespace System.IO.Ports.Tests
             int dataBits = 8;
             int stopBits = (int)StopBits.One;
             string fileName = portName = "PortNameEqualToFileName.txt";
-            System.IO.FileStream testFile = System.IO.File.Open(fileName, System.IO.FileMode.Create);
-            System.Text.ASCIIEncoding asciiEncd = new System.Text.ASCIIEncoding();
+            FileStream testFile = File.Open(fileName, FileMode.Create);
+            ASCIIEncoding asciiEncd = new ASCIIEncoding();
             string testStr = "Hello World";
 
             testFile.Write(asciiEncd.GetBytes(testStr), 0, asciiEncd.GetByteCount(testStr));
@@ -232,7 +233,7 @@ namespace System.IO.Ports.Tests
             }
             finally
             {
-                System.IO.File.Delete(fileName);
+                File.Delete(fileName);
             }
         }
 
@@ -443,7 +444,7 @@ namespace System.IO.Ports.Tests
 
             VerifyCtor(portName, baudRate, parity, dataBits, stopBits, typeof(ArgumentOutOfRangeException), ThrowAt.Set);
         }
-    
+
         [Fact]
         public void COM4_57600_Mark_8_4()
         {
@@ -455,7 +456,7 @@ namespace System.IO.Ports.Tests
 
             VerifyCtor(portName, baudRate, parity, dataBits, stopBits, typeof(ArgumentOutOfRangeException), ThrowAt.Set);
         }
-    
+
         [Fact]
         public void COM255_115200_Space_8_Int32MaxValue()
         {
@@ -467,12 +468,12 @@ namespace System.IO.Ports.Tests
 
             VerifyCtor(portName, baudRate, parity, dataBits, stopBits, typeof(ArgumentOutOfRangeException), ThrowAt.Set);
         }
-    
+
         private void VerifyCtor(string portName, int baudRate, int parity, int dataBits, int stopBits)
         {
             VerifyCtor(portName, baudRate, parity, dataBits, stopBits, null, ThrowAt.Set);
         }
-    
+
         private void VerifyCtor(string portName, int baudRate, int parity, int dataBits, int stopBits, Type expectedException, ThrowAt throwAt)
         {
             SerialPortProperties serPortProp = new SerialPortProperties();

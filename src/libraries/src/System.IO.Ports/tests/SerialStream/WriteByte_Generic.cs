@@ -17,17 +17,17 @@ namespace System.IO.Ports.Tests
     {
         // Set bounds fore random timeout values.
         // If the min is to low write will not timeout accurately and the testcase will fail
-        private static int minRandomTimeout = 250;
+        private const int minRandomTimeout = 250;
 
         // If the max is to large then the testcase will take forever to run
-        private static int maxRandomTimeout = 2000;
+        private const int maxRandomTimeout = 2000;
 
         // If the percentage difference between the expected timeout and the actual timeout
         // found through Stopwatch is greater then 10% then the timeout value was not correctly
         // to the write method and the testcase fails.
-        private static double maxPercentageDifference = .15;
-        private static readonly int NUM_TRYS = 5;
-        private static readonly byte DEFAULT_BYTE = 0;
+        private const double maxPercentageDifference = .15;
+        private const int NUM_TRYS = 5;
+        private const byte DEFAULT_BYTE = 0;
 
         #region Test Cases
 
@@ -78,7 +78,7 @@ namespace System.IO.Ports.Tests
                 com1.Open();
                 com2.Open();
 
-                com2.BaseStream.WriteByte(19);
+                com2.BaseStream.WriteByte(XOnOff.XOFF);
                 Thread.Sleep(250);
                 com2.Close();
 
@@ -162,7 +162,6 @@ namespace System.IO.Ports.Tests
                     Thread.Sleep(100);
 
                 VerifyTimeout(com1);
-
             }
         }
 
@@ -186,8 +185,6 @@ namespace System.IO.Ports.Tests
                 // Wait for write method to timeout and complete the task
                 TCSupport.WaitForTaskCompletion(task);
             }
-
-
         }
 
         [OuterLoop("Slow Test")]
@@ -216,7 +213,7 @@ namespace System.IO.Ports.Tests
 
                 TCSupport.WaitForTaskToStart(t2);
 
-                TCSupport.WaitForWriteBufferToLoad(com, blockLength*2);
+                TCSupport.WaitForWriteBufferToLoad(com, blockLength * 2);
 
                 // Wait for both write methods to timeout
                 TCSupport.WaitForTaskCompletion(t1);
@@ -372,7 +369,7 @@ namespace System.IO.Ports.Tests
 
                 if (Handshake.XOnXOff == handshake || Handshake.RequestToSendXOnXOff == handshake)
                 {
-                    com2.BaseStream.WriteByte(19);
+                    com2.BaseStream.WriteByte(XOnOff.XOFF);
                     Thread.Sleep(250);
                 }
 
@@ -398,7 +395,7 @@ namespace System.IO.Ports.Tests
 
                 if (Handshake.XOnXOff == handshake || Handshake.RequestToSendXOnXOff == handshake)
                 {
-                    com2.BaseStream.WriteByte(17);
+                    com2.BaseStream.WriteByte(XOnOff.XON);
                 }
 
                 // Wait till write finishes

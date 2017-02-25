@@ -73,7 +73,7 @@ namespace System.IO.Ports.Tests
                 //since we are writing some bytes
                 com1.DataBits = 8;
                 com1.Parity = Parity.None;
-                com2.BaseStream.Write(new byte[] {40}, 0, 1);
+                com2.BaseStream.Write(new byte[] { 40 }, 0, 1);
                 Debug.WriteLine("RxEvent Triggered");
                 Thread.Sleep(TRIGERING_EVENTS_WAIT_TIME);
 
@@ -82,7 +82,7 @@ namespace System.IO.Ports.Tests
                 //com1 expects the stop bit at the 8th bit to be -12v
                 com1.DataBits = 7;
                 com1.Parity = Parity.None;
-                com2.BaseStream.Write(new byte[] {0x01}, 0, 1);
+                com2.BaseStream.Write(new byte[] { 0x01 }, 0, 1);
                 Debug.WriteLine("FrameError Triggered");
                 Thread.Sleep(TRIGERING_EVENTS_WAIT_TIME);
 
@@ -96,7 +96,7 @@ namespace System.IO.Ports.Tests
                 //since we are writing the EOF char		
                 com1.DataBits = 8;
                 com1.Parity = Parity.None;
-                com2.BaseStream.Write(new byte[] {26}, 0, 1);
+                com2.BaseStream.Write(new byte[] { 26 }, 0, 1);
                 Debug.WriteLine("RxEOF Triggered");
                 Thread.Sleep(TRIGERING_EVENTS_WAIT_TIME);
 
@@ -179,19 +179,19 @@ namespace System.IO.Ports.Tests
                         }
                     }
                 }
-            
+
                 if (!pinChangedEventHandler.WaitForEvent(MAX_TIME_WAIT, 3))
                 {
                     Fail("Err_2288ajied Expected 3 PinChangedEvents to be fired and only {0} occurred",
                         pinChangedEventHandler.NumEventsHandled);
                 }
-            
+
                 if (!receivedEventHandler.WaitForEvent(MAX_TIME_WAIT, 2))
                 {
                     Fail("Err_122808aoeid Expected 2 ReceivedEvents  to be fired and only {0} occurred",
                         receivedEventHandler.NumEventsHandled);
                 }
-            
+
                 if (!errorEventHandler.WaitForEvent(MAX_TIME_WAIT, 2))
                 {
                     Fail("Err_215887ajeid Expected 3 ErrorEvents to be fired and only {0} occurred",
@@ -206,11 +206,11 @@ namespace System.IO.Ports.Tests
                 //[] Verify all ReceivedEvent should have occurred
                 receivedEventHandler.Validate(SerialData.Chars, 0);
                 receivedEventHandler.Validate(SerialData.Eof, 0);
-            
+
                 //[] Verify all ErrorEvents should have occurred
                 errorEventHandler.Validate(SerialError.RXParity, 0);
                 errorEventHandler.Validate(SerialError.Frame, 0);
-            
+
                 // It's important that we close com1 BEFORE com2 (the using() block would do this the other way around normally)
                 // This is because we have our special blocking event handlers hooked onto com1, and closing com2 is likely to 
                 // cause a pin-change event which then hangs and prevents com1 from closing.
@@ -278,7 +278,7 @@ namespace System.IO.Ports.Tests
                 //since we are writing some bytes
                 com1.DataBits = 8;
                 com1.Parity = Parity.None;
-                com2.BaseStream.Write(new byte[] {40}, 0, 1);
+                com2.BaseStream.Write(new byte[] { 40 }, 0, 1);
                 Thread.Sleep(TRIGERING_EVENTS_WAIT_TIME);
 
                 if (!receivedEventHandler.WaitForEvent(MAX_TIME_WAIT, 1))
@@ -323,7 +323,7 @@ namespace System.IO.Ports.Tests
 
                 if (!errorEventHandler.WaitForEvent(MAX_TIME_WAIT, 1))
                 {
-                    Fail("Err_215887ajeid Expected 1 ErrorEvents to be fired and only {0} occurred",errorEventHandler.NumEventsHandled);
+                    Fail("Err_215887ajeid Expected 1 ErrorEvents to be fired and only {0} occurred", errorEventHandler.NumEventsHandled);
                 }
 
                 Task task = Task.Run(() => com1.Close());
@@ -350,7 +350,7 @@ namespace System.IO.Ports.Tests
         }
 
         private class ErrorEventHandler : TestEventHandler<SerialError>
-        { 
+        {
             public ErrorEventHandler(SerialPort com, bool shouldThrow, bool shouldWait) : base(com, shouldThrow, shouldWait)
             {
             }

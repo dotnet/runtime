@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.IO.PortsTests;
+using System.Threading;
 using System.Threading.Tasks;
 using Legacy.Support;
 using Xunit;
@@ -13,23 +14,20 @@ namespace System.IO.Ports.Tests
     public class ReadTimeout_Property : PortsTest
     {
         //The default number of chars to write with when testing timeout with Read(char[], int, int)
-        public static readonly int DEFAULT_READ_CHAR_ARRAY_SIZE = 8;
+        private const int DEFAULT_READ_CHAR_ARRAY_SIZE = 8;
 
         //The default number of bytes to write with when testing timeout with Read(byte[], int, int)
-        public static readonly int DEFAULT_READ_BYTE_ARRAY_SIZE = 8;
+        private const int DEFAULT_READ_BYTE_ARRAY_SIZE = 8;
 
         //The ammount of time to wait when expecting an infinite timeout
-        public static readonly int DEFAULT_WAIT_INFINITE_TIMEOUT = 250;
+        private const int DEFAULT_WAIT_INFINITE_TIMEOUT = 250;
 
         //The maximum acceptable time allowed when a read method should timeout immediately
-        public static readonly int MAX_ACCEPTABLE_ZERO_TIMEOUT = 100;
+        private const int MAX_ACCEPTABLE_ZERO_TIMEOUT = 100;
 
         //The maximum acceptable time allowed when a read method should timeout immediately when it is called for the first time
-        public static readonly int MAX_ACCEPTABLE_WARMUP_ZERO_TIMEOUT = 1000;
-        public static readonly int NUM_TRYS = 5;
-
-        //The default new lint to read from when testing timeout with ReadTo(str)
-        public static readonly string DEFAULT_READ_TO_STRING = "\r\n";
+        private const int MAX_ACCEPTABLE_WARMUP_ZERO_TIMEOUT = 1000;
+        private const int NUM_TRYS = 5;
 
         private enum ThrowAt { Set, Open };
 
@@ -242,7 +240,7 @@ namespace System.IO.Ports.Tests
 
                 Task task = Task.Run(() => readMethod(com1));
 
-                System.Threading.Thread.Sleep(DEFAULT_WAIT_INFINITE_TIMEOUT);
+                Thread.Sleep(DEFAULT_WAIT_INFINITE_TIMEOUT);
 
                 Assert.True(!task.IsCompleted);
 
@@ -280,7 +278,7 @@ namespace System.IO.Ports.Tests
         {
             SerialPortProperties serPortProp = new SerialPortProperties();
             Stopwatch sw = new Stopwatch();
-        
+
             int actualTime = 0;
 
             serPortProp.SetAllPropertiesToOpenDefaults();
@@ -291,7 +289,7 @@ namespace System.IO.Ports.Tests
 
             com.WriteTimeout = 1000;
 
-            System.Threading.Thread.CurrentThread.Priority = System.Threading.ThreadPriority.Highest;
+            Thread.CurrentThread.Priority = ThreadPriority.Highest;
 
             sw.Start();
             readMethod(com);
@@ -314,7 +312,7 @@ namespace System.IO.Ports.Tests
                 sw.Reset();
             }
 
-            System.Threading.Thread.CurrentThread.Priority = System.Threading.ThreadPriority.Normal;
+            Thread.CurrentThread.Priority = ThreadPriority.Normal;
             actualTime /= NUM_TRYS;
 
             if (MAX_ACCEPTABLE_ZERO_TIMEOUT < actualTime)
@@ -344,7 +342,7 @@ namespace System.IO.Ports.Tests
         private void VerifyExceptionAtOpen(SerialPort com, int readTimeout, ThrowAt throwAt, Type expectedException)
         {
             int origReadTimeout = com.ReadTimeout;
-        
+
             SerialPortProperties serPortProp = new SerialPortProperties();
 
             serPortProp.SetAllPropertiesToDefaults();

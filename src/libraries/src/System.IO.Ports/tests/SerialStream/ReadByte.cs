@@ -14,8 +14,8 @@ namespace System.IO.Ports.Tests
     public class SerialStream_ReadByte : PortsTest
     {
         // The number of random bytes to receive
-        private static int numRndByte = 8;
-        
+        private const int numRndByte = 8;
+
         #region Test Cases
 
         [ConditionalFact(nameof(HasNullModem))]

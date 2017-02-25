@@ -5,6 +5,7 @@
 
 using System.Diagnostics;
 using System.IO.PortsTests;
+using System.Text;
 using Legacy.Support;
 using Xunit;
 
@@ -119,7 +120,7 @@ namespace System.IO.Ports.Tests
 
             VerifyCtor(portName, baudRate, parity, dataBits);
         }
-    
+
         [Fact]
         public void Filename_9600_Space_8()
         {
@@ -128,8 +129,8 @@ namespace System.IO.Ports.Tests
             int parity = (int)Parity.Space;
             int dataBits = 8;
             string fileName = portName = "PortNameEqualToFileName.txt";
-            System.IO.FileStream testFile = System.IO.File.Open(fileName, System.IO.FileMode.Create);
-            System.Text.ASCIIEncoding asciiEncd = new System.Text.ASCIIEncoding();
+            FileStream testFile = File.Open(fileName, FileMode.Create);
+            ASCIIEncoding asciiEncd = new ASCIIEncoding();
             string testStr = "Hello World";
 
             testFile.Write(asciiEncd.GetBytes(testStr), 0, asciiEncd.GetByteCount(testStr));
@@ -144,7 +145,7 @@ namespace System.IO.Ports.Tests
             }
             finally
             {
-                System.IO.File.Delete(fileName);
+                File.Delete(fileName);
             }
         }
 

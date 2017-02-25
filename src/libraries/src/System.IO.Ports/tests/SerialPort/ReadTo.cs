@@ -14,17 +14,17 @@ namespace System.IO.Ports.Tests
     public class ReadTo : PortsTest
     {
         //The number of random bytes to receive for read method testing
-        public static readonly int DEFAULT_NUM_CHARS_TO_READ = 8;
+        private const int DEFAULT_NUM_CHARS_TO_READ = 8;
 
         //The number of new lines to insert into the string not including the one at the end
-        public static readonly int DEFAULT_NUMBER_NEW_LINES = 2;
+        private const int DEFAULT_NUMBER_NEW_LINES = 2;
 
         //The number of random bytes to receive for large input buffer testing
-        public static readonly int LARGE_NUM_CHARS_TO_READ = 2048;
-        public static readonly int MIN_NUM_NEWLINE_CHARS = 1;
-        public static readonly int MAX_NUM_NEWLINE_CHARS = 5;
+        private const int LARGE_NUM_CHARS_TO_READ = 2048;
+        private const int MIN_NUM_NEWLINE_CHARS = 1;
+        private const int MAX_NUM_NEWLINE_CHARS = 5;
 
-        public enum ReadDataFromEnum { NonBuffered, Buffered, BufferedAndNonBuffered };
+        private enum ReadDataFromEnum { NonBuffered, Buffered, BufferedAndNonBuffered };
 
         #region Test Cases
 
@@ -160,7 +160,7 @@ namespace System.IO.Ports.Tests
             {
                 Random rndGen = new Random(-55);
                 StringBuilder strBldrToWrite = new StringBuilder();
-        
+
                 //Genrate random characters
                 for (int i = 0; i < numBytesToRead; i++)
                 {
@@ -256,7 +256,7 @@ namespace System.IO.Ports.Tests
                 char[] charXmitBuffer = TCSupport.GetRandomChars(128, TCSupport.CharacterOptions.Surrogates);
                 byte[] byteXmitBuffer = new byte[1024];
                 char utf32Char = TCSupport.GenerateRandomCharNonSurrogate();
-                byte[] utf32CharBytes = Encoding.UTF32.GetBytes(new [] {utf32Char});
+                byte[] utf32CharBytes = Encoding.UTF32.GetBytes(new[] { utf32Char });
                 int numBytes;
 
                 Debug.WriteLine("Verifying that ReadTo() will read everything from internal buffer and drivers buffer");
@@ -272,8 +272,7 @@ namespace System.IO.Ports.Tests
 
                 com2.Write(byteXmitBuffer, 0, byteXmitBuffer.Length);
 
-                while (com1.BytesToRead < byteXmitBuffer.Length)
-                    System.Threading.Thread.Sleep(50);
+                TCSupport.WaitForReadBufferToLoad(com1, byteXmitBuffer.Length);
 
                 //Read Every Byte except the last one. The last bye should be left in the last position of SerialPort's
                 //internal buffer. When we try to read this char as UTF32 the buffer should have to be resized so 
@@ -298,10 +297,7 @@ namespace System.IO.Ports.Tests
 
                 Encoding.UTF32.GetChars(byteBuffer, 0, byteBuffer.Length, expectedChars, 1);
 
-                while (com1.BytesToRead < 4 + numBytes)
-                {
-                    System.Threading.Thread.Sleep(50);
-                }
+                TCSupport.WaitForReadBufferToLoad(com1, 4 + numBytes);
 
                 string rcvString = com1.ReadTo(com2.NewLine);
                 Assert.NotNull(rcvString);
@@ -365,8 +361,8 @@ namespace System.IO.Ports.Tests
                 char[] charXmitBuffer = TCSupport.GetRandomChars(512, TCSupport.CharacterOptions.None);
                 string endString = "END";
                 ASyncRead asyncRead = new ASyncRead(com1, endString);
-                System.Threading.Thread asyncReadThread =
-                    new System.Threading.Thread(asyncRead.Read);
+                Thread asyncReadThread =
+                    new Thread(asyncRead.Read);
 
                 char endChar = endString[0];
                 char notEndChar = TCSupport.GetRandomOtherChar(endChar, TCSupport.CharacterOptions.None);
@@ -377,7 +373,7 @@ namespace System.IO.Ports.Tests
                 //Ensure the new line is not in charXmitBuffer
                 for (int i = 0; i < charXmitBuffer.Length; ++i)
                 {
-//Se any appearances of a character in the new line string to some other char
+                    //Se any appearances of a character in the new line string to some other char
                     if (endChar == charXmitBuffer[i])
                     {
                         charXmitBuffer[i] = notEndChar;
@@ -396,7 +392,7 @@ namespace System.IO.Ports.Tests
                 asyncReadThread.Start();
                 asyncRead.ReadStartedEvent.WaitOne();
                 //This only tells us that the thread has started to execute code in the method
-                System.Threading.Thread.Sleep(2000); //We need to wait to guarentee that we are executing code in SerialPort
+                Thread.Sleep(2000); //We need to wait to guarentee that we are executing code in SerialPort
                 com2.Write(charXmitBuffer, 0, charXmitBuffer.Length);
                 com2.Write(endString);
 
@@ -493,7 +489,7 @@ namespace System.IO.Ports.Tests
 
                 bool continueRunning = true;
                 int numberOfIterations = 0;
-                System.Threading.Thread writeToCom2Thread = new System.Threading.Thread(delegate()
+                Thread writeToCom2Thread = new Thread(delegate ()
                 {
                     while (continueRunning)
                     {
@@ -508,7 +504,7 @@ namespace System.IO.Ports.Tests
                 //Ensure the new line is not in charXmitBuffer
                 for (int i = 0; i < charXmitBuffer.Length; ++i)
                 {
-//Se any appearances of a character in the new line string to some other char
+                    //Se any appearances of a character in the new line string to some other char
                     if (endChar == charXmitBuffer[i])
                     {
                         charXmitBuffer[i] = notEndChar;
@@ -564,7 +560,6 @@ namespace System.IO.Ports.Tests
             using (SerialPort com1 = TCSupport.InitFirstSerialPort())
             using (SerialPort com2 = TCSupport.InitSecondSerialPort(com1))
             {
-
                 Debug.WriteLine(
                     "Verifying read method with surrogate pair in the input and a surrogate pair for the newline");
                 com1.Open();
@@ -638,7 +633,7 @@ namespace System.IO.Ports.Tests
                 com1.ReadTimeout = 500;
                 com1.Encoding = encoding;
 
-                TCSupport.SetHighSpeed(com1,com2);
+                TCSupport.SetHighSpeed(com1, com2);
 
                 com1.Open();
 
@@ -691,7 +686,7 @@ namespace System.IO.Ports.Tests
             com2.Write(bytesToWrite, 0, 1); // Write one byte at the beginning because we are going to read this to buffer the rest of the data    
             com2.Write(bytesToWrite, 0, bytesToWrite.Length);
 
-            while (com1.BytesToRead < bytesToWrite.Length+1)
+            while (com1.BytesToRead < bytesToWrite.Length + 1)
             {
                 Thread.Sleep(50);
             }
@@ -712,7 +707,7 @@ namespace System.IO.Ports.Tests
 
             com2.Write(bytesToWrite, 0, bytesToWrite.Length);
             com1.ReadTimeout = 500;
-            System.Threading.Thread.Sleep((int)((((bytesToWrite.Length + 1) * 10.0) / com1.BaudRate) * 1000) + 250);
+            Thread.Sleep((int)((((bytesToWrite.Length + 1) * 10.0) / com1.BaudRate) * 1000) + 250);
 
             PerformReadOnCom1FromCom2(com1, com2, expectedString, newLine);
         }
@@ -821,16 +816,16 @@ namespace System.IO.Ports.Tests
                 Fail("Err_7797ajpba!!!: Expected to read \"{0}\"  actual read  \"{1}\"", expectedString, strBldrRead.ToString());
             }
 
-/*
-        if (!retValue)
-        {
-            Debug.WriteLine("\nstrToWrite = ");
-            TCSupport.PrintChars(strToWrite.ToCharArray());
+            /*
+                    if (!retValue)
+                    {
+                        Debug.WriteLine("\nstrToWrite = ");
+                        TCSupport.PrintChars(strToWrite.ToCharArray());
 
-            Debug.WriteLine("\nnewLine = ");
-            TCSupport.PrintChars(newLine.ToCharArray());
-        }
-*/
+                        Debug.WriteLine("\nnewLine = ");
+                        TCSupport.PrintChars(newLine.ToCharArray());
+                    }
+            */
         }
 
 
@@ -911,12 +906,12 @@ namespace System.IO.Ports.Tests
 
         private class ASyncRead
         {
-            private SerialPort _com;
-            private string _value;
+            private readonly SerialPort _com;
+            private readonly string _value;
             private string _result;
 
-            private System.Threading.AutoResetEvent _readCompletedEvent;
-            private System.Threading.AutoResetEvent _readStartedEvent;
+            private readonly AutoResetEvent _readCompletedEvent;
+            private readonly AutoResetEvent _readStartedEvent;
 
             private Exception _exception;
 
@@ -927,8 +922,8 @@ namespace System.IO.Ports.Tests
 
                 _result = null;
 
-                _readCompletedEvent = new System.Threading.AutoResetEvent(false);
-                _readStartedEvent = new System.Threading.AutoResetEvent(false);
+                _readCompletedEvent = new AutoResetEvent(false);
+                _readStartedEvent = new AutoResetEvent(false);
 
                 _exception = null;
             }
@@ -950,9 +945,9 @@ namespace System.IO.Ports.Tests
                 }
             }
 
-            public System.Threading.AutoResetEvent ReadStartedEvent => _readStartedEvent;
+            public AutoResetEvent ReadStartedEvent => _readStartedEvent;
 
-            public System.Threading.AutoResetEvent ReadCompletedEvent => _readCompletedEvent;
+            public AutoResetEvent ReadCompletedEvent => _readCompletedEvent;
 
             public string Result => _result;
 

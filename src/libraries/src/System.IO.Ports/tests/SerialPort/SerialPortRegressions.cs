@@ -17,7 +17,7 @@ namespace System.IO.Ports.Tests
             VerifyReadExisting(new UTF8Encoding());
         }
 
-        void VerifyReadExisting(Encoding encoding)
+        private void VerifyReadExisting(Encoding encoding)
         {
             // TODO - this test text did not come across from legacy properly.
             string text = "????????????4??????????????????,?11????????????????????????????????????????????????,????????????,??????????";
@@ -32,7 +32,7 @@ namespace System.IO.Ports.Tests
                 com1.Encoding = encoding;
                 com2.Encoding = encoding;
 
-                TCSupport.SetHighSpeed(com1,com2);
+                TCSupport.SetHighSpeed(com1, com2);
 
                 com1.Open();
 
@@ -40,7 +40,8 @@ namespace System.IO.Ports.Tests
                     //This is necessary since com1 and com2 might be the same port if we are using a loopback
                     com2.Open();
 
-                com2.DataReceived += (sender, args) => {
+                com2.DataReceived += (sender, args) =>
+                {
                     receivedstr += com2.ReadExisting();
                 };
 

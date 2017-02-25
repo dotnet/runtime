@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.IO.PortsTests;
+using System.Threading;
 using Legacy.Support;
 using Xunit;
 
@@ -12,8 +13,8 @@ namespace System.IO.Ports.Tests
     public class PinChangedEvent : PortsTest
     {
         // Maximum time to wait for all of the expected events to be fired
-        private static readonly int MAX_TIME_WAIT = 1000;
-        private static readonly int NUM_TRYS = 5;
+        private const int MAX_TIME_WAIT = 1000;
+        private const int NUM_TRYS = 5;
 
         #region Test Cases
 
@@ -62,7 +63,7 @@ namespace System.IO.Ports.Tests
 
                 // Some null-modem cables have a connection between CD and CSR/CTR, so we need to discard CDChanged events
                 eventHandler.EventFilter = eventType => eventType != SerialPinChange.CDChanged;
-            
+
                 Debug.WriteLine("Verifying DsrChanged event");
                 com1.PinChanged += eventHandler.HandleEvent;
                 com1.Open();
@@ -122,7 +123,7 @@ namespace System.IO.Ports.Tests
                 }
             }
         }
-   
+
         [ConditionalFact(nameof(HasNullModem))]
         public void PinChangedEvent_Multiple()
         {
@@ -144,9 +145,9 @@ namespace System.IO.Ports.Tests
                 com2.Open();
 
                 com2.BreakState = true;
-                System.Threading.Thread.Sleep(100);
+                Thread.Sleep(100);
                 com2.DtrEnable = true;
-                System.Threading.Thread.Sleep(100);
+                Thread.Sleep(100);
                 com2.RtsEnable = true;
 
                 eventHandler.WaitForEvent(MAX_TIME_WAIT, 3);

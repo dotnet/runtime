@@ -2,11 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO.Ports;
 using System.IO.PortsTests;
+using System.Text;
 using Legacy.Support;
 using Xunit;
 
@@ -18,7 +17,7 @@ namespace System.IO.Ports.Tests
         private const int TRANSMIT_BUFFER_SIZE = 4096;
         private const int MAX_BUFFER_SIZE = 4096;
 
-        private static readonly TimeSpan TestDuration = TCSupport.RunShortStressTests ? TimeSpan.FromSeconds(10) : TimeSpan.FromMinutes(20);
+        private static readonly TimeSpan s_testDuration = TCSupport.RunShortStressTests ? TimeSpan.FromSeconds(10) : TimeSpan.FromMinutes(20);
 
         [ConditionalFact(nameof(HasNullModem))]
         public void WriteChars()
@@ -32,8 +31,8 @@ namespace System.IO.Ports.Tests
                 Stopwatch sw = new Stopwatch();
                 Buffer<char> buffer = new Buffer<char>(MAX_BUFFER_SIZE);
 
-                com1.Encoding = System.Text.Encoding.Unicode;
-                com2.Encoding = System.Text.Encoding.Unicode;
+                com1.Encoding = Encoding.Unicode;
+                com2.Encoding = Encoding.Unicode;
 
                 com1.BaudRate = 115200;
                 com2.BaudRate = 115200;
@@ -44,7 +43,7 @@ namespace System.IO.Ports.Tests
                     com2.Open();
 
                 sw.Start();
-                while (sw.ElapsedMilliseconds < TestDuration.TotalMilliseconds)
+                while (sw.ElapsedMilliseconds < s_testDuration.TotalMilliseconds)
                 {
                     switch (random.Next(0, 2))
                     {
@@ -60,7 +59,7 @@ namespace System.IO.Ports.Tests
                                 com1.Write(xmitCharBuffer, 0, numberOfCharacters);
                                 buffer.Append(xmitCharBuffer, 0, numberOfCharacters);
 
-                                TCSupport.WaitForPredicate(delegate() { return com2.BytesToRead == expectedBytesToRead; },
+                                TCSupport.WaitForPredicate(delegate () { return com2.BytesToRead == expectedBytesToRead; },
                                     60000,
                                     "Err_29829haie Expected to received {0} bytes actual={1}", expectedBytesToRead,
                                     com2.BytesToRead);
@@ -103,8 +102,8 @@ namespace System.IO.Ports.Tests
 
     public class Buffer<T>
     {
-        private Queue<T> _queue;
-        private EqualityComparer<T> _comparer;
+        private readonly Queue<T> _queue;
+        private readonly EqualityComparer<T> _comparer;
 
         public Buffer()
         {

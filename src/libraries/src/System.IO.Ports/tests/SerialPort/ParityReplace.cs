@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
 using System.Diagnostics;
 using System.IO.PortsTests;
+using System.Text;
 using Legacy.Support;
 using Xunit;
 
@@ -12,13 +14,13 @@ namespace System.IO.Ports.Tests
     public class ParityReplace_Property : PortsTest
     {
         //The default number of chars to write with when testing timeout with Read(char[], int, int)
-        public static readonly int DEFAULT_READ_CHAR_ARRAY_SIZE = 8;
+        private const int DEFAULT_READ_CHAR_ARRAY_SIZE = 8;
 
         //The default number of bytes to write with when testing timeout with Read(byte[], int, int)
-        public static readonly int DEFAULT_READ_BYTE_ARRAY_SIZE = 8;
-        private static readonly int s_numRndBytesPairty = 8;
+        private const int DEFAULT_READ_BYTE_ARRAY_SIZE = 8;
+        private const int s_numRndBytesPairty = 8;
 
-        public delegate char[] ReadMethodDelegate(SerialPort com);
+        private delegate char[] ReadMethodDelegate(SerialPort com);
 
         #region Test Cases
         [Fact]
@@ -101,7 +103,7 @@ namespace System.IO.Ports.Tests
             using (SerialPort com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))
             {
                 SerialPortProperties serPortProp = new SerialPortProperties();
-            
+
                 Debug.WriteLine("Verifying setting ParityReplace after Parity has been set");
 
                 serPortProp.SetAllPropertiesToOpenDefaults();
@@ -128,7 +130,7 @@ namespace System.IO.Ports.Tests
             using (SerialPort com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))
             {
                 SerialPortProperties serPortProp = new SerialPortProperties();
-            
+
                 Debug.WriteLine("Verifying setting ParityReplace after ParityReplace has aready been set");
 
                 serPortProp.SetAllPropertiesToOpenDefaults();
@@ -264,14 +266,11 @@ namespace System.IO.Ports.Tests
                 com2.Write(com1.NewLine);
                 while (bytesToWrite.Length + com1.NewLine.Length > com1.BytesToRead)
                 {
-                
                 }
             }
             else
             {
-                while (bytesToWrite.Length > com1.BytesToRead)
-                {
-                }
+                TCSupport.WaitForReadBufferToLoad(com1, bytesToWrite.Length);
             }
 
             char[] actualChars = readMethod(com1);
@@ -298,7 +297,7 @@ namespace System.IO.Ports.Tests
 
         private char[] Read_byte_int_int(SerialPort com)
         {
-            System.Collections.ArrayList receivedBytes = new System.Collections.ArrayList();
+            ArrayList receivedBytes = new ArrayList();
             byte[] buffer = new byte[DEFAULT_READ_BYTE_ARRAY_SIZE];
             int totalBytesRead = 0;
 
@@ -327,7 +326,7 @@ namespace System.IO.Ports.Tests
 
         private char[] Read_char_int_int(SerialPort com)
         {
-            System.Collections.ArrayList receivedChars = new System.Collections.ArrayList();
+            ArrayList receivedChars = new ArrayList();
             char[] buffer = new char[DEFAULT_READ_CHAR_ARRAY_SIZE];
             int totalCharsRead = 0;
             int numChars;
@@ -356,7 +355,7 @@ namespace System.IO.Ports.Tests
 
         private char[] ReadByte(SerialPort com)
         {
-            System.Collections.ArrayList receivedBytes = new System.Collections.ArrayList();
+            ArrayList receivedBytes = new ArrayList();
             int rcvByte;
 
             while (true)
@@ -379,7 +378,7 @@ namespace System.IO.Ports.Tests
 
         private char[] ReadChar(SerialPort com)
         {
-            System.Collections.ArrayList receivedChars = new System.Collections.ArrayList();
+            ArrayList receivedChars = new ArrayList();
             int rcvChar;
 
             while (true)
@@ -402,7 +401,7 @@ namespace System.IO.Ports.Tests
 
         private char[] ReadLine(SerialPort com)
         {
-            System.Text.StringBuilder rcvStringBuilder = new System.Text.StringBuilder();
+            StringBuilder rcvStringBuilder = new StringBuilder();
             string rcvString;
 
             while (true)
@@ -425,7 +424,7 @@ namespace System.IO.Ports.Tests
 
         private char[] ReadTo(SerialPort com)
         {
-            System.Text.StringBuilder rcvStringBuilder = new System.Text.StringBuilder();
+            StringBuilder rcvStringBuilder = new StringBuilder();
             string rcvString;
 
             while (true)

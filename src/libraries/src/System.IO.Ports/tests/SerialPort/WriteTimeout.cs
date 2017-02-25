@@ -14,25 +14,25 @@ namespace System.IO.Ports.Tests
     public class WriteTimeout_Property : PortsTest
     {
         //The default number of chars to write with when testing timeout with Write(char[], int, int)
-        public static readonly int DEFAULT_WRITE_CHAR_ARRAY_SIZE = TCSupport.MinimumBlockingByteCount;
+        private static readonly int s_DEFAULT_WRITE_CHAR_ARRAY_SIZE = TCSupport.MinimumBlockingByteCount;
 
         //The default number of bytes to write with when testing timeout with Write(byte[], int, int)
-        public static readonly int DEFAULT_WRITE_BYTE_ARRAY_SIZE = TCSupport.MinimumBlockingByteCount;
+        private static readonly int s_DEFAULT_WRITE_BYTE_ARRAY_SIZE = TCSupport.MinimumBlockingByteCount;
 
         //The ammount of time to wait when expecting an infinite timeout
-        public static readonly int DEFAULT_WAIT_INFINITE_TIMEOUT = 250;
+        private const int DEFAULT_WAIT_INFINITE_TIMEOUT = 250;
 
         //The maximum acceptable time allowed when a write method should timeout immediately
-        public static readonly int MAX_ACCEPTABLE_ZERO_TIMEOUT = 100;
+        private const int MAX_ACCEPTABLE_ZERO_TIMEOUT = 100;
 
         //The maximum acceptable time allowed when a write method should timeout immediately when it is called for the first time
-        public static readonly int MAX_ACCEPTABLE_WARMUP_ZERO_TIMEOUT = 5000;
+        private const int MAX_ACCEPTABLE_WARMUP_ZERO_TIMEOUT = 5000;
 
         //The default string to write with when testing timeout with Write(str)
-        public static readonly string DEFAULT_STRING_TO_WRITE = new string('H', TCSupport.MinimumBlockingByteCount);
-        public static readonly int NUM_TRYS = 5;
+        private static readonly string s_DEFAULT_STRING_TO_WRITE = new string('H', TCSupport.MinimumBlockingByteCount);
+        private const int NUM_TRYS = 5;
 
-        public delegate void WriteMethodDelegate(SerialPort com);
+        private delegate void WriteMethodDelegate(SerialPort com);
 
         private enum ThrowAt { Set, Open };
 
@@ -174,7 +174,7 @@ namespace System.IO.Ports.Tests
             using (SerialPort com1 = TCSupport.InitFirstSerialPort())
             {
                 SerialPortProperties serPortProp = new SerialPortProperties();
-        
+
                 serPortProp.SetAllPropertiesToOpenDefaults();
                 serPortProp.SetProperty("PortName", TCSupport.LocalMachineSerialInfo.FirstAvailablePortName);
 
@@ -233,7 +233,7 @@ namespace System.IO.Ports.Tests
         {
             SerialPortProperties serPortProp = new SerialPortProperties();
             Stopwatch sw = new Stopwatch();
-        
+
             int actualTime = 0;
 
             serPortProp.SetAllPropertiesToOpenDefaults();
@@ -246,7 +246,7 @@ namespace System.IO.Ports.Tests
             serPortProp.SetProperty("ReadTimeout", 1000);
             com.ReadTimeout = 1000;
 
-            System.Threading.Thread.CurrentThread.Priority = System.Threading.ThreadPriority.Highest;
+            Thread.CurrentThread.Priority = ThreadPriority.Highest;
             sw.Start();
             writeMethod(com);
             sw.Stop();
@@ -267,7 +267,7 @@ namespace System.IO.Ports.Tests
                 sw.Reset();
             }
 
-            System.Threading.Thread.CurrentThread.Priority = System.Threading.ThreadPriority.Normal;
+            Thread.CurrentThread.Priority = ThreadPriority.Normal;
             actualTime /= NUM_TRYS;
 
             if (MAX_ACCEPTABLE_ZERO_TIMEOUT < actualTime)
@@ -295,7 +295,7 @@ namespace System.IO.Ports.Tests
         private void VerifyExceptionAtOpen(SerialPort com, int writeTimeout, ThrowAt throwAt, Type expectedException)
         {
             int origWriteTimeout = com.WriteTimeout;
-        
+
             SerialPortProperties serPortProp = new SerialPortProperties();
 
             serPortProp.SetAllPropertiesToDefaults();
@@ -369,7 +369,7 @@ namespace System.IO.Ports.Tests
         {
             try
             {
-                com.Write(new byte[DEFAULT_WRITE_BYTE_ARRAY_SIZE], 0, DEFAULT_WRITE_BYTE_ARRAY_SIZE);
+                com.Write(new byte[s_DEFAULT_WRITE_BYTE_ARRAY_SIZE], 0, s_DEFAULT_WRITE_BYTE_ARRAY_SIZE);
             }
             catch (TimeoutException)
             {
@@ -381,7 +381,7 @@ namespace System.IO.Ports.Tests
         {
             try
             {
-                com.Write(new char[DEFAULT_WRITE_CHAR_ARRAY_SIZE], 0, DEFAULT_WRITE_CHAR_ARRAY_SIZE);
+                com.Write(new char[s_DEFAULT_WRITE_CHAR_ARRAY_SIZE], 0, s_DEFAULT_WRITE_CHAR_ARRAY_SIZE);
             }
             catch (TimeoutException)
             {
@@ -393,7 +393,7 @@ namespace System.IO.Ports.Tests
         {
             try
             {
-                com.Write(DEFAULT_STRING_TO_WRITE);
+                com.Write(s_DEFAULT_STRING_TO_WRITE);
             }
             catch (TimeoutException)
             {
@@ -405,7 +405,7 @@ namespace System.IO.Ports.Tests
         {
             try
             {
-                com.WriteLine(DEFAULT_STRING_TO_WRITE);
+                com.WriteLine(s_DEFAULT_STRING_TO_WRITE);
             }
             catch (TimeoutException)
             {
