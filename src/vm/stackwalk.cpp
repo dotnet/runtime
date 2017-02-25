@@ -1727,10 +1727,12 @@ ProcessFuncletsForGCReporting:
                         // was a caller of an already executed exception handler based on the previous exception trackers.
                         // The handler funclet frames are already gone from the stack, so the exception trackers are the
                         // only source of evidence about it.
-                        // The filter funclet is different though, its frame is always present on the stack when its parent
-                        // frame is reached by the stack walker, because no exception can escape a filter funclet.
                         // This is different from Windows where the full stack is preserved until an exception is fully handled
                         // and so we can detect it just from walking the stack.
+                        // The filter funclet frames are different, they behave the same way on Windows and Unix. They can be present
+                        // on the stack when we reach their parent frame if the filter hasn't finished running yet or they can be
+                        // gone if the filter completed running, either succesfully or with unhandled exception.
+                        // So the special handling below ignores trackers belonging to filter clauses.
                         bool fProcessingFilterFunclet = !m_sfFuncletParent.IsNull() && !(m_fProcessNonFilterFunclet || m_fProcessIntermediaryNonFilterFunclet);
                         if (!fRecheckCurrentFrame && !fSkippingFunclet && (pTracker != NULL) && !fProcessingFilterFunclet)
                         {
@@ -1739,23 +1741,28 @@ ProcessFuncletsForGCReporting:
                             // frame matching the current frame, it means that the funclet stack frame was reclaimed.
                             StackFrame sfFuncletParent;
                             ExceptionTracker* pCurrTracker = pTracker;
-                            bool hasFuncletStarted = m_crawl.pThread->GetExceptionState()->GetCurrentEHClauseInfo()->IsManagedCodeEntered();
+
+                            bool hasFuncletStarted = pTracker->GetEHClauseInfo()->IsManagedCodeEntered();
 
                             while (pCurrTracker != NULL)
                             {
-                                if (hasFuncletStarted)
+                                // Ignore exception trackers for filter clauses, since their frames are handled the same way as on Windows
+                                if (pCurrTracker->GetEHClauseInfo()->GetClauseType() != COR_PRF_CLAUSE_FILTER)
                                 {
-                                    sfFuncletParent = pCurrTracker->GetCallerOfEnclosingClause();
+                                    if (hasFuncletStarted)
+                                    {
+                                        sfFuncletParent = pCurrTracker->GetCallerOfEnclosingClause();
+                                        if (!sfFuncletParent.IsNull() && ExceptionTracker::IsUnwoundToTargetParentFrame(&m_crawl, sfFuncletParent))
+                                        {
+                                            break;
+                                        }
+                                    }
+
+                                    sfFuncletParent = pCurrTracker->GetCallerOfCollapsedEnclosingClause();
                                     if (!sfFuncletParent.IsNull() && ExceptionTracker::IsUnwoundToTargetParentFrame(&m_crawl, sfFuncletParent))
                                     {
                                         break;
                                     }
-                                }
-
-                                sfFuncletParent = pCurrTracker->GetCallerOfCollapsedEnclosingClause();
-                                if (!sfFuncletParent.IsNull() && ExceptionTracker::IsUnwoundToTargetParentFrame(&m_crawl, sfFuncletParent))
-                                {
-                                    break;
                                 }
 
                                 // Funclets handling exception for trackers older than the current one were always started,
