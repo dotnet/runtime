@@ -291,7 +291,7 @@ namespace System.Net.Sockets
             protected override bool DoTryComplete(SocketAsyncContext context)
             {
                 bool result = SocketPal.TryCompleteConnect(context._socket, SocketAddressLen, out ErrorCode);
-                context.RegisterConnectResult(ErrorCode);
+                context._socket.RegisterConnectResult(ErrorCode);
                 return result;
             }
 
@@ -550,14 +550,6 @@ namespace System.Net.Sockets
             }
         }
 
-        public void RegisterConnectResult(SocketError error)
-        {
-            if (error != SocketError.Success && error != SocketError.WouldBlock)
-            {
-                _socket.LastConnectFailed = true;
-            }
-        }
-
         private bool TryBeginOperation<TOperation>(ref OperationQueue<TOperation> queue, TOperation operation, Interop.Sys.SocketEvents events, bool maintainOrder, out bool isStopped)
             where TOperation : AsyncOperation
         {
@@ -707,7 +699,7 @@ namespace System.Net.Sockets
             SocketError errorCode;
             if (SocketPal.TryStartConnect(_socket, socketAddress, socketAddressLen, out errorCode))
             {
-                RegisterConnectResult(errorCode);
+                _socket.RegisterConnectResult(errorCode);
                 return errorCode;
             }
 
@@ -756,7 +748,7 @@ namespace System.Net.Sockets
             SocketError errorCode;
             if (SocketPal.TryStartConnect(_socket, socketAddress, socketAddressLen, out errorCode))
             {
-                RegisterConnectResult(errorCode);
+                _socket.RegisterConnectResult(errorCode);
 
                 return errorCode;
             }

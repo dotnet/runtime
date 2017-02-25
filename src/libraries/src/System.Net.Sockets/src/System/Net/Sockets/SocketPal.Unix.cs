@@ -751,7 +751,7 @@ namespace System.Net.Sockets
             bool completed = TryStartConnect(handle, socketAddress, socketAddressLen, out errorCode);
             if (completed)
             {
-                handle.AsyncContext.RegisterConnectResult(errorCode);
+                handle.RegisterConnectResult(errorCode);
                 return errorCode;
             }
             else

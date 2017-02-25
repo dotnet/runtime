@@ -161,42 +161,25 @@ namespace System.Net.Sockets
             //       bad form.
             IPAddress[] addresses = Dns.GetHostAddresses(hostname);
             ExceptionDispatchInfo lastex = null;
-            Socket ipv6Socket = null, ipv4Socket = null;
 
             try
             {
-                if (_clientSocket == null)
-                {
-                    if (Socket.OSSupportsIPv4)
-                    {
-                        ipv4Socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                    }
-                    if (Socket.OSSupportsIPv6)
-                    {
-                        ipv6Socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
-                    }
-                }
-
                 foreach (IPAddress address in addresses)
                 {
+                    Socket tmpSocket = null;
                     try
                     {
                         if (_clientSocket == null)
                         {
-                            // We came via the <hostname,port> constructor. Set the
-                            // address family appropriately, create the socket and
-                            // try to connect.
-                            if (address.AddressFamily == AddressFamily.InterNetwork && ipv4Socket != null)
+                            // We came via the <hostname,port> constructor. Set the address family appropriately,
+                            // create the socket and try to connect.
+                            Debug.Assert(address.AddressFamily == AddressFamily.InterNetwork || address.AddressFamily == AddressFamily.InterNetworkV6);
+                            if ((address.AddressFamily == AddressFamily.InterNetwork && Socket.OSSupportsIPv4) || Socket.OSSupportsIPv6)
                             {
-                                ipv4Socket.Connect(address, port);
-                                _clientSocket = ipv4Socket;
-                                ipv6Socket?.Close();
-                            }
-                            else if (ipv6Socket != null)
-                            {
-                                ipv6Socket.Connect(address, port);
-                                _clientSocket = ipv6Socket;
-                                ipv4Socket?.Close();
+                                tmpSocket = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                                tmpSocket.Connect(address, port);
+                                _clientSocket = tmpSocket;
+                                tmpSocket = null;
                             }
 
                             _family = address.AddressFamily;
@@ -213,25 +196,19 @@ namespace System.Net.Sockets
                     }
                     catch (Exception ex) when (!(ex is OutOfMemoryException))
                     {
+                        if (tmpSocket != null)
+                        {
+                            tmpSocket.Dispose();
+                            tmpSocket = null;
+                        }
                         lastex = ExceptionDispatchInfo.Capture(ex);
                     }
                 }
             }
-            catch (Exception ex) when (!(ex is OutOfMemoryException))
-            {
-                lastex = ExceptionDispatchInfo.Capture(ex);
-            }
             finally
             {
-                //cleanup temp sockets if failed
-                //main socket gets closed when tcpclient gets closed
-
-                //did we connect?
                 if (!_active)
                 {
-                    ipv6Socket?.Close();
-                    ipv4Socket?.Close();
-
                     // The connect failed - rethrow the last error we had
                     lastex?.Throw();
                     throw new SocketException((int)SocketError.NotConnected);

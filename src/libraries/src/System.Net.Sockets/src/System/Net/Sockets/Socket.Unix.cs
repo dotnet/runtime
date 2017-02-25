@@ -20,7 +20,7 @@ namespace System.Net.Sockets
             // replicating the socket's file descriptor appropriately.  Similarly, if it's
             // only targeting a single address, but it already experienced a failure in a
             // previous connect call, then this is logically part of a multi endpoint connect,
-            // and the same logic applies.  Either wya, in such a situation we throw.
+            // and the same logic applies.  Either way, in such a situation we throw.
             if (_handle.ExposedHandleOrUntrackedConfiguration && (isMultiEndpoint || _handle.LastConnectFailed))
             {
                 ThrowMultiConnectNotSupported();
@@ -39,8 +39,11 @@ namespace System.Net.Sockets
                 return;
             }
 
-            // Copy out values from key options. The copied values should
-            // be kept in sync with the list in SafeCloseSocket.TrackOption.
+            // Copy out values from key options. The copied values should be kept in sync with the
+            // handling in SafeCloseSocket.TrackOption.  Note that we copy these values out first, before
+            // we change _handle, so that we can use the helpers on Socket which internally access _handle.
+            // Then once _handle is switched to the new one, we can call the setters to propagate the retrieved
+            // values back out to the new underlying socket.
             bool broadcast = false, dontFragment = false, noDelay = false;
             int receiveSize = -1, receiveTimeout = -1, sendSize = -1, sendTimeout = -1;
             short ttl = -1;

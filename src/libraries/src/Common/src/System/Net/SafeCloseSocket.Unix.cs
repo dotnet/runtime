@@ -27,6 +27,19 @@ namespace System.Net.Sockets
         internal bool DualMode { get; set; }
         internal bool ExposedHandleOrUntrackedConfiguration { get; private set; }
 
+        public void RegisterConnectResult(SocketError error)
+        {
+            switch (error)
+            {
+                case SocketError.Success:
+                case SocketError.WouldBlock:
+                    break;
+                default:
+                    LastConnectFailed = true;
+                    break;
+            }
+        }
+
         public void TransferTrackedState(SafeCloseSocket target)
         {
             target._trackedOptions = _trackedOptions;
