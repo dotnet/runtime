@@ -45,12 +45,12 @@ namespace System.IO.Ports.Tests
 
                     rcvEventHandler.Validate(SerialData.Chars, com1.ReceivedBytesThreshold);
 
-                    if (0 != rcvEventHandler.NumberOfOccurencesOfType(SerialData.Eof))
+                    if (0 != rcvEventHandler.NumberOfOccurrencesOfType(SerialData.Eof))
                     {
                         Fail("Err_21087qpua!!! Unexpected EofReceived event fireed {0}", i);
                     }
 
-                    if (0 != rcvEventHandler.NumberOfOccurencesOfType(SerialData.Chars))
+                    if (0 != rcvEventHandler.NumberOfOccurrencesOfType(SerialData.Chars))
                     {
                         Fail("Err_32417!!! Unexpected EofReceived event fireed {0}", i);
                     }
@@ -88,12 +88,12 @@ namespace System.IO.Ports.Tests
 
                     rcvEventHandler.Validate(SerialData.Chars, i + com1.ReceivedBytesThreshold);
 
-                    if (0 != rcvEventHandler.NumberOfOccurencesOfType(SerialData.Eof))
+                    if (0 != rcvEventHandler.NumberOfOccurrencesOfType(SerialData.Eof))
                     {
                         Fail("Err_01278qaods!!! Unexpected EofReceived event fireed {0}", i);
                     }
 
-                    if (1 < rcvEventHandler.NumberOfOccurencesOfType(SerialData.Chars))
+                    if (1 < rcvEventHandler.NumberOfOccurrencesOfType(SerialData.Chars))
                     {
                         Fail("Err_2972qoypa!!! Unexpected ReceivedChars event fireed {0}", i);
                     }
@@ -131,10 +131,10 @@ namespace System.IO.Ports.Tests
 
                     rcvEventHandler.Validate(SerialData.Chars, (i * xmitBytes.Length) + com1.ReceivedBytesThreshold);
 
-                    if (0 != rcvEventHandler.NumberOfOccurencesOfType(SerialData.Eof))
+                    if (0 != rcvEventHandler.NumberOfOccurrencesOfType(SerialData.Eof))
                     {
                         Fail("Err_20712asdfhow!!! Unexpected EofReceived event fired {0} iteration:{1}",
-                            rcvEventHandler.NumberOfOccurencesOfType(SerialData.Eof), i);
+                            rcvEventHandler.NumberOfOccurrencesOfType(SerialData.Eof), i);
                     }
 
                     rcvEventHandler.Clear();
@@ -172,10 +172,10 @@ namespace System.IO.Ports.Tests
 
                     rcvEventHandler.Validate(SerialData.Chars, 1);
 
-                    if (0 != rcvEventHandler.NumberOfOccurencesOfType(SerialData.Eof))
+                    if (0 != rcvEventHandler.NumberOfOccurrencesOfType(SerialData.Eof))
                     {
                         Fail("Err_20712asdfhow!!! Unexpected EofReceived event fired {0} iteration:{1}",
-                            rcvEventHandler.NumberOfOccurencesOfType(SerialData.Eof), i);
+                            rcvEventHandler.NumberOfOccurrencesOfType(SerialData.Eof), i);
                     }
 
                     rcvEventHandler.Clear();
@@ -318,9 +318,9 @@ namespace System.IO.Ports.Tests
                 Assert.True(false, $"Validate {eventType} failed");
             }
 
-            public int NumberOfOccurencesOfType(SerialData eventType)
+            public int NumberOfOccurrencesOfType(SerialData eventType)
             {
-                int numOccurences = 0;
+                int numOccurrences = 0;
 
                 lock (this)
                 {
@@ -328,12 +328,12 @@ namespace System.IO.Ports.Tests
                     {
                         if (eventType == (SerialData)EventType[i])
                         {
-                            numOccurences++;
+                            numOccurrences++;
                         }
                     }
                 }
 
-                return numOccurences;
+                return numOccurrences;
             }
         }
 

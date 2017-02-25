@@ -2574,7 +2574,7 @@ namespace System.Net.Sockets
                 throw new InvalidOperationException(SR.Format(SR.net_io_invalidendcall, nameof(EndDisconnect)));
             }
 
-            //wait for completion if it hasn't occured
+            //wait for completion if it hasn't occurred
             castedAsyncResult.InternalWaitForCompletion();
             castedAsyncResult.EndCalled = true;
 

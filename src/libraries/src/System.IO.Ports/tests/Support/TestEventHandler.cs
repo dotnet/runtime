@@ -147,7 +147,7 @@ namespace Legacy.Support
             Assert.True(false, $"Failed to validate event type {eventType}");
         }
 
-        public int NumberOfOccurencesOfType(T eventType)
+        public int NumberOfOccurrencesOfType(T eventType)
         {
             lock (_lock)
             {

@@ -328,10 +328,10 @@ namespace System.IO.Tests
                     Thread.Sleep(500);
                 }
 
-                AutoResetEvent errorOccured = new AutoResetEvent(false);
+                AutoResetEvent errorOccurred = new AutoResetEvent(false);
                 watcher.Error += (o, e) =>
                 {
-                    errorOccured.Set();
+                    errorOccurred.Set();
                 };
 
                 // Enable raising events but be careful with the possibility of the max user inotify instances being reached already.
@@ -352,7 +352,7 @@ namespace System.IO.Tests
                 }
 
                 action();
-                result = errorOccured.WaitOne(WaitForExpectedEventTimeout);
+                result = errorOccurred.WaitOne(WaitForExpectedEventTimeout);
                 watcher.EnableRaisingEvents = false;
                 cleanup();
             }
