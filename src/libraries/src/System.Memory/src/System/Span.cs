@@ -177,11 +177,7 @@ namespace System
         /// <exception cref="System.IndexOutOfRangeException">
         /// Thrown when index less than 0 or index greater than or equal to Length
         /// </exception>
-
-        // TODO: https://github.com/dotnet/corefx/issues/13681
-        //   Until we get over the hurdle of C# 7 tooling, this indexer will return "T" and have a setter rather than a "ref T". (The doc comments
-        //   continue to reflect the original intent of returning "ref T")
-        public T this[int index]
+        public ref T this[int index]
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
@@ -190,46 +186,10 @@ namespace System
                     ThrowHelper.ThrowIndexOutOfRangeException();
 
                 if (_pinnable == null)
-                    unsafe { return Unsafe.Add<T>(ref Unsafe.AsRef<T>(_byteOffset.ToPointer()), index); }
+                    unsafe { return ref Unsafe.Add<T>(ref Unsafe.AsRef<T>(_byteOffset.ToPointer()), index); }
                 else
-                    return Unsafe.Add<T>(ref Unsafe.AddByteOffset<T>(ref _pinnable.Data, _byteOffset), index);
+                    return ref Unsafe.Add<T>(ref Unsafe.AddByteOffset<T>(ref _pinnable.Data, _byteOffset), index);
             }
-
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set
-            {
-                if ((uint) index >= ((uint) _length))
-                    ThrowHelper.ThrowIndexOutOfRangeException();
-
-                if (_pinnable == null)
-                    unsafe { Unsafe.Add<T>(ref Unsafe.AsRef<T>(_byteOffset.ToPointer()), index) = value; }
-                else
-                    Unsafe.Add<T>(ref Unsafe.AddByteOffset<T>(ref _pinnable.Data, _byteOffset), index) = value;
-            }
-        }
-
-        /// <summary>
-        /// Returns a reference to specified element of the Span.
-        /// </summary>
-        /// <param name="index"></param>
-        /// <returns></returns>
-        /// <exception cref="System.IndexOutOfRangeException">
-        /// Thrown when index less than 0 or index greater than or equal to Length
-        /// </exception>
-
-        // TODO: https://github.com/dotnet/corefx/issues/13681
-        //   Until we get over the hurdle of C# 7 tooling, this temporary method will simulate the intended "ref T" indexer for those
-        //   who need bypass the workaround for performance.
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ref T GetItem(int index)
-        {
-            if ((uint)index >= ((uint)_length))
-                ThrowHelper.ThrowIndexOutOfRangeException();
-
-            if (_pinnable == null)
-                unsafe { return ref Unsafe.Add<T>(ref Unsafe.AsRef<T>(_byteOffset.ToPointer()), index); }
-            else
-                return ref Unsafe.Add<T>(ref Unsafe.AddByteOffset<T>(ref _pinnable.Data, _byteOffset), index);
         }
 
         /// <summary>
