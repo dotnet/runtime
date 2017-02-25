@@ -9,9 +9,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Release|AnyCPU'" />
-  <PropertyGroup>
-    <AssemblyName>System.Transactions.Local</AssemblyName>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Transactions.cs" />
   </ItemGroup>
