@@ -1902,7 +1902,7 @@ mono_arch_create_vars (MonoCompile *cfg)
 	if (cfg->method->save_lmf) {
 		cfg->create_lmf_var = TRUE;
 		cfg->lmf_ir = TRUE;
-#ifndef TARGET_MACH
+#ifdef HAVE_GET_TLS_ADDR
 		cfg->lmf_ir_mono_lmf = TRUE;
 #endif
 	}
