@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <!-- Always use latest Roslyn compiler -->
   <Import Project="..\..\Tools\net45\roslyn\build\Microsoft.Net.Compilers.props" Condition="'$(OS)'=='Windows_NT'" />
@@ -832,41 +832,6 @@
     <MscorlibSources Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\Threading\Tasks\IAsyncCausalityTracerStatics.cs" />
   </ItemGroup>
   <ItemGroup>
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\IO\FileStream.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\IO\Error.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\IO\FileStream.Unix.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(TargetsOSX)' == 'true'">
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\IO\FileStream.OSX.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(TargetsOSX)' != 'true'">
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\IO\FileStream.Linux.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' != 'true'">
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Microsoft\Win32\SafeHandles\SafeFileHandle.Windows.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\IO\FileStream.Win32.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\IO\FileStreamCompletionSource.Win32.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\IO\Win32Marshal.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\IO\Path.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\IO\PathInternal.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\IO\Path.Unix.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\IO\PathInternal.Unix.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' != 'true'">
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\IO\Path.Win32.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\IO\Path.Windows.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\IO\PathHelper.Windows.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\IO\PathInternal.Windows.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\IO\PathInternal.Windows.StringBuffer.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Threading\DeferredDisposableLifetime.cs" />
     <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Threading\ClrThreadPoolBoundHandle.cs" />
     <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Threading\ClrThreadPoolBoundHandleOverlapped.cs" />
@@ -1110,11 +1075,6 @@
     <MscorlibSources Include="$(BclSourcesRoot)\System\Numerics\Hashing\HashHelpers.cs" />
   </ItemGroup>
   <ItemGroup>
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Buffers\ArrayPool.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Buffers\ArrayPoolEventSource.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Buffers\ConfigurableArrayPool.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Buffers\TlsOverPerCoreLockedStacksArrayPool.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Buffers\Utilities.cs" />
     <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Security\CryptographicException.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' != 'true'">
@@ -1205,6 +1165,9 @@
     <!-- TODO list of types to be cleaned up from CoreLib -->
     <MscorlibSources Include="$(BclSourcesRoot)\CleanupToDoList.cs" />
   </ItemGroup>
+
+  <Import Project="$(MSBuildThisFileDirectory)\shared\System.Private.CoreLib.Shared.sources"/>
+
   <ItemGroup>
     <!-- We want the sources to show up nicely in VS-->
     <Compile Include="@(MscorlibSources)">
