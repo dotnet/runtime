@@ -4,6 +4,12 @@
 
 using System.Runtime.Versioning;
 
+#if BIT64
+using nuint = System.UInt64;
+#else
+using nuint = System.UInt32;
+#endif
+
 namespace System.Runtime.CompilerServices
 {
     //
@@ -62,6 +68,18 @@ namespace System.Runtime.CompilerServices
             // The body of this function will be replaced by the EE with unsafe code!!!
             // See getILIntrinsicImplementationForUnsafe for how this happens.
             typeof(T).ToString(); // Type used by the actual method body
+            throw new InvalidOperationException();
+        }
+
+        /// <summary>
+        /// Adds an element offset to the given reference.
+        /// </summary>
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ref T AddByteOffset<T>(ref T source, nuint byteOffset)
+        {
+            // The body of this function will be replaced by the EE with unsafe code!!!
+            // See getILIntrinsicImplementationForUnsafe for how this happens.
             throw new InvalidOperationException();
         }
 

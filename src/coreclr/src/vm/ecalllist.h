@@ -1334,6 +1334,11 @@ FCFuncStart(gRuntimeClassFuncs)
     FCFuncElement("RedirectEquals", ComObject::RedirectEquals)
 FCFuncEnd()
 #endif // ifdef FEATURE_COMINTEROP
+
+FCFuncStart(gRuntimeImportsFuncs)
+    QCFuncElement("RhZeroMemory", SpanNative::SpanClear)
+FCFuncEnd()
+
 FCFuncStart(gWeakReferenceFuncs)
     FCFuncElement("Create", WeakReferenceNative::Create)
     FCFuncElement("Finalize", WeakReferenceNative::Finalize)
@@ -1500,6 +1505,7 @@ FCClassElement("RuntimeClass", "System.Runtime.InteropServices.WindowsRuntime", 
 FCClassElement("RuntimeEnvironment", "System.Runtime.InteropServices", gRuntimeEnvironmentFuncs)
 FCClassElement("RuntimeFieldHandle", "System", gCOMFieldHandleNewFuncs)
 FCClassElement("RuntimeHelpers", "System.Runtime.CompilerServices", gCompilerFuncs)
+FCClassElement("RuntimeImports", "System.Runtime", gRuntimeImportsFuncs)
 FCClassElement("RuntimeMethodHandle", "System", gRuntimeMethodHandle)
 FCClassElement("RuntimeModule", "System.Reflection", gCOMModuleFuncs)
 FCClassElement("RuntimeThread", "Internal.Runtime.Augments", gRuntimeThreadFuncs)
