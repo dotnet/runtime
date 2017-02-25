@@ -302,7 +302,8 @@ __ARMEmulRootfs=/mnt/arm-emulator-rootfs
 __ARMEmulPath=
 __ARMRootfsMountPath=
 __buildConfig=
-__skipTests=0
+# TODO: Currently test is not working correctly for a month. This will be fixed with new arm CI soon.
+__skipTests=1
 __skipMscorlib=
 __testRootDir=
 __mscorlibDir=
