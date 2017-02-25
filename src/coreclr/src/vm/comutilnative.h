@@ -112,6 +112,14 @@ public:
 
 
 //
+// SpanNative
+//
+class SpanNative {
+public:
+    static void QCALLTYPE SpanClear(void *dst, size_t length);
+};
+
+//
 // Buffer
 //
 class Buffer {
