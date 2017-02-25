@@ -850,9 +850,6 @@ namespace System
         // Determines whether two strings match.
         public override bool Equals(Object obj)
         {
-            if (this == null)                        // this is necessary to guard against reverse-pinvokes and
-                throw new NullReferenceException();  // other callers who do not use the callvirt instruction
-
             if (object.ReferenceEquals(this, obj))
                 return true;
 
@@ -870,9 +867,6 @@ namespace System
         [Pure]
         public bool Equals(String value)
         {
-            if (this == null)                        // this is necessary to guard against reverse-pinvokes and
-                throw new NullReferenceException();  // other callers who do not use the callvirt instruction
-
             if (object.ReferenceEquals(this, value))
                 return true;
 
