@@ -4423,6 +4423,14 @@ void Lowering::DoPhase()
 #endif
 #endif
 
+    // If we have any PInvoke calls, insert the one-time prolog code. We'll inserted the epilog code in the
+    // appropriate spots later. NOTE: there is a minor optimization opportunity here, as we still create p/invoke
+    // data structures and setup/teardown even if we've eliminated all p/invoke calls due to dead code elimination.
+    if (comp->info.compCallUnmanaged)
+    {
+        InsertPInvokeMethodProlog();
+    }
+
 #if !defined(_TARGET_64BIT_)
     DecomposeLongs decomp(comp); // Initialize the long decomposition class.
     decomp.PrepareForDecomposition();
@@ -4438,14 +4446,6 @@ void Lowering::DoPhase()
 #endif //!_TARGET_64BIT_
 
         LowerBlock(block);
-    }
-
-    // If we have any PInvoke calls, insert the one-time prolog code. We've already inserted the epilog code in the
-    // appropriate spots. NOTE: there is a minor optimization opportunity here, as we still create p/invoke data
-    // structures and setup/teardown even if we've eliminated all p/invoke calls due to dead code elimination.
-    if (comp->info.compCallUnmanaged)
-    {
-        InsertPInvokeMethodProlog();
     }
 
 #ifdef DEBUG
@@ -4600,13 +4600,6 @@ void Lowering::CheckCallArg(GenTree* arg)
 
     switch (arg->OperGet())
     {
-#if !defined(_TARGET_64BIT_)
-        case GT_LONG:
-            assert(arg->gtGetOp1()->OperIsPutArg());
-            assert(arg->gtGetOp2()->OperIsPutArg());
-            break;
-#endif
-
         case GT_FIELD_LIST:
         {
             GenTreeFieldList* list = arg->AsFieldList();
