@@ -301,23 +301,28 @@ namespace System.Numerics.Tests
 
         public static IEnumerable<object[]> ACos_Advanced_TestData()
         {
+            // Simple values
+            yield return new object[] { 0.0, 0.0, Math.PI / 2.0, 0.0 };
+            yield return new object[] { 1.0, 0.0, 0.0, 0.0 };
+            yield return new object[] { -1.0, 0.0, Math.PI, 0.0 };
+            yield return new object[] { 0.0, 1.0, Math.PI / 2.0, -Math.Log(1.0 + Math.Sqrt(2.0)) };
+            yield return new object[] { 0.0, -1.0, Math.PI / 2.0, Math.Log(1.0 + Math.Sqrt(2.0)) };
+
             yield return new object[] { 1234000000, 0, 0, 21.62667394298955 }; // Real part is positive, imaginary part is 0
             yield return new object[] { 0, -1234000000, 1.5707963267948966, 21.62667394298955 }; // Imaginary part is negative
 
-            // Boundary values
-            yield return new object[] { double.MaxValue, 0, double.NaN, double.NaN };
-            yield return new object[] { double.MinValue, 0, double.NaN, double.NaN };
+            // Extreme values
+            yield return new object[] { double.MaxValue, 0.0, 0.0, Math.Log(2.0) + Math.Log(double.MaxValue) };
+            yield return new object[] { 0.0, double.MaxValue, Math.PI / 2.0, -(Math.Log(2.0) + Math.Log(double.MaxValue)) };
+            yield return new object[] { -double.MaxValue, -double.MaxValue, 3.0 / 4.0 * Math.PI, Math.Log(2.0 * Math.Sqrt(2.0)) + Math.Log(double.MaxValue) };
 
-            // Invalid values
-            foreach (double invalidReal in s_invalidDoubleValues)
-            {
-                yield return new object[] { invalidReal, 1, double.NaN, double.NaN }; // Invalid real
-                foreach (double invalidImaginary in s_invalidDoubleValues)
-                {
-                    yield return new object[] { 1, invalidImaginary, double.NaN, double.NaN }; // Invalid imaginary
-                    yield return new object[] { invalidReal, invalidImaginary, double.NaN, double.NaN }; // Invalid real, invalid imaginary
-                }
-            }
+            // NaN values
+            yield return new object[] { double.NaN, double.NaN, double.NaN, double.NaN };
+            yield return new object[] { -1.0, double.NaN, double.NaN, double.NaN };
+            yield return new object[] { double.NegativeInfinity, double.NaN, double.NaN, double.NaN };
+            yield return new object[] { double.NaN, 0.0, double.NaN, double.NaN };
+            yield return new object[] { double.NaN, double.PositiveInfinity, double.NaN, double.NaN };
+
         }
 
         [Theory, MemberData(nameof(ACos_Advanced_TestData))]
@@ -394,16 +399,13 @@ namespace System.Numerics.Tests
             yield return new object[] { 0.0, double.MaxValue, 0.0, Math.Log(2.0) + Math.Log(double.MaxValue) };
             yield return new object[] { double.MaxValue, double.MaxValue, Math.PI / 4.0, Math.Log(2.0 * Math.Sqrt(2.0)) + Math.Log(double.MaxValue) };
 
-            // Invalid values
-            foreach (double invalidReal in s_invalidDoubleValues)
-            {
-                yield return new object[] { invalidReal, 1, double.NaN, double.NaN }; // Invalid real
-                foreach (double invalidImaginary in s_invalidDoubleValues)
-                {
-                    yield return new object[] { 1, invalidImaginary, double.NaN, double.NaN }; // Invalid imaginary
-                    yield return new object[] { invalidReal, invalidImaginary, double.NaN, double.NaN }; // Invalid real, invalid imaginary
-                }
-            }
+            // NaN values
+            yield return new object[] { double.NaN, double.NaN, double.NaN, double.NaN };
+            yield return new object[] { 0.0, double.NaN, double.NaN, double.NaN };
+            yield return new object[] { double.PositiveInfinity, double.NaN, double.NaN, double.NaN };
+            yield return new object[] { double.NaN, 1.0, double.NaN, double.NaN };
+            yield return new object[] { double.NaN, double.NegativeInfinity, double.NaN, double.NaN };
+            
         }
 
         [ActiveIssue(15455)]
