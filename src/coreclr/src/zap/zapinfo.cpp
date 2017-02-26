@@ -3029,6 +3029,7 @@ void ZapInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
 
         case CORINFO_FIELD_INTRINSIC_ZERO:
         case CORINFO_FIELD_INTRINSIC_EMPTY_STRING:
+        case CORINFO_FIELD_INTRINSIC_ISLITTLEENDIAN:
             break;
 
         default:
