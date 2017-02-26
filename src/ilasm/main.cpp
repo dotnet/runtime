@@ -106,7 +106,7 @@ extern "C" int _cdecl wmain(int argc, __in WCHAR **argv)
 {
     int         i, NumFiles = 0, NumDeltaFiles = 0;
     bool        IsDLL = false, IsOBJ = false;
-    char        szOpt[128];
+    char        szOpt[1024];
     Assembler   *pAsm;
     MappedFileStream *pIn;
     AsmParse    *pParser;
