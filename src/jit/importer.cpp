@@ -13263,6 +13263,20 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                     break;
 
+#if COR_JIT_EE_VERSION > 460
+                    case CORINFO_FIELD_INTRINSIC_ISLITTLEENDIAN:
+                    {
+                        assert(aflags & CORINFO_ACCESS_GET);
+#if BIGENDIAN
+                        op1 = gtNewIconNode(0, lclTyp);
+#else
+                        op1 = gtNewIconNode(1, lclTyp);
+#endif
+                        goto FIELD_DONE;
+                    }
+                    break;
+#endif
+
                     default:
                         assert(!"Unexpected fieldAccessor");
                 }
