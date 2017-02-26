@@ -1719,6 +1719,9 @@ enum CORINFO_FIELD_ACCESSOR
 
     CORINFO_FIELD_INTRINSIC_ZERO,           // intrinsic zero (IntPtr.Zero, UIntPtr.Zero)
     CORINFO_FIELD_INTRINSIC_EMPTY_STRING,   // intrinsic emptry string (String.Empty)
+#if COR_JIT_EE_VERSION > 460
+    CORINFO_FIELD_INTRINSIC_ISLITTLEENDIAN, // intrinsic BitConverter.IsLittleEndian
+#endif
 };
 
 // Set of flags returned in CORINFO_FIELD_INFO::fieldFlags
