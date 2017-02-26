@@ -2161,18 +2161,6 @@ size_t logcount (size_t word)
     return count;
 }
 
-//n!=0
-int log2(unsigned int n) 
-{
-    int pos = 0;
-    if (n >= 1<<16) { n >>= 16; pos += 16; }
-    if (n >= 1<< 8) { n >>=  8; pos +=  8; }
-    if (n >= 1<< 4) { n >>=  4; pos +=  4; }
-    if (n >= 1<< 2) { n >>=  2; pos +=  2; }
-    if (n >= 1<< 1) {           pos +=  1; }
-    return pos;
-}
-
 #ifndef DACCESS_COMPILE
 
 void stomp_write_barrier_resize(bool is_runtime_suspended, bool requires_upper_bounds_check)
