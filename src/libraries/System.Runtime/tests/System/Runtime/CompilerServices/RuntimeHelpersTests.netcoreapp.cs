@@ -48,6 +48,7 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.Throws<MemberAccessException>(() => RuntimeHelpers.GetUninitializedObject(typeof(System.IO.Stream))); // abstract type
             Assert.Throws<MemberAccessException>(() => RuntimeHelpers.GetUninitializedObject(typeof(System.Collections.IEnumerable))); // interface
             Assert.Throws<MemberAccessException>(() => RuntimeHelpers.GetUninitializedObject(typeof(System.Collections.Generic.List<>))); // generic definition
+            Assert.Throws<NotSupportedException>(() => RuntimeHelpers.GetUninitializedObject(typeof(TypedReference))); // byref-like type
         }
 
         [Fact]
