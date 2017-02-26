@@ -38,13 +38,28 @@ namespace System.IO.Tests
             Assert.Throws<ObjectDisposedException>(() => fs.Lock(0, 1));
         }
 
-        [ActiveIssue(5964, TestPlatforms.OSX)]
+        [Fact]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        public void LockUnlock_Unsupported_OSX()
+        {
+            string path = GetTestFilePath();
+            File.WriteAllBytes(path, new byte[100]);
+
+            using (FileStream fs = File.Open(path, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite))
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => fs.Lock(0, 100));
+                File.Open(path, FileMode.Open, FileAccess.Write, FileShare.ReadWrite | FileShare.Delete).Dispose();
+                Assert.Throws<PlatformNotSupportedException>(() => fs.Unlock(0, 100));
+            }
+        }
+
         [Theory]
         [InlineData(100, 0, 100)]
         [InlineData(200, 0, 100)]
         [InlineData(200, 50, 150)]
         [InlineData(200, 100, 100)]
         [InlineData(20, 2000, 1000)]
+        [PlatformSpecific(~TestPlatforms.OSX)]
         public void Lock_Unlock_Successful(long fileLength, long position, long length)
         {
             string path = GetTestFilePath();
@@ -57,9 +72,9 @@ namespace System.IO.Tests
             }
         }
 
-        [ActiveIssue(5964, TestPlatforms.OSX)]
         [Theory]
         [InlineData(10, 0, 2, 3, 5)]
+        [PlatformSpecific(~TestPlatforms.OSX)]
         public void NonOverlappingRegions_Success(long fileLength, long firstPosition, long firstLength, long secondPosition, long secondLength)
         {
             string path = GetTestFilePath();
@@ -89,7 +104,6 @@ namespace System.IO.Tests
         }
 
         [Theory]
-        [PlatformSpecific(TestPlatforms.Windows)] // Unix locks are on a per-process basis, so overlapping locks from the same process are allowed.
         [InlineData(10, 0, 10, 1, 2)]
         [InlineData(10, 3, 5, 3, 5)]
         [InlineData(10, 3, 5, 3, 4)]
@@ -97,6 +111,7 @@ namespace System.IO.Tests
         [InlineData(10, 3, 5, 2, 6)]
         [InlineData(10, 3, 5, 2, 4)]
         [InlineData(10, 3, 5, 4, 6)]
+        [PlatformSpecific(TestPlatforms.Windows)] // Unix locks are on a per-process basis, so overlapping locks from the same process are allowed.
         public void OverlappingRegionsFromSameProcess_ThrowsExceptionOnWindows(long fileLength, long firstPosition, long firstLength, long secondPosition, long secondLength)
         {
             string path = GetTestFilePath();
@@ -114,9 +129,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ActiveIssue(5964, TestPlatforms.OSX)]
         [Theory]
-        [PlatformSpecific(TestPlatforms.AnyUnix)] // Unix locks are on a per-process basis, so overlapping locks from the same process are allowed.
         [InlineData(10, 0, 10, 1, 2)]
         [InlineData(10, 3, 5, 3, 5)]
         [InlineData(10, 3, 5, 3, 4)]
@@ -124,6 +137,7 @@ namespace System.IO.Tests
         [InlineData(10, 3, 5, 2, 6)]
         [InlineData(10, 3, 5, 2, 4)]
         [InlineData(10, 3, 5, 4, 6)]
+        [PlatformSpecific(TestPlatforms.Linux)] // Unix locks are on a per-process basis, so overlapping locks from the same process are allowed.
         public void OverlappingRegionsFromSameProcess_AllowedOnUnix(long fileLength, long firstPosition, long firstLength, long secondPosition, long secondLength)
         {
             string path = GetTestFilePath();
@@ -139,7 +153,6 @@ namespace System.IO.Tests
             }
         }
 
-        [ActiveIssue(5964, TestPlatforms.OSX)]
         [Theory]
         [InlineData(10, 0, 10, 1, 2)]
         [InlineData(10, 3, 5, 3, 5)]
@@ -148,6 +161,7 @@ namespace System.IO.Tests
         [InlineData(10, 3, 5, 2, 6)]
         [InlineData(10, 3, 5, 2, 4)]
         [InlineData(10, 3, 5, 4, 6)]
+        [PlatformSpecific(~TestPlatforms.OSX)]
         public void OverlappingRegionsFromOtherProcess_ThrowsException(long fileLength, long firstPosition, long firstLength, long secondPosition, long secondLength)
         {
             string path = GetTestFilePath();
