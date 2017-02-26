@@ -18,5 +18,11 @@ namespace System.Linq.Tests
 
             Assert.Equal(expected, actual);
         }
+
+        [Fact]
+        public void SkipLastThrowsOnNull()
+        {
+            Assert.Throws<ArgumentNullException>("source", () => ((IQueryable<DateTime>)null).SkipLast(3));
+        }
     }
 }
