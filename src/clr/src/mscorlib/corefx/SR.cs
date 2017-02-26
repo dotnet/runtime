@@ -815,4 +815,19 @@ internal static class SR
     {
         get { return Environment.GetResourceString("Arg_UnauthorizedAccessException"); }
     }
+
+    internal static string ArgumentOutOfRange_GenericPositive
+    {
+        get { return Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"); }
+    }
+
+    internal static string ArgumentOutOfRange_LengthTooLarge
+    {
+        get { return Environment.GetResourceString("ArgumentOutOfRange_LengthTooLarge"); }
+    }
+
+    internal static string Arg_ArrayPlusOffTooSmall
+    {
+        get { return Environment.GetResourceString("Arg_ArrayPlusOffTooSmall"); }
+    }
 }
