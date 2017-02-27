@@ -2481,12 +2481,6 @@ void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 }
 #endif
 
-void PInvokeStubForHost(void)
-{ 
-    // Hosted P/Invoke is not implemented on ARM. See ARMTODO in code:CorHost2::SetHostControl.
-    UNREACHABLE();
-}
-
 class UMEntryThunk * UMEntryThunk::Decode(void *pCallback)
 {
     _ASSERTE(offsetof(UMEntryThunkCode, m_code) == 0);
