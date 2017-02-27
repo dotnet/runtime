@@ -22,6 +22,7 @@
     <Compile Include="DualModeSocketTest.cs" />
     <Compile Include="IPPacketInformationTest.cs" />
     <Compile Include="LingerStateTest.cs" />
+    <Compile Include="LoggingTest.cs" />
     <Compile Include="NetworkStreamTest.cs" />
     <Compile Include="ReceiveMessageFrom.cs" />
     <Compile Include="ReceiveMessageFromAsync.cs" />
@@ -90,9 +91,6 @@
     <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
       <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup Condition="'$(NugetTargetMoniker)' == '.NETStandard,Version=v1.7'">
-    <Compile Include="LoggingTest.cs" />
     <Compile Include="$(CommonTestPath)\System\Diagnostics\Tracing\TestEventListener.cs">
       <Link>Common\System\Diagnostics\Tracing\TestEventListener.cs</Link>
     </Compile>
