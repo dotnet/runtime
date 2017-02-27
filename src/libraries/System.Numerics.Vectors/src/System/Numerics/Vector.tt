@@ -233,12 +233,12 @@ namespace System.Numerics
         }
 
 #pragma warning disable 3001 // void* is not a CLS-Compliant argument type
-        private unsafe Vector(void* dataPointer) : this(dataPointer, 0) { }
+        internal unsafe Vector(void* dataPointer) : this(dataPointer, 0) { }
 #pragma warning restore 3001 // void* is not a CLS-Compliant argument type
 
 #pragma warning disable 3001 // void* is not a CLS-Compliant argument type
         // Implemented with offset if this API ever becomes public; an offset of 0 is used internally.
-        private unsafe Vector(void* dataPointer, int offset)
+        internal unsafe Vector(void* dataPointer, int offset)
             : this()
         {
 <# foreach (Type type in supportedTypes)
@@ -1687,5 +1687,128 @@ namespace System.Numerics
             }
         }
         #endregion
+    }
+
+    public static partial class Vector
+    {
+        #region Widen/Narrow
+<#    foreach (Type type in WidenableTypes)
+    {
+        Type widenTarget = GetWidenTarget(type);
+#>
+        /// <summary>
+        /// Widens a Vector{<#=type.Name#>} into two Vector{<#=widenTarget.Name#>}'s.
+        /// <param name="source">The source vector whose elements are widened into the outputs.</param>
+        /// <param name="low">The first output vector, whose elements will contain the widened elements from lower indices in the source vector.</param>
+        /// <param name="high">The second output vector, whose elements will contain the widened elements from higher indices in the source vector.</param>
+        /// </summary>
+<#
+        if (nonClsCompliantTypes.Contains(type) || nonClsCompliantTypes.Contains(widenTarget))
+        {
+#>
+        [CLSCompliant(false)]
+<#
+        }
+#>
+        [JitIntrinsic]
+        public static unsafe void Widen(Vector<<#=type.Name#>> source, out Vector<<#=widenTarget.Name#>> low, out Vector<<#=widenTarget.Name#>> high)
+        {
+            int elements = Vector<<#=type.Name#>>.Count;
+            <#=widenTarget.Name#>* lowPtr = stackalloc <#=widenTarget.Name#>[elements / 2];
+            for (int i = 0; i < elements / 2; i++)
+            {
+                lowPtr[i] = (<#=widenTarget.Name#>)source[i];
+            }
+            <#=widenTarget.Name#>* highPtr = stackalloc <#=widenTarget.Name#>[elements / 2];
+            for (int i = 0; i < elements / 2; i++)
+            {
+                highPtr[i] = (<#=widenTarget.Name#>)source[i + (elements / 2)];
+            }
+
+            low = new Vector<<#=widenTarget.Name#>>(lowPtr);
+            high = new Vector<<#=widenTarget.Name#>>(highPtr);
+        }
+
+<#
+    }
+#>
+<#    foreach (Type narrowSource in NarrowableTypes)
+    {
+        Type narrowTarget = GetNarrowTarget(narrowSource);
+#>
+        /// <summary>
+        /// Narrows two Vector{<#=narrowSource.Name#>}'s into one Vector{<#=narrowTarget.Name#>}.
+        /// <param name="low">The first source vector, whose elements become the lower-index elements of the return value.</param>
+        /// <param name="high">The second source vector, whose elements become the higher-index elements of the return value.</param>
+        /// <returns>A Vector{<#=narrowTarget.Name#>} containing elements narrowed from the source vectors.</returns>
+        /// </summary>
+<#
+        if (nonClsCompliantTypes.Contains(narrowSource) || nonClsCompliantTypes.Contains(narrowTarget))
+        {
+#>
+        [CLSCompliant(false)]
+<#
+        }
+#>
+        [JitIntrinsic]
+        public static unsafe Vector<<#=narrowTarget.Name#>> Narrow(Vector<<#=narrowSource.Name#>> low, Vector<<#=narrowSource.Name#>> high)
+        {
+		    unchecked
+		    {
+				int elements = Vector<<#=narrowTarget.Name#>>.Count;
+				<#=narrowTarget.Name#>* retPtr = stackalloc <#=narrowTarget.Name#>[elements];
+				for (int i = 0; i < elements / 2; i++)
+				{
+					retPtr[i] = (<#=narrowTarget.Name#>)low[i];
+				}
+				for (int i = 0; i < elements / 2; i++)
+				{
+					retPtr[i + (elements / 2)] = (<#=narrowTarget.Name#>)high[i];
+				}
+
+				return new Vector<<#=narrowTarget.Name#>>(retPtr);
+		    }
+        }
+
+<#
+    }
+#>
+        #endregion Widen/Narrow
+
+        #region Same-Size Conversion
+<#    foreach (var pair in SameSizeConversionPairs)
+    {
+#>
+        /// <summary>
+        /// Converts a Vector{<#=pair.Key.Name#>} to a Vector{<#=pair.Value.Name#>}.
+        /// </summary>
+        /// <param name="value">The source vector.</param>
+        /// <returns>The converted vector.</returns>
+<#
+        if (nonClsCompliantTypes.Contains(pair.Key) || nonClsCompliantTypes.Contains(pair.Value))
+        {
+#>
+        [CLSCompliant(false)]
+<#
+        }
+#>
+        [JitIntrinsic]
+        public static unsafe Vector<<#=pair.Value.Name#>> ConvertTo<#=pair.Value.Name#>(Vector<<#=pair.Key.Name#>> value)
+        {
+			unchecked
+			{
+				int elements = Vector<<#=pair.Value.Name#>>.Count;
+				<#=pair.Value.Name#>* retPtr = stackalloc <#=pair.Value.Name#>[elements];
+				for (int i = 0; i < elements; i++)
+				{
+					retPtr[i] = (<#=pair.Value.Name#>)value[i];
+				}
+
+				return new Vector<<#=pair.Value.Name#>>(retPtr);
+			}
+        }
+
+<# } #>
+        #endregion Same-Size Conversion
     }
 }
