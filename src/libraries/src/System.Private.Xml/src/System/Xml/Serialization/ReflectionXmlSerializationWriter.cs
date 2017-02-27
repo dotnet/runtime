@@ -312,37 +312,57 @@ namespace System.Xml.Serialization
             else if (element.Mapping is ArrayMapping)
             {
                 var mapping = (ArrayMapping)element.Mapping;
-                if (mapping.IsSoap)
-                {
-                    throw new PlatformNotSupportedException();
-                }
 
                 if (element.IsNullable && o == null)
                 {
                     WriteNullTagLiteral(element.Name, element.Form == XmlSchemaForm.Qualified ? element.Namespace : "");
                 }
-                else
+                else if (mapping.IsSoap)
                 {
-                    if (element.IsUnbounded)
+                    if (mapping.Elements == null || mapping.Elements.Length != 1)
                     {
-                        TypeDesc arrayTypeDesc = mapping.TypeDesc.CreateArrayTypeDesc();
+                        throw new InvalidOperationException(SR.XmlInternalError);
+                    }
 
-                        var enumerable = (IEnumerable)o;
-                        foreach (var e in enumerable)
-                        {
-                            element.IsUnbounded = false;
-                            WriteElement(e, element, arrayName, writeAccessor);
-                            element.IsUnbounded = true;
-                        }
+                    var itemElement = mapping.Elements[0];
+                    var itemMapping = itemElement.Mapping as StructMapping;
+                    var itemName = writeAccessor ? itemElement.Name : itemMapping.TypeName;
+                    var itemNamespace = itemElement.Any && itemElement.Name.Length == 0 ? null : (itemElement.Form == XmlSchemaForm.Qualified ? (writeAccessor ? itemElement.Namespace : itemMapping.Namespace) : "");
+                    EnsureXmlSerializationWriteCallbackForMapping(itemMapping,
+                        itemName,
+                        itemNamespace,
+                        itemElement.IsNullable, 
+                        needType: false, 
+                        parentMapping: parentMapping);
+
+                    if (!writeAccessor)
+                    {
+                        WritePotentiallyReferencingElement(name, ns, o, mapping.TypeDesc.Type, true, element.IsNullable);
                     }
                     else
                     {
-                        if (o != null)
-                        {
-                            WriteStartElement(name, ns, false);
-                            WriteArrayItems(mapping.ElementsSortedByDerivation, null, null, mapping.TypeDesc, o);
-                            WriteEndElement();
-                        }
+                        WritePotentiallyReferencingElement(name, ns, o, null, false, element.IsNullable);
+                    }
+                }
+                else if (element.IsUnbounded)
+                {
+                    TypeDesc arrayTypeDesc = mapping.TypeDesc.CreateArrayTypeDesc();
+
+                    var enumerable = (IEnumerable)o;
+                    foreach (var e in enumerable)
+                    {
+                        element.IsUnbounded = false;
+                        WriteElement(e, element, arrayName, writeAccessor);
+                        element.IsUnbounded = true;
+                    }
+                }
+                else
+                {
+                    if (o != null)
+                    {
+                        WriteStartElement(name, ns, false);
+                        WriteArrayItems(mapping.ElementsSortedByDerivation, null, null, mapping.TypeDesc, o);
+                        WriteEndElement();
                     }
                 }
             }
@@ -460,10 +480,7 @@ namespace System.Xml.Serialization
         {
             if (mapping.IsSoap && mapping.TypeDesc.IsRoot) return;
 
-            if (mapping.IsSoap)
-            {
-            }
-            else
+            if (!mapping.IsSoap)
             { 
                 if (o == null)
                 {
