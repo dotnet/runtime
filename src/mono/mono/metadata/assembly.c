@@ -1677,7 +1677,16 @@ mono_assembly_open_full (const char *filename, MonoImageOpenStatus *status, gboo
 MonoAssembly *
 mono_assembly_open_a_lot (const char *filename, MonoImageOpenStatus *status, gboolean refonly, gboolean load_from_context)
 {
+	return mono_assembly_open_predicate (filename, refonly, load_from_context, NULL, NULL, status);
+}
 
+MonoAssembly *
+mono_assembly_open_predicate (const char *filename, gboolean refonly,
+			      gboolean load_from_context,
+			      MonoAssemblyOpenPredicate predicate,
+			      gpointer user_data,
+			      MonoImageOpenStatus *status)
+{
 	MonoImage *image;
 	MonoAssembly *ass;
 	MonoImageOpenStatus def_status;
@@ -1767,10 +1776,20 @@ mono_assembly_open_a_lot (const char *filename, MonoImageOpenStatus *status, gbo
 		mono_assembly_invoke_load_hook (image->assembly);
 		mono_image_close (image);
 		g_free (fname);
-		return image->assembly;
+		if (!predicate || predicate (image->assembly, user_data)) {
+			return image->assembly;
+		} else {
+			*status = MONO_IMAGE_IMAGE_INVALID;
+			return NULL;
+		}
 	}
 
 	ass = mono_assembly_load_from_full (image, fname, status, refonly);
+
+	if (ass && predicate && !predicate (ass, user_data)) {
+		*status = MONO_IMAGE_IMAGE_INVALID;
+		ass = NULL;
+	}
 
 	if (ass) {
 		if (!loaded_from_bundle)
@@ -1948,7 +1967,7 @@ mono_assembly_has_reference_assembly_attribute (MonoAssembly *assembly, MonoErro
 MonoAssembly *
 mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 {
-	return mono_assembly_open_full (filename, status, FALSE);
+	return mono_assembly_open_predicate (filename, FALSE, FALSE, NULL, NULL, status);
 }
 
 /**
