@@ -1599,7 +1599,6 @@ ncells ) {
 		return mInstance;
 	}
 
-	[Category ("!INTERPRETER")]
 	static int test_0_synchronized () {
 		getInstance ();
 		return 0;

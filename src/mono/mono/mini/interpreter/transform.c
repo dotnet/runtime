@@ -2559,7 +2559,14 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 			int size;
 			gpointer handle;
 			token = read32 (td.ip + 1);
-			handle = mono_ldtoken (image, token, &klass, generic_context);
+			if (method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD || method->wrapper_type == MONO_WRAPPER_SYNCHRONIZED) {
+				handle = mono_method_get_wrapper_data (method, token);
+				klass = (MonoClass *) mono_method_get_wrapper_data (method, token + 1);
+				if (klass == mono_defaults.typehandle_class)
+					handle = &((MonoClass *) handle)->byval_arg;
+			} else {
+				handle = mono_ldtoken (image, token, &klass, generic_context);
+			}
 			mt = mint_type(&klass->byval_arg);
 			g_assert (mt == MINT_TYPE_VT);
 			size = mono_class_value_size (klass, NULL);
