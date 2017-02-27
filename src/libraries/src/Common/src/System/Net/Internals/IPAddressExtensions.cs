@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace System.Net.Sockets
 {
-    public static class IPAddressExtensions
+    internal static class IPAddressExtensions
     {
         public static IPAddress Snapshot(this IPAddress original)
         {
