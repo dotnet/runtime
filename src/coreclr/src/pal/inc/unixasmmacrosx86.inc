@@ -69,10 +69,29 @@ C_FUNC(\Name\()_End):
 .macro ESP_PROLOG_BEG
 .endm
 
+.macro ESP_PROLOG_PUSH Reg
+        PROLOG_PUSH \Reg
+.endm
+
+.macro ESP_PROLOG_ALLOC Size
+        sub esp, \Size
+        .cfi_adjust_cfa_offset \Size
+.endm
+
 .macro ESP_PROLOG_END
+        .cfi_def_cfa_register esp
 .endm
 
 .macro ESP_EPILOG_BEG
+.endm
+
+.macro ESP_EPILOG_POP Reg
+        EPILOG_POP \Reg
+.endm
+
+.macro ESP_EPILOG_FREE Size
+        add esp, \Size
+        .cfi_adjust_cfa_offset -\Size
 .endm
 
 .macro ESP_EPILOG_END
