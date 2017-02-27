@@ -2539,13 +2539,24 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
             writer.WriteStartElement("root");
             ser.Serialize(writer, value);
             writer.WriteEndElement();
+            writer.Flush();
             ms.Position = 0;
 
-            string expectedOutput = "<root><SoapEncodedTestType2 xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" id=\"id1\"><TestType3 href=\"#id2\" /></SoapEncodedTestType2><SoapEncodedTestType3 id=\"id2\" d2p1:type=\"SoapEncodedTestType3\" xmlns:d2p1=\"http://www.w3.org/2001/XMLSchema-instance\"><StringValue xmlns:q1=\"http://www.w3.org/2001/XMLSchema\" d2p1:type=\"q1:string\">foo</StringValue></SoapEncodedTestType3>";
+            string expectedOutput = "<root><SoapEncodedTestType2 xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" id=\"id1\"><TestType3 href=\"#id2\" /></SoapEncodedTestType2><SoapEncodedTestType3 id=\"id2\" d2p1:type=\"SoapEncodedTestType3\" xmlns:d2p1=\"http://www.w3.org/2001/XMLSchema-instance\"><StringValue xmlns:q1=\"http://www.w3.org/2001/XMLSchema\" d2p1:type=\"q1:string\">foo</StringValue></SoapEncodedTestType3></root>";
             string actualOutput = new StreamReader(ms).ReadToEnd();
             Utils.CompareResult result = Utils.Compare(expectedOutput, actualOutput);
             Assert.True(result.Equal, string.Format("{1}{0}Test failed for input: {2}{0}Expected: {3}{0}Actual: {4}",
                 Environment.NewLine, result.ErrorMessage, value, expectedOutput, actualOutput));
+
+            ms.Position = 0;
+            using (var reader = new XmlTextReader(ms))
+            {
+                reader.ReadStartElement("root");
+                var actual = (SoapEncodedTestType2)ser.Deserialize(reader);
+                Assert.NotNull(actual);
+                Assert.NotNull(actual.TestType3);
+                Assert.Equal(value.TestType3.StringValue, actual.TestType3.StringValue);
+            }
         }
     }
 
@@ -2801,7 +2812,6 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
     }
 
     [Fact]
-    [ActiveIssue(15525)]
     public static void SoapEncodedSerializationTest_Array()
     {
         XmlTypeMapping myTypeMapping = new SoapReflectionImporter().ImportTypeMapping(typeof(MyGroup));
@@ -2829,14 +2839,17 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
             using (var reader = new XmlTextReader(ms))
             {
                 reader.ReadStartElement("wrapper");
-                var deserialized = (MyGroup)ser.Deserialize(reader);
-                Assert.Equal(value.GroupName, deserialized.GroupName);
-                Assert.Equal(value.MyItems.Count(), deserialized.MyItems.Count());
+                var actual = (MyGroup)ser.Deserialize(reader);
+                Assert.Equal(value.GroupName, actual.GroupName);
+                Assert.Equal(value.MyItems.Count(), actual.MyItems.Count());
+                for(int i = 0; i < value.MyItems.Count(); i++)
+                {
+                    Assert.Equal(value.MyItems[i].ItemName, actual.MyItems[i].ItemName);
+                }
             }
         }
     }
 
-    [ActiveIssue(15525)]
     [Fact]
     public static void SoapEncodedSerializationTest_List()
     {
@@ -2865,9 +2878,13 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
             using (var reader = new XmlTextReader(ms))
             {
                 reader.ReadStartElement("wrapper");
-                var deserialized = (MyGroup2)ser.Deserialize(reader);
-                Assert.Equal(value.GroupName, deserialized.GroupName);
-                Assert.Equal(value.MyItems.Count(), deserialized.MyItems.Count());
+                var actual = (MyGroup2)ser.Deserialize(reader);
+                Assert.Equal(value.GroupName, actual.GroupName);
+                Assert.Equal(value.MyItems.Count(), actual.MyItems.Count());
+                for (int i = 0; i < value.MyItems.Count(); i++)
+                {
+                    Assert.Equal(value.MyItems[i].ItemName, actual.MyItems[i].ItemName);
+                }
             }
         }
     }
