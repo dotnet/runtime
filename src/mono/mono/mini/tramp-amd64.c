@@ -982,32 +982,43 @@ gpointer
 mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 {
 #ifdef ENABLE_INTERPRETER
-	const int gregs_num = 6;
+	const int gregs_num = 8;
 	const int fregs_num = 3;
 	guint8 *start = NULL, *code, *label_gexits [gregs_num], *label_fexits [fregs_num], *label_leave_tramp [3], *label_is_float_ret;
 	MonoJumpInfo *ji = NULL;
 	GSList *unwind_ops = NULL;
-	static int garg_regs[] = {AMD64_ARG_REG1, AMD64_ARG_REG2, AMD64_ARG_REG3, AMD64_ARG_REG4, AMD64_R8, AMD64_R9};
 	static int farg_regs[] = {AMD64_XMM0, AMD64_XMM1, AMD64_XMM2};
-	int i, offset = 0;
+	int i, framesize = 0, off_rbp, off_methodargs, off_targetaddr;
 
 	start = code = (guint8 *) mono_global_codeman_reserve (256);
 
+	off_rbp = -framesize;
+
+	framesize += sizeof (mgreg_t);
+	off_methodargs = -framesize;
+
+	framesize += sizeof (mgreg_t);
+	off_targetaddr = -framesize;
+
+	framesize += (gregs_num - PARAM_REGS) * sizeof (mgreg_t);
+
+	amd64_push_reg (code, AMD64_RBP);
+	amd64_mov_reg_reg (code, AMD64_RBP, AMD64_RSP, sizeof (mgreg_t));
+	amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, ALIGN_TO (framesize, MONO_ARCH_FRAME_ALIGNMENT));
+
 	/* save MethodArguments* onto stack */
-	amd64_push_reg (code, AMD64_ARG_REG2);
+	amd64_mov_membase_reg (code, AMD64_RBP, off_methodargs, AMD64_ARG_REG2, sizeof (mgreg_t));
 
 	/* save target address on stack */
-	amd64_push_reg (code, AMD64_ARG_REG1);
-	amd64_push_reg (code, AMD64_RAX);
+	amd64_mov_membase_reg (code, AMD64_RBP, off_targetaddr, AMD64_ARG_REG1, sizeof (mgreg_t));
 
 	/* load pointer to MethodArguments* into R11 */
 	amd64_mov_reg_reg (code, AMD64_R11, AMD64_ARG_REG2, 8);
 	
-	/* TODO: do float stuff first */
 	/* move flen into RAX */ // TODO: struct offset
-	amd64_mov_reg_membase (code, AMD64_RAX, AMD64_R11, 16, 8);
+	amd64_mov_reg_membase (code, AMD64_RAX, AMD64_R11, 16, sizeof (mgreg_t));
 	/* load pointer to fregs into R11 */ // TODO: struct offset
-	amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11, 24, 8);
+	amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11, 24, sizeof (mgreg_t));
 
 	for (i = 0; i < fregs_num; ++i) {
 		amd64_test_reg_reg (code, AMD64_RAX, AMD64_RAX);
@@ -1023,31 +1034,27 @@ mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 	}
 
 	/* load pointer to MethodArguments* into R11 */
-	amd64_mov_reg_reg (code, AMD64_R11, AMD64_ARG_REG2, 8);
-
+	amd64_mov_reg_reg (code, AMD64_R11, AMD64_ARG_REG2, sizeof (mgreg_t));
 	/* move ilen into RAX */ // TODO: struct offset
-	amd64_mov_reg_membase (code, AMD64_RAX, AMD64_R11, 0, 8);
-	/* load pointer to iregs into R11 */ // TODO: struct offset
-	amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11, 8, 8);
+	amd64_mov_reg_membase (code, AMD64_RAX, AMD64_R11, 0, sizeof (mgreg_t));
 
+	int stack_offset = 0;
 	for (i = 0; i < gregs_num; i++) {
 		amd64_test_reg_reg (code, AMD64_RAX, AMD64_RAX);
 		label_gexits [i] = code;
-		x86_branch8 (code, X86_CC_Z, 0, FALSE);
+		x86_branch32 (code, X86_CC_Z, 0, FALSE);
 
-#ifdef TARGET_WIN32
-		if (i < 4) {
-#else
-		if (i < 6) {
-#endif
-			amd64_mov_reg_membase (code, garg_regs [i], AMD64_R11, i * sizeof (gpointer), 8);
+		/* load pointer to MethodArguments* into R11 */
+		amd64_mov_reg_membase (code, AMD64_R11, AMD64_RBP, off_methodargs, sizeof (mgreg_t));
+		/* load pointer to iregs into R11 */ // TODO: struct offset
+		amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11, 8, sizeof (mgreg_t));
+
+		if (i < PARAM_REGS) {
+			amd64_mov_reg_membase (code, param_regs [i], AMD64_R11, i * sizeof (mgreg_t), sizeof (mgreg_t));
 		} else {
-			g_error ("not tested yet.");
-			amd64_push_reg (code, AMD64_RAX);
-			amd64_mov_reg_membase (code, AMD64_RAX, AMD64_R11, i * sizeof (gpointer), 8);
-			amd64_mov_membase_reg (code, AMD64_RBP, offset, AMD64_RAX, sizeof (gpointer));
-			offset += sizeof (gpointer);
-			amd64_pop_reg (code, AMD64_RAX);
+			amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11, i * sizeof (mgreg_t), sizeof (mgreg_t));
+			amd64_mov_membase_reg (code, AMD64_RSP, stack_offset, AMD64_R11, sizeof (mgreg_t));
+			stack_offset += sizeof (mgreg_t);
 		}
 		amd64_dec_reg_size (code, AMD64_RAX, 1);
 	}
@@ -1056,19 +1063,17 @@ mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 		x86_patch (label_gexits [i], code);
 	}
 
-
-	amd64_pop_reg (code, AMD64_RAX);
-	amd64_pop_reg (code, AMD64_R11);
+	/* load target addr */
+	amd64_mov_reg_membase (code, AMD64_R11, AMD64_RBP, off_targetaddr, sizeof (mgreg_t));
 
 	/* call into native function */
 	amd64_call_reg (code, AMD64_R11);
 
 	/* load MethodArguments */
-	amd64_pop_reg (code, AMD64_R11);
-	amd64_push_reg (code, AMD64_R11);
+	amd64_mov_reg_membase (code, AMD64_R11, AMD64_RBP, off_methodargs, sizeof (mgreg_t));
 
 	/* load is_float_ret */ // TODO: struct offset
-	amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11, 0x28, 8);
+	amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11, 0x28, sizeof (mgreg_t));
 
 	/* check if a float return value is expected */
 	amd64_test_reg_reg (code, AMD64_R11, AMD64_R11);
@@ -1080,15 +1085,15 @@ mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 
 	/* greg return */
 	/* load MethodArguments */
-	amd64_pop_reg (code, AMD64_R11);
+	amd64_mov_reg_membase (code, AMD64_R11, AMD64_RBP, off_methodargs, sizeof (mgreg_t));
 	/* load retval */ // TODO: struct offset
-	amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11, 0x20, 8);
+	amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11, 0x20, sizeof (mgreg_t));
 
 	amd64_test_reg_reg (code, AMD64_R11, AMD64_R11);
 	label_leave_tramp [0] = code;
 	x86_branch8 (code, X86_CC_Z, 0, FALSE);
 
-	amd64_mov_membase_reg (code, AMD64_R11, 0, AMD64_RAX, 8);
+	amd64_mov_membase_reg (code, AMD64_R11, 0, AMD64_RAX, sizeof (mgreg_t));
 
 	label_leave_tramp [1] = code;
 	x86_jump8 (code, 0);
@@ -1098,9 +1103,9 @@ mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 	/* freg return */
 	x86_patch (label_is_float_ret, code);
 	/* load MethodArguments */
-	amd64_pop_reg (code, AMD64_R11);
+	amd64_mov_reg_membase (code, AMD64_R11, AMD64_RBP, off_methodargs, sizeof (mgreg_t));
 	/* load retval */ // TODO: struct offset
-	amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11, 0x20, 8);
+	amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11, 0x20, sizeof (mgreg_t));
 
 	amd64_test_reg_reg (code, AMD64_R11, AMD64_R11);
 	label_leave_tramp [2] = code;
@@ -1108,9 +1113,11 @@ mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 
 	amd64_sse_movsd_membase_reg (code, AMD64_R11, 0, AMD64_XMM0);
 
-
 	for (i = 0; i < 3; i++)
 		x86_patch (label_leave_tramp [i], code);
+
+	amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, ALIGN_TO (framesize, MONO_ARCH_FRAME_ALIGNMENT));
+	amd64_pop_reg (code, AMD64_RBP);
 	amd64_ret (code);
 
 	mono_arch_flush_icache (start, code - start);
