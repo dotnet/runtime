@@ -2271,6 +2271,12 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 					--td.sp;
 					SET_SIMPLE_TYPE(td.sp - 1, STACK_TYPE_I4);
 					break;
+				case MINT_TYPE_O:
+					ENSURE_I4 (&td, 1);
+					SIMPLE_OP (td, MINT_LDELEM_REF);
+					--td.sp;
+					SET_SIMPLE_TYPE(td.sp - 1, STACK_TYPE_O);
+					break;
 				case MINT_TYPE_VT: {
 					int size = mono_class_value_size (klass, NULL);
 					ENSURE_I4 (&td, 1);
