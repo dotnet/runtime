@@ -27,7 +27,6 @@
     <Compile Include="System\AppDomainUnloadedException.cs" />
     <Compile Include="System\ApplicationId.cs" />
     <Compile Include="System\CannotUnloadAppDomainException.cs" />
-    <Compile Include="System\BitConverter.cs" />
     <Compile Include="System\Diagnostics\Stopwatch.cs" />
     <Compile Include="System\Environment.cs" />
     <Compile Include="System\Environment.SpecialFolder.cs" />
