@@ -1219,7 +1219,6 @@ finish_remaining_tests
 
 print_results
 
-echo "constructing $dumplingsListPath"
 find . -type f -name "local_dumplings.txt" -exec cat {} \; > $dumplingsListPath
 
 if [ -s $dumplingsListPath ]; then
