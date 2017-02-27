@@ -348,14 +348,19 @@ mono_print_bb (MonoBasicBlock *bb, const char *msg)
 {
 	int i;
 	MonoInst *tree;
+	GString *str = g_string_new ("");
 
-	printf ("\n%s %d: [IN: ", msg, bb->block_num);
+	g_string_append_printf (str, "%s %d: [IN: ", msg, bb->block_num);
 	for (i = 0; i < bb->in_count; ++i)
-		printf (" BB%d(%d)", bb->in_bb [i]->block_num, bb->in_bb [i]->dfn);
-	printf (", OUT: ");
+		g_string_append_printf (str, " BB%d(%d)", bb->in_bb [i]->block_num, bb->in_bb [i]->dfn);
+	g_string_append_printf (str, ", OUT: ");
 	for (i = 0; i < bb->out_count; ++i)
-		printf (" BB%d(%d)", bb->out_bb [i]->block_num, bb->out_bb [i]->dfn);
-	printf (" ]\n");
+		g_string_append_printf (str, " BB%d(%d)", bb->out_bb [i]->block_num, bb->out_bb [i]->dfn);
+	g_string_append_printf (str, " ]\n");
+
+	g_print ("%s", str->str);
+	g_string_free (str, TRUE);
+
 	for (tree = bb->code; tree; tree = tree->next)
 		mono_print_ins_index (-1, tree);
 }
