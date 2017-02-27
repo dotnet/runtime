@@ -623,7 +623,6 @@ class Tests {
 		return 0;
 	}
 
-	[Category ("!INTERPRETER")]
 	public static int test_0_multi_array_cast () {
 		Duper[,] d = new Duper [1, 1];
 		object[,] o = d;
@@ -919,7 +918,6 @@ class Tests {
 		return f ();
 	}
 
-	[Category ("!INTERPRETER")]
 	public static int test_1_store_decimal () {
 		decimal[,] a = {{1}};
 
@@ -1438,7 +1436,6 @@ ncells ) {
 		return 0;
 	}
 
-	[Category ("!INTERPRETER")]
 	static int test_0_array_get_set_soft_float () {
 		float[,] arr = new float [2, 2];
 		arr [0, 0] = 256f;

@@ -553,7 +553,7 @@ ves_array_create (MonoDomain *domain, MonoClass *klass, MonoMethodSignature *sig
 static void 
 ves_array_set (MonoInvocation *frame)
 {
-	stackval *sp = frame->stack_args;
+	stackval *sp = frame->stack_args + 1;
 	MonoObject *o;
 	MonoArray *ao;
 	MonoClass *ac;
@@ -607,7 +607,7 @@ ves_array_set (MonoInvocation *frame)
 static void 
 ves_array_get (MonoInvocation *frame)
 {
-	stackval *sp = frame->stack_args;
+	stackval *sp = frame->stack_args + 1;
 	MonoObject *o;
 	MonoArray *ao;
 	MonoClass *ac;
@@ -651,7 +651,7 @@ ves_array_get (MonoInvocation *frame)
 static void
 ves_array_element_address (MonoInvocation *frame)
 {
-	stackval *sp = frame->stack_args;
+	stackval *sp = frame->stack_args + 1;
 	MonoObject *o;
 	MonoArray *ao;
 	MonoClass *ac;
