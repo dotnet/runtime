@@ -249,46 +249,6 @@ NESTED_ENTRY StubRareDisableTHROW, _TEXT, NoHandler
     ret
 NESTED_END StubRareDisableTHROW, _TEXT
 
-LEAF_ENTRY InternalExceptionWorker, _TEXT
-    pop     edx             // recover RETADDR
-    add     esp, eax        // release caller's args
-    push    edx             // restore RETADDR
-    jmp     C_FUNC(JIT_InternalThrow)
-LEAF_END InternalExceptionWorker, _TEXT
-
-// EAX -> number of caller arg bytes on the stack that we must remove before going
-// to the throw helper, which assumes the stack is clean.
-LEAF_ENTRY ArrayOpStubNullException, _TEXT
-    // kFactorReg and kTotalReg could not have been modified, but let's pop
-    // them anyway for consistency and to avoid future bugs.
-    pop     esi
-    pop     edi
-    mov     ecx, CORINFO_NullReferenceException_ASM
-    jmp     C_FUNC(InternalExceptionWorker)
-LEAF_END ArrayOpStubNullException, _TEXT
-
-// EAX -> number of caller arg bytes on the stack that we must remove before going
-// to the throw helper, which assumes the stack is clean.
-LEAF_ENTRY ArrayOpStubRangeException, _TEXT
-    // kFactorReg and kTotalReg could not have been modified, but let's pop
-    // them anyway for consistency and to avoid future bugs.
-    pop     esi
-    pop     edi
-    mov     ecx, CORINFO_IndexOutOfRangeException_ASM
-    jmp     C_FUNC(InternalExceptionWorker)
-LEAF_END ArrayOpStubRangeException, _TEXT
-
-// EAX -> number of caller arg bytes on the stack that we must remove before going
-// to the throw helper, which assumes the stack is clean.
-LEAF_ENTRY ArrayOpStubTypeMismatchException, _TEXT
-    // kFactorReg and kTotalReg could not have been modified, but let's pop
-    // them anyway for consistency and to avoid future bugs.
-    pop     esi
-    pop     edi
-    mov     ecx, CORINFO_ArrayTypeMismatchException_ASM
-    jmp     C_FUNC(InternalExceptionWorker)
-LEAF_END ArrayOpStubTypeMismatchException, _TEXT
-
 // ------------------------------------------------------------------------------
 //  This helper routine enregisters the appropriate arguments and makes the
 //  actual call.
