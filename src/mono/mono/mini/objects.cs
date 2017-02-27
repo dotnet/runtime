@@ -1768,7 +1768,6 @@ ncells ) {
 		}
 	}
 
-	[Category ("!INTERPRETER")]
 	public static int test_0_delegate_to_virtual_generic_on_ifaces () {
 		IComparer2 c = new AClass ();
 

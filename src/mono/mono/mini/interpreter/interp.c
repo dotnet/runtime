@@ -314,7 +314,20 @@ get_virtual_method (MonoDomain *domain, RuntimeMethod *runtime_method, MonoObjec
 		/* TODO: interface offset lookup is slow, go through IMT instead */
 		slot += mono_class_interface_offset (obj->vtable->klass, m->klass);
 	}
+
 	MonoMethod *virtual_method = obj->vtable->klass->vtable [slot];
+	if (m->is_inflated && mono_method_get_context (m)->method_inst) {
+		MonoGenericContext context = { NULL, NULL };
+
+		if (mono_class_is_ginst (virtual_method->klass))
+			context.class_inst = mono_class_get_generic_class (virtual_method->klass)->context.class_inst;
+		else if (mono_class_is_gtd (virtual_method->klass))
+			context.class_inst = mono_class_get_generic_container (virtual_method->klass)->context.class_inst;
+		context.method_inst = mono_method_get_context (m)->method_inst;
+
+		virtual_method = mono_class_inflate_generic_method_checked (virtual_method, &context, &error);
+		mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+	}
 	RuntimeMethod *virtual_runtime_method = mono_interp_get_runtime_method (domain, virtual_method, &error);
 	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 	return virtual_runtime_method;
