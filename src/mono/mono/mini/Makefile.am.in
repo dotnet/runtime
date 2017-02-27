@@ -534,8 +534,9 @@ iregtests = \
 	basic-float.exe \
 	basic-long.exe \
 	basic-calls.exe \
-	generics.exe \
-	objects.exe
+	objects.exe \
+	arrays.exe \
+	generics.exe
 
 if X86
 arch_sources = $(x86_sources)

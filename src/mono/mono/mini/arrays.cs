@@ -318,6 +318,7 @@ class Tests
 		return 0;
 	}
 
+	[Category ("!INTERPRETER")]
 	public static int test_0_multi_dimension_arrays () {
 		int sum;
 
@@ -548,6 +549,7 @@ class Tests
 		return 0;
 	}
 
+	[Category ("!INTERPRETER")]
 	public static int test_0_multidym_array_with_negative_lower_bound () {
 		int[,] x = (int[,]) Array.CreateInstance(typeof (int), new int[] { 2, 2 }, new int[] { -2, -3 });
 
@@ -778,6 +780,7 @@ class Tests
 	}
 
 	// #13544
+	[Category ("!INTERPRETER")]
 	public static int test_0_newarr_ovf () {
 		if (!alloc_long (5000000000))
 			return 1;
