@@ -31,9 +31,11 @@ crossgen_everything()
     echo "Running crossgen on all assemblies in $__targetDir."
     for file in $__targetDir/*.{dll,exe}
     do
-        if [ $(basename $file) != "Microsoft.Build.Framework.dll" ]; then
-            crossgen_single $file & pid=$!
-            __pids+=" $pid"
+        if needs_crossgen $file; then
+            if [ $(basename $file) != "Microsoft.Build.Framework.dll" ]; then
+                crossgen_single $file & pid=$!
+                __pids+=" $pid"
+            fi
         fi
     done
 
@@ -53,6 +55,30 @@ crossgen_single()
     else
       echo "Unable to successfully compile $__file"
     fi
+}
+
+needs_crossgen()
+{
+    __file=$1
+    if [[ $__file == *.ni.dll ]]; then
+        # File is already a native image.
+        return 1
+    elif [[ $__file == *.ni.exe ]]; then
+        # File is already a native image.
+        return 1
+    elif [[ $__file == *.dll ]]; then
+        if [ -f ${__file/.dll/.ni.dll} ]; then
+            # File already has a matching .ni.dll
+            return 1
+        fi
+    elif [[ $__file == *.exe ]]; then
+        if [ -f ${__file/.exe/.ni.exe} ]; then
+            # File already has a matching .ni.exe
+            return 1
+        fi
+    fi
+
+    return 0
 }
 
 if [ ! -z $BUILDTOOLS_SKIP_CROSSGEN ]; then
