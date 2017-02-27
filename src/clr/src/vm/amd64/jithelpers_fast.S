@@ -187,8 +187,7 @@ LEAF_ENTRY JIT_WriteBarrier, _TEXT
         mov     byte ptr [rdi + rax], 0FFh
 
 #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
-        NOP_3_BYTE // padding for alignment of constant
-        NOP_3_BYTE // padding for alignment of constant
+        NOP_6_BYTE // padding for alignment of constant
 
         movabs  rax, 0xF0F0F0F0F0F0F0F0
 
