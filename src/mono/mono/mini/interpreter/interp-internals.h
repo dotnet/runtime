@@ -82,7 +82,6 @@ typedef struct _RuntimeMethod
 	guint32 *local_offsets;
 	unsigned int param_count;
 	unsigned int hasthis;
-	unsigned int valuetype;
 } RuntimeMethod;
 
 struct _MonoInvocation {

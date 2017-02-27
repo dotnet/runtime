@@ -269,7 +269,6 @@ class Tests
 		return s.return_field () + s.return_field ();
 	}
 
-	[Category ("!INTERPRETER")]
 	public static int test_0_generic_get_value_optimization_vtype () {
 		TestStruct[] arr = new TestStruct[] { new TestStruct (100, 200), new TestStruct (300, 400) };
 		IEnumerator<TestStruct> enumerator = GenericClass<TestStruct>.Y (arr);

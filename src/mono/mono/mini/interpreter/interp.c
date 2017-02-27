@@ -271,7 +271,6 @@ mono_interp_get_runtime_method (MonoDomain *domain, MonoMethod *method, MonoErro
 	rtm->method = method;
 	rtm->param_count = mono_method_signature (method)->param_count;
 	rtm->hasthis = mono_method_signature (method)->hasthis;
-	rtm->valuetype = method->klass->valuetype;
 	mono_internal_hash_table_insert (&domain->jit_code_hash, method, rtm);
 	mono_os_mutex_unlock (&runtime_method_lookup_section);
 
@@ -1806,6 +1805,15 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			}
 
+			if (csignature->hasthis) {
+				MonoObject *this_arg = sp->data.p;
+
+				if (this_arg->vtable->klass->valuetype) {
+					gpointer *unboxed = mono_object_unbox (this_arg);
+					sp [0].data.p = unboxed;
+				}
+			}
+
 			ves_exec_method_with_context (&child_frame, context);
 
 			context->current_frame = frame;
@@ -1885,7 +1893,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			child_frame.stack_args = sp;
 
 			/* `this' can be NULL for string:.ctor */
-			if (child_frame.runtime_method->hasthis && !child_frame.runtime_method->valuetype && sp->data.p && mono_object_is_transparent_proxy (sp->data.p)) {
+			if (child_frame.runtime_method->hasthis && !child_frame.runtime_method->method->klass->valuetype && sp->data.p && mono_object_is_transparent_proxy (sp->data.p)) {
 				child_frame.runtime_method = mono_interp_get_runtime_method (context->domain, mono_marshal_get_remoting_invoke (child_frame.runtime_method->method), &error);
 				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			}
@@ -1920,7 +1928,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 				--sp;
 			child_frame.stack_args = sp;
 
-			if (child_frame.runtime_method->hasthis && !child_frame.runtime_method->valuetype && mono_object_is_transparent_proxy (sp->data.p)) {
+			if (child_frame.runtime_method->hasthis && !child_frame.runtime_method->method->klass->valuetype && mono_object_is_transparent_proxy (sp->data.p)) {
 				child_frame.runtime_method = mono_interp_get_runtime_method (context->domain, mono_marshal_get_remoting_invoke (child_frame.runtime_method->method), &error);
 				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			}
@@ -1959,10 +1967,11 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 				THROW_EX (mono_get_exception_null_reference(), ip - 2);
 			child_frame.runtime_method = get_virtual_method (context->domain, child_frame.runtime_method, this_arg);
 
-			if (this_arg->vtable->klass->valuetype && child_frame.runtime_method->valuetype) {
+			MonoClass *this_class = this_arg->vtable->klass;
+			if (this_class->valuetype && child_frame.runtime_method->method->klass->valuetype) {
 				/* unbox */
 				gpointer *unboxed = mono_object_unbox (this_arg);
-				stackval_from_data (&this_arg->vtable->klass->byval_arg, sp, (char *) unboxed, FALSE);
+				sp [0].data.p = unboxed;
 			}
 
 			ves_exec_method_with_context (&child_frame, context);
@@ -2006,9 +2015,10 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 				THROW_EX (mono_get_exception_null_reference(), ip - 2);
 			child_frame.runtime_method = get_virtual_method (context->domain, child_frame.runtime_method, this_arg);
 
-			if (this_arg->vtable->klass->valuetype && child_frame.runtime_method->valuetype) {
+			MonoClass *this_class = this_arg->vtable->klass;
+			if (this_class->valuetype && child_frame.runtime_method->method->klass->valuetype) {
 				gpointer *unboxed = mono_object_unbox (this_arg);
-				stackval_from_data (&this_arg->vtable->klass->byval_arg, sp, (char *) unboxed, FALSE);
+				sp [0].data.p = unboxed;
 			}
 
 			ves_exec_method_with_context (&child_frame, context);
