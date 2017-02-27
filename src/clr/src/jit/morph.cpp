@@ -16292,6 +16292,15 @@ GenTreePtr Compiler::fgInitThisClass()
             CORINFO_RESOLVED_TOKEN resolvedToken;
             memset(&resolvedToken, 0, sizeof(resolvedToken));
 
+            // We are in a shared method body, but maybe we don't need a runtime lookup after all.
+            // This covers the case of a generic method on a non-generic type.
+            if (!(info.compClassAttr & CORINFO_FLG_SHAREDINST))
+            {
+                resolvedToken.hClass = info.compClassHnd;
+                return impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_STATIC_BASE, TYP_BYREF);
+            }
+
+            // We need a runtime lookup.
             GenTreePtr ctxTree = getRuntimeContextTree(kind.runtimeLookupKind);
 
             // CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE with a zeroed out resolvedToken means "get the static
