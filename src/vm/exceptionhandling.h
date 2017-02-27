@@ -777,9 +777,7 @@ private: ;
     EnclosingClauseInfo     m_EnclosingClauseInfoOfCollapsedTracker;
 };
 
-#if defined(WIN64EXCEPTIONS)
 PTR_ExceptionTracker GetEHTrackerForPreallocatedException(OBJECTREF oPreAllocThrowable, PTR_ExceptionTracker pStartingEHTracker);
-#endif // WIN64EXCEPTIONS
 
 class TrackerAllocator
 {
