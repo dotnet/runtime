@@ -876,6 +876,23 @@ class Tests {
 		return 2;
 	}
 
+	class InstanceDelegateTest {
+		public int a;
+
+		public int return_field () {
+			return a;
+		}
+	}
+
+	public static int test_2_instance_delegate_with_field () {
+		InstanceDelegateTest t = new InstanceDelegateTest () { a = 1337 };
+		GetIntDel del = new GetIntDel (t.return_field);
+		int v = del ();
+		if (v != 1337)
+			return 0;
+		return 2;
+	}
+
 	interface IFaceVirtualDel {
 		int return_field ();
 	}
