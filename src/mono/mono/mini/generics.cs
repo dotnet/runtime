@@ -462,7 +462,6 @@ class Tests
 	}
 #endif
 
-	[Category ("!INTERPRETER")]
 	public static int test_0_ldvirtftn_generic_method () {
 		new GenericsTests ().ldvirtftn<string> ();
 
@@ -489,7 +488,6 @@ class Tests
 	// This cannot be made to work with full-aot, since there it is impossible to
 	// statically determine that Foo<string>.Bar <int> is needed, the code only
 	// references IFoo.Bar<int>
-	[Category ("!INTERPRETER")]
 	[Category ("!FULLAOT")]
 	public static int test_0_generic_virtual_on_interfaces () {
 		Foo<string>.count1 = 0;
@@ -515,7 +513,6 @@ class Tests
 		return 0;
 	}
 
-	[Category ("!INTERPRETER")]
 	public static int test_0_generic_virtual_on_interfaces_ref () {
 		Foo<string>.count1 = 0;
 		Foo<string>.count2 = 0;
