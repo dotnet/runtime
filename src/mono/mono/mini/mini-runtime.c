@@ -91,7 +91,7 @@
 #endif
 
 #ifdef ENABLE_INTERPRETER
-#include "interpreter/interp.h"
+#include "interp/interp.h"
 #endif
 
 static guint32 default_opt = 0;
