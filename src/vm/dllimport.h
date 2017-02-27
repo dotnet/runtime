@@ -572,12 +572,6 @@ protected:
     DWORD               m_dwStubFlags;
 };
 
-#ifndef _TARGET_X86_
-// The one static host for stub used on !_TARGET_X86_
-EXTERN_C void PInvokeStubForHost(void);
-#endif
-
-
 class NDirectStubParameters
 {
 public:
