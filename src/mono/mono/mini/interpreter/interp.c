@@ -1778,10 +1778,14 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			++sp;
 			ip += 3;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_POP)
-			++ip;
-			--sp;
+		MINT_IN_CASE(MINT_POP) {
+			guint16 u16 = (* (guint16 *)(ip + 1)) + 1;
+			if (u16 > 1)
+				memmove (sp - u16, sp - 1, (u16 - 1) * sizeof (stackval));
+			sp--;
+			ip += 2;
 			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_JMP) {
 			RuntimeMethod *new_method = rtm->data_items [* (guint16 *)(ip + 1)];
 			if (!new_method->transformed) {

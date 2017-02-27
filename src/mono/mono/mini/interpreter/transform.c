@@ -758,11 +758,13 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 				if (mono_interp_traceopt)
 					g_print ("Inline (empty) call of %s.%s\n", target_method->klass->name, target_method->name);
 				for (i = 0; i < csignature->param_count; i++)
-					ADD_CODE(td, MINT_POP); /*FIX: vt */
+					ADD_CODE (td, MINT_POP); /*FIX: vt */
+					ADD_CODE (td, 0);
 				if (csignature->hasthis) {
 					if (virtual)
 						ADD_CODE(td, MINT_CKNULL);
-					ADD_CODE(td, MINT_POP);
+					ADD_CODE (td, MINT_POP);
+					ADD_CODE (td, 0);
 				}
 				td->sp -= csignature->param_count + csignature->hasthis;
 				td->ip += 5;
@@ -1156,6 +1158,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 		case CEE_POP:
 			CHECK_STACK(&td, 1);
 			SIMPLE_OP(td, MINT_POP);
+			ADD_CODE (&td, 0);
 			if (td.sp [-1].type == STACK_TYPE_VT) {
 				int size = mono_class_value_size (td.sp [-1].klass, NULL);
 				size = (size + 7) & ~7;
@@ -2593,7 +2596,10 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 			++td.ip;
 		        switch (*td.ip) {
 				case CEE_MONO_CALLI_EXTRA_ARG:
-					/* Same as CEE_CALLI, llvm specific */
+					/* Same as CEE_CALLI, except that we drop the extra arg required for llvm specific behaviour */
+					ADD_CODE (&td, MINT_POP);
+					ADD_CODE (&td, 1);
+					--td.sp;
 					interp_transform_call (&td, method, NULL, domain, generic_context, is_bb_start, body_start_offset, NULL);
 					break;
 				case CEE_MONO_ICALL: {
