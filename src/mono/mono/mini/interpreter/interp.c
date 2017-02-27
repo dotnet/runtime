@@ -733,8 +733,9 @@ struct _MethodArguments {
 	size_t ilen;
 	gpointer *iargs;
 	size_t flen;
-	gpointer *fargs;
+	double *fargs;
 	gpointer *retval;
+	size_t is_float_ret;
 };
 
 typedef struct _MethodArguments MethodArguments;
@@ -771,6 +772,9 @@ static MethodArguments* build_args_from_sig (MonoMethodSignature *sig, MonoInvoc
 		case MONO_TYPE_GENERICINST:
 			margs->ilen++;
 			break;
+		case MONO_TYPE_R8:
+			margs->flen++;
+			break;
 		default:
 			g_error ("build_args_from_sig: not implemented yet (1): 0x%x\n", ptype);
 		}
@@ -779,14 +783,18 @@ static MethodArguments* build_args_from_sig (MonoMethodSignature *sig, MonoInvoc
 	if (margs->ilen > 0)
 		margs->iargs = g_malloc0 (sizeof (gpointer) * margs->ilen);
 
-	if (margs->ilen > 6)
-		g_error ("build_args_from_sig: TODO, more than 6 iregs: %d\n", margs->ilen);
-
 	if (margs->flen > 0)
-		g_error ("build_args_from_sig: TODO, allocate floats: %d\n", margs->flen);
+		margs->fargs = g_malloc0 (sizeof (double) * margs->flen);
+
+	if (margs->ilen > 6)
+		g_error ("build_args_from_sig: TODO, allocate gregs: %d\n", margs->ilen);
+
+	if (margs->flen > 3)
+		g_error ("build_args_from_sig: TODO, allocate fregs: %d\n", margs->flen);
 
 
 	size_t int_i = 0;
+	size_t int_f = 0;
 
 	if (sig->hasthis) {
 		margs->iargs [0] = frame->stack_args->data.p;
@@ -820,15 +828,45 @@ static MethodArguments* build_args_from_sig (MonoMethodSignature *sig, MonoInvoc
 #endif
 			int_i++;
 			break;
+		case MONO_TYPE_R8:
+			margs->fargs [int_f] = frame->stack_args [i].data.f;
+			int_f++;
+			break;
 		default:
 			g_error ("build_args_from_sig: not implemented yet (2): 0x%x\n", ptype);
 		}
 	}
 
-	if (sig->ret->type != MONO_TYPE_VOID) {
-		margs->retval = &(frame->retval->data.p);
-	} else {
-		margs->retval = NULL;
+	switch (sig->ret->type) {
+		case MONO_TYPE_BOOLEAN:
+		case MONO_TYPE_CHAR:
+		case MONO_TYPE_I1:
+		case MONO_TYPE_U1:
+		case MONO_TYPE_I2:
+		case MONO_TYPE_U2:
+		case MONO_TYPE_I4:
+		case MONO_TYPE_U4:
+		case MONO_TYPE_I:
+		case MONO_TYPE_U:
+		case MONO_TYPE_PTR:
+		case MONO_TYPE_SZARRAY:
+		case MONO_TYPE_CLASS:
+		case MONO_TYPE_OBJECT:
+		case MONO_TYPE_STRING:
+		case MONO_TYPE_I8:
+		case MONO_TYPE_VALUETYPE:
+		case MONO_TYPE_GENERICINST:
+			margs->retval = &(frame->retval->data.p);
+			break;
+		case MONO_TYPE_R8:
+			margs->retval = &(frame->retval->data.p);
+			margs->is_float_ret = 1;
+			break;
+		case MONO_TYPE_VOID:
+			margs->retval = NULL;
+			break;
+		default:
+			g_error ("build_args_from_sig: ret type not implemented yet: 0x%x\n", sig->ret->type);
 	}
 
 	return margs;

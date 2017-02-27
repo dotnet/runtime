@@ -536,6 +536,7 @@ iregtests = \
 	basic-calls.exe \
 	objects.exe \
 	arrays.exe \
+	basic-math.exe \
 	generics.exe
 
 if X86

@@ -983,10 +983,12 @@ mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 {
 #ifdef ENABLE_INTERPRETER
 	const int gregs_num = 6;
-	guint8 *start = NULL, *code, *exits [gregs_num], *leave_tramp;
+	const int fregs_num = 3;
+	guint8 *start = NULL, *code, *label_gexits [gregs_num], *label_fexits [fregs_num], *label_leave_tramp [3], *label_is_float_ret;
 	MonoJumpInfo *ji = NULL;
 	GSList *unwind_ops = NULL;
-	static int arg_regs[] = {AMD64_ARG_REG1, AMD64_ARG_REG2, AMD64_ARG_REG3, AMD64_ARG_REG4, AMD64_R8, AMD64_R9};
+	static int garg_regs[] = {AMD64_ARG_REG1, AMD64_ARG_REG2, AMD64_ARG_REG3, AMD64_ARG_REG4, AMD64_R8, AMD64_R9};
+	static int farg_regs[] = {AMD64_XMM0, AMD64_XMM1, AMD64_XMM2};
 	int i, offset = 0;
 
 	start = code = (guint8 *) mono_global_codeman_reserve (256);
@@ -1002,6 +1004,26 @@ mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 	amd64_mov_reg_reg (code, AMD64_R11, AMD64_ARG_REG2, 8);
 	
 	/* TODO: do float stuff first */
+	/* move flen into RAX */ // TODO: struct offset
+	amd64_mov_reg_membase (code, AMD64_RAX, AMD64_R11, 16, 8);
+	/* load pointer to fregs into R11 */ // TODO: struct offset
+	amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11, 24, 8);
+
+	for (i = 0; i < fregs_num; ++i) {
+		amd64_test_reg_reg (code, AMD64_RAX, AMD64_RAX);
+		label_fexits [i] = code;
+		x86_branch8 (code, X86_CC_Z, 0, FALSE);
+
+		amd64_sse_movsd_reg_membase (code, farg_regs [i], AMD64_R11, i * sizeof (double));
+		amd64_dec_reg_size (code, AMD64_RAX, 1);
+	}
+
+	for (i = 0; i < fregs_num; i++) {
+		x86_patch (label_fexits [i], code);
+	}
+
+	/* load pointer to MethodArguments* into R11 */
+	amd64_mov_reg_reg (code, AMD64_R11, AMD64_ARG_REG2, 8);
 
 	/* move ilen into RAX */ // TODO: struct offset
 	amd64_mov_reg_membase (code, AMD64_RAX, AMD64_R11, 0, 8);
@@ -1010,7 +1032,7 @@ mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 
 	for (i = 0; i < gregs_num; i++) {
 		amd64_test_reg_reg (code, AMD64_RAX, AMD64_RAX);
-		exits [i] = code;
+		label_gexits [i] = code;
 		x86_branch8 (code, X86_CC_Z, 0, FALSE);
 
 #ifdef TARGET_WIN32
@@ -1018,7 +1040,7 @@ mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 #else
 		if (i < 6) {
 #endif
-			amd64_mov_reg_membase (code, arg_regs [i], AMD64_R11, i * sizeof (gpointer), 8);
+			amd64_mov_reg_membase (code, garg_regs [i], AMD64_R11, i * sizeof (gpointer), 8);
 		} else {
 			g_error ("not tested yet.");
 			amd64_push_reg (code, AMD64_RAX);
@@ -1031,7 +1053,7 @@ mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 	}
 
 	for (i = 0; i < gregs_num; i++) {
-		x86_patch (exits [i], code);
+		x86_patch (label_gexits [i], code);
 	}
 
 
@@ -1043,18 +1065,53 @@ mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 
 	/* load MethodArguments */
 	amd64_pop_reg (code, AMD64_R11);
+	amd64_push_reg (code, AMD64_R11);
+
+	/* load is_float_ret */ // TODO: struct offset
+	amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11, 0x28, 8);
+
+	/* check if a float return value is expected */
+	amd64_test_reg_reg (code, AMD64_R11, AMD64_R11);
+
+	label_is_float_ret = code;
+	x86_branch8 (code, X86_CC_NZ, 0, FALSE);
+
+
+
+	/* greg return */
+	/* load MethodArguments */
+	amd64_pop_reg (code, AMD64_R11);
 	/* load retval */ // TODO: struct offset
 	amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11, 0x20, 8);
 
 	amd64_test_reg_reg (code, AMD64_R11, AMD64_R11);
-	leave_tramp = code;
+	label_leave_tramp [0] = code;
 	x86_branch8 (code, X86_CC_Z, 0, FALSE);
 
 	amd64_mov_membase_reg (code, AMD64_R11, 0, AMD64_RAX, 8);
 
-	x86_patch (leave_tramp, code);
-	amd64_ret (code);
+	label_leave_tramp [1] = code;
+	x86_jump8 (code, 0);
 
+
+
+	/* freg return */
+	x86_patch (label_is_float_ret, code);
+	/* load MethodArguments */
+	amd64_pop_reg (code, AMD64_R11);
+	/* load retval */ // TODO: struct offset
+	amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11, 0x20, 8);
+
+	amd64_test_reg_reg (code, AMD64_R11, AMD64_R11);
+	label_leave_tramp [2] = code;
+	x86_branch8 (code, X86_CC_Z, 0, FALSE);
+
+	amd64_sse_movsd_membase_reg (code, AMD64_R11, 0, AMD64_XMM0);
+
+
+	for (i = 0; i < 3; i++)
+		x86_patch (label_leave_tramp [i], code);
+	amd64_ret (code);
 
 	mono_arch_flush_icache (start, code - start);
 	mono_profiler_code_buffer_new (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL);
