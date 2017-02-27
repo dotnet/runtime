@@ -20,10 +20,6 @@ namespace System.Net.Sockets
     {
         public const bool SupportsMultipleConnectAttempts = true;
 
-        private static readonly int s_protocolInformationSize = Marshal.SizeOf<Interop.Winsock.WSAPROTOCOL_INFO>();
-
-        public static int ProtocolInformationSize { get { return s_protocolInformationSize; } }
-
         private static void MicrosecondsToTimeValue(long microseconds, ref Interop.Winsock.TimeValue socketTime)
         {
             const int microcnv = 1000000;
