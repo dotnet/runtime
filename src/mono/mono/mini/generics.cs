@@ -552,7 +552,6 @@ class Tests
 		Value_2 = 2
 	}
 
-	[Category ("!INTERPRETER")]
 	public static int test_0_regress_550964_constrained_enum_long () {
         MyEnumUlong a = MyEnumUlong.Value_2;
         MyEnumUlong b = MyEnumUlong.Value_2;

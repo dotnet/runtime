@@ -722,6 +722,11 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		mono_class_setup_vtable (target_method->klass);
 
 		if (constrained_class->valuetype && (target_method->klass == mono_defaults.object_class || target_method->klass == mono_defaults.enum_class->parent || target_method->klass == mono_defaults.enum_class)) {
+			if (target_method->klass == mono_defaults.enum_class && (td->sp - csignature->param_count - 1)->type == STACK_TYPE_MP) {
+				/* managed pointer on the stack, we need to deref that puppy */
+				ADD_CODE (td, MINT_LDIND_I);
+				ADD_CODE (td, csignature->param_count);
+			}
 			ADD_CODE (td, MINT_BOX);
 			ADD_CODE (td, get_data_item_index (td, constrained_class));
 			ADD_CODE (td, csignature->param_count);
