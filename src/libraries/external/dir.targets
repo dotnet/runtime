@@ -35,11 +35,11 @@
   <Target Name="Build"
           Condition=" '$(_InvalidConfigurationWarning)' != 'true' "
           DependsOnTargets="$(BuildDependsOn)"
-          Returns="@(BinplaceItem)" />
+          Returns="@(BinPlaceItem)" />
 
   <!-- Depprojs need to run Compile in order to populate items that will be copied to output -->
   <Target Name="GetTargetPath"
-          DependsOnTargets="Compile;GetBinplaceItems"
-          Returns="@(BinplaceItem)" />
+          DependsOnTargets="Compile;GetBinPlaceItems"
+          Returns="@(BinPlaceItem)" />
 
 </Project>

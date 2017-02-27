@@ -45,7 +45,7 @@
     <Touch Files="$(GenFacadesSemaphoreFile)" AlwaysCreate="true" />
   </Target>
 
-  <Target Name="Build" DependsOnTargets="RunGenFacades;BinPlaceReferenceAssembly;BinPlaceRuntimeAssembly" />
+  <Target Name="Build" DependsOnTargets="RunGenFacades;BinPlace" />
   <Target Name="Clean">
     <RemoveDir Directories="$(IntermediateOutputPath);$(GenFacadesOutputPath)" />
   </Target>
@@ -53,10 +53,10 @@
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 
-  <Target Name="GetBinplaceItems">
+  <Target Name="GetBinPlaceItems">
     <ItemGroup>
-      <BinplaceItem Include="$(GenFacadesOutputPath)*.dll" />
-      <FileWrites Include="@(BinplaceItem)" />
+      <BinPlaceItem Include="$(GenFacadesOutputPath)*.dll" />
+      <FileWrites Include="@(BinPlaceItem)" />
     </ItemGroup>
   </Target>
 </Project>
