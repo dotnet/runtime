@@ -661,6 +661,12 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 				csignature = (MonoMethodSignature *)mono_method_get_wrapper_data (method, token);
 			else
 				csignature = mono_metadata_parse_signature (image, token);
+
+			if (generic_context) {
+				csignature = mono_inflate_generic_signature (csignature, generic_context, &error);
+				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+			}
+
 			target_method = NULL;
 		} else {
 			if (method->wrapper_type == MONO_WRAPPER_NONE)
@@ -839,13 +845,12 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 }
 
 static void
-generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
+generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, MonoGenericContext *generic_context)
 {
 	MonoMethodHeader *header = mono_method_get_header (method);
 	MonoMethodSignature *signature = mono_method_signature (method);
 	MonoImage *image = method->klass->image;
 	MonoDomain *domain = mono_domain_get ();
-	MonoGenericContext *generic_context = NULL;
 	MonoClass *constrained_class = NULL;
 	MonoError error;
 	int offset, mt;
@@ -860,9 +865,6 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 	guint32 token;
 	TransformData td;
 	int generating_code = 1;
-
-	if (mono_method_signature (method)->is_inflated)
-		generic_context = &((MonoMethodInflated *) method)->context;
 
 	memset(&td, 0, sizeof(td));
 	td.method = method;
@@ -3082,7 +3084,12 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 	mono_profiler_method_jit (method); /* sort of... */
 
 	if (mono_method_signature (method)->is_inflated)
-		generic_context = &((MonoMethodInflated *) method)->context;
+		generic_context = mono_method_get_context (method);
+	else {
+		MonoGenericContainer *generic_container = mono_method_get_generic_container (method);
+		if (generic_container)
+			generic_context = &generic_container->context;
+	}
 
 	if (method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME)) {
 		MonoMethod *nm = NULL;
@@ -3296,7 +3303,7 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 	runtime_method->args_size = offset;
 	g_assert (runtime_method->args_size < 10000);
 
-	generate(method, runtime_method, is_bb_start);
+	generate (method, runtime_method, is_bb_start, generic_context);
 
 	g_free (is_bb_start);
 
