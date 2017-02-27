@@ -692,6 +692,12 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		csignature = mono_method_signature (target_method);
 	}
 
+	/* TODO: that's oddly specific? */
+	if (generic_context && target_method && !strcmp ("Invoke", target_method->name) && target_method->klass->parent == mono_defaults.multicastdelegate_class) {
+		csignature = mono_inflate_generic_signature (csignature, generic_context, &error);
+		mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+	}
+
 	if (constrained_class) {
 		if (constrained_class->enumtype && !strcmp (target_method->name, "GetHashCode")) {
 			/* Use the corresponding method from the base type to avoid boxing */

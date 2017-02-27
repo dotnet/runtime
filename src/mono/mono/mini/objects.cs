@@ -907,14 +907,12 @@ class Tests {
 		}
 	}
 
-	[Category ("!INTERPRETER")]
 	public static int test_42_vtype_delegate () {
 		var s = new VtypeVirtualDelStruct () { f = 42 };
 		Func<int> f = s.return_field_nonvirt;
 		return f ();
 	}
 
-	[Category ("!INTERPRETER")]
 	public static int test_42_vtype_virtual_delegate () {
 		IFaceVirtualDel s = new VtypeVirtualDelStruct () { f = 42 };
 		Func<int> f = s.return_field;
