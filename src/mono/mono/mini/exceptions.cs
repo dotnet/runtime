@@ -981,6 +981,7 @@ class Tests
 		return 0;
 	}
 	
+	[Category ("!INTERPRETER")]
 	public static int test_0_int_cast () {
 		int a;
 		long l;
@@ -1462,6 +1463,7 @@ class Tests
 		return 0;
 	}
 	
+	[Category ("!INTERPRETER")]
 	[Category ("NaClDisable")]
 	public static int test_0_div_zero () {
 		int d = 1;
@@ -1633,6 +1635,7 @@ class Tests
 		return 0;
 	}
 
+	[Category ("!INTERPRETER")]
 	[Category ("NaClDisable")]
 	public static int test_0_long_div_zero () {
 		long d = 1;
@@ -1800,6 +1803,7 @@ class Tests
 		return 0;
 	}
 
+	[Category ("!INTERPRETER")]
 	public static int test_3_checked_cast_un () {
                 ulong i = 0x8000000034000000;
                 long j;
@@ -1815,6 +1819,7 @@ class Tests
 		return 3;
 	}
 	
+	[Category ("!INTERPRETER")]
 	public static int test_4_checked_cast () {
                 long i;
                 ulong j;
@@ -1842,6 +1847,7 @@ class Tests
 		7, 0, 7, 1, 7, 2, 7, 3, 7, 4, 7, 5, 7, 6, 7, 7, 7, 8,
 	};
 
+	[Category ("!INTERPRETER")]
 	public static int test_0_multi_dim_array_access () {
 		int [,] a = System.Array.CreateInstance (typeof (int),
 			new int [] {3,6}, new int [] {2,2 }) as int[,];
@@ -1878,6 +1884,7 @@ class Tests
 		o = "buddy";
 	}
 
+	[Category ("!INTERPRETER")]
 	public static int test_2_array_mismatch () {
 		string[] a = { "hello", "world" };
 		object[] b = a;
@@ -2230,6 +2237,7 @@ class Tests
 		}
 	}
 
+	[Category ("!INTERPRETER")]
 	public static int test_0_exception_in_cctor () {
 		try {
 			Broken.DoSomething ();
@@ -2318,6 +2326,7 @@ class Tests
 		Console.WriteLine ();
 	}
 
+	[Category ("!INTERPRETER")]
 	[Category ("!BITCODE")]
 	public static int test_0_rethrow_stacktrace () {
 		// Check that rethrowing an exception preserves the original stack trace
@@ -2380,6 +2389,7 @@ class Tests
 		}
 	}
 
+	[Category ("!INTERPRETER")]
 	public static int test_0_array_size () {
 		bool failed;
 
@@ -2706,6 +2716,7 @@ class Tests
 		public static Foo* pFoo;
 	}
 
+	[Category ("!INTERPRETER")]
 	/* MS.NET doesn't seem to throw in this case */
 	public unsafe static int test_0_ldflda_null_pointer () {
 		int* pi = &Foo.pFoo->i;

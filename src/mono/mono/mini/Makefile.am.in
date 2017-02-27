@@ -537,7 +537,10 @@ iregtests = \
 	objects.exe \
 	arrays.exe \
 	basic-math.exe \
-	generics.exe
+	exceptions.exe \
+	devirtualization.exe \
+	generics.exe \
+	basic-simd.exe
 
 if X86
 arch_sources = $(x86_sources)
