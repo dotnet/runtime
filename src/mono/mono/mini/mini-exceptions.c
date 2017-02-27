@@ -73,6 +73,7 @@
 #include "seq-points.h"
 #include "llvm-runtime.h"
 #include "mini-llvm.h"
+#include "interpreter/interp.h"
 
 #ifdef ENABLE_LLVM
 #include "mini-llvm-cpp.h"
@@ -220,7 +221,13 @@ mono_exceptions_init (void)
 #ifdef MONO_ARCH_HAVE_EXCEPTIONS_INIT
 	mono_arch_exceptions_init ();
 #endif
-	cbs.mono_walk_stack_with_ctx = mono_runtime_walk_stack_with_ctx;
+#ifdef ENABLE_INTERPRETER
+	if (mono_use_interpreter)
+		cbs.mono_walk_stack_with_ctx = interp_walk_stack_with_ctx;
+	else
+#endif
+		cbs.mono_walk_stack_with_ctx = mono_runtime_walk_stack_with_ctx;
+
 	cbs.mono_walk_stack_with_state = mono_walk_stack_with_state;
 
 	if (mono_llvm_only)

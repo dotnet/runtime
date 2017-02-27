@@ -16,4 +16,7 @@ mono_interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoOb
 
 void
 mono_interp_init_delegate (MonoDelegate *del);
+
+void
+interp_walk_stack_with_ctx (MonoInternalStackWalk func, MonoContext *ctx, MonoUnwindOptions options, void *user_data);
 #endif /* __MONO_MINI_INTERPRETER_H__ */

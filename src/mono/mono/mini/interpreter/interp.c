@@ -689,35 +689,42 @@ ves_array_element_address (MonoInvocation *frame)
 	frame->retval->data.p = ea;
 }
 
-static void
-interp_walk_stack (MonoStackWalk func, gboolean do_il_offset, gpointer user_data)
+void
+interp_walk_stack_with_ctx (MonoInternalStackWalk func, MonoContext *ctx, MonoUnwindOptions options, void *user_data)
 {
-	ThreadContext *context = mono_native_tls_get_value (thread_context_id);
-	MonoInvocation *frame;
-	int il_offset;
-	MonoMethodHeader *hd;
 	MonoError error;
+	ThreadContext *context = mono_native_tls_get_value (thread_context_id);
 
-	if (!context) return;
-		
-	frame = context->current_frame;
+	MonoInvocation *frame = context->current_frame;
 
 	while (frame) {
-		gboolean managed = FALSE;
-		MonoMethod *method = frame->runtime_method->method;
-		if (!method || (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) || (method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME)))
-			il_offset = -1;
-		else {
-			hd = mono_method_get_header_checked (method, &error);
+		MonoStackFrameInfo fi;
+		memset (&fi, 0, sizeof (MonoStackFrameInfo));
+
+		/* TODO: hack to make some asserts happy. */
+		fi.ji = (MonoJitInfo *) frame->runtime_method;
+
+		if (frame->runtime_method)
+			fi.method = fi.actual_method = frame->runtime_method->method;
+
+		if (!fi.method || (fi.method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) || (fi.method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME))) {
+			fi.il_offset = -1;
+			fi.type = FRAME_TYPE_MANAGED_TO_NATIVE;
+		} else {
+			MonoMethodHeader *hd = mono_method_get_header_checked (fi.method, &error);
 			mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-			il_offset = frame->ip - (const unsigned short *)hd->code;
-			if (!method->wrapper_type)
-				managed = TRUE;
+			fi.type = FRAME_TYPE_MANAGED;
+			fi.il_offset = frame->ip - (const unsigned short *) hd->code;
+			if (!fi.method->wrapper_type)
+				fi.managed = TRUE;
 		}
-		if (func (method, -1, il_offset, managed, user_data))
+
+		if (func (&fi, ctx, user_data))
 			return;
 		frame = frame->parent;
 	}
+
+	g_assert (0);
 }
 
 static MonoPIFunc mono_interp_enter_icall_trampoline = NULL;
