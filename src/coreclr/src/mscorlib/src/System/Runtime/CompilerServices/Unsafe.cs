@@ -43,6 +43,7 @@ namespace System.Runtime.CompilerServices
         {
             // The body of this function will be replaced by the EE with unsafe code that just returns sizeof !!T
             // See getILIntrinsicImplementationForUnsafe for how this happens.  
+            typeof(T).ToString(); // Type token used by the actual method body
             throw new InvalidOperationException();
         }
 
@@ -67,7 +68,7 @@ namespace System.Runtime.CompilerServices
         {
             // The body of this function will be replaced by the EE with unsafe code!!!
             // See getILIntrinsicImplementationForUnsafe for how this happens.
-            typeof(T).ToString(); // Type used by the actual method body
+            typeof(T).ToString(); // Type token used by the actual method body
             throw new InvalidOperationException();
         }
 
@@ -105,6 +106,46 @@ namespace System.Runtime.CompilerServices
         {
             // The body of this function will be replaced by the EE with unsafe code!!!
             // See getILIntrinsicImplementationForUnsafe for how this happens.  
+            throw new InvalidOperationException();
+        }
+
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T ReadUnaligned<T>(void* source)
+        {
+            // The body of this function will be replaced by the EE with unsafe code!!!
+            // See getILIntrinsicImplementationForUnsafe for how this happens.  
+            typeof(T).ToString(); // Type token used by the actual method body
+            throw new InvalidOperationException();
+        }
+
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T ReadUnaligned<T>(ref byte source)
+        {
+            // The body of this function will be replaced by the EE with unsafe code!!!
+            // See getILIntrinsicImplementationForUnsafe for how this happens.  
+            typeof(T).ToString(); // Type token used by the actual method body
+            throw new InvalidOperationException();
+        }
+
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteUnaligned<T>(void* destination, T value)
+        {
+            // The body of this function will be replaced by the EE with unsafe code!!!
+            // See getILIntrinsicImplementationForUnsafe for how this happens.  
+            typeof(T).ToString(); // Type token used by the actual method body
+            throw new InvalidOperationException();
+        }
+
+        [NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void WriteUnaligned<T>(ref byte destination, T value)
+        {
+            // The body of this function will be replaced by the EE with unsafe code!!!
+            // See getILIntrinsicImplementationForUnsafe for how this happens.  
+            typeof(T).ToString(); // Type token used by the actual method body
             throw new InvalidOperationException();
         }
     }
