@@ -223,6 +223,8 @@ mono_save_seq_point_info (MonoCompile *cfg)
 		}
 	}
 
+	g_free (seq_points);
+
 	if (has_debug_data)
 		g_free (next);
 
