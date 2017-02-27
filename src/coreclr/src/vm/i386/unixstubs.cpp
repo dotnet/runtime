@@ -44,12 +44,6 @@ extern "C"
     void STDCALL JIT_ProfilerEnterLeaveTailcallStub(UINT_PTR ProfilerHandle)
     {
     }
-
-    BOOL CallRtlUnwind()
-    {
-        PORTABILITY_ASSERT("CallRtlUnwind");
-        return FALSE;
-    }
 };
 
 VOID __cdecl PopSEHRecords(LPVOID pTargetSP)
