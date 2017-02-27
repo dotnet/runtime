@@ -772,6 +772,7 @@ static MethodArguments* build_args_from_sig (MonoMethodSignature *sig, MonoInvoc
 		case MONO_TYPE_GENERICINST:
 			margs->ilen++;
 			break;
+		case MONO_TYPE_R4:
 		case MONO_TYPE_R8:
 			margs->flen++;
 			break;
@@ -828,6 +829,7 @@ static MethodArguments* build_args_from_sig (MonoMethodSignature *sig, MonoInvoc
 #endif
 			int_i++;
 			break;
+		case MONO_TYPE_R4:
 		case MONO_TYPE_R8:
 			margs->fargs [int_f] = frame->stack_args [i].data.f;
 			int_f++;
@@ -858,6 +860,7 @@ static MethodArguments* build_args_from_sig (MonoMethodSignature *sig, MonoInvoc
 		case MONO_TYPE_GENERICINST:
 			margs->retval = &(frame->retval->data.p);
 			break;
+		case MONO_TYPE_R4:
 		case MONO_TYPE_R8:
 			margs->retval = &(frame->retval->data.p);
 			margs->is_float_ret = 1;

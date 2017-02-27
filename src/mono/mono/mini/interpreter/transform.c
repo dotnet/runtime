@@ -2265,11 +2265,53 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 			token = read32 (td.ip + 1);
 			klass = mono_class_get_full (image, token, generic_context);
 			switch (mint_type (&klass->byval_arg)) {
+				case MINT_TYPE_I1:
+					ENSURE_I4 (&td, 1);
+					SIMPLE_OP (td, MINT_LDELEM_I1);
+					--td.sp;
+					SET_SIMPLE_TYPE(td.sp - 1, STACK_TYPE_I4);
+					break;
+				case MINT_TYPE_U1:
+					ENSURE_I4 (&td, 1);
+					SIMPLE_OP (td, MINT_LDELEM_U1);
+					--td.sp;
+					SET_SIMPLE_TYPE(td.sp - 1, STACK_TYPE_I4);
+					break;
+				case MINT_TYPE_U2:
+					ENSURE_I4 (&td, 1);
+					SIMPLE_OP (td, MINT_LDELEM_U2);
+					--td.sp;
+					SET_SIMPLE_TYPE(td.sp - 1, STACK_TYPE_I4);
+					break;
+				case MINT_TYPE_I2:
+					ENSURE_I4 (&td, 1);
+					SIMPLE_OP (td, MINT_LDELEM_I2);
+					--td.sp;
+					SET_SIMPLE_TYPE(td.sp - 1, STACK_TYPE_I4);
+					break;
 				case MINT_TYPE_I4:
 					ENSURE_I4 (&td, 1);
 					SIMPLE_OP (td, MINT_LDELEM_I4);
 					--td.sp;
 					SET_SIMPLE_TYPE(td.sp - 1, STACK_TYPE_I4);
+					break;
+				case MINT_TYPE_I8:
+					ENSURE_I4 (&td, 1);
+					SIMPLE_OP (td, MINT_LDELEM_I8);
+					--td.sp;
+					SET_SIMPLE_TYPE(td.sp - 1, STACK_TYPE_I8);
+					break;
+				case MINT_TYPE_R4:
+					ENSURE_I4 (&td, 1);
+					SIMPLE_OP (td, MINT_LDELEM_R4);
+					--td.sp;
+					SET_SIMPLE_TYPE(td.sp - 1, STACK_TYPE_R8);
+					break;
+				case MINT_TYPE_R8:
+					ENSURE_I4 (&td, 1);
+					SIMPLE_OP (td, MINT_LDELEM_R8);
+					--td.sp;
+					SET_SIMPLE_TYPE(td.sp - 1, STACK_TYPE_R8);
 					break;
 				case MINT_TYPE_O:
 					ENSURE_I4 (&td, 1);

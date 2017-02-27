@@ -113,6 +113,7 @@ public class VectorTests {
 		return Vector2.Abs (v1);
 	}
 
+	[Category ("!INTERPRETER")]
 	public static int test_0_vector2_abs () {
 		var v1 = new Vector2 (-1.0f, -2.0f);
 		var v2 = new Vector2 (1.0f, 2.0f);
@@ -350,6 +351,7 @@ public class VectorTests {
 		return Vector4.Abs (v1);
 	}
 
+	[Category ("!INTERPRETER")]
 	public static int test_0_vector4_abs () {
 		var v1 = new Vector4 (-1.0f, -2.0f, -3.0f, -4.0f);
 		var v2 = new Vector4 (1.0f, 2.0f, 3.0f, 4.0f);
@@ -588,6 +590,7 @@ public class VectorTests {
 		return Vector3.Abs (v1);
 	}
 
+	[Category ("!INTERPRETER")]
 	public static int test_0_vector3_abs () {
 		var v1 = new Vector3 (-1.0f, -2.0f, -3.0f);
 		var v2 = new Vector3 (1.0f, 2.0f, 3.0f);
