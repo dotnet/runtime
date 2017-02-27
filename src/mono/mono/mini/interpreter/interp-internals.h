@@ -116,9 +116,6 @@ extern int mono_interp_traceopt;
 MonoException *
 mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *context);
 
-MonoDelegate*
-mono_interp_ftnptr_to_delegate (MonoClass *klass, gpointer ftn);
-
 void
 mono_interp_transform_init (void);
 

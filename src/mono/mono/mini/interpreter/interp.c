@@ -871,47 +871,6 @@ ves_pinvoke_method (MonoInvocation *frame, MonoMethodSignature *sig, MonoFuncV a
 	g_free (margs);
 }
 
-static void
-interp_delegate_ctor (MonoDomain *domain, MonoObject *this, MonoObject *target, RuntimeMethod *runtime_method)
-{
-	MonoDelegate *delegate = (MonoDelegate *)this;
-	MonoError error;
-
-	delegate->method_info = mono_method_get_object_checked (domain, runtime_method->method, NULL, &error);
-	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-	delegate->target = target;
-
-	if (target && mono_object_is_transparent_proxy (target)) {
-		MonoMethod *method = mono_marshal_get_remoting_invoke (runtime_method->method);
-		delegate->method_ptr = mono_interp_get_runtime_method (domain, method, &error);
-		mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-	} else {
-		delegate->method_ptr = runtime_method;
-	}
-}
-
-MonoDelegate*
-mono_interp_ftnptr_to_delegate (MonoClass *klass, gpointer ftn)
-{
-	MonoDelegate *d;
-	MonoJitInfo *ji;
-	MonoDomain *domain = mono_domain_get ();
-	MonoError error;
-
-	d = (MonoDelegate*)mono_object_new_checked (domain, klass, &error);
-	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-
-	ji = mono_jit_info_table_find (domain, ftn);
-	if (ji == NULL)
-		mono_raise_exception (mono_get_exception_argument ("", "Function pointer was not created by a Delegate."));
-
-	/* FIXME: discard the wrapper and call the original method */
-	interp_delegate_ctor (domain, (MonoObject*)d, NULL, mono_interp_get_runtime_method (domain, ji->d.method, &error));
-	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-
-	return d;
-}
-
 /*
  * From the spec:
  * runtime specifies that the implementation of the method is automatically
@@ -927,15 +886,6 @@ ves_runtime_method (MonoInvocation *frame, ThreadContext *context)
 	MonoError error;
 
 	mono_class_init (method->klass);
-
-	isinst_obj = mono_object_isinst_checked (obj, mono_defaults.multicastdelegate_class, &error);
-	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-	if (obj && isinst_obj) {
-		if (*name == '.' && (strcmp (name, ".ctor") == 0)) {
-			interp_delegate_ctor (context->domain, obj, frame->stack_args [1].data.p, frame->stack_args[2].data.p);
-			return;
-		}
-	}
 
 	isinst_obj = mono_object_isinst_checked (obj, mono_defaults.array_class, &error);
 	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
@@ -4330,24 +4280,6 @@ interp_ves_icall_get_trace (MonoException *exc, gint32 skip, MonoBoolean need_fi
 	}
 
 	return res;
-}
-
-static MonoObject *
-ves_icall_System_Delegate_CreateDelegate_internal (MonoReflectionType *type, MonoObject *target, MonoReflectionMethod *info)
-{
-	MonoClass *delegate_class = mono_class_from_mono_type (type->type);
-	MonoObject *delegate;
-	MonoError error;
-
-	g_assert (delegate_class->parent == mono_defaults.multicastdelegate_class);
-
-	delegate = mono_object_new_checked (mono_object_domain (type), delegate_class, &error);
-	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-
-	interp_delegate_ctor (mono_object_domain (type), delegate, target, mono_interp_get_runtime_method (mono_get_root_domain (), info->method, &error));
-	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-
-	return delegate;
 }
 
 void

@@ -2602,6 +2602,21 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 					--td.sp;
 					interp_transform_call (&td, method, NULL, domain, generic_context, is_bb_start, body_start_offset, NULL);
 					break;
+				case CEE_MONO_JIT_ICALL_ADDR: {
+					guint32 token;
+					gpointer func;
+					MonoJitICallInfo *info;
+
+					token = read32 (td.ip + 1);
+					td.ip += 5;
+					func = mono_method_get_wrapper_data (method, token);
+					info = mono_find_jit_icall_by_addr (func);
+
+					ADD_CODE (&td, MINT_LDFTN);
+					ADD_CODE (&td, get_data_item_index (&td, func));
+					PUSH_SIMPLE_TYPE (&td, STACK_TYPE_I);
+					break;
+				}
 				case CEE_MONO_ICALL: {
 					guint32 token;
 					gpointer func;
@@ -2653,7 +2668,6 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start)
 
 					if (func == mono_ftnptr_to_delegate) {
 						g_error ("TODO: ?");
-						func = mono_interp_ftnptr_to_delegate;
 					}
 					ADD_CODE(&td, get_data_item_index (&td, func));
 					td.sp -= info->sig->param_count;
@@ -3087,7 +3101,12 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 		} else {
 			const char *name = method->name;
 			if (method->klass->parent == mono_defaults.multicastdelegate_class) {
-				if (*name == 'I' && (strcmp (name, "Invoke") == 0)) {
+				if (*name == '.' && (strcmp (name, ".ctor") == 0)) {
+					MonoJitICallInfo *mi = mono_find_jit_icall_by_name ("ves_icall_mono_delegate_ctor");
+					g_assert (mi);
+					char *wrapper_name = g_strdup_printf ("__icall_wrapper_%s", mi->name);
+					nm = mono_marshal_get_icall_wrapper (mi->sig, wrapper_name, mi->func, TRUE);
+				} else if (*name == 'I' && (strcmp (name, "Invoke") == 0)) {
 					nm = mono_marshal_get_delegate_invoke (method, NULL);
 				} else if (*name == 'B' && (strcmp (name, "BeginInvoke") == 0)) {
 					nm = mono_marshal_get_delegate_begin_invoke (method);
