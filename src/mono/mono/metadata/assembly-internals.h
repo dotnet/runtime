@@ -14,13 +14,19 @@ MONO_API MonoImage*    mono_assembly_load_module_checked (MonoAssembly *assembly
 MonoAssembly * mono_assembly_open_a_lot (const char *filename, MonoImageOpenStatus *status, gboolean refonly, gboolean load_from_context);
 
 /* If predicate returns true assembly should be loaded, if false ignore it. */
-typedef gboolean (*MonoAssemblyOpenPredicate)(MonoAssembly *, gpointer);
+typedef gboolean (*MonoAssemblyCandidatePredicate)(MonoAssembly *, gpointer);
 
 MonoAssembly*          mono_assembly_open_predicate (const char *filename,
 						     gboolean refonly,
 						     gboolean load_from_context,
-						     MonoAssemblyOpenPredicate pred,
+						     MonoAssemblyCandidatePredicate pred,
 						     gpointer user_data,
 						     MonoImageOpenStatus *status);
+
+MonoAssembly*          mono_assembly_load_from_predicate (MonoImage *image, const char *fname,
+							  gboolean refonly,
+							  MonoAssemblyCandidatePredicate pred,
+							  gpointer user_data,
+							  MonoImageOpenStatus *status);
 
 #endif /* __MONO_METADATA_ASSEMBLY_INTERNALS_H__ */

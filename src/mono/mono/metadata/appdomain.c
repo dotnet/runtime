@@ -38,7 +38,6 @@
 #include <mono/metadata/appdomain-icalls.h>
 #include <mono/metadata/domain-internals.h>
 #include "mono/metadata/metadata-internals.h"
-#include <mono/metadata/assembly.h>
 #include <mono/metadata/assembly-internals.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/exception-internals.h>
@@ -1900,9 +1899,11 @@ leave:
 
 
 static gboolean
-try_load_from (MonoAssembly **assembly, const gchar *path1, const gchar *path2,
-					const gchar *path3, const gchar *path4,
-					gboolean refonly, gboolean is_private)
+try_load_from (MonoAssembly **assembly,
+	       const gchar *path1, const gchar *path2,
+	       const gchar *path3, const gchar *path4,
+	       gboolean refonly, gboolean is_private,
+	       MonoAssemblyCandidatePredicate predicate, gpointer user_data)
 {
 	gchar *fullpath;
 	gboolean found = FALSE;
@@ -1921,14 +1922,14 @@ try_load_from (MonoAssembly **assembly, const gchar *path1, const gchar *path2,
 		found = g_file_test (fullpath, G_FILE_TEST_IS_REGULAR);
 	
 	if (found)
-		*assembly = mono_assembly_open_full (fullpath, NULL, refonly);
+		*assembly = mono_assembly_open_predicate (fullpath, refonly, FALSE, predicate, user_data, NULL);
 
 	g_free (fullpath);
 	return (*assembly != NULL);
 }
 
 static MonoAssembly *
-real_load (gchar **search_path, const gchar *culture, const gchar *name, gboolean refonly)
+real_load (gchar **search_path, const gchar *culture, const gchar *name, gboolean refonly, MonoAssemblyCandidatePredicate predicate, gpointer user_data)
 {
 	MonoAssembly *result = NULL;
 	gchar **path;
@@ -1955,22 +1956,22 @@ real_load (gchar **search_path, const gchar *culture, const gchar *name, gboolea
 		/* See test cases in bug #58992 and bug #57710 */
 		/* 1st try: [culture]/[name].dll (culture may be empty) */
 		strcpy (filename + len - 4, ".dll");
-		if (try_load_from (&result, *path, local_culture, "", filename, refonly, is_private))
+		if (try_load_from (&result, *path, local_culture, "", filename, refonly, is_private, predicate, user_data))
 			break;
 
 		/* 2nd try: [culture]/[name].exe (culture may be empty) */
 		strcpy (filename + len - 4, ".exe");
-		if (try_load_from (&result, *path, local_culture, "", filename, refonly, is_private))
+		if (try_load_from (&result, *path, local_culture, "", filename, refonly, is_private, predicate, user_data))
 			break;
 
 		/* 3rd try: [culture]/[name]/[name].dll (culture may be empty) */
 		strcpy (filename + len - 4, ".dll");
-		if (try_load_from (&result, *path, local_culture, name, filename, refonly, is_private))
+		if (try_load_from (&result, *path, local_culture, name, filename, refonly, is_private, predicate, user_data))
 			break;
 
 		/* 4th try: [culture]/[name]/[name].exe (culture may be empty) */
 		strcpy (filename + len - 4, ".exe");
-		if (try_load_from (&result, *path, local_culture, name, filename, refonly, is_private))
+		if (try_load_from (&result, *path, local_culture, name, filename, refonly, is_private, predicate, user_data))
 			break;
 	}
 
@@ -1996,11 +1997,11 @@ mono_domain_assembly_preload (MonoAssemblyName *aname,
 	set_domain_search_path (domain);
 
 	if (domain->search_path && domain->search_path [0] != NULL) {
-		result = real_load (domain->search_path, aname->culture, aname->name, refonly);
+		result = real_load (domain->search_path, aname->culture, aname->name, refonly, NULL, NULL);
 	}
 
 	if (result == NULL && assemblies_path && assemblies_path [0] != NULL) {
-		result = real_load (assemblies_path, aname->culture, aname->name, refonly);
+		result = real_load (assemblies_path, aname->culture, aname->name, refonly, NULL, NULL);
 	}
 
 	return result;
