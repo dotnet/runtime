@@ -177,11 +177,9 @@ namespace System.IO
 
         public char ReadChar(Int64 position)
         {
-            int sizeOfType = sizeof(char);
-            EnsureSafeToRead(position, sizeOfType);
+            EnsureSafeToRead(position, sizeof(char));
 
             char result;
-
             unsafe
             {
                 byte* pointer = null;
@@ -189,19 +187,7 @@ namespace System.IO
                 try
                 {
                     _buffer.AcquirePointer(ref pointer);
-                    pointer += (_offset + position);
-
-#if ALIGN_ACCESS
-                    // check if pointer is aligned
-                    if (((int)pointer & (sizeOfType - 1)) == 0) {
-#endif
-                    result = *((char*)(pointer));
-#if ALIGN_ACCESS
-                    }
-                    else {
-                        result = (char)( *pointer | *(pointer + 1) << 8 ) ;
-                    }
-#endif
+                    result = Unsafe.ReadUnaligned<char>(pointer + _offset + position);
                 }
                 finally
                 {
@@ -218,11 +204,9 @@ namespace System.IO
         // See comment above.
         public Int16 ReadInt16(Int64 position)
         {
-            int sizeOfType = sizeof(Int16);
-            EnsureSafeToRead(position, sizeOfType);
+            EnsureSafeToRead(position, sizeof(Int16));
 
             Int16 result;
-
             unsafe
             {
                 byte* pointer = null;
@@ -230,19 +214,7 @@ namespace System.IO
                 try
                 {
                     _buffer.AcquirePointer(ref pointer);
-                    pointer += (_offset + position);
-
-#if ALIGN_ACCESS
-                    // check if pointer is aligned
-                    if (((int)pointer & (sizeOfType - 1)) == 0) {
-#endif
-                    result = *((Int16*)(pointer));
-#if ALIGN_ACCESS
-                    }
-                    else {
-                        result = (Int16)( *pointer | *(pointer + 1) << 8 );
-                    }
-#endif
+                    result = Unsafe.ReadUnaligned<Int16>(pointer + _offset + position);
                 }
                 finally
                 {
@@ -259,8 +231,7 @@ namespace System.IO
 
         public Int32 ReadInt32(Int64 position)
         {
-            int sizeOfType = sizeof(Int32);
-            EnsureSafeToRead(position, sizeOfType);
+            EnsureSafeToRead(position, sizeof(Int32));
 
             Int32 result;
             unsafe
@@ -270,19 +241,7 @@ namespace System.IO
                 try
                 {
                     _buffer.AcquirePointer(ref pointer);
-                    pointer += (_offset + position);
-
-#if ALIGN_ACCESS
-                    // check if pointer is aligned
-                    if (((int)pointer & (sizeOfType - 1)) == 0) {
-#endif
-                    result = *((Int32*)(pointer));
-#if ALIGN_ACCESS
-                    }
-                    else {
-                        result = (Int32)( *pointer | *(pointer + 1) << 8 | *(pointer + 2) << 16 | *(pointer + 3) << 24 );
-                    }
-#endif
+                    result = Unsafe.ReadUnaligned<Int32>(pointer + _offset + position);
                 }
                 finally
                 {
@@ -298,8 +257,7 @@ namespace System.IO
 
         public Int64 ReadInt64(Int64 position)
         {
-            int sizeOfType = sizeof(Int64);
-            EnsureSafeToRead(position, sizeOfType);
+            EnsureSafeToRead(position, sizeof(Int64));
 
             Int64 result;
             unsafe
@@ -309,21 +267,7 @@ namespace System.IO
                 try
                 {
                     _buffer.AcquirePointer(ref pointer);
-                    pointer += (_offset + position);
-
-#if ALIGN_ACCESS
-                    // check if pointer is aligned
-                    if (((int)pointer & (sizeOfType - 1)) == 0) {
-#endif
-                    result = *((Int64*)(pointer));
-#if ALIGN_ACCESS
-                    }
-                    else {
-                        int lo = *pointer | *(pointer + 1) << 8 | *(pointer + 2) << 16 | *(pointer + 3) << 24;
-                        int hi = *(pointer + 4) | *(pointer + 5) << 8 | *(pointer + 6) << 16 | *(pointer + 7) << 24;
-                        result = (Int64)(((Int64)hi << 32) | (UInt32)lo);
-                    }
-#endif
+                    result = Unsafe.ReadUnaligned<Int64>(pointer + _offset + position);
                 }
                 finally
                 {
@@ -337,29 +281,14 @@ namespace System.IO
             return result;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private unsafe Int32 UnsafeReadInt32(byte* pointer)
-        {
-            Int32 result;
-            // check if pointer is aligned
-            if (((int)pointer & (sizeof(Int32) - 1)) == 0)
-            {
-                result = *((Int32*)pointer);
-            }
-            else
-            {
-                result = (Int32)(*(pointer) | *(pointer + 1) << 8 | *(pointer + 2) << 16 | *(pointer + 3) << 24);
-            }
-
-            return result;
-        }
         public Decimal ReadDecimal(Int64 position)
         {
             const int ScaleMask = 0x00FF0000;
             const int SignMask = unchecked((int)0x80000000);
 
-            int sizeOfType = sizeof(Decimal);
-            EnsureSafeToRead(position, sizeOfType);
+            EnsureSafeToRead(position, sizeof(Decimal));
+
+            int lo, mid, hi, flags;
 
             unsafe
             {
@@ -367,23 +296,11 @@ namespace System.IO
                 try
                 {
                     _buffer.AcquirePointer(ref pointer);
-                    pointer += (_offset + position);
-
-                    int lo = UnsafeReadInt32(pointer);
-                    int mid = UnsafeReadInt32(pointer + 4);
-                    int hi = UnsafeReadInt32(pointer + 8);
-                    int flags = UnsafeReadInt32(pointer + 12);
-
-                    // Check for invalid Decimal values
-                    if (!((flags & ~(SignMask | ScaleMask)) == 0 && (flags & ScaleMask) <= (28 << 16)))
-                    {
-                        throw new ArgumentException(Environment.GetResourceString("Arg_BadDecimal")); // Throw same Exception type as Decimal(int[]) ctor for compat
-                    }
-
-                    bool isNegative = (flags & SignMask) != 0;
-                    byte scale = (byte)(flags >> 16);
-
-                    return new decimal(lo, mid, hi, isNegative, scale);
+                    
+                    lo = Unsafe.ReadUnaligned<Int32>(pointer + _offset + position);
+                    mid = Unsafe.ReadUnaligned<Int32>(pointer + _offset + position + 4);
+                    hi = Unsafe.ReadUnaligned<Int32>(pointer + _offset + position + 8);
+                    flags = Unsafe.ReadUnaligned<Int32>(pointer + _offset + position + 12);
                 }
                 finally
                 {
@@ -393,12 +310,22 @@ namespace System.IO
                     }
                 }
             }
+
+            // Check for invalid Decimal values
+            if (!((flags & ~(SignMask | ScaleMask)) == 0 && (flags & ScaleMask) <= (28 << 16)))
+            {
+                throw new ArgumentException(Environment.GetResourceString("Arg_BadDecimal")); // Throw same Exception type as Decimal(int[]) ctor for compat
+            }
+
+            bool isNegative = (flags & SignMask) != 0;
+            byte scale = (byte)(flags >> 16);
+
+            return new decimal(lo, mid, hi, isNegative, scale);
         }
 
         public Single ReadSingle(Int64 position)
         {
-            int sizeOfType = sizeof(Single);
-            EnsureSafeToRead(position, sizeOfType);
+            EnsureSafeToRead(position, sizeof(Single));
 
             Single result;
             unsafe
@@ -408,20 +335,7 @@ namespace System.IO
                 try
                 {
                     _buffer.AcquirePointer(ref pointer);
-                    pointer += (_offset + position);
-
-#if ALIGN_ACCESS
-                    // check if pointer is aligned
-                    if (((int)pointer & (sizeOfType - 1)) == 0) {
-#endif
-                    result = BitConverter.Int32BitsToSingle(*((int*)(pointer)));
-#if ALIGN_ACCESS
-                    }
-                    else {
-                    UInt32 tempResult = (UInt32)( *pointer | *(pointer + 1) << 8 | *(pointer + 2) << 16 | *(pointer + 3) << 24 );
-                    result = *((float*)&tempResult);
-                    }
-#endif
+                    result = Unsafe.ReadUnaligned<Single>(pointer + _offset + position);
                 }
                 finally
                 {
@@ -437,8 +351,7 @@ namespace System.IO
 
         public Double ReadDouble(Int64 position)
         {
-            int sizeOfType = sizeof(Double);
-            EnsureSafeToRead(position, sizeOfType);
+            EnsureSafeToRead(position, sizeof(Double));
 
             Double result;
             unsafe
@@ -448,24 +361,7 @@ namespace System.IO
                 try
                 {
                     _buffer.AcquirePointer(ref pointer);
-                    pointer += (_offset + position);
-
-#if ALIGN_ACCESS
-                    // check if pointer is aligned
-                    if (((int)pointer & (sizeOfType - 1)) == 0) {
-#endif
-                    result = BitConverter.Int64BitsToDouble(*((long*)(pointer)));
-#if ALIGN_ACCESS
-                    }
-                    else {
-
-                    UInt32 lo = (UInt32)( *pointer | *(pointer + 1) << 8  | *(pointer + 2) << 16 | *(pointer + 3) << 24 );
-                    UInt32 hi = (UInt32)( *(pointer + 4) | *(pointer + 5) << 8 | *(pointer + 6) << 16 | *(pointer + 7) << 24 );
-                    UInt64 tempResult = ((UInt64)hi) << 32 | lo;
-                    result = *((double*)&tempResult);
-
-                    }
-#endif
+                    result = Unsafe.ReadUnaligned<Double>(pointer + _offset + position);
                 }
                 finally
                 {
@@ -493,8 +389,7 @@ namespace System.IO
                 try
                 {
                     _buffer.AcquirePointer(ref pointer);
-                    pointer += (_offset + position);
-                    result = *((SByte*)pointer);
+                    result = *((SByte*)(pointer + _offset + position));
                 }
                 finally
                 {
@@ -511,8 +406,7 @@ namespace System.IO
         [CLSCompliant(false)]
         public UInt16 ReadUInt16(Int64 position)
         {
-            int sizeOfType = sizeof(UInt16);
-            EnsureSafeToRead(position, sizeOfType);
+            EnsureSafeToRead(position, sizeof(UInt16));
 
             UInt16 result;
             unsafe
@@ -522,20 +416,7 @@ namespace System.IO
                 try
                 {
                     _buffer.AcquirePointer(ref pointer);
-                    pointer += (_offset + position);
-
-#if ALIGN_ACCESS
-                    // check if pointer is aligned
-                    if (((int)pointer & (sizeOfType - 1)) == 0) {
-#endif
-                    result = *((UInt16*)(pointer));
-#if ALIGN_ACCESS
-                    }
-                    else {
-                        result = (UInt16)( *pointer | *(pointer + 1) << 8 );
-                    }
-#endif
-
+                    result = Unsafe.ReadUnaligned<UInt16>(pointer + _offset + position);
                 }
                 finally
                 {
@@ -552,8 +433,7 @@ namespace System.IO
         [CLSCompliant(false)]
         public UInt32 ReadUInt32(Int64 position)
         {
-            int sizeOfType = sizeof(UInt32);
-            EnsureSafeToRead(position, sizeOfType);
+            EnsureSafeToRead(position, sizeof(UInt32));
 
             UInt32 result;
             unsafe
@@ -563,20 +443,7 @@ namespace System.IO
                 try
                 {
                     _buffer.AcquirePointer(ref pointer);
-                    pointer += (_offset + position);
-
-#if ALIGN_ACCESS
-                    // check if pointer is aligned
-                    if (((int)pointer & (sizeOfType - 1)) == 0) {
-#endif
-                    result = *((UInt32*)(pointer));
-#if ALIGN_ACCESS
-                    }
-                    else {
-                        result = (UInt32)( *pointer | *(pointer + 1) << 8  | *(pointer + 2) << 16 | *(pointer + 3) << 24 );
-                    }
-#endif
-
+                    result = Unsafe.ReadUnaligned<UInt32>(pointer + _offset + position);
                 }
                 finally
                 {
@@ -593,8 +460,7 @@ namespace System.IO
         [CLSCompliant(false)]
         public UInt64 ReadUInt64(Int64 position)
         {
-            int sizeOfType = sizeof(UInt64);
-            EnsureSafeToRead(position, sizeOfType);
+            EnsureSafeToRead(position, sizeof(UInt64));
 
             UInt64 result;
             unsafe
@@ -604,22 +470,7 @@ namespace System.IO
                 try
                 {
                     _buffer.AcquirePointer(ref pointer);
-                    pointer += (_offset + position);
-
-#if ALIGN_ACCESS
-                    // check if pointer is aligned
-                    if (((int)pointer & (sizeOfType - 1)) == 0) {
-#endif
-                    result = *((UInt64*)(pointer));
-#if ALIGN_ACCESS
-                    }
-                    else {
-                        UInt32 lo = (UInt32)( *pointer | *(pointer + 1) << 8 | *(pointer + 2) << 16 | *(pointer + 3) << 24 );
-                        UInt32 hi = (UInt32)( *(pointer + 4) | *(pointer + 5) << 8 | *(pointer + 6) << 16 | *(pointer + 7) << 24 );
-                        result = (UInt64)(((UInt64)hi << 32) | lo );
-                    }
-#endif
-
+                    result = Unsafe.ReadUnaligned<UInt64>(pointer + _offset + position);
                 }
                 finally
                 {
@@ -776,8 +627,7 @@ namespace System.IO
 
         public void Write(Int64 position, char value)
         {
-            int sizeOfType = sizeof(char);
-            EnsureSafeToWrite(position, sizeOfType);
+            EnsureSafeToWrite(position, sizeof(char));
 
             unsafe
             {
@@ -786,20 +636,7 @@ namespace System.IO
                 try
                 {
                     _buffer.AcquirePointer(ref pointer);
-                    pointer += (_offset + position);
-
-#if ALIGN_ACCESS
-                    // check if pointer is aligned
-                    if (((int)pointer & (sizeOfType - 1)) == 0) {
-#endif
-                    *((char*)pointer) = value;
-#if ALIGN_ACCESS
-                    }
-                    else {
-                        *(pointer) = (byte)value;
-                        *(pointer+1) = (byte)(value >> 8);
-                    }
-#endif
+                    Unsafe.WriteUnaligned<char>(pointer + _offset + position, value);
                 }
                 finally
                 {
@@ -814,8 +651,7 @@ namespace System.IO
 
         public void Write(Int64 position, Int16 value)
         {
-            int sizeOfType = sizeof(Int16);
-            EnsureSafeToWrite(position, sizeOfType);
+            EnsureSafeToWrite(position, sizeof(Int16));
 
             unsafe
             {
@@ -824,20 +660,7 @@ namespace System.IO
                 try
                 {
                     _buffer.AcquirePointer(ref pointer);
-                    pointer += (_offset + position);
-
-#if ALIGN_ACCESS
-                    // check if pointer is aligned
-                    if (((int)pointer & (sizeOfType - 1)) == 0) {
-#endif
-                    *((Int16*)pointer) = value;
-#if ALIGN_ACCESS
-                    }
-                    else {
-                        *(pointer) = (byte)value;
-                        *(pointer + 1) = (byte)(value >> 8);
-                    }
-#endif
+                    Unsafe.WriteUnaligned<Int16>(pointer + _offset + position, value);
                 }
                 finally
                 {
@@ -852,8 +675,7 @@ namespace System.IO
 
         public void Write(Int64 position, Int32 value)
         {
-            int sizeOfType = sizeof(Int32);
-            EnsureSafeToWrite(position, sizeOfType);
+            EnsureSafeToWrite(position, sizeof(Int32));
 
             unsafe
             {
@@ -862,22 +684,7 @@ namespace System.IO
                 try
                 {
                     _buffer.AcquirePointer(ref pointer);
-                    pointer += (_offset + position);
-
-#if ALIGN_ACCESS
-                    // check if pointer is aligned
-                    if (((int)pointer & (sizeOfType - 1)) == 0) {
-#endif
-                    *((Int32*)pointer) = value;
-#if ALIGN_ACCESS
-                    }
-                    else {
-                        *(pointer) = (byte)value;
-                        *(pointer + 1) = (byte)(value >> 8);
-                        *(pointer + 2) = (byte)(value >> 16);
-                        *(pointer + 3) = (byte)(value >> 24);
-                    }
-#endif
+                    Unsafe.WriteUnaligned<Int32>(pointer + _offset + position, value);
                 }
                 finally
                 {
@@ -891,8 +698,7 @@ namespace System.IO
 
         public void Write(Int64 position, Int64 value)
         {
-            int sizeOfType = sizeof(Int64);
-            EnsureSafeToWrite(position, sizeOfType);
+            EnsureSafeToWrite(position, sizeof(Int64));
 
             unsafe
             {
@@ -901,25 +707,7 @@ namespace System.IO
                 try
                 {
                     _buffer.AcquirePointer(ref pointer);
-                    pointer += (_offset + position);
-#if ALIGN_ACCESS
-                    // check if pointer is aligned
-                    if (((int)pointer & (sizeOfType - 1)) == 0) {
-#endif
-                    *((Int64*)pointer) = value;
-#if ALIGN_ACCESS
-                    }
-                    else {
-                        *(pointer) = (byte)value;
-                        *(pointer + 1) = (byte)(value >> 8);
-                        *(pointer + 2) = (byte)(value >> 16);
-                        *(pointer + 3) = (byte)(value >> 24);
-                        *(pointer + 4) = (byte)(value >> 32);
-                        *(pointer + 5) = (byte)(value >> 40);
-                        *(pointer + 6) = (byte)(value >> 48);
-                        *(pointer + 7) = (byte)(value >> 56);
-                    }
-#endif
+                    Unsafe.WriteUnaligned<Int64>(pointer + _offset + position, value);
                 }
                 finally
                 {
@@ -931,46 +719,27 @@ namespace System.IO
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private unsafe void UnsafeWriteInt32(byte* pointer, Int32 value)
-        {
-            // check if pointer is aligned
-            if (((int)pointer & (sizeof(Int32) - 1)) == 0)
-            {
-                *((Int32*)pointer) = value;
-            }
-            else
-            {
-                *(pointer) = (byte)value;
-                *(pointer + 1) = (byte)(value >> 8);
-                *(pointer + 2) = (byte)(value >> 16);
-                *(pointer + 3) = (byte)(value >> 24);
-            }
-        }
-
         public void Write(Int64 position, Decimal value)
         {
-            int sizeOfType = sizeof(Decimal);
-            EnsureSafeToWrite(position, sizeOfType);
+            EnsureSafeToWrite(position, sizeof(Decimal));
 
             unsafe
             {
+                int* valuePtr = (int*)(&value);
+                int flags = *valuePtr;
+                int hi = *(valuePtr + 1);
+                int lo = *(valuePtr + 2);
+                int mid = *(valuePtr + 3);
+
                 byte* pointer = null;
                 try
                 {
                     _buffer.AcquirePointer(ref pointer);
-                    pointer += (_offset + position);
 
-                    int* valuePtr = (int*)(&value);
-                    int flags = *valuePtr;
-                    int hi = *(valuePtr + 1);
-                    int lo = *(valuePtr + 2);
-                    int mid = *(valuePtr + 3);
-
-                    UnsafeWriteInt32(pointer, lo);
-                    UnsafeWriteInt32(pointer + 4, mid);
-                    UnsafeWriteInt32(pointer + 8, hi);
-                    UnsafeWriteInt32(pointer + 12, flags);
+                    Unsafe.WriteUnaligned<Int32>(pointer + _offset + position, lo);
+                    Unsafe.WriteUnaligned<Int32>(pointer + _offset + position + 4, mid);
+                    Unsafe.WriteUnaligned<Int32>(pointer + _offset + position + 8, hi);
+                    Unsafe.WriteUnaligned<Int32>(pointer + _offset + position + 12, flags);
                 }
                 finally
                 {
@@ -984,8 +753,7 @@ namespace System.IO
 
         public void Write(Int64 position, Single value)
         {
-            int sizeOfType = sizeof(Single);
-            EnsureSafeToWrite(position, sizeOfType);
+            EnsureSafeToWrite(position, sizeof(Single));
 
             unsafe
             {
@@ -994,23 +762,7 @@ namespace System.IO
                 try
                 {
                     _buffer.AcquirePointer(ref pointer);
-                    pointer += (_offset + position);
-#if ALIGN_ACCESS
-                    // check if pointer is aligned
-                    if (((int)pointer & (sizeOfType - 1)) == 0) {
-#endif
-                    *((int*)pointer) = BitConverter.SingleToInt32Bits(value);
-#if ALIGN_ACCESS
-                    }
-                    else {
-                    UInt32 tmpValue = *(UInt32*)&value;
-                    *(pointer) = (byte)tmpValue;
-                    *(pointer + 1) = (byte)(tmpValue >> 8);
-                    *(pointer + 2) = (byte)(tmpValue >> 16);
-                    *(pointer + 3) = (byte)(tmpValue >> 24);
-
-                    }
-#endif
+                    Unsafe.WriteUnaligned<Single>(pointer + _offset + position, value);
                 }
                 finally
                 {
@@ -1024,8 +776,7 @@ namespace System.IO
 
         public void Write(Int64 position, Double value)
         {
-            int sizeOfType = sizeof(Double);
-            EnsureSafeToWrite(position, sizeOfType);
+            EnsureSafeToWrite(position, sizeof(Double));
 
             unsafe
             {
@@ -1034,27 +785,7 @@ namespace System.IO
                 try
                 {
                     _buffer.AcquirePointer(ref pointer);
-                    pointer += (_offset + position);
-#if ALIGN_ACCESS
-                    // check if pointer is aligned
-                    if (((int)pointer & (sizeOfType - 1)) == 0) {
-#endif
-                    *((long*)pointer) = BitConverter.DoubleToInt64Bits(value);
-#if ALIGN_ACCESS
-                    }
-                    else {
-                    UInt64 tmpValue = *(UInt64 *)&value;
-                    *(pointer) = (byte) tmpValue;
-                    *(pointer + 1) = (byte) (tmpValue >> 8);
-                    *(pointer + 2) = (byte) (tmpValue >> 16);
-                    *(pointer + 3) = (byte) (tmpValue >> 24);
-                    *(pointer + 4) = (byte) (tmpValue >> 32);
-                    *(pointer + 5) = (byte) (tmpValue >> 40);
-                    *(pointer + 6) = (byte) (tmpValue >> 48);
-                    *(pointer + 7) = (byte) (tmpValue >> 56);
-
-                    }
-#endif
+                    Unsafe.WriteUnaligned<Double>(pointer + _offset + position, value);
                 }
                 finally
                 {
@@ -1069,8 +800,7 @@ namespace System.IO
         [CLSCompliant(false)]
         public void Write(Int64 position, SByte value)
         {
-            int sizeOfType = sizeof(SByte);
-            EnsureSafeToWrite(position, sizeOfType);
+            EnsureSafeToWrite(position, sizeof(SByte));
 
             unsafe
             {
@@ -1079,8 +809,7 @@ namespace System.IO
                 try
                 {
                     _buffer.AcquirePointer(ref pointer);
-                    pointer += (_offset + position);
-                    *((SByte*)pointer) = value;
+                    *((SByte*)(pointer + _offset + position)) = value;
                 }
                 finally
                 {
@@ -1105,20 +834,7 @@ namespace System.IO
                 try
                 {
                     _buffer.AcquirePointer(ref pointer);
-                    pointer += (_offset + position);
-
-#if ALIGN_ACCESS
-                    // check if pointer is aligned
-                    if (((int)pointer & (sizeOfType - 1)) == 0) {
-#endif
-                    *((UInt16*)pointer) = value;
-#if ALIGN_ACCESS
-                    }
-                    else {
-                        *(pointer) = (byte)value;
-                        *(pointer + 1) = (byte)(value >> 8);
-                    }
-#endif
+                    Unsafe.WriteUnaligned<UInt16>(pointer + _offset + position, value);
                 }
                 finally
                 {
@@ -1133,8 +849,7 @@ namespace System.IO
         [CLSCompliant(false)]
         public void Write(Int64 position, UInt32 value)
         {
-            int sizeOfType = sizeof(UInt32);
-            EnsureSafeToWrite(position, sizeOfType);
+            EnsureSafeToWrite(position, sizeof(UInt32));
 
             unsafe
             {
@@ -1143,23 +858,7 @@ namespace System.IO
                 try
                 {
                     _buffer.AcquirePointer(ref pointer);
-                    pointer += (_offset + position);
-
-#if ALIGN_ACCESS
-                    // check if pointer is aligned
-                    if (((int)pointer & (sizeOfType - 1)) == 0) {
-#endif
-                    *((UInt32*)pointer) = value;
-#if ALIGN_ACCESS
-                    }
-                    else {
-                        *(pointer) = (byte)value;
-                        *(pointer + 1) = (byte)(value >> 8);
-                        *(pointer + 2) = (byte)(value >> 16);
-                        *(pointer + 3) = (byte)(value >> 24);
-                    }
-#endif
-
+                    Unsafe.WriteUnaligned<UInt32>(pointer + _offset + position, value);
                 }
                 finally
                 {
@@ -1174,8 +873,7 @@ namespace System.IO
         [CLSCompliant(false)]
         public void Write(Int64 position, UInt64 value)
         {
-            int sizeOfType = sizeof(UInt64);
-            EnsureSafeToWrite(position, sizeOfType);
+            EnsureSafeToWrite(position, sizeof(UInt64));
 
             unsafe
             {
@@ -1184,26 +882,7 @@ namespace System.IO
                 try
                 {
                     _buffer.AcquirePointer(ref pointer);
-                    pointer += (_offset + position);
-#if ALIGN_ACCESS
-                    // check if pointer is aligned
-                    if (((int)pointer & (sizeOfType - 1)) == 0) {
-#endif
-                    *((UInt64*)pointer) = value;
-#if ALIGN_ACCESS
-                    }
-                    else {
-                        *(pointer) = (byte)value;
-                        *(pointer + 1) = (byte)(value >> 8);
-                        *(pointer + 2) = (byte)(value >> 16);
-                        *(pointer + 3) = (byte)(value >> 24);
-                        *(pointer + 4) = (byte)(value >> 32);
-                        *(pointer + 5) = (byte)(value >> 40);
-                        *(pointer + 6) = (byte)(value >> 48);
-                        *(pointer + 7) = (byte)(value >> 56);
-                    }
-#endif
-
+                    Unsafe.WriteUnaligned<UInt64>(pointer + _offset + position, value);
                 }
                 finally
                 {
@@ -1310,7 +989,7 @@ namespace System.IO
                 try
                 {
                     _buffer.AcquirePointer(ref pointer);
-                    result = *((byte*)(pointer + _offset + position));
+                    result = *(pointer + _offset + position);
                 }
                 finally
                 {
@@ -1336,7 +1015,7 @@ namespace System.IO
                 try
                 {
                     _buffer.AcquirePointer(ref pointer);
-                    *((byte*)(pointer + _offset + position)) = value;
+                    *(pointer + _offset + position) = value;
                 }
                 finally
                 {
