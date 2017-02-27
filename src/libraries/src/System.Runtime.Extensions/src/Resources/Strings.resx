@@ -88,9 +88,6 @@
   <data name="ArgumentOutOfRange_GenericPositive" xml:space="preserve">
     <value>Value must be positive.</value>
   </data>
-  <data name="ArgumentOutOfRange_LengthTooLarge" xml:space="preserve">
-    <value>The specified length exceeds the maximum value of {0}.</value>
-  </data>
   <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
     <value>Non-negative number required.</value>
   </data>
