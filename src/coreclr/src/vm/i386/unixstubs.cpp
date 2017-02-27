@@ -11,11 +11,6 @@ extern "C"
         PORTABILITY_ASSERT("Implement for PAL");
     }
 
-    void NakedThrowHelper()
-    {
-        PORTABILITY_ASSERT("Implement for PAL");
-    }
-
     void ProfileEnterNaked(FunctionIDOrClientID functionIDOrClientID)    
     {
         PORTABILITY_ASSERT("Implement for PAL");
