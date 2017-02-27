@@ -320,13 +320,13 @@
 // We do not need this to be saved in ngen images on Mac64 since the exception dispatch
 // is not done via the OS and thus, there wont be any need to know this information
 // by anyone.
-#if !defined(_TARGET_X86_)
+#ifdef WIN64EXCEPTIONS
     JITHELPER(CORINFO_HELP_EE_PERSONALITY_ROUTINE, ProcessCLRException,               CORINFO_HELP_SIG_UNDEF)
     JITHELPER(CORINFO_HELP_EE_PERSONALITY_ROUTINE_FILTER_FUNCLET, ProcessCLRException,CORINFO_HELP_SIG_UNDEF)
-#else
+#else // WIN64EXCEPTIONS
     JITHELPER(CORINFO_HELP_EE_PERSONALITY_ROUTINE, NULL,                              CORINFO_HELP_SIG_UNDEF)
     JITHELPER(CORINFO_HELP_EE_PERSONALITY_ROUTINE_FILTER_FUNCLET, NULL,               CORINFO_HELP_SIG_UNDEF)
-#endif
+#endif // !WIN64EXCEPTIONS
 
 #ifdef _TARGET_X86_
     JITHELPER(CORINFO_HELP_ASSIGN_REF_EAX, JIT_WriteBarrierEAX, CORINFO_HELP_SIG_NO_ALIGN_STUB)
