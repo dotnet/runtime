@@ -36,7 +36,7 @@
 
 /* trim excessive headers */
 #include <mono/metadata/image.h>
-#include <mono/metadata/assembly.h>
+#include <mono/metadata/assembly-internals.h>
 #include <mono/metadata/cil-coff.h>
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/tabledefs.h>
@@ -4535,7 +4535,7 @@ mono_interp_regression_list (int verbose, int count, char *images [])
 	
 	total_run = total = 0;
 	for (i = 0; i < count; ++i) {
-		MonoAssembly *ass = mono_assembly_open (images [i], NULL);
+		MonoAssembly *ass = mono_assembly_open_predicate (images [i], FALSE, FALSE, NULL, NULL, NULL);
 		if (!ass) {
 			g_warning ("failed to load assembly: %s", images [i]);
 			continue;

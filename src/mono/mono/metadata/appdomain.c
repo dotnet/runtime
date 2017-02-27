@@ -2054,7 +2054,7 @@ ves_icall_System_Reflection_Assembly_LoadFrom (MonoStringHandle fname, MonoBoole
 	if (!is_ok (error))
 		goto leave;
 	
-	MonoAssembly *ass = mono_assembly_open_a_lot (filename, &status, refOnly, TRUE);
+	MonoAssembly *ass = mono_assembly_open_predicate (filename, refOnly, TRUE, NULL, NULL, &status);
 	
 	if (!ass) {
 		if (status == MONO_IMAGE_IMAGE_INVALID)

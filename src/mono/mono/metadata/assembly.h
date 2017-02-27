@@ -8,8 +8,10 @@ MONO_BEGIN_DECLS
 
 MONO_API void          mono_assemblies_init     (void);
 MONO_API void          mono_assemblies_cleanup  (void);
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoAssembly *mono_assembly_open       (const char *filename,
 				       	MonoImageOpenStatus *status);
+MONO_RT_EXTERNAL_ONLY
 MONO_API MonoAssembly *mono_assembly_open_full (const char *filename,
 				       	MonoImageOpenStatus *status,
 					mono_bool refonly);

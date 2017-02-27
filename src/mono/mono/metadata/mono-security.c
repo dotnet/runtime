@@ -12,7 +12,7 @@
 #include <config.h>
 #endif
 
-#include <mono/metadata/assembly.h>
+#include <mono/metadata/assembly-internals.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/image.h>
 #include <mono/metadata/exception.h>
@@ -592,7 +592,7 @@ void invoke_protected_memory_method (MonoArray *data, MonoObject *scope, gboolea
 	if (system_security_assembly == NULL) {
 		system_security_assembly = mono_image_loaded ("System.Security");
 		if (!system_security_assembly) {
-			MonoAssembly *sa = mono_assembly_open ("System.Security.dll", NULL);
+			MonoAssembly *sa = mono_assembly_open_predicate ("System.Security.dll", FALSE, FALSE, NULL, NULL, NULL);
 			if (!sa)
 				g_assert_not_reached ();
 			system_security_assembly = mono_assembly_get_image (sa);
