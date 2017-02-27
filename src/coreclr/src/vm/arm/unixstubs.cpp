@@ -11,11 +11,6 @@ extern "C"
         PORTABILITY_ASSERT("Implement for PAL");
     }
 
-    void PInvokeStubForHostInner(DWORD dwStackSize, LPVOID pStackFrame, LPVOID pTarget)
-    {
-        PORTABILITY_ASSERT("Implement for PAL");
-    }
-
     void RedirectForThreadAbort()
     {
         PORTABILITY_ASSERT("Implement for PAL");
