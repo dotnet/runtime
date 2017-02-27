@@ -4844,13 +4844,6 @@ async_abort_critical (MonoThreadInfo *info, gpointer ud)
 	if (mono_get_eh_callbacks ()->mono_install_handler_block_guard (mono_thread_info_get_suspend_state (info)))
 		return MonoResumeThread;
 
-	/*
-	The target thread is running at least one protected block, which must not be interrupted, so we give up.
-	The protected block code will give them a chance when appropriate.
-	*/
-	if (mono_thread_get_abort_prot_block_count (thread) > 0)
-		return MonoResumeThread;
-
 	/*someone is already interrupting it*/
 	if (!mono_thread_set_interruption_requested (thread))
 		return MonoResumeThread;
