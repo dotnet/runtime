@@ -14,4 +14,6 @@ mono_interp_create_method_pointer (MonoMethod *method, MonoError *error);
 MonoObject*
 mono_interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc, MonoError *error);
 
+void
+mono_interp_init_delegate (MonoDelegate *del);
 #endif /* __MONO_MINI_INTERPRETER_H__ */

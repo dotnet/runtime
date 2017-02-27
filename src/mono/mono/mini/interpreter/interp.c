@@ -871,6 +871,14 @@ ves_pinvoke_method (MonoInvocation *frame, MonoMethodSignature *sig, MonoFuncV a
 	g_free (margs);
 }
 
+void
+mono_interp_init_delegate (MonoDelegate *del)
+{
+	g_assert (!del->method);
+	del->method = ((RuntimeMethod *) del->method_ptr)->method;
+	g_assert (del->method);
+}
+
 /*
  * From the spec:
  * runtime specifies that the implementation of the method is automatically
