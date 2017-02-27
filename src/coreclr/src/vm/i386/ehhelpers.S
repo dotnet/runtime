@@ -11,12 +11,14 @@
 NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
 
     ESP_PROLOG_BEG
-    PROLOG_PUSH ebp
-    mov ebp, esp
-    PROLOG_PUSH ebx
-    PROLOG_PUSH esi
-    PROLOG_PUSH edi
+    ESP_PROLOG_PUSH ebp
+    ESP_PROLOG_PUSH ebx
+    ESP_PROLOG_PUSH esi
+    ESP_PROLOG_PUSH edi
+    ESP_PROLOG_ALLOC 12
     ESP_PROLOG_END
+
+    lea     ebp, [esp + 3*4 + 12]
 
     // On entry:
     //
@@ -43,10 +45,11 @@ NESTED_ENTRY CallEHFunclet, _TEXT, NoHandler
     call    edx
 
     ESP_EPILOG_BEG
-    EPILOG_POP edi
-    EPILOG_POP esi
-    EPILOG_POP ebx
-    EPILOG_POP ebp
+    ESP_EPILOG_FREE 12
+    ESP_EPILOG_POP edi
+    ESP_EPILOG_POP esi
+    ESP_EPILOG_POP ebx
+    ESP_EPILOG_POP ebp
     ESP_EPILOG_END
 
     ret     16
@@ -58,12 +61,14 @@ NESTED_END CallEHFunclet, _TEXT
 NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
 
     ESP_PROLOG_BEG
-    PROLOG_PUSH ebp
-    mov ebp, esp
-    PROLOG_PUSH ebx
-    PROLOG_PUSH esi
-    PROLOG_PUSH edi
+    ESP_PROLOG_PUSH ebp
+    ESP_PROLOG_PUSH ebx
+    ESP_PROLOG_PUSH esi
+    ESP_PROLOG_PUSH edi
+    ESP_PROLOG_ALLOC 12
     ESP_PROLOG_END
+
+    lea     ebp, [esp + 3*4 + 12]
 
     // On entry:
     //
@@ -86,13 +91,13 @@ NESTED_ENTRY CallEHFilterFunclet, _TEXT, NoHandler
     call    edx
 
     ESP_EPILOG_BEG
-    EPILOG_POP edi
-    EPILOG_POP esi
-    EPILOG_POP ebx
-    EPILOG_POP ebp
+    ESP_EPILOG_FREE 12
+    ESP_EPILOG_POP edi
+    ESP_EPILOG_POP esi
+    ESP_EPILOG_POP ebx
+    ESP_EPILOG_POP ebp
     ESP_EPILOG_END
 
     ret     16
 
 NESTED_END CallEHFunclet, _TEXT
-
