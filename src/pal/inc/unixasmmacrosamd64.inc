@@ -55,6 +55,15 @@ C_FUNC(\Name\()_End):
         LEAF_END \Name, \Section
 .endm
 
+.macro NOP_6_BYTE
+        .byte 0x66
+        .byte 0x0F
+        .byte 0x1F
+        .byte 0x44
+        .byte 0x00
+        .byte 0x00
+.endm
+
 .macro NOP_3_BYTE
         nop dword ptr [rax]
 .endm
