@@ -169,7 +169,7 @@ namespace System.Diagnostics.Tests
             Assert.Throws<InvalidOperationException>(() => p.ExitTime);
             p.Kill();
             Assert.True(p.WaitForExit(WaitInMS));
-            Assert.True(p.ExitTime.ToUniversalTime() >= timeBeforeProcessStart, "TestExitTime is incorrect.");
+            Assert.True(p.ExitTime.ToUniversalTime() >= timeBeforeProcessStart, $"TestExitTime is incorrect. TimeBeforeStart={timeBeforeProcessStart}, ExitTime={p.ExitTime}, ExitTimeUniversal={p.ExitTime.ToUniversalTime()}");
         }
 
         [Fact]
