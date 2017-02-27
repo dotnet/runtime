@@ -473,7 +473,6 @@ class Tests {
 		return o.GetHashCode ();
 	}
 
-	[Category ("!INTERPRETER")]
 	public static int test_0_unbox_trampoline2 () {
 		int i = 12;
 		object o = i;
@@ -1786,7 +1785,6 @@ ncells ) {
 
 	enum Mine { One, Two }
 
-	[Category ("!INTERPRETER")]
 	public static int test_0_enum_gethashcode_opt () {
 		int sum = 0;
         for (int i = 0; i < 1000000; ++i)
