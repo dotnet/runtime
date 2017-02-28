@@ -46,7 +46,6 @@ namespace System.Security.Cryptography.Xml.Tests
 
             SignedXml signedXml = new SignedXml(xmlDoc);
             var signatureNode = (XmlElement)xmlDoc.GetElementsByTagName("Signature")[0];
-            Console.WriteLine(signatureNode.OuterXml);
             signedXml.LoadXml(signatureNode);
             return signedXml.CheckSignature(key);
         }
@@ -57,19 +56,15 @@ namespace System.Security.Cryptography.Xml.Tests
         [Fact]
         public void SignedXmlHasVerifiableSignature()
         {
-            var cspParams = new CspParameters()
+            using (var key = RSA.Create())
             {
-                KeyContainerName = "XML_DSIG_RSA_KEY"
-            };
+                var xmlDoc = new XmlDocument();
+                xmlDoc.PreserveWhitespace = true;
+                xmlDoc.LoadXml(ExampleXml);
+                SignXml(xmlDoc, key);
 
-            var rsaKey = new RSACryptoServiceProvider(cspParams);
-
-            var xmlDoc = new XmlDocument();
-            xmlDoc.PreserveWhitespace = true;
-            xmlDoc.LoadXml(ExampleXml);
-            SignXml(xmlDoc, rsaKey);
-
-            Assert.True(VerifyXml(xmlDoc.OuterXml, rsaKey));
+                Assert.True(VerifyXml(xmlDoc.OuterXml, key));
+            }
         }
     }
 }
