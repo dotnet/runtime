@@ -1,54 +1,6 @@
-// Optimization failure, divrem fails
-// https://github.com/dotnet/coreclr/issues/8155
-JIT/Methodical/divrem/div/decimaldiv_cs_do/decimaldiv_cs_do.sh
-JIT/Methodical/divrem/div/decimaldiv_cs_ro/decimaldiv_cs_ro.sh
-JIT/Methodical/divrem/div/i4div_cs_do/i4div_cs_do.sh
-JIT/Methodical/divrem/div/i4div_cs_ro/i4div_cs_ro.sh
-JIT/Methodical/divrem/div/i8div_cs_do/i8div_cs_do.sh
-JIT/Methodical/divrem/div/i8div_cs_ro/i8div_cs_ro.sh
-JIT/Methodical/divrem/div/overlddiv_cs_do/overlddiv_cs_do.sh
-JIT/Methodical/divrem/div/overlddiv_cs_ro/overlddiv_cs_ro.sh
-JIT/Methodical/divrem/div/r4div_cs_do/r4div_cs_do.sh
-JIT/Methodical/divrem/div/r4div_cs_ro/r4div_cs_ro.sh
-JIT/Methodical/divrem/div/r8div_cs_do/r8div_cs_do.sh
-JIT/Methodical/divrem/div/r8div_cs_ro/r8div_cs_ro.sh
-JIT/Methodical/divrem/div/u4div_cs_do/u4div_cs_do.sh
-JIT/Methodical/divrem/div/u4div_cs_ro/u4div_cs_ro.sh
-JIT/Methodical/divrem/div/u8div_cs_do/u8div_cs_do.sh
-JIT/Methodical/divrem/div/u8div_cs_ro/u8div_cs_ro.sh
-JIT/Methodical/divrem/rem/decimalrem_cs_do/decimalrem_cs_do.sh
-JIT/Methodical/divrem/rem/decimalrem_cs_ro/decimalrem_cs_ro.sh
-JIT/Methodical/divrem/rem/r4rem_cs_do/r4rem_cs_do.sh
-JIT/Methodical/divrem/rem/r4rem_cs_ro/r4rem_cs_ro.sh
-JIT/Methodical/divrem/rem/r8rem_cs_do/r8rem_cs_do.sh
-JIT/Methodical/divrem/rem/r8rem_cs_ro/r8rem_cs_ro.sh
-
-// Optimization failure, System.ArgumentException: Decimal byte array constructor requires an array of length four containing valid decimal bytes.
-// https://github.com/dotnet/coreclr/issues/8154
-JIT/Methodical/divrem/rem/i4rem_cs_do/i4rem_cs_do.sh
-JIT/Methodical/divrem/rem/i4rem_cs_ro/i4rem_cs_ro.sh
-JIT/Methodical/divrem/rem/i8rem_cs_do/i8rem_cs_do.sh
-JIT/Methodical/divrem/rem/i8rem_cs_ro/i8rem_cs_ro.sh
-JIT/Methodical/divrem/rem/overldrem_cs_do/overldrem_cs_do.sh
-JIT/Methodical/divrem/rem/overldrem_cs_ro/overldrem_cs_ro.sh
-JIT/Methodical/divrem/rem/u4rem_cs_do/u4rem_cs_do.sh
-JIT/Methodical/divrem/rem/u4rem_cs_ro/u4rem_cs_ro.sh
-JIT/Methodical/divrem/rem/u8rem_cs_do/u8rem_cs_do.sh
-JIT/Methodical/divrem/rem/u8rem_cs_ro/u8rem_cs_ro.sh
-
-// Optimization failure, Unhandled Exception: System.OverflowException: Value was either too large or too small for an Int32
-// https://github.com/dotnet/coreclr/issues/8153
-JIT/Methodical/fp/exgen/1000w1d_cs_do/1000w1d_cs_do.sh
-JIT/Methodical/fp/exgen/1000w1d_cs_ro/1000w1d_cs_ro.sh
-JIT/Methodical/fp/exgen/10w5d_cs_do/10w5d_cs_do.sh
-JIT/Methodical/fp/exgen/10w5d_cs_ro/10w5d_cs_ro.sh
-
 // Optimization failure, No exception thrown
 JIT/Regression/JitBlue/DevDiv_359736/DevDiv_359736_do/DevDiv_359736_do.sh
 JIT/Regression/JitBlue/DevDiv_359736/DevDiv_359736_ro/DevDiv_359736_ro.sh
-
-// Assertion failed 'initBlkNode->gtRsvdRegs == RBM_ARG_2'
-JIT/Regression/JitBlue/DevDiv_278371/DevDiv_278371/DevDiv_278371.sh
 
 // Unhandled Exception: System.InvalidProgramException: Common Language Runtime detected an invalid program.
 JIT/Methodical/tailcall_v4/smallFrame/smallFrame.sh
