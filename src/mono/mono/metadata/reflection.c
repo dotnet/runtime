@@ -165,7 +165,10 @@ reflected_equal (gconstpointer a, gconstpointer b)
 guint
 reflected_hash (gconstpointer a) {
 	const ReflectedEntry *ea = (const ReflectedEntry *)a;
-	return mono_aligned_addr_hash (ea->item);
+	/* Combine hashes for item and refclass. Identical to boost's hash_combine */
+	guint seed = mono_aligned_addr_hash (ea->item) + 0x9e3779b9;
+	seed ^= mono_aligned_addr_hash (ea->refclass) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+	return seed;
 }
 
 

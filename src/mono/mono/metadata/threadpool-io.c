@@ -325,7 +325,7 @@ selector_thread (gpointer data)
 		return 0;
 	}
 
-	states = mono_g_hash_table_new_type (g_direct_hash, g_direct_equal, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_THREAD_POOL, "i/o thread pool states table");
+	states = mono_g_hash_table_new_type (g_direct_hash, NULL, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_THREAD_POOL, "i/o thread pool states table");
 
 	while (!mono_runtime_is_shutting_down ()) {
 		gint i, j;

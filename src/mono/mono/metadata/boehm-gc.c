@@ -618,6 +618,12 @@ mono_gc_make_descr_from_bitmap (gsize *bitmap, int numbits)
 }
 
 void*
+mono_gc_make_vector_descr (void)
+{
+	return NULL;
+}
+
+void*
 mono_gc_make_root_descr_all_refs (int numbits)
 {
 	return NULL;

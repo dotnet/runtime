@@ -6714,7 +6714,8 @@ mono_signature_explicit_this (MonoMethodSignature *sig)
 guint
 mono_aligned_addr_hash (gconstpointer ptr)
 {
-	return GPOINTER_TO_UINT (ptr) >> 3;
+	/* Same hashing we use for objects */
+	return (GPOINTER_TO_UINT (ptr) >> 3) * 2654435761u;
 }
 
 /*

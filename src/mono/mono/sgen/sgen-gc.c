@@ -858,6 +858,7 @@ static void
 precisely_scan_objects_from (void** start_root, void** end_root, char* n_start, char *n_end, SgenDescriptor desc, ScanCopyContext ctx)
 {
 	CopyOrMarkObjectFunc copy_func = ctx.ops->copy_or_mark_object;
+	ScanPtrFieldFunc scan_field_func = ctx.ops->scan_ptr_field;
 	SgenGrayQueue *queue = ctx.queue;
 
 	switch (desc & ROOT_DESC_TYPE_MASK) {
@@ -889,6 +890,15 @@ precisely_scan_objects_from (void** start_root, void** end_root, char* n_start, 
 				++objptr;
 			}
 			start_run += GC_BITS_PER_WORD;
+		}
+		break;
+	}
+	case ROOT_DESC_VECTOR: {
+		void **p;
+
+		for (p = start_root; p < end_root; p++) {
+			if (*p)
+				scan_field_func (NULL, (GCObject**)p, queue);
 		}
 		break;
 	}
@@ -1481,13 +1491,16 @@ enqueue_scan_from_roots_jobs (SgenGrayQueue *gc_thread_gray_queue, char *heap_st
 	scrrj->root_type = ROOT_TYPE_NORMAL;
 	sgen_workers_enqueue_job (&scrrj->scan_job.job, enqueue);
 
-	scrrj = (ScanFromRegisteredRootsJob*)sgen_thread_pool_job_alloc ("scan from registered roots wbarrier", job_scan_from_registered_roots, sizeof (ScanFromRegisteredRootsJob));
-	scrrj->scan_job.ops = ops;
-	scrrj->scan_job.gc_thread_gray_queue = gc_thread_gray_queue;
-	scrrj->heap_start = heap_start;
-	scrrj->heap_end = heap_end;
-	scrrj->root_type = ROOT_TYPE_WBARRIER;
-	sgen_workers_enqueue_job (&scrrj->scan_job.job, enqueue);
+	if (current_collection_generation == GENERATION_OLD) {
+		/* During minors we scan the cardtable for these roots instead */
+		scrrj = (ScanFromRegisteredRootsJob*)sgen_thread_pool_job_alloc ("scan from registered roots wbarrier", job_scan_from_registered_roots, sizeof (ScanFromRegisteredRootsJob));
+		scrrj->scan_job.ops = ops;
+		scrrj->scan_job.gc_thread_gray_queue = gc_thread_gray_queue;
+		scrrj->heap_start = heap_start;
+		scrrj->heap_end = heap_end;
+		scrrj->root_type = ROOT_TYPE_WBARRIER;
+		sgen_workers_enqueue_job (&scrrj->scan_job.job, enqueue);
+	}
 
 	/* Threads */
 
@@ -2597,6 +2610,94 @@ sgen_deregister_root (char* addr)
 			roots_size -= (root.end_root - addr);
 	}
 	UNLOCK_GC;
+}
+
+void
+sgen_wbroots_iterate_live_block_ranges (sgen_cardtable_block_callback cb)
+{
+	void **start_root;
+	RootRecord *root;
+	SGEN_HASH_TABLE_FOREACH (&roots_hash [ROOT_TYPE_WBARRIER], void **, start_root, RootRecord *, root) {
+		cb ((mword)start_root, (mword)root->end_root - (mword)start_root);
+	} SGEN_HASH_TABLE_FOREACH_END;
+}
+
+/* Root equivalent of sgen_client_cardtable_scan_object */
+static void
+sgen_wbroot_scan_card_table (void** start_root, mword size,  ScanCopyContext ctx)
+{
+	ScanPtrFieldFunc scan_field_func = ctx.ops->scan_ptr_field;
+	guint8 *card_data = sgen_card_table_get_card_scan_address ((mword)start_root);
+	guint8 *card_base = card_data;
+	mword card_count = sgen_card_table_number_of_cards_in_range ((mword)start_root, size);
+	guint8 *card_data_end = card_data + card_count;
+	mword extra_idx = 0;
+	char *obj_start = sgen_card_table_align_pointer (start_root);
+	char *obj_end = (char*)start_root + size;
+#ifdef SGEN_HAVE_OVERLAPPING_CARDS
+	guint8 *overflow_scan_end = NULL;
+#endif
+
+#ifdef SGEN_HAVE_OVERLAPPING_CARDS
+	/*Check for overflow and if so, setup to scan in two steps*/
+	if (card_data_end >= SGEN_SHADOW_CARDTABLE_END) {
+		overflow_scan_end = sgen_shadow_cardtable + (card_data_end - SGEN_SHADOW_CARDTABLE_END);
+		card_data_end = SGEN_SHADOW_CARDTABLE_END;
+	}
+
+LOOP_HEAD:
+#endif
+
+	card_data = sgen_find_next_card (card_data, card_data_end);
+
+	for (; card_data < card_data_end; card_data = sgen_find_next_card (card_data + 1, card_data_end)) {
+		size_t idx = (card_data - card_base) + extra_idx;
+		char *start = (char*)(obj_start + idx * CARD_SIZE_IN_BYTES);
+		char *card_end = start + CARD_SIZE_IN_BYTES;
+		char *elem = start, *first_elem = start;
+
+		/*
+		 * Don't clean first and last card on 32bit systems since they
+		 * may also be part from other roots.
+		 */
+		if (card_data != card_base && card_data != (card_data_end - 1))
+			sgen_card_table_prepare_card_for_scanning (card_data);
+
+		card_end = MIN (card_end, obj_end);
+
+		if (elem < (char*)start_root)
+			first_elem = elem = (char*)start_root;
+
+		for (; elem < card_end; elem += SIZEOF_VOID_P) {
+			if (*(GCObject**)elem)
+				scan_field_func (NULL, (GCObject**)elem, ctx.queue);
+		}
+
+		binary_protocol_card_scan (first_elem, elem - first_elem);
+	}
+
+#ifdef SGEN_HAVE_OVERLAPPING_CARDS
+	if (overflow_scan_end) {
+		extra_idx = card_data - card_base;
+		card_base = card_data = sgen_shadow_cardtable;
+		card_data_end = overflow_scan_end;
+		overflow_scan_end = NULL;
+		goto LOOP_HEAD;
+	}
+#endif
+}
+
+void
+sgen_wbroots_scan_card_table (ScanCopyContext ctx)
+{
+	void **start_root;
+	RootRecord *root;
+
+	SGEN_HASH_TABLE_FOREACH (&roots_hash [ROOT_TYPE_WBARRIER], void **, start_root, RootRecord *, root) {
+		SGEN_ASSERT (0, (root->root_desc & ROOT_DESC_TYPE_MASK) == ROOT_DESC_VECTOR, "Unsupported root type");
+
+		sgen_wbroot_scan_card_table (start_root, (mword)root->end_root - (mword)start_root, ctx);
+	} SGEN_HASH_TABLE_FOREACH_END;
 }
 
 /*

@@ -276,6 +276,12 @@ mono_gc_make_descr_from_bitmap (gsize *bitmap, int numbits)
 }
 
 SgenDescriptor
+mono_gc_make_vector_descr (void)
+{
+	return MAKE_ROOT_DESC (ROOT_DESC_VECTOR, 0);
+}
+
+SgenDescriptor
 mono_gc_make_root_descr_all_refs (int numbits)
 {
 	gsize *gc_bitmap;
