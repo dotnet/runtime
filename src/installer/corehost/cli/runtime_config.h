@@ -25,6 +25,7 @@ public:
     const std::list<pal::string_t>& get_probe_paths() const;
     bool get_patch_roll_fwd() const;
     bool get_prerelease_roll_fwd() const;
+    int get_roll_fwd_on_no_candidate_fx() const;
     bool get_portable() const;
     bool parse_opts(const json_value& opts);
     void config_kv(std::vector<pal::string_t>*, std::vector<pal::string_t>*) const;
@@ -42,6 +43,7 @@ private:
     pal::string_t m_fx_ver;
     bool m_patch_roll_fwd;
     bool m_prerelease_roll_fwd;
+    int m_roll_fwd_on_no_candidate_fx;
 
     pal::string_t m_dev_path;
     pal::string_t m_path;

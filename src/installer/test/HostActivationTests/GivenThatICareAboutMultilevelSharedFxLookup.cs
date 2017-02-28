@@ -1,7 +1,8 @@
-﻿using System;
+﻿using Microsoft.DotNet.InternalAbstractions;
+using Newtonsoft.Json.Linq;
+using System;
 using System.IO;
 using Xunit;
-using Microsoft.DotNet.InternalAbstractions;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLookup
 {
@@ -90,7 +91,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             var appDll = fixture.TestProject.AppDll;
 
             // Set desired version = 9999.0.0
-            SetProductionRuntimeConfig(fixture);
+            string runtimeConfig = Path.Combine(fixture.TestProject.OutputDirectory, "SharedFxLookupPortableApp.runtimeconfig.json");
+            SetRuntimeConfigJson(runtimeConfig, "9999.0.0");
 
             // Add a dummy version in the exe dir
             AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.0");
@@ -167,7 +169,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.0", "9999.0.0-dummy0");
 
             // Set desired version = 9999.0.0-dummy0
-            SetPrereleaseRuntimeConfig(fixture);
+            string runtimeConfig = Path.Combine(fixture.TestProject.OutputDirectory, "SharedFxLookupPortableApp.runtimeconfig.json");
+            SetRuntimeConfigJson(runtimeConfig, "9999.0.0-dummy0");
 
             // Version: 9999.0.0-dummy0
             // CWD: empty
@@ -205,7 +208,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
                 .HaveStdErrContaining(Path.Combine(_cwdSelectedMessage, "9999.0.0-dummy1"));
 
             // Set desired version = 9999.0.0
-            SetProductionRuntimeConfig(fixture);
+            SetRuntimeConfigJson(runtimeConfig, "9999.0.0");
 
             // Version: 9999.0.0
             // CWD: 9999.0.0-dummy1
@@ -296,6 +299,288 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             DeleteAvailableSharedFxVersions(_userSharedFxBaseDir, "9999.0.2", "9999.0.0-dummy2");
         }
 
+        [Fact]
+        public void Roll_Forward_On_No_Candidate_Fx_Must_Happen_If_Compatible_Patch_Version_Is_Not_Available()
+        {
+            var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
+                .Copy();
+
+            var dotnet = fixture.BuiltDotnet;
+            var appDll = fixture.TestProject.AppDll;
+
+            // Set desired version = 9999.0.0
+            string runtimeConfig = Path.Combine(fixture.TestProject.OutputDirectory, "SharedFxLookupPortableApp.runtimeconfig.json");
+            SetRuntimeConfigJson(runtimeConfig, "9999.0.0");
+
+            // Add some dummy versions in the cwd
+            AddAvailableSharedFxVersions(_cwdSharedFxBaseDir, "10000.1.1", "10000.1.3");
+
+            // Version: 9999.0.0
+            // 'Roll forward on no candidate fx' enabled through env var
+            // CWD: 10000.1.1, 10000.1.3
+            // Expected: 10000.1.3 from cwd
+            dotnet.Exec(appDll)
+                .WorkingDirectory(_currentWorkingDir)
+                .EnvironmentVariable("DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX", "1")
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdErrContaining(Path.Combine(_cwdSelectedMessage, "10000.1.3"));
+
+            // Add a dummy version in the cwd
+            AddAvailableSharedFxVersions(_cwdSharedFxBaseDir, "9999.1.1");
+
+            // Version: 9999.0.0
+            // 'Roll forward on no candidate fx' enabled through env var
+            // CWD: 9999.1.1, 10000.1.1, 10000.1.3
+            // Expected: 9999.1.1 from cwd
+            dotnet.Exec(appDll)
+                .WorkingDirectory(_currentWorkingDir)
+                .EnvironmentVariable("DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX", "1")
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdErrContaining(Path.Combine(_cwdSelectedMessage, "9999.1.1"));
+        }
+
+        [Fact]
+        public void Roll_Forward_On_No_Candidate_Fx_Fails_If_No_Higher_Version_Is_Available()
+        {
+            var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
+                .Copy();
+
+            var dotnet = fixture.BuiltDotnet;
+            var appDll = fixture.TestProject.AppDll;
+
+            // Set desired version = 9999.1.1
+            string runtimeConfig = Path.Combine(fixture.TestProject.OutputDirectory, "SharedFxLookupPortableApp.runtimeconfig.json");
+            SetRuntimeConfigJson(runtimeConfig, "9999.1.1");
+
+            // Add some dummy versions in the cwd
+            AddAvailableSharedFxVersions(_cwdSharedFxBaseDir, "9998.0.1", "9998.1.0", "9999.0.0", "9999.0.1", "9999.1.0");
+
+            // Version: 9999.1.1
+            // 'Roll forward on no candidate fx' enabled through env var
+            // CWD: 9998.0.1, 9998.1.0, 9999.0.0, 9999.0.1, 9999.1.0
+            // Expected: no compatible version
+            dotnet.Exec(appDll)
+                .WorkingDirectory(_currentWorkingDir)
+                .EnvironmentVariable("DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX", "1")
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute(fExpectedToFail:true)
+                .Should()
+                .Fail()
+                .And
+                .HaveStdErrContaining("It was not possible to find any compatible framework version");
+        }
+
+        [Fact]
+        public void Roll_Forward_On_No_Candidate_Fx_Must_Look_Into_All_Lookup_Folders()
+        {
+            var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
+                .Copy();
+
+            var dotnet = fixture.BuiltDotnet;
+            var appDll = fixture.TestProject.AppDll;
+
+            // Set desired version = 9999.0.0
+            string runtimeConfig = Path.Combine(fixture.TestProject.OutputDirectory, "SharedFxLookupPortableApp.runtimeconfig.json");
+            SetRuntimeConfigJson(runtimeConfig, "9999.0.0");
+
+            // Add a dummy version in the exe dir
+            AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.1.0");
+
+            // Version: 9999.0.0
+            // 'Roll forward on no candidate fx' enabled through env var
+            // CWD: empty
+            // User: empty
+            // Exe: 9999.1.0
+            // Expected: 9999.1.0 from exe dir
+            dotnet.Exec(appDll)
+                .WorkingDirectory(_currentWorkingDir)
+                .EnvironmentVariable("DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX", "1")
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdErrContaining(_exeSelectedMessage);
+
+            // Add a dummy version in the user dir
+            AddAvailableSharedFxVersions(_userSharedFxBaseDir, "9999.1.1");
+
+            // Version: 9999.0.0
+            // 'Roll forward on no candidate fx' enabled through env var
+            // CWD: empty
+            // User: 9999.1.1
+            // Exe: 9999.1.0
+            // Expected: 9999.1.1 from user dir
+            dotnet.Exec(appDll)
+                .WorkingDirectory(_currentWorkingDir)
+                .EnvironmentVariable("DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX", "1")
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdErrContaining(_userSelectedMessage);
+
+            // Add a dummy version in the cwd
+            AddAvailableSharedFxVersions(_cwdSharedFxBaseDir, "10000.0.0");
+
+            // Version: 9999.0.0
+            // 'Roll forward on no candidate fx' enabled through env var
+            // CWD: 10000.0.0
+            // User: 9999.1.1
+            // Exe: 9999.1.0
+            // Expected: 10000.0.0 from cwd
+            dotnet.Exec(appDll)
+                .WorkingDirectory(_currentWorkingDir)
+                .EnvironmentVariable("DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX", "1")
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdErrContaining(_cwdSelectedMessage);
+
+            // Remove dummy folders from user dir
+            DeleteAvailableSharedFxVersions(_userSharedFxBaseDir, "9999.1.1");
+        }
+
+        [Fact]
+        public void Roll_Forward_On_No_Candidate_Fx_May_Be_Enabled_Through_Runtimeconfig_Json_File()
+        {
+            var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
+                .Copy();
+
+            var dotnet = fixture.BuiltDotnet;
+            var appDll = fixture.TestProject.AppDll;
+
+            // Set desired version = 9999.0.0
+            // Enable 'roll forward on no candidate fx' through runtimeconfig
+            string runtimeConfig = Path.Combine(fixture.TestProject.OutputDirectory, "SharedFxLookupPortableApp.runtimeconfig.json");
+            SetRuntimeConfigJson(runtimeConfig, "9999.0.0", 1);
+
+            // Add some dummy versions
+            AddAvailableSharedFxVersions(_cwdSharedFxBaseDir, "9999.1.0");
+            AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.0");
+
+            // Version: 9999.0.0
+            // 'Roll forward on no candidate fx' enabled through runtimeconfig
+            // CWD: 9999.1.0
+            // User: empty
+            // Exe: 9999.0.0
+            // Expected: 9999.1.0 from cwd
+            dotnet.Exec(appDll)
+                .WorkingDirectory(_currentWorkingDir)
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdErrContaining(_cwdSelectedMessage);
+
+            // Set desired version = 9999.0.0
+            // Disable 'roll forward on no candidate fx' through runtimeconfig
+            runtimeConfig = Path.Combine(fixture.TestProject.OutputDirectory, "SharedFxLookupPortableApp.runtimeconfig.json");
+            SetRuntimeConfigJson(runtimeConfig, "9999.0.0", 0);
+
+            // Version: 9999.0.0
+            // 'Roll forward on no candidate fx' disabled through runtimeconfig
+            // CWD: 9999.1.0
+            // User: empty
+            // Exe: 9999.0.0
+            // Expected: 9999.0.0 from exe dir
+            dotnet.Exec(appDll)
+                .WorkingDirectory(_currentWorkingDir)
+                .EnvironmentVariable("DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX", "1")
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdErrContaining(_exeSelectedMessage);
+        }
+
+        [Fact]
+        public void Roll_Forward_On_No_Candidate_Fx_May_Be_Enabled_Through_Argument()
+        {
+            var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
+                .Copy();
+
+            var dotnet = fixture.BuiltDotnet;
+            var appDll = fixture.TestProject.AppDll;
+
+            // Set desired version = 9999.0.0
+            // Disable 'roll forward on no candidate fx' through Runtimeconfig
+            string runtimeConfig = Path.Combine(fixture.TestProject.OutputDirectory, "SharedFxLookupPortableApp.runtimeconfig.json");
+            SetRuntimeConfigJson(runtimeConfig, "9999.0.0", 0);
+
+            // Add some dummy versions
+            AddAvailableSharedFxVersions(_cwdSharedFxBaseDir, "9999.1.0");
+            AddAvailableSharedFxVersions(_exeSharedFxBaseDir, "9999.0.0");
+
+            // Version: 9999.0.0
+            // 'Roll forward on no candidate fx' enabled through argument
+            // CWD: 9999.1.0
+            // User: empty
+            // Exe: 9999.0.0
+            // Expected: 9999.1.0 from cwd
+            dotnet.Exec("--roll-forward-on-no-candidate-fx", "1", appDll)
+                .WorkingDirectory(_currentWorkingDir)
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdErrContaining(_cwdSelectedMessage);
+
+            // Set desired version = 9999.0.0
+            // Enable 'roll forward on no candidate fx' through Runtimeconfig
+            SetRuntimeConfigJson(runtimeConfig, "9999.0.0", 1);
+
+            // Version: 9999.0.0
+            // 'Roll forward on no candidate fx' disabled through argument
+            // CWD: 9999.1.0
+            // User: empty
+            // Exe: 9999.0.0
+            // Expected: 9999.0.0 from exe dir
+            dotnet.Exec("--roll-forward-on-no-candidate-fx", "0", appDll)
+                .WorkingDirectory(_currentWorkingDir)
+                .EnvironmentVariable("DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX", "1")
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdErrContaining(_exeSelectedMessage);
+        }
+
         // This method adds a list of new framework version folders in the specified
         // sharedFxBaseDir. The files are copied from the _buildSharedFxDir.
         // Remarks:
@@ -384,24 +669,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             }
         }
 
-        // Overwrites the fixture's runtimeconfig.json. The specified version is 9999.0.0-dummy0
-        private void SetPrereleaseRuntimeConfig(TestProjectFixture fixture)
-        {
-            string destFile = Path.Combine(fixture.TestProject.OutputDirectory, "SharedFxLookupPortableApp.runtimeconfig.json");
-            string srcFile = Path.Combine(RepoDirectories.RepoRoot, "TestAssets", "TestUtils",
-                "SharedFxLookup", "SharedFxLookupPortableApp_prerelease.runtimeconfig.json");
-            File.Copy(srcFile, destFile, true);
-        }
-
-        // Overwrites the fixture's runtimeconfig.json. The specified version is 9999.0.0
-        private void SetProductionRuntimeConfig(TestProjectFixture fixture)
-        {
-            string destFile = Path.Combine(fixture.TestProject.OutputDirectory, "SharedFxLookupPortableApp.runtimeconfig.json");
-            string srcFile = Path.Combine(RepoDirectories.RepoRoot, "TestAssets", "TestUtils",
-                "SharedFxLookup", "SharedFxLookupPortableApp_production.runtimeconfig.json");
-            File.Copy(srcFile, destFile, true);
-        }
-
         // MultilevelDirectory is %TEST_ARTIFACTS%\dotnetMultilevelSharedFxLookup\id.
         // We must locate the first non existing id.
         private string CalculateMultilevelDirectory(string baseMultilevelDir)
@@ -416,6 +683,40 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSharedFxLooku
             } while (Directory.Exists(multilevelDir));
 
             return multilevelDir;
+        }
+
+        // Generated json file:
+        /*
+         * {
+         *   "runtimeOptions": {
+         *     "framework": {
+         *       "name": "Microsoft.NETCore.App",
+         *       "version": {version}
+         *     },
+         *     "rollForwardOnNoCandidateFx": {rollFwdOnNoCandidateFx} <-- only if rollFwdOnNoCandidateFx is defined
+         *   }
+         * }
+        */
+        private void SetRuntimeConfigJson(string destFile, string version, int? rollFwdOnNoCandidateFx = null)
+        {
+            JObject runtimeOptions = new JObject(
+                new JProperty("framework",
+                    new JObject(
+                        new JProperty("name", "Microsoft.NETCore.App"),
+                        new JProperty("version", version)
+                    )
+                )
+            );
+
+            if (rollFwdOnNoCandidateFx.HasValue)
+            {
+                runtimeOptions.Add("rollForwardOnNoCandidateFx", rollFwdOnNoCandidateFx);
+            }
+
+            JObject json = new JObject();
+            json.Add("runtimeOptions", runtimeOptions);
+
+            File.WriteAllText(destFile, json.ToString());
         }
     }
 }
