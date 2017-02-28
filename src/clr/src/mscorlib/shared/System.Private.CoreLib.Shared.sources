@@ -5,6 +5,59 @@
     <TargetsUnix Condition="'$(TargetsUnix)' != 'true'">false</TargetsUnix>
     <TargetsOSX Condition="'$(TargetsOSX)' != 'true'">false</TargetsOSX>
   </PropertyGroup>
+  <ItemGroup Condition="$(TargetsWindows)">
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Windows\Interop.BOOL.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Windows\Interop.Errors.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Windows\Interop.Libraries.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Windows\BCrypt\Interop.NTSTATUS.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Windows\Kernel32\Interop.CancelIoEx.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Windows\Kernel32\Interop.CloseHandle.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Windows\Kernel32\Interop.FileOperations.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Windows\Kernel32\Interop.FileTypes.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Windows\Kernel32\Interop.FlushFileBuffers.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Windows\Kernel32\Interop.FormatMessage.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Windows\Kernel32\Interop.GetFileInformationByHandleEx.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Windows\Kernel32\Interop.GetFileType_SafeHandle.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Windows\Kernel32\Interop.GetFullPathNameW.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Windows\Kernel32\Interop.GetLongPathNameW.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Windows\Kernel32\Interop.GetTempFileNameW.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Windows\Kernel32\Interop.GetTempPathW.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Windows\Kernel32\Interop.LockFile.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Windows\Kernel32\Interop.ReadFile_SafeHandle_IntPtr.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Windows\Kernel32\Interop.ReadFile_SafeHandle_NativeOverlapped.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Windows\Kernel32\Interop.SafeCreateFile.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Windows\Kernel32\Interop.SecurityOptions.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Windows\Kernel32\Interop.SECURITY_ATTRIBUTES.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Windows\Kernel32\Interop.SetEndOfFile.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Windows\Kernel32\Interop.SetErrorMode.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Windows\Kernel32\Interop.SetFilePointerEx.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Windows\Kernel32\Interop.UnsafeCreateFile.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Windows\Kernel32\Interop.WriteFile_SafeHandle_IntPtr.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Windows\Kernel32\Interop.WriteFile_SafeHandle_NativeOverlapped.cs"/>
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetsUnix)">
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Unix\Interop.Errors.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Unix\Interop.IOErrors.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Unix\Interop.Libraries.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Unix\System.Native\Interop.Close.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Unix\System.Native\Interop.FLock.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Unix\System.Native\Interop.FSync.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Unix\System.Native\Interop.FTruncate.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Unix\System.Native\Interop.GetCwd.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Unix\System.Native\Interop.GetUnixName.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Unix\System.Native\Interop.LockFileRegion.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Unix\System.Native\Interop.LSeek.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Unix\System.Native\Interop.Open.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Unix\System.Native\Interop.OpenFlags.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Unix\System.Native\Interop.PathConf.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Unix\System.Native\Interop.Permissions.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Unix\System.Native\Interop.PosixFAdvise.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Unix\System.Native\Interop.Read.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Unix\System.Native\Interop.Stat.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Unix\System.Native\Interop.Unlink.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\Interop\Unix\System.Native\Interop.Write.cs"/>
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)\System\Buffers\ArrayPool.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)\System\Buffers\ArrayPoolEventSource.cs"/>

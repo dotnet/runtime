@@ -1079,37 +1079,8 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' != 'true'">
     <MscorlibSources Include="$(CoreFxSourcesRoot)\System\HResults.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Windows\Interop.BOOL.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Windows\Interop.Errors.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Windows\Interop.Libraries.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Windows\BCrypt\Interop.NTSTATUS.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.CancelIoEx.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.CloseHandle.cs" />
     <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.CreateFile.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.FileTypes.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.FileOperations.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.FlushFileBuffers.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.FormatMessage.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.GetFileInformationByHandleEx.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.GetFileType_SafeHandle.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.GetFullPathNameW.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.GetLongPathNameW.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.GetTempFileNameW.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.GetTempPathW.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.LockFile.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.ReadFile_SafeHandle_IntPtr.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.ReadFile_SafeHandle_NativeOverlapped.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.SafeCreateFile.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.SECURITY_ATTRIBUTES.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.SecurityOptions.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.SetEndOfFile.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.SetErrorMode.cs" />
     <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.SetFileInformationByHandle.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.SetFilePointerEx.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.UnsafeCreateFile.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.WriteFile_SafeHandle_IntPtr.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.WriteFile_SafeHandle_NativeOverlapped.cs" />
   </ItemGroup>
   <ItemGroup>
     <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Security\SecureString.cs" />
@@ -1129,27 +1100,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <MscorlibSources Include="$(CoreFxSourcesRoot)\System\HResults.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Unix\Interop.Errors.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Unix\Interop.IOErrors.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Unix\Interop.Libraries.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.Close.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.GetCwd.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.GetUnixName.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.Fcntl.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.FLock.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.FSync.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.FTruncate.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.LSeek.cs" />
     <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.MksTemps.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.Open.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.OpenFlags.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.PathConf.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.Permissions.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.PosixFAdvise.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.Read.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.Stat.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.Unlink.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.Write.cs" />
   </ItemGroup>
   <ItemGroup>
     <MscorlibSources Include="$(CoreFxSourcesRoot)\Debug.cs" />
