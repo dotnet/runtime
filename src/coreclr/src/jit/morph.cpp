@@ -5042,7 +5042,7 @@ GenTreePtr Compiler::fgMorphMultiregStructArg(GenTreePtr arg, fgArgTabEntryPtr f
             //    replace the existing LDOBJ(ADDR(LCLVAR))
             //    with a FIELD_LIST(LCLFLD-LO, FIELD_LIST(LCLFLD-HI, nullptr) ...)
             //
-            unsigned          offset    = 0;
+            unsigned          offset    = baseOffset;
             GenTreeFieldList* listEntry = nullptr;
             for (unsigned inx = 0; inx < elemCount; inx++)
             {
