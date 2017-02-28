@@ -93,7 +93,7 @@ platformList.each { platform ->
 
     if (os == 'Ubuntu16.04' && architecture == 'arm') {
         // Don't enable by default
-        def contextString = "${osForGHTrigger} ${architecture} ${configuration} Build"
+        def contextString = "${osForGHTrigger} ${architecture} ${configuration}"
         Utilities.addGithubPRTriggerForBranch(newJob, branch, "${contextString} Build", "(?i).*test\\W+${contextString}.*", true /* trigger on comment phrase only */)
     }
     else {
