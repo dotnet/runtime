@@ -343,20 +343,23 @@ EXTERN_C FCDECL1_V(INT32, JIT_Dbl2IntOvf, double val);
 EXTERN_C FCDECL2_VV(float, JIT_FltRem, float dividend, float divisor);
 EXTERN_C FCDECL2_VV(double, JIT_DblRem, double dividend, double divisor);
 
-#if !defined(_WIN64) && !defined(_TARGET_X86_)
+#ifndef BIT64
+#ifdef _TARGET_X86_
+// JIThelp.asm
+EXTERN_C void STDCALL JIT_LLsh();
+EXTERN_C void STDCALL JIT_LRsh();
+EXTERN_C void STDCALL JIT_LRsz();
+#else // _TARGET_X86_
 EXTERN_C FCDECL2_VV(UINT64, JIT_LLsh, UINT64 num, int shift);
 EXTERN_C FCDECL2_VV(INT64, JIT_LRsh, INT64 num, int shift);
 EXTERN_C FCDECL2_VV(UINT64, JIT_LRsz, UINT64 num, int shift);
-#endif
+#endif // !_TARGET_X86_
+#endif // !BIT64
 
 #ifdef _TARGET_X86_
 
 extern "C"
 {
-    void STDCALL JIT_LLsh();                      // JIThelp.asm
-    void STDCALL JIT_LRsh();                      // JIThelp.asm
-    void STDCALL JIT_LRsz();                      // JIThelp.asm
-
     void STDCALL JIT_CheckedWriteBarrierEAX(); // JIThelp.asm/JIThelp.s
     void STDCALL JIT_CheckedWriteBarrierEBX(); // JIThelp.asm/JIThelp.s
     void STDCALL JIT_CheckedWriteBarrierECX(); // JIThelp.asm/JIThelp.s
