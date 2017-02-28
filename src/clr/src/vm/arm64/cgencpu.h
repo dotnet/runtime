@@ -514,6 +514,16 @@ struct HijackArgs
          }; 
         size_t ReturnValue[2];
     };
+    union
+    {
+        struct {  
+             DWORD64 D0;  
+             DWORD64 D1;  
+             DWORD64 D2;  
+             DWORD64 D3;  
+         }; 
+        size_t FPReturnValue[4];
+    };
 };
 
 EXTERN_C VOID STDCALL PrecodeFixupThunk();
