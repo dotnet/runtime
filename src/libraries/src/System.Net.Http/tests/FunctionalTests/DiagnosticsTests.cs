@@ -517,6 +517,84 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
+        public void SendAsync_ExpectedDiagnosticExceptionOnlyActivityLogging()
+        {
+            RemoteInvoke(() =>
+            {
+                bool exceptionLogged = false;
+                bool activityLogged = false;
+                var diagnosticListenerObserver = new FakeDiagnosticListenerObserver(kvp =>
+                {
+                    if (kvp.Key.Equals("System.Net.Http.Activity.Stop")) { activityLogged = true; }
+                    else if (kvp.Key.Equals("System.Net.Http.Exception"))
+                    {
+                        Assert.NotNull(kvp.Value);
+                        GetPropertyValueFromAnonymousTypeInstance<Exception>(kvp.Value, "Exception");
+
+                        exceptionLogged = true;
+                    }
+                });
+
+                using (DiagnosticListener.AllListeners.Subscribe(diagnosticListenerObserver))
+                {
+                    diagnosticListenerObserver.Enable(s => s.Equals("System.Net.Http.Exception"));
+                    using (var client = new HttpClient())
+                    {
+                        Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync($"http://{Guid.NewGuid()}.com")).Wait();
+                    }
+                    // Poll with a timeout since logging response is not synchronized with returning a response.
+                    WaitForTrue(() => exceptionLogged, TimeSpan.FromSeconds(1),
+                        "Exception was not logged within 1 second timeout.");
+                    Assert.False(activityLogged, "Activity was logged when logging was disabled");
+                    diagnosticListenerObserver.Disable();
+                }
+
+                return SuccessExitCode;
+            }).Dispose();
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Fact]
+        public void SendAsync_ExpectedDiagnosticStopOnlyActivityLogging()
+        {
+            RemoteInvoke(() =>
+            {
+                bool activityStartLogged = false;
+                bool activityStopLogged = false;
+
+                Activity parentActivity = new Activity("parent");
+                parentActivity.Start();
+
+                var diagnosticListenerObserver = new FakeDiagnosticListenerObserver(kvp =>
+                {
+                    if (kvp.Key.Equals("System.Net.Http.Activity.Start")) { activityStartLogged = true; }
+                    else if (kvp.Key.Equals("System.Net.Http.Activity.Stop"))
+                    {
+                        Assert.Equal(parentActivity, Activity.Current.Parent);
+                        activityStopLogged = true;
+                    }
+                });
+
+                using (DiagnosticListener.AllListeners.Subscribe(diagnosticListenerObserver))
+                {
+                    diagnosticListenerObserver.Enable(s => s.Equals("System.Net.Http.Activity"));
+                    using (var client = new HttpClient())
+                    {
+                        var response = client.GetAsync(Configuration.Http.RemoteEchoServer).Result;
+                    }
+                    // Poll with a timeout since logging response is not synchronized with returning a response.
+                    WaitForTrue(() => activityStopLogged, TimeSpan.FromSeconds(1),
+                        "Activity.Stop was not logged within 1 second timeout.");
+                    Assert.False(activityStartLogged, "Activity Start was logged when start logging was disabled");
+                    diagnosticListenerObserver.Disable();
+                }
+
+                return SuccessExitCode;
+            }).Dispose();
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Fact]
         public void SendAsync_ExpectedDiagnosticCancelledActivityLogging()
         {
             RemoteInvoke(() =>

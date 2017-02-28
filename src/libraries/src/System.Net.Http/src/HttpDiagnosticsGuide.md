@@ -74,7 +74,8 @@ Consumer may optionally provide predicate to DiagnosticListener to prevent some 
 If request processing throws exception, instrumentation first checks if consumer wants to receive this event.
 
 ### System.Net.Http.Activity.Start
-After initial instrumentation preconditions are met and `DiagnosticListener.IsEnabled("System.Net.Http.Activity", request)` check is passed, instrumentation starts a new Activity to represent outgoing request and writes  **"System.Net.Http.Activity.Start"** event.  Event payload has Request property with `HttpRequestMessage` object representing request.
+After initial instrumentation preconditions are met and `DiagnosticListener.IsEnabled("System.Net.Http.Activity", request)` check is passed, instrumentation starts a new Activity to represent outgoing request.
+If **"System.Net.Http.Activity.Start"** is enabled, instrumentation writes  it. Event payload has Request property with `HttpRequestMessage` object representing request.
 
 ### System.Net.Http.Activity.Stop
 When request is completed (faulted with exception, cancelled or successfully completed), instrumentation stops activity and writes  **"System.Net.Http.Activity.Stop"** event.
@@ -97,10 +98,11 @@ Otherwise, `Activity.Current` represent some 'parent' activity (presumably incom
 1. `DiagnosticListener.IsEnabled()` - determines if there is a consumer
 2. `DiagnosticListener.IsEnabled("System.Net.Http.Activity")` - determines if consumer is interested in any Activity events
 3. `DiagnosticListener.IsEnabled("System.Net.Http.Activity", request)` - determines if this particular request should be instrumented
-4. `DiagnosticListener.Write("System.Net.Http.Activity.Start", new {Request})` - notifies that activity (outgoing request) was started
-5. `DiagnosticListener.IsEnabled("System.Net.Http.Exception")` - determines if exception event (if thrown) should be written
-6. `DiagnosticListener.Write("System.Net.Http.Activity.Exception", new {Exception, Request})` - notifies about exception during request processing (if thrown)
-7. `DiagnosticListener.Write("System.Net.Http.Activity.Stop", new {Response, RequestTaskStatus})` - notifies that activity (outgoing request) is stopping
+4. `DiagnosticListener.IsEnabled("System.Net.Http.Activity.Start")` - determines if Start event should be written
+5. `DiagnosticListener.Write("System.Net.Http.Activity.Start", new {Request})` - notifies that activity (outgoing request) was started
+6. `DiagnosticListener.IsEnabled("System.Net.Http.Exception")` - determines if exception event (if thrown) should be written
+7. `DiagnosticListener.Write("System.Net.Http.Activity.Exception", new {Exception, Request})` - notifies about exception during request processing (if thrown)
+8. `DiagnosticListener.Write("System.Net.Http.Activity.Stop", new {Response, RequestTaskStatus})` - notifies that activity (outgoing request) is stopping
 
 # Non-Activity events (deprecated)
 If there is a subscriber to "HttpHandlerDiagnosticListener", but Activity events are disabled, instrumentation attempts to send legacy "System.Net.Http.Request" and "System.Net.Http.Response" events if they are enabled.
