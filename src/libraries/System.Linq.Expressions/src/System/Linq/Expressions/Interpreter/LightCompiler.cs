@@ -1215,6 +1215,7 @@ namespace System.Linq.Expressions.Interpreter
                 switch (node.NodeType)
                 {
                     case ExpressionType.Not:
+                    case ExpressionType.OnesComplement:
                         CompileNotExpression(node);
                         break;
                     case ExpressionType.TypeAs:
@@ -1246,10 +1247,6 @@ namespace System.Linq.Expressions.Interpreter
                     case ExpressionType.IsTrue:
                     case ExpressionType.IsFalse:
                         EmitUnaryBoolCheck(node);
-                        break;
-                    case ExpressionType.OnesComplement:
-                        Compile(node.Operand);
-                        _instructions.EmitOnesComplement(node.Type);
                         break;
                     default:
                         throw new PlatformNotSupportedException(SR.Format(SR.UnsupportedExpressionType, node.NodeType));
