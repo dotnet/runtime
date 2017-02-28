@@ -98,7 +98,7 @@ namespace System.Security.Cryptography.Xml
             {
                 if (_canonicalizationMethodTransform == null)
                 {
-                    _canonicalizationMethodTransform = CryptoConfig.CreateFromName(CanonicalizationMethod) as Transform;
+                    _canonicalizationMethodTransform = CryptoHelpers.CreateFromName(CanonicalizationMethod) as Transform;
                     if (_canonicalizationMethodTransform == null)
                         throw new CryptographicException(string.Format(CultureInfo.CurrentCulture, SR.Cryptography_Xml_CreateTransformFailed, CanonicalizationMethod));
                     _canonicalizationMethodTransform.SignedXml = SignedXml;

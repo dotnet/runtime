@@ -705,7 +705,7 @@ namespace System.Security.Cryptography.Xml
                                                   reference.Id,
                                                   reference.Type,
                                                   reference.DigestMethod,
-                                                  CryptoConfig.CreateFromName(reference.DigestMethod).GetType().Name);
+                                                  CryptoHelpers.CreateFromName(reference.DigestMethod).GetType().Name);
 
                 WriteLine(signedXml,
                           TraceEventType.Verbose,
@@ -835,7 +835,7 @@ namespace System.Security.Cryptography.Xml
                                                   SR.Log_ReferenceHash,
                                                   GetObjectId(reference),
                                                   reference.DigestMethod,
-                                                  CryptoConfig.CreateFromName(reference.DigestMethod).GetType().Name,
+                                                  CryptoHelpers.CreateFromName(reference.DigestMethod).GetType().Name,
                                                   FormatBytes(actualHash),
                                                   FormatBytes(expectedHash));
 
@@ -1047,7 +1047,7 @@ namespace System.Security.Cryptography.Xml
                                                     SR.Log_SignedXmlRecursionLimit,
                                                     GetObjectId(reference),
                                                     reference.DigestMethod,
-                                                    CryptoConfig.CreateFromName(reference.DigestMethod).GetType().Name);
+                                                    CryptoHelpers.CreateFromName(reference.DigestMethod).GetType().Name);
 
                 WriteLine(signedXml,
                             TraceEventType.Information,
