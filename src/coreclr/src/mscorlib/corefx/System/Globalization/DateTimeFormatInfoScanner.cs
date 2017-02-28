@@ -28,7 +28,7 @@ using System.Text;
 namespace System.Globalization
 {
 
-#if INSIDE_CLR
+#if CORECLR
     using StringStringDictionary = Dictionary<string, string>;
     using StringList = List<string>;
 #else

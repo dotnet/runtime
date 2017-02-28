@@ -35,7 +35,7 @@ using System.Threading;
 namespace System.Globalization
 {
 
-#if INSIDE_CLR
+#if CORECLR
     using StringCultureInfoDictionary = Dictionary<string, CultureInfo>;
     using StringLcidDictionary = Dictionary<int, CultureInfo>;
     
