@@ -4047,3 +4047,10 @@ BOOL VirtualCallStubManagerManager::TraceManager(
     // Forward the call to the appropriate manager.
     return pMgr->TraceManager(thread, trace, pContext, pRetAddr);
 }
+
+#if defined(_TARGET_X86_) && defined(FEATURE_PAL)
+void BackPatchWorkerStaticStub(PCODE returnAddr, TADDR siteAddrForRegisterIndirect)
+{
+    VirtualCallStubManager::BackPatchWorkerStatic(returnAddr, siteAddrForRegisterIndirect);
+}
+#endif

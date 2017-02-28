@@ -1104,3 +1104,26 @@ LOCAL_LABEL(fail):
 
 NESTED_END ResolveWorkerChainLookupAsmStub, _TEXT
 #endif // CROSSGEN_COMPILE
+
+// backpatch a call site to point to a different stub
+NESTED_ENTRY BackPatchWorkerAsmStub, _TEXT, NoHandler
+    PROLOG_BEG
+    PROLOG_PUSH eax // it may contain siteAddrForRegisterIndirect
+    PROLOG_PUSH ecx
+    PROLOG_PUSH edx
+    PROLOG_END
+
+    sub     esp, 4     //  for 16 bytes align
+    push    eax        //  push any indirect call address as the second arg to BackPatchWorker
+    push    [ebp+8]    //  and push return address as the first arg to BackPatchWorker
+
+    call    C_FUNC(BackPatchWorkerStaticStub)
+    add     esp, 12
+
+    EPILOG_BEG
+    EPILOG_POP edx
+    EPILOG_POP ecx
+    EPILOG_POP eax
+    EPILOG_END
+    ret
+NESTED_END BackPatchWorkerAsmStub, _TEXT
