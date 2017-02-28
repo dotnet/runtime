@@ -24539,7 +24539,7 @@ private:
         void AddArgumentToTail(GenTreeArgList* argList, GenTreePtr hiddenArgument)
         {
             GenTreeArgList* iterator = argList;
-            while (iterator->Rest())
+            while (iterator->Rest() != nullptr)
             {
                 iterator = iterator->Rest();
             }
