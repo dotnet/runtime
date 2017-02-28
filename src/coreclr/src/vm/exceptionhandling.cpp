@@ -19,6 +19,8 @@
 
 #if defined(_TARGET_ARM_) || defined(_TARGET_ARM64_) || defined(_TARGET_X86_)
 #define ADJUST_PC_UNWOUND_TO_CALL
+#define STACK_RANGE_BOUNDS_ARE_CALLER_SP
+#define USE_FUNCLET_CALL_HELPER
 #define USE_CALLER_SP_IN_FUNCLET
 #endif // _TARGET_ARM_ || _TARGET_ARM64_ || _TARGET_X86_
 
@@ -2873,7 +2875,7 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
                                 SetEnclosingClauseInfo(fIsFunclet,
                                                               pcfThisFrame->GetRelOffset(),
                                                               GetSP(pcfThisFrame->GetRegisterSet()->pCallerContext));
-#ifdef USE_CALLER_SP_IN_FUNCLET
+#ifdef USE_FUNCLET_CALL_HELPER
                                 // On ARM & ARM64, the OS passes us the CallerSP for the frame for which personality routine has been invoked.
                                 // Since IL filters are invoked in the first pass, we pass this CallerSP to the filter funclet which will
                                 // then lookup the actual frame pointer value using it since we dont have a frame pointer to pass to it
@@ -2884,11 +2886,13 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
                                 
                                 // 1) In first pass, we dont have a valid current context IP
                                 _ASSERTE(GetIP(pCurRegDisplay->pCurrentContext) == 0); 
+#ifdef USE_CALLER_SP_IN_FUNCLET
                                 // 2) Our caller context and caller SP are valid
                                 _ASSERTE(pCurRegDisplay->IsCallerContextValid && pCurRegDisplay->IsCallerSPValid);
                                 // 3) CallerSP is intact
                                 _ASSERTE(GetSP(pCurRegDisplay->pCallerContext) == GetRegdisplaySP(pCurRegDisplay));
 #endif // USE_CALLER_SP_IN_FUNCLET
+#endif // USE_FUNCLET_CALL_HELPER
                                 {
                                     // CallHandler expects to be in COOP mode.
                                     GCX_COOP();
@@ -3193,7 +3197,7 @@ lExit:
 
 #define OPTIONAL_SO_CLEANUP_UNWIND(pThread, pFrame)  if (pThread->GetFrame() < pFrame) { UnwindFrameChain(pThread, pFrame); }
 
-#ifdef USE_CALLER_SP_IN_FUNCLET
+#ifdef USE_FUNCLET_CALL_HELPER
 // This is an assembly helper that enables us to call into EH funclets.
 EXTERN_C DWORD_PTR STDCALL CallEHFunclet(Object *pThrowable, UINT_PTR pFuncletToInvoke, UINT_PTR *pFirstNonVolReg, UINT_PTR *pFuncletCallerSP);
 
@@ -3235,7 +3239,7 @@ static inline TADDR GetFrameRestoreBase(PCONTEXT pContextRecord)
 #endif
 }
 
-#endif // USE_CALLER_SP_IN_FUNCLET
+#endif // USE_FUNCLET_CALL_HELPER
   
 DWORD_PTR ExceptionTracker::CallHandler(
     UINT_PTR               uHandlerStartPC,
@@ -3298,7 +3302,7 @@ DWORD_PTR ExceptionTracker::CallHandler(
         break;
     }
 
-#ifdef USE_CALLER_SP_IN_FUNCLET
+#ifdef USE_FUNCLET_CALL_HELPER
     // Invoke the funclet. We pass throwable only when invoking the catch block.
     // Since the actual caller of the funclet is the assembly helper, pass the reference
     // to the CallerStackFrame instance so that it can be updated.
@@ -3321,12 +3325,12 @@ DWORD_PTR ExceptionTracker::CallHandler(
                                          CastHandlerFn(pfnHandler),
                                          pFuncletCallerSP);
     }
-#else // USE_CALLER_SP_IN_FUNCLET
+#else // USE_FUNCLET_CALL_HELPER
     //
     // Invoke the funclet. 
     //    
     dwResumePC = pfnHandler(sf.SP, OBJECTREFToObject(throwable));
-#endif // !USE_CALLER_SP_IN_FUNCLET
+#endif // !USE_FUNCLET_CALL_HELPER
 
     switch(funcletType)
     {
@@ -6184,11 +6188,11 @@ bool ExceptionTracker::IsInStackRegionUnwoundBySpecifiedException(CrawlFrame * p
 
     // Remember that sfLowerBound and sfUpperBound are in the "OS format".
     // Refer to the comment for CallerStackFrame for more information.
-#if defined(_TARGET_AMD64_)
+#ifndef STACK_RANGE_BOUNDS_ARE_CALLER_SP
     if ((sfLowerBound < csfToCheck) && (csfToCheck <= sfUpperBound))
-#else // _TARGET_ARM_ || _TARGET_ARM64_
+#else // !STACK_RANGE_BOUNDS_ARE_CALLER_SP
     if ((sfLowerBound <= csfToCheck) && (csfToCheck < sfUpperBound))
-#endif // _TARGET_AMD64_
+#endif // STACK_RANGE_BOUNDS_ARE_CALLER_SP
     {
         return true;
     }
@@ -6276,13 +6280,11 @@ bool ExceptionTracker::HasFrameBeenUnwoundByAnyActiveException(CrawlFrame * pCF)
             // Refer to the detailed comment in ExceptionTracker::IsInStackRegionUnwoundBySpecifiedException on the nature
             // of this check.
             //
-#if defined(_TARGET_AMD64_)
+#ifndef STACK_RANGE_BOUNDS_ARE_CALLER_SP
             if ((sfLowerBound < csfToCheck) && (csfToCheck <= sfUpperBound))
-#elif defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
+#else // !STACK_RANGE_BOUNDS_ARE_CALLER_SP
             if ((sfLowerBound <= csfToCheck) && (csfToCheck < sfUpperBound))
-#else
-            PORTABILITY_ASSERT("ExceptionTracker::HasFrameBeenUnwoundByAnyActiveException");
-#endif // _TARGET_AMD64_
+#endif // STACK_RANGE_BOUNDS_ARE_CALLER_SP
             {
                 fHasFrameBeenUnwound = true;
                 break;
@@ -6305,7 +6307,7 @@ bool ExceptionTracker::HasFrameBeenUnwoundByAnyActiveException(CrawlFrame * pCF)
             // This is applicable to managed frames only.
             if (fFrameless)
             {
-#if defined(_TARGET_AMD64_)
+#ifndef STACK_RANGE_BOUNDS_ARE_CALLER_SP
                 // On X64, if the SP of the managed frame indicates that the frame is forming the upper bound,
                 // then:
                 //
@@ -6330,7 +6332,7 @@ bool ExceptionTracker::HasFrameBeenUnwoundByAnyActiveException(CrawlFrame * pCF)
                         break;
                     }
                 }
-#else // _TARGET_ARM_ || _TARGET_ARM64_
+#else // !STACK_RANGE_BOUNDS_ARE_CALLER_SP
                 // On ARM, if the callerSP of the managed frame is the same as upper bound, then:
                 // 
                 // For case (1), sfCurrentEstablisherFrame will be above the callerSP of the managed frame (since EstbalisherFrame is the caller SP for a given frame on ARM)
@@ -6350,7 +6352,7 @@ bool ExceptionTracker::HasFrameBeenUnwoundByAnyActiveException(CrawlFrame * pCF)
                         break;
                     }
                 }
-#endif // _TARGET_AMD64_
+#endif // STACK_RANGE_BOUNDS_ARE_CALLER_SP
             }
 
             // The frame in question does not appear in the current tracker's scanned stack range (of managed frames).
