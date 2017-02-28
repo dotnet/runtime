@@ -64,7 +64,7 @@ namespace System.Globalization
         [OptionalField(VersionAdded = 2)]
         private bool _isReadOnly = false;
 
-#if INSIDE_CLR
+#if CORECLR
         internal const CalendarId CAL_HEBREW = CalendarId.HEBREW;
         internal const CalendarId CAL_HIJRI = CalendarId.HIJRI;
         internal const CalendarId CAL_JAPAN = CalendarId.JAPAN;
