@@ -174,11 +174,11 @@ function cross_build_core_setup_with_docker {
         # TODO: For arm, we are going to embed RootFS inside Docker image.
         case $__linuxCodeName in
         trusty)
-            __dockerImage=" microsoft/dotnet-buildtools-prereqs:ubuntu1404_cross_prereqs_v1"
+            __dockerImage=" microsoft/dotnet-buildtools-prereqs:ubuntu1404_cross_prereqs_v2"
             __runtimeOS="ubuntu.14.04"
         ;;
         xenial)
-            __dockerImage=" microsoft/dotnet-buildtools-prereqs:ubuntu1604_cross_prereqs_v1"
+            __dockerImage=" microsoft/dotnet-buildtools-prereqs:ubuntu1604_cross_prereqs_v2"
             __runtimeOS="ubuntu.16.04"
         ;;
         *)
@@ -209,10 +209,11 @@ function cross_build_core_setup_with_docker {
         (set +x; echo "Build RootFS for $__buildArch $__linuxCodeName")
         $__dockerCmd $__buildRootfsCmd
         sudo chown -R $(id -u -n) cross/rootfs
+        __rootfsDir="/opt/core-setup/cross/rootfs/$__buildArch"
     fi
 
     # Cross building core-setup with rootfs in Docker
-    __buildCmd="./build.sh --env-vars DISABLE_CROSSGEN=1,TARGETPLATFORM=$__buildArch,TARGETRID=$__runtimeOS-$__buildArch,CROSS=1"
+    __buildCmd="./build.sh --env-vars DISABLE_CROSSGEN=1,TARGETPLATFORM=$__buildArch,TARGETRID=$__runtimeOS-$__buildArch,CROSS=1,ROOTFS_DIR=$__rootfsDir"
     $__dockerCmd $__buildCmd
 }
 
@@ -226,6 +227,7 @@ __verboseFlag=
 __buildArch="arm"
 __linuxCodeName="trusty"
 __skipRootFS=0
+__rootfsDir=
 __initialGitHead=`git rev-parse --verify HEAD`
 
 #Parse command line arguments
@@ -250,6 +252,8 @@ do
     --arm)
         __ARMRootfsImageBase="rootfs-u1404.ext4"
         __buildArch="arm"
+        __skipRootFS=1
+        __rootfsDir="/crossrootfs/arm"
         ;;
     --armel)
         __ARMRootfsImageBase="rootfs-t30.ext4"
