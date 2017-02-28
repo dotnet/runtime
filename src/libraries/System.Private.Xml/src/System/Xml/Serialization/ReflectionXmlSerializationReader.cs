@@ -31,6 +31,20 @@ namespace System.Xml.Serialization
 
         protected override void InitCallbacks()
         {
+            TypeScope scope = _mapping.Scope;
+            foreach (TypeMapping mapping in scope.TypeMappings)
+            {
+                if (mapping.IsSoap &&
+                        (mapping is StructMapping || mapping is EnumMapping || mapping is ArrayMapping || mapping is NullableMapping) &&
+                        !mapping.TypeDesc.IsRoot)
+                {
+                    AddReadCallback(
+                        mapping.TypeName,
+                        mapping.Namespace,
+                        mapping.TypeDesc.Type,
+                        CreateXmlSerializationReadCallback(mapping));
+                }
+            }
         }
 
         protected override void InitIDs()
@@ -486,7 +500,6 @@ namespace System.Xml.Serialization
                 TypeMapping mapping = element.Mapping;
                 if (mapping.IsSoap)
                 {
-                    EnsureXmlSerializationReadCallbackForMapping(mapping);
                     object rre = fixupIndex >= 0 ?
                           ReadReferencingElement(mapping.TypeName, mapping.Namespace, out fixup.Ids[fixupIndex])
                         : ReadReferencedElement(mapping.TypeName, mapping.Namespace);
@@ -606,21 +619,6 @@ namespace System.Xml.Serialization
             }
         }
 
-        private void EnsureXmlSerializationReadCallbackForMapping(TypeMapping mapping)
-        {
-            EnsureCallbackTables();
-            if (mapping.IsSoap &&
-                        (mapping is StructMapping || mapping is EnumMapping || mapping is ArrayMapping || mapping is NullableMapping) &&
-                        !mapping.TypeDesc.IsRoot)
-            {
-                AddReadCallback(
-                    mapping.TypeName,
-                    mapping.Namespace,
-                    mapping.TypeDesc.Type,
-                    CreateXmlSerializationReadCallback(mapping));
-            }
-        }
-
         private XmlSerializationReadCallback CreateXmlSerializationReadCallback(TypeMapping mapping)
         {
             if (mapping is StructMapping)
@@ -631,14 +629,20 @@ namespace System.Xml.Serialization
             {
                 return () => WriteEnumMethodSoap((EnumMapping)mapping);
             }
-            else if (mapping is NullableMapping)
+            else if (mapping is ArrayMapping)
             {
-                throw new NotImplementedException();
+                return DummyReadArrayMethod;
             }
             else
             {
                 throw new NotImplementedException();
             }
+        }
+
+        private object DummyReadArrayMethod()
+        {
+            UnknownNode(null);
+            return null;
         }
 
         private static Type GetMemberType(MemberInfo memberInfo)
@@ -672,7 +676,6 @@ namespace System.Xml.Serialization
         {
             if (arrayMapping.IsSoap)
             {
-                EnsureXmlSerializationReadCallbackForMapping(arrayMapping.Elements[0].Mapping);
                 object rre;
 
                 if (fixupIndex >= 0)

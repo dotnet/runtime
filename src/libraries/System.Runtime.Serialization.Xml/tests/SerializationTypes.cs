@@ -4226,3 +4226,8 @@ public class MySpecialOrder : MyOrder
 {
     public int SecondaryID;
 }
+
+public class MySpecialOrder2 : MyOrder
+{
+    public int SecondaryID;
+}
