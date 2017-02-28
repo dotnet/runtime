@@ -30,7 +30,7 @@ namespace System.Net.Http
             return s_diagnosticListener.IsEnabled();
         }
 
-        protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+        protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
             //HttpClientHandler is responsible to call DiagnosticsHandler.IsEnabled() before forwarding request here.
@@ -38,50 +38,32 @@ namespace System.Net.Http
             //from DiagnosticListener right after the check. So some requests happening right after subscription starts
             //might not be instrumented. Similarly, when consumer unsubscribes, extra requests might be instumented
 
-            Task<HttpResponseMessage> responseTask;
-
-            //We need to know if activity events are enabled and send Request/Response events otherwise
-            if (s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityName))
+            Activity activity = null;
+            Guid loggingRequestId = Guid.Empty;
+            
+            //cache IsEnabled result for Activity name
+            if (!s_activityEventIsChecked)
             {
-                if (Activity.Current != null)
+                s_activityIsEnabled = s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityName);
+                s_activityEventIsChecked = true;
+            }
+
+            if (Activity.Current != null && //without parent activity, we cannot instrument the request
+                s_activityIsEnabled &&  //Activity events are enabled
+                s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityName, request)) //user wants THIS request to be instumented
+            {
+                activity = new Activity(DiagnosticsHandlerLoggingStrings.ActivityName);
+                //Only send start event to users who subscribed for it, but start activity anyway
+                if (s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityStartName))
                 {
-                    responseTask = SendInstrumentedAsync(request, cancellationToken);
+                    s_diagnosticListener.StartActivity(activity, new { Request = request });
                 }
                 else
                 {
-                    //null Activity.Current means that incoming request was not instrumented
-                    //and there is nothing we can do for outgoing request. 
-                    //Activity events are enabled so we don't send Request/Response events
-                    responseTask = base.SendAsync(request, cancellationToken);
+                    activity.Start();
                 }
-            }
-            else 
-            {
-                Guid loggingRequestId = Guid.NewGuid();
-                LogHttpRequestDeprecated(request, loggingRequestId);
-                responseTask = base.SendAsync(request, cancellationToken);
-                LogHttpResponseDeprecated(responseTask, loggingRequestId);
-            }
-            return responseTask;
-        }
-
-        #region private
-
-        private static readonly DiagnosticListener s_diagnosticListener =
-            new DiagnosticListener(DiagnosticsHandlerLoggingStrings.DiagnosticListenerName);
-
-        private async Task<HttpResponseMessage> SendInstrumentedAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-        {
-            Activity activity = null;
-            //check if user wants THIS request to be instrumented
-            if (s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityName, request))
-            {
-                activity = new Activity(DiagnosticsHandlerLoggingStrings.ActivityName);
-
-                s_diagnosticListener.StartActivity(activity, new { Request = request });
 
                 request.Headers.Add(DiagnosticsHandlerLoggingStrings.RequestIdHeaderName, activity.Id);
-
                 //we expect baggage to be empty or contain a few items
                 using (IEnumerator<KeyValuePair<string, string>> e = activity.Baggage.GetEnumerator())
                 {
@@ -98,6 +80,20 @@ namespace System.Net.Http
                     }
                 }
             }
+            //if Activity events are disabled, try to write System.Net.Http.Request event (deprecated)
+            else if (!s_activityIsEnabled && s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.RequestWriteNameDeprecated))
+            {
+                long timestamp = Stopwatch.GetTimestamp();
+                loggingRequestId = Guid.NewGuid();
+                s_diagnosticListener.Write(DiagnosticsHandlerLoggingStrings.RequestWriteNameDeprecated,
+                    new
+                    {
+                        Request = request,
+                        LoggingRequestId = loggingRequestId,
+                        Timestamp = timestamp
+                    }
+                );
+            }
 
             Task<HttpResponseMessage> responseTask = base.SendAsync(request, cancellationToken);
             try
@@ -111,15 +107,12 @@ namespace System.Net.Http
             }
             catch (Exception ex)
             {
-                //If request was initialy instrumented, Activity.Current has all necessary context for logging
-                //If user decided to NOT instrument this request AND it threw an exception then:
-                //Activity.Current represents 'parent' Activity (presumably incoming request)
-                //So we let user log it as exception happened in this 'parent' activity
-                //Request is passed to provide some context if instrumentation was disabled and to avoid
-                //extensive Activity.Tags usage to tunnel request properties
                 if (s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ExceptionEventName))
                 {
-                    s_diagnosticListener.Write(DiagnosticsHandlerLoggingStrings.ExceptionEventName, new {Exception = ex, Request = request});
+                    //If request was initialy instrumented, Activity.Current has all necessary context for logging
+                    //Request is passed to provide some context if instrumentation was disabled and to avoid
+                    //extensive Activity.Tags usage to tunnel request properties
+                    s_diagnosticListener.Write(DiagnosticsHandlerLoggingStrings.ExceptionEventName, new { Exception = ex, Request = request });
                 }
                 throw;
             }
@@ -134,63 +127,30 @@ namespace System.Net.Http
                         RequestTaskStatus = responseTask.Status
                     });
                 }
+                //if Activity events are disabled, try to write System.Net.Http.Response event (deprecated)
+                else if (!s_activityIsEnabled && s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ResponseWriteNameDeprecated))
+                {
+                    long timestamp = Stopwatch.GetTimestamp();
+                    s_diagnosticListener.Write(DiagnosticsHandlerLoggingStrings.ResponseWriteNameDeprecated,
+                        new
+                        {
+                            Response = responseTask.Status == TaskStatus.RanToCompletion ? responseTask.Result : null,
+                            LoggingRequestId = loggingRequestId,
+                            TimeStamp = timestamp,
+                            RequestTaskStatus = responseTask.Status
+                        }
+                    );
+                }
             }
             return responseTask.Result;
         }
 
-        private static void LogHttpRequestDeprecated(HttpRequestMessage request, Guid loggingRequestId)
-        {
-            if (s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.RequestWriteNameDeprecated))
-            {
-                long timestamp = Stopwatch.GetTimestamp();
+        #region private
 
-                s_diagnosticListener.Write(
-                    DiagnosticsHandlerLoggingStrings.RequestWriteNameDeprecated,
-                    new
-                    {
-                        Request = request,
-                        LoggingRequestId = loggingRequestId,
-                        Timestamp = timestamp
-                    }
-                );
-            }
-        }
-
-        private static void LogHttpResponseDeprecated(Task<HttpResponseMessage> responseTask, Guid loggingRequestId)
-        {
-            responseTask.ContinueWith(
-                (t, s) =>
-                {
-                    long timestamp = Stopwatch.GetTimestamp();
-
-                    if (t.IsFaulted && s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ExceptionEventName))
-                    {
-                        s_diagnosticListener.Write(
-                            DiagnosticsHandlerLoggingStrings.ExceptionEventName,
-                            new
-                            {
-                                LoggingRequestId = (Guid) s,
-                                Timestamp = timestamp,
-                                Exception = t.Exception,
-                            }
-                        );
-                    }
-
-                    if (s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ResponseWriteNameDeprecated))
-                    {
-                        s_diagnosticListener.Write(
-                            DiagnosticsHandlerLoggingStrings.ResponseWriteNameDeprecated,
-                            new
-                            {
-                                Response = t.Status == TaskStatus.RanToCompletion ? t.Result : null,
-                                LoggingRequestId = (Guid) s,
-                                TimeStamp = timestamp,
-                                RequestTaskStatus = t.Status
-                            }
-                        );
-                    }
-                }, loggingRequestId, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
-        }
+        private static bool s_activityIsEnabled = false;
+        private static bool s_activityEventIsChecked = false;
+        private static readonly DiagnosticListener s_diagnosticListener =
+            new DiagnosticListener(DiagnosticsHandlerLoggingStrings.DiagnosticListenerName);
 
         #endregion
     }
