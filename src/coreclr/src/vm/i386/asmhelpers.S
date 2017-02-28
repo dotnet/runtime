@@ -574,6 +574,7 @@ LEAF_END GetCurrentIP, _TEXT
 // LPVOID __stdcall GetCurrentSP(void);
 LEAF_ENTRY GetCurrentSP, _TEXT
     mov     eax, esp
+    add     eax, 4
     ret
 LEAF_END GetCurrentSP, _TEXT
 
