@@ -132,7 +132,7 @@ pal::string_t get_current_rid()
         currentRid = pal::get_current_os_rid_platform();
         if (!currentRid.empty())
         {
-        currentRid = currentRid + pal::string_t(_X("-")) + get_arch();
+            currentRid = currentRid + pal::string_t(_X("-")) + get_arch();
         }
     }
     

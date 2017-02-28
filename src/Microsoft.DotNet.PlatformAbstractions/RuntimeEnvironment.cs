@@ -80,7 +80,7 @@ namespace Microsoft.DotNet.PlatformAbstractions
             }
             else if (ver.Major >= 10)
             {
-                // Use Win10-* RID even for newer platforms we do not know for so that existing Win10 assets can be used
+                // Use Win10-* RID even for newer platforms we do not know for, so that existing Win10 assets can be used
                 // to keep apps working.
                 return "10";
             }
