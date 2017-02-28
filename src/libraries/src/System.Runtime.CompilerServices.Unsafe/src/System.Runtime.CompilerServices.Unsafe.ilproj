@@ -4,7 +4,7 @@
   <PropertyGroup>
     <DocumentationFile>$(MSBuildThisFileDirectory)System.Runtime.CompilerServices.Unsafe.xml</DocumentationFile>
     <ProjectGuid>{04BA3E3C-6979-4792-B19E-C797AD607F42}</ProjectGuid>
-    <IlasmFlags>$(IlasmFlags) -INCLUDE=include\$(TargetGroup)</IlasmFlags>
+    <IlasmFlags>$(IlasmFlags) /INCLUDE=include\$(TargetGroup)</IlasmFlags>
     <!-- cannot build on unix, but package as OS-agnostic -->
     <PackageTargetRuntime />
   </PropertyGroup>
