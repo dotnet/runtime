@@ -13,10 +13,6 @@ namespace System.Net.Sockets
 {
     internal static partial class SocketPal
     {
-        // The API that uses this information is not supported on *nix, and will throw
-        // PlatformNotSupportedException instead.
-        public const int ProtocolInformationSize = 0;
-
         public const bool SupportsMultipleConnectAttempts = false;
         private static readonly bool SupportsDualModeIPv4PacketInfo = GetPlatformSupportsDualModeIPv4PacketInfo();
 

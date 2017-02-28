@@ -2159,12 +2159,7 @@ namespace System.Net.Sockets
 
         // Routine Description:
         // 
-        //    BeginConnect - Does a async winsock connect, by calling
-        //    WSAEventSelect to enable Connect Events to signal an event and
-        //    wake up a callback which invokes a callback.
-        // 
-        //     So note: This routine may go pending at which time,
-        //     but any case the callback Delegate will be called upon completion
+        //    BeginConnect - Does an async connect.
         // 
         // Arguments:
         // 
@@ -4813,7 +4808,7 @@ namespace System.Net.Sockets
                 {
                     SocketError errorCode;
 
-                    // Go to blocking mode.  We know no WSAEventSelect is pending because of the lock and UnsetAsyncEventSelect() above.
+                    // Go to blocking mode.
                     if (!_willBlock || !_willBlockInternal)
                     {
                         bool willBlock;
@@ -5504,7 +5499,6 @@ namespace System.Net.Sockets
 
             if (!CleanedUp)
             {
-                // If socket is still alive cancel WSAEventSelect().
                 if (NetEventSource.IsEnabled) NetEventSource.Info(this, "!CleanedUp");
             }
         }
