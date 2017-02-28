@@ -10,7 +10,7 @@ using System.Threading;
 namespace System.Globalization
 {
 
-#if INSIDE_CLR
+#if CORECLR
     using StringStringDictionary = Dictionary<string, string>;
     using StringCultureDataDictionary = Dictionary<string, CultureData>;
     using LcidToCultureNameDictionary = Dictionary<int, string>;
