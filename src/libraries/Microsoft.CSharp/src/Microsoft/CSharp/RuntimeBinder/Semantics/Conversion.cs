@@ -1568,7 +1568,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     if (!srcIntegral)
                     {
                         valueInt = (long)(ulong)valueFlt;
-                        // code below stolen from jit...
                         const double two63 = 2147483648.0 * 4294967296.0;
                         if (valueFlt < two63)
                         {
