@@ -32,7 +32,7 @@ VNFunc GetVNFuncForOper(genTreeOps oper, bool isUnsigned)
         case GT_LE:
             return VNF_LE_UN;
         case GT_GE:
-            return VNF_GT_UN;
+            return VNF_GE_UN;
         case GT_GT:
             return VNF_GT_UN;
         case GT_ADD:
