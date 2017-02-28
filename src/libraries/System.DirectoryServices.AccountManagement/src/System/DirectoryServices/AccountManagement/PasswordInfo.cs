@@ -11,7 +11,6 @@ namespace System.DirectoryServices.AccountManagement
 #if TESTHOOK
     public class PasswordInfo
 #else
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.LinkDemand, Unrestricted = true)]
     internal class PasswordInfo
 #endif
     {

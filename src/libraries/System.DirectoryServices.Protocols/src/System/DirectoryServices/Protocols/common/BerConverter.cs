@@ -6,6 +6,7 @@ namespace System.DirectoryServices.Protocols
 {
     using System;
     using System.Diagnostics;
+    using System.Globalization;
     using System.Runtime.InteropServices;
     using System.Collections;
     using System.Text;
@@ -16,8 +17,6 @@ namespace System.DirectoryServices.Protocols
 
         public static byte[] Encode(string format, params object[] value)
         {
-            Utility.CheckOSVersion();
-
             if (format == null)
                 throw new ArgumentNullException("format");
 
@@ -49,14 +48,14 @@ namespace System.DirectoryServices.Protocols
                     {
                         // we don't have enough argument for the format string
                         Debug.WriteLine("value argument is not valid, valueCount >= value.Length\n");
-                        throw new ArgumentException(Res.GetString(Res.BerConverterNotMatch));
+                        throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.BerConverterNotMatch));
                     }
 
                     if (!(value[valueCount] is int))
                     {
                         // argument is wrong                                                                        
                         Debug.WriteLine("type should be int\n");
-                        throw new ArgumentException(Res.GetString(Res.BerConverterNotMatch));
+                        throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.BerConverterNotMatch));
                     }
 
                     // one int argument
@@ -71,14 +70,14 @@ namespace System.DirectoryServices.Protocols
                     {
                         // we don't have enough argument for the format string
                         Debug.WriteLine("value argument is not valid, valueCount >= value.Length\n");
-                        throw new ArgumentException(Res.GetString(Res.BerConverterNotMatch));
+                        throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.BerConverterNotMatch));
                     }
 
                     if (!(value[valueCount] is bool))
                     {
                         // argument is wrong
                         Debug.WriteLine("type should be boolean\n");
-                        throw new ArgumentException(Res.GetString(Res.BerConverterNotMatch));
+                        throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.BerConverterNotMatch));
                     }
 
                     // one int argument                    
@@ -93,7 +92,7 @@ namespace System.DirectoryServices.Protocols
                     {
                         // we don't have enough argument for the format string
                         Debug.WriteLine("value argument is not valid, valueCount >= value.Length\n");
-                        throw new ArgumentException(Res.GetString(Res.BerConverterNotMatch));
+                        throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.BerConverterNotMatch));
                     }
 
                     if (value[valueCount] != null && !(value[valueCount] is string))
@@ -101,7 +100,7 @@ namespace System.DirectoryServices.Protocols
                         // argument is wrong
                         Debug.WriteLine("type should be string, but receiving value has type of ");
                         Debug.WriteLine(value[valueCount].GetType());
-                        throw new ArgumentException(Res.GetString(Res.BerConverterNotMatch));
+                        throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.BerConverterNotMatch));
                     }
 
                     // one string argument       
@@ -122,7 +121,7 @@ namespace System.DirectoryServices.Protocols
                     {
                         // we don't have enough argument for the format string
                         Debug.WriteLine("value argument is not valid, valueCount >= value.Length\n");
-                        throw new ArgumentException(Res.GetString(Res.BerConverterNotMatch));
+                        throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.BerConverterNotMatch));
                     }
 
                     if (value[valueCount] != null && !(value[valueCount] is byte[]))
@@ -130,7 +129,7 @@ namespace System.DirectoryServices.Protocols
                         // argument is wrong
                         Debug.WriteLine("type should be byte[], but receiving value has type of ");
                         Debug.WriteLine(value[valueCount].GetType());
-                        throw new ArgumentException(Res.GetString(Res.BerConverterNotMatch));
+                        throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.BerConverterNotMatch));
                     }
 
                     byte[] tempValue = (byte[])value[valueCount];
@@ -145,7 +144,7 @@ namespace System.DirectoryServices.Protocols
                     {
                         // we don't have enough argument for the format string
                         Debug.WriteLine("value argument is not valid, valueCount >= value.Length\n");
-                        throw new ArgumentException(Res.GetString(Res.BerConverterNotMatch));
+                        throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.BerConverterNotMatch));
                     }
 
                     if (value[valueCount] != null && !(value[valueCount] is string[]))
@@ -153,7 +152,7 @@ namespace System.DirectoryServices.Protocols
                         // argument is wrong
                         Debug.WriteLine("type should be string[], but receiving value has type of ");
                         Debug.WriteLine(value[valueCount].GetType());
-                        throw new ArgumentException(Res.GetString(Res.BerConverterNotMatch));
+                        throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.BerConverterNotMatch));
                     }
 
                     string[] stringValues = (string[])value[valueCount];
@@ -184,7 +183,7 @@ namespace System.DirectoryServices.Protocols
                     {
                         // we don't have enough argument for the format string
                         Debug.WriteLine("value argument is not valid, valueCount >= value.Length\n");
-                        throw new ArgumentException(Res.GetString(Res.BerConverterNotMatch));
+                        throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.BerConverterNotMatch));
                     }
 
                     if (value[valueCount] != null && !(value[valueCount] is byte[][]))
@@ -192,7 +191,7 @@ namespace System.DirectoryServices.Protocols
                         // argument is wrong
                         Debug.WriteLine("type should be byte[][], but receiving value has type of ");
                         Debug.WriteLine(value[valueCount].GetType());
-                        throw new ArgumentException(Res.GetString(Res.BerConverterNotMatch));
+                        throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.BerConverterNotMatch));
                     }
 
                     byte[][] tempValue = (byte[][])value[valueCount];
@@ -205,7 +204,7 @@ namespace System.DirectoryServices.Protocols
                 {
                     Debug.WriteLine("Format string contains undefined character: ");
                     Debug.WriteLine(new string(fmt, 1));
-                    throw new ArgumentException(Res.GetString(Res.BerConverterUndefineChar));
+                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.BerConverterUndefineChar));
                 }
 
                 // process the return value
@@ -269,8 +268,6 @@ namespace System.DirectoryServices.Protocols
 
         internal static object[] TryDecode(string format, byte[] value, out bool decodeSucceeded)
         {
-            Utility.CheckOSVersion();
-
             if (format == null)
                 throw new ArgumentNullException("format");
 
@@ -430,7 +427,7 @@ namespace System.DirectoryServices.Protocols
                 else
                 {
                     Debug.WriteLine("Format string contains undefined character\n");
-                    throw new ArgumentException(Res.GetString(Res.BerConverterUndefineChar));
+                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.BerConverterUndefineChar));
                 }
 
                 if (error != 0)
