@@ -37,6 +37,7 @@ namespace System.Net.Security.Tests
 
         [Theory]
         [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
+        [ActiveIssue(16516, TestPlatforms.Windows)]
         public async Task ServerAsyncAuthenticate_EachSupportedProtocol_Success(SslProtocols protocol)
         {
             await ServerAsyncSslHelper(protocol, protocol);
@@ -87,6 +88,7 @@ namespace System.Net.Security.Tests
 
         [Theory]
         [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
+        [ActiveIssue(16516, TestPlatforms.Windows)]
         public async Task ServerAsyncAuthenticate_AllClientVsIndividualServerSupportedProtocols_Success(
             SslProtocols serverProtocol)
         {
