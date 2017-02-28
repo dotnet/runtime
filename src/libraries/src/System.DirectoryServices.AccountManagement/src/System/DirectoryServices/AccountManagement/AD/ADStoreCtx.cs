@@ -20,7 +20,6 @@ using System.DirectoryServices.ActiveDirectory;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted = true)]
     internal partial class ADStoreCtx : StoreCtx
     {
         protected DirectoryEntry ctxBase;

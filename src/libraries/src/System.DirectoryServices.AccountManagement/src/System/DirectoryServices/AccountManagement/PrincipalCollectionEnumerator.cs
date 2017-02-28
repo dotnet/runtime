@@ -10,7 +10,6 @@ using System.Globalization;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.LinkDemand, Unrestricted = true)]
     internal class PrincipalCollectionEnumerator : IEnumerator<Principal>, IEnumerator
     {
         //

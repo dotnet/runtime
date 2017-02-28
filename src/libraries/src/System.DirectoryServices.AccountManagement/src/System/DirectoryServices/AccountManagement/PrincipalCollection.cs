@@ -9,7 +9,6 @@ using System.Collections.Generic;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.LinkDemand, Unrestricted = true)]
     public class PrincipalCollection : ICollection<Principal>, ICollection, IEnumerable<Principal>, IEnumerable
     {
         //

@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.DirectoryServices.AccountManagement;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace AccountManagementUnitTests
 {
@@ -11,7 +11,6 @@ namespace AccountManagementUnitTests
     ///This is a test class for ComputerPrincipalTest and is intended
     ///to contain all ComputerPrincipalTest Unit Tests
     ///</summary>
-    [TestClass()]
     public class ComputerPrincipalTest : PrincipalTest
     {
         #region Additional test attributes
@@ -47,12 +46,14 @@ namespace AccountManagementUnitTests
         /// <summary>
         ///A test for ComputerPrincipal Constructor
         ///</summary>
-        [TestMethod()]
+        [Fact]
         public void ComputerPrincipalConstructorTest()
         {
             ComputerPrincipal computer = new ComputerPrincipal(domainContext);
             computer.Dispose();
-            Assert.Inconclusive("TODO: Implement code to verify target");
+            // jsimmons - I currently do not see a straightforward 
+            //   XUnit replacement for Assert.Inconclusive.
+            //Assert.Inconclusive("TODO: Implement code to verify target");
         }
 
         internal override Principal CreatePrincipal(PrincipalContext context, string name)
@@ -64,7 +65,7 @@ namespace AccountManagementUnitTests
 
         internal override Principal CreateExtendedPrincipal(PrincipalContext context, string name)
         {
-            Assert.Inconclusive("TODO: Implement code to verify target");
+            //Assert.Inconclusive("TODO: Implement code to verify target");
             throw new System.NotImplementedException();
         }
 
