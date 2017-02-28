@@ -193,6 +193,9 @@ namespace pal
     inline void err_flush() { std::fflush(stderr); }
     inline void out_flush() { std::fflush(stdout); }
 
+    // Based upon https://github.com/dotnet/core-setup/blob/master/src/Microsoft.DotNet.PlatformAbstractions/Native/PlatformApis.cs
+    pal::string_t get_current_os_rid_platform();
+        
     bool touch_file(const pal::string_t& path);
     bool realpath(string_t* path);
     bool file_exists(const string_t& path);
