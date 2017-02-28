@@ -211,6 +211,9 @@ int run(const arguments_t& args)
     breadcrumb_writer_t writer(&breadcrumbs);
     writer.begin_write();
 
+    // Previous hostpolicy trace messages must be printed before executing assembly
+    trace::flush();
+
     // Execute the application
     unsigned int exit_code = 1;
     hr = coreclr::execute_assembly(

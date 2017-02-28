@@ -32,6 +32,8 @@ struct fx_ver_t
     bool operator !=(const fx_ver_t& b) const;
     bool operator <(const fx_ver_t& b) const;
     bool operator >(const fx_ver_t& b) const;
+    bool operator <=(const fx_ver_t& b) const;
+    bool operator >=(const fx_ver_t& b) const;
 
     static bool parse(const pal::string_t& ver, fx_ver_t* fx_ver, bool parse_only_production = false);
 

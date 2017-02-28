@@ -44,6 +44,16 @@ bool fx_ver_t::operator >(const fx_ver_t& b) const
     return compare(*this, b) > 0;
 }
 
+bool fx_ver_t::operator <=(const fx_ver_t& b) const
+{
+    return compare(*this, b) <= 0;
+}
+
+bool fx_ver_t::operator >=(const fx_ver_t& b) const
+{
+    return compare(*this, b) >= 0;
+}
+
 pal::string_t fx_ver_t::as_str() const
 {
     pal::stringstream_t stream;

@@ -64,6 +64,9 @@ int execute_app(
         return code;
     }
 
+    // Previous hostfxr trace messages must be printed before calling trace::setup in hostpolicy
+    trace::flush();
+
     const host_interface_t& intf = init->get_host_init_data();
     if ((code = host_load(&intf)) == 0)
     {
