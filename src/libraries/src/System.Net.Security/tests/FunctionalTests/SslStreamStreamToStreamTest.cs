@@ -228,6 +228,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [ActiveIssue(16516, TestPlatforms.Windows)]
         public void SslStream_StreamToStream_Write_ReadByte_Success()
         {
             VirtualNetwork network = new VirtualNetwork();
