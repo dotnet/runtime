@@ -31,11 +31,6 @@ extern "C"
     }
 };
 
-EXTERN_C VOID BackPatchWorkerAsmStub()
-{
-    PORTABILITY_ASSERT("BackPatchWorkerAsmStub");
-}
-
 EXTERN_C VOID JIT_TailCall()
 {
   PORTABILITY_ASSERT("JIT_TailCall");
