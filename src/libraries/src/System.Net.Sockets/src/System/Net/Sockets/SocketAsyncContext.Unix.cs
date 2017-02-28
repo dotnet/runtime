@@ -367,6 +367,7 @@ namespace System.Net.Sockets
 
             public void Init()
             {
+                Debug.Assert(_queueLock == null);
                 _queueLock = new object();
             }
 
