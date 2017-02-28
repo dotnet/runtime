@@ -24600,7 +24600,7 @@ private:
         //    fixedFptrAddress - pointer to the tuple <methodPointer, instantiationArgumentPointer>
         //
         // Return Value:
-        //    loaded hidden argument.
+        //    generic context hidden argument.
         GenTreePtr GetHiddenArgument(GenTreePtr fixedFptrAddress)
         {
             GenTreePtr fixedFptrAddressCopy = compiler->gtCloneExpr(fixedFptrAddress);
@@ -24616,7 +24616,7 @@ private:
         //
         // Arguments:
         //    actualCallAddress - fixed call address
-        //    hiddenArgument - loaded hidden argument
+        //    hiddenArgument - generic context hidden argument
         //
         // Return Value:
         //    created call node.
@@ -24626,10 +24626,55 @@ private:
             GenTreePtr   fatTree = fatStmt->gtStmtExpr;
             GenTreeCall* fatCall = GetCall(fatStmt);
             fatCall->gtCallAddr  = actualCallAddress;
-            GenTreeArgList* args = fatCall->gtCallArgs;
-            args                 = compiler->gtNewListNode(hiddenArgument, args);
-            fatCall->gtCallArgs  = args;
+            AddHiddenArgument(fatCall, hiddenArgument);
             return fatStmt;
+        }
+
+        //------------------------------------------------------------------------
+        // AddHiddenArgument: add hidden argument to the call argument list.
+        //
+        // Arguments:
+        //    fatCall - fat call node
+        //    hiddenArgument - generic context hidden argument
+        //
+        void AddHiddenArgument(GenTreeCall* fatCall, GenTreePtr hiddenArgument)
+        {
+            GenTreeArgList* oldArgs = fatCall->gtCallArgs;
+            GenTreeArgList* newArgs;
+#if USER_ARGS_COME_LAST
+            if (fatCall->HasRetBufArg())
+            {
+                GenTreePtr      retBuffer = oldArgs->Current();
+                GenTreeArgList* rest      = oldArgs->Rest();
+                newArgs                   = compiler->gtNewListNode(hiddenArgument, rest);
+                newArgs                   = compiler->gtNewListNode(retBuffer, newArgs);
+            }
+            else
+            {
+                newArgs = compiler->gtNewListNode(hiddenArgument, oldArgs);
+            }
+#else
+            newArgs = oldArgs;
+            AddArgumentToTail(newArgs, hiddenArgument);
+#endif
+            fatCall->gtCallArgs = newArgs;
+        }
+
+        //------------------------------------------------------------------------
+        // AddArgumentToTail: add hidden argument to the tail of the call argument list.
+        //
+        // Arguments:
+        //    argList - fat call node
+        //    hiddenArgument - generic context hidden argument
+        //
+        void AddArgumentToTail(GenTreeArgList* argList, GenTreePtr hiddenArgument)
+        {
+            GenTreeArgList* iterator = argList;
+            while (iterator->Rest() != nullptr)
+            {
+                iterator = iterator->Rest();
+            }
+            iterator->Rest() = compiler->gtNewArgList(hiddenArgument);
         }
 
         //------------------------------------------------------------------------
