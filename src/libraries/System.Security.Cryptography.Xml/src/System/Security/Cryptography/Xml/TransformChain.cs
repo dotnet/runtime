@@ -200,7 +200,7 @@ namespace System.Security.Cryptography.Xml
             {
                 XmlElement transformElement = (XmlElement)transformNodes.Item(i);
                 string algorithm = Utils.GetAttribute(transformElement, "Algorithm", SignedXml.XmlDsigNamespaceUrl);
-                Transform transform = CryptoConfig.CreateFromName(algorithm) as Transform;
+                Transform transform = CryptoHelpers.CreateFromName(algorithm) as Transform;
                 if (transform == null)
                     throw new CryptographicException(SR.Cryptography_Xml_UnknownTransform);
                 // let the transform read the children of the transformElement for data

@@ -102,5 +102,8 @@
     <Reference Include="System.Xml.ReaderWriter" />
     <Reference Include="System.Xml.XPath" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Include="System\Security\Cryptography\Xml\CryptoHelpers.cs" />
+  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
