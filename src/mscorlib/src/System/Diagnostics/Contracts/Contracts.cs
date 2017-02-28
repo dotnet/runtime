@@ -639,7 +639,7 @@ namespace System.Diagnostics.Contracts
         public static bool ForAll(int fromInclusive, int toExclusive, Predicate<int> predicate)
         {
             if (fromInclusive > toExclusive)
-#if INSIDE_CLR
+#if CORECLR
                 throw new ArgumentException(Environment.GetResourceString("Argument_ToExclusiveLessThanFromExclusive"));
 #else
                 throw new ArgumentException("fromInclusive must be less than or equal to toExclusive.");
@@ -699,7 +699,7 @@ namespace System.Diagnostics.Contracts
         public static bool Exists(int fromInclusive, int toExclusive, Predicate<int> predicate)
         {
             if (fromInclusive > toExclusive)
-#if INSIDE_CLR
+#if CORECLR
                 throw new ArgumentException(Environment.GetResourceString("Argument_ToExclusiveLessThanFromExclusive"));
 #else
                 throw new ArgumentException("fromInclusive must be less than or equal to toExclusive.");
