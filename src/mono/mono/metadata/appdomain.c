@@ -1997,6 +1997,14 @@ mono_domain_assembly_preload (MonoAssemblyName *aname,
 	set_domain_search_path (domain);
 
 	if (domain->search_path && domain->search_path [0] != NULL) {
+		if (mono_trace_is_traced (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY)) {
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Domain %s search path is:", domain->friendly_name);
+			for (int i = 0; domain->search_path [i]; i++) {
+				const char *p = domain->search_path[i];
+				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "\tpath[%d] = '%s'", i, p);
+			}
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "End of domain %s search path.", domain->friendly_name);			
+		}
 		result = real_load (domain->search_path, aname->culture, aname->name, refonly, &mono_assembly_candidate_predicate_sn_same_name, aname);
 	}
 
