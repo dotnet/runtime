@@ -1,10 +1,10 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.ILAsm": "2.0.0-beta-25021-03",
-    "Microsoft.NETCore.ILDAsm": "2.0.0-beta-25021-03",
-    "Microsoft.NETCore.Jit": "2.0.0-beta-25021-03",
-    "Microsoft.NETCore.Runtime.CoreCLR": "2.0.0-beta-25021-03",
-    "Microsoft.NETCore.TestHost": "2.0.0-beta-25021-03"
+    "Microsoft.NETCore.ILAsm": "2.0.0-beta-25028-02",
+    "Microsoft.NETCore.ILDAsm": "2.0.0-beta-25028-02",
+    "Microsoft.NETCore.Jit": "2.0.0-beta-25028-02",
+    "Microsoft.NETCore.Runtime.CoreCLR": "2.0.0-beta-25028-02",
+    "Microsoft.NETCore.TestHost": "2.0.0-beta-25028-02"
   },
   "frameworks": {
     "netcoreapp1.1": {
