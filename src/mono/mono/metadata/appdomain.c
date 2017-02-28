@@ -1997,11 +1997,11 @@ mono_domain_assembly_preload (MonoAssemblyName *aname,
 	set_domain_search_path (domain);
 
 	if (domain->search_path && domain->search_path [0] != NULL) {
-		result = real_load (domain->search_path, aname->culture, aname->name, refonly, NULL, NULL);
+		result = real_load (domain->search_path, aname->culture, aname->name, refonly, &mono_assembly_candidate_predicate_sn_same_name, aname);
 	}
 
 	if (result == NULL && assemblies_path && assemblies_path [0] != NULL) {
-		result = real_load (assemblies_path, aname->culture, aname->name, refonly, NULL, NULL);
+		result = real_load (assemblies_path, aname->culture, aname->name, refonly, &mono_assembly_candidate_predicate_sn_same_name, aname);
 	}
 
 	return result;

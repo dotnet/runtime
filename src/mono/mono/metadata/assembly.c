@@ -3317,6 +3317,44 @@ prevent_reference_assembly_from_running (MonoAssembly* candidate, gboolean refon
 	return candidate;
 }
 
+gboolean
+mono_assembly_candidate_predicate_sn_same_name (MonoAssembly *candidate, gpointer ud)
+{
+	MonoAssemblyName *wanted_name = (MonoAssemblyName*)ud;
+	MonoAssemblyName *candidate_name = &candidate->aname;
+
+	g_assert (wanted_name != NULL);
+	g_assert (candidate_name != NULL);
+
+	if (mono_trace_is_traced (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY)) {
+		char * s = mono_stringify_assembly_name (wanted_name);
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Predicate: wanted = %s\n", s);
+		g_free (s);
+		s = mono_stringify_assembly_name (candidate_name);
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Predicate: candidate = %s\n", s);
+		g_free (s);
+	}
+
+	/* No wanted token, bail. */
+	if (0 == wanted_name->public_key_token [0]) {
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Predicate: wanted has no token, returning TRUE\n");
+		return TRUE;
+	}
+
+	if (0 == candidate_name->public_key_token [0]) {
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Predicate: candidate has no token, returning FALSE\n");
+		return FALSE;
+	}
+
+
+	gboolean result = mono_assembly_names_equal (wanted_name, candidate_name);
+
+	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Predicate: candidate and wanted names %s\n",
+		    result ? "match, returning TRUE" : "don't match, returning FALSE");
+	return result;
+
+}
+
 
 MonoAssembly*
 mono_assembly_load_full_nosearch (MonoAssemblyName *aname, 

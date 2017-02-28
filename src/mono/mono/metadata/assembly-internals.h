@@ -29,4 +29,12 @@ MonoAssembly*          mono_assembly_load_from_predicate (MonoImage *image, cons
 							  gpointer user_data,
 							  MonoImageOpenStatus *status);
 
+/* MonoAssemblyCandidatePredicate that compares the assembly name (name, version,
+ * culture, public key token) of the candidate with the wanted name, if the
+ * wanted name has a public key token (if not present, always return true).
+ * Pass the wanted MonoAssemblyName* as the user_data.
+ */
+gboolean
+mono_assembly_candidate_predicate_sn_same_name (MonoAssembly *candidate, gpointer wanted_name);
+
 #endif /* __MONO_METADATA_ASSEMBLY_INTERNALS_H__ */
