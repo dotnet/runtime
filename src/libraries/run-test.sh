@@ -22,6 +22,9 @@ usage()
     echo "    --runtime <location>              Location of root of the binaries directory"
     echo "                                      containing the FreeBSD, Linux, NetBSD or OSX runtime"
     echo "                                      default: <repo_root>/bin/testhost/netcoreapp-<OS>-<ConfigurationGroup>-<Arch>"
+    echo "    --corefx-tests <location>         Location of the root binaries location containing"
+    echo "                                      the tests to run"
+    echo "                                      default: <repo_root>/bin"
     echo
     echo "Flavor/OS/Architecture options:"
     echo "    --configurationGroup <config>     ConfigurationGroup to run (Debug/Release)"
@@ -159,7 +162,7 @@ run_selected_tests()
     selectedTests[${#selectedTests[@]}]="$TestDir"
   fi
 
-  run_all_tests ${selectedTests[@]}
+  run_all_tests ${selectedTests[@]/#/$CoreFxTests/}
 }
 
 # $1 is the name of the platform folder (e.g Unix.AnyCPU.Debug)
@@ -293,6 +296,9 @@ do
         --runtime)
         Runtime=$2
         ;;
+        --corefx-tests)
+        CoreFxTests=$2
+        ;;
         --restrict-proj)
         TestSelection=$2
         ;;
@@ -342,6 +348,11 @@ then
     Runtime="$ProjectRoot/bin/testhost/netcoreapp-$OS-$ConfigurationGroup-$__Arch"
 fi
 
+if [ "$CoreFxTests" == "" ]
+then
+    CoreFxTests="$ProjectRoot/bin"
+fi
+
 # Check parameters up front for valid values:
 
 if [ ! "$ConfigurationGroup" == "Debug" ] && [ ! "$ConfigurationGroup" == "Release" ]
@@ -386,9 +397,9 @@ if [ -n "$TestDirFile" ] || [ -n "$TestDir" ]
 then
     run_selected_tests
 else
-    run_all_tests "$ProjectRoot/bin/AnyOS.AnyCPU.$ConfigurationGroup/"*.Tests
-    run_all_tests "$ProjectRoot/bin/Unix.AnyCPU.$ConfigurationGroup/"*.Tests
-    run_all_tests "$ProjectRoot/bin/$OS.AnyCPU.$ConfigurationGroup/"*.Tests
+    run_all_tests "$CoreFxTests/AnyOS.AnyCPU.$ConfigurationGroup/"*.Tests
+    run_all_tests "$CoreFxTests/Unix.AnyCPU.$ConfigurationGroup/"*.Tests
+    run_all_tests "$CoreFxTests/$OS.AnyCPU.$ConfigurationGroup/"*.Tests
 fi
 
 if [ "$CoreClrCoverage" == "ON" ]
