@@ -77,13 +77,17 @@ add_definitions(-D_FILE_OFFSET_BITS=64)
 if(PAL_CMAKE_PLATFORM_ARCH_AMD64)
   add_definitions(-DBIT64=1)
   add_definitions(-D_WIN64=1)
+  set(PAL_ARCH_SOURCES_DIR amd64)
 elseif(PAL_CMAKE_PLATFORM_ARCH_ARM)
   add_definitions(-DBIT32=1)
+  set(PAL_ARCH_SOURCES_DIR arm)
 elseif(PAL_CMAKE_PLATFORM_ARCH_ARM64)
   add_definitions(-DBIT64=1)
   add_definitions(-D_WIN64=1)
+  set(PAL_ARCH_SOURCES_DIR arm64)
 elseif(PAL_CMAKE_PLATFORM_ARCH_I386)
   add_definitions(-DBIT32=1)
+  set(PAL_ARCH_SOURCES_DIR i386)
 endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL Linux AND NOT CLR_CMAKE_PLATFORM_ALPINE_LINUX)
@@ -102,16 +106,16 @@ set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} -Wl,--no
 add_compile_options(-fPIC)
 
 set(ARCH_SOURCES
-  arch/${ARCH_SOURCES_DIR}/context2.S
-  arch/${ARCH_SOURCES_DIR}/debugbreak.S
-  arch/${ARCH_SOURCES_DIR}/exceptionhelper.S
-  arch/${ARCH_SOURCES_DIR}/processor.cpp
+  arch/${PAL_ARCH_SOURCES_DIR}/context2.S
+  arch/${PAL_ARCH_SOURCES_DIR}/debugbreak.S
+  arch/${PAL_ARCH_SOURCES_DIR}/exceptionhelper.S
+  arch/${PAL_ARCH_SOURCES_DIR}/processor.cpp
 )
 
 if(NOT CMAKE_SYSTEM_NAME STREQUAL Darwin)
   list(APPEND PLATFORM_SOURCES
-    arch/${ARCH_SOURCES_DIR}/callsignalhandlerwrapper.S
-    arch/${ARCH_SOURCES_DIR}/signalhandlerhelper.cpp
+    arch/${PAL_ARCH_SOURCES_DIR}/callsignalhandlerwrapper.S
+    arch/${PAL_ARCH_SOURCES_DIR}/signalhandlerhelper.cpp
   )
 endif(NOT CMAKE_SYSTEM_NAME STREQUAL Darwin)
 
