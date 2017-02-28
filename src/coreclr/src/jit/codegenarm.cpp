@@ -986,7 +986,7 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
         case GT_LABEL:
             genPendingCallLabel       = genCreateTempLabel();
             treeNode->gtLabel.gtLabBB = genPendingCallLabel;
-            emit->emitIns_R_L(INS_lea, EA_PTRSIZE, genPendingCallLabel, treeNode->gtRegNum);
+            emit->emitIns_J_R(INS_adr, EA_PTRSIZE, genPendingCallLabel, treeNode->gtRegNum);
             break;
 
         case GT_CLS_VAR_ADDR:
