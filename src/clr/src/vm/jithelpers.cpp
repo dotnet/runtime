@@ -454,7 +454,7 @@ HCIMPL2_VV(UINT64, JIT_ULMod, UINT64 dividend, UINT64 divisor)
 }
 HCIMPLEND
 
-#if !defined(_WIN64) && !defined(_TARGET_X86_)
+#if !defined(BIT64) && !defined(_TARGET_X86_)
 /*********************************************************************/
 HCIMPL2_VV(UINT64, JIT_LLsh, UINT64 num, int shift)
 {
@@ -478,8 +478,7 @@ HCIMPL2_VV(UINT64, JIT_LRsz, UINT64 num, int shift)
     return num >> shift;
 }
 HCIMPLEND
-
-#endif
+#endif // !BIT64 && !_TARGET_X86_
 
 #include <optdefault.h>
 
