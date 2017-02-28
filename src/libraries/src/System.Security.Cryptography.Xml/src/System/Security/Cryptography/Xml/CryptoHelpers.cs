@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -49,34 +53,27 @@ namespace System.Security.Cryptography.Xml
                     //return new System.Security.Cryptography.HMACRIPEMD160();
                 case "http://www.w3.org/2000/09/xmldsig#dsa-sha1":
                     throw new NotImplementedException(name);
-                    //return DSASignatureDescription();
+                    //return new DSASignatureDescription();
                 case "System.Security.Cryptography.DSASignatureDescription":
                     throw new NotImplementedException(name);
-                    //return DSASignatureDescription();
+                    //return new DSASignatureDescription();
                 case "http://www.w3.org/2000/09/xmldsig#rsa-sha1":
-                    throw new NotImplementedException(name);
-                    //return RSAPKCS1SHA1SignatureDescription();
+                    return new RSAPKCS1SHA1SignatureDescription();
                 case "System.Security.Cryptography.RSASignatureDescription":
                     throw new NotImplementedException(name);
-                    //return RSAPKCS1SHA1SignatureDescription();
+                    //return new RSAPKCS1SHA1SignatureDescription();
                 case "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256":
                     throw new NotImplementedException(name);
-                    //return RSAPKCS1SHA256SignatureDescription();
+                    //return new RSAPKCS1SHA256SignatureDescription();
                 case "http://www.w3.org/2001/04/xmldsig-more#rsa-sha384":
                     throw new NotImplementedException(name);
-                    //return RSAPKCS1SHA384SignatureDescription();
+                    //return new RSAPKCS1SHA384SignatureDescription();
                 case "http://www.w3.org/2001/04/xmldsig-more#rsa-sha512":
                     throw new NotImplementedException(name);
-                    //return RSAPKCS1SHA512SignatureDescription();
+                    //return new RSAPKCS1SHA512SignatureDescription();
             }
 
-            var ret = CryptoConfig.CreateFromName(name);
-            if (ret == null)
-            {
-                throw new Exception($"Could not find: {name}");
-            }
-
-            return ret;
+            return CryptoConfig.CreateFromName(name);
         }
     }
 }

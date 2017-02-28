@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -26,19 +30,15 @@ namespace System.Security.Cryptography.Xml.Tests
             reference.Uri = "";
 
             reference.AddTransform(new XmlDsigEnvelopedSignatureTransform());
-            reference.AddTransform(new XmlDsigExcC14NTransform());
 
             signedXml.AddReference(reference);
 
-            //XmlDsigExcC14NTransform
-            //signedXml.SignedInfo.CanonicalizationMethod = typeof(XmlDsigExcC14NTransform).AssemblyQualifiedName;
-            signedXml.SignedInfo.CanonicalizationMethod = SignedXml.XmlDsigExcC14NTransformUrl;
-            signedXml.ComputeSignature(/*new HMACSHA256()*/);
+            signedXml.ComputeSignature();
             XmlElement xmlDigitalSignature = signedXml.GetXml();
             doc.DocumentElement.AppendChild(doc.ImportNode(xmlDigitalSignature, true));
         }
 
-        private static bool VerifyXml(string signedXmlText)
+        private static bool VerifyXml(string signedXmlText, RSA key)
         {
             XmlDocument xmlDoc = new XmlDocument();
             xmlDoc.PreserveWhitespace = true;
@@ -48,7 +48,7 @@ namespace System.Security.Cryptography.Xml.Tests
             var signatureNode = (XmlElement)xmlDoc.GetElementsByTagName("Signature")[0];
             Console.WriteLine(signatureNode.OuterXml);
             signedXml.LoadXml(signatureNode);
-            return signedXml.CheckSignature(new HMACSHA256());
+            return signedXml.CheckSignature(key);
         }
 
         // Implementation of MSDN samples:
@@ -62,8 +62,6 @@ namespace System.Security.Cryptography.Xml.Tests
                 KeyContainerName = "XML_DSIG_RSA_KEY"
             };
 
-            //cspParams.
-
             var rsaKey = new RSACryptoServiceProvider(cspParams);
 
             var xmlDoc = new XmlDocument();
@@ -71,9 +69,7 @@ namespace System.Security.Cryptography.Xml.Tests
             xmlDoc.LoadXml(ExampleXml);
             SignXml(xmlDoc, rsaKey);
 
-            //Console.WriteLine(xmlDoc.OuterXml);
-
-            Assert.True(VerifyXml(xmlDoc.OuterXml));
+            Assert.True(VerifyXml(xmlDoc.OuterXml, rsaKey));
         }
     }
 }
