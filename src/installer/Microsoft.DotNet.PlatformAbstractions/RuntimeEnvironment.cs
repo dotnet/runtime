@@ -78,9 +78,10 @@ namespace Microsoft.DotNet.PlatformAbstractions
                     return "81";
                 }
             }
-            else if (ver.Major == 10 && ver.Minor == 0)
+            else if (ver.Major >= 10)
             {
-                // Not sure if there will be  10.x (where x > 0) or even 11, so let's be defensive.
+                // Use Win10-* RID even for newer platforms we do not know for, so that existing Win10 assets can be used
+                // to keep apps working.
                 return "10";
             }
             return string.Empty; // Unknown version

@@ -170,7 +170,6 @@ namespace Microsoft.DotNet.Host.Build
         {
             var hostVersion = c.BuildContext.Get<HostVersion>("HostVersion");
             var configuration = c.BuildContext.Get<string>("Configuration");
-            string rid = c.BuildContext.Get<string>("TargetRID");
             string platform = c.BuildContext.Get<string>("Platform");
             string crossEnv = c.BuildContext.Get<string>("Cross");
             bool linkPortable = c.BuildContext.Get<bool>("LinkPortable");
@@ -201,7 +200,6 @@ namespace Microsoft.DotNet.Host.Build
                 List<string> cmakeArgList = new List<string>();
 
                 string cmakeBaseRid, visualStudio, archMacro, arch;
-                string ridMacro = $"-DCLI_CMAKE_RUNTIME_ID:STRING=win10-{platform.ToLower()}";
                 string cmakeHostVer = $"-DCLI_CMAKE_HOST_VER:STRING={hostVersion.LatestHostVersion.ToString()}";
                 string cmakeAppHostVer = $"-DCLI_CMAKE_APPHOST_VER:STRING={hostVersion.LatestAppHostVersion.ToString()}";
                 string cmakeHostPolicyVer = $"-DCLI_CMAKE_HOST_POLICY_VER:STRING={hostVersion.LatestHostPolicyVersion.ToString()}";
@@ -247,7 +245,6 @@ namespace Microsoft.DotNet.Host.Build
 
                 cmakeArgList.Add(corehostSrcDir);
                 cmakeArgList.Add(archMacro);
-                cmakeArgList.Add(ridMacro);
                 cmakeArgList.Add(cmakeHostVer);
                 cmakeArgList.Add(cmakeAppHostVer);
                 cmakeArgList.Add(cmakeHostFxrVer);
@@ -310,6 +307,8 @@ namespace Microsoft.DotNet.Host.Build
                 List<string> buildScriptArgList = new List<string>();
                 string buildScriptFile  = Path.Combine(corehostSrcDir, "build.sh");
 
+                buildScriptArgList.Add("--configuration");
+                buildScriptArgList.Add(configuration);
                 buildScriptArgList.Add("--arch");
                 buildScriptArgList.Add(arch);
                 buildScriptArgList.Add("--hostver");
@@ -320,8 +319,6 @@ namespace Microsoft.DotNet.Host.Build
                 buildScriptArgList.Add(hostVersion.LatestHostFxrVersion.ToString());
                 buildScriptArgList.Add("--policyver");
                 buildScriptArgList.Add(hostVersion.LatestHostPolicyVersion.ToString());
-                buildScriptArgList.Add("--rid");
-                buildScriptArgList.Add(rid);
                 buildScriptArgList.Add("--commithash");
                 buildScriptArgList.Add(commitHash);
 
