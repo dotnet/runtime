@@ -252,10 +252,10 @@ encode_public_tok (const guchar *token, gint32 len)
 
 /**
  * mono_public_tokens_are_equal:
- * @pubt1: first public key token
- * @pubt2: second public key token
+ * \param pubt1 first public key token
+ * \param pubt2 second public key token
  *
- * Compare two public key tokens and return #TRUE is they are equal and #FALSE
+ * Compare two public key tokens and return TRUE is they are equal and FALSE
  * otherwise.
  */
 gboolean
@@ -266,7 +266,7 @@ mono_public_tokens_are_equal (const unsigned char *pubt1, const unsigned char *p
 
 /**
  * mono_set_assemblies_path:
- * @path: list of paths that contain directories where Mono will look for assemblies
+ * \param path list of paths that contain directories where Mono will look for assemblies
  *
  * Use this method to override the standard assembly lookup system and
  * override any assemblies coming from the GAC.  This is the method
@@ -492,15 +492,15 @@ check_policy_versions (MonoAssemblyBindingInfo *info, MonoAssemblyName *name)
 
 /**
  * mono_assembly_names_equal:
- * @l: first assembly
- * @r: second assembly.
+ * \param l first assembly
+ * \param r second assembly.
  *
  * Compares two MonoAssemblyNames and returns whether they are equal.
  *
  * This compares the names, the cultures, the release version and their
  * public tokens.
  *
- * Returns: TRUE if both assembly names are equal.
+ * \returns TRUE if both assembly names are equal.
  */
 gboolean
 mono_assembly_names_equal (MonoAssemblyName *l, MonoAssemblyName *r)
@@ -547,7 +547,7 @@ load_in_path (const char *basename, const char** search_path, MonoImageOpenStatu
 
 /**
  * mono_assembly_setrootdir:
- * @root_dir: The pathname of the root directory where we will locate assemblies
+ * \param root_dir The pathname of the root directory where we will locate assemblies
  *
  * This routine sets the internal default root directory for looking up
  * assemblies.
@@ -596,8 +596,8 @@ mono_native_getrootdir (void)
 
 /**
  * mono_set_dirs:
- * @assembly_dir: the base directory for assemblies
- * @config_dir: the base directory for configuration files
+ * \param assembly_dir the base directory for assemblies
+ * \param config_dir the base directory for configuration files
  *
  * This routine is used internally and by developers embedding
  * the runtime into their own applications.
@@ -925,12 +925,12 @@ mono_assembly_fill_assembly_name (MonoImage *image, MonoAssemblyName *aname)
 
 /**
  * mono_stringify_assembly_name:
- * @aname: the assembly name.
+ * \param aname the assembly name.
  *
- * Convert @aname into its string format. The returned string is dynamically
+ * Convert \p aname into its string format. The returned string is dynamically
  * allocated and should be freed by the caller.
  *
- * Returns: a newly allocated string with a string representation of
+ * \returns a newly allocated string with a string representation of
  * the assembly name.
  */
 char*
@@ -967,7 +967,7 @@ assemblyref_public_tok (MonoImage *image, guint32 key_index, guint32 flags)
 
 /**
  * mono_assembly_addref:
- * @assemnly: the assembly to reference
+ * \param assembly the assembly to reference
  *
  * This routine increments the reference count on a MonoAssembly.
  * The reference count is reduced every time the method mono_assembly_close() is
@@ -1152,11 +1152,11 @@ mono_assembly_remap_version (MonoAssemblyName *aname, MonoAssemblyName *dest_ana
 
 /**
  * mono_assembly_get_assemblyref:
- * @image: pointer to the MonoImage to extract the information from.
- * @index: index to the assembly reference in the image.
- * @aname: pointer to a `MonoAssemblyName` that will hold the returned value.
+ * \param image pointer to the MonoImage to extract the information from.
+ * \param index index to the assembly reference in the image.
+ * \param aname pointer to a `MonoAssemblyName` that will hold the returned value.
  *
- * Fills out the @aname with the assembly name of the @index assembly reference in @image.
+ * Fills out the \p aname with the assembly name of the \p index assembly reference in \p image.
  */
 void
 mono_assembly_get_assemblyref (MonoImage *image, int index, MonoAssemblyName *aname)
@@ -1299,9 +1299,9 @@ mono_assembly_load_reference (MonoImage *image, int index)
 
 /**
  * mono_assembly_load_references:
- * @image: 
- * @status:
- * @deprecated: There is no reason to use this method anymore, it does nothing
+ * \param image
+ * \param status
+ * \deprecated There is no reason to use this method anymore, it does nothing
  *
  * This method is now a no-op, it does nothing other than setting the @status to #MONO_IMAGE_OK
  */
@@ -1609,10 +1609,10 @@ absolute_dir (const gchar *filename)
 
 /** 
  * mono_assembly_open_from_bundle:
- * @filename: Filename requested
- * @status: return status code
+ * \param filename Filename requested
+ * \param status return status code
  *
- * This routine tries to open the assembly specified by `filename' from the
+ * This routine tries to open the assembly specified by \p filename from the
  * defined bundles, if found, returns the MonoImage for it, if not found
  * returns NULL
  */
@@ -1656,27 +1656,27 @@ mono_assembly_open_from_bundle (const char *filename, MonoImageOpenStatus *statu
 
 /**
  * mono_assemblies_open_full:
- * @filename: the file to load
- * @status: return status code 
- * @refonly: Whether this assembly is being opened in "reflection-only" mode.
+ * \param filename the file to load
+ * \param status return status code 
+ * \param refonly Whether this assembly is being opened in "reflection-only" mode.
 * 
- * This loads an assembly from the specified @filename.   The @filename allows
+ * This loads an assembly from the specified \p filename. The \p filename allows
  * a local URL (starting with a file:// prefix).  If a file prefix is used, the
  * filename is interpreted as a URL, and the filename is URL-decoded.   Otherwise the file
  * is treated as a local path.
  *
  * First, an attempt is made to load the assembly from the bundled executable (for those
- * deployments that have been done with the `mkbundle` tool or for scenarios where the
+ * deployments that have been done with the \c mkbundle tool or for scenarios where the
  * assembly has been registered as an embedded assembly).   If this is not the case, then
  * the assembly is loaded from disk using `api:mono_image_open_full`.
  *
  * If the pointed assembly does not live in the Global Assembly Cache, a shadow copy of
  * the assembly is made.
  *
- * If @refonly is set to true, then the assembly is loaded purely for inspection with
- * the `System.Reflection` API.
+ * If \p refonly is set to true, then the assembly is loaded purely for inspection with
+ * the \c System.Reflection API.
  *
- * Returns: NULL on error, with the @status set to an error code, or a pointer
+ * \returns NULL on error, with the \p status set to an error code, or a pointer
  * to the assembly.
  */
 MonoAssembly *
@@ -1816,7 +1816,7 @@ free_item (gpointer val, gpointer user_data)
 
 /**
  * mono_assembly_load_friends:
- * @ass: an assembly
+ * \param ass an assembly
  *
  * Load the list of friend assemblies that are allowed to access
  * the assembly's internal types and members. They are stored as assembly
@@ -1920,11 +1920,11 @@ has_reference_assembly_attribute_iterator (MonoImage *image, guint32 typeref_sco
 
 /**
  * mono_assembly_has_reference_assembly_attribute:
- * @assembly: a MonoAssembly
- * @error: set on error.
+ * \param assembly a MonoAssembly
+ * \param error set on error.
  *
- * Returns TRUE if @assembly has the System.Runtime.CompilerServices.ReferenceAssemblyAttribute set.
- * On error returns FALSE and sets @error.
+ * \returns TRUE if \p assembly has the \c System.Runtime.CompilerServices.ReferenceAssemblyAttribute set.
+ * On error returns FALSE and sets \p error.
  */
 gboolean
 mono_assembly_has_reference_assembly_attribute (MonoAssembly *assembly, MonoError *error)
@@ -1945,25 +1945,25 @@ mono_assembly_has_reference_assembly_attribute (MonoAssembly *assembly, MonoErro
 
 /**
  * mono_assembly_open:
- * @filename: Opens the assembly pointed out by this name
- * @status: return status code
+ * \param filename Opens the assembly pointed out by this name
+ * \param status return status code
  *
- * This loads an assembly from the specified @filename.   The @filename allows
- * a local URL (starting with a file:// prefix).  If a file prefix is used, the
+ * This loads an assembly from the specified \p filename. The \p filename allows
+ * a local URL (starting with a \c file:// prefix).  If a file prefix is used, the
  * filename is interpreted as a URL, and the filename is URL-decoded.   Otherwise the file
  * is treated as a local path.
  *
  * First, an attempt is made to load the assembly from the bundled executable (for those
- * deployments that have been done with the `mkbundle` tool or for scenarios where the
+ * deployments that have been done with the \c mkbundle tool or for scenarios where the
  * assembly has been registered as an embedded assembly).   If this is not the case, then
  * the assembly is loaded from disk using `api:mono_image_open_full`.
  *
  * If the pointed assembly does not live in the Global Assembly Cache, a shadow copy of
  * the assembly is made.
  *
- * Return: a pointer to the MonoAssembly if @filename contains a valid
+ * \returns a pointer to the MonoAssembly if \p filename contains a valid
  * assembly or NULL on error.  Details about the error are stored in the
- * @status variable.
+ * \p status variable.
  */
 MonoAssembly *
 mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
@@ -1973,21 +1973,21 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 
 /**
  * mono_assembly_load_from_full:
- * @image: Image to load the assembly from
- * @fname: assembly name to associate with the assembly
- * @status: returns the status condition
- * @refonly: Whether this assembly is being opened in "reflection-only" mode.
+ * \param image Image to load the assembly from
+ * \param fname assembly name to associate with the assembly
+ * \param status returns the status condition
+ * \param refonly Whether this assembly is being opened in "reflection-only" mode.
  *
- * If the provided @image has an assembly reference, it will process the given
+ * If the provided \p image has an assembly reference, it will process the given
  * image as an assembly with the given name.
  *
  * Most likely you want to use the `api:mono_assembly_load_full` method instead.
  *
- * Returns: A valid pointer to a `MonoAssembly*` on success and the @status will be
- * set to #MONO_IMAGE_OK;  or NULL on error.
+ * Returns: A valid pointer to a \c MonoAssembly* on success and the \p status will be
+ * set to \c MONO_IMAGE_OK;  or NULL on error.
  *
- * If there is an error loading the assembly the @status will indicate the
- * reason with @status being set to `MONO_IMAGE_INVALID` if the
+ * If there is an error loading the assembly the \p status will indicate the
+ * reason with \p status being set to \c MONO_IMAGE_INVALID if the
  * image did not contain an assembly reference table.
  */
 MonoAssembly *
@@ -2138,22 +2138,22 @@ mono_assembly_load_from_predicate (MonoImage *image, const char *fname,
 
 /**
  * mono_assembly_load_from:
- * @image: Image to load the assembly from
- * @fname: assembly name to associate with the assembly
- * @status: return status code
+ * \param image Image to load the assembly from
+ * \param fname assembly name to associate with the assembly
+ * \param status return status code
  *
- * If the provided @image has an assembly reference, it will process the given
+ * If the provided \p image has an assembly reference, it will process the given
  * image as an assembly with the given name.
  *
  * Most likely you want to use the `api:mono_assembly_load_full` method instead.
  *
  * This is equivalent to calling `api:mono_assembly_load_from_full` with the
- * @refonly parameter set to FALSE.
- * Returns: A valid pointer to a `MonoAssembly*` on success and the @status will be
- * set to #MONO_IMAGE_OK;  or NULL on error.
+ * \p refonly parameter set to FALSE.
+ * \returns A valid pointer to a \c MonoAssembly* on success and then \p status will be
+ * set to \c MONO_IMAGE_OK; or NULL on error.
  *
- * If there is an error loading the assembly the @status will indicate the
- * reason with @status being set to `MONO_IMAGE_INVALID` if the
+ * If there is an error loading the assembly the \p status will indicate the
+ * reason with \p status being set to \c MONO_IMAGE_INVALID if the
  * image did not contain an assembly reference table.
  
  */
@@ -2166,7 +2166,7 @@ mono_assembly_load_from (MonoImage *image, const char *fname,
 
 /**
  * mono_assembly_name_free:
- * @aname: assembly name to free
+ * \param aname assembly name to free
  * 
  * Frees the provided assembly name object.
  * (it does not frees the object itself, only the name members).
@@ -2582,13 +2582,13 @@ unquote (const char *str)
 
 /**
  * mono_assembly_name_parse:
- * @name: name to parse
- * @aname: the destination assembly name
+ * \param name name to parse
+ * \param aname the destination assembly name
  * 
  * Parses an assembly qualified type name and assigns the name,
  * version, culture and token to the provided assembly name object.
  *
- * Returns: TRUE if the name could be parsed.
+ * \returns TRUE if the name could be parsed.
  */
 gboolean
 mono_assembly_name_parse (const char *name, MonoAssemblyName *aname)
@@ -2598,12 +2598,12 @@ mono_assembly_name_parse (const char *name, MonoAssemblyName *aname)
 
 /**
  * mono_assembly_name_new:
- * @name: name to parse
+ * \param name name to parse
  *
  * Allocate a new MonoAssemblyName and fill its values from the
- * passed @name.
+ * passed \p name.
  *
- * Returns: a newly allocated structure or NULL if there was any failure.
+ * \returns a newly allocated structure or NULL if there was any failure.
  */
 MonoAssemblyName*
 mono_assembly_name_new (const char *name)
@@ -2720,8 +2720,8 @@ probe_for_partial_name (const char *basepath, const char *fullname, MonoAssembly
 
 /**
  * mono_assembly_load_with_partial_name:
- * @name: an assembly name that is then parsed by `api:mono_assembly_name_parse`.
- * @status: return status code
+ * \param name an assembly name that is then parsed by `api:mono_assembly_name_parse`.
+ * \param status return status code
  *
  * Loads a Mono Assembly from a name.  The name is parsed using `api:mono_assembly_name_parse`,
  * so it might contain a qualified type name, version, culture and token.
@@ -2730,10 +2730,10 @@ probe_for_partial_name (const char *basepath, const char *fullname, MonoAssembly
  * by appending the .dll extension.
  *
  * The assembly is loaded from either one of the extra Global Assembly Caches specified
- * by the extra GAC paths (specified by the `MONO_GAC_PREFIX` environment variable) or
+ * by the extra GAC paths (specified by the \c MONO_GAC_PREFIX environment variable) or
  * if that fails from the GAC.
  *
- * Returns: NULL on failure, or a pointer to a MonoAssembly on success.   
+ * \returns NULL on failure, or a pointer to a MonoAssembly on success.   
  */
 MonoAssembly*
 mono_assembly_load_with_partial_name (const char *name, MonoImageOpenStatus *status)
@@ -3190,7 +3190,7 @@ mono_assembly_apply_binding (MonoAssemblyName *aname, MonoAssemblyName *dest_nam
 /**
  * mono_assembly_load_from_gac
  *
- * @aname: The assembly name object
+ * \param aname The assembly name object
  */
 static MonoAssembly*
 mono_assembly_load_from_gac (MonoAssemblyName *aname,  gchar *filename, MonoImageOpenStatus *status, MonoBoolean refonly)
@@ -3464,19 +3464,19 @@ mono_assembly_load_full_internal (MonoAssemblyName *aname, MonoAssembly *request
 
 /**
  * mono_assembly_load_full:
- * @aname: A MonoAssemblyName with the assembly name to load.
- * @basedir: A directory to look up the assembly at.
- * @status: a pointer to a MonoImageOpenStatus to return the status of the load operation
- * @refonly: Whether this assembly is being opened in "reflection-only" mode.
+ * \param aname A MonoAssemblyName with the assembly name to load.
+ * \param basedir A directory to look up the assembly at.
+ * \param status a pointer to a MonoImageOpenStatus to return the status of the load operation
+ * \param refonly Whether this assembly is being opened in "reflection-only" mode.
  *
- * Loads the assembly referenced by @aname, if the value of @basedir is not NULL, it
+ * Loads the assembly referenced by \p aname, if the value of \p basedir is not NULL, it
  * attempts to load the assembly from that directory before probing the standard locations.
  *
- * If the assembly is being opened in reflection-only mode (@refonly set to TRUE) then no 
+ * If the assembly is being opened in reflection-only mode (\p refonly set to TRUE) then no 
  * assembly binding takes place.
  *
- * Returns: the assembly referenced by @aname loaded or NULL on error.   On error the
- * value pointed by status is updated with an error code.
+ * \returns the assembly referenced by \p aname loaded or NULL on error. On error the
+ * value pointed by \p status is updated with an error code.
  */
 MonoAssembly*
 mono_assembly_load_full (MonoAssemblyName *aname, const char *basedir, MonoImageOpenStatus *status, gboolean refonly)
@@ -3486,15 +3486,15 @@ mono_assembly_load_full (MonoAssemblyName *aname, const char *basedir, MonoImage
 
 /**
  * mono_assembly_load:
- * @aname: A MonoAssemblyName with the assembly name to load.
- * @basedir: A directory to look up the assembly at.
- * @status: a pointer to a MonoImageOpenStatus to return the status of the load operation
+ * \param aname A MonoAssemblyName with the assembly name to load.
+ * \param basedir A directory to look up the assembly at.
+ * \param status a pointer to a MonoImageOpenStatus to return the status of the load operation
  *
- * Loads the assembly referenced by @aname, if the value of @basedir is not NULL, it
+ * Loads the assembly referenced by \p aname, if the value of \p basedir is not NULL, it
  * attempts to load the assembly from that directory before probing the standard locations.
  *
- * Returns: the assembly referenced by @aname loaded or NULL on error.   On error the
- * value pointed by status is updated with an error code.
+ * \returns the assembly referenced by \p aname loaded or NULL on error. On error the
+ * value pointed by \p status is updated with an error code.
  */
 MonoAssembly*
 mono_assembly_load (MonoAssemblyName *aname, const char *basedir, MonoImageOpenStatus *status)
@@ -3504,12 +3504,12 @@ mono_assembly_load (MonoAssemblyName *aname, const char *basedir, MonoImageOpenS
 
 /**
  * mono_assembly_loaded_full:
- * @aname: an assembly to look for.
- * @refonly: Whether this assembly is being opened in "reflection-only" mode.
+ * \param aname an assembly to look for.
+ * \param refonly Whether this assembly is being opened in "reflection-only" mode.
  *
  * This is used to determine if the specified assembly has been loaded
- * Returns: NULL If the given @aname assembly has not been loaded, or a pointer to
- * a `MonoAssembly` that matches the `MonoAssemblyName` specified.
+ * \returns NULL If the given \p aname assembly has not been loaded, or a pointer to
+ * a \c MonoAssembly that matches the \c MonoAssemblyName specified.
  */
 MonoAssembly*
 mono_assembly_loaded_full (MonoAssemblyName *aname, gboolean refonly)
@@ -3526,12 +3526,12 @@ mono_assembly_loaded_full (MonoAssemblyName *aname, gboolean refonly)
 
 /**
  * mono_assembly_loaded:
- * @aname: an assembly to look for.
+ * \param aname an assembly to look for.
  *
  * This is used to determine if the specified assembly has been loaded
  
- * Returns: NULL If the given @aname assembly has not been loaded, or a pointer to
- * a `MonoAssembly` that matches the `MonoAssemblyName` specified.
+ * \returns NULL If the given \p aname assembly has not been loaded, or a pointer to
+ * a \c MonoAssembly that matches the \c MonoAssemblyName specified.
  */
 MonoAssembly*
 mono_assembly_loaded (MonoAssemblyName *aname)
@@ -3617,9 +3617,9 @@ mono_assembly_close_finish (MonoAssembly *assembly)
 
 /**
  * mono_assembly_close:
- * @assembly: the assembly to release.
+ * \param assembly the assembly to release.
  *
- * This method releases a reference to the @assembly.  The assembly is
+ * This method releases a reference to the \p assembly.  The assembly is
  * only released when all the outstanding references to it are released.
  */
 void
@@ -3647,12 +3647,12 @@ mono_assembly_load_module_checked (MonoAssembly *assembly, uint32_t idx, MonoErr
 
 /**
  * mono_assembly_foreach:
- * @func: function to invoke for each assembly loaded
- * @user_data: data passed to the callback
+ * \param func function to invoke for each assembly loaded
+ * \param user_data data passed to the callback
  *
- * Invokes the provided @func callback for each assembly loaded into
+ * Invokes the provided \p func callback for each assembly loaded into
  * the runtime.   The first parameter passed to the callback  is the
- * `MonoAssembly*`, and the second parameter is the @user_data.
+ * \c MonoAssembly*, and the second parameter is the \p user_data.
  *
  * This is done for all assemblies loaded in the runtime, not just
  * those loaded in the current application domain.
@@ -3750,9 +3750,9 @@ mono_assembly_get_main (void)
 
 /**
  * mono_assembly_get_image:
- * @assembly: The assembly to retrieve the image from
+ * \param assembly The assembly to retrieve the image from
  *
- * Returns: the MonoImage associated with this assembly.
+ * \returns the MonoImage associated with this assembly.
  */
 MonoImage*
 mono_assembly_get_image (MonoAssembly *assembly)
@@ -3762,11 +3762,11 @@ mono_assembly_get_image (MonoAssembly *assembly)
 
 /**
  * mono_assembly_get_name:
- * @assembly: The assembly to retrieve the name from
+ * \param assembly The assembly to retrieve the name from
  *
- * The returned name's lifetime is the same as @assembly's.
+ * The returned name's lifetime is the same as \p assembly's.
  *
- * Returns: the MonoAssemblyName associated with this assembly.
+ * \returns the MonoAssemblyName associated with this assembly.
  */
 MonoAssemblyName *
 mono_assembly_get_name (MonoAssembly *assembly)

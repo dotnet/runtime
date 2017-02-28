@@ -47,12 +47,12 @@ mono_class_try_get_generic_class (MonoClass *klass)
 
 /**
  * mono_class_get_flags:
- * @klass: the MonoClass to act on
+ * \param klass the MonoClass to act on
  *
- * Return the TypeAttributes flags of @klass.
- * See the TYPE_ATTRIBUTE_* definitions on tabledefs.h for the different values.
+ * Return the TypeAttributes flags of \p klass.
+ * See the \c TYPE_ATTRIBUTE_* definitions in tabledefs.h for the different values.
  *
- * Returns: The type flags
+ * \returns The type flags
  */
 guint32
 mono_class_get_flags (MonoClass *klass)

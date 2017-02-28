@@ -271,12 +271,12 @@ mono_gc_base_cleanup (void)
 
 /**
  * mono_gc_collect:
- * @generation: GC generation identifier
+ * \param generation GC generation identifier
  *
  * Perform a garbage collection for the given generation, higher numbers
  * mean usually older objects. Collecting a high-numbered generation
  * implies collecting also the lower-numbered generations.
- * The maximum value for @generation can be retrieved with a call to
+ * The maximum value for \p generation can be retrieved with a call to
  * mono_gc_max_generation(), so this function is usually called as:
  *
  * 	mono_gc_collect (mono_gc_max_generation ());
@@ -307,12 +307,12 @@ mono_gc_max_generation (void)
 
 /**
  * mono_gc_get_generation:
- * @object: a managed object
+ * \param object a managed object
  *
- * Get the garbage collector's generation that @object belongs to.
+ * Get the garbage collector's generation that \p object belongs to.
  * Use this has a hint only.
  *
- * Returns: a garbage collector generation number
+ * \returns a garbage collector generation number
  */
 int
 mono_gc_get_generation  (MonoObject *object)
@@ -322,12 +322,12 @@ mono_gc_get_generation  (MonoObject *object)
 
 /**
  * mono_gc_collection_count:
- * @generation: a GC generation number
+ * \param generation: a GC generation number
  *
  * Get how many times a garbage collection has been performed
- * for the given @generation number.
+ * for the given \p generation number.
  *
- * Returns: the number of garbage collections
+ * \returns the number of garbage collections
  */
 int
 mono_gc_collection_count (int generation)
@@ -337,13 +337,13 @@ mono_gc_collection_count (int generation)
 
 /**
  * mono_gc_add_memory_pressure:
- * @value: amount of bytes
+ * \param value amount of bytes
  *
  * Adjust the garbage collector's view of how many bytes of memory
  * are indirectly referenced by managed objects (for example unmanaged
  * memory holding image or other binary data).
  * This is a hint only to the garbage collector algorithm.
- * Note that negative amounts of @value will decrease the memory
+ * Note that negative amounts of p value will decrease the memory
  * pressure.
  */
 void
@@ -1706,19 +1706,19 @@ alloc_handle (HandleData *handles, MonoObject *obj, gboolean track)
 
 /**
  * mono_gchandle_new:
- * @obj: managed object to get a handle for
- * @pinned: whether the object should be pinned
+ * \param obj managed object to get a handle for
+ * \param pinned whether the object should be pinned
  *
  * This returns a handle that wraps the object, this is used to keep a
  * reference to a managed object from the unmanaged world and preventing the
  * object from being disposed.
  * 
- * If @pinned is false the address of the object can not be obtained, if it is
+ * If \p pinned is false the address of the object can not be obtained, if it is
  * true the address of the object can be obtained.  This will also pin the
  * object so it will not be possible by a moving garbage collector to move the
  * object. 
  * 
- * Returns: a handle that can be used to access the object from
+ * \returns a handle that can be used to access the object from
  * unmanaged code.
  */
 guint32
@@ -1729,8 +1729,8 @@ mono_gchandle_new (MonoObject *obj, gboolean pinned)
 
 /**
  * mono_gchandle_new_weakref:
- * @obj: managed object to get a handle for
- * @track_resurrection: Determines how long to track the object, if this is set to TRUE, the object is tracked after finalization, if FALSE, the object is only tracked up until the point of finalization.
+ * \param obj managed object to get a handle for
+ * \param track_resurrection Determines how long to track the object, if this is set to TRUE, the object is tracked after finalization, if FALSE, the object is only tracked up until the point of finalization.
  *
  * This returns a weak handle that wraps the object, this is used to
  * keep a reference to a managed object from the unmanaged world.
@@ -1738,14 +1738,14 @@ mono_gchandle_new (MonoObject *obj, gboolean pinned)
  * garbage collector.  In this case the value of the GCHandle will be
  * set to zero.
  * 
- * If @track_resurrection is TRUE the object will be tracked through
+ * If \p track_resurrection is TRUE the object will be tracked through
  * finalization and if the object is resurrected during the execution
  * of the finalizer, then the returned weakref will continue to hold
- * a reference to the object.   If @track_resurrection is FALSE, then
+ * a reference to the object.   If \p track_resurrection is FALSE, then
  * the weak reference's target will become NULL as soon as the object
  * is passed on to the finalizer.
  * 
- * Returns: a handle that can be used to access the object from
+ * \returns a handle that can be used to access the object from
  * unmanaged code.
  */
 guint32
@@ -1756,12 +1756,12 @@ mono_gchandle_new_weakref (MonoObject *obj, gboolean track_resurrection)
 
 /**
  * mono_gchandle_get_target:
- * @gchandle: a GCHandle's handle.
+ * \param gchandle a GCHandle's handle.
  *
- * The handle was previously created by calling `mono_gchandle_new` or
- * `mono_gchandle_new_weakref`.
+ * The handle was previously created by calling \c mono_gchandle_new or
+ * \c mono_gchandle_new_weakref.
  *
- * Returns: A pointer to the `MonoObject*` represented by the handle or
+ * \returns A pointer to the \c MonoObject* represented by the handle or
  * NULL for a collected object if using a weakref handle.
  */
 MonoObject*
@@ -1826,13 +1826,13 @@ mono_gc_is_null (void)
 
 /**
  * mono_gchandle_is_in_domain:
- * @gchandle: a GCHandle's handle.
- * @domain: An application domain.
+ * \param gchandle a GCHandle's handle.
+ * \param domain An application domain.
  *
- * Use this function to determine if the @gchandle points to an
- * object allocated in the specified @domain.
+ * Use this function to determine if the \p gchandle points to an
+ * object allocated in the specified \p domain.
  *
- * Returns: TRUE if the object wrapped by the @gchandle belongs to the specific @domain.
+ * \returns TRUE if the object wrapped by the \p gchandle belongs to the specific \p domain.
  */
 gboolean
 mono_gchandle_is_in_domain (guint32 gchandle, MonoDomain *domain)
@@ -1866,9 +1866,9 @@ mono_gchandle_is_in_domain (guint32 gchandle, MonoDomain *domain)
 
 /**
  * mono_gchandle_free:
- * @gchandle: a GCHandle's handle.
+ * \param gchandle a GCHandle's handle.
  *
- * Frees the @gchandle handle.  If there are no outstanding
+ * Frees the \p gchandle handle.  If there are no outstanding
  * references, the garbage collector can reclaim the memory of the
  * object wrapped. 
  */
@@ -1903,7 +1903,7 @@ mono_gchandle_free (guint32 gchandle)
 
 /**
  * mono_gchandle_free_domain:
- * @domain: domain that is unloading
+ * \param domain domain that is unloading
  *
  * Function used internally to cleanup any GC handle for objects belonging
  * to the specified domain during appdomain unload.

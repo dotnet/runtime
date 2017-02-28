@@ -230,7 +230,7 @@ create_domain_objects (MonoDomain *domain)
 
 /**
  * mono_runtime_init:
- * @domain: domain returned by mono_init ()
+ * \param domain: domain returned by mono_init ()
  *
  * Initialize the core AppDomain: this function will run also some
  * IL initialization code, so it needs the execution engine to be fully 
@@ -362,9 +362,9 @@ mono_check_corlib_version (void)
 
 /**
  * mono_context_init:
- * @domain: The domain where the System.Runtime.Remoting.Context.Context is initialized
+ * \param domain: The domain where the System.Runtime.Remoting.Context.Context is initialized
  *
- * Initializes the @domain's default System.Runtime.Remoting's Context.
+ * Initializes the \p domain's default System.Runtime.Remoting's Context.
  */
 void
 mono_context_init (MonoDomain *domain)
@@ -394,7 +394,7 @@ mono_context_init_checked (MonoDomain *domain, MonoError *error)
 
 /**
  * mono_runtime_cleanup:
- * @domain: unused.
+ * \param domain unused.
  *
  * Internal routine.
  *
@@ -438,10 +438,10 @@ mono_runtime_quit ()
 
 /**
  * mono_domain_create_appdomain:
- * @friendly_name: The friendly name of the appdomain to create
- * @configuration_file: The configuration file to initialize the appdomain with
+ * \param friendly_name The friendly name of the appdomain to create
+ * \param configuration_file The configuration file to initialize the appdomain with
  * 
- * Returns a MonoDomain initialized with the appdomain
+ * \returns a MonoDomain initialized with the appdomain
  */
 MonoDomain *
 mono_domain_create_appdomain (char *friendly_name, char *configuration_file)
@@ -455,11 +455,11 @@ mono_domain_create_appdomain (char *friendly_name, char *configuration_file)
 
 /**
  * mono_domain_create_appdomain_checked:
- * @friendly_name: The friendly name of the appdomain to create
- * @configuration_file: The configuration file to initialize the appdomain with
- * @error: Set on error.
+ * \param friendly_name The friendly name of the appdomain to create
+ * \param configuration_file The configuration file to initialize the appdomain with
+ * \param error Set on error.
  * 
- * Returns a MonoDomain initialized with the appdomain.  On failure sets @error and returns NULL.
+ * \returns a MonoDomain initialized with the appdomain.  On failure sets \p error and returns NULL.
  */
 MonoDomain *
 mono_domain_create_appdomain_checked (char *friendly_name, char *configuration_file, MonoError *error)
@@ -493,9 +493,9 @@ leave:
 
 /**
  * mono_domain_set_config:
- * @domain: MonoDomain initialized with the appdomain we want to change
- * @base_dir: new base directory for the appdomain
- * @config_file_name: path to the new configuration for the app domain
+ * \param domain MonoDomain initialized with the appdomain we want to change
+ * \param base_dir new base directory for the appdomain
+ * \param config_file_name path to the new configuration for the app domain
  *
  * Used to set the system configuration for an appdomain
  *
@@ -650,10 +650,9 @@ leave:
 
 /**
  * mono_domain_has_type_resolve:
- * @domain: application domains being looked up
+ * \param domain application domains being looked up
  *
- * Returns: TRUE if the AppDomain.TypeResolve field has been
- * set.
+ * \returns TRUE if the AppDomain.TypeResolve field has been set.
  */
 gboolean
 mono_domain_has_type_resolve (MonoDomain *domain)
@@ -676,16 +675,16 @@ mono_domain_has_type_resolve (MonoDomain *domain)
 
 /**
  * mono_domain_try_type_resolve:
- * @domain: application domainwhere the name where the type is going to be resolved
- * @name: the name of the type to resolve or NULL.
- * @tb: A System.Reflection.Emit.TypeBuilder, used if name is NULL.
+ * \param domain application domainwhere the name where the type is going to be resolved
+ * \param name the name of the type to resolve or NULL.
+ * \param tb A System.Reflection.Emit.TypeBuilder, used if name is NULL.
  *
  * This routine invokes the internal System.AppDomain.DoTypeResolve and returns
  * the assembly that matches name.
  *
- * If @name is null, the value of ((TypeBuilder)tb).FullName is used instead
+ * If \p name is null, the value of ((TypeBuilder)tb).FullName is used instead
  *
- * Returns: A MonoReflectionAssembly or NULL if not found
+ * \returns A MonoReflectionAssembly or NULL if not found
  */
 MonoReflectionAssembly *
 mono_domain_try_type_resolve (MonoDomain *domain, char *name, MonoObject *tb)
@@ -745,15 +744,13 @@ mono_domain_owns_vtable_slot (MonoDomain *domain, gpointer vtable_slot)
 
 /**
  * mono_domain_set:
- * @domain: domain
- * @force: force setting.
+ * \param domain domain
+ * \param force force setting.
  *
- * Set the current appdomain to @domain. If @force is set, set it even
+ * Set the current appdomain to \p domain. If \p force is set, set it even
  * if it is being unloaded.
  *
- * Returns:
- *   TRUE on success;
- *   FALSE if the domain is unloaded
+ * \returns TRUE on success; FALSE if the domain is unloaded
  */
 gboolean
 mono_domain_set (MonoDomain *domain, gboolean force)
