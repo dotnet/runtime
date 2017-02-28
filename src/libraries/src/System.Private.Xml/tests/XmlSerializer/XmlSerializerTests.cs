@@ -2755,11 +2755,11 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
     }
 
     [Fact]
-    [ActiveIssue(15523)]
     public static void SoapEncodedSerialization_IncludeType()
     {
         var soapImporter = new SoapReflectionImporter();
         soapImporter.IncludeType(typeof(MySpecialOrder));
+        soapImporter.IncludeType(typeof(MySpecialOrder2));
         XmlTypeMapping myTypeMapping = soapImporter.ImportTypeMapping(typeof(MyOrder));
         var ser = new XmlSerializer(myTypeMapping);
         var value = new MySpecialOrder()

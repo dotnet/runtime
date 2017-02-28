@@ -40,6 +40,25 @@ namespace System.Xml.Serialization
             }
         }
 
+        protected override void InitCallbacks()
+        {
+            TypeScope scope = _mapping.Scope;
+            foreach (TypeMapping mapping in scope.TypeMappings)
+            {
+                if (mapping.IsSoap &&
+                    (mapping is StructMapping || mapping is EnumMapping) &&
+                    !mapping.TypeDesc.IsRoot)
+                {
+                    AddWriteCallback(
+                        mapping.TypeDesc.Type,
+                        mapping.TypeName,
+                        mapping.Namespace,
+                        CreateXmlSerializationWriteCallback(mapping, mapping.TypeName, mapping.Namespace, mapping.TypeDesc.IsNullable)
+                    );
+                }
+            }
+        }
+
         public void WriteObject(object o)
         {
             XmlMapping xmlMapping = _mapping;
@@ -328,12 +347,6 @@ namespace System.Xml.Serialization
                     var itemMapping = itemElement.Mapping as StructMapping;
                     var itemName = writeAccessor ? itemElement.Name : itemMapping.TypeName;
                     var itemNamespace = itemElement.Any && itemElement.Name.Length == 0 ? null : (itemElement.Form == XmlSchemaForm.Qualified ? (writeAccessor ? itemElement.Namespace : itemMapping.Namespace) : "");
-                    EnsureXmlSerializationWriteCallbackForMapping(itemMapping,
-                        itemName,
-                        itemNamespace,
-                        itemElement.IsNullable, 
-                        needType: false, 
-                        parentMapping: parentMapping);
 
                     if (!writeAccessor)
                     {
@@ -401,7 +414,6 @@ namespace System.Xml.Serialization
                 var mapping = (StructMapping)element.Mapping;
                 if (mapping.IsSoap)
                 {
-                    EnsureXmlSerializationWriteCallbackForMapping(mapping, name, ns, element.IsNullable, needType: false, parentMapping: parentMapping);
                     WritePotentiallyReferencingElement(name, ns, o, !writeAccessor ? mapping.TypeDesc.Type : null, !writeAccessor, element.IsNullable);
                 }
                 else
@@ -435,24 +447,20 @@ namespace System.Xml.Serialization
             }
         }
 
-        private void EnsureXmlSerializationWriteCallbackForMapping(StructMapping mapping, string name, string ns, bool isNullable, bool needType, XmlMapping parentMapping)
+        private XmlSerializationWriteCallback CreateXmlSerializationWriteCallback(TypeMapping mapping, string name, string ns, bool isNullable)
         {
-            if (!ExistTypeEntry(mapping.TypeDesc.Type))
+            var structMapping = mapping as StructMapping;
+            if (structMapping != null)
             {
-                AddWriteCallback(
-                    mapping.TypeDesc.Type,
-                    mapping.TypeName,
-                    mapping.Namespace,
-                    CreateXmlSerializationWriteCallback(mapping, name, ns, isNullable, needType, parentMapping));
+                return (o) =>
+                {
+                    WriteStructMethod(structMapping, name, ns, o, isNullable, needType: false);
+                };
             }
-        }
-
-        private XmlSerializationWriteCallback CreateXmlSerializationWriteCallback(StructMapping mapping, string name, string ns, bool isNullable, bool needType, XmlMapping parentMapping)
-        {
-            return (o) =>
+            else
             {
-                WriteStructMethod(mapping, name, ns, o, isNullable, needType: false, parentMapping: parentMapping);
-            };
+                throw new NotImplementedException();
+            }
         }
 
         private void WriteQualifiedNameElement(string name, string ns, object defaultValue, XmlQualifiedName o, bool nullable, bool isSoap, PrimitiveMapping mapping)
@@ -1228,10 +1236,6 @@ namespace System.Xml.Serialization
             // as WCF uses XmlReflectionImporter.ImportMembersMapping and generates special
             // serializers for OperationContracts.
             throw new NotImplementedException();
-        }
-
-        protected override void InitCallbacks()
-        {
         }
 
         [Flags]
