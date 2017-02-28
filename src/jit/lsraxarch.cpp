@@ -1174,6 +1174,55 @@ void Lowering::TreeNodeInfoInitShiftRotate(GenTree* tree)
 }
 
 //------------------------------------------------------------------------
+// TreeNodeInfoInitPutArgReg: Set the NodeInfo for a PUTARG_REG.
+//
+// Arguments:
+//    node                - The PUTARG_REG node.
+//    argReg              - The register in which to pass the argument.
+//    info                - The info for the node's using call.
+//    isVarArgs           - True if the call uses a varargs calling convention.
+//    callHasFloatRegArgs - Set to true if this PUTARG_REG uses an FP register.
+//
+// Return Value:
+//    None.
+//
+void Lowering::TreeNodeInfoInitPutArgReg(
+    GenTreeUnOp* node, regNumber argReg, TreeNodeInfo& info, bool isVarArgs, bool* callHasFloatRegArgs)
+{
+    assert(node != nullptr);
+    assert(node->OperIsPutArgReg());
+    assert(argReg != REG_NA);
+
+    // Each register argument corresponds to one source.
+    info.srcCount++;
+
+    // Set the register requirements for the node.
+    const regMaskTP argMask = genRegMask(argReg);
+    node->gtLsraInfo.setDstCandidates(m_lsra, argMask);
+    node->gtLsraInfo.setSrcCandidates(m_lsra, argMask);
+
+    // To avoid redundant moves, have the argument operand computed in the
+    // register in which the argument is passed to the call.
+    node->gtOp.gtOp1->gtLsraInfo.setSrcCandidates(m_lsra, m_lsra->getUseCandidates(node));
+
+#if FEATURE_VARARG
+    *callHasFloatRegArgs |= varTypeIsFloating(node->TypeGet());
+
+    // In the case of a varargs call, the ABI dictates that if we have floating point args,
+    // we must pass the enregistered arguments in both the integer and floating point registers.
+    // Since the integer register is not associated with this arg node, we will reserve it as
+    // an internal register so that it is not used during the evaluation of the call node
+    // (e.g. for the target).
+    if (isVarArgs && varTypeIsFloating(node))
+    {
+        regNumber targetReg = comp->getCallArgIntRegister(argReg);
+        info.setInternalIntCount(info.internalIntCount + 1);
+        info.addInternalCandidates(m_lsra, genRegMask(targetReg));
+    }
+#endif // FEATURE_VARARG
+}
+
+//------------------------------------------------------------------------
 // TreeNodeInfoInitCall: Set the NodeInfo for a call.
 //
 // Arguments:
@@ -1337,15 +1386,23 @@ void Lowering::TreeNodeInfoInitCall(GenTreeCall* call)
         }
     }
 
-#if FEATURE_VARARG
     bool callHasFloatRegArgs = false;
-#endif // !FEATURE_VARARG
+    bool isVarArgs           = call->IsVarargs();
 
     // First, count reg args
     for (GenTreePtr list = call->gtCallLateArgs; list; list = list->MoveNext())
     {
         assert(list->OperIsList());
 
+        // By this point, lowering has ensured that all call arguments are one of the following:
+        // - an arg setup store
+        // - an arg placeholder
+        // - a nop
+        // - a copy blk
+        // - a field list
+        // - a put arg
+        //
+        // Note that this property is statically checked by Lowering::CheckBlock.
         GenTreePtr argNode = list->Current();
 
         fgArgTabEntryPtr curArgTabEntry = compiler->gtArgEntryByNode(call, argNode);
@@ -1372,166 +1429,30 @@ void Lowering::TreeNodeInfoInitCall(GenTreeCall* call)
                 argNode->gtLsraInfo.srcCount             = 0;
             }
 #endif // FEATURE_PUT_STRUCT_ARG_STK
+
             continue;
         }
 
-        regNumber argReg    = REG_NA;
-        regMaskTP argMask   = RBM_NONE;
-        short     regCount  = 0;
-        bool      isOnStack = true;
-        if (curArgTabEntry->regNum != REG_STK)
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
+        if (argNode->OperGet() == GT_FIELD_LIST)
         {
-            isOnStack         = false;
-            var_types argType = argNode->TypeGet();
+            assert(varTypeIsStruct(argNode) || curArgTabEntry->isStruct);
 
-#if FEATURE_VARARG
-            callHasFloatRegArgs |= varTypeIsFloating(argType);
-#endif // !FEATURE_VARARG
-
-            argReg   = curArgTabEntry->regNum;
-            regCount = 1;
-
-            // Default case is that we consume one source; modify this later (e.g. for
-            // promoted structs)
-            info->srcCount++;
-
-            argMask = genRegMask(argReg);
-            argNode = argNode->gtEffectiveVal();
-        }
-
-        // If the struct arg is wrapped in CPYBLK the type of the param will be TYP_VOID.
-        // Use the curArgTabEntry's isStruct to get whether the param is a struct.
-        if (varTypeIsStruct(argNode) PUT_STRUCT_ARG_STK_ONLY(|| curArgTabEntry->isStruct))
-        {
-            unsigned   originalSize = 0;
-            LclVarDsc* varDsc       = nullptr;
-            if (argNode->gtOper == GT_LCL_VAR)
+            unsigned eightbyte = 0;
+            for (GenTreeFieldList* entry = argNode->AsFieldList(); entry != nullptr; entry = entry->Rest())
             {
-                varDsc       = compiler->lvaTable + argNode->gtLclVarCommon.gtLclNum;
-                originalSize = varDsc->lvSize();
+                const regNumber argReg = eightbyte == 0 ? curArgTabEntry->regNum : curArgTabEntry->otherRegNum;
+                TreeNodeInfoInitPutArgReg(entry->Current()->AsUnOp(), argReg, *info, isVarArgs, &callHasFloatRegArgs);
+
+                eightbyte++;
             }
-            else if (argNode->gtOper == GT_MKREFANY)
-            {
-                originalSize = 2 * TARGET_POINTER_SIZE;
-            }
-            else if (argNode->gtOper == GT_OBJ)
-            {
-                noway_assert(!"GT_OBJ not supported for amd64");
-            }
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-            else if (argNode->gtOper == GT_PUTARG_REG)
-            {
-                originalSize = genTypeSize(argNode->gtType);
-            }
-            else if (argNode->gtOper == GT_FIELD_LIST)
-            {
-                originalSize = 0;
-
-                // There could be up to 2 PUTARG_REGs in the list
-                GenTreeFieldList* fieldListPtr = argNode->AsFieldList();
-                unsigned          iterationNum = 0;
-                for (; fieldListPtr; fieldListPtr = fieldListPtr->Rest())
-                {
-                    GenTreePtr putArgRegNode = fieldListPtr->Current();
-                    assert(putArgRegNode->gtOper == GT_PUTARG_REG);
-
-                    if (iterationNum == 0)
-                    {
-                        varDsc       = compiler->lvaTable + putArgRegNode->gtOp.gtOp1->gtLclVarCommon.gtLclNum;
-                        originalSize = varDsc->lvSize();
-                        assert(originalSize != 0);
-                    }
-                    else
-                    {
-                        // Need an extra source for every node, but the first in the list.
-                        info->srcCount++;
-
-                        // Get the mask for the second putarg_reg
-                        argMask = genRegMask(curArgTabEntry->otherRegNum);
-                    }
-
-                    putArgRegNode->gtLsraInfo.setDstCandidates(l, argMask);
-                    putArgRegNode->gtLsraInfo.setSrcCandidates(l, argMask);
-
-                    // To avoid redundant moves, have the argument child tree computed in the
-                    // register in which the argument is passed to the call.
-                    putArgRegNode->gtOp.gtOp1->gtLsraInfo.setSrcCandidates(l, l->getUseCandidates(putArgRegNode));
-                    iterationNum++;
-                }
-
-                assert(iterationNum <= CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS);
-            }
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
-            else
-            {
-                noway_assert(!"Can't predict unsupported TYP_STRUCT arg kind");
-            }
-
-            unsigned slots          = ((unsigned)(roundUp(originalSize, TARGET_POINTER_SIZE))) / REGSIZE_BYTES;
-            unsigned remainingSlots = slots;
-
-            if (!isOnStack)
-            {
-                remainingSlots = slots - 1;
-
-                regNumber reg = (regNumber)(argReg + 1);
-                while (remainingSlots > 0 && reg <= REG_ARG_LAST)
-                {
-                    argMask |= genRegMask(reg);
-                    reg = (regNumber)(reg + 1);
-                    remainingSlots--;
-                    regCount++;
-                }
-            }
-
-            short internalIntCount = 0;
-            if (remainingSlots > 0)
-            {
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-                // This TYP_STRUCT argument is also passed in the outgoing argument area
-                // We need a register to address the TYP_STRUCT
-                internalIntCount = 1;
-#else  // FEATURE_UNIX_AMD64_STRUCT_PASSING
-                // And we may need 2
-                internalIntCount           = 2;
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
-            }
-            argNode->gtLsraInfo.internalIntCount = internalIntCount;
-
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
-            if (argNode->gtOper == GT_PUTARG_REG)
-            {
-                argNode->gtLsraInfo.setDstCandidates(l, argMask);
-                argNode->gtLsraInfo.setSrcCandidates(l, argMask);
-            }
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
         }
         else
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
         {
-            argNode->gtLsraInfo.setDstCandidates(l, argMask);
-            argNode->gtLsraInfo.setSrcCandidates(l, argMask);
+            TreeNodeInfoInitPutArgReg(argNode->AsUnOp(), curArgTabEntry->regNum, *info, isVarArgs,
+                                      &callHasFloatRegArgs);
         }
-
-        // To avoid redundant moves, have the argument child tree computed in the
-        // register in which the argument is passed to the call.
-        if (argNode->gtOper == GT_PUTARG_REG)
-        {
-            argNode->gtOp.gtOp1->gtLsraInfo.setSrcCandidates(l, l->getUseCandidates(argNode));
-        }
-
-#if FEATURE_VARARG
-        // In the case of a varargs call, the ABI dictates that if we have floating point args,
-        // we must pass the enregistered arguments in both the integer and floating point registers.
-        // Since the integer register is not associated with this arg node, we will reserve it as
-        // an internal register so that it is not used during the evaluation of the call node
-        // (e.g. for the target).
-        if (call->IsVarargs() && varTypeIsFloating(argNode))
-        {
-            regNumber targetReg = compiler->getCallArgIntRegister(argReg);
-            info->setInternalIntCount(info->internalIntCount + 1);
-            info->addInternalCandidates(l, genRegMask(targetReg));
-        }
-#endif // FEATURE_VARARG
     }
 
     // Now, count stack args

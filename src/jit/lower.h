@@ -195,6 +195,8 @@ private:
     void TreeNodeInfoInitStoreLoc(GenTree* tree);
     void TreeNodeInfoInitReturn(GenTree* tree);
     void TreeNodeInfoInitShiftRotate(GenTree* tree);
+    void TreeNodeInfoInitPutArgReg(
+        GenTreeUnOp* node, regNumber argReg, TreeNodeInfo& info, bool isVarArgs, bool* callHasFloatRegArgs);
     void TreeNodeInfoInitCall(GenTreeCall* call);
     void TreeNodeInfoInitCmp(GenTreePtr tree);
     void TreeNodeInfoInitStructArg(GenTreePtr structArg);
