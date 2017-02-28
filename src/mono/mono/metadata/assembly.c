@@ -76,8 +76,13 @@ static char **assemblies_path = NULL;
 static char **extra_gac_paths = NULL;
 
 #ifndef DISABLE_ASSEMBLY_REMAPPING
+
+static GHashTable* assembly_remapping_table;
 /* The list of system assemblies what will be remapped to the running
- * runtime version. WARNING: this list must be sorted.
+ * runtime version.
+ * This list is stored in @assembly_remapping_table during initialization.
+ * Keep it sorted just to make maintenance easier.
+ *
  * The integer number is an index in the MonoRuntimeInfo structure, whose
  * values can be found in domain.c - supported_runtimes. Look there
  * to understand what remapping will be made.
@@ -133,9 +138,9 @@ static const AssemblyVersionMap framework_assemblies [] = {
 	{"System.Drawing", 0},
 	{"System.Drawing.Design", 0},
 	{"System.EnterpriseServices", 0},
+	{"System.IO.Compression", 2},
 	{"System.IdentityModel", 3},
 	{"System.IdentityModel.Selectors", 3},
-	{"System.IO.Compression", 2},
 	{"System.Management", 0},
 	{"System.Messaging", 0},
 	{"System.Net", 2},
@@ -796,6 +801,15 @@ mono_assemblies_init (void)
 
 	mono_os_mutex_init_recursive (&assemblies_mutex);
 	mono_os_mutex_init (&assembly_binding_mutex);
+
+#ifndef DISABLE_ASSEMBLY_REMAPPING
+	assembly_remapping_table = g_hash_table_new (g_str_hash, g_str_equal);
+
+	int i;
+	for (i = 0; i < G_N_ELEMENTS (framework_assemblies) - 1; ++i)
+		g_hash_table_insert (assembly_remapping_table, (void*)framework_assemblies [i].assembly_name, (void*)&framework_assemblies [i]);
+
+#endif
 }
 
 static void
@@ -1037,7 +1051,6 @@ static MonoAssemblyName *
 mono_assembly_remap_version (MonoAssemblyName *aname, MonoAssemblyName *dest_aname)
 {
 	const MonoRuntimeInfo *current_runtime;
-	int pos, first, last;
 
 	if (aname->name == NULL) return aname;
 
@@ -1074,52 +1087,52 @@ mono_assembly_remap_version (MonoAssemblyName *aname, MonoAssemblyName *dest_ana
 	}
 	
 #ifndef DISABLE_ASSEMBLY_REMAPPING
-	first = 0;
-	last = G_N_ELEMENTS (framework_assemblies) - 1;
-	
-	while (first <= last) {
-		int res;
-		pos = first + (last - first) / 2;
-		res = strcmp (aname->name, framework_assemblies[pos].assembly_name);
-		if (res == 0) {
-			const AssemblyVersionSet* vset;
-			int index = framework_assemblies[pos].version_set_index;
-			g_assert (index < G_N_ELEMENTS (current_runtime->version_sets));
-			vset = &current_runtime->version_sets [index];
+	const AssemblyVersionMap *vmap = (AssemblyVersionMap *)g_hash_table_lookup (assembly_remapping_table, aname->name);
+	if (vmap) {
+		const AssemblyVersionSet* vset;
+		int index = vmap->version_set_index;
+		g_assert (index < G_N_ELEMENTS (current_runtime->version_sets));
+		vset = &current_runtime->version_sets [index];
 
-			if (aname->major == vset->major && aname->minor == vset->minor &&
-				aname->build == vset->build && aname->revision == vset->revision)
-				return aname;
-		
-			if (framework_assemblies[pos].only_lower_versions && compare_versions ((AssemblyVersionSet*)vset, aname) < 0)
-				return aname;
-
-			if ((aname->major | aname->minor | aname->build | aname->revision) != 0)
-				mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_ASSEMBLY,
-					"The request to load the assembly %s v%d.%d.%d.%d was remapped to v%d.%d.%d.%d",
-							aname->name,
-							aname->major, aname->minor, aname->build, aname->revision,
-							vset->major, vset->minor, vset->build, vset->revision
-							);
-			
-			memcpy (dest_aname, aname, sizeof(MonoAssemblyName));
-			dest_aname->major = vset->major;
-			dest_aname->minor = vset->minor;
-			dest_aname->build = vset->build;
-			dest_aname->revision = vset->revision;
-			if (framework_assemblies[pos].new_assembly_name != NULL) {
-				dest_aname->name = framework_assemblies[pos].new_assembly_name;
-				mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_ASSEMBLY,
-							"The assembly name %s was remapped to %s",
-							aname->name,
-							dest_aname->name);
-			}
-			return dest_aname;
-		} else if (res < 0) {
-			last = pos - 1;
-		} else {
-			first = pos + 1;
+		if (aname->major == vset->major && aname->minor == vset->minor &&
+			aname->build == vset->build && aname->revision == vset->revision) {
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Found assembly remapping for %s and was for the same version %d.%d.%d.%d",
+				aname->name,
+				aname->major, aname->minor, aname->build, aname->revision);
+			return aname;
 		}
+
+		if (vmap->only_lower_versions && compare_versions ((AssemblyVersionSet*)vset, aname) < 0) {
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY,
+				"Found lower-versions-only assembly remaping to load %s %d.%d.%d.%d but mapping has %d.%d.%d.%d",
+						aname->name,
+						aname->major, aname->minor, aname->build, aname->revision,
+						vset->major, vset->minor, vset->build, vset->revision
+						);
+			return aname;
+		}
+
+		if ((aname->major | aname->minor | aname->build | aname->revision) != 0)
+			mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_ASSEMBLY,
+				"The request to load the assembly %s v%d.%d.%d.%d was remapped to v%d.%d.%d.%d",
+						aname->name,
+						aname->major, aname->minor, aname->build, aname->revision,
+						vset->major, vset->minor, vset->build, vset->revision
+						);
+
+		memcpy (dest_aname, aname, sizeof(MonoAssemblyName));
+		dest_aname->major = vset->major;
+		dest_aname->minor = vset->minor;
+		dest_aname->build = vset->build;
+		dest_aname->revision = vset->revision;
+		if (vmap->new_assembly_name != NULL) {
+			dest_aname->name = vmap->new_assembly_name;
+			mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_ASSEMBLY,
+						"The assembly name %s was remapped to %s",
+						aname->name,
+						dest_aname->name);
+		}
+		return dest_aname;
 	}
 #endif
 
