@@ -156,25 +156,6 @@ namespace System.Net.Sockets
 
                     if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{handle}, ioctlsocket()#1:{errorCode}");
 
-                    // This can fail if there's a pending WSAEventSelect.  Try canceling it.
-                    if (errorCode == SocketError.InvalidArgument)
-                    {
-                        errorCode = Interop.Winsock.WSAEventSelect(
-                            handle,
-                            IntPtr.Zero,
-                            Interop.Winsock.AsyncEventBits.FdNone);
-
-                        if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{handle}, WSAEventSelect()#1:{(errorCode == SocketError.SocketError ? (SocketError)Marshal.GetLastWin32Error() : errorCode)}");
-
-                        // Now retry the ioctl.
-                        errorCode = Interop.Winsock.ioctlsocket(
-                            handle,
-                            Interop.Winsock.IoctlSocketConstants.FIONBIO,
-                            ref nonBlockCmd);
-
-                        if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{handle}, ioctlsocket()#2:{(errorCode == SocketError.SocketError ? (SocketError)Marshal.GetLastWin32Error() : errorCode)}");
-                    }
-
                     // If that succeeded, try again.
                     if (errorCode == SocketError.Success)
                     {
