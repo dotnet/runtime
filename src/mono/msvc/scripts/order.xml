@@ -68,7 +68,7 @@
     </project>
     <project dir="class/System.Numerics" library="System.Numerics-basic">
       <boot>true</boot>
-      <flags>/codepage:65001 /nologo /noconfig -d:NET_4_0 -d:NET_4_5 -d:MONO -d:WIN_PLATFORM -d:BOOTSTRAP_BASIC -nowarn:1699 -nostdlib -r:./../../class/lib/basic/mscorlib.dll -optimize /unsafe -nowarn:414 -nowarn:436 -r:./../../class/lib/basic/System.dll</flags>
+      <flags>/codepage:65001 /nologo /noconfig -d:NET_4_0 -d:NET_4_5 -d:MONO -d:WIN_PLATFORM -d:BOOTSTRAP_BASIC -nowarn:1699 -nostdlib -r:./../../class/lib/basic/mscorlib.dll -optimize /unsafe -r:./../../class/lib/basic/System.dll</flags>
       <output>System.Numerics.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/basic/System.Numerics.dll</library_output>
@@ -574,7 +574,7 @@
     </project>
     <project dir="class/System.Numerics" library="System.Numerics-build">
       <boot>false</boot>
-      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../class/lib/build/mscorlib.dll -optimize /unsafe -nowarn:414 -nowarn:436 -r:./../../class/lib/build/System.dll</flags>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../class/lib/build/mscorlib.dll -optimize /unsafe -r:./../../class/lib/build/System.dll</flags>
       <output>System.Numerics.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/build/System.Numerics.dll</library_output>
@@ -1443,7 +1443,7 @@
     </project>
     <project dir="class/System.Numerics" library="System.Numerics-net_4_x">
       <boot>false</boot>
-      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize /unsafe -nowarn:414 -nowarn:436 -r:./../../class/lib/net_4_x/System.dll</flags>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize /unsafe -r:./../../class/lib/net_4_x/System.dll</flags>
       <output>System.Numerics.dll</output>
       <built_sources></built_sources>
       <library_output>./../../class/lib/net_4_x/System.Numerics.dll</library_output>
@@ -1454,7 +1454,7 @@
     </project>
     <project dir="class/System.Numerics" library="System.Numerics-tests-net_4_x">
       <boot>false</boot>
-      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize -r:./../../class/lib/net_4_x/System.Numerics.dll /unsafe -nowarn:414 -nowarn:436 -r:./../../class/lib/net_4_x/System.dll</flags>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize -r:./../../class/lib/net_4_x/System.Numerics.dll /unsafe -r:./../../class/lib/net_4_x/System.dll</flags>
       <output>net_4_x_System.Numerics_test.dll</output>
       <built_sources></built_sources>
       <library_output>net_4_x_System.Numerics_test.dll</library_output>
