@@ -12,6 +12,7 @@ namespace System.Security.Cryptography.Xml
 {
     internal static class CryptoHelpers
     {
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "SHA1 needed for compat.")]
         public static object CreateFromName(string name)
         {
             switch (name)
@@ -71,6 +72,11 @@ namespace System.Security.Cryptography.Xml
                 case "http://www.w3.org/2001/04/xmldsig-more#rsa-sha512":
                     throw new NotImplementedException(name);
                     //return new RSAPKCS1SHA512SignatureDescription();
+
+                // workarounds for issue https://github.com/dotnet/corefx/issues/16563
+                // remove attribute from this method when removing them
+                case "http://www.w3.org/2000/09/xmldsig#sha1":
+                    return SHA1.Create();
             }
 
             return CryptoConfig.CreateFromName(name);
