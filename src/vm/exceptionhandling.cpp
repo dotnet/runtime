@@ -5042,6 +5042,39 @@ BOOL IsSafeToCallExecutionManager()
            GCStress<cfg_instr_ngen>::IsEnabled();
 }
 
+#if defined(_TARGET_ARM_) || defined(_TARGET_X86_)
+//Return TRUE if pContext->Pc is in VirtualStub
+static BOOL IsIPinVirtualStub(PCODE f_IP)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    Thread * pThread = GetThread();
+
+    // We may not have a managed thread object. Example is an AV on the helper thread.
+    // (perhaps during StubManager::IsStub)
+    if (pThread == NULL)
+    {
+        return FALSE;
+    }
+
+    VirtualCallStubManager::StubKind sk;
+    VirtualCallStubManager::FindStubManager(f_IP, &sk);
+
+    if (sk == VirtualCallStubManager::SK_DISPATCH)
+    {
+        return TRUE;
+    }
+    else if (sk == VirtualCallStubManager::SK_RESOLVE)
+    {
+        return TRUE;
+    }
+
+    else {
+        return FALSE;
+    }
+}
+#endif
+
 BOOL IsSafeToHandleHardwareException(PCONTEXT contextRecord, PEXCEPTION_RECORD exceptionRecord)
 {
     PCODE controlPc = GetIP(contextRecord);
@@ -5049,7 +5082,7 @@ BOOL IsSafeToHandleHardwareException(PCONTEXT contextRecord, PEXCEPTION_RECORD e
         exceptionRecord->ExceptionCode == STATUS_BREAKPOINT || 
         exceptionRecord->ExceptionCode == STATUS_SINGLE_STEP ||
         (IsSafeToCallExecutionManager() && ExecutionManager::IsManagedCode(controlPc)) ||
-#ifdef _TARGET_ARM_
+#if defined(_TARGET_ARM_) || defined(_TARGET_X86_)
         IsIPinVirtualStub(controlPc) ||  // access violation comes from DispatchStub of Interface call
 #endif
         IsIPInMarkedJitHelper(controlPc));
@@ -5100,7 +5133,7 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
                 PAL_VirtualUnwind(ex->GetContextRecord(), NULL);
                 ex->GetExceptionRecord()->ExceptionAddress = (PVOID)GetIP(ex->GetContextRecord());
             }
-#ifdef _TARGET_ARM_
+#if defined(_TARGET_ARM_) || defined(_TARGET_X86_)
             else if (IsIPinVirtualStub(controlPc)) 
             {
                 AdjustContextForVirtualStub(ex->GetExceptionRecord(), ex->GetContextRecord());
