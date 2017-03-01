@@ -48,11 +48,15 @@ namespace Microsoft.DotNet.Cli.Build
             // TODO-ARM-Crossgen: Add ubuntu.14.04-arm and ubuntu.16.04-arm
             if (_targetRID == "win8-arm")
             {
-                ridCrossgen = Path.Combine(crossgenPackagePath, "tools", "x86_arm", $"crossgen{Constants.ExeSuffix}");
+                // workaround https://github.com/dotnet/coreclr/issues/9884
+                // ridCrossgen = Path.Combine(crossgenPackagePath, "tools", "x86_arm", $"crossgen{Constants.ExeSuffix}");
+                ridCrossgen = Path.Combine(crossgenPackagePath, "tools", "x86_AnyCPU", $"crossgen{Constants.ExeSuffix}");
             }
             else if (_targetRID == "win10-arm64")
             {
-                ridCrossgen = Path.Combine(crossgenPackagePath, "tools", "x64_arm64", $"crossgen{Constants.ExeSuffix}");
+                // workaround https://github.com/dotnet/coreclr/issues/9884
+                // ridCrossgen = Path.Combine(crossgenPackagePath, "tools", "x86_arm", $"crossgen{Constants.ExeSuffix}");
+                ridCrossgen = Path.Combine(crossgenPackagePath, "tools", "x86_AnyCPU", $"crossgen{Constants.ExeSuffix}");
             }
             else
             {
@@ -77,11 +81,15 @@ namespace Microsoft.DotNet.Cli.Build
             // TODO-ARM-Crossgen: Add ubuntu.14.04-arm and ubuntu.16.04-arm
             if (_targetRID == "win8-arm") 
             {
-                jitPath = Path.Combine(jitPackagePath, "runtimes", "x86_arm", "native", $"{Constants.DynamicLibPrefix}clrjit{Constants.DynamicLibSuffix}");
+                // workaround https://github.com/dotnet/coreclr/issues/9884
+                // jitPath = Path.Combine(jitPackagePath, "runtimes", "x86_arm", "native", $"{Constants.DynamicLibPrefix}clrjit{Constants.DynamicLibSuffix}");
+                jitPath = Path.Combine(jitPackagePath, "runtimes", "x86_AnyCPU", "native", $"{Constants.DynamicLibPrefix}clrjit{Constants.DynamicLibSuffix}");
             }
             else if (_targetRID == "win10-arm64") 
             {
-                jitPath = Path.Combine(jitPackagePath, "runtimes", "x64_arm64", "native", $"{Constants.DynamicLibPrefix}clrjit{Constants.DynamicLibSuffix}");
+                // workaround https://github.com/dotnet/coreclr/issues/9884
+                // jitPath = Path.Combine(jitPackagePath, "runtimes", "x64_arm64", "native", $"{Constants.DynamicLibPrefix}clrjit{Constants.DynamicLibSuffix}");
+                jitPath = Path.Combine(jitPackagePath, "runtimes", "x64_AnyCPU", "native", $"{Constants.DynamicLibPrefix}clrjit{Constants.DynamicLibSuffix}");
             }
             
             return jitPath;
