@@ -121,12 +121,6 @@ namespace System.Net.Http.Functional.Tests
                 bool activityStartLogged = false;
                 bool activityStopLogged = false;
 
-                //start parent activity 
-                Activity parentActivity = new Activity("parent");
-                parentActivity.AddBaggage("correlationId", Guid.NewGuid().ToString());
-                parentActivity.Start();
-
-
                 var diagnosticListenerObserver = new FakeDiagnosticListenerObserver(kvp =>
                 {
                     if (kvp.Key.Equals("System.Net.Http.Request"))
@@ -393,9 +387,6 @@ namespace System.Net.Http.Functional.Tests
                     else if (kvp.Key.Equals("System.Net.Http.Activity.Stop")) {activityStopLogged = true;}
                 });
 
-                Activity parentActivity = new Activity("parent");
-                parentActivity.Start();
-
                 using (DiagnosticListener.AllListeners.Subscribe(diagnosticListenerObserver))
                 {
                     diagnosticListenerObserver.Enable((s, r, _) =>
@@ -415,51 +406,6 @@ namespace System.Net.Http.Functional.Tests
                     Assert.False(activityStartLogged, "Activity.Start was logged while URL disabled.");
                     // Poll with a timeout since logging response is not synchronized with returning a response.
                     Assert.False(activityStopLogged, "Activity.Stop was logged while URL disabled.");
-                    diagnosticListenerObserver.Disable();
-                }
-
-                return SuccessExitCode;
-            }).Dispose();
-        }
-
-        [OuterLoop] // TODO: Issue #11345
-        [Fact]
-        public void SendAsync_ExpectedDiagnosticNoParentActivityLogging()
-        {
-            RemoteInvoke(() =>
-            {
-                bool activityLogged = false;
-                bool requestLogged = false;
-                bool responseLogged = false;
-
-                var diagnosticListenerObserver = new FakeDiagnosticListenerObserver(kvp =>
-                {
-                    if (kvp.Key.StartsWith("System.Net.Http.Activity"))
-                    {
-                        activityLogged = true;
-                    }
-                    else if (kvp.Key.Equals("System.Net.Http.Request"))
-                    {
-                        requestLogged = true;
-                    }
-                    else if (kvp.Key.Equals("System.Net.Http.Response"))
-                    {
-                        responseLogged = true;
-                    }
-                });
-
-                using (DiagnosticListener.AllListeners.Subscribe(diagnosticListenerObserver))
-                {
-                    diagnosticListenerObserver.Enable();
-                    using (var client = new HttpClient())
-                    {
-                        var response = client.GetAsync(Configuration.Http.RemoteEchoServer).Result;
-                    }
-
-                    Assert.False(requestLogged, "Request was logged when activity events were enabled.");
-                    // Poll with a timeout since logging response is not synchronized with returning a response.
-                    WaitForFalse(() => responseLogged, TimeSpan.FromSeconds(1), "Response was logged when activity events were enabled.");
-                    Assert.False(activityLogged, "Activity was logged, when there was no parent activity.");
                     diagnosticListenerObserver.Disable();
                 }
 
@@ -493,9 +439,6 @@ namespace System.Net.Http.Functional.Tests
                         exceptionLogged = true;
                     }
                 });
-
-                Activity parentActivity = new Activity("parent");
-                parentActivity.Start();
 
                 using (DiagnosticListener.AllListeners.Subscribe(diagnosticListenerObserver))
                 {
@@ -562,15 +505,12 @@ namespace System.Net.Http.Functional.Tests
                 bool activityStartLogged = false;
                 bool activityStopLogged = false;
 
-                Activity parentActivity = new Activity("parent");
-                parentActivity.Start();
-
                 var diagnosticListenerObserver = new FakeDiagnosticListenerObserver(kvp =>
                 {
                     if (kvp.Key.Equals("System.Net.Http.Activity.Start")) { activityStartLogged = true; }
                     else if (kvp.Key.Equals("System.Net.Http.Activity.Stop"))
                     {
-                        Assert.Equal(parentActivity, Activity.Current.Parent);
+                        Assert.NotNull(Activity.Current);
                         activityStopLogged = true;
                     }
                 });
@@ -610,9 +550,6 @@ namespace System.Net.Http.Functional.Tests
                         cancelLogged = true;
                     }
                 });
-
-                Activity parentActivity = new Activity("parent");
-                parentActivity.Start();
 
                 using (DiagnosticListener.AllListeners.Subscribe(diagnosticListenerObserver))
                 {
