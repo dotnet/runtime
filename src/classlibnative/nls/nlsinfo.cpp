@@ -341,17 +341,6 @@ INT32 COMNlsInfo::CallGetUserDefaultUILanguage()
     return s_lcid;
 }
 
-INT_PTR COMNlsInfo::EnsureValidSortHandle(INT_PTR handle, INT_PTR handleOrigin, LPCWSTR localeName)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // For CoreCLR, on Windows 8 and up the handle will be valid. on downlevels the handle will be null
-    return handle;
-}
-
-
-
-
 
 FCIMPL2(Object*, COMNlsInfo::nativeGetLocaleInfoEx, StringObject* localeNameUNSAFE, INT32 lcType)
 {
@@ -1402,8 +1391,6 @@ INT32 QCALLTYPE COMNlsInfo::InternalCompareString(
     INT32 result = 1;
     BEGIN_QCALL;
 
-    handle = EnsureValidSortHandle(handle, handleOrigin, localeName);
-
     {
         result = NewApis::CompareStringEx(handle != NULL ? NULL : localeName, flags, &string1[offset1], length1, &string2[offset2], length2,NULL,NULL, (LPARAM) handle);
     }
@@ -1479,7 +1466,7 @@ BOOL UseConstantSpaceHashAlgorithm()
 //  InternalGetGlobalizedHashCode
 //
 ////////////////////////////////////////////////////////////////////////////
-INT32 QCALLTYPE COMNlsInfo::InternalGetGlobalizedHashCode(INT_PTR handle, INT_PTR handleOrigin, LPCWSTR localeName, LPCWSTR string, INT32 length, INT32 dwFlagsIn, BOOL bForceRandomizedHashing, INT64 additionalEntropy)
+INT32 QCALLTYPE COMNlsInfo::InternalGetGlobalizedHashCode(INT_PTR handle, LPCWSTR localeName, LPCWSTR string, INT32 length, INT32 dwFlagsIn, INT64 additionalEntropy)
 {
     CONTRACTL
     {
@@ -1491,7 +1478,6 @@ INT32 QCALLTYPE COMNlsInfo::InternalGetGlobalizedHashCode(INT_PTR handle, INT_PT
     INT32  iReturnHash  = 0;
     BEGIN_QCALL;
 
-    handle = EnsureValidSortHandle(handle, handleOrigin, localeName);
     int byteCount = 0;
 
     //
@@ -1501,61 +1487,35 @@ INT32 QCALLTYPE COMNlsInfo::InternalGetGlobalizedHashCode(INT_PTR handle, INT_PT
         COMPlusThrowArgumentNull(W("string"),W("ArgumentNull_String"));
     }
 
+    DWORD dwFlags = (LCMAP_SORTKEY | dwFlagsIn);
 
-    if(length > 0 && UseConstantSpaceHashAlgorithm() 
-    // Note that we can't simply do the hash without the entropy and then try to add it after the fact we need the hash function itself to pass entropy to its inputs.
-#ifdef FEATURE_RANDOMIZED_STRING_HASHING
-         && !bForceRandomizedHashing
-         && !COMNlsHashProvider::s_NlsHashProvider.GetUseRandomHashing()
-#endif // FEATURE_RANDOMIZED_STRING_HASHING
-       )
+    //
+    // Caller has already verified that the string is not of zero length
+    //
+    // Assert if we might hit an AV in LCMapStringEx for the invariant culture.
+    _ASSERTE(length > 0 || (dwFlags & LCMAP_LINGUISTIC_CASING) == 0);
     {
-        {
-            int iRes = 0;
-            int iHashValue = 0;
-
-            {
-                iRes = NewApis::LCMapStringEx(localeName, dwFlagsIn | LCMAP_HASH, string, length, (LPWSTR) &iHashValue, sizeof(INT32), NULL, NULL, 0);
-            }
-
-            if(iRes != 0)
-            {
-                iReturnHash = iHashValue;
-            }
-        }
+        byteCount=NewApis::LCMapStringEx(handle != NULL ? NULL : localeName, dwFlags, string, length, NULL, 0, NULL, NULL, (LPARAM) handle);
     }
 
-    if(iReturnHash == 0)
+    //A count of 0 indicates that we either had an error or had a zero length string originally.
+    if (byteCount==0)
     {
-        DWORD dwFlags = (LCMAP_SORTKEY | dwFlagsIn);
+        COMPlusThrow(kArgumentException, W("Arg_MustBeString"));
+    }
 
-        //
-        // Caller has already verified that the string is not of zero length
-        //
-        // Assert if we might hit an AV in LCMapStringEx for the invariant culture.
-        _ASSERTE(length > 0 || (dwFlags & LCMAP_LINGUISTIC_CASING) == 0);
+    // We used to use a NewArrayHolder here, but it turns out that hurts our large # process
+    // scalability in ASP.Net hosting scenarios, using the quick bytes instead mostly stack
+    // allocates and ups throughput by 8% in 100 process case, 5% in 1000 process case
+    {
+        CQuickBytesSpecifySize<MAX_STRING_VALUE * sizeof(WCHAR)> qbBuffer;
+        BYTE* pByte = (BYTE*)qbBuffer.AllocThrows(byteCount);
+
         {
-            byteCount=NewApis::LCMapStringEx(handle != NULL ? NULL : localeName, dwFlags, string, length, NULL, 0, NULL, NULL, (LPARAM) handle);
+            NewApis::LCMapStringEx(handle != NULL ? NULL : localeName, dwFlags, string, length, (LPWSTR)pByte, byteCount, NULL,NULL, (LPARAM) handle);
         }
 
-        //A count of 0 indicates that we either had an error or had a zero length string originally.
-        if (byteCount==0) {
-            COMPlusThrow(kArgumentException, W("Arg_MustBeString"));
-        }
-
-        // We used to use a NewArrayHolder here, but it turns out that hurts our large # process
-        // scalability in ASP.Net hosting scenarios, using the quick bytes instead mostly stack
-        // allocates and ups throughput by 8% in 100 process case, 5% in 1000 process case
-        {
-            CQuickBytesSpecifySize<MAX_STRING_VALUE * sizeof(WCHAR)> qbBuffer;
-            BYTE* pByte = (BYTE*)qbBuffer.AllocThrows(byteCount);
-
-            {
-                NewApis::LCMapStringEx(handle != NULL ? NULL : localeName, dwFlags, string, length, (LPWSTR)pByte, byteCount, NULL,NULL, (LPARAM) handle);
-            }
-
-            iReturnHash = COMNlsHashProvider::s_NlsHashProvider.HashSortKey(pByte, byteCount, bForceRandomizedHashing, additionalEntropy);
-        }
+        iReturnHash = COMNlsHashProvider::s_NlsHashProvider.HashSortKey(pByte, byteCount, true, additionalEntropy);
     }
     END_QCALL;
     return(iReturnHash);
@@ -1591,8 +1551,6 @@ FCIMPL5(FC_CHAR_RET, COMNlsInfo::InternalChangeCaseChar,
     BOOL isInvariantLocale = IsInvariantLocale(localeName);
     // Check for Invariant to avoid A/V in LCMapStringEx
     DWORD linguisticCasing = (isInvariantLocale) ? 0 : LCMAP_LINGUISTIC_CASING;
-
-    handle = EnsureValidSortHandle(handle, handleOrigin, localeName->GetBuffer());
 
     {
         ret_LCMapStringEx = NewApis::LCMapStringEx(handle != NULL ? NULL : localeName->GetBuffer(),
@@ -1649,8 +1607,6 @@ FCIMPL5(Object*, COMNlsInfo::InternalChangeCaseString,
     gc.pLocale = ObjectToSTRINGREF(localeNameUNSAFE);
 
     HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc)
-
-    handle = EnsureValidSortHandle(handle, handleOrigin, gc.pLocale->GetBuffer());
 
     //
     //  Get the length of the string.
@@ -1804,8 +1760,6 @@ FCIMPL6(INT32, COMNlsInfo::InternalGetCaseInsHash,
     }
     else
     {
-        handle = EnsureValidSortHandle(handle, handleOrigin, localeName->GetBuffer());
-
         // Make it upper case
         CQuickBytes newBuffer;
         INT32 length = strA->GetStringLength();
@@ -2169,190 +2123,6 @@ FCIMPL0(INT32, COMNlsInfo::nativeGetNumEncodingItems)
     return (m_nEncodingDataTableItems);
 }
 FCIMPLEND
-
-
-
-typedef CultureDataBaseObject* CULTUREDATAREF;
-
-// nativeInitCultureData checks with the OS to see if this is a valid culture.
-// If so we populate a limited number of fields.  If its not valid we return false.
-//
-// The fields we populate:
-//
-// sWindowsName -- The name that windows thinks this culture is, ie:
-//                            en-US if you pass in en-US
-//                            de-DE_phoneb if you pass in de-DE_phoneb
-//                            fj-FJ if you pass in fj (neutral, on a pre-Windows 7 machine)
-//                            fj if you pass in fj (neutral, post-Windows 7 machine)
-//
-// sRealName -- The name you used to construct the culture, in pretty form
-//                       en-US if you pass in EN-us
-//                       en if you pass in en
-//                       de-DE_phoneb if you pass in de-DE_phoneb
-//
-// sSpecificCulture -- The specific culture for this culture
-//                             en-US for en-US
-//                             en-US for en
-//                             de-DE_phoneb for alt sort
-//                             fj-FJ for fj (neutral)
-//
-// sName -- The IETF name of this culture (ie: no sort info, could be neutral)
-//                en-US if you pass in en-US
-//                en if you pass in en
-//                de-DE if you pass in de-DE_phoneb
-//
-// bNeutral -- TRUE if it is a neutral locale
-//
-// For a neutral we just populate the neutral name, but we leave the windows name pointing to the
-// windows locale that's going to provide data for us.
-//
-FCIMPL1(FC_BOOL_RET, COMNlsInfo::nativeInitCultureData, CultureDataBaseObject *cultureDataUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    BOOL        success=FALSE;
-
-    struct _gc
-    {
-        STRINGREF stringResult;
-        CULTUREDATAREF cultureData;
-    } gc;
-
-    gc.stringResult = NULL;
-    gc.cultureData  = (CULTUREDATAREF) cultureDataUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
-
-    WCHAR       buffer[LOCALE_NAME_MAX_LENGTH];
-    int         result;
-
-    StackSString realNameBuffer( ((STRINGREF)gc.cultureData->sRealName)->GetBuffer() );
-
-    // Call GetLocaleInfoEx and see if the OS knows about it.
-    // Note that GetLocaleInfoEx has variations:
-    // * Pre-Vista it fails and has to go downlevel
-    // * Vista succeeds, but not for neutrals
-    // * Win7 succeeds for all locales.
-    // * Mac does ???
-    // The differences should be handled by the NewApis wrapper
-    result = NewApis::GetLocaleInfoEx(realNameBuffer, LOCALE_SNAME, buffer, NumItems(buffer));
-
-    // Did it fail?
-    if (result == 0)
-    {
-        // Not a real locale, fail
-        goto Exit;
-    }
-
-    // It worked, note that the name is the locale name, so use that (even for neutrals)
-    // We need to clean up our "real" name, which should look like the windows name right now
-    // so overwrite the input with the cleaned up name
-    gc.stringResult = StringObject::NewString(buffer, result-1);
-    SetObjectReference((OBJECTREF*)&(gc.cultureData->sRealName), gc.stringResult, NULL);
-
-    // Check for neutrality, don't expect to fail
-    // (buffer has our name in it, so we don't have to do the gc. stuff)
-    DWORD bNeutral;
-    if (0 == NewApis::GetLocaleInfoEx(buffer, LOCALE_INEUTRAL | LOCALE_RETURN_NUMBER, (LPWSTR)&bNeutral, sizeof(bNeutral)/sizeof(WCHAR)))
-        goto Exit;
-
-    // Remember our neutrality
-    gc.cultureData->bNeutral = (bNeutral != 0);
-
-    gc.cultureData->bWin32Installed = (IsOSValidLocaleName(buffer, gc.cultureData->bNeutral) != 0);
-    gc.cultureData->bFramework = (IsWhidbeyFrameworkCulture(buffer) != 0);
-
-
-    // Note: Parents will be set dynamically
-
-    // Start by assuming the windows name'll be the same as the specific name since windows knows
-    // about specifics on all versions.  For macs it also works.  Only for downlevel Neutral locales
-    // does this have to change.
-    gc.stringResult = StringObject::NewString(buffer, result-1);
-    SetObjectReference((OBJECTREF*)&(gc.cultureData->sWindowsName), gc.stringResult, NULL);
-
-    // Neutrals and non-neutrals are slightly different
-    if (gc.cultureData->bNeutral)
-    {
-        // Neutral Locale
-
-        // IETF name looks like neutral name
-        gc.stringResult = StringObject::NewString(buffer, result-1);
-        SetObjectReference((OBJECTREF*)&(gc.cultureData->sName), gc.stringResult, NULL);
-
-        // Specific locale name is whatever ResolveLocaleName (win7+) returns.
-        // (Buffer has our name in it, and we can recycle that because windows resolves it before writing to the buffer)
-        result = NewApis::ResolveLocaleName(buffer, buffer, NumItems(buffer));
-
-        // 0 is failure, 1 is invariant (""), which we expect
-        if (result < 1) goto Exit;
-
-        // We found a locale name, so use it.
-        // In vista this should look like a sort name (de-DE_phoneb) or a specific culture (en-US) and be in the "pretty" form
-        gc.stringResult = StringObject::NewString(buffer, result - 1);
-        SetObjectReference((OBJECTREF*)&(gc.cultureData->sSpecificCulture), gc.stringResult, NULL);
-
-        if (!IsWindows7())
-        {
-            // For neutrals on Windows 7 + the neutral windows name can be the same as the neutral name,
-            // but on pre windows 7 names it has to be the specific, so we have to fix it in that case.
-            gc.stringResult = StringObject::NewString(buffer, result - 1);
-            SetObjectReference((OBJECTREF*)&(gc.cultureData->sWindowsName), gc.stringResult, NULL);
-        }
-
-
-    }
-    else
-    {
-        // Specific Locale
-
-        // Specific culture's the same as the locale name since we know its not neutral
-        // On mac we'll use this as well, even for neutrals. There's no obvious specific
-        // culture to use and this isn't exposed, but behaviorally this is correct on mac.
-        // Note that specifics include the sort name (de-DE_phoneb)
-        gc.stringResult = StringObject::NewString(buffer, result-1);
-        SetObjectReference((OBJECTREF*)&(gc.cultureData->sSpecificCulture), gc.stringResult, NULL);
-
-        // We need the IETF name (sname)
-        // If we aren't an alt sort locale then this is the same as the windows name.
-        // If we are an alt sort locale then this is the same as the part before the _ in the windows name
-        // This is for like de-DE_phoneb and es-ES_tradnl that hsouldn't have the _ part
-
-        int localeNameLength = result - 1;
-
-        LCID lcid = NewApis::LocaleNameToLCID(buffer, 0);
-        if (!IsCustomCultureId(lcid))
-        {
-            LPCWSTR index = wcschr(buffer, W('_'));
-            if(index)                               // Not a custom culture and looks like an alt sort name
-            {
-                // Looks like an alt sort, and has a appropriate sort LCID (so not custom), make it smaller for the RFC 4646 style name
-                localeNameLength = static_cast<int>(index - buffer);
-            }
-        }
-
-        gc.stringResult = StringObject::NewString(buffer, localeNameLength);
-        _ASSERTE(gc.stringResult != NULL);
-
-        // Now use that name
-        SetObjectReference((OBJECTREF*)&(gc.cultureData->sName), gc.stringResult, NULL);
-    }
-
-    // For Silverlight make sure that the sorting tables are available (< Vista may not have east asian installed)
-    result = NewApis::CompareStringEx(((STRINGREF)gc.cultureData->sWindowsName)->GetBuffer(),
-                                      0, W("A"), 1, W("B"), 1, NULL, NULL, 0);
-    if (result == 0) goto Exit;
-
-    // It succeeded.
-    success = TRUE;
-
-Exit: {}
-
-    HELPER_METHOD_FRAME_END();
-
-    FC_RETURN_BOOL(success);
-}
-FCIMPLEND
-
 
 // Return true if we're on Windows 7 (ie: if we have neutral native support)
 BOOL COMNlsInfo::IsWindows7()

@@ -28,7 +28,6 @@ namespace System.Globalization
         //
 
         public const int ChineseEra = 1;
-        //internal static Calendar m_defaultInstance;
 
         internal const int MIN_LUNISOLAR_YEAR = 1901;
         internal const int MAX_LUNISOLAR_YEAR = 2100;
@@ -71,10 +70,11 @@ namespace System.Globalization
         }
 
 
-        private static readonly int[,] yinfo =
+        private static readonly int[,] s_yinfo =
         {
- /*Y            LM        Lmon    Lday        DaysPerMonth    D1    D2    D3    D4    D5    D6    D7    D8    D9    D10    D11    D12    D13    #Days
-1901    */{    0    ,    2    ,    19    ,    19168    },/*    29    30    29    29    30    29    30    29    30    30    30    29    0    354
+            /*Y            LM        Lmon    Lday        DaysPerMonth    D1    D2    D3    D4    D5    D6    D7    D8    D9    D10    D11    D12    D13    #Days
+           1901    */
+          {    0    ,    2    ,    19    ,    19168    },/*    29    30    29    29    30    29    30    29    30    30    30    29    0    354
 1902    */{    0    ,    2    ,    8    ,    42352    },/*    30    29    30    29    29    30    29    30    29    30    30    30    0    355
 1903    */{    5    ,    1    ,    29    ,    21096    },/*    29    30    29    30    29    29    30    29    29    30    30    29    30    383
 1904    */{    0    ,    2    ,    16    ,    53856    },/*    30    30    29    30    29    29    30    29    29    30    30    29    0    354
@@ -317,19 +317,19 @@ namespace System.Globalization
             }
         }
 
-        internal override int GetYearInfo(int LunarYear, int Index)
+        internal override int GetYearInfo(int lunarYear, int index)
         {
-            if ((LunarYear < MIN_LUNISOLAR_YEAR) || (LunarYear > MAX_LUNISOLAR_YEAR))
+            if ((lunarYear < MIN_LUNISOLAR_YEAR) || (lunarYear > MAX_LUNISOLAR_YEAR))
             {
                 throw new ArgumentOutOfRangeException(
                             "year",
                             String.Format(
                                 CultureInfo.CurrentCulture,
-                                Environment.GetResourceString("ArgumentOutOfRange_Range"), MIN_LUNISOLAR_YEAR, MAX_LUNISOLAR_YEAR));
+                                SR.ArgumentOutOfRange_Range, MIN_LUNISOLAR_YEAR, MAX_LUNISOLAR_YEAR));
             }
             Contract.EndContractBlock();
 
-            return yinfo[LunarYear - MIN_LUNISOLAR_YEAR, Index];
+            return s_yinfo[lunarYear - MIN_LUNISOLAR_YEAR, index];
         }
 
         internal override int GetYear(int year, DateTime time)
@@ -341,7 +341,7 @@ namespace System.Globalization
         {
             if (era != CurrentEra && era != ChineseEra)
             {
-                throw new ArgumentOutOfRangeException(nameof(era), Environment.GetResourceString("ArgumentOutOfRange_InvalidEraValue"));
+                throw new ArgumentOutOfRangeException(nameof(era), SR.ArgumentOutOfRange_InvalidEraValue);
             }
 
             if (year < MIN_LUNISOLAR_YEAR || year > MAX_LUNISOLAR_YEAR)
@@ -350,38 +350,16 @@ namespace System.Globalization
                             nameof(year),
                             String.Format(
                                 CultureInfo.CurrentCulture,
-                                Environment.GetResourceString("ArgumentOutOfRange_Range"), MIN_LUNISOLAR_YEAR, MAX_LUNISOLAR_YEAR));
+                                SR.ArgumentOutOfRange_Range, MIN_LUNISOLAR_YEAR, MAX_LUNISOLAR_YEAR));
             }
             Contract.EndContractBlock();
 
             return year;
         }
 
-
-        /*=================================GetDefaultInstance==========================
-        **Action: Internal method to provide a default intance of ChineseLunisolarCalendar.  Used by NLS+ implementation
-        **       and other calendars.
-        **Returns:
-        **Arguments:
-        **Exceptions:
-        ============================================================================*/
-
-        /*
-        internal static Calendar GetDefaultInstance()
-        {
-            if (m_defaultInstance == null) {
-                m_defaultInstance = new ChineseLunisolarCalendar();
-            }
-            return (m_defaultInstance);
-        }
-        */
-
-        // Construct an instance of ChineseLunisolar calendar.
-
         public ChineseLunisolarCalendar()
         {
         }
-
 
         public override int GetEra(DateTime time)
         {
@@ -389,20 +367,20 @@ namespace System.Globalization
             return (ChineseEra);
         }
 
-        internal override int ID
+        internal override CalendarId ID
         {
             get
             {
-                return (CAL_CHINESELUNISOLAR);
+                return (CalendarId.CHINESELUNISOLAR);
             }
         }
 
-        internal override int BaseCalendarID
+        internal override CalendarId BaseCalendarID
         {
             get
             {
                 //Use CAL_GREGORIAN just to get CurrentEraValue as 1 since we do not have data under the ID CAL_ChineseLunisolar yet
-                return (CAL_GREGORIAN);
+                return (CalendarId.GREGORIAN);
             }
         }
 

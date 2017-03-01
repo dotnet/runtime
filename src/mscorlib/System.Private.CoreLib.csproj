@@ -561,109 +561,83 @@
     <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Metadata\AssemblyExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\DateTimeFormat.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\DateTimeParse.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\DateTimeStyles.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\NumberStyles.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\TimeSpanFormat.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\TimeSpanParse.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\DaylightTime.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(FeatureCoreFxGlobalization)' != 'true'">
     <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\BidiCategory.cs" />
     <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\Calendar.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\CalendarData.cs" />
     <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\CalendarAlgorithmType.cs" />
+    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\CalendarData.cs" />
     <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\CalendarWeekRule.cs" />
     <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\CalendricalCalculationsHelper.cs" />
     <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\CharUnicodeInfo.cs" />
+    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\CharUnicodeInfoData.cs" />
+    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\ChineseLunisolarCalendar.cs" />
     <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\CompareInfo.cs" />
+    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\CultureData.cs" />
     <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\CultureInfo.cs" />
     <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\CultureNotFoundException.cs" />
     <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\CultureTypes.cs" />
+    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\DaylightTime.cs" />
+    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\DateTimeFormat.cs" />
     <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\DateTimeFormatInfo.cs" />
     <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\DateTimeFormatInfoScanner.cs" />
+    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\DateTimeParse.cs" />
+    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\DateTimeStyles.cs" />
     <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\DigitShapes.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\EncodingDataItem.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\EncodingTable.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\GlobalizationAssembly.cs" />
+    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\EastAsianLunisolarCalendar.cs" />
     <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\GregorianCalendar.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\GregorianCalendarTypes.cs" />
     <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\GregorianCalendarHelper.cs" />
+    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\GregorianCalendarTypes.cs" />
     <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\HebrewCalendar.cs" />
+    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\HebrewNumber.cs" />
     <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\HijriCalendar.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\UmAlQuraCalendar.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\PersianCalendar.cs" />
     <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\IdnMapping.cs" />
+    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\InternalGlobalizationHelper.cs" />
     <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\JapaneseCalendar.cs" />
+    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\JapaneseLunisolarCalendar.cs" />
+    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\JulianCalendar.cs" />
     <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\KoreanCalendar.cs" />
+    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\KoreanLunisolarCalendar.cs" />
+    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\NumberFormatInfo.cs" />
+    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\NumberStyles.cs" />
+    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\PersianCalendar.cs" />
     <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\RegionInfo.cs" />
     <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\SortKey.cs" />
     <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\SortVersion.cs" />
     <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\StringInfo.cs" />
     <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\TaiwanCalendar.cs" />
+    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\TaiwanLunisolarCalendar.cs" />
     <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\TextElementEnumerator.cs" />
     <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\TextInfo.cs" />
     <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\ThaiBuddhistCalendar.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\TimeSpanStyles.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\NumberFormatInfo.cs" />
+    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\TimeSpanFormat.cs" />
+    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\TimeSpanParse.cs" />
+    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\UmAlQuraCalendar.cs" />
     <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\UnicodeCategory.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\CultureData.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\HebrewNumber.cs" />
-    <MscorlibSources Condition="'$(FeatureOnlyCoreCalendars)'==''" Include="$(BclSourcesRoot)\System\Globalization\ChineseLunisolarCalendar.cs" />
-    <MscorlibSources Condition="'$(FeatureOnlyCoreCalendars)'==''" Include="$(BclSourcesRoot)\System\Globalization\EastAsianLunisolarCalendar.cs" />
-    <MscorlibSources Condition="'$(FeatureOnlyCoreCalendars)'==''" Include="$(BclSourcesRoot)\System\Globalization\JapaneseLunisolarCalendar.cs" />
-    <MscorlibSources Condition="'$(FeatureOnlyCoreCalendars)'==''" Include="$(BclSourcesRoot)\System\Globalization\JulianCalendar.cs" />
-    <MscorlibSources Condition="'$(FeatureOnlyCoreCalendars)'==''" Include="$(BclSourcesRoot)\System\Globalization\KoreanLunisolarCalendar.cs" />
-    <MscorlibSources Condition="'$(FeatureOnlyCoreCalendars)'==''" Include="$(BclSourcesRoot)\System\Globalization\TaiwanLunisolarCalendar.cs" />
+    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\TimeSpanStyles.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(FeatureCoreFxGlobalization)' != 'true'">
+    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\EncodingDataItem.cs" />
+    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\EncodingTable.cs" />
+    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\GlobalizationAssembly.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\CalendarData.Unix.cs" />
+    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\CompareInfo.Unix.cs" />
+    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\CultureData.Unix.cs" />
+    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\CultureInfo.Unix.cs" />
+    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\TextInfo.Unix.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' != 'true'">
+    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\CalendarData.Windows.cs" />
+    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\CompareInfo.Windows.cs" />
+    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\CultureData.Windows.cs" />
+    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\CultureInfo.Windows.cs" />
+    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\HijriCalendar.Win32.cs" />
+    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\IdnMapping.Windows.cs" />
+    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\JapaneseCalendar.Win32.cs" />
+    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\TextInfo.Windows.cs" />
   </ItemGroup>
   <ItemGroup>
     <MscorlibSources Include="$(CoreFxSourcesRoot)\SR.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(FeatureCoreFxGlobalization)' == 'true'">
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\Calendar.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\CalendarAlgorithmType.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\CalendarData.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\CalendarWeekRule.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\CalendricalCalculationsHelper.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\CharUnicodeInfo.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\CharUnicodeInfoData.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\ChineseLunisolarCalendar.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\CompareInfo.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\CultureData.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\CultureInfo.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\CultureTypes.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\CultureNotFoundException.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\DateTimeFormatInfo.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\DateTimeFormatInfoScanner.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\EastAsianLunisolarCalendar.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\GregorianCalendar.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\GregorianCalendarHelper.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\GregorianCalendarTypes.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\HebrewCalendar.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\HebrewNumber.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\HijriCalendar.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\IdnMapping.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\InternalGlobalizationHelper.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\JapaneseCalendar.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\JapaneseLunisolarCalendar.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\JulianCalendar.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\KoreanCalendar.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\KoreanLunisolarCalendar.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\NumberFormatInfo.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\PersianCalendar.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\RegionInfo.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\SortKey.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\SortVersion.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\StringInfo.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\TaiwanCalendar.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\TaiwanLunisolarCalendar.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\TextElementEnumerator.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\TextInfo.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\ThaiBuddhistCalendar.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\TimeSpanStyles.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\UmAlQuraCalendar.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\UnicodeCategory.cs " />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureCoreFxGlobalization)' == 'true' and '$(TargetsUnix)' == 'true'">
     <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\EncodingTable.Unix.cs" />
@@ -678,16 +652,10 @@
     <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.ResultCode.cs" />
     <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.TimeZoneInfo.cs" />
     <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Utils.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\CalendarData.Unix.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\CompareInfo.Unix.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\CultureData.Unix.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\CultureInfo.Unix.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\DigitShapes.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\HijriCalendar.Unix.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\IdnMapping.Unix.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\JapaneseCalendar.Unix.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\LocaleData.Unix.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Globalization\TextInfo.Unix.cs" />
+    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\HijriCalendar.Unix.cs" />
+    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\IdnMapping.Unix.cs" />
+    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\JapaneseCalendar.Unix.cs" />
+    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\LocaleData.Unix.cs" />
   </ItemGroup>
   <ItemGroup>
     <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\AbandonedMutexException.cs" />
@@ -994,6 +962,8 @@
   <ItemGroup Condition="'$(TargetsUnix)' != 'true'">
     <MscorlibSources Include="$(CoreFxSourcesRoot)\System\HResults.cs" />
     <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.CreateFile.cs" />
+    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.Globalization.cs" />
+    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Windows\Normaliz\Interop.Idna.cs" />
     <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.SetFileInformationByHandle.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -1060,11 +1030,6 @@
     <Exec Command="python $(MSBuildThisFileDirectory)..\scripts\check-definitions.py &quot;$(CMakeDefinitionSaveFile)&quot; &quot;$(DefineConstants)&quot; &quot;$(IgnoreDefineConstants)&quot; " />
     <Message Importance="High" Text="============" />
   </Target>
-  <ItemGroup>
-    <EmbeddedResource Include="$(NlpObjDir)\charinfo.nlp">
-      <LogicalName>charinfo.nlp</LogicalName>
-    </EmbeddedResource>
-  </ItemGroup>
   <PropertyGroup Condition="'$(BuildOS)' == 'Windows_NT'">
     <EnableDotnetAnalyzers Condition="'$(EnableDotnetAnalyzers)'==''">true</EnableDotnetAnalyzers>
     <UseWin32Apis>true</UseWin32Apis>

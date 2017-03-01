@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Runtime.Serialization;
-using System.Text;
 using System;
 using System.Diagnostics.Contracts;
+using System.Runtime.Serialization;
+using System.Text;
 
 namespace System.Globalization
 {
@@ -42,10 +42,10 @@ namespace System.Globalization
     //
 
     [Serializable]
-    sealed public partial class NumberFormatInfo : ICloneable, IFormatProvider
+    sealed public class NumberFormatInfo : IFormatProvider, ICloneable
     {
         // invariantInfo is constant irrespective of your current culture.
-        private static volatile NumberFormatInfo invariantInfo;
+        private static volatile NumberFormatInfo s_invariantInfo;
 
         // READTHIS READTHIS READTHIS
         // This class has an exact mapping onto a native structure defined in COMNumber.cpp
@@ -62,10 +62,6 @@ namespace System.Globalization
         internal String currencyGroupSeparator = ",";
         internal String currencyDecimalSeparator = ".";
         internal String currencySymbol = "\x00a4";  // U+00a4 is the symbol for International Monetary Fund.
-        // The alternative currency symbol used in Win9x ANSI codepage, that can not roundtrip between ANSI and Unicode.
-        // Currently, only ja-JP and ko-KR has non-null values (which is U+005c, backslash)
-        // NOTE: The only legal values for this string are null and "\x005c"
-        internal String ansiCurrencySymbol = null;
         internal String nanSymbol = "NaN";
         internal String positiveInfinitySymbol = "Infinity";
         internal String negativeInfinitySymbol = "-Infinity";
@@ -74,14 +70,9 @@ namespace System.Globalization
         internal String percentSymbol = "%";
         internal String perMilleSymbol = "\u2030";
 
+
         [OptionalField(VersionAdded = 2)]
         internal String[] nativeDigits = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" };
-
-        // an index which points to a record in Culture Data Table.
-        // We shouldn't be persisting dataItem (since its useless & we weren't using it),
-        // but since COMNumber.cpp uses it and since serialization isn't implimented, its stuck for now.
-        [OptionalField(VersionAdded = 1)]
-        internal int m_dataItem = 0;    // NEVER USED, DO NOT USE THIS! (Serialized in Everett)
 
         internal int numberDecimalDigits = 2;
         internal int currencyDecimalDigits = 2;
@@ -93,15 +84,12 @@ namespace System.Globalization
         internal int percentDecimalDigits = 2;
 
         [OptionalField(VersionAdded = 2)]
-        internal int digitSubstitution = 1; // DigitShapes.None
+        internal int digitSubstitution = (int) DigitShapes.None;
 
         internal bool isReadOnly = false;
-        // We shouldn't be persisting m_useUserOverride (since its useless & we weren't using it),
-        // but since COMNumber.cpp uses it and since serialization isn't implimented, its stuck for now.
-        [OptionalField(VersionAdded = 1)]
-        internal bool m_useUserOverride = false;    // NEVER USED, DO NOT USE THIS! (Serialized in Everett)
 
         // Is this NumberFormatInfo for invariant culture?
+
         [OptionalField(VersionAdded = 2)]
         internal bool m_isInvariant = false;
 
@@ -109,67 +97,50 @@ namespace System.Globalization
         {
         }
 
-        #region Serialization
-        // Check if NumberFormatInfo was not set up ambiguously for parsing as number and currency
-        // eg. if the NumberDecimalSeparator and the NumberGroupSeparator were the same. This check
-        // is solely for backwards compatibility / version tolerant serialization
-        [OptionalField(VersionAdded = 1)]
-        internal bool validForParseAsNumber = true;     // NEVER USED, DO NOT USE THIS! (Serialized in Whidbey/Everett)
-        [OptionalField(VersionAdded = 1)]
-        internal bool validForParseAsCurrency = true;   // NEVER USED, DO NOT USE THIS! (Serialized in Whidbey/Everett)
-
         [OnSerializing]
-        private void OnSerializing(StreamingContext ctx)
-        {
-        }
+        private void OnSerializing(StreamingContext ctx) { }
 
         [OnDeserializing]
-        private void OnDeserializing(StreamingContext ctx)
-        {
-        }
+        private void OnDeserializing(StreamingContext ctx) { }
 
         [OnDeserialized]
-        private void OnDeserialized(StreamingContext ctx)
-        {
-        }
-        #endregion Serialization
+        private void OnDeserialized(StreamingContext ctx) { }
 
-        static private void VerifyDecimalSeparator(String decSep, String propertyName)
+        private static void VerifyDecimalSeparator(String decSep, String propertyName)
         {
             if (decSep == null)
             {
                 throw new ArgumentNullException(propertyName,
-                        Environment.GetResourceString("ArgumentNull_String"));
+                        SR.ArgumentNull_String);
             }
 
             if (decSep.Length == 0)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyDecString"));
+                throw new ArgumentException(SR.Argument_EmptyDecString);
             }
             Contract.EndContractBlock();
         }
 
-        static private void VerifyGroupSeparator(String groupSep, String propertyName)
+        private static void VerifyGroupSeparator(String groupSep, String propertyName)
         {
             if (groupSep == null)
             {
                 throw new ArgumentNullException(propertyName,
-                        Environment.GetResourceString("ArgumentNull_String"));
+                        SR.ArgumentNull_String);
             }
             Contract.EndContractBlock();
         }
 
-        static private void VerifyNativeDigits(String[] nativeDig, String propertyName)
+        private static void VerifyNativeDigits(string [] nativeDig, string propertyName)
         {
             if (nativeDig == null)
             {
-                throw new ArgumentNullException(propertyName,
-                        Environment.GetResourceString("ArgumentNull_Array"));
+                throw new ArgumentNullException(propertyName, SR.ArgumentNull_Array);
             }
 
             if (nativeDig.Length != 10)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidNativeDigitCount"), propertyName);
+                throw new ArgumentException(SR.Argument_InvalidNativeDigitCount, propertyName);
             }
             Contract.EndContractBlock();
 
@@ -177,22 +148,20 @@ namespace System.Globalization
             {
                 if (nativeDig[i] == null)
                 {
-                    throw new ArgumentNullException(propertyName,
-                            Environment.GetResourceString("ArgumentNull_ArrayValue"));
+                    throw new ArgumentNullException(propertyName, SR.ArgumentNull_ArrayValue);
                 }
-
 
                 if (nativeDig[i].Length != 1)
                 {
                     if (nativeDig[i].Length != 2)
                     {
                         // Not 1 or 2 UTF-16 code points
-                        throw new ArgumentException(Environment.GetResourceString("Argument_InvalidNativeDigitValue"), propertyName);
-                    }
+                        throw new ArgumentException(SR.Argument_InvalidNativeDigitValue, propertyName);
+                    } 
                     else if (!char.IsSurrogatePair(nativeDig[i][0], nativeDig[i][1]))
                     {
                         // 2 UTF-6 code points, but not a surrogate pair
-                        throw new ArgumentException(Environment.GetResourceString("Argument_InvalidNativeDigitValue"), propertyName);
+                        throw new ArgumentException(SR.Argument_InvalidNativeDigitValue, propertyName);
                     }
                 }
 
@@ -201,13 +170,13 @@ namespace System.Globalization
                 {
                     // Not the appropriate digit according to the Unicode data properties
                     // (Digit 0 must be a 0, etc.).
-                    throw new ArgumentException(Environment.GetResourceString("Argument_InvalidNativeDigitValue"), propertyName);
+                    throw new ArgumentException(SR.Argument_InvalidNativeDigitValue, propertyName);
                 }
             }
         }
 
-        static private void VerifyDigitSubstitution(DigitShapes digitSub, String propertyName)
-        {
+         private static void VerifyDigitSubstitution(DigitShapes digitSub, string propertyName)
+         {
             switch (digitSub)
             {
                 case DigitShapes.Context:
@@ -217,12 +186,10 @@ namespace System.Globalization
                     break;
 
                 default:
-                    throw new ArgumentException(Environment.GetResourceString("Argument_InvalidDigitSubstitution"), propertyName);
+                    throw new ArgumentException(SR.Argument_InvalidDigitSubstitution, propertyName);
             }
         }
 
-        // We aren't persisting dataItem any more (since its useless & we weren't using it),
-        // Ditto with m_useUserOverride.  Don't use them, we use a local copy of everything.
         internal NumberFormatInfo(CultureData cultureData)
         {
             if (cultureData != null)
@@ -244,7 +211,7 @@ namespace System.Globalization
         {
             if (isReadOnly)
             {
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_ReadOnly"));
+                throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
             }
             Contract.EndContractBlock();
         }
@@ -258,25 +225,24 @@ namespace System.Globalization
         {
             get
             {
-                if (invariantInfo == null)
+                if (s_invariantInfo == null)
                 {
                     // Lazy create the invariant info. This cannot be done in a .cctor because exceptions can
                     // be thrown out of a .cctor stack that will need this.
                     NumberFormatInfo nfi = new NumberFormatInfo();
                     nfi.m_isInvariant = true;
-                    invariantInfo = ReadOnly(nfi);
+                    s_invariantInfo = ReadOnly(nfi);
                 }
-                return invariantInfo;
+                return s_invariantInfo;
             }
         }
-
 
         public static NumberFormatInfo GetInstance(IFormatProvider formatProvider)
         {
             // Fast case for a regular CultureInfo
             NumberFormatInfo info;
             CultureInfo cultureProvider = formatProvider as CultureInfo;
-            if (cultureProvider != null && !cultureProvider.m_isInherited)
+            if (cultureProvider != null && !cultureProvider._isInherited)
             {
                 info = cultureProvider.numInfo;
                 if (info != null)
@@ -326,7 +292,7 @@ namespace System.Globalization
                                 nameof(CurrencyDecimalDigits),
                                 String.Format(
                                     CultureInfo.CurrentCulture,
-                                    Environment.GetResourceString("ArgumentOutOfRange_Range"),
+                                    SR.ArgumentOutOfRange_Range,
                                     0,
                                     99));
                 }
@@ -343,7 +309,7 @@ namespace System.Globalization
             set
             {
                 VerifyWritable();
-                VerifyDecimalSeparator(value, nameof(CurrencyDecimalSeparator));
+                VerifyDecimalSeparator(value, "CurrencyDecimalSeparator");
                 currencyDecimalSeparator = value;
             }
         }
@@ -363,7 +329,7 @@ namespace System.Globalization
         // Every element in the groupSize array should be between 1 and 9
         // excpet the last element could be zero.
         //
-        static internal void CheckGroupSize(String propName, int[] groupSize)
+        internal static void CheckGroupSize(String propName, int[] groupSize)
         {
             for (int i = 0; i < groupSize.Length; i++)
             {
@@ -371,11 +337,11 @@ namespace System.Globalization
                 {
                     if (i == groupSize.Length - 1 && groupSize[i] == 0)
                         return;
-                    throw new ArgumentException(Environment.GetResourceString("Argument_InvalidGroupSize"), propName);
+                    throw new ArgumentException(SR.Argument_InvalidGroupSize, propName);
                 }
                 else if (groupSize[i] > 9)
                 {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_InvalidGroupSize"), propName);
+                    throw new ArgumentException(SR.Argument_InvalidGroupSize, propName);
                 }
             }
         }
@@ -392,7 +358,7 @@ namespace System.Globalization
                 if (value == null)
                 {
                     throw new ArgumentNullException(nameof(CurrencyGroupSizes),
-                        Environment.GetResourceString("ArgumentNull_Obj"));
+                        SR.ArgumentNull_Obj);
                 }
                 Contract.EndContractBlock();
                 VerifyWritable();
@@ -416,7 +382,7 @@ namespace System.Globalization
                 if (value == null)
                 {
                     throw new ArgumentNullException(nameof(NumberGroupSizes),
-                        Environment.GetResourceString("ArgumentNull_Obj"));
+                        SR.ArgumentNull_Obj);
                 }
                 Contract.EndContractBlock();
                 VerifyWritable();
@@ -438,13 +404,13 @@ namespace System.Globalization
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException(nameof(PercentGroupSizes),
-                        Environment.GetResourceString("ArgumentNull_Obj"));
+                    throw new ArgumentNullException("PercentGroupSizes",
+                        SR.ArgumentNull_Obj);
                 }
                 Contract.EndContractBlock();
                 VerifyWritable();
                 Int32[] inputSizes = (Int32[])value.Clone();
-                CheckGroupSize(nameof(PercentGroupSizes), inputSizes);
+                CheckGroupSize("PercentGroupSizes", inputSizes);
                 percentGroupSizes = inputSizes;
             }
         }
@@ -470,7 +436,7 @@ namespace System.Globalization
                 if (value == null)
                 {
                     throw new ArgumentNullException(nameof(CurrencySymbol),
-                        Environment.GetResourceString("ArgumentNull_String"));
+                        SR.ArgumentNull_String);
                 }
                 Contract.EndContractBlock();
                 VerifyWritable();
@@ -485,8 +451,8 @@ namespace System.Globalization
         {
             get
             {
-                System.Globalization.CultureInfo culture = System.Threading.Thread.CurrentThread.CurrentCulture;
-                if (!culture.m_isInherited)
+                System.Globalization.CultureInfo culture = CultureInfo.CurrentCulture;
+                if (!culture._isInherited)
                 {
                     NumberFormatInfo info = culture.numInfo;
                     if (info != null)
@@ -510,7 +476,7 @@ namespace System.Globalization
                 if (value == null)
                 {
                     throw new ArgumentNullException(nameof(NaNSymbol),
-                        Environment.GetResourceString("ArgumentNull_String"));
+                        SR.ArgumentNull_String);
                 }
                 Contract.EndContractBlock();
                 VerifyWritable();
@@ -531,7 +497,7 @@ namespace System.Globalization
                                 nameof(CurrencyNegativePattern),
                                 String.Format(
                                     CultureInfo.CurrentCulture,
-                                    Environment.GetResourceString("ArgumentOutOfRange_Range"),
+                                    SR.ArgumentOutOfRange_Range,
                                     0,
                                     15));
                 }
@@ -556,7 +522,7 @@ namespace System.Globalization
                                 nameof(NumberNegativePattern),
                                 String.Format(
                                     CultureInfo.CurrentCulture,
-                                    Environment.GetResourceString("ArgumentOutOfRange_Range"),
+                                    SR.ArgumentOutOfRange_Range,
                                     0,
                                     4));
                 }
@@ -581,7 +547,7 @@ namespace System.Globalization
                                 nameof(PercentPositivePattern),
                                 String.Format(
                                     CultureInfo.CurrentCulture,
-                                    Environment.GetResourceString("ArgumentOutOfRange_Range"),
+                                    SR.ArgumentOutOfRange_Range,
                                     0,
                                     3));
                 }
@@ -606,7 +572,7 @@ namespace System.Globalization
                                 nameof(PercentNegativePattern),
                                 String.Format(
                                     CultureInfo.CurrentCulture,
-                                    Environment.GetResourceString("ArgumentOutOfRange_Range"),
+                                    SR.ArgumentOutOfRange_Range,
                                     0,
                                     11));
                 }
@@ -628,7 +594,7 @@ namespace System.Globalization
                 if (value == null)
                 {
                     throw new ArgumentNullException(nameof(NegativeInfinitySymbol),
-                        Environment.GetResourceString("ArgumentNull_String"));
+                        SR.ArgumentNull_String);
                 }
                 Contract.EndContractBlock();
                 VerifyWritable();
@@ -645,7 +611,7 @@ namespace System.Globalization
                 if (value == null)
                 {
                     throw new ArgumentNullException(nameof(NegativeSign),
-                        Environment.GetResourceString("ArgumentNull_String"));
+                        SR.ArgumentNull_String);
                 }
                 Contract.EndContractBlock();
                 VerifyWritable();
@@ -665,7 +631,7 @@ namespace System.Globalization
                                 nameof(NumberDecimalDigits),
                                 String.Format(
                                     CultureInfo.CurrentCulture,
-                                    Environment.GetResourceString("ArgumentOutOfRange_Range"),
+                                    SR.ArgumentOutOfRange_Range,
                                     0,
                                     99));
                 }
@@ -711,7 +677,7 @@ namespace System.Globalization
                                 nameof(CurrencyPositivePattern),
                                 String.Format(
                                     CultureInfo.CurrentCulture,
-                                    Environment.GetResourceString("ArgumentOutOfRange_Range"),
+                                    SR.ArgumentOutOfRange_Range,
                                     0,
                                     3));
                 }
@@ -733,7 +699,7 @@ namespace System.Globalization
                 if (value == null)
                 {
                     throw new ArgumentNullException(nameof(PositiveInfinitySymbol),
-                        Environment.GetResourceString("ArgumentNull_String"));
+                        SR.ArgumentNull_String);
                 }
                 Contract.EndContractBlock();
                 VerifyWritable();
@@ -750,7 +716,7 @@ namespace System.Globalization
                 if (value == null)
                 {
                     throw new ArgumentNullException(nameof(PositiveSign),
-                        Environment.GetResourceString("ArgumentNull_String"));
+                        SR.ArgumentNull_String);
                 }
                 Contract.EndContractBlock();
                 VerifyWritable();
@@ -770,7 +736,7 @@ namespace System.Globalization
                                 nameof(PercentDecimalDigits),
                                 String.Format(
                                     CultureInfo.CurrentCulture,
-                                    Environment.GetResourceString("ArgumentOutOfRange_Range"),
+                                    SR.ArgumentOutOfRange_Range,
                                     0,
                                     99));
                 }
@@ -816,7 +782,7 @@ namespace System.Globalization
                 if (value == null)
                 {
                     throw new ArgumentNullException(nameof(PercentSymbol),
-                        Environment.GetResourceString("ArgumentNull_String"));
+                        SR.ArgumentNull_String);
                 }
                 Contract.EndContractBlock();
                 VerifyWritable();
@@ -833,7 +799,7 @@ namespace System.Globalization
                 if (value == null)
                 {
                     throw new ArgumentNullException(nameof(PerMilleSymbol),
-                        Environment.GetResourceString("ArgumentNull_String"));
+                        SR.ArgumentNull_String);
                 }
                 Contract.EndContractBlock();
                 VerifyWritable();
@@ -841,10 +807,9 @@ namespace System.Globalization
             }
         }
 
-
-        public String[] NativeDigits
+        public string [] NativeDigits
         {
-            get { return (String[])nativeDigits.Clone(); }
+            get { return (String[]) nativeDigits.Clone(); }
             set
             {
                 VerifyWritable();
@@ -855,12 +820,12 @@ namespace System.Globalization
 
         public DigitShapes DigitSubstitution
         {
-            get { return (DigitShapes)digitSubstitution; }
+            get { return (DigitShapes) digitSubstitution; } 
             set
             {
                 VerifyWritable();
                 VerifyDigitSubstitution(value, nameof(DigitSubstitution));
-                digitSubstitution = (int)value;
+                digitSubstitution = (int) value;
             }
         }
 
@@ -897,14 +862,14 @@ namespace System.Globalization
             // Check for undefined flags
             if ((style & InvalidNumberStyles) != 0)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidNumberStyles"), nameof(style));
+                throw new ArgumentException(SR.Argument_InvalidNumberStyles, nameof(style));
             }
             Contract.EndContractBlock();
             if ((style & NumberStyles.AllowHexSpecifier) != 0)
             { // Check for hex number
                 if ((style & ~NumberStyles.HexNumber) != 0)
                 {
-                    throw new ArgumentException(Environment.GetResourceString("Arg_InvalidHexStyle"));
+                    throw new ArgumentException(SR.Arg_InvalidHexStyle);
                 }
             }
         }
@@ -914,12 +879,12 @@ namespace System.Globalization
             // Check for undefined flags
             if ((style & InvalidNumberStyles) != 0)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidNumberStyles"), nameof(style));
+                throw new ArgumentException(SR.Argument_InvalidNumberStyles, nameof(style));
             }
             Contract.EndContractBlock();
             if ((style & NumberStyles.AllowHexSpecifier) != 0)
             { // Check for hex number
-                throw new ArgumentException(Environment.GetResourceString("Arg_HexStyleNotSupported"));
+                throw new ArgumentException(SR.Arg_HexStyleNotSupported);
             }
         }
     } // NumberFormatInfo

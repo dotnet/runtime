@@ -29,8 +29,6 @@ namespace System.Globalization
 
         public const int GregorianEra = 1;
 
-        //internal static Calendar m_defaultInstance;
-
         internal const int MIN_LUNISOLAR_YEAR = 918;
         internal const int MAX_LUNISOLAR_YEAR = 2050;
 
@@ -73,10 +71,11 @@ namespace System.Globalization
             }
         }
 
-        private static readonly int[,] yinfo =
+        private static readonly int[,] s_yinfo =
         {
-/*Y            LM        Lmon    Lday        DaysPerMonth    D1    D2    D3    D4    D5    D6    D7    D8    D9    D10    D11    D12    D13    #Days
-918    */{    0    ,    2    ,    14    ,    21936    },/*    29    30    29    30    29    30    29    30    30    29    30    30    0    355
+            /*Y            LM        Lmon    Lday        DaysPerMonth    D1    D2    D3    D4    D5    D6    D7    D8    D9    D10    D11    D12    D13    #Days
+            918    */
+         {    0    ,    2    ,    14    ,    21936    },/*    29    30    29    30    29    30    29    30    30    29    30    30    0    355
 919    */{    0    ,    2    ,    4    ,    17872    },/*    29    30    29    29    29    30    29    30    30    30    29    30    0    354
 920    */{    6    ,    1    ,    24    ,    41688    },/*    30    29    30    29    29    29    30    29    30    30    29    30    30    384
 921    */{    0    ,    2    ,    11    ,    41648    },/*    30    29    30    29    29    29    30    29    30    29    30    30    0    354
@@ -1252,20 +1251,20 @@ namespace System.Globalization
             }
         }
 
-        internal override int GetYearInfo(int LunarYear, int Index)
+        internal override int GetYearInfo(int lunarYear, int index)
         {
-            if ((LunarYear < MIN_LUNISOLAR_YEAR) || (LunarYear > MAX_LUNISOLAR_YEAR))
+            if ((lunarYear < MIN_LUNISOLAR_YEAR) || (lunarYear > MAX_LUNISOLAR_YEAR))
             {
                 throw new ArgumentOutOfRangeException(
                             "year",
                             String.Format(
                                 CultureInfo.CurrentCulture,
-                                Environment.GetResourceString("ArgumentOutOfRange_Range"),
+                                SR.ArgumentOutOfRange_Range,
                                 MIN_LUNISOLAR_YEAR,
                                 MAX_LUNISOLAR_YEAR));
             }
             Contract.EndContractBlock();
-            return yinfo[LunarYear - MIN_LUNISOLAR_YEAR, Index];
+            return s_yinfo[lunarYear - MIN_LUNISOLAR_YEAR, index];
         }
 
         internal override int GetYear(int year, DateTime time)
@@ -1276,7 +1275,7 @@ namespace System.Globalization
         internal override int GetGregorianYear(int year, int era)
         {
             if (era != CurrentEra && era != GregorianEra)
-                throw new ArgumentOutOfRangeException(nameof(era), Environment.GetResourceString("ArgumentOutOfRange_InvalidEraValue"));
+                throw new ArgumentOutOfRangeException(nameof(era), SR.ArgumentOutOfRange_InvalidEraValue);
 
             if (year < MIN_LUNISOLAR_YEAR || year > MAX_LUNISOLAR_YEAR)
             {
@@ -1284,37 +1283,16 @@ namespace System.Globalization
                             nameof(year),
                             String.Format(
                                 CultureInfo.CurrentCulture,
-                                Environment.GetResourceString("ArgumentOutOfRange_Range"), MIN_LUNISOLAR_YEAR, MAX_LUNISOLAR_YEAR));
+                                SR.ArgumentOutOfRange_Range, MIN_LUNISOLAR_YEAR, MAX_LUNISOLAR_YEAR));
             }
             Contract.EndContractBlock();
 
             return year;
         }
 
-        /*=================================GetDefaultInstance==========================
-        **Action: Internal method to provide a default intance of KoreanLunisolarCalendar.  Used by NLS+ implementation
-        **       and other calendars.
-        **Returns:
-        **Arguments:
-        **Exceptions:
-        ============================================================================*/
-        /*
-        internal static Calendar GetDefaultInstance()
-        {
-            if (m_defaultInstance == null) {
-                m_defaultInstance = new KoreanLunisolarCalendar();
-            }
-            return (m_defaultInstance);
-        }
-        */
-
-        // Construct an instance of KoreanLunisolar calendar.
-
         public KoreanLunisolarCalendar()
         {
         }
-
-
 
         public override int GetEra(DateTime time)
         {
@@ -1322,19 +1300,19 @@ namespace System.Globalization
             return (GregorianEra);
         }
 
-        internal override int BaseCalendarID
+        internal override CalendarId BaseCalendarID
         {
             get
             {
-                return (CAL_KOREA);
+                return (CalendarId.KOREA);
             }
         }
 
-        internal override int ID
+        internal override CalendarId ID
         {
             get
             {
-                return (CAL_KOREANLUNISOLAR);
+                return (CalendarId.KOREANLUNISOLAR);
             }
         }
 

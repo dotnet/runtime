@@ -63,7 +63,6 @@ class CharTypeTable;
 class CasingTable;
 class SortingTable;
 class NativeTextInfo;
-class CultureDataBaseObject;
 
 class COMNlsInfo {
 
@@ -91,13 +90,12 @@ public:
     //
     //  Native helper functions for CultureData
     //
-    static FCDECL1(FC_BOOL_RET, nativeInitCultureData, CultureDataBaseObject *data);
     static FCDECL3(FC_BOOL_RET, nativeGetNumberFormatInfoValues, StringObject* localeNameUNSAFE, NumberFormatInfo* nfi, CLR_BOOL useUserOverride);
     static FCDECL1(Object*, LCIDToLocaleName, LCID lcid);
     static FCDECL1(INT32, LocaleNameToLCID, StringObject* localeNameUNSAFE);
 
     static INT32 QCALLTYPE InternalCompareString (INT_PTR handle, INT_PTR handleOrigin, LPCWSTR localeName, LPCWSTR string1, INT32 offset1, INT32 length1, LPCWSTR string2, INT32 offset2, INT32 length2, INT32 flags);
-    static INT32 QCALLTYPE InternalGetGlobalizedHashCode(INT_PTR handle, INT_PTR handleOrigin, LPCWSTR localeName, LPCWSTR pString, INT32 length, INT32 dwFlagsIn, BOOL bForceRandomizedHashing, INT64 additionalEntropy);
+    static INT32 QCALLTYPE InternalGetGlobalizedHashCode(INT_PTR handle, LPCWSTR localeName, LPCWSTR pString, INT32 length, INT32 dwFlagsIn, INT64 additionalEntropy);
 
     static BOOL QCALLTYPE InternalIsSortable(INT_PTR handle, INT_PTR handleOrigin, LPCWSTR localeName, LPCWSTR pString, INT32 length);
     static INT_PTR QCALLTYPE InternalInitSortHandle(LPCWSTR localeName, INT_PTR* handleOrigin);
@@ -215,8 +213,6 @@ private:
 
     const static int m_nCodePageTableItems;
     const static CodePageDataItem CodePageDataTable[];
-
-    static INT_PTR EnsureValidSortHandle(INT_PTR handle, INT_PTR handleOrigin, LPCWSTR localeName);
 };
 
 #endif  // _NLSINFO_H_
