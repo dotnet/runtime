@@ -1671,6 +1671,13 @@ mono_assembly_open_from_bundle (const char *filename, MonoImageOpenStatus *statu
 MonoAssembly *
 mono_assembly_open_full (const char *filename, MonoImageOpenStatus *status, gboolean refonly)
 {
+	return mono_assembly_open_a_lot (filename, status, refonly, FALSE);
+}
+
+MonoAssembly *
+mono_assembly_open_a_lot (const char *filename, MonoImageOpenStatus *status, gboolean refonly, gboolean load_from_context)
+{
+
 	MonoImage *image;
 	MonoAssembly *ass;
 	MonoImageOpenStatus def_status;

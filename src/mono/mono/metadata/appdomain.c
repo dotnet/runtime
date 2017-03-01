@@ -39,6 +39,7 @@
 #include <mono/metadata/domain-internals.h>
 #include "mono/metadata/metadata-internals.h"
 #include <mono/metadata/assembly.h>
+#include <mono/metadata/assembly-internals.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/exception-internals.h>
 #include <mono/metadata/threads.h>
@@ -2054,7 +2055,7 @@ ves_icall_System_Reflection_Assembly_LoadFrom (MonoStringHandle fname, MonoBoole
 	if (!is_ok (error))
 		goto leave;
 	
-	MonoAssembly *ass = mono_assembly_open_full (filename, &status, refOnly);
+	MonoAssembly *ass = mono_assembly_open_a_lot (filename, &status, refOnly, TRUE);
 	
 	if (!ass) {
 		if (status == MONO_IMAGE_IMAGE_INVALID)
