@@ -1580,143 +1580,33 @@ private:
     OBJECTREF numInfo;
     OBJECTREF dateTimeInfo;
     OBJECTREF calendar;
-    OBJECTREF m_cultureData;
-    OBJECTREF m_consoleFallbackCulture;
-    STRINGREF m_name;                       // "real" name - en-US, de-DE_phoneb or fj-FJ
-    STRINGREF m_nonSortName;                // name w/o sort info (de-DE for de-DE_phoneb)
-    STRINGREF m_sortName;                   // Sort only name (de-DE_phoneb, en-us for fj-fj (w/us sort)
-    CULTUREINFOBASEREF m_parent;
-#ifndef FEATURE_COREFX_GLOBALIZATION
-    INT32    iDataItem;                     // NEVER USED, DO NOT USE THIS! (Serialized in Whidbey/Everett)
-    INT32    iCultureID;                    // NEVER USED, DO NOT USE THIS! (Serialized in Whidbey/Everett)
-#endif // !FEATURE_COREFX_GLOBALIZATION
-    CLR_BOOL m_isReadOnly;
-    CLR_BOOL m_isInherited;
-    CLR_BOOL m_useUserOverride;
+    OBJECTREF _cultureData;
+    OBJECTREF _consoleFallbackCulture;
+    STRINGREF _name;                       // "real" name - en-US, de-DE_phoneb or fj-FJ
+    STRINGREF _nonSortName;                // name w/o sort info (de-DE for de-DE_phoneb)
+    STRINGREF _sortName;                   // Sort only name (de-DE_phoneb, en-us for fj-fj (w/us sort)
+    CULTUREINFOBASEREF _parent;
+    CLR_BOOL _isReadOnly;
+    CLR_BOOL _isInherited;
+    CLR_BOOL _useUserOverride;
 
 public:
     CULTUREINFOBASEREF GetParent()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_parent;
+        return _parent;
     }// GetParent
 
 
     STRINGREF GetName()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_name;
+        return _name;
     }// GetName
-
 
 }; // class CultureInfoBaseObject
 
-
 #ifndef FEATURE_COREFX_GLOBALIZATION
-typedef DPTR(class CultureDataBaseObject) PTR_CultureDataBaseObject;
-class CultureDataBaseObject : public Object
-{
-public:
-        // offsets are for Silverlight
-        /* 0x000 */ STRINGREF sRealName                ; // Name you passed in (ie: en-US, en, or de-DE_phoneb)
-        /* 0x008 */ STRINGREF sWindowsName             ; // Name OS thinks the object is (ie: de-DE_phoneb, or en-US (even if en was passed in))       
-        /* 0x010 */ STRINGREF sName                    ; // locale name (ie: en-us, NO sort info, but could be neutral)
-        /* 0x012 */ STRINGREF sParent                  ; // Parent name (which may be a custom locale/culture)        
-        /* 0x020 */ STRINGREF sLocalizedDisplayName    ; // Localized pretty name for this locale
-        /* 0x028 */ STRINGREF sEnglishDisplayName      ; // English pretty name for this locale
-        /* 0x030 */ STRINGREF sNativeDisplayName       ; // Native pretty name for this locale        
-        /* 0x038 */ STRINGREF sSpecificCulture         ; // The culture name to be used in CultureInfo.CreateSpecificCulture(), en-US form if neutral, sort name if sort
-        /* 0x040 */ STRINGREF sISO639Language          ; // ISO 639 Language Name
-        /* 0x048 */ STRINGREF sLocalizedLanguage       ; // Localized name for this language
-        /* 0x050 */ STRINGREF sEnglishLanguage         ; // English name for this language
-        /* 0x058 */ STRINGREF sNativeLanguage          ; // Native name of this language
-        /* 0x060 */ STRINGREF sRegionName              ; // (RegionInfo)        
-        /* 0x068 */ STRINGREF sLocalizedCountry        ; // localized country name
-        /* 0x070 */ STRINGREF sEnglishCountry          ; // english country name (RegionInfo)
-        /* 0x078 */ STRINGREF sNativeCountry           ; // native country name
-        /* 0x080 */ STRINGREF sISO3166CountryName      ; // (RegionInfo), ie: US
-        /* 0x088 */ STRINGREF sPositiveSign            ; // (user can override) positive sign
-        /* 0x090 */ STRINGREF sNegativeSign            ; // (user can override) negative sign
-
-        /* 0x098 */ PTRARRAYREF saNativeDigits         ; // (user can override) native characters for digits 0-9
-        /* 0x0a0 */ I4ARRAYREF  waGrouping             ; // (user can override) grouping of digits
-
-        /* 0x0a8 */ STRINGREF sDecimalSeparator        ; // (user can override) decimal separator
-        /* 0x0b0 */ STRINGREF sThousandSeparator       ; // (user can override) thousands separator
-        /* 0x0b8 */ STRINGREF sNaN                     ; // Not a Number
-        /* 0x0c0 */ STRINGREF sPositiveInfinity        ; // + Infinity
-        /* 0x0c8 */ STRINGREF sNegativeInfinity        ; // - Infinity
-        /* 0x0d0 */ STRINGREF sPercent                 ; // Percent (%) symbol
-        /* 0x0d8 */ STRINGREF sPerMille                ; // PerMille (U+2030) symbol
-        /* 0x0e0 */ STRINGREF sCurrency                ; // (user can override) local monetary symbol
-        /* 0x0e8 */ STRINGREF sIntlMonetarySymbol      ; // international monetary symbol (RegionInfo)
-        /* 0x0f0 */ STRINGREF sEnglishCurrency         ; // English name for this currency
-        /* 0x0f8 */ STRINGREF sNativeCurrency          ; // Native name for this currency
-
-        /* 0x100 */ I4ARRAYREF  waMonetaryGrouping     ; // (user can override) monetary grouping of digits
-
-        /* 0x108 */ STRINGREF sMonetaryDecimal         ; // (user can override) monetary decimal separator
-        /* 0x110 */ STRINGREF sMonetaryThousand        ; // (user can override) monetary thousands separator
-        /* 0x118 */ STRINGREF sListSeparator           ; // (user can override) list separator       
-        /* 0x120 */ STRINGREF sAM1159                  ; // (user can override) AM designator
-        /* 0x128 */ STRINGREF sPM2359                  ; // (user can override) PM designator
-                    STRINGREF sTimeSeparator           ; // Time Separator
-
-        /* 0x130 */ PTRARRAYREF saLongTimes            ; // (user can override) time format
-        /* 0x138 */ PTRARRAYREF saShortTimes           ; // short time format
-        /* 0x140 */ PTRARRAYREF saDurationFormats      ; // time duration format 
-
-        /* 0x148 */ I4ARRAYREF  waCalendars            ; // all available calendar type(s).  The first one is the default calendar
-
-        /* 0x150 */ PTRARRAYREF calendars              ; // Store for specific calendar data
-
-        /* 0x158 */ STRINGREF sTextInfo                ; // Text info name to use for custom
-        /* 0x160 */ STRINGREF sCompareInfo             ; // Compare info name (including sorting key) to use if custom
-        /* 0x168 */ STRINGREF sScripts                 ; // Typical Scripts for this locale (latn;cyrl; etc)
-
-        // these are ordered correctly
-        /* ????? */ STRINGREF sAbbrevLang              ; // abbreviated language name (Windows Language Name) ex: ENU
-        /* ????? */ STRINGREF sAbbrevCountry           ; // abbreviated country name (RegionInfo) (Windows Region Name) ex: USA
-        /* ????? */ STRINGREF sISO639Language2         ; // 3 char ISO 639 lang name 2 ex: eng
-        /* ????? */ STRINGREF sISO3166CountryName2     ; // 3 char ISO 639 country name 2 2(RegionInfo) ex: USA (ISO)
-        /* ????? */ STRINGREF sConsoleFallbackName     ; // The culture name for the console fallback UI culture
-        /* ????? */ STRINGREF sKeyboardsToInstall      ; // Keyboard installation string.
-        /* ????? */ STRINGREF fontSignature            ; // Font signature (16 WORDS)
-
-// Unused for now:        /* ????? */ INT32    iCountry                  ; // (user can override) country code (RegionInfo)
-        /* 0x170 */ INT32    iGeoId                    ; // GeoId
-        /* 0x174 */ INT32    iDigitSubstitution        ; // (user can override) Digit substitution 0=context, 1=none/arabic, 2=Native/national (2 seems to be unused)
-        /* 0x178 */ INT32    iLeadingZeros             ; // (user can override) leading zeros 0 = no leading zeros, 1 = leading zeros
-        /* 0x17c */ INT32    iDigits                   ; // (user can override) number of fractional digits
-        /* 0x180 */ INT32    iNegativeNumber           ; // (user can override) negative number format
-        /* 0x184 */ INT32    iNegativePercent          ; // Negative Percent (0-3)
-        /* 0x188 */ INT32    iPositivePercent          ; // Positive Percent (0-11)
-        /* 0x18c */ INT32    iCurrencyDigits           ; // (user can override) # local monetary fractional digits
-        /* 0x190 */ INT32    iCurrency                 ; // (user can override) positive currency format
-        /* 0x194 */ INT32    iNegativeCurrency         ; // (user can override) negative currency format       
-        /* 0x198 */ INT32    iMeasure                  ; // (user can override) system of measurement 0=metric, 1=US (RegionInfo)
-// Unused for now        /* ????? */ INT32    iPaperSize                ; // default paper size (RegionInfo)
-        /* 0x19c */ INT32    iFirstDayOfWeek           ; // (user can override) first day of week (gregorian really)
-        /* 0x1a0 */ INT32    iFirstWeekOfYear          ; // (user can override) first week of year (gregorian really)
-
-        /* ????? */ INT32    iReadingLayout; // Reading Layout Data (0-3)
-
-        // these are ordered correctly
-        /* ????? */ INT32    iDefaultAnsiCodePage      ; // default ansi code page ID (ACP)
-        /* ????? */ INT32    iDefaultOemCodePage       ; // default oem code page ID (OCP or OEM)
-        /* ????? */ INT32    iDefaultMacCodePage       ; // default macintosh code page
-        /* ????? */ INT32    iDefaultEbcdicCodePage    ; // default EBCDIC code page
-        /* ????? */ INT32    iLanguage                 ; // locale ID (0409) - NO sort information
-        /* ????? */ INT32    iInputLanguageHandle      ; // input language handle
-        /* 0x1a4 */ CLR_BOOL bUseOverrides             ; // use user overrides?
-        /* 0x1a5 */ CLR_BOOL bNeutral                  ; // Flags for the culture (ie: neutral or not right now)        
-        /* ????? */ CLR_BOOL bWin32Installed           ; // Flags indicate if the culture is Win32 installed       
-        /* ????? */ CLR_BOOL bFramework                ; // Flags for indicate if the culture is one of Whidbey cultures 
-
-}; // class CultureDataBaseObject
-
-
-
 typedef DPTR(class CalendarDataBaseObject) PTR_CalendarDataBaseObject;
 class CalendarDataBaseObject : public Object
 {
@@ -3814,9 +3704,6 @@ public:
     STRINGREF sCurrencyGroup;       // currencyDecimalSeparator
     STRINGREF sCurrencyDecimal;     // currencyGroupSeparator
     STRINGREF sCurrency;            // currencySymbol
-#ifndef FEATURE_COREFX_GLOBALIZATION
-    STRINGREF sAnsiCurrency;        // ansiCurrencySymbol
-#endif
     STRINGREF sNaN;                 // nanSymbol
     STRINGREF sPositiveInfinity;    // positiveInfinitySymbol
     STRINGREF sNegativeInfinity;    // negativeInfinitySymbol
@@ -3827,9 +3714,6 @@ public:
 
     PTRARRAYREF sNativeDigits;      // nativeDigits (a string array)
 
-#ifndef FEATURE_COREFX_GLOBALIZATION    
-    INT32 iDataItem;                // Index into the CultureInfo Table.  Only used from managed code.
-#endif
     INT32 cNumberDecimals;          // numberDecimalDigits
     INT32 cCurrencyDecimals;        // currencyDecimalDigits
     INT32 cPosCurrencyFormat;       // positiveCurrencyFormat
@@ -3841,14 +3725,7 @@ public:
     INT32 iDigitSubstitution;       // digitSubstitution
 
     CLR_BOOL bIsReadOnly;              // Is this NumberFormatInfo ReadOnly?
-#ifndef FEATURE_COREFX_GLOBALIZATION
-    CLR_BOOL bUseUserOverride;         // Flag to use user override. Only used from managed code.
-#endif
     CLR_BOOL bIsInvariant;             // Is this the NumberFormatInfo for the Invariant Culture?
-#ifndef FEATURE_COREFX_GLOBALIZATION
-    CLR_BOOL bvalidForParseAsNumber;   // NEVER USED, DO NOT USE THIS! (Serialized in Whidbey/Everett)
-    CLR_BOOL bvalidForParseAsCurrency; // NEVER USED, DO NOT USE THIS! (Serialized in Whidbey/Everett)
-#endif
 };
 
 typedef NumberFormatInfo * NUMFMTREF;

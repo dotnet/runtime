@@ -436,12 +436,7 @@ namespace System
                         return (CompareOrdinalIgnoreCaseHelper(strA, strB));
                     }
 
-#if FEATURE_COREFX_GLOBALIZATION
                     return CompareInfo.CompareOrdinalIgnoreCase(strA, 0, strA.Length, strB, 0, strB.Length);
-#else
-                    // Take the slow path.
-                    return TextInfo.CompareOrdinalIgnoreCase(strA, strB);
-#endif
 
                 default:
                     throw new NotSupportedException(Environment.GetResourceString("NotSupported_StringComparison"));
@@ -635,11 +630,7 @@ namespace System
                     return CompareOrdinalHelper(strA, indexA, lengthA, strB, indexB, lengthB);
 
                 case StringComparison.OrdinalIgnoreCase:
-#if FEATURE_COREFX_GLOBALIZATION
                     return (CompareInfo.CompareOrdinalIgnoreCase(strA, indexA, lengthA, strB, indexB, lengthB));
-#else
-                    return (TextInfo.CompareOrdinalIgnoreCaseEx(strA, indexA, strB, indexB, lengthA, lengthB));
-#endif
 
                 default:
                     throw new ArgumentException(Environment.GetResourceString("NotSupported_StringComparison"));
@@ -807,11 +798,7 @@ namespace System
                     return this.Length < value.Length ? false : (CompareOrdinalHelper(this, this.Length - value.Length, value.Length, value, 0, value.Length) == 0);
 
                 case StringComparison.OrdinalIgnoreCase:
-#if FEATURE_COREFX_GLOBALIZATION
                     return this.Length < value.Length ? false : (CompareInfo.CompareOrdinalIgnoreCase(this, this.Length - value.Length, value.Length, value, 0, value.Length) == 0);
-#else                    
-                    return this.Length < value.Length ? false : (TextInfo.CompareOrdinalIgnoreCaseEx(this, this.Length - value.Length, value, 0, value.Length, value.Length) == 0);
-#endif
                 default:
                     throw new ArgumentException(Environment.GetResourceString("NotSupported_StringComparison"), nameof(comparisonType));
             }
@@ -929,12 +916,7 @@ namespace System
                         return EqualsIgnoreCaseAsciiHelper(this, value);
                     }
 
-#if FEATURE_COREFX_GLOBALIZATION
                     return (CompareInfo.CompareOrdinalIgnoreCase(this, 0, this.Length, value, 0, value.Length) == 0);
-#else
-                    // Take the slow path.
-                    return (TextInfo.CompareOrdinalIgnoreCase(this, value) == 0);
-#endif
 
                 default:
                     throw new ArgumentException(Environment.GetResourceString("NotSupported_StringComparison"), nameof(comparisonType));
@@ -1008,11 +990,7 @@ namespace System
                         }
                         // Take the slow path.
 
-#if FEATURE_COREFX_GLOBALIZATION
                         return (CompareInfo.CompareOrdinalIgnoreCase(a, 0, a.Length, b, 0, b.Length) == 0);
-#else
-                        return (TextInfo.CompareOrdinalIgnoreCase(a, b) == 0);
-#endif
                     }
 
                 default:
@@ -1188,11 +1166,7 @@ namespace System
                         return false;
                     }
 
-#if FEATURE_COREFX_GLOBALIZATION
                     return (CompareInfo.CompareOrdinalIgnoreCase(this, 0, value.Length, value, 0, value.Length) == 0);
-#else
-                    return (TextInfo.CompareOrdinalIgnoreCaseEx(this, 0, value, 0, value.Length, value.Length) == 0);
-#endif
 
                 default:
                     throw new ArgumentException(Environment.GetResourceString("NotSupported_StringComparison"), nameof(comparisonType));

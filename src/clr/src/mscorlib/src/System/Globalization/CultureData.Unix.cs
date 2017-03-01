@@ -242,7 +242,7 @@ namespace System.Globalization
 
         private static string GetLanguageDisplayName(string cultureName)
         {
-            return new CultureInfo(cultureName).m_cultureData.GetLocaleInfo(cultureName, LocaleStringData.LocalizedDisplayName);
+            return new CultureInfo(cultureName)._cultureData.GetLocaleInfo(cultureName, LocaleStringData.LocalizedDisplayName);
         }
 
         private static string GetRegionDisplayName(string isoCountryCode)

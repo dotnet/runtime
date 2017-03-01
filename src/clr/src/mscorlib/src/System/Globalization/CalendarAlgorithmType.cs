@@ -16,6 +16,5 @@ namespace System.Globalization
         LunisolarCalendar = 3   // Lunisolar-based calendar which use leap month rule, such as HebrewCalendar and Asian Lunisolar calendars.
                                 // Lunisolar calendars are based on the cycle of the moon, but consider the seasons as a secondary consideration,
                                 // so they align with the seasons as well as lunar events.
-
     }
 }

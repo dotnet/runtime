@@ -10,14 +10,14 @@ namespace System.Globalization
     [Serializable]
     public sealed class SortVersion : IEquatable<SortVersion>
     {
-        private int m_NlsVersion;
-        private Guid m_SortId;
+        private int _nlsVersion;
+        private Guid _sortId;
 
         public int FullVersion
         {
             get
             {
-                return m_NlsVersion;
+                return _nlsVersion;
             }
         }
 
@@ -25,31 +25,30 @@ namespace System.Globalization
         {
             get
             {
-                return m_SortId;
+                return _sortId;
             }
         }
 
         public SortVersion(int fullVersion, Guid sortId)
         {
-            m_SortId = sortId;
-            m_NlsVersion = fullVersion;
+            _sortId = sortId;
+            _nlsVersion = fullVersion;
         }
 
         internal SortVersion(int nlsVersion, int effectiveId, Guid customVersion)
         {
-            m_NlsVersion = nlsVersion;
+            _nlsVersion = nlsVersion;
 
             if (customVersion == Guid.Empty)
             {
-                byte[] b = BitConverter.GetBytes(effectiveId);
-                byte b1 = (byte)((uint)effectiveId >> 24);
+                byte b1 = (byte)(effectiveId >> 24);
                 byte b2 = (byte)((effectiveId & 0x00FF0000) >> 16);
                 byte b3 = (byte)((effectiveId & 0x0000FF00) >> 8);
                 byte b4 = (byte)(effectiveId & 0xFF);
                 customVersion = new Guid(0, 0, 0, 0, 0, 0, 0, b1, b2, b3, b4);
             }
 
-            m_SortId = customVersion;
+            _sortId = customVersion;
         }
 
         public override bool Equals(object obj)
@@ -70,12 +69,12 @@ namespace System.Globalization
                 return false;
             }
 
-            return m_NlsVersion == other.m_NlsVersion && m_SortId == other.m_SortId;
+            return _nlsVersion == other._nlsVersion && _sortId == other._sortId;
         }
 
         public override int GetHashCode()
         {
-            return m_NlsVersion * 7 | m_SortId.GetHashCode();
+            return _nlsVersion * 7 | _sortId.GetHashCode();
         }
 
         public static bool operator ==(SortVersion left, SortVersion right)

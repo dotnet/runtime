@@ -13,7 +13,6 @@ namespace System.Globalization
     //
     ////////////////////////////////////////////////////////////////////////////
 
-
     [Serializable]
     public abstract class EastAsianLunisolarCalendar : Calendar
     {
@@ -37,9 +36,6 @@ namespace System.Globalization
         internal const int DatePartDayOfYear = 1;
         internal const int DatePartMonth = 2;
         internal const int DatePartDay = 3;
-
-        // Return the type of the East Asian Lunisolar calendars.
-        //
 
         public override CalendarAlgorithmType AlgorithmType
         {
@@ -72,7 +68,7 @@ namespace System.Globalization
             {
                 throw new ArgumentOutOfRangeException(
                                 nameof(sexagenaryYear),
-                                Environment.GetResourceString("ArgumentOutOfRange_Range", 1, 60));
+                                SR.Format(SR.ArgumentOutOfRange_Range, 1, 60));
             }
             Contract.EndContractBlock();
 
@@ -89,7 +85,7 @@ namespace System.Globalization
             {
                 throw new ArgumentOutOfRangeException(
                                 nameof(sexagenaryYear),
-                                Environment.GetResourceString("ArgumentOutOfRange_Range", 1, 60));
+                                SR.Format(SR.ArgumentOutOfRange_Range, 1, 60));
             }
             Contract.EndContractBlock();
 
@@ -135,7 +131,7 @@ namespace System.Globalization
                     return (mEraInfo[i].minEraYear);
                 }
             }
-            throw new ArgumentOutOfRangeException(nameof(era), Environment.GetResourceString("ArgumentOutOfRange_InvalidEraValue"));
+            throw new ArgumentOutOfRangeException(nameof(era), SR.ArgumentOutOfRange_InvalidEraValue);
         }
 
         internal int MaxEraCalendarYear(int era)
@@ -164,10 +160,8 @@ namespace System.Globalization
                     return (mEraInfo[i].maxEraYear);
                 }
             }
-            throw new ArgumentOutOfRangeException(nameof(era), Environment.GetResourceString("ArgumentOutOfRange_InvalidEraValue"));
+            throw new ArgumentOutOfRangeException(nameof(era), SR.ArgumentOutOfRange_InvalidEraValue);
         }
-
-        // Construct an instance of EastAsianLunisolar calendar.
 
         internal EastAsianLunisolarCalendar()
         {
@@ -179,7 +173,7 @@ namespace System.Globalization
             {
                 throw new ArgumentOutOfRangeException(
                                 "time",
-                                String.Format(CultureInfo.InvariantCulture, Environment.GetResourceString("ArgumentOutOfRange_CalendarRange"),
+                                String.Format(CultureInfo.InvariantCulture, SR.ArgumentOutOfRange_CalendarRange,
                                 MinSupportedDateTime, MaxSupportedDateTime));
             }
             Contract.EndContractBlock();
@@ -194,7 +188,7 @@ namespace System.Globalization
 
             if ((era < GetEra(MinDate)) || (era > GetEra(MaxDate)))
             {
-                throw new ArgumentOutOfRangeException(nameof(era), Environment.GetResourceString("ArgumentOutOfRange_InvalidEraValue"));
+                throw new ArgumentOutOfRangeException(nameof(era), SR.ArgumentOutOfRange_InvalidEraValue);
             }
         }
 
@@ -207,7 +201,7 @@ namespace System.Globalization
             {
                 throw new ArgumentOutOfRangeException(
                                 nameof(year),
-                                Environment.GetResourceString("ArgumentOutOfRange_Range", MinEraCalendarYear(era), MaxEraCalendarYear(era)));
+                                SR.Format(SR.ArgumentOutOfRange_Range, MinEraCalendarYear(era), MaxEraCalendarYear(era)));
             }
             return year;
         }
@@ -220,12 +214,12 @@ namespace System.Globalization
             {
                 //Reject if there is no leap month this year
                 if (GetYearInfo(year, LeapMonth) == 0)
-                    throw new ArgumentOutOfRangeException(nameof(month), Environment.GetResourceString("ArgumentOutOfRange_Month"));
+                    throw new ArgumentOutOfRangeException(nameof(month), SR.ArgumentOutOfRange_Month);
             }
 
             if (month < 1 || month > 13)
             {
-                throw new ArgumentOutOfRangeException(nameof(month), Environment.GetResourceString("ArgumentOutOfRange_Month"));
+                throw new ArgumentOutOfRangeException(nameof(month), SR.ArgumentOutOfRange_Month);
             }
             return year;
         }
@@ -269,10 +263,9 @@ namespace System.Globalization
             int daysInMonth = InternalGetDaysInMonth(year, month);
             if (day < 1 || day > daysInMonth)
             {
-                BCLDebug.Log("year = " + year + ", month = " + month + ", day = " + day);
                 throw new ArgumentOutOfRangeException(
                             nameof(day),
-                            Environment.GetResourceString("ArgumentOutOfRange_Day", daysInMonth, month));
+                            SR.Format(SR.ArgumentOutOfRange_Day, daysInMonth, month));
             }
 
             int gy = 0; int gm = 0; int gd = 0;
@@ -283,7 +276,7 @@ namespace System.Globalization
             }
             else
             {
-                throw new ArgumentOutOfRangeException(null, Environment.GetResourceString("ArgumentOutOfRange_BadYearMonthDay"));
+                throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadYearMonthDay);
             }
         }
 
@@ -453,7 +446,7 @@ namespace System.Globalization
             {
                 throw new ArgumentOutOfRangeException(
                             nameof(months),
-                            Environment.GetResourceString("ArgumentOutOfRange_Range", -120000, 120000));
+                            SR.Format(SR.ArgumentOutOfRange_Range, -120000, 120000));
             }
             Contract.EndContractBlock();
 
@@ -633,7 +626,7 @@ namespace System.Globalization
             {
                 throw new ArgumentOutOfRangeException(
                             nameof(day),
-                            Environment.GetResourceString("ArgumentOutOfRange_Day", daysInMonth, month));
+                            SR.Format(SR.ArgumentOutOfRange_Day, daysInMonth, month));
             }
             int m = GetYearInfo(year, LeapMonth);
             return ((m != 0) && (month == (m + 1)));
@@ -700,7 +693,7 @@ namespace System.Globalization
                 {
                     throw new ArgumentOutOfRangeException(
                                 nameof(value),
-                                Environment.GetResourceString("ArgumentOutOfRange_Range", 99, MaxCalendarYear));
+                                SR.Format(SR.ArgumentOutOfRange_Range, 99, MaxCalendarYear));
                 }
                 twoDigitYearMax = value;
             }
@@ -712,7 +705,7 @@ namespace System.Globalization
             if (year < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(year),
-                    Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                    SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             Contract.EndContractBlock();
 

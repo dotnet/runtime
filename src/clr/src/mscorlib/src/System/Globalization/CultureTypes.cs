@@ -2,10 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//
 // The enumeration constants used in CultureInfo.GetCultures().
-//
-// Note that this isn't exposed in Silverlight
+// On Linux platforms, the only enum values used there is NeutralCultures and SpecificCultures 
+// the rest are obsolete or not valid on Linux
 
 namespace System.Globalization
 {

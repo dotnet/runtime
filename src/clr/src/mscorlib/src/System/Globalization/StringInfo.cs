@@ -12,63 +12,59 @@
 //
 ////////////////////////////////////////////////////////////////////////////
 
-
 using System;
-using System.Runtime.Serialization;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.Runtime.Serialization;
 
 namespace System.Globalization
 {
     [Serializable]
     public class StringInfo
     {
-        [OptionalField(VersionAdded = 2)]
-        private String m_str;
+        [OptionalField(VersionAdded = 2)] 
+        private string _str;
 
-        // We allow this class to be serialized but there is no conceivable reason
-        // for them to do so. Thus, we do not serialize the instance variables.
-        [NonSerialized] private int[] m_indexes;
+        [NonSerialized]
+        private int[] _indexes;
 
         // Legacy constructor
         public StringInfo() : this("") { }
 
         // Primary, useful constructor
-        public StringInfo(String value)
+        public StringInfo(string value)
         {
             this.String = value;
         }
 
-        #region Serialization 
         [OnDeserializing]
         private void OnDeserializing(StreamingContext ctx)
         {
-            m_str = String.Empty;
+            _str = String.Empty;
         }
 
         [OnDeserialized]
         private void OnDeserialized(StreamingContext ctx)
         {
-            if (m_str.Length == 0)
+            if (_str.Length == 0)
             {
-                m_indexes = null;
+                _indexes = null;
             }
         }
-        #endregion Serialization
 
         public override bool Equals(Object value)
         {
             StringInfo that = value as StringInfo;
             if (that != null)
             {
-                return (m_str.Equals(that.m_str));
+                return (_str.Equals(that._str));
             }
             return (false);
         }
 
         public override int GetHashCode()
         {
-            return m_str.GetHashCode();
+            return _str.GetHashCode();
         }
 
 
@@ -78,32 +74,32 @@ namespace System.Globalization
         {
             get
             {
-                if ((null == m_indexes) && (0 < this.String.Length))
+                if ((null == _indexes) && (0 < this.String.Length))
                 {
-                    m_indexes = StringInfo.ParseCombiningCharacters(this.String);
+                    _indexes = StringInfo.ParseCombiningCharacters(this.String);
                 }
 
-                return (m_indexes);
+                return (_indexes);
             }
         }
 
-        public String String
+        public string String
         {
             get
             {
-                return (m_str);
+                return (_str);
             }
             set
             {
                 if (null == value)
                 {
-                    throw new ArgumentNullException(nameof(String),
-                        Environment.GetResourceString("ArgumentNull_String"));
+                    throw new ArgumentNullException("String",
+                        SR.ArgumentNull_String);
                 }
                 Contract.EndContractBlock();
 
-                m_str = value;
-                m_indexes = null;
+                _str = value;
+                _indexes = null;
             }
         }
 
@@ -121,58 +117,49 @@ namespace System.Globalization
             }
         }
 
-        public String SubstringByTextElements(int startingTextElement)
+        public string SubstringByTextElements(int startingTextElement) 
         {
             // If the string is empty, no sense going further. 
-            if (null == this.Indexes)
+            if (null == this.Indexes) 
             {
                 // Just decide which error to give depending on the param they gave us....
-                if (startingTextElement < 0)
+                if (startingTextElement < 0) 
                 {
-                    throw new ArgumentOutOfRangeException(nameof(startingTextElement),
-                        Environment.GetResourceString("ArgumentOutOfRange_NeedPosNum"));
+                    throw new ArgumentOutOfRangeException(nameof(startingTextElement), SR.ArgumentOutOfRange_NeedPosNum);
                 }
                 else
                 {
-                    throw new ArgumentOutOfRangeException(nameof(startingTextElement),
-                        Environment.GetResourceString("Arg_ArgumentOutOfRangeException"));
+                    throw new ArgumentOutOfRangeException(nameof(startingTextElement), SR.Arg_ArgumentOutOfRangeException);
                 }
             }
-            return (this.SubstringByTextElements(startingTextElement, this.Indexes.Length - startingTextElement));
+            return (SubstringByTextElements(startingTextElement, Indexes.Length - startingTextElement));
         }
 
-        public String SubstringByTextElements(int startingTextElement, int lengthInTextElements)
+        public string SubstringByTextElements(int startingTextElement, int lengthInTextElements) 
         {
-            //
-            // Parameter checking
-            //
             if (startingTextElement < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(startingTextElement),
-                    Environment.GetResourceString("ArgumentOutOfRange_NeedPosNum"));
+                throw new ArgumentOutOfRangeException(nameof(startingTextElement), SR.ArgumentOutOfRange_NeedPosNum);
             }
 
-            if (this.String.Length == 0 || startingTextElement >= this.Indexes.Length)
+            if (this.String.Length == 0 || startingTextElement >= Indexes.Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(startingTextElement),
-                    Environment.GetResourceString("Arg_ArgumentOutOfRangeException"));
+                throw new ArgumentOutOfRangeException(nameof(startingTextElement), SR.Arg_ArgumentOutOfRangeException);
             }
 
             if (lengthInTextElements < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(lengthInTextElements),
-                    Environment.GetResourceString("ArgumentOutOfRange_NeedPosNum"));
+                throw new ArgumentOutOfRangeException(nameof(lengthInTextElements), SR.ArgumentOutOfRange_NeedPosNum);
             }
 
-            if (startingTextElement > this.Indexes.Length - lengthInTextElements)
+            if (startingTextElement > Indexes.Length - lengthInTextElements)
             {
-                throw new ArgumentOutOfRangeException(nameof(lengthInTextElements),
-                    Environment.GetResourceString("Arg_ArgumentOutOfRangeException"));
+                throw new ArgumentOutOfRangeException(nameof(lengthInTextElements), SR.Arg_ArgumentOutOfRangeException);
             }
 
-            int start = this.Indexes[startingTextElement];
+            int start = Indexes[startingTextElement];
 
-            if (startingTextElement + lengthInTextElements == this.Indexes.Length)
+            if (startingTextElement + lengthInTextElements == Indexes.Length)
             {
                 // We are at the last text element in the string and because of that
                 // must handle the call differently.
@@ -180,11 +167,11 @@ namespace System.Globalization
             }
             else
             {
-                return (this.String.Substring(start, (this.Indexes[lengthInTextElements + startingTextElement] - start)));
+                return (this.String.Substring(start, (Indexes[lengthInTextElements + startingTextElement] - start)));
             }
         }
 
-        public static String GetNextTextElement(String str)
+        public static string GetNextTextElement(string str)
         {
             return (GetNextTextElement(str, 0));
         }
@@ -222,7 +209,7 @@ namespace System.Globalization
         //
         ////////////////////////////////////////////////////////////////////////
 
-        internal static int GetCurrentTextElementLen(String str, int index, int len, ref UnicodeCategory ucCurrent, ref int currentCharCount)
+        internal static int GetCurrentTextElementLen(string str, int index, int len, ref UnicodeCategory ucCurrent, ref int currentCharCount)
         {
             Debug.Assert(index >= 0 && len >= 0, "StringInfo.GetCurrentTextElementLen() : index = " + index + ", len = " + len);
             Debug.Assert(index < len, "StringInfo.GetCurrentTextElementLen() : index = " + index + ", len = " + len);
@@ -285,7 +272,7 @@ namespace System.Globalization
         // of str.  It recognizes a base character plus one or more combining 
         // characters or a properly formed surrogate pair as a text element.  See also 
         // the ParseCombiningCharacters() and the ParseSurrogates() methods.
-        public static String GetNextTextElement(String str, int index)
+        public static string GetNextTextElement(string str, int index)
         {
             //
             // Validate parameters.
@@ -303,7 +290,7 @@ namespace System.Globalization
                 {
                     return (String.Empty);
                 }
-                throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
             }
 
             int charLen;
@@ -311,12 +298,12 @@ namespace System.Globalization
             return (str.Substring(index, GetCurrentTextElementLen(str, index, len, ref uc, ref charLen)));
         }
 
-        public static TextElementEnumerator GetTextElementEnumerator(String str)
+        public static TextElementEnumerator GetTextElementEnumerator(string str)
         {
             return (GetTextElementEnumerator(str, 0));
         }
 
-        public static TextElementEnumerator GetTextElementEnumerator(String str, int index)
+        public static TextElementEnumerator GetTextElementEnumerator(string str, int index)
         {
             //
             // Validate parameters.
@@ -330,7 +317,7 @@ namespace System.Globalization
             int len = str.Length;
             if (index < 0 || (index > len))
             {
-                throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
             }
 
             return (new TextElementEnumerator(str, index, len));
@@ -348,7 +335,7 @@ namespace System.Globalization
          * return the indices: 0, 2, 4.
          */
 
-        public static int[] ParseCombiningCharacters(String str)
+        public static int[] ParseCombiningCharacters(string str)
         {
             if (str == null)
             {

@@ -2,12 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Runtime.CompilerServices;
-using System.Globalization;
-using System.Runtime.Versioning;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.Runtime.Serialization;
 
 namespace System.Globalization
 {
@@ -32,7 +29,7 @@ namespace System.Globalization
     // since most of the calendars (or all?) have the same way of calcuating hour/minute/second.
 
     [Serializable]
-    public abstract class Calendar : ICloneable
+    public abstract partial class Calendar : ICloneable
     {
         // Number of 100ns (10E-7 second) ticks per time unit
         internal const long TicksPerMillisecond = 10000;
@@ -61,39 +58,20 @@ namespace System.Globalization
 
         internal const long MaxMillis = (long)DaysTo10000 * MillisPerDay;
 
-        //
-        //  Calendar ID Values.  This is used to get data from calendar.nlp.
-        //  The order of calendar ID means the order of data items in the table.
-        //
+        private int _currentEraValue = -1;
 
-        internal const int CAL_GREGORIAN = 1;     // Gregorian (localized) calendar
-        internal const int CAL_GREGORIAN_US = 2;     // Gregorian (U.S.) calendar
-        internal const int CAL_JAPAN = 3;     // Japanese Emperor Era calendar
-        internal const int CAL_TAIWAN = 4;     // Taiwan Era calendar
-        internal const int CAL_KOREA = 5;     // Korean Tangun Era calendar
-        internal const int CAL_HIJRI = 6;     // Hijri (Arabic Lunar) calendar
-        internal const int CAL_THAI = 7;     // Thai calendar
-        internal const int CAL_HEBREW = 8;     // Hebrew (Lunar) calendar
-        internal const int CAL_GREGORIAN_ME_FRENCH = 9;     // Gregorian Middle East French calendar
-        internal const int CAL_GREGORIAN_ARABIC = 10;     // Gregorian Arabic calendar
-        internal const int CAL_GREGORIAN_XLIT_ENGLISH = 11;     // Gregorian Transliterated English calendar
-        internal const int CAL_GREGORIAN_XLIT_FRENCH = 12;
-        internal const int CAL_JULIAN = 13;
-        internal const int CAL_JAPANESELUNISOLAR = 14;
-        internal const int CAL_CHINESELUNISOLAR = 15;
-        internal const int CAL_SAKA = 16;     // reserved to match Office but not implemented in our code
-        internal const int CAL_LUNAR_ETO_CHN = 17;     // reserved to match Office but not implemented in our code
-        internal const int CAL_LUNAR_ETO_KOR = 18;     // reserved to match Office but not implemented in our code
-        internal const int CAL_LUNAR_ETO_ROKUYOU = 19;     // reserved to match Office but not implemented in our code
-        internal const int CAL_KOREANLUNISOLAR = 20;
-        internal const int CAL_TAIWANLUNISOLAR = 21;
-        internal const int CAL_PERSIAN = 22;
-        internal const int CAL_UMALQURA = 23;
+        [OptionalField(VersionAdded = 2)]
+        private bool _isReadOnly = false;
 
-        internal int m_currentEraValue = -1;
-
-        [System.Runtime.Serialization.OptionalField(VersionAdded = 2)]
-        private bool m_isReadOnly = false;
+#if CORECLR
+        internal const CalendarId CAL_HEBREW = CalendarId.HEBREW;
+        internal const CalendarId CAL_HIJRI = CalendarId.HIJRI;
+        internal const CalendarId CAL_JAPAN = CalendarId.JAPAN;
+        internal const CalendarId CAL_JULIAN = CalendarId.JULIAN;
+        internal const CalendarId CAL_TAIWAN = CalendarId.TAIWAN;
+        internal const CalendarId CAL_UMALQURA = CalendarId.UMALQURA;
+        internal const CalendarId CAL_PERSIAN = CalendarId.PERSIAN;
+#endif
 
         // The minimum supported DateTime range for the calendar.
 
@@ -115,8 +93,13 @@ namespace System.Globalization
             }
         }
 
-
-
+        public virtual CalendarAlgorithmType AlgorithmType
+        {
+            get
+            {
+                return CalendarAlgorithmType.Unknown;
+            }
+        }
 
         protected Calendar()
         {
@@ -126,11 +109,11 @@ namespace System.Globalization
         ///
         // This can not be abstract, otherwise no one can create a subclass of Calendar.
         //
-        internal virtual int ID
+        internal virtual CalendarId ID
         {
             get
             {
-                return (-1);
+                return CalendarId.UNINITIALIZED_VALUE;
             }
         }
 
@@ -138,19 +121,9 @@ namespace System.Globalization
         // Return the Base calendar ID for calendars that didn't have defined data in calendarData
         //
 
-        internal virtual int BaseCalendarID
+        internal virtual CalendarId BaseCalendarID
         {
             get { return ID; }
-        }
-
-        // Returns  the type of the calendar.
-        //
-        public virtual CalendarAlgorithmType AlgorithmType
-        {
-            get
-            {
-                return CalendarAlgorithmType.Unknown;
-            }
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -162,7 +135,7 @@ namespace System.Globalization
         ////////////////////////////////////////////////////////////////////////
         public bool IsReadOnly
         {
-            get { return (m_isReadOnly); }
+            get { return (_isReadOnly); }
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -172,7 +145,7 @@ namespace System.Globalization
         //  Is the implementation of ICloneable.
         //
         ////////////////////////////////////////////////////////////////////////
-        public virtual Object Clone()
+        public virtual object Clone()
         {
             object o = MemberwiseClone();
             ((Calendar)o).SetReadOnlyState(false);
@@ -201,15 +174,15 @@ namespace System.Globalization
 
         internal void VerifyWritable()
         {
-            if (m_isReadOnly)
+            if (_isReadOnly)
             {
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_ReadOnly"));
+                throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
             }
         }
 
         internal void SetReadOnlyState(bool readOnly)
         {
-            m_isReadOnly = readOnly;
+            _isReadOnly = readOnly;
         }
 
 
@@ -227,12 +200,12 @@ namespace System.Globalization
             get
             {
                 // The following code assumes that the current era value can not be -1.
-                if (m_currentEraValue == -1)
+                if (_currentEraValue == -1)
                 {
-                    Debug.Assert(BaseCalendarID > 0, "[Calendar.CurrentEraValue] Expected ID > 0");
-                    m_currentEraValue = CalendarData.GetCalendarData(BaseCalendarID).iCurrentEra;
+                    Debug.Assert(BaseCalendarID != CalendarId.UNINITIALIZED_VALUE, "[Calendar.CurrentEraValue] Expected a real calendar ID");
+                    _currentEraValue = CalendarData.GetCalendarData(BaseCalendarID).iCurrentEra;
                 }
-                return (m_currentEraValue);
+                return (_currentEraValue);
             }
         }
 
@@ -247,8 +220,8 @@ namespace System.Globalization
             if (ticks < minValue.Ticks || ticks > maxValue.Ticks)
             {
                 throw new ArgumentException(
-                    String.Format(CultureInfo.InvariantCulture, Environment.GetResourceString("Argument_ResultCalendarRange"),
-                        minValue, maxValue));
+                    String.Format(CultureInfo.InvariantCulture, SR.Format(SR.Argument_ResultCalendarRange,
+                        minValue, maxValue)));
             }
             Contract.EndContractBlock();
         }
@@ -265,7 +238,7 @@ namespace System.Globalization
             double tempMillis = (value * scale + (value >= 0 ? 0.5 : -0.5));
             if (!((tempMillis > -(double)MaxMillis) && (tempMillis < (double)MaxMillis)))
             {
-                throw new ArgumentOutOfRangeException(nameof(value), Environment.GetResourceString("ArgumentOutOfRange_AddValue"));
+                throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_AddValue);
             }
 
             long millis = (long)tempMillis;
@@ -669,7 +642,7 @@ namespace System.Globalization
             if ((int)firstDayOfWeek < 0 || (int)firstDayOfWeek > 6)
             {
                 throw new ArgumentOutOfRangeException(
-                    nameof(firstDayOfWeek), Environment.GetResourceString("ArgumentOutOfRange_Range",
+                    nameof(firstDayOfWeek), SR.Format(SR.ArgumentOutOfRange_Range,
                     DayOfWeek.Sunday, DayOfWeek.Saturday));
             }
             Contract.EndContractBlock();
@@ -683,7 +656,7 @@ namespace System.Globalization
                     return (GetWeekOfYearFullDays(time, (int)firstDayOfWeek, 4));
             }
             throw new ArgumentOutOfRangeException(
-                nameof(rule), Environment.GetResourceString("ArgumentOutOfRange_Range",
+                nameof(rule), SR.Format(SR.ArgumentOutOfRange_Range,
                 CalendarWeekRule.FirstDay, CalendarWeekRule.FirstFourDayWeek));
         }
 
@@ -840,7 +813,7 @@ namespace System.Globalization
             if (year < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(year),
-                    Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                    SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             Contract.EndContractBlock();
             if (year < 100)
@@ -864,17 +837,17 @@ namespace System.Globalization
                                 nameof(millisecond),
                                 String.Format(
                                     CultureInfo.InvariantCulture,
-                                    Environment.GetResourceString("ArgumentOutOfRange_Range"), 0, MillisPerSecond - 1));
+                                    SR.Format(SR.ArgumentOutOfRange_Range, 0, MillisPerSecond - 1)));
                 }
-                return TimeSpan.TimeToTicks(hour, minute, second) + millisecond * TicksPerMillisecond;
+                return InternalGloablizationHelper.TimeToTicks(hour, minute, second) + millisecond * TicksPerMillisecond;
             }
-            throw new ArgumentOutOfRangeException(null, Environment.GetResourceString("ArgumentOutOfRange_BadHourMinuteSecond"));
+            throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadHourMinuteSecond);
         }
 
-        internal static int GetSystemTwoDigitYearSetting(int CalID, int defaultYearValue)
+        internal static int GetSystemTwoDigitYearSetting(CalendarId CalID, int defaultYearValue)
         {
             // Call nativeGetTwoDigitYearMax
-            int twoDigitYearMax = CalendarData.nativeGetTwoDigitYearMax(CalID);
+            int twoDigitYearMax = CalendarData.GetTwoDigitYearMax(CalID);
             if (twoDigitYearMax < 0)
             {
                 twoDigitYearMax = defaultYearValue;

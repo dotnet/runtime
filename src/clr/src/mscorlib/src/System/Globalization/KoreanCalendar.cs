@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
@@ -44,7 +43,7 @@ namespace System.Globalization
         //m_EraInfo[0] = new EraInfo(1, new DateTime(1, 1, 1).Ticks, -2333, 2334, GregorianCalendar.MaxYear + 2333);
 
         // Initialize our era info.
-        static internal EraInfo[] koreanEraInfo = new EraInfo[] {
+        internal static EraInfo[] koreanEraInfo = new EraInfo[] {
             new EraInfo( 1, 1, 1, 1, -2333, 2334, GregorianCalendar.MaxYear + 2333)   // era #, start year/month/day, yearOffset, minEraYear 
         };
 
@@ -67,9 +66,6 @@ namespace System.Globalization
             }
         }
 
-        // Return the type of the Korean calendar.
-        //
-
         public override CalendarAlgorithmType AlgorithmType
         {
             get
@@ -77,23 +73,6 @@ namespace System.Globalization
                 return CalendarAlgorithmType.SolarCalendar;
             }
         }
-
-        /*=================================GetDefaultInstance==========================
-        **Action: Internal method to provide a default intance of KoreanCalendar.  Used by NLS+ implementation
-        **       and other calendars.
-        **Returns:
-        **Arguments:
-        **Exceptions:
-        ============================================================================*/
-        /*
-        internal static Calendar GetDefaultInstance() {
-            if (m_defaultInstance == null) {
-                m_defaultInstance = new KoreanCalendar();
-            }
-            return (m_defaultInstance);
-        }
-        */
-
 
         public KoreanCalendar()
         {
@@ -103,16 +82,16 @@ namespace System.Globalization
             }
             catch (ArgumentException e)
             {
-                throw new TypeInitializationException(this.GetType().FullName, e);
+                throw new TypeInitializationException(this.GetType().ToString(), e);
             }
             helper = new GregorianCalendarHelper(this, koreanEraInfo);
         }
 
-        internal override int ID
+        internal override CalendarId ID
         {
             get
             {
-                return (CAL_KOREA);
+                return CalendarId.KOREA;
             }
         }
 
@@ -264,7 +243,7 @@ namespace System.Globalization
                                 "year",
                                 String.Format(
                                     CultureInfo.CurrentCulture,
-                                    Environment.GetResourceString("ArgumentOutOfRange_Range"),
+                                    SR.ArgumentOutOfRange_Range,
                                     99,
                                     helper.MaxYear));
                 }
@@ -278,7 +257,7 @@ namespace System.Globalization
             if (year < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(year),
-                    Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                    SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             Contract.EndContractBlock();
 
