@@ -203,9 +203,12 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Theory]
-        [InlineData(5000, 1, 1, false)]
-        [InlineData(5000, 1, 1, true)]
-        public async Task Socket_SendReceiveAsync_PropagateToStream_Success(int iterations, int writeBufferSize, int readBufferSize, bool shutdownUnusedDirections)
+        [InlineData(5000, 1, 1)]
+        [InlineData(500, 18, 21)]
+        [InlineData(500, 21, 18)]
+        [InlineData(5, 128000, 64000)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests SendReceiveAsync sucess for UnixDomainSocketEndPoint on Unix
+        public async Task Socket_SendReceiveAsync_PropagateToStream_Success(int iterations, int writeBufferSize, int readBufferSize)
         {             
             var writeBuffer = new byte[writeBufferSize * iterations];
             new Random().NextBytes(writeBuffer);
@@ -221,10 +224,11 @@ namespace System.Net.Sockets.Tests
                     server.Bind(endPoint);
                     server.Listen(1);
 
+                    Task<Socket> serverAccept = server.AcceptAsync();
+                    await Task.WhenAll(serverAccept, client.ConnectAsync(endPoint));
+
                     Task clientReceives = Task.Run(async () =>
                     {
-                        await client.ConnectAsync(endPoint);
-
                         int bytesRead;
                         byte[] buffer = new byte[readBufferSize];
                         while ((bytesRead = await client.ReceiveAsync(new ArraySegment<byte>(buffer), SocketFlags.None)) > 0)
@@ -233,14 +237,8 @@ namespace System.Net.Sockets.Tests
                         }
                     });
 
-                    using (Socket accepted = await server.AcceptAsync())
+                    using (Socket accepted = await serverAccept)
                     {
-                        if (shutdownUnusedDirections)
-                        {
-                            server.Shutdown(SocketShutdown.Receive);
-                            client.Shutdown(SocketShutdown.Send);
-                        }
-
                         for (int iter = 0; iter < iterations; iter++)
                         {
                             Task<int> sendTask = accepted.SendAsync(new ArraySegment<byte>(writeBuffer, iter * writeBufferSize, writeBufferSize), SocketFlags.None);
