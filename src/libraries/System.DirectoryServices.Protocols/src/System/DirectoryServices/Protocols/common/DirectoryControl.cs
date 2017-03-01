@@ -883,10 +883,10 @@ namespace System.DirectoryServices.Protocols
                 {
                     sortPtr = Marshal.AllocHGlobal(structSize);
                     Marshal.StructureToPtr(_keys[i], sortPtr, false);
-                    tempPtr = (IntPtr)((long)memHandle + Marshal.SizeOf(typeof(IntPtr)) * i);
+                    tempPtr = (IntPtr)((long)memHandle + IntPtr.Size * i);
                     Marshal.WriteIntPtr(tempPtr, sortPtr);
                 }
-                tempPtr = (IntPtr)((long)memHandle + Marshal.SizeOf(typeof(IntPtr)) * i);
+                tempPtr = (IntPtr)((long)memHandle + IntPtr.Size * i);
                 Marshal.WriteIntPtr(tempPtr, (IntPtr)0);
 
                 bool critical = IsCritical;
@@ -924,7 +924,7 @@ namespace System.DirectoryServices.Protocols
                     //release the memory from the heap
                     for (int i = 0; i < keyCount; i++)
                     {
-                        IntPtr tempPtr = Marshal.ReadIntPtr(memHandle, Marshal.SizeOf(typeof(IntPtr)) * i);
+                        IntPtr tempPtr = Marshal.ReadIntPtr(memHandle, IntPtr.Size * i);
                         if (tempPtr != (IntPtr)0)
                         {
                             // free the marshalled name
@@ -932,7 +932,7 @@ namespace System.DirectoryServices.Protocols
                             if (ptr != (IntPtr)0)
                                 Marshal.FreeHGlobal(ptr);
                             // free the marshalled rule
-                            ptr = Marshal.ReadIntPtr(tempPtr, Marshal.SizeOf(typeof(IntPtr)));
+                            ptr = Marshal.ReadIntPtr(tempPtr, IntPtr.Size);
                             if (ptr != (IntPtr)0)
                                 Marshal.FreeHGlobal(ptr);
 

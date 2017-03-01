@@ -31,7 +31,7 @@ internal partial class Interop
                 FileAttributes = fileAttributes
             };
 
-            return SetFileInformationByHandle(hFile, FILE_INFO_BY_HANDLE_CLASS.FileBasicInfo, ref basicInfo, (uint)Marshal.SizeOf<FILE_BASIC_INFO>());
+            return SetFileInformationByHandle(hFile, FILE_INFO_BY_HANDLE_CLASS.FileBasicInfo, ref basicInfo, (uint)sizeof(FILE_BASIC_INFO));
         }
 
         internal struct FILE_BASIC_INFO

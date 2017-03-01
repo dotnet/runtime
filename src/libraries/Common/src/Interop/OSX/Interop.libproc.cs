@@ -23,7 +23,6 @@ internal static partial class Interop
         private const int PROC_PIDTHREADINFO = 5;
         private const int PROC_PIDLISTTHREADS = 6;
         private const int PROC_PIDPATHINFO_MAXSIZE = 4 * MAXPATHLEN;
-        private static int PROC_PIDLISTTHREADS_SIZE = (Marshal.SizeOf<uint>() * 2);
 
         // Constants from sys\resource.h
         private const int RUSAGE_INFO_V3 = 3;
@@ -201,7 +200,7 @@ internal static partial class Interop
 
                 fixed (int* pBuffer = &processes[0])
                 {
-                    numProcesses = proc_listallpids(pBuffer, processes.Length * Marshal.SizeOf<int>());
+                    numProcesses = proc_listallpids(pBuffer, processes.Length * sizeof(int));
                     if (numProcesses <= 0)
                     {
                         throw new Win32Exception(SR.CantGetAllPids);
@@ -317,7 +316,7 @@ internal static partial class Interop
             }
 
             // Get the process information for the specified pid
-            int size = Marshal.SizeOf<proc_taskallinfo>();
+            int size = sizeof(proc_taskallinfo);
             proc_taskallinfo info = default(proc_taskallinfo);
             int result = proc_pidinfo(pid, PROC_PIDTASKALLINFO, 0, &info, size);
             return (result == size ? new proc_taskallinfo?(info) : null);
@@ -346,7 +345,7 @@ internal static partial class Interop
             }
 
             // Get the thread information for the specified thread in the specified process
-            int size = Marshal.SizeOf<proc_threadinfo>();
+            int size = sizeof(proc_threadinfo);
             proc_threadinfo info = default(proc_threadinfo);
             int result = proc_pidinfo(pid, PROC_PIDTHREADINFO, (ulong)thread, &info, size);
             return (result == size ? new proc_threadinfo?(info) : null);
@@ -373,7 +372,7 @@ internal static partial class Interop
                 threadIds = new ulong[size];
                 fixed (ulong* pBuffer = &threadIds[0])
                 {
-                    result = proc_pidinfo(pid, PROC_PIDLISTTHREADS, 0, pBuffer, Marshal.SizeOf<ulong>() * threadIds.Length);
+                    result = proc_pidinfo(pid, PROC_PIDLISTTHREADS, 0, pBuffer, sizeof(ulong) * threadIds.Length);
                 }
 
                 if (result <= 0)
@@ -391,12 +390,12 @@ internal static partial class Interop
                     }
                 }
             }
-            while (result == Marshal.SizeOf<ulong>() * threadIds.Length);
+            while (result == sizeof(ulong) * threadIds.Length);
 
-            Debug.Assert((result % Marshal.SizeOf<ulong>()) == 0);
+            Debug.Assert((result % sizeof(ulong)) == 0);
 
             // Loop over each thread and get the thread info
-            int count = (int)(result / Marshal.SizeOf<ulong>());
+            int count = (int)(result / sizeof(ulong));
             threads.Capacity = count;
             for (int i = 0; i < count; i++)
             {        
@@ -435,7 +434,7 @@ internal static partial class Interop
             // The path is a fixed buffer size, so use that and trim it after
             int result = 0;
             byte* pBuffer = stackalloc byte[PROC_PIDPATHINFO_MAXSIZE];
-            result = proc_pidpath(pid, pBuffer, (uint)(PROC_PIDPATHINFO_MAXSIZE * Marshal.SizeOf<byte>()));
+            result = proc_pidpath(pid, pBuffer, (uint)(PROC_PIDPATHINFO_MAXSIZE * sizeof(byte)));
             if (result <= 0)
             {
                 throw new Win32Exception();

@@ -58,7 +58,7 @@ namespace System.Net.Sockets
                         SocketOptionLevel.Socket,
                         SocketOptionName.UpdateAcceptContext,
                         ref handle,
-                        Marshal.SizeOf(handle));
+                        IntPtr.Size);
 
                     if (errorCode == SocketError.SocketError)
                     {
