@@ -323,9 +323,9 @@ nameof(binaryForm),
 
             binaryForm[offset + 0] = Revision;
             binaryForm[offset + 1] = 0;
-            binaryForm[offset + 2] = ( byte )( BinaryLength >> 0 );
+            binaryForm[offset + 2] = unchecked(( byte )( BinaryLength >> 0 ));
             binaryForm[offset + 3] = ( byte )( BinaryLength >> 8 );
-            binaryForm[offset + 4] = ( byte )( Count >> 0 );
+            binaryForm[offset + 4] = unchecked(( byte )( Count >> 0 ));
             binaryForm[offset + 5] = ( byte )( Count >> 8 );
             binaryForm[offset + 6] = 0;
             binaryForm[offset + 7] = 0;

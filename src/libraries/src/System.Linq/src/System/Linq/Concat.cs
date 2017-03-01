@@ -463,7 +463,8 @@ namespace System.Linq
 
             public virtual TSource[] ToArray()
             {
-                var builder = new LargeArrayBuilder<TSource>(initialize: true);
+                var builder = new SparseArrayBuilder<TSource>(initialize: true);
+                var deferredCopies = new ArrayBuilder<int>();
 
                 for (int i = 0; ; i++)
                 {
@@ -473,10 +474,32 @@ namespace System.Linq
                         break;
                     }
 
+                    int count;
+                    if (EnumerableHelpers.TryGetCount(source, out count))
+                    {
+                        if (count > 0)
+                        {
+                            builder.Reserve(count);
+                            deferredCopies.Add(i);
+                        }
+                        continue;
+                    }
+
                     builder.AddRange(source);
                 }
 
-                return builder.ToArray();
+                TSource[] array = builder.ToArray();
+
+                ArrayBuilder<Marker> markers = builder.Markers;
+                for (int i = 0; i < markers.Count; i++)
+                {
+                    Marker marker = markers[i];
+                    IEnumerable<TSource> source = GetEnumerable(deferredCopies[i]);
+                    
+                    EnumerableHelpers.Copy(source, array, marker.Index, marker.Count);
+                }
+
+                return array;
             }
 
             public List<TSource> ToList()

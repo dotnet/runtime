@@ -432,7 +432,7 @@ namespace System.Xml.Schema
             { //Both are built-in types
                 Type derivedType = this.GetType();
                 Type baseType = datatype.GetType();
-                return baseType == derivedType || derivedType.GetTypeInfo().IsSubclassOf(baseType);
+                return baseType == derivedType || derivedType.IsSubclassOf(baseType);
             }
             else if (datatype.Variety == XmlSchemaDatatypeVariety.Union && !datatype.HasLexicalFacets && !datatype.HasValueFacets && _variety != XmlSchemaDatatypeVariety.Union)
             { //base type is union (not a restriction of union) and derived type is not union

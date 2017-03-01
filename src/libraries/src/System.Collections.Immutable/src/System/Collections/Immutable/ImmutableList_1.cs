@@ -3123,7 +3123,7 @@ namespace System.Collections.Immutable
             /// <returns>
             /// <c>true</c> if this tree is balanced; otherwise, <c>false</c>.
             /// </returns>
-            private bool IsBalanced => (uint)(this.BalanceFactor + 1) <= 2;
+            private bool IsBalanced => unchecked((uint)(this.BalanceFactor + 1)) <= 2;
 
             /// <summary>
             /// Balances this tree.

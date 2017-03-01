@@ -4,7 +4,7 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Errors
 {
-    internal class CErrorFactory
+    internal sealed class CErrorFactory
     {
         public CError CreateError(ErrorCode iErrorIndex, params string[] args)
         {

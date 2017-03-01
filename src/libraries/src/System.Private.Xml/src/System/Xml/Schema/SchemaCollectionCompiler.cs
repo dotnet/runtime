@@ -1437,7 +1437,7 @@ namespace System.Xml.Schema
             {
                 return false;
             }
-            // eliminate occurrance range check
+            // eliminate occurrence range check
             string minOccursAny = baseAny.MinOccursString;
             baseAny.MinOccurs = decimal.Zero;
 

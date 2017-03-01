@@ -157,7 +157,7 @@ namespace System.Linq
         /// Creates an array from the items in this set.
         /// </summary>
         /// <returns>An array of the items in this set.</returns>
-        internal TElement[] ToArray()
+        public TElement[] ToArray()
         {
 #if DEBUG
             Debug.Assert(!_haveRemoved, "Optimised ToArray cannot be called if Remove has been called.");
@@ -175,7 +175,7 @@ namespace System.Linq
         /// Creates a list from the items in this set.
         /// </summary>
         /// <returns>A list of the items in this set.</returns>
-        internal List<TElement> ToList()
+        public List<TElement> ToList()
         {
 #if DEBUG
             Debug.Assert(!_haveRemoved, "Optimised ToList cannot be called if Remove has been called.");
@@ -193,14 +193,28 @@ namespace System.Linq
         /// <summary>
         /// The number of items in this set.
         /// </summary>
-        internal int Count => _count;
+        public int Count => _count;
+
+        /// <summary>
+        /// Unions this set with an enumerable.
+        /// </summary>
+        /// <param name="other">The enumerable.</param>
+        public void UnionWith(IEnumerable<TElement> other)
+        {
+            Debug.Assert(other != null);
+
+            foreach (TElement item in other)
+            {
+                Add(item);
+            }
+        }
 
         /// <summary>
         /// Gets the hash code of the provided value with its sign bit zeroed out, so that modulo has a positive result.
         /// </summary>
         /// <param name="value">The value to hash.</param>
         /// <returns>The lower 31 bits of the value's hash code.</returns>
-        internal int InternalGetHashCode(TElement value)
+        private int InternalGetHashCode(TElement value)
         {
             // Handle comparer implementations that throw when passed null
             return (value == null) ? 0 : _comparer.GetHashCode(value) & 0x7FFFFFFF;

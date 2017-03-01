@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -7,12 +7,14 @@
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Unix-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Unix-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Windows_NT-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.3-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.3-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Unix-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Unix-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup>
     <!-- SYSTEM_NET_PRIMITIVES_DLL is required to allow source-level code sharing for types defined within the 
          System.Net.Internals namespace. -->
@@ -22,32 +24,39 @@
   <ItemGroup>
     <TargetingPackExclusions Include="System.Net.Primitives" />
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="IPAddressPalTest.cs" />
-    <Compile Include="HostInformationPalTest.cs" />
-    <Compile Include="SocketAddressPalTest.cs" />
-    <Compile Include="Fakes\NetEventSource.cs" />
-    <Compile Include="Fakes\Serialization.cs" Condition="'$(TargetGroup)' != 'netstandard'" />
-    <Compile Include="..\..\src\System\Net\EndPoint.cs">
-      <Link>ProductionCode\System\Net\EndPoint.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\IPAddress.cs">
-      <Link>ProductionCode\System\Net\IPAddress.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\IPAddressParser.cs">
-      <Link>ProductionCode\System\Net\IPAddressParser.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\IPEndPoint.cs">
-      <Link>ProductionCode\System\Net\IPEndPoint.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\SocketException.cs">
-      <Link>ProductionCode\System\Net\SocketException.cs</Link>
-    </Compile>
+
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
     <Compile Include="..\..\src\System\Net\Sockets\AddressFamily.cs">
       <Link>ProductionCode\System\Net\Sockets\AddressFamily.cs</Link>
     </Compile>
     <Compile Include="..\..\src\System\Net\Sockets\SocketError.cs">
       <Link>ProductionCode\System\Net\Sockets\SocketError.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\IPAddress.cs">
+      <Link>ProductionCode\System\Net\IPAddress.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\IPEndPoint.cs">
+      <Link>ProductionCode\System\Net\IPEndPoint.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\SocketAddress.cs">
+      <Link>Common\System\Net\SocketAddress.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\EndPoint.cs">
+      <Link>ProductionCode\System\Net\EndPoint.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\IPAddressParser.cs">
+      <Link>ProductionCode\System\Net\IPAddressParser.cs</Link>
+    </Compile>
+    <Compile Include="IPAddressPalTest.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="HostInformationPalTest.cs" />
+    <Compile Include="SocketAddressPalTest.cs" />
+    <Compile Include="Fakes\NetEventSource.cs" />
+    <Compile Include="Fakes\Serialization.cs" Condition="'$(TargetGroup)' != 'netstandard' And '$(TargetGroup)' != 'netcoreapp'" />
+    <Compile Include="..\..\src\System\Net\SocketException.cs">
+      <Link>ProductionCode\System\Net\SocketException.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\ByteOrder.cs">
       <Link>ProductionCode\Common\System\Net\ByteOrder.cs</Link>
@@ -57,9 +66,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\IPAddressParserStatics.cs">
       <Link>ProductionCode\Common\System\Net\IPAddressParserStatics.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\SocketAddress.cs">
-      <Link>Common\System\Net\SocketAddress.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\TcpValidationHelpers.cs">
       <Link>ProductionCode\Common\System\Net\TcpValidationHelpers.cs</Link>
@@ -72,7 +78,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
-    <Compile Include="..\..\src\System\Net\IPAddressPal.Windows.cs">
+    <Compile Include="..\..\src\System\Net\IPAddressPal.Windows.cs" Condition="'$(TargetGroup)' == 'netcoreapp'">
       <Link>ProductionCode\System\Net\IPAddressPal.Windows.cs</Link>
     </Compile>
     <Compile Include="..\..\src\System\Net\SocketException.Windows.cs">

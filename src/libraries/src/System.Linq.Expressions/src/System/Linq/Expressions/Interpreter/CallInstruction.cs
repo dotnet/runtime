@@ -52,7 +52,7 @@ namespace System.Linq.Expressions.Interpreter
 #if !FEATURE_DLG_INVOKE
             return new MethodInfoCallInstruction(info, argumentCount);
 #else
-            if (!info.IsStatic && info.DeclaringType.GetTypeInfo().IsValueType)
+            if (!info.IsStatic && info.DeclaringType.IsValueType)
             {
                 return new MethodInfoCallInstruction(info, argumentCount);
             }
@@ -475,16 +475,9 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     foreach (ByRefUpdater arg in _byrefArgs)
                     {
-                        if (arg.ArgumentIndex == -1)
-                        {
-                            // instance param, just copy back the exact instance invoked with, which
-                            // gets passed by reference from reflection for value types.
-                            arg.Update(frame, instance);
-                        }
-                        else
-                        {
-                            arg.Update(frame, args[arg.ArgumentIndex]);
-                        }
+                        // -1: instance param, just copy back the exact instance invoked with, which
+                        // gets passed by reference from reflection for value types.
+                        arg.Update(frame, arg.ArgumentIndex == -1 ? instance : args[arg.ArgumentIndex]);
                     }
                 }
             }

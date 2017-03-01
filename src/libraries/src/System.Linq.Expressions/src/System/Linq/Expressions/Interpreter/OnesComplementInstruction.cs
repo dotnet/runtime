@@ -80,7 +80,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push((ushort)(~(ushort)obj));
+                    frame.Push(unchecked((ushort)(~(ushort)obj)));
                 }
                 return 1;
             }
@@ -131,7 +131,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Push((byte)(~(byte)obj));
+                    frame.Push(unchecked((byte)(~(byte)obj)));
                 }
                 return 1;
             }
@@ -156,7 +156,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public static Instruction Create(Type type)
         {
-            Debug.Assert(!type.GetTypeInfo().IsEnum);
+            Debug.Assert(!type.IsEnum);
             switch (type.GetNonNullableType().GetTypeCode())
             {
                 case TypeCode.SByte: return s_SByte ?? (s_SByte = new OnesComplementSByte());

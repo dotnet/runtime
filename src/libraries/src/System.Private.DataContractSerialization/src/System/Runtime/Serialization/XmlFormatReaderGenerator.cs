@@ -11,9 +11,6 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Security;
-#if NET_NATIVE
-using Internal.Runtime.Augments;
-#endif
 
 namespace System.Runtime.Serialization
 {
@@ -250,7 +247,7 @@ namespace System.Runtime.Serialization
             private void CreateObject(ClassDataContract classContract)
             {
                 Type type = _objectType = classContract.UnderlyingType;
-                if (type.GetTypeInfo().IsValueType && !classContract.IsNonAttributedType)
+                if (type.IsValueType && !classContract.IsNonAttributedType)
                     type = Globals.TypeOfValueType;
 
                 _objectLocal = _ilg.DeclareLocal(type, "objectDeserialized");
@@ -262,7 +259,7 @@ namespace System.Runtime.Serialization
                 }
                 else if (classContract.IsNonAttributedType)
                 {
-                    if (type.GetTypeInfo().IsValueType)
+                    if (type.IsValueType)
                     {
                         _ilg.Ldloca(_objectLocal);
                         _ilg.InitObj(type);
@@ -459,14 +456,14 @@ namespace System.Runtime.Serialization
                 LocalBuilder value = _ilg.DeclareLocal(type, "valueRead");
                 LocalBuilder nullableValue = null;
                 int nullables = 0;
-                while (type.GetTypeInfo().IsGenericType && type.GetGenericTypeDefinition() == Globals.TypeOfNullable)
+                while (type.IsGenericType && type.GetGenericTypeDefinition() == Globals.TypeOfNullable)
                 {
                     nullables++;
                     type = type.GetGenericArguments()[0];
                 }
 
                 PrimitiveDataContract primitiveContract = PrimitiveDataContract.GetPrimitiveDataContract(type);
-                if ((primitiveContract != null && primitiveContract.UnderlyingType != Globals.TypeOfObject) || nullables != 0 || type.GetTypeInfo().IsValueType)
+                if ((primitiveContract != null && primitiveContract.UnderlyingType != Globals.TypeOfObject) || nullables != 0 || type.IsValueType)
                 {
                     LocalBuilder objectId = _ilg.DeclareLocal(Globals.TypeOfString, "objectIdRead");
                     _ilg.Call(_contextArg, XmlFormatGeneratorStatics.ReadAttributesMethod, _xmlReaderArg);
@@ -479,7 +476,7 @@ namespace System.Runtime.Serialization
                         _ilg.LoadAddress(value);
                         _ilg.InitObj(value.LocalType);
                     }
-                    else if (type.GetTypeInfo().IsValueType)
+                    else if (type.IsValueType)
                         ThrowValidationException(SR.Format(SR.ValueTypeCannotBeNull, DataContract.GetClrTypeFullName(type)));
                     else
                     {
@@ -493,7 +490,7 @@ namespace System.Runtime.Serialization
                     _ilg.ElseIfIsEmptyString(objectId);
                     _ilg.Call(_contextArg, XmlFormatGeneratorStatics.GetObjectIdMethod);
                     _ilg.Stloc(objectId);
-                    if (type.GetTypeInfo().IsValueType)
+                    if (type.IsValueType)
                     {
                         _ilg.IfNotIsEmptyString(objectId);
                         ThrowValidationException(SR.Format(SR.ValueTypeCannotHaveId, DataContract.GetClrTypeFullName(type)));
@@ -509,7 +506,7 @@ namespace System.Runtime.Serialization
                     {
                         _ilg.Call(_xmlReaderArg, primitiveContract.XmlFormatReaderMethod);
                         _ilg.Stloc(value);
-                        if (!type.GetTypeInfo().IsValueType)
+                        if (!type.IsValueType)
                             _ilg.Call(_contextArg, XmlFormatGeneratorStatics.AddNewObjectMethod, value);
                     }
                     else
@@ -518,7 +515,7 @@ namespace System.Runtime.Serialization
                     }
                     // Deserialize ref
                     _ilg.Else();
-                    if (type.GetTypeInfo().IsValueType)
+                    if (type.IsValueType)
                         ThrowValidationException(SR.Format(SR.ValueTypeCannotHaveRef, DataContract.GetClrTypeFullName(type)));
                     else
                     {
@@ -581,7 +578,7 @@ namespace System.Runtime.Serialization
 
                 ConstructorInfo constructor = collectionContract.Constructor;
 
-                if (type.GetTypeInfo().IsInterface)
+                if (type.IsInterface)
                 {
                     switch (collectionContract.Kind)
                     {
@@ -610,7 +607,7 @@ namespace System.Runtime.Serialization
                 _objectLocal = _ilg.DeclareLocal(type, "objectDeserialized");
                 if (!isArray)
                 {
-                    if (type.GetTypeInfo().IsValueType)
+                    if (type.IsValueType)
                     {
                         _ilg.Ldloca(_objectLocal);
                         _ilg.InitObj(type);
@@ -929,11 +926,7 @@ namespace System.Runtime.Serialization
 
         internal static object UnsafeGetUninitializedObject(Type type)
         {
-#if !NET_NATIVE
             return FormatterServices.GetUninitializedObject(type);
-#else
-            return RuntimeAugments.NewObject(type.TypeHandle);
-#endif
         }
 
         /// <SecurityNote>

@@ -1,6 +1,6 @@
 # Running XUnit tests cross platform
 
-Unlike Windows, where we run tests as part of the build, we have a seperate
+Unlike Windows, where we run tests as part of the build, we have a separate
 explicit testing step on Linux and OSX. Over time, this special step will go
 away in favor of a similar "run tests during the build" model.
 
@@ -17,12 +17,12 @@ instructions assume you are building for Linux, but are easily modifiable for OS
 
    From the root of your CoreCLR enlistment on Linux, run `./build.sh Release` in
    order to build.
-2. A corresponding version of mscorlib.dll. Depending on your platform, this may
+2. A corresponding version of System.Private.Corelib.dll. Depending on your platform, this may
    be produced when you run  `build.sh`. Otherwise, this can be produced by
-   running `build.cmd linuxmscorlib Release` from a CoreCLR enlistment on
-   Windows. Remember that the runtime and mscorlib are tightly coupled with
+   running `build.cmd linuxmscorlib Release` (it's `mscorlib` for historical reasons) from a CoreCLR enlistment on
+   Windows. Remember that the runtime and System.Private.Corelib are tightly coupled with
    respect to object sizes and layout so you need to ensure you have either a
-   release coreclr and release mscorlib or debug coreclr and debug mscorlib.
+   release coreclr and release System.Private.Corelib or debug coreclr and debug System.Private.Corelib.
 3. A Linux build of CoreFX. We currently have experimental support for building
    CoreFX on Linux via `build.sh`. 
    The other option is:
@@ -56,17 +56,15 @@ If needed, copy the packages folder:
 # rsync -v -f ~/mnt/matell3/d/git/corefx/packages ~/git/corefx/packages
 ```
 
-If needed, copy mscorlib:
+If needed, copy System.Private.Corelib:
 ```
 # rsync -v -r  ~/mnt/matell3/d/git/coreclr/bin/Product/ ~/git/coreclr/bin/Product/
 ```
 
-Then, run the tests. We need to pass an explict path to the location of CoreCLR
-and mscorlib.dll.
+Then, run the tests. We need to pass an explict path to the location of CoreCLR.
 
 ```
-# ./run-test.sh --coreclr-bins ~/git/coreclr/bin/Product/Linux.x64.Release \
---mscorlib-bins ~/git/coreclr/bin/Product/Linux.x64.Release \
+# ./run-test.sh --coreclr-bins ~/git/coreclr/bin/Product/Linux.x64.Release
 ```
 
 run-test.sh should now invoke all the managed tests.

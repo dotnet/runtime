@@ -11,7 +11,7 @@ namespace System.Collections.Tests
     /// <summary>
     /// Contains tests that ensure the correctness of the SortedSet class.
     /// </summary>
-    public abstract class SortedSet_Generic_Tests<T> : ISet_Generic_Tests<T>
+    public abstract partial class SortedSet_Generic_Tests<T> : ISet_Generic_Tests<T>
     {
         #region ISet<T> Helper Methods
 
@@ -36,18 +36,7 @@ namespace System.Collections.Tests
         {
             IComparer<T> comparer = GetIComparer();
             SortedSet<T> set = new SortedSet<T>(comparer);
-            if (comparer == null)
-                Assert.Equal(Comparer<T>.Default, set.Comparer);
-            else
-                Assert.Equal(comparer, set.Comparer);
-        }
-
-        [Fact]
-        public void SortedSet_Generic_Constructor_IComparer_Null()
-        {
-            IComparer<T> comparer = GetIComparer();
-            SortedSet<T> set = new SortedSet<T>((IComparer<T>)null);
-            Assert.Equal(Comparer<T>.Default, set.Comparer);
+            Assert.Equal(comparer ?? Comparer<T>.Default, set.Comparer);
         }
 
         [Theory]
@@ -75,6 +64,15 @@ namespace System.Collections.Tests
             Assert.True(set.SetEquals(enumerable));
         }
 
+        [Theory]
+        [MemberData(nameof(EnumerableTestData))]
+        public void SortedSet_Generic_Constructor_IEnumerable_IComparer_NullComparer(EnumerableType enumerableType, int setLength, int enumerableLength, int numberOfMatchingElements, int numberOfDuplicateElements)
+        {
+            IEnumerable<T> enumerable = CreateEnumerable(enumerableType, null, enumerableLength, 0, 0);
+            SortedSet<T> set = new SortedSet<T>(enumerable, comparer: null);
+            Assert.True(set.SetEquals(enumerable));
+        }
+
         #endregion
 
         #region Max and Min
@@ -83,13 +81,18 @@ namespace System.Collections.Tests
         [MemberData(nameof(ValidCollectionSizes))]
         public void SortedSet_Generic_MaxAndMin(int setLength)
         {
+            SortedSet<T> set = (SortedSet<T>)GenericISetFactory(setLength);
             if (setLength > 0)
             {
-                SortedSet<T> set = (SortedSet<T>)GenericISetFactory(setLength);
                 List<T> expected = set.ToList();
                 expected.Sort(GetIComparer());
                 Assert.Equal(expected[0], set.Min);
                 Assert.Equal(expected[setLength - 1], set.Max);
+            }
+            else
+            {
+                Assert.Equal(default(T), set.Min);
+                Assert.Equal(default(T), set.Max);
             }
         }
 
@@ -118,9 +121,7 @@ namespace System.Collections.Tests
         {
             if (setLength >= 3)
             {
-                IComparer<T> comparer = GetIComparer();
-                if (comparer == null)
-                    comparer = Comparer<T>.Default;
+                IComparer<T> comparer = GetIComparer() ?? Comparer<T>.Default;
                 SortedSet<T> set = (SortedSet<T>)GenericISetFactory(setLength);
                 T firstElement = set.ElementAt(1);
                 T lastElement = set.ElementAt(setLength - 2);
@@ -142,9 +143,7 @@ namespace System.Collections.Tests
         {
             if (setLength >= 2)
             {
-                IComparer<T> comparer = GetIComparer();
-                if (comparer == null)
-                    comparer = Comparer<T>.Default;
+                IComparer<T> comparer = GetIComparer() ?? Comparer<T>.Default;
                 SortedSet<T> set = (SortedSet<T>)GenericISetFactory(setLength);
                 T firstElement = set.ElementAt(0);
                 T lastElement = set.ElementAt(setLength - 1);
@@ -160,9 +159,7 @@ namespace System.Collections.Tests
             if (setLength >= 3)
             {
                 SortedSet<T> set = (SortedSet<T>)GenericISetFactory(setLength);
-                IComparer<T> comparer = GetIComparer();
-                if (comparer == null)
-                    comparer = Comparer<T>.Default;
+                IComparer<T> comparer = GetIComparer() ?? Comparer<T>.Default;
                 T firstElement = set.ElementAt(0);
                 T middleElement = set.ElementAt(setLength / 2);
                 T lastElement = set.ElementAt(setLength - 1);
@@ -195,6 +192,13 @@ namespace System.Collections.Tests
             int removedCount = set.RemoveWhere((value) => { return false; });
             Assert.Equal(0, removedCount);
             Assert.Equal(setLength, set.Count);
+        }
+
+        [Fact]
+        public void SortedSet_Generic_RemoveWhere_NullPredicate_ThrowsArgumentNullException()
+        {
+            SortedSet<T> set = (SortedSet<T>)GenericISetFactory();
+            Assert.Throws<ArgumentNullException>("match", () => set.RemoveWhere(null));
         }
 
         #endregion
@@ -285,7 +289,6 @@ namespace System.Collections.Tests
 
         #region CreateSetComparer
 
-#if netstandard17
         [Fact]
         public void SetComparer_SetEqualsTests()
         {
@@ -319,7 +322,6 @@ namespace System.Collections.Tests
             Assert.True(comparerSet1.SetEquals(set));
             Assert.True(comparerSet2.SetEquals(set));
         }
-#endif
         #endregion
     }
 }

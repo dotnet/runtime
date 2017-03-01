@@ -129,6 +129,25 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void NullNullableValueException(bool useInterpreter)
+        {
+            string localizedMessage = null;
+            try
+            {
+                int dummy = default(int?).Value;
+            }
+            catch (InvalidOperationException ioe)
+            {
+                localizedMessage = ioe.Message;
+            }
+
+            Expression<Func<long>> e = () => default(long?).Value;
+            Func<long> f = e.Compile(useInterpreter);
+            InvalidOperationException exception = Assert.Throws<InvalidOperationException>(() => f());
+            Assert.Equal(localizedMessage, exception.Message);
+        }
+
         [Theory]
         [ClassData(typeof(CompilationTypes))]
         public static void CheckMemberAccessClassInstanceFieldTest(bool useInterpreter)
@@ -221,6 +240,18 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<ArgumentException>("expression", () => Expression.Field(expression, typeof(FC).GetField(nameof(FC.SI))));
 
             Assert.Throws<ArgumentException>("expression", () => Expression.MakeMemberAccess(expression, typeof(FC).GetField(nameof(FC.SI))));
+        }
+
+        [Fact]
+        public static void Field_ByrefTypeFieldAccessor_ThrowsArgumentException()
+        {
+            Assert.Throws<ArgumentException>(() => Expression.Property(null, typeof(GenericClass<string>).MakeByRefType(), nameof(GenericClass<string>.Field)));
+        }
+
+        [Fact]
+        public static void Field_GenericFieldAccessor_ThrowsArgumentException()
+        {
+            Assert.Throws<ArgumentException>(() => Expression.Property(null, typeof(GenericClass<>), nameof(GenericClass<string>.Field)));
         }
 
         [Fact]
@@ -469,14 +500,21 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void Property_GenericPropertyAccessor_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>("propertyAccessor", () => Expression.Property(null, typeof(GenericClass<>).GetMethod(nameof(GenericClass<string>.Method))));
+            Assert.Throws<ArgumentException>("propertyAccessor", () => Expression.Property(null, typeof(GenericClass<>).GetProperty(nameof(GenericClass<string>.Property)).GetGetMethod()));
             Assert.Throws<ArgumentException>("propertyAccessor", () => Expression.Property(null, typeof(NonGenericClass).GetMethod(nameof(NonGenericClass.GenericMethod))));
+            Assert.Throws<ArgumentException>("property", () => Expression.Property(null, typeof(GenericClass<>).GetProperty(nameof(GenericClass<string>.Property))));
         }
 
         [Fact]
         public static void Property_PropertyAccessorNotFromProperty_ThrowsArgumentException()
         {
             Assert.Throws<ArgumentException>("propertyAccessor", () => Expression.Property(null, typeof(NonGenericClass).GetMethod(nameof(NonGenericClass.StaticMethod))));
+        }
+
+        [Fact]
+        public static void Property_ByRefStaticAccess_ThrowsArgumentException()
+        {
+            Assert.Throws<ArgumentException>(() => Expression.Property(null, typeof(NonGenericClass).MakeByRefType(), nameof(NonGenericClass.NonGenericProperty)));
         }
 
         [Fact]
@@ -544,6 +582,28 @@ namespace System.Linq.Expressions.Tests
 
             MemberExpression e2 = Expression.Property(Expression.Parameter(typeof(DateTime), "d"), typeof(DateTime).GetProperty(nameof(DateTime.Year)));
             Assert.Equal("d.Year", e2.ToString());
+        }
+
+        [Fact]
+        public static void UpdateSameResturnsSame()
+        {
+            var exp = Expression.Constant(new PS {II = 42});
+            var pro = Expression.Property(exp, nameof(PS.II));
+            Assert.Same(pro, pro.Update(exp));
+        }
+
+        [Fact]
+        public static void UpdateStaticResturnsSame()
+        {
+            var pro = Expression.Property(null, typeof(PS), nameof(PS.SI));
+            Assert.Same(pro, pro.Update(null));
+        }
+
+        [Fact]
+        public static void UpdateDifferentResturnsDifferent()
+        {
+            var pro = Expression.Property(Expression.Constant(new PS {II = 42}), nameof(PS.II));
+            Assert.NotSame(pro, pro.Update(Expression.Constant(new PS {II = 42})));
         }
     }
 }

@@ -835,7 +835,7 @@ namespace System
         public static float Round(float x, int digits) { throw null; }
         public static float Round(float x, int digits, System.MidpointRounding mode) { throw null; }
         public static float Round(float x, System.MidpointRounding mode) { throw null; }
-        public static int Sign(float x) { return default(int); }
+        public static int Sign(float x) { throw null; }
         public static float Sin(float x) { throw null; }
         public static float Sinh(float x) { throw null; }
         public static float Sqrt(float x) { throw null; }
@@ -1177,7 +1177,7 @@ namespace System.IO
         public static string GetTempPath() { throw null; }
         public static bool HasExtension(string path) { throw null; }
         public static bool IsPathRooted(string path) { throw null; }
-        public static string GetRelativePath(string relativeTo, string path) { return default(string); }
+        public static string GetRelativePath(string relativeTo, string path) { throw null; }
     }
 
     public partial class BinaryReader : System.IDisposable
@@ -1278,8 +1278,8 @@ namespace System.IO
         public override void Write(byte[] array, int offset, int count) { }
         public override System.Threading.Tasks.Task WriteAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
         public override void WriteByte(byte value) { }
-        public Stream UnderlyingStream { get { return default(Stream); } }
-        public int BufferSize { get { return 0; } }
+        public Stream UnderlyingStream { get { throw null; } }
+        public int BufferSize { get { throw null; } }
     }
     public partial class EndOfStreamException : System.IO.IOException
     {

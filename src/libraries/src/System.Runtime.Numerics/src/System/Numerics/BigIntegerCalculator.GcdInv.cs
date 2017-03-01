@@ -11,7 +11,9 @@ namespace System.Numerics
         public static uint Gcd(uint left, uint right)
         {
             // Executes the classic Euclidean algorithm.
+
             // https://en.wikipedia.org/wiki/Euclidean_algorithm
+
             while (right != 0)
             {
                 uint temp = left % right;
@@ -25,6 +27,7 @@ namespace System.Numerics
         public static ulong Gcd(ulong left, ulong right)
         {
             // Same as above, but for 64-bit values.
+
             while (right > 0xFFFFFFFF)
             {
                 ulong temp = left % right;
@@ -269,8 +272,8 @@ namespace System.Numerics
                 long yDigit = d * y[i] - c * x[i] + yCarry;
                 xCarry = xDigit >> 32;
                 yCarry = yDigit >> 32;
-                x[i] = (uint)xDigit;
-                y[i] = (uint)yDigit;
+                x[i] = unchecked((uint)xDigit);
+                y[i] = unchecked((uint)yDigit);
             }
 
             xBuffer.Refresh(length);

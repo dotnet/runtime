@@ -173,7 +173,7 @@ namespace System.Data.SqlTypes
 
         public static SqlInt16 operator |(SqlInt16 x, SqlInt16 y)
         {
-            return (x.IsNull || y.IsNull) ? Null : new SqlInt16((short)((ushort)x._value | (ushort)y._value));
+            return (x.IsNull || y.IsNull) ? Null : new SqlInt16(unchecked((short)((ushort)x._value | (ushort)y._value)));
         }
 
         public static SqlInt16 operator ^(SqlInt16 x, SqlInt16 y)

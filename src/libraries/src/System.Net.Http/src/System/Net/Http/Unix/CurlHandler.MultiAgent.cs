@@ -849,7 +849,14 @@ namespace System.Net.Http
                     // ignore it and treat such failures as successes, to match the Windows behavior.
                     if (messageResult != CURLcode.CURLE_UNSUPPORTED_PROTOCOL)
                     {
-                        ThrowIfCURLEError(messageResult);
+                        // libcurl will return CURLE_RECV_ERROR (56) if proxy authentication failed when connecting to a https server,
+                        // whereas it returns CURLE_OK for a http server proxy authentication failure. We ignore this curl behavior error,
+                        // and let the user rely on response message status code to match the Windows behavior.
+                        if (messageResult != CURLcode.CURLE_RECV_ERROR ||
+                                completedOperation._responseMessage.StatusCode != HttpStatusCode.ProxyAuthenticationRequired)
+                        {
+                            ThrowIfCURLEError(messageResult);
+                        }
                     }
 
                     // Make sure the response message is published, in case it wasn't already, and since we're done processing
@@ -1078,9 +1085,9 @@ namespace System.Net.Http
                 if (sts != null)
                 {
                     // Is there a previous read that may still have data to be consumed?
-                    if (sts._task != null)
+                    if (sts.Task != null)
                     {
-                        if (!sts._task.IsCompleted)
+                        if (!sts.Task.IsCompleted)
                         {
                             // We have a previous read that's not yet completed.  This should be quite rare, but it can
                             // happen when we're unpaused prematurely, potentially due to the request still finishing
@@ -1096,8 +1103,8 @@ namespace System.Net.Http
                         // Determine how many bytes were read on the last asynchronous read.
                         // If nothing was read, then we're done and can simply return 0 to indicate
                         // the end of the stream.
-                        int bytesRead = sts._task.GetAwaiter().GetResult(); // will throw if read failed
-                        Debug.Assert(bytesRead >= 0 && bytesRead <= sts._buffer.Length, $"ReadAsync returned an invalid result length: {bytesRead}");
+                        int bytesRead = sts.Task.GetAwaiter().GetResult(); // will throw if read failed
+                        Debug.Assert(bytesRead >= 0 && bytesRead <= sts.Buffer.Length, $"ReadAsync returned an invalid result length: {bytesRead}");
                         if (bytesRead == 0)
                         {
                             sts.SetTaskOffsetCount(null, 0, 0);
@@ -1106,26 +1113,26 @@ namespace System.Net.Http
 
                         // If Count is still 0, then this is the first time after the task completed
                         // that we're examining the data: transfer the bytesRead to the Count.
-                        if (sts._count == 0)
+                        if (sts.Count == 0)
                         {
                             multi.EventSourceTrace("ReadAsync completed with bytes: {0}", bytesRead, easy: easy);
-                            sts._count = bytesRead;
+                            sts.Count = bytesRead;
                         }
 
                         // Now Offset and Count are both accurate.  Determine how much data we can copy to libcurl...
-                        int availableData = sts._count - sts._offset;
+                        int availableData = sts.Count - sts.Offset;
                         Debug.Assert(availableData > 0, "There must be some data still available.");
 
                         // ... and copy as much of that as libcurl will allow.
                         int bytesToCopy = Math.Min(availableData, length);
-                        Marshal.Copy(sts._buffer, sts._offset, buffer, bytesToCopy);
+                        Marshal.Copy(sts.Buffer, sts.Offset, buffer, bytesToCopy);
                         multi.EventSourceTrace("Copied {0} bytes from request stream", bytesToCopy, easy: easy);
 
                         // Update the offset.  If we've gone through all of the data, reset the state 
                         // so that the next time we're called back we'll do a new read.
-                        sts._offset += bytesToCopy;
-                        Debug.Assert(sts._offset <= sts._count, "Offset should never exceed count");
-                        if (sts._offset == sts._count)
+                        sts.Offset += bytesToCopy;
+                        Debug.Assert(sts.Offset <= sts.Count, "Offset should never exceed count");
+                        if (sts.Offset == sts.Count)
                         {
                             sts.SetTaskOffsetCount(null, 0, 0);
                         }
@@ -1151,9 +1158,9 @@ namespace System.Net.Http
                 }
 
                 Debug.Assert(sts != null, "By this point we should have a transfer object");
-                Debug.Assert(sts._task == null, "There shouldn't be a task now.");
-                Debug.Assert(sts._count == 0, "Count should be zero.");
-                Debug.Assert(sts._offset == 0, "Offset should be zero.");
+                Debug.Assert(sts.Task == null, "There shouldn't be a task now.");
+                Debug.Assert(sts.Count == 0, "Count should be zero.");
+                Debug.Assert(sts.Offset == 0, "Offset should be zero.");
 
                 // If we get here, there was no previously read data available to copy.
 
@@ -1179,7 +1186,7 @@ namespace System.Net.Http
                 {
                     multi.EventSourceTrace("Starting async read", easy: easy);
                     asyncRead = easy._requestContentStream.ReadAsync(
-                       sts._buffer, 0, Math.Min(sts._buffer.Length, length), easy._cancellationToken);
+                       sts.Buffer, 0, Math.Min(sts.Buffer.Length, length), easy._cancellationToken);
                 }
                 Debug.Assert(asyncRead != null, "Badly implemented stream returned a null task from ReadAsync");
 
@@ -1199,8 +1206,8 @@ namespace System.Net.Http
 
                     // Copy as much as we can.
                     int bytesToCopy = Math.Min(bytesRead, length);
-                    Debug.Assert(bytesToCopy > 0 && bytesToCopy <= sts._buffer.Length, $"ReadAsync quickly returned an invalid result length: {bytesToCopy}");
-                    Marshal.Copy(sts._buffer, 0, buffer, bytesToCopy);
+                    Debug.Assert(bytesToCopy > 0 && bytesToCopy <= sts.Buffer.Length, $"ReadAsync quickly returned an invalid result length: {bytesToCopy}");
+                    Marshal.Copy(sts.Buffer, 0, buffer, bytesToCopy);
                     multi.EventSourceTrace("Read {0} bytes", bytesToCopy, easy: easy);
 
                     // If we read more than we were able to copy, stash it away for the next read.
@@ -1256,7 +1263,7 @@ namespace System.Net.Http
 
                     // Now that we have a stream, do the desired read
                     multi.EventSourceTrace("Starting async read", easy: easy);
-                    return easy._requestContentStream.ReadAsync(sts._buffer, 0, Math.Min(sts._buffer.Length, length), easy._cancellationToken);
+                    return easy._requestContentStream.ReadAsync(sts.Buffer, 0, Math.Min(sts.Buffer.Length, length), easy._cancellationToken);
                 }
                 catch (OperationCanceledException oce)
                 {

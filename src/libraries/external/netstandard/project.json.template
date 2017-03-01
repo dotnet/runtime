@@ -1,0 +1,9 @@
+﻿{
+  "frameworks": {
+    "{TFM}": {
+      "dependencies": {
+        "NETStandard.Library": "2.0.0-beta-25028-01"
+      }
+    }
+  }
+}

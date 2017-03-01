@@ -266,8 +266,10 @@ namespace System.Security.Cryptography
         public override string SignatureAlgorithm { get { throw null; } }
         protected override void Dispose(bool disposing) { }
         public override System.Security.Cryptography.DSAParameters ExportParameters(bool includePrivateParameters) { throw null; }
+#if !netfx // types missing from netfx targeting pack
         protected override byte[] HashData(byte[] data, int offset, int count, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
         protected override byte[] HashData(System.IO.Stream data, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
+#endif
         public override void ImportParameters(System.Security.Cryptography.DSAParameters parameters) { }
         public override bool VerifySignature(byte[] rgbHash, byte[] rgbSignature) { throw null; }
     }
@@ -276,17 +278,23 @@ namespace System.Security.Cryptography
         public ECDsaCng() { }
         public ECDsaCng(int keySize) { }
         public ECDsaCng(System.Security.Cryptography.CngKey key) { }
+#if !netfx // types missing from netfx targeting pack
         public ECDsaCng(System.Security.Cryptography.ECCurve curve) { }
+#endif
         public System.Security.Cryptography.CngKey Key { get { throw null; } }
         public override int KeySize { get { throw null; } set { } }
         public override System.Security.Cryptography.KeySizes[] LegalKeySizes { get { throw null; } }
         protected override void Dispose(bool disposing) { }
+#if !netfx // types missing from netfx targeting pack
         public override System.Security.Cryptography.ECParameters ExportExplicitParameters(bool includePrivateParameters) { throw null; }
         public override System.Security.Cryptography.ECParameters ExportParameters(bool includePrivateParameters) { throw null; }
         public override void GenerateKey(System.Security.Cryptography.ECCurve curve) { }
+#endif
         protected override byte[] HashData(byte[] data, int offset, int count, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
         protected override byte[] HashData(System.IO.Stream data, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
+#if !netfx // types missing from netfx targeting pack
         public override void ImportParameters(System.Security.Cryptography.ECParameters parameters) { }
+#endif
         public override byte[] SignHash(byte[] hash) { throw null; }
         public override bool VerifyHash(byte[] hash, byte[] signature) { throw null; }
     }

@@ -127,7 +127,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return (expr.isCONSTANT_OK()) && (expr.asCONSTANT().isZero());
         }
 
-        public static EXPR GetSeqVal(this EXPR expr)
+        private static EXPR GetSeqVal(this EXPR expr)
         {
             // Scan through EK_SEQUENCE and EK_SEQREV exprs to get the real value.
             if (expr == null)

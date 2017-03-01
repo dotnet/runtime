@@ -123,7 +123,7 @@ namespace System.ComponentModel
             {
                 e.Handler = Delegate.Remove(e.Handler, value);
             }
-            // else... no error for removal of non-existant delegate
+            // else... no error for removal of non-existent delegate
             //
         }
 

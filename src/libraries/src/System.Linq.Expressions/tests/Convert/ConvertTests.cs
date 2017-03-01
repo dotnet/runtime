@@ -7134,7 +7134,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<sbyte> f = e.Compile(useInterpreter);
 
-            Assert.Equal((sbyte)value, f());
+            Assert.Equal(unchecked((sbyte)value), f());
         }
 
         private static void VerifyByteToNullableSByte(byte value, bool useInterpreter)
@@ -7145,7 +7145,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<sbyte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((sbyte)value, f());
+            Assert.Equal(unchecked((sbyte)value), f());
         }
 
         private static void VerifyByteToShort(byte value, bool useInterpreter)
@@ -7470,7 +7470,7 @@ namespace System.Linq.Expressions.Tests
             Func<sbyte> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((sbyte)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((sbyte)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -7483,7 +7483,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<sbyte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((sbyte?)value, f());
+            Assert.Equal(unchecked((sbyte?)value), f());
         }
 
         private static void VerifyNullableByteToShort(byte? value, bool useInterpreter)
@@ -7594,7 +7594,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<byte> f = e.Compile(useInterpreter);
 
-            Assert.Equal((byte)value, f());
+            Assert.Equal(unchecked((byte)value), f());
         }
 
         private static void VerifyCharToNullableByte(char value, bool useInterpreter)
@@ -7605,7 +7605,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<byte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((byte)value, f());
+            Assert.Equal(unchecked((byte)value), f());
         }
 
         private static void VerifyCharToChar(char value, bool useInterpreter)
@@ -7792,7 +7792,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<sbyte> f = e.Compile(useInterpreter);
 
-            Assert.Equal((sbyte)value, f());
+            Assert.Equal(unchecked((sbyte)value), f());
         }
 
         private static void VerifyCharToNullableSByte(char value, bool useInterpreter)
@@ -7803,7 +7803,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<sbyte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((sbyte)value, f());
+            Assert.Equal(unchecked((sbyte)value), f());
         }
 
         private static void VerifyCharToShort(char value, bool useInterpreter)
@@ -7814,7 +7814,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<short> f = e.Compile(useInterpreter);
 
-            Assert.Equal((short)value, f());
+            Assert.Equal(unchecked((short)value), f());
         }
 
         private static void VerifyCharToNullableShort(char value, bool useInterpreter)
@@ -7825,7 +7825,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<short?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((short)value, f());
+            Assert.Equal(unchecked((short)value), f());
         }
 
         private static void VerifyCharToUInt(char value, bool useInterpreter)
@@ -7903,7 +7903,7 @@ namespace System.Linq.Expressions.Tests
             Func<byte> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((byte)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((byte)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -7916,7 +7916,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<byte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((byte?)value, f());
+            Assert.Equal(unchecked((byte?)value), f());
         }
 
         private static void VerifyNullableCharToChar(char? value, bool useInterpreter)
@@ -8128,7 +8128,7 @@ namespace System.Linq.Expressions.Tests
             Func<sbyte> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((sbyte)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((sbyte)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -8141,7 +8141,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<sbyte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((sbyte?)value, f());
+            Assert.Equal(unchecked((sbyte?)value), f());
         }
 
         private static void VerifyNullableCharToShort(char? value, bool useInterpreter)
@@ -8153,7 +8153,7 @@ namespace System.Linq.Expressions.Tests
             Func<short> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((short)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((short)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -8166,7 +8166,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<short?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((short?)value, f());
+            Assert.Equal(unchecked((short?)value), f());
         }
 
         private static void VerifyNullableCharToUInt(char? value, bool useInterpreter)
@@ -9230,7 +9230,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<byte> f = e.Compile(useInterpreter);
 
-            Assert.Equal((byte)value, f());
+            Assert.Equal(unchecked((byte)value), f());
         }
 
         private static void VerifyDoubleToNullableByte(double value, bool useInterpreter)
@@ -9241,7 +9241,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<byte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((byte)value, f());
+            Assert.Equal(unchecked((byte)value), f());
         }
 
         private static void VerifyDoubleToChar(double value, bool useInterpreter)
@@ -9252,7 +9252,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<char> f = e.Compile(useInterpreter);
 
-            Assert.Equal((char)value, f());
+            Assert.Equal(unchecked((char)value), f());
         }
 
         private static void VerifyDoubleToNullableChar(double value, bool useInterpreter)
@@ -9263,7 +9263,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<char?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((char?)value, f());
+            Assert.Equal(unchecked((char?)value), f());
         }
 
         private static void VerifyDoubleToDecimal(double value, bool useInterpreter)
@@ -9340,7 +9340,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<E> f = e.Compile(useInterpreter);
 
-            Assert.Equal((E)value, f());
+            Assert.Equal(unchecked((E)value), f());
         }
 
         private static void VerifyDoubleToNullableEnum(double value, bool useInterpreter)
@@ -9351,7 +9351,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<E?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((E)value, f());
+            Assert.Equal(unchecked((E)value), f());
         }
 
         private static void VerifyDoubleToEnumLong(double value, bool useInterpreter)
@@ -9362,7 +9362,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<El> f = e.Compile(useInterpreter);
 
-            Assert.Equal((El)value, f());
+            Assert.Equal(unchecked((El)value), f());
         }
 
         private static void VerifyDoubleToNullableEnumLong(double value, bool useInterpreter)
@@ -9373,7 +9373,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<El?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((El)value, f());
+            Assert.Equal(unchecked((El)value), f());
         }
 
         private static void VerifyDoubleToFloat(double value, bool useInterpreter)
@@ -9406,7 +9406,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<int> f = e.Compile(useInterpreter);
 
-            Assert.Equal((int)value, f());
+            Assert.Equal(unchecked((int)value), f());
         }
 
         private static void VerifyDoubleToNullableInt(double value, bool useInterpreter)
@@ -9417,7 +9417,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<int?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((int)value, f());
+            Assert.Equal(unchecked((int)value), f());
         }
 
         private static void VerifyDoubleToLong(double value, bool useInterpreter)
@@ -9428,7 +9428,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<long> f = e.Compile(useInterpreter);
 
-            Assert.Equal((long)value, f());
+            Assert.Equal(unchecked((long)value), f());
         }
 
         private static void VerifyDoubleToNullableLong(double value, bool useInterpreter)
@@ -9439,7 +9439,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<long?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((long)value, f());
+            Assert.Equal(unchecked((long)value), f());
         }
 
         private static void VerifyDoubleToSByte(double value, bool useInterpreter)
@@ -9450,7 +9450,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<sbyte> f = e.Compile(useInterpreter);
 
-            Assert.Equal((sbyte)value, f());
+            Assert.Equal(unchecked((sbyte)value), f());
         }
 
         private static void VerifyDoubleToNullableSByte(double value, bool useInterpreter)
@@ -9461,7 +9461,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<sbyte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((sbyte)value, f());
+            Assert.Equal(unchecked((sbyte)value), f());
         }
 
         private static void VerifyDoubleToShort(double value, bool useInterpreter)
@@ -9472,7 +9472,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<short> f = e.Compile(useInterpreter);
 
-            Assert.Equal((short)value, f());
+            Assert.Equal(unchecked((short)value), f());
         }
 
         private static void VerifyDoubleToNullableShort(double value, bool useInterpreter)
@@ -9483,7 +9483,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<short?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((short)value, f());
+            Assert.Equal(unchecked((short)value), f());
         }
 
         private static void VerifyDoubleToUInt(double value, bool useInterpreter)
@@ -9494,7 +9494,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<uint> f = e.Compile(useInterpreter);
 
-            Assert.Equal((uint)value, f());
+            Assert.Equal(unchecked((uint)value), f());
         }
 
         private static void VerifyDoubleToNullableUInt(double value, bool useInterpreter)
@@ -9505,7 +9505,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<uint?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((uint)value, f());
+            Assert.Equal(unchecked((uint)value), f());
         }
 
         private static void VerifyDoubleToULong(double value, bool useInterpreter)
@@ -9516,7 +9516,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ulong> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ulong)value, f());
+            Assert.Equal(unchecked((ulong)value), f());
         }
 
         private static void VerifyDoubleToNullableULong(double value, bool useInterpreter)
@@ -9527,7 +9527,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ulong?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ulong)value, f());
+            Assert.Equal(unchecked((ulong)value), f());
         }
 
         private static void VerifyDoubleToUShort(double value, bool useInterpreter)
@@ -9538,7 +9538,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ushort> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ushort)value, f());
+            Assert.Equal(unchecked((ushort)value), f());
         }
 
         private static void VerifyDoubleToNullableUShort(double value, bool useInterpreter)
@@ -9549,7 +9549,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ushort?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ushort)value, f());
+            Assert.Equal(unchecked((ushort)value), f());
         }
 
         private static void VerifyNullableDoubleToByte(double? value, bool useInterpreter)
@@ -9561,7 +9561,7 @@ namespace System.Linq.Expressions.Tests
             Func<byte> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((byte)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((byte)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -9574,7 +9574,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<byte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((byte?)value, f());
+            Assert.Equal(unchecked((byte?)value), f());
         }
 
         private static void VerifyNullableDoubleToChar(double? value, bool useInterpreter)
@@ -9586,7 +9586,7 @@ namespace System.Linq.Expressions.Tests
             Func<char> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((char)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((char)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -9599,7 +9599,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<char?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((char?)value, f());
+            Assert.Equal(unchecked((char?)value), f());
         }
 
         private static void VerifyNullableDoubleToDecimal(double? value, bool useInterpreter)
@@ -9685,7 +9685,7 @@ namespace System.Linq.Expressions.Tests
             Func<E> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((E)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((E)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -9698,7 +9698,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<E?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((E?)value, f());
+            Assert.Equal(unchecked((E?)value), f());
         }
 
         private static void VerifyNullableDoubleToEnumLong(double? value, bool useInterpreter)
@@ -9710,7 +9710,7 @@ namespace System.Linq.Expressions.Tests
             Func<El> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((El)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((El)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -9723,7 +9723,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<El?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((El?)value, f());
+            Assert.Equal(unchecked((El?)value), f());
         }
 
         private static void VerifyNullableDoubleToFloat(double? value, bool useInterpreter)
@@ -9760,7 +9760,7 @@ namespace System.Linq.Expressions.Tests
             Func<int> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((int)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((int)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -9773,7 +9773,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<int?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((int?)value, f());
+            Assert.Equal(unchecked((int?)value), f());
         }
 
         private static void VerifyNullableDoubleToLong(double? value, bool useInterpreter)
@@ -9785,7 +9785,7 @@ namespace System.Linq.Expressions.Tests
             Func<long> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((long)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((long)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -9798,7 +9798,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<long?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((long?)value, f());
+            Assert.Equal(unchecked((long?)value), f());
         }
 
         private static void VerifyNullableDoubleToSByte(double? value, bool useInterpreter)
@@ -9810,7 +9810,7 @@ namespace System.Linq.Expressions.Tests
             Func<sbyte> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((sbyte)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((sbyte)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -9823,7 +9823,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<sbyte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((sbyte?)value, f());
+            Assert.Equal(unchecked((sbyte?)value), f());
         }
 
         private static void VerifyNullableDoubleToShort(double? value, bool useInterpreter)
@@ -9835,7 +9835,7 @@ namespace System.Linq.Expressions.Tests
             Func<short> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((short)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((short)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -9848,7 +9848,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<short?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((short?)value, f());
+            Assert.Equal(unchecked((short?)value), f());
         }
 
         private static void VerifyNullableDoubleToUInt(double? value, bool useInterpreter)
@@ -9860,7 +9860,7 @@ namespace System.Linq.Expressions.Tests
             Func<uint> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((uint)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((uint)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -9873,7 +9873,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<uint?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((uint?)value, f());
+            Assert.Equal(unchecked((uint?)value), f());
         }
 
         private static void VerifyNullableDoubleToULong(double? value, bool useInterpreter)
@@ -9885,7 +9885,7 @@ namespace System.Linq.Expressions.Tests
             Func<ulong> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((ulong)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((ulong)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -9898,7 +9898,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ulong?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ulong?)value, f());
+            Assert.Equal(unchecked((ulong?)value), f());
         }
 
         private static void VerifyNullableDoubleToUShort(double? value, bool useInterpreter)
@@ -9910,7 +9910,7 @@ namespace System.Linq.Expressions.Tests
             Func<ushort> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((ushort)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((ushort)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -9923,7 +9923,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ushort?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ushort?)value, f());
+            Assert.Equal(unchecked((ushort?)value), f());
         }
 
         private static void VerifyEnumToByte(E value, bool useInterpreter)
@@ -9934,7 +9934,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<byte> f = e.Compile(useInterpreter);
 
-            Assert.Equal((byte)value, f());
+            Assert.Equal(unchecked((byte)value), f());
         }
 
         private static void VerifyEnumToNullableByte(E value, bool useInterpreter)
@@ -9945,7 +9945,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<byte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((byte)value, f());
+            Assert.Equal(unchecked((byte)value), f());
         }
 
         private static void VerifyEnumToChar(E value, bool useInterpreter)
@@ -9956,7 +9956,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<char> f = e.Compile(useInterpreter);
 
-            Assert.Equal((char)value, f());
+            Assert.Equal(unchecked((char)value), f());
         }
 
         private static void VerifyEnumToNullableChar(E value, bool useInterpreter)
@@ -9967,7 +9967,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<char?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((char?)value, f());
+            Assert.Equal(unchecked((char?)value), f());
         }
 
         private static void VerifyEnumToDouble(E value, bool useInterpreter)
@@ -10110,7 +10110,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<sbyte> f = e.Compile(useInterpreter);
 
-            Assert.Equal((sbyte)value, f());
+            Assert.Equal(unchecked((sbyte)value), f());
         }
 
         private static void VerifyEnumToNullableSByte(E value, bool useInterpreter)
@@ -10121,7 +10121,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<sbyte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((sbyte)value, f());
+            Assert.Equal(unchecked((sbyte)value), f());
         }
 
         private static void VerifyEnumToShort(E value, bool useInterpreter)
@@ -10132,7 +10132,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<short> f = e.Compile(useInterpreter);
 
-            Assert.Equal((short)value, f());
+            Assert.Equal(unchecked((short)value), f());
         }
 
         private static void VerifyEnumToNullableShort(E value, bool useInterpreter)
@@ -10143,7 +10143,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<short?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((short)value, f());
+            Assert.Equal(unchecked((short)value), f());
         }
 
         private static void VerifyEnumToUInt(E value, bool useInterpreter)
@@ -10154,7 +10154,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<uint> f = e.Compile(useInterpreter);
 
-            Assert.Equal((uint)value, f());
+            Assert.Equal(unchecked((uint)value), f());
         }
 
         private static void VerifyEnumToNullableUInt(E value, bool useInterpreter)
@@ -10165,7 +10165,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<uint?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((uint?)value, f());
+            Assert.Equal(unchecked((uint?)value), f());
         }
 
         private static void VerifyEnumToULong(E value, bool useInterpreter)
@@ -10176,7 +10176,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ulong> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ulong)value, f());
+            Assert.Equal(unchecked((ulong)value), f());
         }
 
         private static void VerifyEnumToNullableULong(E value, bool useInterpreter)
@@ -10187,7 +10187,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ulong?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ulong)value, f());
+            Assert.Equal(unchecked((ulong)value), f());
         }
 
         private static void VerifyEnumToUShort(E value, bool useInterpreter)
@@ -10198,7 +10198,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ushort> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ushort)value, f());
+            Assert.Equal(unchecked((ushort)value), f());
         }
 
         private static void VerifyEnumToNullableUShort(E value, bool useInterpreter)
@@ -10209,7 +10209,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ushort?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ushort)value, f());
+            Assert.Equal(unchecked((ushort)value), f());
         }
 
         private static void VerifyNullableEnumToByte(E? value, bool useInterpreter)
@@ -10221,7 +10221,7 @@ namespace System.Linq.Expressions.Tests
             Func<byte> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((byte)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((byte)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -10234,7 +10234,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<byte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((byte?)value, f());
+            Assert.Equal(unchecked((byte?)value), f());
         }
 
         private static void VerifyNullableEnumToChar(E? value, bool useInterpreter)
@@ -10246,7 +10246,7 @@ namespace System.Linq.Expressions.Tests
             Func<char> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((char)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((char)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -10259,7 +10259,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<char?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((char?)value, f());
+            Assert.Equal(unchecked((char?)value), f());
         }
 
         private static void VerifyNullableEnumToDouble(E? value, bool useInterpreter)
@@ -10421,7 +10421,7 @@ namespace System.Linq.Expressions.Tests
             Func<sbyte> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((sbyte)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((sbyte)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -10434,7 +10434,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<sbyte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((sbyte?)value, f());
+            Assert.Equal(unchecked((sbyte?)value), f());
         }
 
         private static void VerifyNullableEnumToShort(E? value, bool useInterpreter)
@@ -10446,7 +10446,7 @@ namespace System.Linq.Expressions.Tests
             Func<short> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((short)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((short)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -10459,7 +10459,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<short?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((short?)value, f());
+            Assert.Equal(unchecked((short?)value), f());
         }
 
         private static void VerifyNullableEnumToUInt(E? value, bool useInterpreter)
@@ -10471,7 +10471,7 @@ namespace System.Linq.Expressions.Tests
             Func<uint> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((uint)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((uint)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -10484,7 +10484,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<uint?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((uint?)value, f());
+            Assert.Equal(unchecked((uint?)value), f());
         }
 
         private static void VerifyNullableEnumToULong(E? value, bool useInterpreter)
@@ -10496,7 +10496,7 @@ namespace System.Linq.Expressions.Tests
             Func<ulong> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((ulong)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((ulong)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -10509,7 +10509,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ulong?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ulong?)value, f());
+            Assert.Equal(unchecked((ulong?)value), f());
         }
 
         private static void VerifyNullableEnumToUShort(E? value, bool useInterpreter)
@@ -10521,7 +10521,7 @@ namespace System.Linq.Expressions.Tests
             Func<ushort> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((ushort)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((ushort)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -10534,7 +10534,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ushort?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ushort?)value, f());
+            Assert.Equal(unchecked((ushort?)value), f());
         }
 
         private static void VerifyEnumLongToByte(El value, bool useInterpreter)
@@ -10545,7 +10545,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<byte> f = e.Compile(useInterpreter);
 
-            Assert.Equal((byte)value, f());
+            Assert.Equal(unchecked((byte)value), f());
         }
 
         private static void VerifyEnumLongToNullableByte(El value, bool useInterpreter)
@@ -10556,7 +10556,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<byte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((byte)value, f());
+            Assert.Equal(unchecked((byte)value), f());
         }
 
         private static void VerifyEnumLongToChar(El value, bool useInterpreter)
@@ -10567,7 +10567,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<char> f = e.Compile(useInterpreter);
 
-            Assert.Equal((char)value, f());
+            Assert.Equal(unchecked((char)value), f());
         }
 
         private static void VerifyEnumLongToNullableChar(El value, bool useInterpreter)
@@ -10578,7 +10578,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<char?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((char?)value, f());
+            Assert.Equal(unchecked((char?)value), f());
         }
 
         private static void VerifyEnumLongToDouble(El value, bool useInterpreter)
@@ -10611,7 +10611,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<E> f = e.Compile(useInterpreter);
 
-            Assert.Equal((E)value, f());
+            Assert.Equal(unchecked((E)value), f());
         }
 
         private static void VerifyEnumLongToNullableEnum(El value, bool useInterpreter)
@@ -10622,7 +10622,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<E?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((E)value, f());
+            Assert.Equal(unchecked((E)value), f());
         }
 
         private static void VerifyEnumLongToEnumLong(El value, bool useInterpreter)
@@ -10677,7 +10677,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<int> f = e.Compile(useInterpreter);
 
-            Assert.Equal((int)value, f());
+            Assert.Equal(unchecked((int)value), f());
         }
 
         private static void VerifyEnumLongToNullableInt(El value, bool useInterpreter)
@@ -10688,7 +10688,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<int?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((int)value, f());
+            Assert.Equal(unchecked((int)value), f());
         }
 
         private static void VerifyEnumLongToLong(El value, bool useInterpreter)
@@ -10721,7 +10721,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<sbyte> f = e.Compile(useInterpreter);
 
-            Assert.Equal((sbyte)value, f());
+            Assert.Equal(unchecked((sbyte)value), f());
         }
 
         private static void VerifyEnumLongToNullableSByte(El value, bool useInterpreter)
@@ -10732,7 +10732,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<sbyte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((sbyte)value, f());
+            Assert.Equal(unchecked((sbyte)value), f());
         }
 
         private static void VerifyEnumLongToShort(El value, bool useInterpreter)
@@ -10743,7 +10743,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<short> f = e.Compile(useInterpreter);
 
-            Assert.Equal((short)value, f());
+            Assert.Equal(unchecked((short)value), f());
         }
 
         private static void VerifyEnumLongToNullableShort(El value, bool useInterpreter)
@@ -10754,7 +10754,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<short?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((short)value, f());
+            Assert.Equal(unchecked((short)value), f());
         }
 
         private static void VerifyEnumLongToUInt(El value, bool useInterpreter)
@@ -10765,7 +10765,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<uint> f = e.Compile(useInterpreter);
 
-            Assert.Equal((uint)value, f());
+            Assert.Equal(unchecked((uint)value), f());
         }
 
         private static void VerifyEnumLongToNullableUInt(El value, bool useInterpreter)
@@ -10776,7 +10776,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<uint?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((uint)value, f());
+            Assert.Equal(unchecked((uint)value), f());
         }
 
         private static void VerifyEnumLongToULong(El value, bool useInterpreter)
@@ -10787,7 +10787,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ulong> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ulong)value, f());
+            Assert.Equal(unchecked((ulong)value), f());
         }
 
         private static void VerifyEnumLongToNullableULong(El value, bool useInterpreter)
@@ -10798,7 +10798,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ulong?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ulong)value, f());
+            Assert.Equal(unchecked((ulong)value), f());
         }
 
         private static void VerifyEnumLongToUShort(El value, bool useInterpreter)
@@ -10809,7 +10809,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ushort> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ushort)value, f());
+            Assert.Equal(unchecked((ushort)value), f());
         }
 
         private static void VerifyEnumLongToNullableUShort(El value, bool useInterpreter)
@@ -10820,7 +10820,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ushort?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ushort)value, f());
+            Assert.Equal(unchecked((ushort)value), f());
         }
 
         private static void VerifyNullableEnumLongToByte(El? value, bool useInterpreter)
@@ -10832,7 +10832,7 @@ namespace System.Linq.Expressions.Tests
             Func<byte> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((byte)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((byte)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -10845,7 +10845,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<byte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((byte?)value, f());
+            Assert.Equal(unchecked((byte?)value), f());
         }
 
         private static void VerifyNullableEnumLongToChar(El? value, bool useInterpreter)
@@ -10857,7 +10857,7 @@ namespace System.Linq.Expressions.Tests
             Func<char> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((char)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((char)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -10870,7 +10870,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<char?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((char?)value, f());
+            Assert.Equal(unchecked((char?)value), f());
         }
 
         private static void VerifyNullableEnumLongToDouble(El? value, bool useInterpreter)
@@ -10907,7 +10907,7 @@ namespace System.Linq.Expressions.Tests
             Func<E> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((E)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((E)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -10920,7 +10920,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<E?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((E?)value, f());
+            Assert.Equal(unchecked((E?)value), f());
         }
 
         private static void VerifyNullableEnumLongToEnumLong(El? value, bool useInterpreter)
@@ -10982,7 +10982,7 @@ namespace System.Linq.Expressions.Tests
             Func<int> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((int)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((int)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -10995,7 +10995,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<int?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((int?)value, f());
+            Assert.Equal(unchecked((int?)value), f());
         }
 
         private static void VerifyNullableEnumLongToLong(El? value, bool useInterpreter)
@@ -11032,7 +11032,7 @@ namespace System.Linq.Expressions.Tests
             Func<sbyte> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((sbyte)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((sbyte)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -11045,7 +11045,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<sbyte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((sbyte?)value, f());
+            Assert.Equal(unchecked((sbyte?)value), f());
         }
 
         private static void VerifyNullableEnumLongToShort(El? value, bool useInterpreter)
@@ -11057,7 +11057,7 @@ namespace System.Linq.Expressions.Tests
             Func<short> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((short)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((short)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -11070,7 +11070,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<short?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((short?)value, f());
+            Assert.Equal(unchecked((short?)value), f());
         }
 
         private static void VerifyNullableEnumLongToUInt(El? value, bool useInterpreter)
@@ -11082,7 +11082,7 @@ namespace System.Linq.Expressions.Tests
             Func<uint> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((uint)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((uint)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -11095,7 +11095,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<uint?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((uint?)value, f());
+            Assert.Equal(unchecked((uint?)value), f());
         }
 
         private static void VerifyNullableEnumLongToULong(El? value, bool useInterpreter)
@@ -11107,7 +11107,7 @@ namespace System.Linq.Expressions.Tests
             Func<ulong> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((ulong)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((ulong)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -11120,7 +11120,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ulong?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ulong?)value, f());
+            Assert.Equal(unchecked((ulong?)value), f());
         }
 
         private static void VerifyNullableEnumLongToUShort(El? value, bool useInterpreter)
@@ -11132,7 +11132,7 @@ namespace System.Linq.Expressions.Tests
             Func<ushort> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((ushort)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((ushort)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -11145,7 +11145,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ushort?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ushort?)value, f());
+            Assert.Equal(unchecked((ushort?)value), f());
         }
 
         private static void VerifyFloatToByte(float value, bool useInterpreter)
@@ -11156,7 +11156,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<byte> f = e.Compile(useInterpreter);
 
-            Assert.Equal((byte)value, f());
+            Assert.Equal(unchecked((byte)value), f());
         }
 
         private static void VerifyFloatToNullableByte(float value, bool useInterpreter)
@@ -11167,7 +11167,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<byte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((byte)value, f());
+            Assert.Equal(unchecked((byte)value), f());
         }
 
         private static void VerifyFloatToChar(float value, bool useInterpreter)
@@ -11178,7 +11178,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<char> f = e.Compile(useInterpreter);
 
-            Assert.Equal((char)value, f());
+            Assert.Equal(unchecked((char)value), f());
         }
 
         private static void VerifyFloatToNullableChar(float value, bool useInterpreter)
@@ -11189,7 +11189,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<char?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((char?)value, f());
+            Assert.Equal(unchecked((char?)value), f());
         }
 
         private static void VerifyFloatToDecimal(float value, bool useInterpreter)
@@ -11266,7 +11266,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<E> f = e.Compile(useInterpreter);
 
-            Assert.Equal((E)value, f());
+            Assert.Equal(unchecked((E)value), f());
         }
 
         private static void VerifyFloatToNullableEnum(float value, bool useInterpreter)
@@ -11277,7 +11277,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<E?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((E)value, f());
+            Assert.Equal(unchecked((E)value), f());
         }
 
         private static void VerifyFloatToEnumLong(float value, bool useInterpreter)
@@ -11288,7 +11288,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<El> f = e.Compile(useInterpreter);
 
-            Assert.Equal((El)value, f());
+            Assert.Equal(unchecked((El)value), f());
         }
 
         private static void VerifyFloatToNullableEnumLong(float value, bool useInterpreter)
@@ -11299,7 +11299,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<El?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((El)value, f());
+            Assert.Equal(unchecked((El)value), f());
         }
 
         private static void VerifyFloatToFloat(float value, bool useInterpreter)
@@ -11332,7 +11332,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<int> f = e.Compile(useInterpreter);
 
-            Assert.Equal((int)value, f());
+            Assert.Equal(unchecked((int)value), f());
         }
 
         private static void VerifyFloatToNullableInt(float value, bool useInterpreter)
@@ -11343,7 +11343,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<int?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((int)value, f());
+            Assert.Equal(unchecked((int)value), f());
         }
 
         private static void VerifyFloatToLong(float value, bool useInterpreter)
@@ -11354,7 +11354,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<long> f = e.Compile(useInterpreter);
 
-            Assert.Equal((long)value, f());
+            Assert.Equal(unchecked((long)value), f());
         }
 
         private static void VerifyFloatToNullableLong(float value, bool useInterpreter)
@@ -11365,7 +11365,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<long?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((long)value, f());
+            Assert.Equal(unchecked((long)value), f());
         }
 
         private static void VerifyFloatToSByte(float value, bool useInterpreter)
@@ -11376,7 +11376,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<sbyte> f = e.Compile(useInterpreter);
 
-            Assert.Equal((sbyte)value, f());
+            Assert.Equal(unchecked((sbyte)value), f());
         }
 
         private static void VerifyFloatToNullableSByte(float value, bool useInterpreter)
@@ -11387,7 +11387,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<sbyte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((sbyte)value, f());
+            Assert.Equal(unchecked((sbyte)value), f());
         }
 
         private static void VerifyFloatToShort(float value, bool useInterpreter)
@@ -11398,7 +11398,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<short> f = e.Compile(useInterpreter);
 
-            Assert.Equal((short)value, f());
+            Assert.Equal(unchecked((short)value), f());
         }
 
         private static void VerifyFloatToNullableShort(float value, bool useInterpreter)
@@ -11409,7 +11409,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<short?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((short)value, f());
+            Assert.Equal(unchecked((short)value), f());
         }
 
         private static void VerifyFloatToUInt(float value, bool useInterpreter)
@@ -11420,7 +11420,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<uint> f = e.Compile(useInterpreter);
 
-            Assert.Equal((uint)value, f());
+            Assert.Equal(unchecked((uint)value), f());
         }
 
         private static void VerifyFloatToNullableUInt(float value, bool useInterpreter)
@@ -11431,7 +11431,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<uint?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((uint)value, f());
+            Assert.Equal(unchecked((uint)value), f());
         }
 
         private static void VerifyFloatToULong(float value, bool useInterpreter)
@@ -11442,7 +11442,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ulong> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ulong)value, f());
+            Assert.Equal(unchecked((ulong)value), f());
         }
 
         private static void VerifyFloatToNullableULong(float value, bool useInterpreter)
@@ -11453,7 +11453,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ulong?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ulong)value, f());
+            Assert.Equal(unchecked((ulong)value), f());
         }
 
         private static void VerifyFloatToUShort(float value, bool useInterpreter)
@@ -11464,7 +11464,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ushort> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ushort)value, f());
+            Assert.Equal(unchecked((ushort)value), f());
         }
 
         private static void VerifyFloatToNullableUShort(float value, bool useInterpreter)
@@ -11475,7 +11475,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ushort?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ushort)value, f());
+            Assert.Equal(unchecked((ushort)value), f());
         }
 
         private static void VerifyNullableFloatToByte(float? value, bool useInterpreter)
@@ -11487,7 +11487,7 @@ namespace System.Linq.Expressions.Tests
             Func<byte> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((byte)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((byte)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -11500,7 +11500,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<byte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((byte?)value, f());
+            Assert.Equal(unchecked((byte?)value), f());
         }
 
         private static void VerifyNullableFloatToChar(float? value, bool useInterpreter)
@@ -11512,7 +11512,7 @@ namespace System.Linq.Expressions.Tests
             Func<char> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((char)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((char)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -11525,7 +11525,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<char?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((char?)value, f());
+            Assert.Equal(unchecked((char?)value), f());
         }
 
         private static void VerifyNullableFloatToDecimal(float? value, bool useInterpreter)
@@ -11611,7 +11611,7 @@ namespace System.Linq.Expressions.Tests
             Func<E> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((E)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((E)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -11624,7 +11624,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<E?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((E?)value, f());
+            Assert.Equal(unchecked((E?)value), f());
         }
 
         private static void VerifyNullableFloatToEnumLong(float? value, bool useInterpreter)
@@ -11636,7 +11636,7 @@ namespace System.Linq.Expressions.Tests
             Func<El> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((El)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((El)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -11649,7 +11649,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<El?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((El?)value, f());
+            Assert.Equal(unchecked((El?)value), f());
         }
 
         private static void VerifyNullableFloatToFloat(float? value, bool useInterpreter)
@@ -11686,7 +11686,7 @@ namespace System.Linq.Expressions.Tests
             Func<int> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((int)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((int)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -11699,7 +11699,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<int?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((int?)value, f());
+            Assert.Equal(unchecked((int?)value), f());
         }
 
         private static void VerifyNullableFloatToLong(float? value, bool useInterpreter)
@@ -11711,7 +11711,7 @@ namespace System.Linq.Expressions.Tests
             Func<long> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((long)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((long)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -11724,7 +11724,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<long?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((long?)value, f());
+            Assert.Equal(unchecked((long?)value), f());
         }
 
         private static void VerifyNullableFloatToSByte(float? value, bool useInterpreter)
@@ -11736,7 +11736,7 @@ namespace System.Linq.Expressions.Tests
             Func<sbyte> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((sbyte)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((sbyte)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -11749,7 +11749,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<sbyte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((sbyte?)value, f());
+            Assert.Equal(unchecked((sbyte?)value), f());
         }
 
         private static void VerifyNullableFloatToShort(float? value, bool useInterpreter)
@@ -11761,7 +11761,7 @@ namespace System.Linq.Expressions.Tests
             Func<short> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((short)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((short)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -11774,7 +11774,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<short?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((short?)value, f());
+            Assert.Equal(unchecked((short?)value), f());
         }
 
         private static void VerifyNullableFloatToUInt(float? value, bool useInterpreter)
@@ -11786,7 +11786,7 @@ namespace System.Linq.Expressions.Tests
             Func<uint> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((uint)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((uint)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -11799,7 +11799,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<uint?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((uint?)value, f());
+            Assert.Equal(unchecked((uint?)value), f());
         }
 
         private static void VerifyNullableFloatToULong(float? value, bool useInterpreter)
@@ -11811,7 +11811,7 @@ namespace System.Linq.Expressions.Tests
             Func<ulong> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((ulong)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((ulong)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -11824,7 +11824,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ulong?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ulong?)value, f());
+            Assert.Equal(unchecked((ulong?)value), f());
         }
 
         private static void VerifyNullableFloatToUShort(float? value, bool useInterpreter)
@@ -11836,7 +11836,7 @@ namespace System.Linq.Expressions.Tests
             Func<ushort> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((ushort)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((ushort)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -11849,7 +11849,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ushort?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ushort?)value, f());
+            Assert.Equal(unchecked((ushort?)value), f());
         }
 
         private static void VerifyIntToByte(int value, bool useInterpreter)
@@ -11860,7 +11860,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<byte> f = e.Compile(useInterpreter);
 
-            Assert.Equal((byte)value, f());
+            Assert.Equal(unchecked((byte)value), f());
         }
 
         private static void VerifyIntToNullableByte(int value, bool useInterpreter)
@@ -11871,7 +11871,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<byte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((byte)value, f());
+            Assert.Equal(unchecked((byte)value), f());
         }
 
         private static void VerifyIntToChar(int value, bool useInterpreter)
@@ -11882,7 +11882,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<char> f = e.Compile(useInterpreter);
 
-            Assert.Equal((char)value, f());
+            Assert.Equal(unchecked((char)value), f());
         }
 
         private static void VerifyIntToNullableChar(int value, bool useInterpreter)
@@ -11893,7 +11893,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<char?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((char?)value, f());
+            Assert.Equal(unchecked((char?)value), f());
         }
 
         private static void VerifyIntToDecimal(int value, bool useInterpreter)
@@ -12058,7 +12058,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<sbyte> f = e.Compile(useInterpreter);
 
-            Assert.Equal((sbyte)value, f());
+            Assert.Equal(unchecked((sbyte)value), f());
         }
 
         private static void VerifyIntToNullableSByte(int value, bool useInterpreter)
@@ -12069,7 +12069,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<sbyte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((sbyte)value, f());
+            Assert.Equal(unchecked((sbyte)value), f());
         }
 
         private static void VerifyIntToShort(int value, bool useInterpreter)
@@ -12080,7 +12080,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<short> f = e.Compile(useInterpreter);
 
-            Assert.Equal((short)value, f());
+            Assert.Equal(unchecked((short)value), f());
         }
 
         private static void VerifyIntToNullableShort(int value, bool useInterpreter)
@@ -12091,7 +12091,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<short?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((short)value, f());
+            Assert.Equal(unchecked((short)value), f());
         }
 
         private static void VerifyIntToUInt(int value, bool useInterpreter)
@@ -12102,7 +12102,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<uint> f = e.Compile(useInterpreter);
 
-            Assert.Equal((uint)value, f());
+            Assert.Equal(unchecked((uint)value), f());
         }
 
         private static void VerifyIntToNullableUInt(int value, bool useInterpreter)
@@ -12113,7 +12113,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<uint?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((uint)value, f());
+            Assert.Equal(unchecked((uint)value), f());
         }
 
         private static void VerifyIntToULong(int value, bool useInterpreter)
@@ -12124,7 +12124,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ulong> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ulong)value, f());
+            Assert.Equal(unchecked((ulong)value), f());
         }
 
         private static void VerifyIntToNullableULong(int value, bool useInterpreter)
@@ -12135,7 +12135,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ulong?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ulong)value, f());
+            Assert.Equal(unchecked((ulong)value), f());
         }
 
         private static void VerifyIntToUShort(int value, bool useInterpreter)
@@ -12146,7 +12146,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ushort> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ushort)value, f());
+            Assert.Equal(unchecked((ushort)value), f());
         }
 
         private static void VerifyIntToNullableUShort(int value, bool useInterpreter)
@@ -12157,7 +12157,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ushort?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ushort)value, f());
+            Assert.Equal(unchecked((ushort)value), f());
         }
 
         private static void VerifyNullableIntToByte(int? value, bool useInterpreter)
@@ -12169,7 +12169,7 @@ namespace System.Linq.Expressions.Tests
             Func<byte> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((byte)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((byte)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -12182,7 +12182,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<byte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((byte?)value, f());
+            Assert.Equal(unchecked((byte?)value), f());
         }
 
         private static void VerifyNullableIntToChar(int? value, bool useInterpreter)
@@ -12194,7 +12194,7 @@ namespace System.Linq.Expressions.Tests
             Func<char> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((char)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((char)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -12207,7 +12207,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<char?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((char?)value, f());
+            Assert.Equal(unchecked((char?)value), f());
         }
 
         private static void VerifyNullableIntToDecimal(int? value, bool useInterpreter)
@@ -12394,7 +12394,7 @@ namespace System.Linq.Expressions.Tests
             Func<sbyte> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((sbyte)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((sbyte)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -12407,7 +12407,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<sbyte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((sbyte?)value, f());
+            Assert.Equal(unchecked((sbyte?)value), f());
         }
 
         private static void VerifyNullableIntToShort(int? value, bool useInterpreter)
@@ -12419,7 +12419,7 @@ namespace System.Linq.Expressions.Tests
             Func<short> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((short)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((short)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -12432,7 +12432,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<short?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((short?)value, f());
+            Assert.Equal(unchecked((short?)value), f());
         }
 
         private static void VerifyNullableIntToUInt(int? value, bool useInterpreter)
@@ -12444,7 +12444,7 @@ namespace System.Linq.Expressions.Tests
             Func<uint> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((uint)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((uint)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -12457,7 +12457,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<uint?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((uint?)value, f());
+            Assert.Equal(unchecked((uint?)value), f());
         }
 
         private static void VerifyNullableIntToULong(int? value, bool useInterpreter)
@@ -12469,7 +12469,7 @@ namespace System.Linq.Expressions.Tests
             Func<ulong> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((ulong)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((ulong)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -12482,7 +12482,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ulong?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ulong?)value, f());
+            Assert.Equal(unchecked((ulong?)value), f());
         }
 
         private static void VerifyNullableIntToUShort(int? value, bool useInterpreter)
@@ -12494,7 +12494,7 @@ namespace System.Linq.Expressions.Tests
             Func<ushort> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((ushort)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((ushort)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -12507,7 +12507,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ushort?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ushort?)value, f());
+            Assert.Equal(unchecked((ushort?)value), f());
         }
 
         private static void VerifyLongToByte(long value, bool useInterpreter)
@@ -12518,7 +12518,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<byte> f = e.Compile(useInterpreter);
 
-            Assert.Equal((byte)value, f());
+            Assert.Equal(unchecked((byte)value), f());
         }
 
         private static void VerifyLongToNullableByte(long value, bool useInterpreter)
@@ -12529,7 +12529,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<byte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((byte)value, f());
+            Assert.Equal(unchecked((byte)value), f());
         }
 
         private static void VerifyLongToChar(long value, bool useInterpreter)
@@ -12540,7 +12540,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<char> f = e.Compile(useInterpreter);
 
-            Assert.Equal((char)value, f());
+            Assert.Equal(unchecked((char)value), f());
         }
 
         private static void VerifyLongToNullableChar(long value, bool useInterpreter)
@@ -12551,7 +12551,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<char?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((char?)value, f());
+            Assert.Equal(unchecked((char?)value), f());
         }
 
         private static void VerifyLongToDecimal(long value, bool useInterpreter)
@@ -12606,7 +12606,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<E> f = e.Compile(useInterpreter);
 
-            Assert.Equal((E)value, f());
+            Assert.Equal(unchecked((E)value), f());
         }
 
         private static void VerifyLongToNullableEnum(long value, bool useInterpreter)
@@ -12617,7 +12617,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<E?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((E)value, f());
+            Assert.Equal(unchecked((E)value), f());
         }
 
         private static void VerifyLongToEnumLong(long value, bool useInterpreter)
@@ -12672,7 +12672,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<int> f = e.Compile(useInterpreter);
 
-            Assert.Equal((int)value, f());
+            Assert.Equal(unchecked((int)value), f());
         }
 
         private static void VerifyLongToNullableInt(long value, bool useInterpreter)
@@ -12683,7 +12683,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<int?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((int)value, f());
+            Assert.Equal(unchecked((int)value), f());
         }
 
         private static void VerifyLongToLong(long value, bool useInterpreter)
@@ -12716,7 +12716,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<sbyte> f = e.Compile(useInterpreter);
 
-            Assert.Equal((sbyte)value, f());
+            Assert.Equal(unchecked((sbyte)value), f());
         }
 
         private static void VerifyLongToNullableSByte(long value, bool useInterpreter)
@@ -12727,7 +12727,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<sbyte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((sbyte)value, f());
+            Assert.Equal(unchecked((sbyte)value), f());
         }
 
         private static void VerifyLongToShort(long value, bool useInterpreter)
@@ -12738,7 +12738,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<short> f = e.Compile(useInterpreter);
 
-            Assert.Equal((short)value, f());
+            Assert.Equal(unchecked((short)value), f());
         }
 
         private static void VerifyLongToNullableShort(long value, bool useInterpreter)
@@ -12749,7 +12749,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<short?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((short)value, f());
+            Assert.Equal(unchecked((short)value), f());
         }
 
         private static void VerifyLongToUInt(long value, bool useInterpreter)
@@ -12760,7 +12760,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<uint> f = e.Compile(useInterpreter);
 
-            Assert.Equal((uint)value, f());
+            Assert.Equal(unchecked((uint)value), f());
         }
 
         private static void VerifyLongToNullableUInt(long value, bool useInterpreter)
@@ -12771,7 +12771,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<uint?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((uint)value, f());
+            Assert.Equal(unchecked((uint)value), f());
         }
 
         private static void VerifyLongToULong(long value, bool useInterpreter)
@@ -12782,7 +12782,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ulong> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ulong)value, f());
+            Assert.Equal(unchecked((ulong)value), f());
         }
 
         private static void VerifyLongToNullableULong(long value, bool useInterpreter)
@@ -12793,7 +12793,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ulong?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ulong)value, f());
+            Assert.Equal(unchecked((ulong)value), f());
         }
 
         private static void VerifyLongToUShort(long value, bool useInterpreter)
@@ -12804,7 +12804,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ushort> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ushort)value, f());
+            Assert.Equal(unchecked((ushort)value), f());
         }
 
         private static void VerifyLongToNullableUShort(long value, bool useInterpreter)
@@ -12815,7 +12815,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ushort?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ushort)value, f());
+            Assert.Equal(unchecked((ushort)value), f());
         }
 
         private static void VerifyNullableLongToByte(long? value, bool useInterpreter)
@@ -12827,7 +12827,7 @@ namespace System.Linq.Expressions.Tests
             Func<byte> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((byte)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((byte)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -12840,7 +12840,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<byte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((byte?)value, f());
+            Assert.Equal(unchecked((byte?)value), f());
         }
 
         private static void VerifyNullableLongToChar(long? value, bool useInterpreter)
@@ -12852,7 +12852,7 @@ namespace System.Linq.Expressions.Tests
             Func<char> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((char)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((char)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -12865,7 +12865,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<char?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((char?)value, f());
+            Assert.Equal(unchecked((char?)value), f());
         }
 
         private static void VerifyNullableLongToDecimal(long? value, bool useInterpreter)
@@ -12927,7 +12927,7 @@ namespace System.Linq.Expressions.Tests
             Func<E> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((E)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((E)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -12940,7 +12940,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<E?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((E?)value, f());
+            Assert.Equal(unchecked((E?)value), f());
         }
 
         private static void VerifyNullableLongToEnumLong(long? value, bool useInterpreter)
@@ -13002,7 +13002,7 @@ namespace System.Linq.Expressions.Tests
             Func<int> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((int)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((int)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -13015,7 +13015,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<int?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((int?)value, f());
+            Assert.Equal(unchecked((int?)value), f());
         }
 
         private static void VerifyNullableLongToLong(long? value, bool useInterpreter)
@@ -13052,7 +13052,7 @@ namespace System.Linq.Expressions.Tests
             Func<sbyte> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((sbyte)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((sbyte)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -13065,7 +13065,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<sbyte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((sbyte?)value, f());
+            Assert.Equal(unchecked((sbyte?)value), f());
         }
 
         private static void VerifyNullableLongToShort(long? value, bool useInterpreter)
@@ -13077,7 +13077,7 @@ namespace System.Linq.Expressions.Tests
             Func<short> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((short)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((short)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -13090,7 +13090,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<short?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((short?)value, f());
+            Assert.Equal(unchecked((short?)value), f());
         }
 
         private static void VerifyNullableLongToUInt(long? value, bool useInterpreter)
@@ -13102,7 +13102,7 @@ namespace System.Linq.Expressions.Tests
             Func<uint> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((uint)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((uint)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -13115,7 +13115,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<uint?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((uint?)value, f());
+            Assert.Equal(unchecked((uint?)value), f());
         }
 
         private static void VerifyNullableLongToULong(long? value, bool useInterpreter)
@@ -13127,7 +13127,7 @@ namespace System.Linq.Expressions.Tests
             Func<ulong> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((ulong)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((ulong)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -13140,7 +13140,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ulong?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ulong?)value, f());
+            Assert.Equal(unchecked((ulong?)value), f());
         }
 
         private static void VerifyNullableLongToUShort(long? value, bool useInterpreter)
@@ -13152,7 +13152,7 @@ namespace System.Linq.Expressions.Tests
             Func<ushort> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((ushort)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((ushort)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -13165,7 +13165,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ushort?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ushort?)value, f());
+            Assert.Equal(unchecked((ushort?)value), f());
         }
 
         private static void VerifySByteToByte(sbyte value, bool useInterpreter)
@@ -13176,7 +13176,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<byte> f = e.Compile(useInterpreter);
 
-            Assert.Equal((byte)value, f());
+            Assert.Equal(unchecked((byte)value), f());
         }
 
         private static void VerifySByteToNullableByte(sbyte value, bool useInterpreter)
@@ -13187,7 +13187,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<byte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((byte)value, f());
+            Assert.Equal(unchecked((byte)value), f());
         }
 
         private static void VerifySByteToChar(sbyte value, bool useInterpreter)
@@ -13198,7 +13198,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<char> f = e.Compile(useInterpreter);
 
-            Assert.Equal((char)value, f());
+            Assert.Equal(unchecked((char)value), f());
         }
 
         private static void VerifySByteToNullableChar(sbyte value, bool useInterpreter)
@@ -13209,7 +13209,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<char?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((char)value, f());
+            Assert.Equal(unchecked((char)value), f());
         }
 
         private static void VerifySByteToDecimal(sbyte value, bool useInterpreter)
@@ -13418,7 +13418,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<uint> f = e.Compile(useInterpreter);
 
-            Assert.Equal((uint)value, f());
+            Assert.Equal(unchecked((uint)value), f());
         }
 
         private static void VerifySByteToNullableUInt(sbyte value, bool useInterpreter)
@@ -13429,7 +13429,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<uint?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((uint)value, f());
+            Assert.Equal(unchecked((uint)value), f());
         }
 
         private static void VerifySByteToULong(sbyte value, bool useInterpreter)
@@ -13440,7 +13440,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ulong> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ulong)value, f());
+            Assert.Equal(unchecked((ulong)value), f());
         }
 
         private static void VerifySByteToNullableULong(sbyte value, bool useInterpreter)
@@ -13451,7 +13451,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ulong?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ulong)value, f());
+            Assert.Equal(unchecked((ulong)value), f());
         }
 
         private static void VerifySByteToUShort(sbyte value, bool useInterpreter)
@@ -13462,7 +13462,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ushort> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ushort)value, f());
+            Assert.Equal(unchecked((ushort)value), f());
         }
 
         private static void VerifySByteToNullableUShort(sbyte value, bool useInterpreter)
@@ -13473,7 +13473,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ushort?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ushort)value, f());
+            Assert.Equal(unchecked((ushort)value), f());
         }
 
         private static void VerifyNullableSByteToByte(sbyte? value, bool useInterpreter)
@@ -13485,7 +13485,7 @@ namespace System.Linq.Expressions.Tests
             Func<byte> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((byte)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((byte)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -13498,7 +13498,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<byte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((byte?)value, f());
+            Assert.Equal(unchecked((byte?)value), f());
         }
 
         private static void VerifyNullableSByteToChar(sbyte? value, bool useInterpreter)
@@ -13510,7 +13510,7 @@ namespace System.Linq.Expressions.Tests
             Func<char> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((char)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((char)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -13523,7 +13523,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<char?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((char?)value, f());
+            Assert.Equal(unchecked((char?)value), f());
         }
 
         private static void VerifyNullableSByteToDecimal(sbyte? value, bool useInterpreter)
@@ -13760,7 +13760,7 @@ namespace System.Linq.Expressions.Tests
             Func<uint> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((uint)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((uint)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -13773,7 +13773,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<uint?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((uint?)value, f());
+            Assert.Equal(unchecked((uint?)value), f());
         }
 
         private static void VerifyNullableSByteToULong(sbyte? value, bool useInterpreter)
@@ -13785,7 +13785,7 @@ namespace System.Linq.Expressions.Tests
             Func<ulong> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((ulong)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((ulong)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -13798,7 +13798,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ulong?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ulong?)value, f());
+            Assert.Equal(unchecked((ulong?)value), f());
         }
 
         private static void VerifyNullableSByteToUShort(sbyte? value, bool useInterpreter)
@@ -13810,7 +13810,7 @@ namespace System.Linq.Expressions.Tests
             Func<ushort> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((ushort)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((ushort)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -13823,7 +13823,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ushort?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ushort?)value, f());
+            Assert.Equal(unchecked((ushort?)value), f());
         }
 
         private static void VerifyShortToByte(short value, bool useInterpreter)
@@ -13834,7 +13834,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<byte> f = e.Compile(useInterpreter);
 
-            Assert.Equal((byte)value, f());
+            Assert.Equal(unchecked((byte)value), f());
         }
 
         private static void VerifyShortToNullableByte(short value, bool useInterpreter)
@@ -13845,7 +13845,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<byte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((byte)value, f());
+            Assert.Equal(unchecked((byte)value), f());
         }
 
         private static void VerifyShortToChar(short value, bool useInterpreter)
@@ -13856,7 +13856,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<char> f = e.Compile(useInterpreter);
 
-            Assert.Equal((char)value, f());
+            Assert.Equal(unchecked((char)value), f());
         }
 
         private static void VerifyShortToNullableChar(short value, bool useInterpreter)
@@ -13867,7 +13867,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<char?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((char?)value, f());
+            Assert.Equal(unchecked((char?)value), f());
         }
 
         private static void VerifyShortToDecimal(short value, bool useInterpreter)
@@ -14032,7 +14032,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<sbyte> f = e.Compile(useInterpreter);
 
-            Assert.Equal((sbyte)value, f());
+            Assert.Equal(unchecked((sbyte)value), f());
         }
 
         private static void VerifyShortToNullableSByte(short value, bool useInterpreter)
@@ -14043,7 +14043,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<sbyte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((sbyte)value, f());
+            Assert.Equal(unchecked((sbyte)value), f());
         }
 
         private static void VerifyShortToShort(short value, bool useInterpreter)
@@ -14076,7 +14076,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<uint> f = e.Compile(useInterpreter);
 
-            Assert.Equal((uint)value, f());
+            Assert.Equal(unchecked((uint)value), f());
         }
 
         private static void VerifyShortToNullableUInt(short value, bool useInterpreter)
@@ -14087,7 +14087,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<uint?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((uint)value, f());
+            Assert.Equal(unchecked((uint)value), f());
         }
 
         private static void VerifyShortToULong(short value, bool useInterpreter)
@@ -14098,7 +14098,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ulong> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ulong)value, f());
+            Assert.Equal(unchecked((ulong)value), f());
         }
 
         private static void VerifyShortToNullableULong(short value, bool useInterpreter)
@@ -14109,7 +14109,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ulong?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ulong)value, f());
+            Assert.Equal(unchecked((ulong)value), f());
         }
 
         private static void VerifyShortToUShort(short value, bool useInterpreter)
@@ -14120,7 +14120,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ushort> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ushort)value, f());
+            Assert.Equal(unchecked((ushort)value), f());
         }
 
         private static void VerifyShortToNullableUShort(short value, bool useInterpreter)
@@ -14131,7 +14131,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ushort?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ushort)value, f());
+            Assert.Equal(unchecked((ushort)value), f());
         }
 
         private static void VerifyNullableShortToByte(short? value, bool useInterpreter)
@@ -14143,7 +14143,7 @@ namespace System.Linq.Expressions.Tests
             Func<byte> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((byte)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((byte)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -14156,7 +14156,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<byte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((byte?)value, f());
+            Assert.Equal(unchecked((byte?)value), f());
         }
 
         private static void VerifyNullableShortToChar(short? value, bool useInterpreter)
@@ -14168,7 +14168,7 @@ namespace System.Linq.Expressions.Tests
             Func<char> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((char)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((char)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -14181,7 +14181,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<char?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((char?)value, f());
+            Assert.Equal(unchecked((char?)value), f());
         }
 
         private static void VerifyNullableShortToDecimal(short? value, bool useInterpreter)
@@ -14368,7 +14368,7 @@ namespace System.Linq.Expressions.Tests
             Func<sbyte> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((sbyte)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((sbyte)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -14381,7 +14381,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<sbyte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((sbyte?)value, f());
+            Assert.Equal(unchecked((sbyte?)value), f());
         }
 
         private static void VerifyNullableShortToShort(short? value, bool useInterpreter)
@@ -14418,7 +14418,7 @@ namespace System.Linq.Expressions.Tests
             Func<uint> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((uint)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((uint)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -14431,7 +14431,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<uint?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((uint?)value, f());
+            Assert.Equal(unchecked((uint?)value), f());
         }
 
         private static void VerifyNullableShortToULong(short? value, bool useInterpreter)
@@ -14443,7 +14443,7 @@ namespace System.Linq.Expressions.Tests
             Func<ulong> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((ulong)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((ulong)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -14456,7 +14456,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ulong?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ulong?)value, f());
+            Assert.Equal(unchecked((ulong?)value), f());
         }
 
         private static void VerifyNullableShortToUShort(short? value, bool useInterpreter)
@@ -14468,7 +14468,7 @@ namespace System.Linq.Expressions.Tests
             Func<ushort> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((ushort)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((ushort)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -14481,7 +14481,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ushort?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ushort?)value, f());
+            Assert.Equal(unchecked((ushort?)value), f());
         }
 
         private static void VerifyUIntToByte(uint value, bool useInterpreter)
@@ -14492,7 +14492,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<byte> f = e.Compile(useInterpreter);
 
-            Assert.Equal((byte)value, f());
+            Assert.Equal(unchecked((byte)value), f());
         }
 
         private static void VerifyUIntToNullableByte(uint value, bool useInterpreter)
@@ -14503,7 +14503,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<byte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((byte)value, f());
+            Assert.Equal(unchecked((byte)value), f());
         }
 
         private static void VerifyUIntToChar(uint value, bool useInterpreter)
@@ -14514,7 +14514,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<char> f = e.Compile(useInterpreter);
 
-            Assert.Equal((char)value, f());
+            Assert.Equal(unchecked((char)value), f());
         }
 
         private static void VerifyUIntToNullableChar(uint value, bool useInterpreter)
@@ -14525,7 +14525,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<char?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((char?)value, f());
+            Assert.Equal(unchecked((char?)value), f());
         }
 
         private static void VerifyUIntToDecimal(uint value, bool useInterpreter)
@@ -14580,7 +14580,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<E> f = e.Compile(useInterpreter);
 
-            Assert.Equal((E)value, f());
+            Assert.Equal(unchecked((E)value), f());
         }
 
         private static void VerifyUIntToNullableEnum(uint value, bool useInterpreter)
@@ -14591,7 +14591,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<E?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((E)value, f());
+            Assert.Equal(unchecked((E)value), f());
         }
 
         private static void VerifyUIntToEnumLong(uint value, bool useInterpreter)
@@ -14646,7 +14646,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<int> f = e.Compile(useInterpreter);
 
-            Assert.Equal((int)value, f());
+            Assert.Equal(unchecked((int)value), f());
         }
 
         private static void VerifyUIntToNullableInt(uint value, bool useInterpreter)
@@ -14657,7 +14657,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<int?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((int)value, f());
+            Assert.Equal(unchecked((int)value), f());
         }
 
         private static void VerifyUIntToLong(uint value, bool useInterpreter)
@@ -14690,7 +14690,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<sbyte> f = e.Compile(useInterpreter);
 
-            Assert.Equal((sbyte)value, f());
+            Assert.Equal(unchecked((sbyte)value), f());
         }
 
         private static void VerifyUIntToNullableSByte(uint value, bool useInterpreter)
@@ -14701,7 +14701,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<sbyte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((sbyte)value, f());
+            Assert.Equal(unchecked((sbyte)value), f());
         }
 
         private static void VerifyUIntToShort(uint value, bool useInterpreter)
@@ -14712,7 +14712,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<short> f = e.Compile(useInterpreter);
 
-            Assert.Equal((short)value, f());
+            Assert.Equal(unchecked((short)value), f());
         }
 
         private static void VerifyUIntToNullableShort(uint value, bool useInterpreter)
@@ -14723,7 +14723,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<short?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((short)value, f());
+            Assert.Equal(unchecked((short)value), f());
         }
 
         private static void VerifyUIntToUInt(uint value, bool useInterpreter)
@@ -14778,7 +14778,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ushort> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ushort)value, f());
+            Assert.Equal(unchecked((ushort)value), f());
         }
 
         private static void VerifyUIntToNullableUShort(uint value, bool useInterpreter)
@@ -14789,7 +14789,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ushort?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ushort)value, f());
+            Assert.Equal(unchecked((ushort)value), f());
         }
 
         private static void VerifyNullableUIntToByte(uint? value, bool useInterpreter)
@@ -14801,7 +14801,7 @@ namespace System.Linq.Expressions.Tests
             Func<byte> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((byte)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((byte)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -14814,7 +14814,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<byte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((byte?)value, f());
+            Assert.Equal(unchecked((byte?)value), f());
         }
 
         private static void VerifyNullableUIntToChar(uint? value, bool useInterpreter)
@@ -14826,7 +14826,7 @@ namespace System.Linq.Expressions.Tests
             Func<char> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((char)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((char)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -14839,7 +14839,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<char?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((char?)value, f());
+            Assert.Equal(unchecked((char?)value), f());
         }
 
         private static void VerifyNullableUIntToDecimal(uint? value, bool useInterpreter)
@@ -14901,7 +14901,7 @@ namespace System.Linq.Expressions.Tests
             Func<E> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((E)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((E)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -14914,7 +14914,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<E?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((E?)value, f());
+            Assert.Equal(unchecked((E?)value), f());
         }
 
         private static void VerifyNullableUIntToEnumLong(uint? value, bool useInterpreter)
@@ -14976,7 +14976,7 @@ namespace System.Linq.Expressions.Tests
             Func<int> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((int)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((int)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -14989,7 +14989,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<int?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((int?)value, f());
+            Assert.Equal(unchecked((int?)value), f());
         }
 
         private static void VerifyNullableUIntToLong(uint? value, bool useInterpreter)
@@ -15026,7 +15026,7 @@ namespace System.Linq.Expressions.Tests
             Func<sbyte> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((sbyte)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((sbyte)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -15039,7 +15039,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<sbyte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((sbyte?)value, f());
+            Assert.Equal(unchecked((sbyte?)value), f());
         }
 
         private static void VerifyNullableUIntToShort(uint? value, bool useInterpreter)
@@ -15051,7 +15051,7 @@ namespace System.Linq.Expressions.Tests
             Func<short> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((short)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((short)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -15064,7 +15064,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<short?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((short?)value, f());
+            Assert.Equal(unchecked((short?)value), f());
         }
 
         private static void VerifyNullableUIntToUInt(uint? value, bool useInterpreter)
@@ -15126,7 +15126,7 @@ namespace System.Linq.Expressions.Tests
             Func<ushort> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((ushort)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((ushort)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -15139,7 +15139,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ushort?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ushort?)value, f());
+            Assert.Equal(unchecked((ushort?)value), f());
         }
 
         private static void VerifyULongToByte(ulong value, bool useInterpreter)
@@ -15150,7 +15150,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<byte> f = e.Compile(useInterpreter);
 
-            Assert.Equal((byte)value, f());
+            Assert.Equal(unchecked((byte)value), f());
         }
 
         private static void VerifyULongToNullableByte(ulong value, bool useInterpreter)
@@ -15161,7 +15161,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<byte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((byte)value, f());
+            Assert.Equal(unchecked((byte)value), f());
         }
 
         private static void VerifyULongToChar(ulong value, bool useInterpreter)
@@ -15172,7 +15172,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<char> f = e.Compile(useInterpreter);
 
-            Assert.Equal((char)value, f());
+            Assert.Equal(unchecked((char)value), f());
         }
 
         private static void VerifyULongToNullableChar(ulong value, bool useInterpreter)
@@ -15183,7 +15183,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<char?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((char?)value, f());
+            Assert.Equal(unchecked((char?)value), f());
         }
 
         private static void VerifyULongToDecimal(ulong value, bool useInterpreter)
@@ -15238,7 +15238,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<E> f = e.Compile(useInterpreter);
 
-            Assert.Equal((E)value, f());
+            Assert.Equal(unchecked((E)value), f());
         }
 
         private static void VerifyULongToNullableEnum(ulong value, bool useInterpreter)
@@ -15249,7 +15249,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<E?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((E)value, f());
+            Assert.Equal(unchecked((E)value), f());
         }
 
         private static void VerifyULongToEnumLong(ulong value, bool useInterpreter)
@@ -15260,7 +15260,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<El> f = e.Compile(useInterpreter);
 
-            Assert.Equal((El)value, f());
+            Assert.Equal(unchecked((El)value), f());
         }
 
         private static void VerifyULongToNullableEnumLong(ulong value, bool useInterpreter)
@@ -15271,7 +15271,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<El?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((El)value, f());
+            Assert.Equal(unchecked((El)value), f());
         }
 
         private static void VerifyULongToFloat(ulong value, bool useInterpreter)
@@ -15304,7 +15304,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<int> f = e.Compile(useInterpreter);
 
-            Assert.Equal((int)value, f());
+            Assert.Equal(unchecked((int)value), f());
         }
 
         private static void VerifyULongToNullableInt(ulong value, bool useInterpreter)
@@ -15315,7 +15315,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<int?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((int)value, f());
+            Assert.Equal(unchecked((int)value), f());
         }
 
         private static void VerifyULongToLong(ulong value, bool useInterpreter)
@@ -15326,7 +15326,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<long> f = e.Compile(useInterpreter);
 
-            Assert.Equal((long)value, f());
+            Assert.Equal(unchecked((long)value), f());
         }
 
         private static void VerifyULongToNullableLong(ulong value, bool useInterpreter)
@@ -15337,7 +15337,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<long?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((long)value, f());
+            Assert.Equal(unchecked((long)value), f());
         }
 
         private static void VerifyULongToSByte(ulong value, bool useInterpreter)
@@ -15348,7 +15348,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<sbyte> f = e.Compile(useInterpreter);
 
-            Assert.Equal((sbyte)value, f());
+            Assert.Equal(unchecked((sbyte)value), f());
         }
 
         private static void VerifyULongToNullableSByte(ulong value, bool useInterpreter)
@@ -15359,7 +15359,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<sbyte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((sbyte)value, f());
+            Assert.Equal(unchecked((sbyte)value), f());
         }
 
         private static void VerifyULongToShort(ulong value, bool useInterpreter)
@@ -15370,7 +15370,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<short> f = e.Compile(useInterpreter);
 
-            Assert.Equal((short)value, f());
+            Assert.Equal(unchecked((short)value), f());
         }
 
         private static void VerifyULongToNullableShort(ulong value, bool useInterpreter)
@@ -15381,7 +15381,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<short?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((short)value, f());
+            Assert.Equal(unchecked((short)value), f());
         }
 
         private static void VerifyULongToUInt(ulong value, bool useInterpreter)
@@ -15392,7 +15392,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<uint> f = e.Compile(useInterpreter);
 
-            Assert.Equal((uint)value, f());
+            Assert.Equal(unchecked((uint)value), f());
         }
 
         private static void VerifyULongToNullableUInt(ulong value, bool useInterpreter)
@@ -15403,7 +15403,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<uint?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((uint)value, f());
+            Assert.Equal(unchecked((uint)value), f());
         }
 
         private static void VerifyULongToULong(ulong value, bool useInterpreter)
@@ -15436,7 +15436,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ushort> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ushort)value, f());
+            Assert.Equal(unchecked((ushort)value), f());
         }
 
         private static void VerifyULongToNullableUShort(ulong value, bool useInterpreter)
@@ -15447,7 +15447,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ushort?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ushort)value, f());
+            Assert.Equal(unchecked((ushort)value), f());
         }
 
         private static void VerifyNullableULongToByte(ulong? value, bool useInterpreter)
@@ -15459,7 +15459,7 @@ namespace System.Linq.Expressions.Tests
             Func<byte> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((byte)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((byte)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -15472,7 +15472,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<byte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((byte?)value, f());
+            Assert.Equal(unchecked((byte?)value), f());
         }
 
         private static void VerifyNullableULongToChar(ulong? value, bool useInterpreter)
@@ -15484,7 +15484,7 @@ namespace System.Linq.Expressions.Tests
             Func<char> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((char)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((char)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -15497,7 +15497,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<char?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((char?)value, f());
+            Assert.Equal(unchecked((char?)value), f());
         }
 
         private static void VerifyNullableULongToDecimal(ulong? value, bool useInterpreter)
@@ -15559,7 +15559,7 @@ namespace System.Linq.Expressions.Tests
             Func<E> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((E)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((E)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -15572,7 +15572,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<E?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((E?)value, f());
+            Assert.Equal(unchecked((E?)value), f());
         }
 
         private static void VerifyNullableULongToEnumLong(ulong? value, bool useInterpreter)
@@ -15584,7 +15584,7 @@ namespace System.Linq.Expressions.Tests
             Func<El> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((El)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((El)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -15597,7 +15597,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<El?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((El?)value, f());
+            Assert.Equal(unchecked((El?)value), f());
         }
 
         private static void VerifyNullableULongToFloat(ulong? value, bool useInterpreter)
@@ -15634,7 +15634,7 @@ namespace System.Linq.Expressions.Tests
             Func<int> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((int)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((int)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -15647,7 +15647,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<int?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((int?)value, f());
+            Assert.Equal(unchecked((int?)value), f());
         }
 
         private static void VerifyNullableULongToLong(ulong? value, bool useInterpreter)
@@ -15659,7 +15659,7 @@ namespace System.Linq.Expressions.Tests
             Func<long> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((long)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((long)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -15672,7 +15672,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<long?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((long?)value, f());
+            Assert.Equal(unchecked((long?)value), f());
         }
 
         private static void VerifyNullableULongToSByte(ulong? value, bool useInterpreter)
@@ -15684,7 +15684,7 @@ namespace System.Linq.Expressions.Tests
             Func<sbyte> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((sbyte)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((sbyte)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -15697,7 +15697,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<sbyte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((sbyte?)value, f());
+            Assert.Equal(unchecked((sbyte?)value), f());
         }
 
         private static void VerifyNullableULongToShort(ulong? value, bool useInterpreter)
@@ -15709,7 +15709,7 @@ namespace System.Linq.Expressions.Tests
             Func<short> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((short)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((short)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -15722,7 +15722,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<short?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((short?)value, f());
+            Assert.Equal(unchecked((short?)value), f());
         }
 
         private static void VerifyNullableULongToUInt(ulong? value, bool useInterpreter)
@@ -15734,7 +15734,7 @@ namespace System.Linq.Expressions.Tests
             Func<uint> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((uint)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((uint)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -15747,7 +15747,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<uint?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((uint?)value, f());
+            Assert.Equal(unchecked((uint?)value), f());
         }
 
         private static void VerifyNullableULongToULong(ulong? value, bool useInterpreter)
@@ -15784,7 +15784,7 @@ namespace System.Linq.Expressions.Tests
             Func<ushort> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((ushort)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((ushort)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -15797,7 +15797,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ushort?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ushort?)value, f());
+            Assert.Equal(unchecked((ushort?)value), f());
         }
 
         private static void VerifyUShortToByte(ushort value, bool useInterpreter)
@@ -15808,7 +15808,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<byte> f = e.Compile(useInterpreter);
 
-            Assert.Equal((byte)value, f());
+            Assert.Equal(unchecked((byte)value), f());
         }
 
         private static void VerifyUShortToNullableByte(ushort value, bool useInterpreter)
@@ -15819,7 +15819,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<byte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((byte)value, f());
+            Assert.Equal(unchecked((byte)value), f());
         }
 
         private static void VerifyUShortToChar(ushort value, bool useInterpreter)
@@ -16006,7 +16006,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<sbyte> f = e.Compile(useInterpreter);
 
-            Assert.Equal((sbyte)value, f());
+            Assert.Equal(unchecked((sbyte)value), f());
         }
 
         private static void VerifyUShortToNullableSByte(ushort value, bool useInterpreter)
@@ -16017,7 +16017,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<sbyte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((sbyte)value, f());
+            Assert.Equal(unchecked((sbyte)value), f());
         }
 
         private static void VerifyUShortToShort(ushort value, bool useInterpreter)
@@ -16028,7 +16028,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<short> f = e.Compile(useInterpreter);
 
-            Assert.Equal((short)value, f());
+            Assert.Equal(unchecked((short)value), f());
         }
 
         private static void VerifyUShortToNullableShort(ushort value, bool useInterpreter)
@@ -16039,7 +16039,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<short?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((short)value, f());
+            Assert.Equal(unchecked((short)value), f());
         }
 
         private static void VerifyUShortToUInt(ushort value, bool useInterpreter)
@@ -16117,7 +16117,7 @@ namespace System.Linq.Expressions.Tests
             Func<byte> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((byte)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((byte)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -16130,7 +16130,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<byte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((byte?)value, f());
+            Assert.Equal(unchecked((byte?)value), f());
         }
 
         private static void VerifyNullableUShortToChar(ushort? value, bool useInterpreter)
@@ -16342,7 +16342,7 @@ namespace System.Linq.Expressions.Tests
             Func<sbyte> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((sbyte)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((sbyte)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -16355,7 +16355,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<sbyte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((sbyte?)value, f());
+            Assert.Equal(unchecked((sbyte?)value), f());
         }
 
         private static void VerifyNullableUShortToShort(ushort? value, bool useInterpreter)
@@ -16367,7 +16367,7 @@ namespace System.Linq.Expressions.Tests
             Func<short> f = e.Compile(useInterpreter);
 
             if (value.HasValue)
-                Assert.Equal((short)value.GetValueOrDefault(), f());
+                Assert.Equal(unchecked((short)value.GetValueOrDefault()), f());
             else
                 Assert.Throws<InvalidOperationException>(() => f());
         }
@@ -16380,7 +16380,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<short?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((short?)value, f());
+            Assert.Equal(unchecked((short?)value), f());
         }
 
         private static void VerifyNullableUShortToUInt(ushort? value, bool useInterpreter)
@@ -16709,6 +16709,104 @@ namespace System.Linq.Expressions.Tests
         public static void PointerType()
         {
             Assert.Throws<ArgumentException>("type", () => Expression.Convert(Expression.Constant(null), typeof(int*)));
+        }
+
+        public static IEnumerable<object[]> Conversions()
+        {
+            yield return new object[] { 3, 3 };
+            yield return new object[] { (byte)3, 3 };
+            yield return new object[] { 3, 3.0 };
+            yield return new object[] { 3.0, 3 };
+            yield return new object[] { 12345678, (short)24910 };
+        }
+
+        [Theory, PerCompilationType(nameof(Conversions))]
+        public static void ConvertMakeUnary(object source, object result, bool useInterpreter)
+        {
+            LambdaExpression lambda = Expression.Lambda(
+                Expression.MakeUnary(ExpressionType.Convert, Expression.Constant(source), result.GetType())
+                );
+            Delegate del = lambda.Compile(useInterpreter);
+            Assert.Equal(result, del.DynamicInvoke());
+        }
+
+        private class CustomConversions
+        {
+            public int Value { get; set; }
+
+            public static int ConvertToInt(CustomConversions cc) => cc.Value;
+
+            public static CustomConversions ConvertFromInt(int x) => new CustomConversions {Value = x};
+
+            public static void DoNothing(CustomConversions cc)
+            {
+            }
+
+            public static CustomConversions Create() => new CustomConversions();
+
+            public static CustomConversions FromAddition(int x, int y) => new CustomConversions {Value = x + y};
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CustomConversionNotStandardNameTo(bool useInterpreter)
+        {
+            Expression operand = Expression.Constant(new CustomConversions { Value = 9 });
+            MethodInfo method = typeof(CustomConversions).GetMethod(nameof(CustomConversions.ConvertToInt));
+            Expression<Func<int>> lambda = Expression.Lambda<Func<int>>(
+                Expression.Convert(operand, typeof(int), method));
+            Func<int> func = lambda.Compile(useInterpreter);
+            Assert.Equal(9, func());
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void CustomConversionNotStandardNameFrom(bool useInterpreter)
+        {
+            Expression operand = Expression.Constant(4);
+            MethodInfo method = typeof(CustomConversions).GetMethod(nameof(CustomConversions.ConvertFromInt));
+            Expression<Func<CustomConversions>> lambda = Expression.Lambda<Func<CustomConversions>>(
+                Expression.Convert(operand, typeof(CustomConversions), method));
+            Func<CustomConversions> func = lambda.Compile(useInterpreter);
+            Assert.Equal(4, func().Value);
+        }
+
+        [Fact]
+        public static void CustomConversionNotStandardNameToWrongType()
+        {
+            Expression operand = Expression.Constant(new CustomConversions { Value = 9 });
+            MethodInfo method = typeof(CustomConversions).GetMethod(nameof(CustomConversions.ConvertToInt));
+            Assert.Throws<InvalidOperationException>(() => Expression.Convert(operand, typeof(long), method));
+        }
+
+        [Fact]
+        public static void CustomConversionNotStandardNameFromWrongType()
+        {
+            Expression operand = Expression.Constant(4L);
+            MethodInfo method = typeof(CustomConversions).GetMethod(nameof(CustomConversions.ConvertFromInt));
+            Assert.Throws<InvalidOperationException>(() => Expression.Convert(operand, typeof(CustomConversions), method));
+        }
+
+        [Fact]
+        public static void CustomConversionNotStandardNameToVoidReturn()
+        {
+            Expression operand = Expression.Constant(new CustomConversions { Value = 9 });
+            MethodInfo method = typeof(CustomConversions).GetMethod(nameof(CustomConversions.DoNothing));
+            Assert.Throws<ArgumentException>("method", () => Expression.Convert(operand, typeof(int), method));
+        }
+
+        [Fact]
+        public static void CustomConversionNotStandardNameToNullary()
+        {
+            Expression operand = Expression.Constant(new CustomConversions { Value = 9 });
+            MethodInfo method = typeof(CustomConversions).GetMethod(nameof(CustomConversions.Create));
+            Assert.Throws<ArgumentException>("method", () => Expression.Convert(operand, typeof(int), method));
+        }
+
+        [Fact]
+        public static void CustomConversionNotStandardNameToExcessiveArity()
+        {
+            Expression operand = Expression.Constant(new CustomConversions { Value = 9 });
+            MethodInfo method = typeof(CustomConversions).GetMethod(nameof(CustomConversions.FromAddition));
+            Assert.Throws<ArgumentException>(() => Expression.Convert(operand, typeof(int), method));
         }
     }
 }

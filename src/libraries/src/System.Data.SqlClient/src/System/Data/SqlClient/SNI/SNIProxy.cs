@@ -6,9 +6,13 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net;
+using System.Net.Security;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
+using System;
+using System.Threading;
+using System.Collections;
 
 namespace System.Data.SqlClient.SNI
 {
@@ -17,13 +21,22 @@ namespace System.Data.SqlClient.SNI
     /// </summary>
     internal class SNIProxy
     {
-        private static readonly char SemicolonSeparator = ';';
-        private static readonly char CommaSeparator = ',';
-        private static readonly char BackSlashSeparator = '\\';
+        private const char SemicolonSeparator = ';';
+        private const char CommaSeparator = ',';
+        private const char BackSlashSeparator = '\\';
         private const int SqlServerBrowserPort = 1434;
         private const int DefaultSqlServerPort = 1433;
-        private const string DefaultHostname = "localhost";
+        private const string DefaultHostName = "localhost";
         private const string DefaultSqlServerInstanceName = "MSSQLSERVER";
+        private const string Kerberos = "Kerberos";
+        private const string SqlServerSpnHeader = "MSSQLSvc";
+
+        internal class SspiClientContextResult
+        {
+            internal const uint OK = 0;
+            internal const uint Failed = 1;
+            internal const uint KerberosTicketMissing = 2;
+        }
 
         public static readonly SNIProxy Singleton = new SNIProxy();
 
@@ -88,9 +101,84 @@ namespace System.Data.SqlClient.SNI
         /// <param name="serverName">Service Principal Name buffer</param>
         /// <param name="serverNameLength">Length of Service Principal Name</param>
         /// <returns>SNI error code</returns>
-        public uint GenSspiClientContext(SNIHandle handle, byte[] receivedBuff, uint receivedLength, byte[] sendBuff, ref uint sendLength, byte[] serverName, uint serverNameLength)
+        public void GenSspiClientContext(SspiClientContextStatus sspiClientContextStatus, byte[] receivedBuff, ref byte[] sendBuff, byte[] serverName)
         {
-            throw new PlatformNotSupportedException();
+            SafeDeleteContext securityContext = sspiClientContextStatus.SecurityContext;
+            ContextFlagsPal contextFlags = sspiClientContextStatus.ContextFlags;
+            SafeFreeCredentials credentialsHandle = sspiClientContextStatus.CredentialsHandle;
+
+            SecurityBuffer[] inSecurityBufferArray = null;
+            if (securityContext == null) //first iteration
+            {
+                credentialsHandle = NegotiateStreamPal.AcquireDefaultCredential(Kerberos, false);
+            }
+            else
+            {
+                inSecurityBufferArray = new SecurityBuffer[] { new SecurityBuffer(receivedBuff, SecurityBufferType.SECBUFFER_TOKEN) };
+            }
+
+            int tokenSize = NegotiateStreamPal.QueryMaxTokenSize(Kerberos);
+            SecurityBuffer outSecurityBuffer = new SecurityBuffer(tokenSize, SecurityBufferType.SECBUFFER_TOKEN);
+
+            ContextFlagsPal requestedContextFlags = ContextFlagsPal.Connection
+                | ContextFlagsPal.Confidentiality
+                | ContextFlagsPal.MutualAuth;
+
+            string serverSPN = System.Text.Encoding.UTF8.GetString(serverName);
+
+            SecurityStatusPal statusCode = NegotiateStreamPal.InitializeSecurityContext(
+                       credentialsHandle,
+                       ref securityContext,
+                       serverSPN,
+                       requestedContextFlags,
+                       inSecurityBufferArray,
+                       outSecurityBuffer,
+                       ref contextFlags);
+
+            if (statusCode.ErrorCode == SecurityStatusPalErrorCode.CompleteNeeded ||
+                statusCode.ErrorCode == SecurityStatusPalErrorCode.CompAndContinue)
+            {
+                inSecurityBufferArray = new SecurityBuffer[] { outSecurityBuffer };
+                statusCode = NegotiateStreamPal.CompleteAuthToken(ref securityContext, inSecurityBufferArray);
+            }
+
+            sendBuff = outSecurityBuffer.token;
+            if (sendBuff == null)
+            {
+                sendBuff = Array.Empty<byte>();
+            }
+
+            sspiClientContextStatus.SecurityContext = securityContext;
+            sspiClientContextStatus.ContextFlags = contextFlags;
+            sspiClientContextStatus.CredentialsHandle = credentialsHandle;
+
+            if (IsErrorStatus(statusCode.ErrorCode))
+            {
+                // Could not access Kerberos Ticket.
+                //
+                // SecurityStatusPalErrorCode.InternalError only occurs in Unix and always comes with a GssApiException,
+                // so we don't need to check for a GssApiException here.
+                if (statusCode.ErrorCode == SecurityStatusPalErrorCode.InternalError) 
+                {
+                    throw new Exception(SQLMessage.KerberosTicketMissingError() + "\n" + statusCode);
+                }
+                else
+                {
+                    throw new Exception(SQLMessage.SSPIGenerateError() + "\n" + statusCode);
+                }
+            }
+        }
+
+        private static bool IsErrorStatus(SecurityStatusPalErrorCode errorCode)
+        {
+            return errorCode != SecurityStatusPalErrorCode.NotSet &&
+                errorCode != SecurityStatusPalErrorCode.OK &&
+                errorCode != SecurityStatusPalErrorCode.ContinueNeeded &&
+                errorCode != SecurityStatusPalErrorCode.CompleteNeeded &&
+                errorCode != SecurityStatusPalErrorCode.CompAndContinue &&
+                errorCode != SecurityStatusPalErrorCode.ContextExpired &&
+                errorCode != SecurityStatusPalErrorCode.CredentialsNeeded &&
+                errorCode != SecurityStatusPalErrorCode.Renegotiate;
         }
 
         /// <summary>
@@ -186,6 +274,28 @@ namespace System.Data.SqlClient.SNI
             packet.Reset();
         }
 
+        private static string GetServerNameWithOutProtocol(string fullServerName, string protocolHeader)
+        {
+            string serverNameWithOutProtocol = null;
+            if (fullServerName.Length > protocolHeader.Length &&
+                String.Compare(fullServerName, 0, protocolHeader, 0, protocolHeader.Length, true) == 0)
+            {
+                serverNameWithOutProtocol = fullServerName.Substring(protocolHeader.Length, fullServerName.Length - protocolHeader.Length);
+            }
+
+            return serverNameWithOutProtocol;
+        }
+
+        private static bool IsOccursOnce(string s, char c)
+        {
+            Debug.Assert(!String.IsNullOrEmpty(s));
+            Debug.Assert(c != '\0');
+
+            int pos = s.IndexOf(c);
+            int nextIndex = pos + 1;
+            return pos >= 0 && (s.Length == nextIndex || s.IndexOf(c, pos + 1) == -1);
+        }
+
         /// <summary>
         /// Create a SNI connection handle
         /// </summary>
@@ -199,44 +309,77 @@ namespace System.Data.SqlClient.SNI
         /// <param name="async">Asynchronous connection</param>
         /// <param name="parallel">Attempt parallel connects</param>
         /// <returns>SNI handle</returns>
-        public SNIHandle CreateConnectionHandle(object callbackObject, string fullServerName, bool ignoreSniOpenTimeout, long timerExpire, out byte[] instanceName, byte[] spnBuffer, bool flushCache, bool async, bool parallel)
+        public SNIHandle CreateConnectionHandle(object callbackObject, string fullServerName, bool ignoreSniOpenTimeout, long timerExpire, out byte[] instanceName, ref byte[] spnBuffer, bool flushCache, bool async, bool parallel, bool isIntegratedSecurity)
         {
             instanceName = new byte[1];
-            instanceName[0] = 0;
 
-            string[] serverNameParts = fullServerName.Split(':');
-
-            if (serverNameParts.Length > 2)
+            SNIHandle sniHandle = null;
+            if (fullServerName.IndexOf(':') == -1)
             {
-                SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.INVALID_PROV, 0, SNICommon.InvalidConnStringError, string.Empty);
-                return null;
+                // default to using tcp if no protocol is provided
+                sniHandle = CreateTcpHandle(fullServerName, timerExpire, callbackObject, parallel, ref spnBuffer, isIntegratedSecurity);
             }
-
-            // Default to using tcp if no protocol is provided
-            if (serverNameParts.Length == 1)
+            else
             {
-                return CreateTcpHandle(serverNameParts[0], timerExpire, callbackObject, parallel);
-            }
+                string serverNameWithOutProtocol = null;
 
-            switch (serverNameParts[0])
-            {
-                case TdsEnums.TCP:
-                    return CreateTcpHandle(serverNameParts[1], timerExpire, callbackObject, parallel);
+                // when tcp protocol is specified
+                if ((serverNameWithOutProtocol = GetServerNameWithOutProtocol(fullServerName, TdsEnums.TCP + ":")) != null)
+                {
+                    sniHandle = CreateTcpHandle(serverNameWithOutProtocol, timerExpire, callbackObject, parallel, ref spnBuffer, isIntegratedSecurity);
+                }
+                // when np protocol is specified
+                else if ((serverNameWithOutProtocol = GetServerNameWithOutProtocol(fullServerName, TdsEnums.NP + ":\\\\")) != null ||
+                         (serverNameWithOutProtocol = GetServerNameWithOutProtocol(fullServerName, "\\\\")) != null)
+                {
+                    sniHandle = CreateNpHandle(serverNameWithOutProtocol, timerExpire, callbackObject, parallel);
+                }
+                // possibly error case
+                else
+                {
+                    int portOrInstanceNameIndex = Math.Max(fullServerName.LastIndexOf(','), fullServerName.LastIndexOf('\\'));
+                    string serverNameWithOutPortOrInstanceName = portOrInstanceNameIndex > 0 ? fullServerName.Substring(0, portOrInstanceNameIndex) : fullServerName;
+                    IPAddress address = null;
 
-                case TdsEnums.NP:
-                    return CreateNpHandle(serverNameParts[1], timerExpire, callbackObject, parallel);
-
-                default:
-                    if (parallel)
+                    // when no protocol is specified, and fullServerName is IPv6
+                    if (IPAddress.TryParse(serverNameWithOutPortOrInstanceName, out address) && address.AddressFamily == AddressFamily.InterNetworkV6)
                     {
-                        SNICommon.ReportSNIError(SNIProviders.INVALID_PROV, 0, SNICommon.MultiSubnetFailoverWithNonTcpProtocol, string.Empty);
+                        // default to using tcp if no protocol is provided
+                        sniHandle = CreateTcpHandle(fullServerName, timerExpire, callbackObject, parallel, ref spnBuffer, isIntegratedSecurity);
                     }
+                    // error case for sure
                     else
                     {
-                        SNICommon.ReportSNIError(SNIProviders.INVALID_PROV, 0, SNICommon.ProtocolNotSupportedError, string.Empty);
+                        // when invalid protocol is specified
+                        if (IsOccursOnce(fullServerName, ':'))
+                        {
+                            SNICommon.ReportSNIError(
+                                SNIProviders.INVALID_PROV, 0,
+                                (uint)(parallel ? SNICommon.MultiSubnetFailoverWithNonTcpProtocol : SNICommon.ProtocolNotSupportedError),
+                                string.Empty);
+                        }
+                        // when fullServerName is in invalid format
+                        else
+                        {
+                            SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.INVALID_PROV, 0, SNICommon.InvalidConnStringError, string.Empty);
+                        }
                     }
-                    return null;
+                }
             }
+
+            return sniHandle;
+        }
+
+        private static byte[] MakeMsSqlServerSPN(string fullyQualifiedDomainName, int port = DefaultSqlServerPort)
+        {
+            string serverSpn = SqlServerSpnHeader + "/" + fullyQualifiedDomainName + ":" + port;
+            return Encoding.UTF8.GetBytes(serverSpn);
+        }
+
+        private static string GetFullyQualifiedDomainName(string hostNameOrAddress)
+        {
+            IPHostEntry hostEntry = Dns.GetHostEntry(hostNameOrAddress);
+            return hostEntry.HostName;
         }
 
         /// <summary>
@@ -247,76 +390,105 @@ namespace System.Data.SqlClient.SNI
         /// <param name="callbackObject">Asynchronous I/O callback object</param>
         /// <param name="parallel">Should MultiSubnetFailover be used</param>
         /// <returns>SNITCPHandle</returns>
-        private SNITCPHandle CreateTcpHandle(string fullServerName, long timerExpire, object callbackObject, bool parallel)
+        private SNITCPHandle CreateTcpHandle(string fullServerName, long timerExpire, object callbackObject, bool parallel, ref byte[] spnBuffer, bool isIntegratedSecurity)
         {
             // TCP Format: 
             // tcp:<host name>\<instance name>
             // tcp:<host name>,<TCP/IP port number>
 
-            if (string.IsNullOrWhiteSpace(fullServerName))
+            string hostName = null;
+            int port = -1;
+            Exception exception = null;
+
+            if (string.IsNullOrWhiteSpace(fullServerName)) // when fullServerName is empty
             {
-                int defaultInstancePort = TryToGetDefaultInstancePort(DefaultHostname);
-                return new SNITCPHandle(DefaultHostname, (defaultInstancePort > 0 ? defaultInstancePort : DefaultSqlServerPort), timerExpire, callbackObject, parallel);
+                hostName = DefaultHostName;
+                port = DefaultSqlServerPort;
+            }
+            else
+            {
+                string[] serverNamePartsByComma = fullServerName.Split(CommaSeparator);
+                string[] serverNamePartsByBackSlash = fullServerName.Split(BackSlashSeparator);
+
+                // when no port or instance name provided
+                if (serverNamePartsByComma.Length < 2 && serverNamePartsByBackSlash.Length < 2)
+                {
+                    hostName = fullServerName;
+                    port = DefaultSqlServerPort;
+                }
+                // when port is provided, and no instance name
+                else if (serverNamePartsByComma.Length == 2 && serverNamePartsByBackSlash.Length < 2)
+                {
+                    hostName = serverNamePartsByComma[0];
+                    string portString = serverNamePartsByComma[1];
+                    try
+                    {
+                        port = ushort.Parse(portString);
+                    }
+                    catch (Exception e)
+                    {
+                        exception = e;
+                    }
+                }
+                // when instance name is provided, and no port
+                else if (serverNamePartsByComma.Length < 2 && serverNamePartsByBackSlash.Length == 2)
+                {
+                    hostName = serverNamePartsByBackSlash[0];
+                    string instanceName = serverNamePartsByBackSlash[1];
+                    try
+                    {
+                        port = GetPortByInstanceName(hostName, instanceName);
+                    }
+                    catch (Exception e)
+                    {
+                        exception = e;
+                    }
+                }
             }
 
-            string[] serverNamePartsByComma = fullServerName.Split(CommaSeparator);
-            string[] serverNamePartsByBackSlash = fullServerName.Split(BackSlashSeparator);
-
-            if (serverNamePartsByComma.Length < 2 && serverNamePartsByBackSlash.Length < 2)
+            if (hostName != null && port > 0 && exception == null && isIntegratedSecurity)
             {
-                return new SNITCPHandle(fullServerName, DefaultSqlServerPort, timerExpire, callbackObject, parallel);
-            }
-            else if (serverNamePartsByComma.Length == 2 && serverNamePartsByBackSlash.Length < 2)
-            {
-                string hostName = serverNamePartsByComma[0];
-                int portNumber = -1;
                 try
                 {
-                    portNumber = ushort.Parse(serverNamePartsByComma[1]);
-                    return new SNITCPHandle(hostName, portNumber, timerExpire, callbackObject, parallel);
+                    hostName = GetFullyQualifiedDomainName(hostName);
+                    spnBuffer = MakeMsSqlServerSPN(hostName, port);
                 }
                 catch (Exception e)
                 {
-                    SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.TCP_PROV, SNICommon.InvalidConnStringError, e);
-                    return null;
+                    exception = e;
                 }
             }
-            else if (serverNamePartsByComma.Length < 2 && serverNamePartsByBackSlash.Length == 2)
+
+            SNITCPHandle sniTcpHandle = null;
+            if (hostName != null && port > 0 && exception == null)
             {
-                string hostName = serverNamePartsByBackSlash[0];
-                string instanceName = serverNamePartsByBackSlash[1];
-                int portNumber = -1;
-                try
-                {
-                    portNumber = GetPortByInstanceName(hostName, instanceName);
-                    return new SNITCPHandle(hostName, portNumber, timerExpire, callbackObject, parallel);
-                }
-                catch (Exception e)
-                {
-                    SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.TCP_PROV, SNICommon.InvalidConnStringError, e);
-                    return null;
-                }
+                sniTcpHandle = new SNITCPHandle(hostName, port, timerExpire, callbackObject, parallel);
+            }
+            else if (exception != null)
+            {
+                SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.TCP_PROV, SNICommon.InvalidConnStringError, exception);
             }
             else
             {
                 SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.TCP_PROV, 0, SNICommon.InvalidConnStringError, string.Empty);
-                return null;
             }
+
+            return sniTcpHandle;
         }
 
         /// <summary>
         /// Sends CLNT_UCAST_INST request for given instance name to SQL Sever Browser, and receive SVR_RESP from the Browser.
         /// </summary>
-        /// <param name="browserHostname">SQL Sever Browser hostname</param>
+        /// <param name="browserHostName">SQL Sever Browser hostname</param>
         /// <param name="instanceName">instance name for CLNT_UCAST_INST request</param>
         /// <returns>SVR_RESP packets from SQL Sever Browser</returns>
-        private static byte[] SendInstanceInfoRequest(string browserHostname, string instanceName)
+        private static byte[] SendInstanceInfoRequest(string browserHostName, string instanceName)
         {
-            Debug.Assert(!string.IsNullOrWhiteSpace(browserHostname));
+            Debug.Assert(!string.IsNullOrWhiteSpace(browserHostName));
             Debug.Assert(!string.IsNullOrWhiteSpace(instanceName));
 
             byte[] instanceInfoRequest = CreateInstanceInfoRequest(instanceName);
-            byte[] responsePacket = SendUDPRequest(browserHostname, SqlServerBrowserPort, instanceInfoRequest);
+            byte[] responsePacket = SendUDPRequest(browserHostName, SqlServerBrowserPort, instanceInfoRequest);
 
             const byte SvrResp = 0x05;
             if (responsePacket == null || responsePacket.Length <= 3 || responsePacket[0] != SvrResp ||
@@ -400,8 +572,12 @@ namespace System.Data.SqlClient.SNI
 
             const int sendTimeOut = 1000;
             const int receiveTimeOut = 1000;
+
+            IPAddress address = null;
+            IPAddress.TryParse(browserHostname, out address);
+
             byte[] responsePacket = null;
-            using (UdpClient client = new UdpClient(AddressFamily.InterNetwork))
+            using (UdpClient client = new UdpClient(address == null ? AddressFamily.InterNetwork : address.AddressFamily))
             {
                 Task<int> sendTask = client.SendAsync(requestPacket, requestPacket.Length, browserHostname, port);
                 Task<UdpReceiveResult> receiveTask = null;

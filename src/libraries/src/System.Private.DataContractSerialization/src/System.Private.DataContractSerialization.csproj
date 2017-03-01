@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -11,13 +11,17 @@
     <DebugSymbols>true</DebugSymbols>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DefineConstants>$(DefineConstants);FEATURE_SERIALIZATION</DefineConstants>
-    <DefineConstants Condition="'$(TargetGroup)'=='uap101aot'">$(DefineConstants);NET_NATIVE</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)'=='uapaot'">$(DefineConstants);NET_NATIVE</DefineConstants>
     <!-- We do not want to block reflection for this assembly -->
-    <BlockReflectionAttribute Condition="'$(TargetGroup)'=='uap101aot'">false</BlockReflectionAttribute>
+    <BlockReflectionAttribute Condition="'$(TargetGroup)'=='uapaot'">false</BlockReflectionAttribute>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup>
     <RuntimeSerializationSources>System\Runtime\Serialization</RuntimeSerializationSources>
     <JsonSources>System\Runtime\Serialization\Json</JsonSources>
@@ -159,8 +163,7 @@
     <Compile Include="System\Runtime\Serialization\XsdDataContractExporter.cs" />
     <Compile Include="System\Xml\IFragmentCapableXmlDictionaryWriter.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='uap101aot'">
-    <TargetingPackReference Include="System.Private.CoreLib.Augments" />
+  <ItemGroup Condition="'$(TargetGroup)'=='uapaot'">
     <EmbeddedResource Include="$(MsBuildThisFileDirectory)Resources\$(AssemblyName).rd.xml" />
   </ItemGroup>
   <ItemGroup>

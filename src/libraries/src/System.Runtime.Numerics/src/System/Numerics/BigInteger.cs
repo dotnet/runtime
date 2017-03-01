@@ -76,7 +76,7 @@ namespace System.Numerics
                 ulong x = 0;
                 if (value < 0)
                 {
-                    x = (ulong)-value;
+                    x = unchecked((ulong)-value);
                     _sign = -1;
                 }
                 else
@@ -93,7 +93,7 @@ namespace System.Numerics
                 else
                 {
                     _bits = new uint[2];
-                    _bits[0] = (uint)x;
+                    _bits[0] = unchecked((uint)x);
                     _bits[1] = (uint)(x >> kcbitUint);
                 }
             }
@@ -119,7 +119,7 @@ namespace System.Numerics
             {
                 _sign = +1;
                 _bits = new uint[2];
-                _bits[0] = (uint)value;
+                _bits[0] = unchecked((uint)value);
                 _bits[1] = (uint)(value >> kcbitUint);
             }
 
@@ -189,9 +189,9 @@ namespace System.Numerics
                 // Populate the uints.
                 _bits = new uint[cu + 2];
                 _bits[cu + 1] = (uint)(man >> (cbit + kcbitUint));
-                _bits[cu] = (uint)(man >> cbit);
+                _bits[cu] = unchecked((uint)(man >> cbit));
                 if (cbit > 0)
-                    _bits[cu - 1] = (uint)man << (kcbitUint - cbit);
+                    _bits[cu - 1] = unchecked((uint)man) << (kcbitUint - cbit);
                 _sign = sign;
             }
 
@@ -223,11 +223,16 @@ namespace System.Numerics
             else
             {
                 _bits = new uint[size];
-                _bits[0] = (uint)bits[0];
-                if (size > 1)
-                    _bits[1] = (uint)bits[1];
-                if (size > 2)
-                    _bits[2] = (uint)bits[2];
+
+                unchecked
+                {
+                    _bits[0] = (uint)bits[0];
+                    if (size > 1)
+                        _bits[1] = (uint)bits[1];
+                    if (size > 2)
+                        _bits[2] = (uint)bits[2];
+                }
+
                 _sign = ((bits[3] & DecimalSignMask) != 0) ? -1 : +1;
             }
             AssertValid();
@@ -279,7 +284,7 @@ namespace System.Numerics
                     // can be naively packed into 4 bytes (due to the leading 0x0)
                     // it overflows into the int32 sign bit
                     _bits = new uint[1];
-                    _bits[0] = (uint)_sign;
+                    _bits[0] = unchecked((uint)_sign);
                     _sign = +1;
                 }
                 if (_sign == int.MinValue)
@@ -333,7 +338,7 @@ namespace System.Numerics
                     int len = val.Length;
                     while (len > 0 && val[len - 1] == 0)
                         len--;
-                    if (len == 1 && ((int)(val[0])) > 0)
+                    if (len == 1 && unchecked((int)(val[0])) > 0)
                     {
                         if (val[0] == 1 /* abs(-1) */)
                         {
@@ -441,20 +446,20 @@ namespace System.Numerics
             }
             if (dwordCount == 1)
             {
-                if ((int)value[0] < 0 && !isNegative)
+                if (unchecked((int)value[0]) < 0 && !isNegative)
                 {
                     _bits = new uint[1];
                     _bits[0] = value[0];
                     _sign = +1;
                 }
                 // Handle the special cases where the BigInteger likely fits into _sign
-                else if (int.MinValue == (int)value[0])
+                else if (int.MinValue == unchecked((int)value[0]))
                 {
                     this = s_bnMinInt;
                 }
                 else
                 {
-                    _sign = (int)value[0];
+                    _sign = unchecked((int)value[0]);
                     _bits = null;
                 }
                 AssertValid();
@@ -488,7 +493,7 @@ namespace System.Numerics
             while (len > 0 && value[len - 1] == 0) len--;
 
             // The number is represented by a single dword
-            if (len == 1 && ((int)(value[0])) > 0)
+            if (len == 1 && unchecked((int)(value[0])) > 0)
             {
                 if (value[0] == 1 /* abs(-1) */)
                 {
@@ -865,7 +870,7 @@ namespace System.Numerics
                 return _sign;
             int hash = _sign;
             for (int iv = _bits.Length; --iv >= 0;)
-                hash = NumericsHelpers.CombineHash(hash, (int)_bits[iv]);
+                hash = NumericsHelpers.CombineHash(hash, unchecked((int)_bits[iv]));
             return hash;
         }
 
@@ -1140,7 +1145,7 @@ namespace System.Numerics
 
             if (_bits == null)
             {
-                dwords = new uint[] { (uint)_sign };
+                dwords = new uint[] { unchecked((uint)_sign) };
                 highDWord = (_sign < 0) ? uint.MaxValue : 0;
             }
             else if (_sign == -1)
@@ -1416,7 +1421,7 @@ namespace System.Numerics
                 uu = value._bits[0];
             }
 
-            long ll = value._sign > 0 ? (long)uu : -(long)uu;
+            long ll = value._sign > 0 ? unchecked((long)uu) : unchecked(-(long)uu);
             if ((ll > 0 && value._sign > 0) || (ll < 0 && value._sign < 0))
             {
                 // Signs match, no overflow
@@ -1499,9 +1504,13 @@ namespace System.Numerics
             if (length > 3) throw new OverflowException(SR.Overflow_Decimal);
 
             int lo = 0, mi = 0, hi = 0;
-            if (length > 2) hi = (int)value._bits[2];
-            if (length > 1) mi = (int)value._bits[1];
-            if (length > 0) lo = (int)value._bits[0];
+
+            unchecked
+            {
+                if (length > 2) hi = (int)value._bits[2];
+                if (length > 1) mi = (int)value._bits[1];
+                if (length > 0) lo = (int)value._bits[0];
+            }
 
             return new decimal(lo, mi, hi, value._sign < 0, 0);
         }
@@ -1511,6 +1520,11 @@ namespace System.Numerics
             if (left.IsZero || right.IsZero)
             {
                 return Zero;
+            }
+
+            if (left._bits == null && right._bits == null)
+            {
+                return left._sign & right._sign;
             }
 
             uint[] x = left.ToUInt32Array();
@@ -1534,6 +1548,11 @@ namespace System.Numerics
                 return right;
             if (right.IsZero)
                 return left;
+            
+            if (left._bits == null && right._bits == null)
+            {
+                return left._sign | right._sign;
+            }
 
             uint[] x = left.ToUInt32Array();
             uint[] y = right.ToUInt32Array();
@@ -1552,6 +1571,11 @@ namespace System.Numerics
 
         public static BigInteger operator ^(BigInteger left, BigInteger right)
         {
+            if (left._bits == null && right._bits == null)
+            {
+                return left._sign ^ right._sign;
+            }
+
             uint[] x = left.ToUInt32Array();
             uint[] y = right.ToUInt32Array();
             uint[] z = new uint[Math.Max(x.Length, y.Length)];

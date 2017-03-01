@@ -31,12 +31,12 @@ namespace System.Linq.Expressions.Tests
 
         public static IEnumerable<object[]> Int16sAndDecrements()
         {
-            return Int16s.Select(i => new object[] { typeof(short), i, (short)(i - 1) });
+            return Int16s.Select(i => new object[] { typeof(short), i, unchecked((short)(i - 1)) });
         }
 
         public static IEnumerable<object[]> Int16sAndIncrements()
         {
-            return Int16s.Select(i => new object[] { typeof(short), i, (short)(i + 1) });
+            return Int16s.Select(i => new object[] { typeof(short), i, unchecked((short)(i + 1)) });
         }
 
         public static IEnumerable<short?> NullableInt16s
@@ -46,12 +46,12 @@ namespace System.Linq.Expressions.Tests
 
         public static IEnumerable<object[]> NullableInt16sAndDecrements()
         {
-            return NullableInt16s.Select(i => new object[] { typeof(short?), i, (short?)(i - 1) });
+            return NullableInt16s.Select(i => new object[] { typeof(short?), i, unchecked((short?)(i - 1)) });
         }
 
         public static IEnumerable<object[]> NullableInt16sAndIncrements()
         {
-            return NullableInt16s.Select(i => new object[] { typeof(short?), i, (short?)(i + 1) });
+            return NullableInt16s.Select(i => new object[] { typeof(short?), i, unchecked((short?)(i + 1)) });
         }
 
         public static IEnumerable<ushort> UInt16s
@@ -64,12 +64,12 @@ namespace System.Linq.Expressions.Tests
 
         public static IEnumerable<object[]> UInt16sAndDecrements()
         {
-            return UInt16s.Select(i => new object[] { typeof(ushort), i, (ushort)(i - 1) });
+            return UInt16s.Select(i => new object[] { typeof(ushort), i, unchecked((ushort)(i - 1)) });
         }
 
         public static IEnumerable<object[]> UInt16sAndIncrements()
         {
-            return UInt16s.Select(i => new object[] { typeof(ushort), i, (ushort)(i + 1) });
+            return UInt16s.Select(i => new object[] { typeof(ushort), i, unchecked((ushort)(i + 1)) });
         }
 
         public static IEnumerable<ushort?> NullableUInt16s
@@ -79,12 +79,12 @@ namespace System.Linq.Expressions.Tests
 
         public static IEnumerable<object[]> NullableUInt16sAndDecrements()
         {
-            return NullableUInt16s.Select(i => new object[] { typeof(ushort?), i, (ushort?)(i - 1) });
+            return NullableUInt16s.Select(i => new object[] { typeof(ushort?), i, unchecked((ushort?)(i - 1)) });
         }
 
         public static IEnumerable<object[]> NullableUInt16sAndIncrements()
         {
-            return NullableUInt16s.Select(i => new object[] { typeof(ushort?), i, (ushort?)(i + 1) });
+            return NullableUInt16s.Select(i => new object[] { typeof(ushort?), i, unchecked((ushort?)(i + 1)) });
         }
 
         public static IEnumerable<int> Int32s
@@ -97,12 +97,12 @@ namespace System.Linq.Expressions.Tests
 
         public static IEnumerable<object[]> Int32sAndDecrements()
         {
-            return Int32s.Select(i => new object[] { typeof(int), i, i - 1 });
+            return Int32s.Select(i => new object[] { typeof(int), i, unchecked(i - 1) });
         }
 
         public static IEnumerable<object[]> Int32sAndIncrements()
         {
-            return Int32s.Select(i => new object[] { typeof(int), i, i + 1 });
+            return Int32s.Select(i => new object[] { typeof(int), i, unchecked(i + 1) });
         }
 
         public static IEnumerable<int?> NullableInt32s
@@ -112,12 +112,12 @@ namespace System.Linq.Expressions.Tests
 
         public static IEnumerable<object[]> NullableInt32sAndDecrements()
         {
-            return NullableInt32s.Select(i => new object[] { typeof(int?), i, i - 1 });
+            return NullableInt32s.Select(i => new object[] { typeof(int?), i, unchecked(i - 1) });
         }
 
         public static IEnumerable<object[]> NullableInt32sAndIncrements()
         {
-            return NullableInt32s.Select(i => new object[] { typeof(int?), i, i + 1 });
+            return NullableInt32s.Select(i => new object[] { typeof(int?), i, unchecked(i + 1) });
         }
 
         public static IEnumerable<uint> UInt32s
@@ -130,12 +130,12 @@ namespace System.Linq.Expressions.Tests
 
         public static IEnumerable<object[]> UInt32sAndDecrements()
         {
-            return UInt32s.Select(i => new object[] { typeof(uint), i, i - 1 });
+            return UInt32s.Select(i => new object[] { typeof(uint), i, unchecked(i - 1) });
         }
 
         public static IEnumerable<object[]> UInt32sAndIncrements()
         {
-            return UInt32s.Select(i => new object[] { typeof(uint), i, i + 1 });
+            return UInt32s.Select(i => new object[] { typeof(uint), i, unchecked(i + 1) });
         }
 
         public static IEnumerable<uint?> NullableUInt32s
@@ -145,12 +145,12 @@ namespace System.Linq.Expressions.Tests
 
         public static IEnumerable<object[]> NullableUInt32sAndDecrements()
         {
-            return NullableUInt32s.Select(i => new object[] { typeof(uint?), i, i - 1 });
+            return NullableUInt32s.Select(i => new object[] { typeof(uint?), i, unchecked(i - 1) });
         }
 
         public static IEnumerable<object[]> NullableUInt32sAndIncrements()
         {
-            return NullableUInt32s.Select(i => new object[] { typeof(uint?), i, i + 1 });
+            return NullableUInt32s.Select(i => new object[] { typeof(uint?), i, unchecked(i + 1) });
         }
 
         public static IEnumerable<long> Int64s
@@ -163,12 +163,12 @@ namespace System.Linq.Expressions.Tests
 
         public static IEnumerable<object[]> Int64sAndDecrements()
         {
-            return Int64s.Select(i => new object[] { typeof(long), i, i - 1 });
+            return Int64s.Select(i => new object[] { typeof(long), i, unchecked(i - 1) });
         }
 
         public static IEnumerable<object[]> Int64sAndIncrements()
         {
-            return Int64s.Select(i => new object[] { typeof(long), i, i + 1 });
+            return Int64s.Select(i => new object[] { typeof(long), i, unchecked(i + 1) });
         }
 
         public static IEnumerable<long?> NullableInt64s
@@ -178,12 +178,12 @@ namespace System.Linq.Expressions.Tests
 
         public static IEnumerable<object[]> NullableInt64sAndDecrements()
         {
-            return NullableInt64s.Select(i => new object[] { typeof(long?), i, i - 1 });
+            return NullableInt64s.Select(i => new object[] { typeof(long?), i, unchecked(i - 1) });
         }
 
         public static IEnumerable<object[]> NullableInt64sAndIncrements()
         {
-            return NullableInt64s.Select(i => new object[] { typeof(long?), i, i + 1 });
+            return NullableInt64s.Select(i => new object[] { typeof(long?), i, unchecked(i + 1) });
         }
 
         public static IEnumerable<ulong> UInt64s
@@ -196,12 +196,12 @@ namespace System.Linq.Expressions.Tests
 
         public static IEnumerable<object[]> UInt64sAndDecrements()
         {
-            return UInt64s.Select(i => new object[] { typeof(ulong), i, i - 1 });
+            return UInt64s.Select(i => new object[] { typeof(ulong), i, unchecked(i - 1) });
         }
 
         public static IEnumerable<object[]> UInt64sAndIncrements()
         {
-            return UInt64s.Select(i => new object[] { typeof(ulong), i, i + 1 });
+            return UInt64s.Select(i => new object[] { typeof(ulong), i, unchecked(i + 1) });
         }
 
         public static IEnumerable<ulong?> NullableUInt64s
@@ -211,12 +211,12 @@ namespace System.Linq.Expressions.Tests
 
         public static IEnumerable<object[]> NullableUInt64sAndDecrements()
         {
-            return NullableUInt64s.Select(i => new object[] { typeof(ulong?), i, i - 1 });
+            return NullableUInt64s.Select(i => new object[] { typeof(ulong?), i, unchecked(i - 1) });
         }
 
         public static IEnumerable<object[]> NullableUInt64sAndIncrements()
         {
-            return NullableUInt64s.Select(i => new object[] { typeof(ulong?), i, i + 1 });
+            return NullableUInt64s.Select(i => new object[] { typeof(ulong?), i, unchecked(i + 1) });
         }
 
         public static IEnumerable<decimal> Decimals

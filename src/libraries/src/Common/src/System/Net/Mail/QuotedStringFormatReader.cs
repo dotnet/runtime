@@ -9,7 +9,7 @@ namespace System.Net.Mail
 {
     // RFC 2822 Section 3.2.5 - Quoted strings
     // When a string of characters does not conform to an atom string (Section 3.2.4), it must be enclosed in double
-    // quotes.  This allows for white spaces, quoted/escaped characters, etc.  ("Say hello. \"hello!\" ")
+    // quotes.  This allows for whitespace, quoted/escaped characters, etc.  ("Say hello. \"hello!\" ")
     //
     // For robustness, we allow the bounding double quotes to be omitted when we have another clear delineator such as
     // a comma: (sales@contoso.com, Contoso Pharmaceuticals info@contoso.com), where the display name 'Contoso Pharmaceuticals' should have been quoted.

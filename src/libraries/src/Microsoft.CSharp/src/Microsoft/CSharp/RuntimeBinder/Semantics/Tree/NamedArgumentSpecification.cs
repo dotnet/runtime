@@ -4,7 +4,7 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal class EXPRNamedArgumentSpecification : EXPR
+    internal sealed class EXPRNamedArgumentSpecification : EXPR
     {
         public Syntax.Name Name;
         public EXPR Value;

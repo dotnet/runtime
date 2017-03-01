@@ -74,7 +74,7 @@ internal static partial class Interop
             IntPtr allocator,
             [MarshalAs(UnmanagedType.LPArray)]
             IntPtr[] values,
-            ulong numValues,
+            UIntPtr numValues,
             IntPtr callbacks);
 
         /// <summary>
@@ -83,7 +83,7 @@ internal static partial class Interop
         /// <param name="values">The values to put in the array</param>
         /// <param name="numValues">The number of values in the array</param>
         /// <returns>Returns a valid SafeCreateHandle to a CFArray on success; otherwise, returns an invalid SafeCreateHandle</returns>
-        internal static SafeCreateHandle CFArrayCreate(IntPtr[] values, ulong numValues)
+        internal static SafeCreateHandle CFArrayCreate(IntPtr[] values, UIntPtr numValues)
         {
             return CFArrayCreate(IntPtr.Zero, values, numValues, IntPtr.Zero);
         }

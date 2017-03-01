@@ -12,17 +12,7 @@ namespace System
         private static ResourceManager s_resourceManager;
 
         private static ResourceManager ResourceManager
-        {
-            get
-            {
-                if (SR.s_resourceManager == null)
-                {
-                    SR.s_resourceManager = new ResourceManager(SR.ResourceType);
-                }
-
-                return SR.s_resourceManager;
-            }
-        }
+            => s_resourceManager ?? (s_resourceManager = new ResourceManager(ResourceType));
 
         // This method is used to decide if we need to append the exception message parameters to the message when calling SR.Format.
         // by default it returns false.

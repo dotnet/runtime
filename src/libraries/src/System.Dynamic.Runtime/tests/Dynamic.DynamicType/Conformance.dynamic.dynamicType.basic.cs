@@ -10661,7 +10661,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.basic.opera
                     var b21 = a1;
                     var b22 = a2;
                     dynamic d2 = a2;
-                    if ((b11 <<= d2) != (b21 <<= b22))
+                    if (unchecked(b11 <<= d2) != unchecked(b21 <<= b22))
                     {
                         System.Console.WriteLine("Failed -- byte <<= byte");
                         return false;

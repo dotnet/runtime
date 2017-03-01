@@ -27,14 +27,14 @@ namespace System.Xml.Tests
 
         public static MethodInfo GetInstanceMethod(Type type, string methName)
         {
-            MethodInfo methInfo = type.GetTypeInfo().GetMethod(methName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            MethodInfo methInfo = type.GetMethod(methName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
             Debug.Assert(methInfo != null, "Instance method " + type.Name + "." + methName + " not found");
             return methInfo;
         }
 
         public static MethodInfo GetStaticMethod(Type type, string methName)
         {
-            MethodInfo methInfo = type.GetTypeInfo().GetMethod(methName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+            MethodInfo methInfo = type.GetMethod(methName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
             Debug.Assert(methInfo != null, "Static method " + type.Name + "." + methName + " not found");
             return methInfo;
         }
@@ -2902,7 +2902,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation("Output filename is \'\\\\\'")]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Invalid path specific to Windows
         [InlineData(XslInputType.Reader, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.URI, ReaderType.XmlValidatingReader)]
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader)]
@@ -3129,7 +3129,7 @@ namespace System.Xml.Tests
             XmlReader xmlReader = XmlReader.Create(xmlFile);
             //Let's select randomly how to create navigator
             IXPathNavigable navigator = null;
-            Random randGenerator = new Random((int)DateTime.Now.Ticks);
+            Random randGenerator = new Random(unchecked((int)DateTime.Now.Ticks));
             switch (randGenerator.Next(2))
             {
                 case 0:
@@ -3463,7 +3463,7 @@ param2 (correct answer is 'local-param2-arg'): local-param2-arg
                 DynamicMethod hello = new DynamicMethod("Hello",
                                 typeof(int),
                                 new Type[] { },
-                                typeof(string).GetTypeInfo().Module);
+                                typeof(string).Module);
 
                 ILGenerator il = hello.GetILGenerator(256);
                 il.Emit(OpCodes.Ret);

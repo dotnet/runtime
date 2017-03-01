@@ -104,7 +104,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return _methKind == MethodKindEnum.EventAccessor;
         }
 
-        public bool isExplicit()          // is user defined explicit conversion operator
+        private bool isExplicit()          // is user defined explicit conversion operator
         {
             return _methKind == MethodKindEnum.ExplicitConv;
         }
@@ -171,7 +171,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return !isOperator && !isAnyAccessor();
         }
 
-        public bool isAnyAccessor()
+        private bool isAnyAccessor()
         {
             return isPropertyAccessor() || isEventAccessor();
         }
@@ -206,11 +206,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     // used for CMOD_OPT interop
     // ----------------------------------------------------------------------------
 
-    internal class InterfaceImplementationMethodSymbol : MethodSymbol
+    internal sealed class InterfaceImplementationMethodSymbol : MethodSymbol
     {
     }
 
-    internal class IteratorFinallyMethodSymbol : MethodSymbol
+    internal sealed class IteratorFinallyMethodSymbol : MethodSymbol
     {
     }
 }

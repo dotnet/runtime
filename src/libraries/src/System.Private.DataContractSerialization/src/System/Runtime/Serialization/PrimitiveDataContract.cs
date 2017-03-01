@@ -60,7 +60,7 @@ namespace System.Runtime.Serialization
             {
                 if (_helper.XmlFormatWriterMethod == null)
                 {
-                    if (UnderlyingType.GetTypeInfo().IsValueType)
+                    if (UnderlyingType.IsValueType)
                         _helper.XmlFormatWriterMethod = typeof(XmlWriterDelegator).GetMethod(WriteMethodName, Globals.ScanAllMembers, new Type[] { UnderlyingType, typeof(XmlDictionaryString), typeof(XmlDictionaryString) });
                     else
                         _helper.XmlFormatWriterMethod = typeof(XmlObjectSerializerWriteContext).GetMethod(WriteMethodName, Globals.ScanAllMembers, new Type[] { typeof(XmlWriterDelegator), UnderlyingType, typeof(XmlDictionaryString), typeof(XmlDictionaryString) });
@@ -75,7 +75,7 @@ namespace System.Runtime.Serialization
             {
                 if (_helper.XmlFormatContentWriterMethod == null)
                 {
-                    if (UnderlyingType.GetTypeInfo().IsValueType)
+                    if (UnderlyingType.IsValueType)
                         _helper.XmlFormatContentWriterMethod = typeof(XmlWriterDelegator).GetMethod(WriteMethodName, Globals.ScanAllMembers, new Type[] { UnderlyingType });
                     else
                         _helper.XmlFormatContentWriterMethod = typeof(XmlObjectSerializerWriteContext).GetMethod(WriteMethodName, Globals.ScanAllMembers, new Type[] { typeof(XmlWriterDelegator), UnderlyingType });
@@ -1017,12 +1017,12 @@ namespace System.Runtime.Serialization
     }
 
 #if NET_NATIVE
-    public class TimeSpanDataContract : PrimitiveDataContract
+    public class XsDurationDataContract : TimeSpanDataContract
 #else
     internal class XsDurationDataContract : TimeSpanDataContract
 #endif
     {
-        internal XsDurationDataContract() : base(DictionaryGlobals.TimeSpanLocalName, DictionaryGlobals.SchemaNamespace) { }
+        public XsDurationDataContract() : base(DictionaryGlobals.TimeSpanLocalName, DictionaryGlobals.SchemaNamespace) { }
     }
 
 #if NET_NATIVE

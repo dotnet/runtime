@@ -1,14 +1,15 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{53D09AF4-0C13-4197-B8AD-9746F0374E88}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='net461'">true</IsPartialFacadeAssembly>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='netfx'">true</IsPartialFacadeAssembly>
+    <DefineConstants>$(DefineConstants);CODEDOM</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='net461-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='net461-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netfx-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netfx-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
@@ -125,30 +126,15 @@
     <Compile Include="System\CodeDom\Compiler\ICodeParser.cs" />
     <Compile Include="System\CodeDom\Compiler\ExposedTabStringIndentedTextWriter.cs" />
     <Compile Include="System\CodeDom\Compiler\LanguageOptions.cs" />
-    <Compile Include="System\CodeDom\Compiler\TempFiles.cs" />
+    <Compile Include="$(CommonPath)\System\IO\TempFileCollection.cs" />
     <Compile Include="System\CodeDom\FieldDirection.cs" />
     <Compile Include="System\CodeDom\MemberAttributes.cs" />
     <Compile Include="System\Collections\Specialized\FixedStringLookup.cs" />
     <Compile Include="$(CommonPath)\System\CSharpHelpers.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net461'">
-    <TargetingPackReference Include="System" />
-  </ItemGroup>
-  <ItemGroup>
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Collections.NonGeneric" />
-    <Reference Include="System.Collections.Specialized" />
-    <Reference Include="System.ComponentModel.Primitives" />
-    <Reference Include="System.ComponentModel.TypeConverter" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Diagnostics.Process" />
-    <Reference Include="System.Diagnostics.Tools" />
-    <Reference Include="System.IO.FileSystem" />
-    <Reference Include="System.Resources.ResourceManager" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Security.Permissions" />
-    <Reference Include="System.Threading" />
+  <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
+    <Reference Include="mscorlib" />
+    <Reference Include="System" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

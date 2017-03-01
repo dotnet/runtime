@@ -103,7 +103,7 @@ namespace System.Net.Mail
                 if (index >= 0 && data[index] == MailBnfHelper.StartAngleBracket)
                 {
                     index--; // Skip the angle bracket
-                    // Skip white spaces, but leave comments, as they may be part of the display name.
+                    // Skip whitespace, but leave comments, as they may be part of the display name.
                     index = WhitespaceReader.ReadFwsReverse(data, index);
                 }
                 else
@@ -215,7 +215,7 @@ namespace System.Net.Mail
                 index = DotAtomReader.ReadReverse(data, index);
 
                 // Check that the local-part is properly separated from the next component. It may be separated by a 
-                // comment, white space, an expected angle bracket, a quote for the display-name, or an expected comma 
+                // comment, whitespace, an expected angle bracket, a quote for the display-name, or an expected comma 
                 // before the next address.
                 if (index >= 0 &&
                         !(

@@ -377,7 +377,7 @@ namespace System.Linq.Expressions
                 ExpressionType kind = NodeType;
 
                 return (kind == ExpressionType.Equal || kind == ExpressionType.NotEqual) &&
-                    method == null && !left.GetTypeInfo().IsValueType && !right.GetTypeInfo().IsValueType;
+                    method == null && !left.IsValueType && !right.IsValueType;
             }
         }
 
@@ -615,7 +615,7 @@ namespace System.Linq.Expressions
                 Type nnLeftType = left.Type.GetNonNullableType();
                 Type nnRightType = right.Type.GetNonNullableType();
                 method = GetUserDefinedBinaryOperator(binaryType, nnLeftType, nnRightType, name);
-                if (method != null && method.ReturnType.GetTypeInfo().IsValueType && !method.ReturnType.IsNullableType())
+                if (method != null && method.ReturnType.IsValueType && !method.ReturnType.IsNullableType())
                 {
                     if (method.ReturnType != typeof(bool) || liftToNull)
                     {
@@ -647,7 +647,7 @@ namespace System.Linq.Expressions
             if (left.Type.IsNullableType() && right.Type.IsNullableType() &&
                 ParameterIsAssignable(pms[0], left.Type.GetNonNullableType()) &&
                 ParameterIsAssignable(pms[1], right.Type.GetNonNullableType()) &&
-                method.ReturnType.GetTypeInfo().IsValueType && !method.ReturnType.IsNullableType())
+                method.ReturnType.IsValueType && !method.ReturnType.IsNullableType())
             {
                 if (method.ReturnType != typeof(bool) || liftToNull)
                 {
@@ -824,8 +824,13 @@ namespace System.Linq.Expressions
             {
                 left = left.GetNonNullableType();
             }
-            MethodInfo opTrue = TypeUtils.GetBooleanOperator(method.DeclaringType, "op_True");
-            MethodInfo opFalse = TypeUtils.GetBooleanOperator(method.DeclaringType, "op_False");
+            Type declaringType = method.DeclaringType;
+            if (declaringType == null)
+            {
+                throw Error.LogicalOperatorMustHaveBooleanOperators(nodeType, method.Name);
+            }
+            MethodInfo opTrue = TypeUtils.GetBooleanOperator(declaringType, "op_True");
+            MethodInfo opFalse = TypeUtils.GetBooleanOperator(declaringType, "op_False");
             if (opTrue == null || opTrue.ReturnType != typeof(bool) ||
                 opFalse == null || opFalse.ReturnType != typeof(bool))
             {
@@ -1092,7 +1097,7 @@ namespace System.Linq.Expressions
             if (left.Type == right.Type && (left.Type.IsNumeric() ||
                 left.Type == typeof(object) ||
                 left.Type.IsBool() ||
-                left.Type.GetNonNullableType().GetTypeInfo().IsEnum))
+                left.Type.GetNonNullableType().IsEnum))
             {
                 if (left.Type.IsNullableType() && liftToNull)
                 {
@@ -1422,7 +1427,7 @@ namespace System.Linq.Expressions
                 return new SimpleBinaryExpression(ExpressionType.Coalesce, left, right, resultType);
             }
 
-            if (left.Type.GetTypeInfo().IsValueType && !left.Type.IsNullableType())
+            if (left.Type.IsValueType && !left.Type.IsNullableType())
             {
                 throw Error.CoalesceUsedOnNonNullType();
             }
@@ -1461,7 +1466,7 @@ namespace System.Linq.Expressions
         private static Type ValidateCoalesceArgTypes(Type left, Type right)
         {
             Type leftStripped = left.GetNonNullableType();
-            if (left.GetTypeInfo().IsValueType && !left.IsNullableType())
+            if (left.IsValueType && !left.IsNullableType())
             {
                 throw Error.CoalesceUsedOnNonNullType();
             }

@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <BinPlaceRef>true</BinPlaceRef>
+    <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
+    <NugetRuntimeIdentifier>None</NugetRuntimeIdentifier>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- for all configurations this project provides refs for that configuration -->
+    <BinPlaceConfiguration Include="$(Configuration)">
+      <RefPath>$(RefPath)</RefPath>
+    </BinPlaceConfiguration>
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

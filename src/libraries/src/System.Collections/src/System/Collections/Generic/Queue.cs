@@ -12,6 +12,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace System.Collections.Generic
 {
@@ -89,12 +90,17 @@ namespace System.Collections.Generic
         {
             if (_size != 0)
             {
-                if (_head < _tail)
-                    Array.Clear(_array, _head, _size);
-                else
+                if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
                 {
-                    Array.Clear(_array, _head, _array.Length - _head);
-                    Array.Clear(_array, 0, _tail);
+                    if (_head < _tail)
+                    {
+                        Array.Clear(_array, _head, _size);
+                    }
+                    else
+                    {
+                        Array.Clear(_array, _head, _array.Length - _head);
+                        Array.Clear(_array, 0, _tail);
+                    }
                 }
 
                 _size = 0;
@@ -233,7 +239,10 @@ namespace System.Collections.Generic
             }
 
             T removed = _array[_head];
-            _array[_head] = default(T);
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+            {
+                _array[_head] = default(T);
+            }
             MoveNext(ref _head);
             _size--;
             _version++;
@@ -249,7 +258,10 @@ namespace System.Collections.Generic
             }
 
             result = _array[_head];
-            _array[_head] = default(T);
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+            {
+                _array[_head] = default(T);
+            }
             MoveNext(ref _head);
             _size--;
             _version++;

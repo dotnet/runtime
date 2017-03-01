@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.DirectoryServices.AccountManagement;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Xunit;
 
 namespace AccountManagementUnitTests
 {
@@ -11,7 +11,6 @@ namespace AccountManagementUnitTests
     ///This is a test class for UserPrincipalTest and is intended
     ///to contain all UserPrincipalTest Unit Tests
     ///</summary>
-    [TestClass()]
     public class UserPrincipalTest : PrincipalTest
     {
         #region Additional test attributes
@@ -66,15 +65,13 @@ namespace AccountManagementUnitTests
         /// <summary>
         ///A test for UserPrincipal Constructor
         ///</summary>
-        [TestMethod()]
         public void UserPrincipalConstructorTest()
         {
             UserPrincipal user = new UserPrincipal(domainContext);
             user.Dispose();
-            Assert.Inconclusive("TODO: Implement code to verify target");
+            //Assert.Inconclusive("TODO: Implement code to verify target");
         }
 
-        [TestMethod()]
         public void ComputedUACCheck()
         {
             string username = "Administrator";
@@ -93,14 +90,14 @@ namespace AccountManagementUnitTests
             context.ValidateCredentials("good", "wrong password");
 
             //verify that the account is locked out
-            Assert.IsTrue(user.IsAccountLockedOut(), "trying wrong credentials did not lock the account");
+            Assert.True(user.IsAccountLockedOut(), "trying wrong credentials did not lock the account");
 
             // if uac is not set correctly, this call might clear the lockout
             user.SmartcardLogonRequired = false;
             user.Save();
 
             //verify that the account is still locked out
-            Assert.IsTrue(user.IsAccountLockedOut(), "the account is no longer locked out after writing setting SmartCardLogonRequired");
+            Assert.True(user.IsAccountLockedOut(), "the account is no longer locked out after writing setting SmartCardLogonRequired");
         }
     }
 }

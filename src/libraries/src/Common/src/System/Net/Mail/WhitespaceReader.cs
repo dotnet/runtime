@@ -86,8 +86,8 @@ namespace System.Net.Mail
         // - The index must be within the upper bounds of the data string.
         // 
         // Return value: 
-        // - The given index if it data[index] was not a ')' or white space
-        // - The index of the next non comment or white space character
+        // - The given index if it data[index] was not a ')' or whitespace
+        // - The index of the next non comment or whitespace character
         //   e.g. " d ( ( c o mment) )" returns index 1
         // - -1 if skipping the comments and/or whitespace moves you to the beginning of the data string.
         //   e.g. " (comment) " returns -1

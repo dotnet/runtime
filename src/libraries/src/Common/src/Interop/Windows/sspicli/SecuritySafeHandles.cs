@@ -563,7 +563,7 @@ namespace System.Net.Security
                     }
 
                     Interop.SspiCli.SecBuffer[] outUnmanagedBuffer = new Interop.SspiCli.SecBuffer[1];
-                    fixed (void* outUnmanagedBufferPtr = outUnmanagedBuffer)
+                    fixed (void* outUnmanagedBufferPtr = &outUnmanagedBuffer[0])
                     {
                         // Fix Descriptor pointer that points to unmanaged SecurityBuffers.
                         outSecurityBufferDescriptor.pBuffers = outUnmanagedBufferPtr;
@@ -854,7 +854,7 @@ namespace System.Net.Security
                     }
 
                     var outUnmanagedBuffer = new Interop.SspiCli.SecBuffer[1];
-                    fixed (void* outUnmanagedBufferPtr = outUnmanagedBuffer)
+                    fixed (void* outUnmanagedBufferPtr = &outUnmanagedBuffer[0])
                     {
                         // Fix Descriptor pointer that points to unmanaged SecurityBuffers.
                         outSecurityBufferDescriptor.pBuffers = outUnmanagedBufferPtr;

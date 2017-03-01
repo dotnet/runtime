@@ -12,6 +12,7 @@ namespace System.Net.Tests
         private readonly HttpListener _processPrefixListener;
         private readonly Exception _processPrefixException;
         private readonly string _processPrefix;
+        private readonly int _port;
 
         internal HttpListenerFactory()
         {
@@ -33,6 +34,7 @@ namespace System.Net.Tests
 
                     _processPrefixListener = listener;
                     _processPrefix = prefix;
+                    _port = port;
                     break;
                 }
                 catch (Exception e)
@@ -53,6 +55,19 @@ namespace System.Net.Tests
             // At this point, either we've reserved a prefix, or we've tried everything and failed.  If we failed,
             // we've saved the exception for later.  We'll defer actually *throwing* the exception until a test
             // asks for the prefix, because dealing with a type initialization exception is not nice in xunit.
+        }
+
+        public int Port
+        {
+            get
+            {
+                if (_port == 0)
+                {
+                    throw new Exception("Could not reserve a port for HttpListener", _processPrefixException);
+                }
+
+                return _port;
+            }
         }
 
         public string ListeningUrl

@@ -11,13 +11,9 @@ using System.Security.Principal;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    // <SecurityKernel Critical="True" Ring="0">
-    // <Asserts Name="Declarative: [DirectoryServicesPermission(SecurityAction.Assert, Unrestricted = true)]" />
-    // </SecurityKernel>
 #pragma warning disable 618    // Have not migrated to v4 transparency yet
     [System.Security.SecurityCritical(System.Security.SecurityCriticalScope.Everything)]
 #pragma warning restore 618
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted = true)]
     internal class ADDNLinkedAttrSet : BookmarkableResultSet
     {
         // This class can be used to either enumerate the members of a group, or the groups
@@ -362,7 +358,7 @@ namespace System.DirectoryServices.AccountManagement
                     // We reached the end of this group's membership.  If we're not processing recursively,
                     // we're done.  Otherwise, go on to the next group to visit.
                     // First create a DE that points to the group we want to expand,  Using that as a search root run
-                    // an ASQ search against  member and and start enumerting those results.
+                    // an ASQ search against  member and start enumerting those results.
                     if (_recursive)
                     {
                         GlobalDebug.WriteLineIf(GlobalDebug.Info,
@@ -599,7 +595,7 @@ namespace System.DirectoryServices.AccountManagement
             List<Byte[]> sidList = new List<Byte[]>(_foreignMembersCurrentGroup.Count);
 
             // Foreach foreign principal retrive the sid. 
-            // If the SID is for a fake object we have to track it seperately.  If we were attempt to translate it
+            // If the SID is for a fake object we have to track it separately.  If we were attempt to translate it
             // it would fail and not be returned and we would lose it.
             // Once we have a list of sids then translate them against the target store in one call.
             foreach (DirectoryEntry de in _foreignMembersCurrentGroup)

@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
 namespace System.Collections.Generic
@@ -309,7 +310,10 @@ namespace System.Collections.Generic
                             _slots[last].next = _slots[i].next;
                         }
                         _slots[i].hashCode = -1;
-                        _slots[i].value = default(T);
+                        if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+                        {
+                            _slots[i].value = default(T);
+                        }
                         _slots[i].next = _freeList;
 
                         _count--;
@@ -447,6 +451,33 @@ namespace System.Collections.Generic
         public bool Add(T item)
         {
             return AddIfNotPresent(item);
+        }
+
+        /// <summary>
+        /// Searches the set for a given value and returns the equal value it finds, if any.
+        /// </summary>
+        /// <param name="equalValue">The value to search for.</param>
+        /// <param name="actualValue">The value from the set that the search found, or the original value if the search yielded no match.</param>
+        /// <returns>A value indicating whether the search was successful.</returns>
+        /// <remarks>
+        /// This can be useful when you want to reuse a previously stored reference instead of 
+        /// a newly constructed one (so that more sharing of references can occur) or to look up
+        /// a value that has more complete data than the value you currently have, although their
+        /// comparer functions indicate they are equal.
+        /// </remarks>
+        public bool TryGetValue(T equalValue, out T actualValue)
+        {
+            if (_buckets != null)
+            {
+                int i = InternalIndexOf(equalValue);
+                if (i >= 0)
+                {
+                    actualValue = _slots[i].value;
+                    return true;
+                }
+            }
+            actualValue = default(T);
+            return false;
         }
 
         /// <summary>

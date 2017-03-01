@@ -9,7 +9,6 @@ using System.Collections.Generic;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.LinkDemand, Unrestricted = true)]
     internal class ValueCollectionEnumerator<T> : IEnumerator<T>, IEnumerator
     // T must be a ValueType
     {
@@ -28,9 +27,6 @@ namespace System.DirectoryServices.AccountManagement
 
         object IEnumerator.Current
         {
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="ValueCollectionEnumerator`1<T>.get_Current():T" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
@@ -48,9 +44,6 @@ namespace System.DirectoryServices.AccountManagement
             return _inner.MoveNext();
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="ValueCollectionEnumerator`1<T>.MoveNext():System.Boolean" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         bool IEnumerator.MoveNext()
         {
@@ -63,9 +56,6 @@ namespace System.DirectoryServices.AccountManagement
             _inner.Reset();
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="ValueCollectionEnumerator`1<T>.Reset():System.Void" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         void IEnumerator.Reset()
         {

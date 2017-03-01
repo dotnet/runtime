@@ -1,96 +1,154 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <UsingTask TaskName="FindBestConfiguration" AssemblyFile="$(CoreFxToolsTaskDir)CoreFx.Tools.dll"/>
+  <UsingTask TaskName="FindBestConfigurations" AssemblyFile="$(CoreFxToolsTaskDir)CoreFx.Tools.dll"/>
   <PropertyGroup>
     <ImportedBuildVerticalTargets>true</ImportedBuildVerticalTargets>
+    <_traversalBuildConfigurations>$(BuildConfiguration)</_traversalBuildConfigurations>
+    <_traversalBuildConfigurations Condition="'$(AdditionalBuildConfigurations)' != ''">$(_traversalBuildConfigurations);$(AdditionalBuildConfigurations)</_traversalBuildConfigurations>
   </PropertyGroup>
 
   <!-- Import configuration data model -->
   <Import Project="$(MSBuildThisFileDirectory)src/Tools/GenerateProps/properties.props" />
 
-  <!-- Runs during traversal to select which projects and configurations of those projects to build -->
-  <Target Name="AnnotateAndFilterProjects"
-          BeforeTargets="BuildAllProjects;TestAllProjects">
-
-    <!-- find the best configuration for each project, projects that shouldn't build for this configuration
-         return an empty item.  -->
-    <MSBuild Targets="FindBestConfiguration"
-             Projects="@(Project)"
-             Condition="'$(BuildAllConfigurations)' != 'true'">
-      <Output TaskParameter="TargetOutputs"
-              ItemName="_ProjectBestConfigurations" />
-    </MSBuild>
+  <!-- Runs during traversal when BuildAllConfigurations is set to expand each project
+       to a seperate instance for each of its BuildConfigurations -->
+  <Target Name="ExpandAllBuildConfigurations"
+          Condition="'$(BuildAllConfigurations)' == 'true'">
     <MSBuild Targets="GetBuildConfigurations"
              Projects="@(Project)"
              Condition="'$(BuildAllConfigurations)' == 'true'">
       <Output TaskParameter="TargetOutputs"
-              ItemName="_ProjectBestConfigurations" />
+              ItemName="_projectBuildConfigurations" />
     </MSBuild>
 
     <ItemGroup>
+      <!-- assign configuration as a seperate step to prevent batching during the transform which can reorder the list.
+           order or projects matters here since this applies to traversal projects which build projects serially. -->
+      <_projectBuildConfigurations>
+        <AdditionalProperties>Configuration=%(Identity);%(_projectBuildConfigurations.AdditionalProperties)</AdditionalProperties>
+      </_projectBuildConfigurations>
+
       <!-- transform back to project -->
-      <ProjectWithConfiguration Include="@(_ProjectBestConfigurations->'%(OriginalItemSpec)')">
-        <AdditionalProperties>Configuration=%(Identity);%(_ProjectBestConfigurations.AdditionalProperties)</AdditionalProperties>
-      </ProjectWithConfiguration>
+      <_projectWithConfiguration Include="@(_projectBuildConfigurations->'%(OriginalItemSpec)')" />
     </ItemGroup>
 
     <ItemGroup>
       <Project Remove="@(Project)" />
-      <Project Include="@(ProjectWithConfiguration)" />
+      <Project Include="@(_projectWithConfiguration)" />
     </ItemGroup>
   </Target>
 
-  <!-- Runs in a leaf project (eg: csproj) to determine best configuration if one exists for purposes of filtering -->
-  <Target Name="FindBestConfiguration"
-          Returns="$(_BestConfiguration)">
+  <Target Name="ExpandAllBuildConfigurationsForPkgProj"
+          BeforeTargets="ExpandProjectReferences"
+          Condition="'$(MSBuildProjectExtension)' == '.pkgproj'">
+    <MSBuild Targets="GetPackageConfigurations"
+             Projects="@(_NonPkgProjProjectReference)">
+      <Output TaskParameter="TargetOutputs"
+              ItemName="_NonPkgProjProjectReferenceBuildConfigurations" />
+    </MSBuild>
 
-    <!-- if BuildConfigurations is defined, find the best one -->
-    <FindBestConfiguration Condition="'$(BuildConfigurations)' != ''"
-                           Properties="@(Property)"
-                           PropertyValues="@(PropertyValue)"
-                           BuildConfigurations="$(BuildConfigurations)"
-                           BuildConfiguration="$(BuildConfiguration)">
-      <Output TaskParameter="BestConfiguration" PropertyName="_BestConfiguration" />
-    </FindBestConfiguration>
+    <ItemGroup>
+      <!-- assign configuration as a seperate step to prevent batching during the transform which can reorder the list.
+           order or projects matters here since this applies to traversal projects which build projects serially. -->
+      <_NonPkgProjProjectReferenceBuildConfigurations>
+        <AdditionalProperties>Configuration=%(Identity);%(_NonPkgProjProjectReferenceBuildConfigurations.AdditionalProperties)</AdditionalProperties>
+      </_NonPkgProjProjectReferenceBuildConfigurations>
+      
+      <!-- transform back to project -->
+      <_NonPkgProjProjectReferenceWitnConfiguration Include="@(_NonPkgProjProjectReferenceBuildConfigurations->'%(OriginalItemSpec)')" />
+    </ItemGroup>
 
-    <!-- if BuildConfigurations is not defined, use BuildConfiguration -->
-    <PropertyGroup>
-      <_BestConfiguration Condition="'$(BuildConfigurations)' == ''">$(BuildConfiguration)</_BestConfiguration>
-    </PropertyGroup>
+    <ItemGroup>
+      <_NonPkgProjProjectReference Remove="@(_NonPkgProjProjectReference)" />
+      <_NonPkgProjProjectReference Include="@(_NonPkgProjProjectReferenceWitnConfiguration)" />
+    </ItemGroup>
   </Target>
-  
+
+  <!-- Runs during traversal to select which projects and configurations of those projects to build
+       Batches over the projects because we need to treat BuildConfigurations as a Property
+       as well as copy the Project based on results of FindBestConfigurations. -->
+  <Target Name="FilterBuildConfiguration"
+          Condition="'$(BuildAllConfigurations)' != 'true'"
+          Inputs="%(Project.Identity)"
+          Outputs="unused">
+
+    <MSBuild Targets="GetBuildConfigurations"
+             Projects="@(Project)">
+      <Output TaskParameter="TargetOutputs"
+              PropertyName="_projectBuildConfigurations" />
+    </MSBuild>
+
+    <FindBestConfigurations Properties="@(Property)"
+                            PropertyValues="@(PropertyValue)"
+                            SupportedConfigurations="$(_projectBuildConfigurations)"
+                            Configurations="$(_traversalBuildConfigurations)">
+      <Output TaskParameter="BestConfigurations" ItemName="_projectBestConfigurations" />
+    </FindBestConfigurations>
+
+    <ItemGroup>
+      <!-- Apply configuration, this does a catesian product between @(Project) and @(_projectBestConfigurations) -->
+      <_projectWithConfiguration Include="@(Project)" Condition="'@(_projectBestConfigurations)' != ''">
+        <AdditionalProperties>Configuration=%(_projectBestConfigurations.Identity);%(_projectWithConfiguration.AdditionalProperties)</AdditionalProperties>
+      </_projectWithConfiguration>
+      <Project Remove="@(Project)"/>
+      <Project Include="@(_projectWithConfiguration)"/>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="FilterProjects"
+          DependsOnTargets="ExpandAllBuildConfigurations;FilterBuildConfiguration" />
+
   <!-- Runs in a leaf project (eg: csproj) to determine all configurations -->
   <Target Name="GetBuildConfigurations"
           Returns="$(_AllBuildConfigurations)">
      <PropertyGroup>
        <_AllBuildConfigurations>$(BuildConfigurations)</_AllBuildConfigurations>
-       <_AllBuildConfigurations Condition="'$(BuildConfigurations)' == ''">$(BuildConfiguration)</_AllBuildConfigurations>
+       <_AllBuildConfigurations Condition="'$(BuildConfigurations)' == ''">$(_traversalBuildConfigurations)</_AllBuildConfigurations>
+     </PropertyGroup>
+  </Target>
+
+  <!-- Runs in a leaf project (eg: csproj) to determine configurations to package -->
+  <Target Name="GetPackageConfigurations"
+          Returns="$(PackageConfigurations)">
+     <ItemGroup Condition="'$(PackageConfigurations)' == ''">
+       <_buildConfigurations Include="$(BuildConfigurations)" />
+       <_excludeBuildConfigurations Include="@(_buildConfigurations)" Condition="'$(IsReferenceAssembly)' == 'true' AND ('%(Identity)' == 'netfx' OR $([System.String]::new('%(Identity)').StartsWith('net4')))"/>
+       <_packageConfigurations Include="@(_buildConfigurations)" Exclude="@(_excludeBuildConfigurations)" />
+     </ItemGroup>
+
+     <PropertyGroup Condition="'$(PackageConfigurations)' == ''">
+       <PackageConfigurations>@(_packageConfigurations)</PackageConfigurations>
      </PropertyGroup>
   </Target>
 
   <!-- Runs in a leaf project (csproj) to determine best configuration for ProjectReferences -->
   <Target Name="AnnotateProjectReference"
-          BeforeTargets="BeforeResolveReferences"
+          BeforeTargets="AssignProjectConfiguration"
           Condition="'@(ProjectReference)' != ''"
           Inputs="%(ProjectReference.Identity)"
           Outputs="unused">
 
-    <!-- Get all configurations for each ProjectReference.  We use this 
-         rather than the FindBestConfiguration target since we need to 
-         choose the best configuration for the referencing project's 
-         configuration, not the BuildConfiguration.  -->
     <MSBuild Targets="GetBuildConfigurations"
              Projects="@(ProjectReference)">
       <Output TaskParameter="TargetOutputs" PropertyName="_projectReferenceBuildConfigurations" />
     </MSBuild>
 
+    <PropertyGroup>
+      <!--
+        When building in VS or using the solution file Configuration for some projects is set to Debug/Release
+        in such cases we should treat it as an empty configuration and set it to be $BuildConfiguration for the
+        purposes of annotating project references.
+      -->
+      <Configuration Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Release'">$(BuildConfiguration)</Configuration>
+    </PropertyGroup>
+
     <!-- Find the best configuration for the current Project's Configuration -->
-    <FindBestConfiguration Properties="@(Property)"
-                           PropertyValues="@(PropertyValue)"
-                           BuildConfigurations="$(_ProjectReferenceBuildConfigurations)"
-                           BuildConfiguration="$(Configuration)">
-      <Output TaskParameter="BestConfiguration" PropertyName="_projectReferenceConfiguration" />
-    </FindBestConfiguration>
+    <FindBestConfigurations Properties="@(Property)"
+                            PropertyValues="@(PropertyValue)"
+                            SupportedConfigurations="$(_ProjectReferenceBuildConfigurations)"
+                            Configurations="$(Configuration)">
+      <Output TaskParameter="BestConfigurations" PropertyName="_projectReferenceConfiguration" />
+    </FindBestConfigurations>
 
     <Error Condition="'$(_projectReferenceConfiguration)' == ''" Text="Could not find a configuration for ProjectReference '@(ProjectReference)' from configurations '$(_projectReferenceBuildConfigurations)' when building '$(MSBuildProjectName)' for configuration '$(Configuration)' ." />
 
@@ -98,16 +156,21 @@
       <ProjectReference>
         <AdditionalProperties>Configuration=$(_projectReferenceConfiguration);%(ProjectReference.AdditionalProperties)</AdditionalProperties>
       </ProjectReference>
+
+      <!-- Project references for non-test assemblies should never be copied to the output. -->
+      <ProjectReference Condition="'$(IsTestProject)' != 'true'">
+        <Private>false</Private>
+      </ProjectReference>
     </ItemGroup>
   </Target>
 
-  <Target Name="BuildAll">
+  <Target Name="BuildAllConfigurations">
     <ItemGroup>
       <_buildConfigurations Include="$(BuildConfigurations)" />
-      <_buildConfigurations Condition="'@(_buildConfigurations)' == ''" Include="$(BuildConfiguration)" />
+      <_buildConfigurations Condition="'@(_buildConfigurations)' == ''" Include="$(_traversalBuildConfigurations)" />
     </ItemGroup>
 
     <MSBuild Projects="$(MSBuildProjectFullPath)"
-             Properties="Configuration=%(_buildConfigurations.Identity)" />
+             Properties="Configuration=%(_buildConfigurations.Identity);BuildAllConfigurations=true" />
   </Target>
 </Project>

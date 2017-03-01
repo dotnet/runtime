@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -12,8 +12,8 @@
     <DefineConstants Condition=" '$(FeatureInterpret)' == 'true' ">$(DefineConstants);FEATURE_INTERPRET</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <ItemGroup>
     <TargetingPackExclusions Include="System.Linq.Expressions" />
     <ReferenceFromRuntime Include="System.Linq.Expressions" />
@@ -21,6 +21,9 @@
   <ItemGroup>
     <!-- Remove this when TypeBuilder extends TypeInfo. See https://github.com/dotnet/corefx/issues/14334 -->
     <Compile Include="$(CommonTestPath)\System\TypeBuilderExtensions.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <AdditionalCodeCoverageAssemblies Include="Microsoft.CSharp" /> 
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CompilerTests.cs" />
@@ -182,7 +185,6 @@
     <Compile Include="New\NewTests.cs" />
     <Compile Include="New\NewWithParameterTests.cs" />
     <Compile Include="New\NewWithTwoParametersTests.cs" />
-    <Compile Include="New\TypeExtensions.cs" />
     <Compile Include="ReadOnlyCollectionBuilderTests.cs" />
     <Compile Include="SequenceTests\SequenceTests.cs" />
     <Compile Include="StackSpillerTests.cs" />
@@ -204,6 +206,7 @@
     <Compile Include="Unary\IncDecAssign\PreDecrementAssignTests.cs" />
     <Compile Include="Unary\IncDecAssign\PreIncrementAssignTests.cs" />
     <Compile Include="Unary\IncrementDecrementTests.cs" />
+    <Compile Include="Unary\MakeUnaryTests.cs" />
     <Compile Include="Unary\UnaryArithmeticNegateNullableOneOffTests.cs" />
     <Compile Include="Unary\UnaryArithmeticNegateCheckedNullableTests.cs" />
     <Compile Include="Unary\UnaryArithmeticNegateNullableTests.cs" />
@@ -250,6 +253,9 @@
     <Compile Include="ILReader\PrivateReflectionHelpers.cs" />
     <Compile Include="ILReader\LocalsSignatureParser.cs" />
     <Compile Include="ILReader\SigParser.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ReferenceFromRuntime Include="xunit.execution.dotnet" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

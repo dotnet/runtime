@@ -75,6 +75,21 @@ namespace System.Net
 
         private static void AddPrefixInternal(string p, HttpListener listener)
         {
+            int start = p.IndexOf(':') + 3;
+            int colon = p.IndexOf(':', start);
+            if (colon != -1)
+            {
+                // root can't be -1 here, since we've already checked for ending '/' in ListenerPrefix.
+                int root = p.IndexOf('/', colon, p.Length - colon);
+                string portString = p.Substring(colon + 1, root - colon - 1);
+                
+                int port;
+                if (!int.TryParse(portString, out port) || port <= 0 || port >= 65536)
+                {
+                    throw new HttpListenerException((int)HttpStatusCode.BadRequest, SR.net_invalid_port);
+                }
+            }
+
             ListenerPrefix lp = new ListenerPrefix(p);
             if (lp.Path.IndexOf('%') != -1)
                 throw new HttpListenerException((int)HttpStatusCode.BadRequest, SR.net_invalid_path);

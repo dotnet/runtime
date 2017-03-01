@@ -12,7 +12,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     // A symbol table is a helper class used by the symbol manager. There are
     // two symbol tables; a global and a local.
 
-    internal class SYMTBL
+    internal sealed class SYMTBL
     {
         /////////////////////////////////////////////////////////////////////////////////
         // Public
@@ -47,20 +47,26 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private void InsertChildNoGrow(Symbol child)
         {
+            switch (child.getKind())
+            {
+                case SYMKIND.SK_Scope:
+                case SYMKIND.SK_LocalVariableSymbol:
+                    return;
+            }
+
             Key k = new Key(child.name, child.parent);
             Symbol sym;
 
             if (_dictionary.TryGetValue(k, out sym))
             {
                 // Link onto the end of the symbol chain here.
-                while (sym != null && sym.nextSameName != null)
+                while (sym?.nextSameName != null)
                 {
                     sym = sym.nextSameName;
                 }
 
                 Debug.Assert(sym != null && sym.nextSameName == null);
                 sym.nextSameName = child;
-                return;
             }
             else
             {

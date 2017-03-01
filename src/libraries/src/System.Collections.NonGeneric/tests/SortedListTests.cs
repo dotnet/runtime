@@ -755,11 +755,13 @@ namespace System.Collections.Tests
             Helpers.PerformActionOnAllSortedListWrappers(sortList1, sortList2 =>
             {
                 IList keys = sortList2.GetKeyList();
-                Assert.Throws<ArgumentNullException>("dest", () => keys.CopyTo(null, 0)); // Array is null
-                Assert.Throws<ArgumentException>(() => keys.CopyTo(new object[10, 10], 0)); // Array is multidimensional
+                AssertExtensions.Throws<ArgumentNullException>("destinationArray", "dest", () => keys.CopyTo(null, 0)); // Array is null
+                Assert.Throws<ArgumentException>("array", () => keys.CopyTo(new object[10, 10], 0)); // Array is multidimensional
 
-                Assert.Throws<ArgumentOutOfRangeException>("dstIndex", () => keys.CopyTo(new object[100], -1)); // Index < 0
-                Assert.Throws<ArgumentException>(string.Empty, () => keys.CopyTo(new object[150], 51)); // Index + list.Count > array.Count
+                // Index < 0
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("destinationIndex", "dstIndex", () => keys.CopyTo(new object[100], -1));
+                // Index + list.Count > array.Count
+                AssertExtensions.Throws<ArgumentException>("destinationArray", string.Empty, () => keys.CopyTo(new object[150], 51));
             });
         }
 
@@ -995,11 +997,11 @@ namespace System.Collections.Tests
             Helpers.PerformActionOnAllSortedListWrappers(sortList1, sortList2 =>
             {
                 IList values = sortList2.GetValueList();
-                Assert.Throws<ArgumentNullException>("dest", () => values.CopyTo(null, 0)); // Array is null
-                Assert.Throws<ArgumentException>(() => values.CopyTo(new object[10, 10], 0)); // Array is multidimensional
+                AssertExtensions.Throws<ArgumentNullException>("destinationArray", "dest", () => values.CopyTo(null, 0)); // Array is null
+                Assert.Throws<ArgumentException>("array", () => values.CopyTo(new object[10, 10], 0)); // Array is multidimensional
 
-                Assert.Throws<ArgumentOutOfRangeException>("dstIndex", () => values.CopyTo(new object[100], -1)); // Index < 0
-                Assert.Throws<ArgumentException>(string.Empty, () => values.CopyTo(new object[150], 51)); // Index + list.Count > array.Count
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("destinationIndex", "dstIndex", () => values.CopyTo(new object[100], -1)); // Index < 0
+                AssertExtensions.Throws<ArgumentException>("destinationArray", string.Empty, () => values.CopyTo(new object[150], 51)); // Index + list.Count > array.Count
             });
         }
 

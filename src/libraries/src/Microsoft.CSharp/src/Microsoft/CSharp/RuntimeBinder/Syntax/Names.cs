@@ -18,11 +18,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
             get { return _text; }
         }
 
-        public virtual PredefinedName PredefinedName
-        {
-            get { return PredefinedName.PN_COUNT; }
-        }
-
         public override string ToString()
         {
             return _text;

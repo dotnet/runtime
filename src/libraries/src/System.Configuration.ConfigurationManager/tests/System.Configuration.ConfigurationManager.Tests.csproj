@@ -72,6 +72,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Strings.resx</DependentUpon>
     </Compile>
+    <Compile Include="System\Configuration\ApplicationSettingsBaseTests.cs" />
     <Compile Include="System\Configuration\AppSettingsTests.cs" />
     <Compile Include="System\Configuration\ConfigPathUtilityTests.cs" />
     <Compile Include="System\Configuration\ConfigurationElementCollectionTests.cs" />
@@ -80,14 +81,19 @@
     <Compile Include="System\Configuration\ConfigurationPropertyTests.cs" />
     <Compile Include="System\Configuration\ConfigurationTests.cs" />
     <Compile Include="System\Configuration\BasicCustomSectionTests.cs" />
+    <Compile Include="System\Configuration\ConnectionStringsTests.cs" />
     <Compile Include="System\Configuration\ExceptionUtilTests.cs" />
     <Compile Include="System\Configuration\ImplicitMachineConfigTests.cs" />
     <Compile Include="System\Configuration\KeyValueConfigurationCollectionTests.cs" />
+    <Compile Include="System\Configuration\LocalFileSettingsProviderTests.cs" />
+    <Compile Include="System\Configuration\NameValueConfigurationCollectionTests.cs" />
+    <Compile Include="System\Configuration\SectionGroupsTests.cs" />
     <Compile Include="System\Configuration\SmokeTest.cs" />
     <Compile Include="System\Configuration\StringUtilTests.cs" />
     <Compile Include="System\Configuration\TempConfig.cs" />
     <Compile Include="System\Configuration\TestData.cs" />
     <Compile Include="System\Configuration\TypeUtilTests.cs" />
+    <Compile Include="System\Configuration\UriSectionTests.cs" />
     <Compile Include="System\Configuration\ValidatiorUtilsTests.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

@@ -1,17 +1,13 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <ProjectGuid>{492EC54D-D2C4-4B3F-AC1F-646B3F7EBB02}</ProjectGuid>
+    <ProjectGuid>{7517F1E9-EEB4-4676-A054-CE4A44A66B66}</ProjectGuid>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
-    <Compile Include="PrincipalPermissionTests.cs" />
-    <Compile Include="SecurityElementTests.cs" />
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="ApplicationTrustTests.cs" />
     <Compile Include="CodeConnectAccessTests.cs" />
@@ -24,6 +20,8 @@
     <Compile Include="TrustManagerContextTests.cs" />
     <Compile Include="PermissionSetTests.cs" />
     <Compile Include="PermissionTests.cs" />
+    <Compile Include="PrincipalPermissionTests.cs" />
+    <Compile Include="SecurityElementTests.cs" />
     <Compile Include="HostSecurityManagerTests.cs" />
     <Compile Include="HostProtectionTests.cs" />
     <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">

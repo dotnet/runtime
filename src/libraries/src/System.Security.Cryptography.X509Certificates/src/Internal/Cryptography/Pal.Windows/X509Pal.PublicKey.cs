@@ -175,7 +175,7 @@ namespace Internal.Cryptography.Pal
             {
                 Debug.Assert(ecBlob.Length >= sizeof(Interop.BCrypt.BCRYPT_ECCKEY_BLOB));
 
-                fixed (byte* pEcBlob = ecBlob)
+                fixed (byte* pEcBlob = &ecBlob[0])
                 {
                     Interop.BCrypt.BCRYPT_ECCKEY_BLOB* pBcryptBlob = (Interop.BCrypt.BCRYPT_ECCKEY_BLOB*)pEcBlob;
 
@@ -341,7 +341,7 @@ namespace Internal.Cryptography.Pal
 
             unsafe
             {
-                fixed (byte* pValue = value)
+                fixed (byte* pValue = &value[0])
                 {
                     string valueAsString = Marshal.PtrToStringUni((IntPtr)pValue);
                     return valueAsString;

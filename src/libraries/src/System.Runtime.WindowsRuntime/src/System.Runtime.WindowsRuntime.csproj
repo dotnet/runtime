@@ -1,0 +1,121 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <UseECMAKey>true</UseECMAKey>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ClsCompliant>true</ClsCompliant>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'uapaot'">true</IsPartialFacadeAssembly>
+    <!-- CS1698 - Disable warning about reference to 4.0.0.0 System.Runtime.WindowsRuntime having same simple name as target assembly -->
+    <!-- CS0436 - System.Private.CoreLib has internals visible to System.Runtime.WindowsRuntime and is colliding internals on common shared code -->
+    <NoWarn>$(NoWarn);1698;0436</NoWarn>
+    <ProjectGuid>{844A2A0B-4169-49C3-B367-AFDC4894E487}</ProjectGuid>
+    <PackageTargetRuntime>win8</PackageTargetRuntime>
+    <PackageTargetRuntime Condition="'$(TargetGroup)' == 'uapaot'">win8-aot</PackageTargetRuntime>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetGroup)'=='netcoreapp' or '$(TargetGroup)'=='uap'">
+    <DefineConstants>$(DefineConstants);netstandard;FEATURE_APPX</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp' or '$(TargetGroup)'=='uap'">
+    <ReferenceFromRuntime Include="System.Private.CoreLib" />
+    <Reference Include="mscorlib" />
+    <Reference Include="Windows" />
+    <!-- Needed for the compiler to resolve IObservableMap.MapChanged. -->
+    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj">
+      <Aliases>System_Runtime_Extensions</Aliases>
+    </ProjectReference>    <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj" />
+    <ProjectReference Include="..\..\System.Diagnostics.Tools\src\System.Diagnostics.Tools.csproj" />
+    <ProjectReference Include="..\..\System.Runtime.InteropServices.WindowsRuntime\src\System.Runtime.InteropServices.WindowsRuntime.csproj" />
+    <ProjectReference Include="..\..\System.ObjectModel\src\System.ObjectModel.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'uapaot'">
+    <!-- We need to add this for now because these three types exist in System.Private.Interop.dll and Windows.winmd. -->
+    <SeedTypePreference Include="Windows.Foundation.Point">
+      <Assembly>System.Private.Interop</Assembly>
+    </SeedTypePreference>
+    <SeedTypePreference Include="Windows.Foundation.Rect">
+      <Assembly>System.Private.Interop</Assembly>
+    </SeedTypePreference>
+    <SeedTypePreference Include="Windows.Foundation.Size">
+      <Assembly>System.Private.Interop</Assembly>
+    </SeedTypePreference>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'uapaot'">
+    <ReferenceFromRuntime Include="System.Private.Interop" />
+    <ReferenceFromRuntime Include="System.Private.Corelib" />
+    <ReferenceFromRuntime Include="System.Private.Threading" />
+    <Reference Include="Windows" />
+    <Reference Include="mscorlib" />
+    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj">
+      <TargetGroup>uapaot</TargetGroup>
+    </ProjectReference>
+    <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj">
+      <Aliases>System_Runtime_Extensions</Aliases>
+      <TargetGroup>uapaot</TargetGroup>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp' or '$(TargetGroup)'=='uap'">
+    <Compile Include="System\IO\StreamOperationAsyncResult.CoreCLR.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\MarshalingHelpers.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\RestrictedErrorInfoHelper.cs" />
+    <Compile Include="System\Threading\Tasks\AsyncInfoToTaskBridge.CoreCLR.cs" />
+    <Compile Include="System\Threading\WindowsRuntimeSynchronizationContext.cs" />
+    <Compile Include="System\WindowsRuntimeSystemExtensions.CoreCLR.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.GetRestrictedErrorInfo.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.GetRestrictedErrorInfo.cs</Link>
+    </Compile>
+    <Compile Include="System\Windows\Point.cs" />
+    <Compile Include="System\Windows\Rect.cs" />
+    <Compile Include="System\Windows\Size.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='uapaot'">
+    <Compile Include="System\IO\StreamOperationAsyncResult.CoreRT.cs" />
+    <Compile Include="System\Threading\Tasks\AsyncInfoToTaskBridge.CoreRT.cs" />
+    <Compile Include="System\WindowsRuntimeSystemExtensions.CoreRT.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.ResolveLocaleName.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.ResolveLocaleName.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\mincore\Interop.RoGetBufferMarshaler.cs">
+      <Link>Common\Interop\Windows\mincore\Interop.RoGetBufferMarshaler.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="System\InternalHelpers.cs" />
+    <Compile Include="System\IO\NetFxToWinRtStreamAdapter.cs" />
+    <Compile Include="System\IO\StreamOperationAsyncResult.cs" />
+    <Compile Include="System\IO\StreamOperationsImplementation.cs" />
+    <Compile Include="System\IO\WindowsRuntimeStorageExtensions.cs" />
+    <Compile Include="System\IO\WindowsRuntimeStreamExtensions.cs" />
+    <Compile Include="System\IO\WinRtIOHelper.cs" />
+    <Compile Include="System\IO\WinRtToNetFxStreamAdapter.cs" />
+    <Compile Include="System\Resources\WindowsRuntimeResourceManager.cs" />
+    <Compile Include="System\Runtime\InteropServices\HResults.cs" />
+    <Compile Include="System\Runtime\InteropServices\IAgileObject.cs" />
+    <Compile Include="System\Runtime\InteropServices\IMarshal.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\AsyncInfo.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\IBufferByteAccess.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeBuffer.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeBufferExtensions.cs" />
+    <Compile Include="System\Threading\Tasks\AsyncInfoIdGenerator.cs" />
+    <Compile Include="System\Threading\Tasks\ExceptionDispatchHelper.cs" />
+    <Compile Include="System\Threading\Tasks\TaskToAsyncActionAdapter.cs" />
+    <Compile Include="System\Threading\Tasks\TaskToAsyncActionWithProgressAdapter.cs" />
+    <Compile Include="System\Threading\Tasks\TaskToAsyncInfoAdapter.cs" />
+    <Compile Include="System\Threading\Tasks\TaskToAsyncOperationAdapter.cs" />
+    <Compile Include="System\Threading\Tasks\TaskToAsyncOperationWithProgressAdapter.cs" />
+    <Compile Include="System\VoidTypeParameter.cs" />
+    <Compile Include="System\Windows\TokenizerHelper.cs" />
+    <Compile Include="System\Windows\UI\Color.cs" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

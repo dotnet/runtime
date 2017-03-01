@@ -3,8 +3,15 @@
   <PropertyGroup>
     <!-- Include netcoreapp since we need to generate facades between desktop and netcoreapp -->
     <BuildConfigurations>
+      net45;
+      net451;
+      net46;
       net461;
+      net462;
+      net463;
+      netfx;
       netcoreapp;
+      uap;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

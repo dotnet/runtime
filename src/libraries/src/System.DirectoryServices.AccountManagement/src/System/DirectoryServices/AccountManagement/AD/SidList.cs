@@ -13,13 +13,9 @@ using System.Net;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    // <SecurityKernel Critical="True" Ring="0">
-    // <Asserts Name="Declarative: [DirectoryServicesPermission(SecurityAction.Assert, Unrestricted = true)]" />
-    // </SecurityKernel>
 #pragma warning disable 618    // Have not migrated to v4 transparency yet
     [System.Security.SecurityCritical(System.Security.SecurityCriticalScope.Everything)]
 #pragma warning restore 618
-    [System.DirectoryServices.DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted = true)]
 
     internal class SidList
     {
@@ -322,9 +318,6 @@ namespace System.DirectoryServices.AccountManagement
         //
         // IDisposable
         //
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="Marshal.FreeHGlobal(System.IntPtr):System.Void" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         public virtual void Dispose()
         {

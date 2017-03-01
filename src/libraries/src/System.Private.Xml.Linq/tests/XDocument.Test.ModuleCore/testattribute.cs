@@ -34,23 +34,23 @@ namespace Microsoft.Test.ModuleCore
         protected string pfilter;
         protected string pversion;
 
-        //Allows Inhertiance (ie: object to determine if ever been set)
-        protected int? ppriority;       //Allows Inhertiance
-        protected string ppurpose;      //Allows Inhertiance
-        protected bool? pimplemented;   //Allows Inhertiance
-        protected string[] powners;     //Allows Inhertiance
-        protected string[] pareas;          //Allows Inhertiance
-        protected bool? pskipped;       //Allows Inhertiance
-        protected bool? perror;         //Allows Inhertiance
-        protected bool? pmanual;        //Allows Inhertiance
-        protected SecurityFlags? psecurity;     //Allows Inhertiance
-        protected string pfiltercriteria;//Allows Inhertiance
-        protected string[] planguages;      //Allows Inhertiance
-        protected string pxml;          //Allows Inhertiance
-        protected int? ptimeout;        //Allows Inhertiance
-        protected int? pthreads;        //Allows Inhertiance
-        protected int? prepeat;     //Allows Inhertiance
-        protected bool? pstress;        //Allows Inhertiance
+        //Allows Inheritance (ie: object to determine if ever been set)
+        protected int? ppriority;       //Allows Inheritance
+        protected string ppurpose;      //Allows Inheritance
+        protected bool? pimplemented;   //Allows Inheritance
+        protected string[] powners;     //Allows Inheritance
+        protected string[] pareas;          //Allows Inheritance
+        protected bool? pskipped;       //Allows Inheritance
+        protected bool? perror;         //Allows Inheritance
+        protected bool? pmanual;        //Allows Inheritance
+        protected SecurityFlags? psecurity;     //Allows Inheritance
+        protected string pfiltercriteria;//Allows Inheritance
+        protected string[] planguages;      //Allows Inheritance
+        protected string pxml;          //Allows Inheritance
+        protected int? ptimeout;        //Allows Inheritance
+        protected int? pthreads;        //Allows Inheritance
+        protected int? prepeat;     //Allows Inheritance
+        protected bool? pstress;        //Allows Inheritance
 
         //Constructors
         public TestAttribute()

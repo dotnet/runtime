@@ -5,12 +5,9 @@
     <ProjectGuid>{466D87DF-BDEC-4E6C-BACD-317D79B8EDBE}</ProjectGuid>
     <AssemblyName>XmlDiff</AssemblyName>
     <RootNamespace>System.Xml.XmlDiff</RootNamespace>
-    <NoWarn>0436</NoWarn>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
-  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="XmlDiff.cs" />
     <Compile Include="XmlDiffDocument.cs" />
@@ -24,9 +21,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ModuleCore\ModuleCore.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

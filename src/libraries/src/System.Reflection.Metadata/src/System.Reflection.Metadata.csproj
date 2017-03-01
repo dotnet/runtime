@@ -1,10 +1,9 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{F3E433C8-352F-4944-BF7F-765CE435370D}</ProjectGuid>
-    <AssemblyName>System.Reflection.Metadata</AssemblyName>
-    <DocumentationFile>$(OutputPath)System.Reflection.Metadata.xml</DocumentationFile>
+    <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
     <RootNamespace>System.Reflection.Metadata</RootNamespace>
     <FileAlignment>512</FileAlignment>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -13,8 +12,14 @@
     <CLSCompliant>false</CLSCompliant>
     <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard1.1'">netstandard1.1;portable-net45+win8</PackageTargetFramework>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.1-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.1-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.1-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.1-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System\Reflection\Internal\Utilities\ExceptionUtilities.cs" />
     <Compile Include="System\Reflection\Internal\Utilities\PathUtilities.cs" />
@@ -69,6 +74,7 @@
     <Compile Include="System\Reflection\PortableExecutable\ManagedTextSection.cs" />
     <Compile Include="System\Reflection\PortableExecutable\PEBuilder.cs" />
     <Compile Include="System\Reflection\PortableExecutable\DebugDirectory\DebugDirectoryBuilder.cs" />
+    <Compile Include="System\Reflection\PortableExecutable\DebugDirectory\DebugDirectoryBuilder.EmbeddedPortablePdb.cs" />
     <Compile Include="System\Reflection\PortableExecutable\PEDirectoriesBuilder.cs" />
     <Compile Include="System\Reflection\PortableExecutable\PEHeaderBuilder.cs" />
     <Compile Include="System\Reflection\PortableExecutable\ResourceSectionBuilder.cs" />
@@ -228,6 +234,7 @@
     <Compile Include="System\Reflection\PortableExecutable\PEHeaders.cs" />
     <Compile Include="System\Reflection\PortableExecutable\PEMemoryBlock.cs" />
     <Compile Include="System\Reflection\PortableExecutable\PEReader.cs" />
+    <Compile Include="System\Reflection\PortableExecutable\PEReader.EmbeddedPortablePdb.cs" />
     <Compile Include="System\Reflection\PortableExecutable\PEStreamOptions.cs" />
     <Compile Include="System\Reflection\PortableExecutable\SectionHeader.cs" />
     <Compile Include="System\Reflection\Throw.cs" />

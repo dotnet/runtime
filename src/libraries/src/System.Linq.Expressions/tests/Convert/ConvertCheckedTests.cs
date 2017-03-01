@@ -18423,5 +18423,24 @@ namespace System.Linq.Expressions.Tests
         {
             Assert.Throws<ArgumentException>("type", () => Expression.ConvertChecked(Expression.Constant(null), typeof(int*)));
         }
+
+        public static IEnumerable<object[]> Conversions()
+        {
+            yield return new object[] { 3, 3 };
+            yield return new object[] { (byte)3, 3 };
+            yield return new object[] { 3, 3.0 };
+            yield return new object[] { 3.0, 3 };
+            yield return new object[] { 24910, (short)24910 };
+        }
+
+        [Theory, PerCompilationType(nameof(Conversions))]
+        public static void ConvertCheckedMakeUnary(object source, object result, bool useInterpreter)
+        {
+            LambdaExpression lambda = Expression.Lambda(
+                Expression.MakeUnary(ExpressionType.ConvertChecked, Expression.Constant(source), result.GetType())
+                );
+            Delegate del = lambda.Compile(useInterpreter);
+            Assert.Equal(result, del.DynamicInvoke());
+        }
     }
 }

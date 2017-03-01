@@ -58,6 +58,7 @@ setup_dirs()
     mkdir -p "$__BinDir"
     mkdir -p "$__IntermediatesDir"
     mkdir -p "$__RuntimePath"
+    mkdir -p "$__TestSharedFrameworkPath"
 }
 
 # Check the system to ensure the right pre-reqs are in place
@@ -93,7 +94,7 @@ prepare_native_build()
             __versionSourceLine="static char sccsid[] __attribute__((used)) = \"@(#)No version information produced\";"
             echo $__versionSourceLine > $__versionSourceFile
         fi
-    fi    
+    fi
 }
 
 build_native()
@@ -129,6 +130,7 @@ copy_to_vertical_runtime()
 {
     echo "Copying native shims to vertical runtime folder."
     cp $__BinDir/* "$__RuntimePath"
+    cp $__BinDir/* "$__TestSharedFrameworkPath"
 }
 
 __scriptpath=$(cd "$(dirname "$0")"; pwd -P)
@@ -150,8 +152,8 @@ __UnprocessedBuildArgs=
 __CrossBuild=0
 __ServerGC=0
 __VerboseBuild=false
-__ClangMajorVersion=3
-__ClangMinorVersion=5
+__ClangMajorVersion=0
+__ClangMinorVersion=0
 __StaticLibLink=0
 __PortableLinux=0
 
@@ -196,7 +198,7 @@ while :; do
             ;;
         release)
             __BuildType=Release
-            __CMakeArgs=RELEASE 
+            __CMakeArgs=RELEASE
             ;;
         freebsd)
             __BuildOS=FreeBSD
@@ -220,7 +222,7 @@ while :; do
         --numproc)
             shift
             __NumProc=$1
-            ;;         
+            ;;
         verbose)
             __VerboseBuild=1
             ;;
@@ -303,10 +305,22 @@ case $CPUName in
         ;;
 esac
 
+# Set the default clang version if not already set
+if [[ $__ClangMajorVersion == 0 && $__ClangMinorVersion == 0 ]]; then
+    if [ $__CrossBuild == 1 ]; then
+        __ClangMajorVersion=3
+        __ClangMinorVersion=6
+    else
+        __ClangMajorVersion=3
+        __ClangMinorVersion=5
+    fi
+fi
+
 # Set the remaining variables based upon the determined build configuration
 __IntermediatesDir="$__rootbinpath/obj/$__BuildOS.$__BuildArch.$__BuildType/native"
 __BinDir="$__rootbinpath/$__BuildOS.$__BuildArch.$__BuildType/native"
 __RuntimePath="$__rootbinpath/runtime/$__TargetGroup-$__BuildOS-$__BuildType-$__BuildArch"
+__TestSharedFrameworkPath="$__rootbinpath/testhost/$__TargetGroup-$__BuildOS-$__BuildType-$__BuildArch/shared/Microsoft.NETCore.App/9.9.9"
 
 # Make the directories necessary for build if they don't exist
 setup_dirs

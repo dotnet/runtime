@@ -5,24 +5,23 @@
     <AssemblyName>System.Threading.Thread</AssemblyName>
     <OutputType>Library</OutputType>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <!-- Don't allow project reference to package dependency conversion -->
-    <KeepAllProjectReferences>true</KeepAllProjectReferences>
     <!-- Type being defined conflicts with imported type from dependency assembly -->
     <NoWarn>436</NoWarn>
+    <ProjectGuid>{06197EED-FF48-43F3-976D-463839D43E8C}</ProjectGuid>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='uap101aot-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='uap101aot-Windows_NT-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Windows_NT-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Unix-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Unix-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='net461-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='net461-Windows_NT-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(TargetGroup)' == 'uap101aot'">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(TargetGroup)' == 'uapaot'">
     <DefineConstants>$(DefineConstants);NETNATIVE</DefineConstants>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'net461'">
+  <ItemGroup>
     <Compile Include="System\LocalDataStoreSlot.cs" />
     <Compile Include="System\Threading\CompressedStack.cs" />
     <Compile Include="System\Threading\Thread.cs" />
@@ -31,7 +30,7 @@
     <Compile Include="System\Threading\ThreadAbortException.cs" />
     <Compile Include="System\Threading\ThreadExceptionEventArgs.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap'">
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj">
       <Aliases>System_Runtime</Aliases>
     </ProjectReference>
@@ -42,18 +41,6 @@
       <Aliases>System_Security_Principal</Aliases>
     </ProjectReference>
     <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'net461'">
-    <TargetingPackReference Include="System.Private.CoreLib" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'uap101aot'">
-    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
-    <ProjectReference Include="..\..\System.Resources.ResourceManager\src\System.Resources.ResourceManager.csproj" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net461'">
-    <TargetingPackReference Include="mscorlib" />
-    <TargetingPackReference Include="System" />
-    <TargetingPackReference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
     <ReferenceFromRuntime Include="System.Private.CoreLib" />

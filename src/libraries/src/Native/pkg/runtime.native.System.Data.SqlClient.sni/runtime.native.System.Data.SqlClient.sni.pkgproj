@@ -4,18 +4,16 @@
   <PropertyGroup>
     <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <SkipValidatePackage>true</SkipValidatePackage>
-    <!-- replace with $(PackageVersion) once we have a new TFS build -->
-    <RuntimePackageVersion>4.3.0</RuntimePackageVersion>
   </PropertyGroup>
   <ItemGroup>
     <Dependency Include="runtime.win7-x64.runtime.native.System.Data.SqlClient.sni">
-      <Version>$(RuntimePackageVersion)-$(ExternalExpectedPrerelease)</Version>
+      <Version>$(SniPackageVersion)</Version>
     </Dependency>
     <Dependency Include="runtime.win7-x86.runtime.native.System.Data.SqlClient.sni">
-      <Version>$(RuntimePackageVersion)-$(ExternalExpectedPrerelease)</Version>
+      <Version>$(SniPackageVersion)</Version>
     </Dependency>
     <Dependency Include="runtime.win10-arm64.runtime.native.System.Data.SqlClient.sni">
-      <Version>$(RuntimePackageVersion)-$(ExternalExpectedPrerelease)</Version>
+      <Version>$(SniPackageVersion)</Version>
     </Dependency>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

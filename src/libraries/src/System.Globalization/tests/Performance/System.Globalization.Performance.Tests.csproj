@@ -3,13 +3,11 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <IncludePerformanceTests>true</IncludePerformanceTests>
-    <DefineConstants Condition="'$(TargetGroup)' == 'net46'">$(DefineConstants);net46</DefineConstants>
+    <ProjectGuid>{0BA6851E-0E75-453D-9D2A-CEB94E4DE975}</ProjectGuid>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46_Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="Perf.CultureInfo.cs" />
     <Compile Include="Perf.DateTimeCultureInfo.cs" />
@@ -18,17 +16,17 @@
       <Link>Common\System\PerfUtils.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net46'">
-    <TargetingPackReference Include="System" />
-    <TargetingPackReference Include="System.Threading.Tasks" />
-    <TargetingPackReference Include="System.Core" />
-    <TargetingPackReference Include="System.Runtime" />
-  </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="$(CommonTestPath)\Data\UnicodeData.8.0.txt">
       <Link>CharUnicodeInfo\UnicodeData8.0.txt</Link>
       <LogicalName>UnicodeData.8.0.txt</LogicalName>
     </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonPath)\..\perf\PerfRunner\PerfRunner.csproj">
+      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
+      <Name>PerfRunner</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

@@ -374,10 +374,10 @@ namespace System.Configuration
                     {
                         Reader.Skip();
 
-                        // We need to skip all the whitespaces following a skipped element.
-                        // - If the whitespaces don't contain /r/n, then it's okay to skip them 
+                        // We need to skip all the whitespace following a skipped element.
+                        // - If the whitespace doesn't contain /r/n, then it's okay to skip them 
                         //   as part of the element.
-                        // - If the whitespaces contain /r/n, not skipping them will result
+                        // - If the whitespace contains /r/n, not skipping them will result
                         //   in a redundant emtpy line being copied.
                         if (Reader.NodeType == XmlNodeType.Whitespace) Reader.Skip();
                     }
@@ -468,7 +468,7 @@ namespace System.Configuration
 
             int lineNumberOfEndElement = Reader.LineNumber;
 
-            // Read until we hit a a non-whitespace node or reach the end
+            // Read until we hit a non-whitespace node or reach the end
             while (!Reader.EOF)
             {
                 if (Reader.NodeType != XmlNodeType.Whitespace)

@@ -6,7 +6,7 @@
     <MinClientVersion>2.8.6</MinClientVersion>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\System.Diagnostics.DiagnosticSource.builds">
+    <ProjectReference Include="..\src\System.Diagnostics.DiagnosticSource.csproj">
       <SupportedFramework>net46;net45;netcore45;netcoreapp1.0;wpa81;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
   </ItemGroup>

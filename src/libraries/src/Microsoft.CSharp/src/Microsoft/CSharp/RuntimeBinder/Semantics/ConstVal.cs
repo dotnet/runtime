@@ -167,8 +167,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             if (o == null)
                 return true;
 
-            TypeCode code = o.GetType().GetTypeCode();
-            switch (code)
+            switch (Type.GetTypeCode(o.GetType()))
             {
                 case TypeCode.Boolean:
                     return default(bool).Equals(o);

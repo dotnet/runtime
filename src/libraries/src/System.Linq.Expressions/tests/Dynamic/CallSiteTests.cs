@@ -30,5 +30,11 @@ namespace System.Runtime.CompilerServices.Tests
         {
             Assert.Throws<ArgumentNullException>("binder", () => CallSite.Create(typeof(Func<string>), null));
         }
+
+        [Fact]
+        public void NullBinder()
+        {
+            Assert.Throws<ArgumentNullException>("binder", () => CallSite<Func<CallSite, object, object>>.Create(null));
+        }
     }
 }

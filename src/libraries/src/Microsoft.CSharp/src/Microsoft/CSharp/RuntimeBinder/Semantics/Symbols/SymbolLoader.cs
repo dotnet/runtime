@@ -8,12 +8,12 @@ using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal class SymbolLoader
+    internal sealed class SymbolLoader
     {
         private readonly NameManager _nameManager;
 
         public PredefinedMembers PredefinedMembers { get; }
-        public GlobalSymbolContext GlobalSymbolContext { get; }
+        private GlobalSymbolContext GlobalSymbolContext { get; }
         public ErrorHandling ErrorContext { get; }
         public SymbolTable RuntimeBinderSymbolTable { get; private set; }
 
@@ -117,7 +117,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return GetOptPredefAgg(pt, true);
         }
 
-        public AggregateSymbol GetOptPredefAgg(PredefinedType pt, bool fEnsureState)
+        private AggregateSymbol GetOptPredefAgg(PredefinedType pt, bool fEnsureState)
         {
             AggregateSymbol agg = GetTypeManager().GetOptPredefAgg(pt);
             return agg;
@@ -189,7 +189,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return null;
         }
 
-        public bool IsBaseInterface(CType pDerived, CType pBase)
+        private bool IsBaseInterface(CType pDerived, CType pBase)
         {
             Debug.Assert(pDerived != null);
             Debug.Assert(pBase != null);
@@ -231,7 +231,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return IsBaseClass(pDerived, pBase);
         }
 
-        public bool IsBaseClass(CType pDerived, CType pBase)
+        private bool IsBaseClass(CType pDerived, CType pBase)
         {
             Debug.Assert(pDerived != null);
             Debug.Assert(pBase != null);
@@ -292,7 +292,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return HasImplicitReferenceConversion(pSource, pDest);
         }
 
-        protected bool AreTypesEqualForConversion(CType pType1, CType pType2)
+        private bool AreTypesEqualForConversion(CType pType1, CType pType2)
         {
             return pType1.Equals(pType2);
         }
@@ -344,7 +344,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return HasIdentityOrImplicitReferenceConversion(pSourceElement, pDestTypeArgument);
         }
 
-        public bool HasImplicitReferenceConversion(CType pSource, CType pDest)
+        private bool HasImplicitReferenceConversion(CType pSource, CType pDest)
         {
             Debug.Assert(pSource != null);
             Debug.Assert(pDest != null);

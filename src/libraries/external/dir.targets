@@ -1,4 +1,10 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <ProjectJsonTemplate Condition="'$(ProjectJsonTemplate)' == ''">$(MSBuildThisProjectDirectory)project.json.template</ProjectJsonTemplate>
+    <ProjectJson Condition="Exists('$(ProjectJsonTemplate)')">$(IntermediateOutputPath)project.json</ProjectJson>
+    <ProjectLockJson Condition="Exists('$(ProjectJsonTemplate)')">$(IntermediateOutputPath)project.lock.json</ProjectLockJson>
+  </PropertyGroup>
+
   <Import Project="..\dir.targets" />
 
   <PropertyGroup>
@@ -13,16 +19,27 @@
     Outputs="$(ProjectJson)"
     Condition="Exists('$(ProjectJsonTemplate)')"
     >
+    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName('$(ProjectJson)'))" />
     <!-- Update project.json template -->
     <WriteLinesToFile
       File="$(ProjectJson)"
-      Lines="$([System.IO.File]::ReadAllText('project.json.template').Replace('{RID}', $(NuGetRuntimeIdentifier)).Replace('{TFM}', $(NuGetTargetMoniker)))"
+      Lines="$([System.IO.File]::ReadAllText('$(ProjectJsonTemplate)').Replace('{RID}', $(NuGetRuntimeIdentifier)).Replace('{TFM}', $(NuGetTargetMoniker)).Replace('{PackageId}', $(TargetingPackNugetPackageId)))"
       Overwrite="true"
                       />
-    <ItemGroup>
-      <FileWrites Include="$(ProjectJson);$(ProjectLockJson)" />
-    </ItemGroup>
 
+    <!-- if lock file exists be sure to update timestamp otherwise we could get in a state of aways calling restore but the lock file not being updated -->
+    <Touch Condition="Exists('$(ProjectLockJson)')" Files="$(ProjectLockJson)" />
   </Target>
+
+  <!-- Override build and GetTargetPath to return all items deployed -->
+  <Target Name="Build"
+          Condition=" '$(_InvalidConfigurationWarning)' != 'true' "
+          DependsOnTargets="$(BuildDependsOn)"
+          Returns="@(BinPlaceItem)" />
+
+  <!-- Depprojs need to run Compile in order to populate items that will be copied to output -->
+  <Target Name="GetTargetPath"
+          DependsOnTargets="Compile;GetBinPlaceItems"
+          Returns="@(BinPlaceItem)" />
 
 </Project>

@@ -31,9 +31,6 @@ namespace System.DirectoryServices.AccountManagement
 
         public string ParsedUserName
         {
-            // <SecurityKernel Critical="True" Ring="1">
-            // <ReferencesCritical Name="Method: SplitUsername(String, String&, String&):Void" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
@@ -48,9 +45,6 @@ namespace System.DirectoryServices.AccountManagement
 
         public string Domain
         {
-            // <SecurityKernel Critical="True" Ring="1">
-            // <ReferencesCritical Name="Method: SplitUsername(String, String&, String&):Void" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
@@ -63,9 +57,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.CredUIParseUserName(System.String,System.Text.StringBuilder,System.UInt32,System.Text.StringBuilder,System.UInt32):System.Int32" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         private void SplitUsername(string username, ref string parsedUserName, ref string parsedDomainName)
         {
@@ -77,7 +68,7 @@ namespace System.DirectoryServices.AccountManagement
                 return;
             }
 
-            // Logon user expects the username in UPN or to have the username and domain split to the seperate parameters.
+            // Logon user expects the username in UPN or to have the username and domain split to the separate parameters.
             // It does not work properly with NT4 style name formats.  This function will put the username in the proper format.
             StringBuilder splitUsername = new StringBuilder(UnsafeNativeMethods.CRED_MAX_USERNAME_LENGTH);
             StringBuilder splitDomain = new StringBuilder(UnsafeNativeMethods.CRED_MAX_DOMAIN_TARGET_LENGTH);

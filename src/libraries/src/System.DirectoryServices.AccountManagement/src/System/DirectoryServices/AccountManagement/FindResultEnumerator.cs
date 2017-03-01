@@ -9,7 +9,6 @@ using System.Diagnostics;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.LinkDemand, Unrestricted = true)]
     internal class FindResultEnumerator<T> : IEnumerator<T>, IEnumerator
     {
         //
@@ -22,9 +21,6 @@ namespace System.DirectoryServices.AccountManagement
 
         public T Current
         {
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="FindResultEnumerator`1<T>.CheckDisposed():System.Void" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
@@ -53,10 +49,6 @@ namespace System.DirectoryServices.AccountManagement
 
         object IEnumerator.Current
         {
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="FindResultEnumerator`1<T>.get_Current():T" />
-            // <ReferencesCritical Name="Method: get_Current():T" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
@@ -70,9 +62,6 @@ namespace System.DirectoryServices.AccountManagement
 
         // Calls resultSet.MoveNext() to advance to the next principal in the ResultSet.
         // Returns false when it reaches the end of the last ResultSet in resultSets, and sets endReached to true.
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="FindResultEnumerator`1<T>.CheckDisposed():System.Void" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         public bool MoveNext()
         {
@@ -125,10 +114,6 @@ namespace System.DirectoryServices.AccountManagement
             return f;
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="FindResultEnumerator`1<T>.MoveNext():System.Boolean" />
-        // <ReferencesCritical Name="Method: MoveNext():Boolean" Ring="1" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         bool IEnumerator.MoveNext()
         {
@@ -137,9 +122,6 @@ namespace System.DirectoryServices.AccountManagement
 
         // Repositions us to the beginning by setting beforeStart to true.  Also clears endReached
         // by setting it back to false;
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="FindResultEnumerator`1<T>.CheckDisposed():System.Void" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         public void Reset()
         {
@@ -151,10 +133,6 @@ namespace System.DirectoryServices.AccountManagement
             _beforeStart = true;
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="FindResultEnumerator`1<T>.Reset():System.Void" />
-        // <ReferencesCritical Name="Method: Reset():Void" Ring="1" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         void IEnumerator.Reset()
         {

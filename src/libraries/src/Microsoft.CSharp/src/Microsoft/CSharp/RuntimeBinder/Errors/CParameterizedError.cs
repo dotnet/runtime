@@ -10,7 +10,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
     // This object is the unrealized error that is generated prior to
     // becoming a CError.  It only has the spans, error number, and parameters.
 
-    internal class CParameterizedError
+    internal sealed class CParameterizedError
     {
         private ErrorCode _errorNumber;
         private ErrArg[] _arguments;

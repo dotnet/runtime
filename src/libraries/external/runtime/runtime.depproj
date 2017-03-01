@@ -1,0 +1,46 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <!-- support cross-targeting by choosing a RID to restore when running on a different machine that what we're build for -->
+    <NugetRuntimeIdentifier Condition="'$(OSGroup)' == 'Windows_NT' AND '$(RunningOnUnix)' == 'true'">win7-x64</NugetRuntimeIdentifier>
+    <NugetRuntimeIdentifier Condition="'$(OSGroup)' == 'Unix' AND '$(RunningOnUnix)' != 'true'">ubuntu.14.04-x64</NugetRuntimeIdentifier>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetGroup)' == 'uapaot'">
+    <ProjectJsonTemplate>$(MSBuildThisFileDirectory)NETNative/project.json.template</ProjectJsonTemplate>
+    <!-- System.Private.* can't be on the ILCInputFolder since ilc.exe needs to use the matching one from its toolchain. -->
+    <BinPlaceILCInputFolder>false</BinPlaceILCInputFolder>
+    <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='uapaot'">
+    <FileToExclude Include="System.Private.CoreLib.Augments" />
+    <FileToExclude Include="System.Private.CoreLib.DynamicDelegate" />
+    <FileToExclude Include="System.Private.CoreLib.WinRTInterop" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+
+  <!-- Setup the testing shared framework host -->
+  <Target Name="SetupTestingHost" AfterTargets="ResolveNuGetPackages" Condition="'$(BinPlaceTestSharedFramework)' == 'true'">
+
+    <PropertyGroup>
+      <HostFxrFileName Condition="'$(OSGroup)'=='Windows_NT'">hostfxr</HostFxrFileName>
+      <HostFxrFileName Condition="'$(OSGroup)'!='Windows_NT'">libhostfxr</HostFxrFileName>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <HostFxFile Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.Filename)' == '$(HostFxrFileName)'" />
+      <DotnetExe Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.Filename)' == 'dotnet'" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(HostFxFile)"
+          DestinationFolder="$(NETCoreAppTestHostFxrPath)"
+          SkipUnchangedFiles="true"
+          UseHardlinksIfPossible="true" />
+
+    <Copy SourceFiles="@(DotnetExe)"
+          DestinationFolder="$(NETCoreAppTestRootPath)"
+          SkipUnchangedFiles="true"
+          UseHardlinksIfPossible="true" />
+
+  </Target>
+</Project>

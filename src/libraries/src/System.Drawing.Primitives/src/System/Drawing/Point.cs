@@ -134,32 +134,32 @@ namespace System.Drawing
         ///       Translates a <see cref='System.Drawing.Point'/> by a given <see cref='System.Drawing.Size'/> .
         ///    </para>
         /// </summary>        
-        public static Point Add(Point pt, Size sz) => new Point(pt.X + sz.Width, pt.Y + sz.Height);
+        public static Point Add(Point pt, Size sz) => new Point(unchecked(pt.X + sz.Width), unchecked(pt.Y + sz.Height));
 
         /// <summary>
         ///    <para>
         ///       Translates a <see cref='System.Drawing.Point'/> by the negative of a given <see cref='System.Drawing.Size'/> .
         ///    </para>
         /// </summary>        
-        public static Point Subtract(Point pt, Size sz) => new Point(pt.X - sz.Width, pt.Y - sz.Height);
+        public static Point Subtract(Point pt, Size sz) => new Point(unchecked(pt.X - sz.Width), unchecked(pt.Y - sz.Height));
 
         /// <summary>
         ///   Converts a PointF to a Point by performing a ceiling operation on
         ///   all the coordinates.
         /// </summary>
-        public static Point Ceiling(PointF value) => new Point((int)Math.Ceiling(value.X), (int)Math.Ceiling(value.Y));
+        public static Point Ceiling(PointF value) => new Point(unchecked((int)Math.Ceiling(value.X)), unchecked((int)Math.Ceiling(value.Y)));
 
         /// <summary>
         ///   Converts a PointF to a Point by performing a truncate operation on
         ///   all the coordinates.
         /// </summary>
-        public static Point Truncate(PointF value) => new Point((int)value.X, (int)value.Y);
+        public static Point Truncate(PointF value) => new Point(unchecked((int)value.X), unchecked((int)value.Y));
 
         /// <summary>
         ///   Converts a PointF to a Point by performing a round operation on
         ///   all the coordinates.
         /// </summary>
-        public static Point Round(PointF value) => new Point((int)Math.Round(value.X), (int)Math.Round(value.Y));
+        public static Point Round(PointF value) => new Point(unchecked((int)Math.Round(value.X)), unchecked((int)Math.Round(value.Y)));
 
         /// <summary>
         ///    <para>
@@ -183,8 +183,11 @@ namespace System.Drawing
         /// </summary>
         public void Offset(int dx, int dy)
         {
-            X += dx;
-            Y += dy;
+            unchecked
+            {
+                X += dx;
+                Y += dy;
+            }
         }
 
         /// <summary>
@@ -201,8 +204,8 @@ namespace System.Drawing
         /// </summary>
         public override string ToString() => "{X=" + X.ToString() + ",Y=" + Y.ToString() + "}";
 
-        private static short HighInt16(int n) => (short)((n >> 16) & 0xffff);
+        private static short HighInt16(int n) => unchecked((short)((n >> 16) & 0xffff));
 
-        private static short LowInt16(int n) => (short)(n & 0xffff);
+        private static short LowInt16(int n) => unchecked((short)(n & 0xffff));
     }
 }

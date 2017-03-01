@@ -9,22 +9,15 @@ using System.Security.Permissions;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    // <SecurityKernel Critical="True" Ring="0">
-    // <SatisfiesLinkDemand Name="Principal" />
-    // </SecurityKernel>
 #pragma warning disable 618    // Have not migrated to v4 transparency yet
     [System.Security.SecurityCritical(System.Security.SecurityCriticalScope.Everything)]
 #pragma warning restore 618
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.LinkDemand, Unrestricted = true)]
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.InheritanceDemand, Unrestricted = true)]
     [DirectoryRdnPrefix("CN")]
     public class GroupPrincipal : Principal
     {
         //
         // Public constructors
         //
-        [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.LinkDemand, Unrestricted = true)]
-        [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.InheritanceDemand, Unrestricted = true)]
         public GroupPrincipal(PrincipalContext context)
         {
             if (context == null)
@@ -34,8 +27,6 @@ namespace System.DirectoryServices.AccountManagement
             this.unpersisted = true;
         }
 
-        [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.LinkDemand, Unrestricted = true)]
-        [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.InheritanceDemand, Unrestricted = true)]
         public GroupPrincipal(PrincipalContext context, string samAccountName) : this(context)
         {
             if (samAccountName == null)
@@ -373,7 +364,7 @@ namespace System.DirectoryServices.AccountManagement
 
         /// <summary>
         ///  Finds if the group is "small", meaning that it has less than MaxValRange values (usually 1500)
-        ///  The property list for the searcher of a a group has "member" attribute. if there are more results than MaxValRange, there will also be a "member;range=..." attribute               
+        ///  The property list for the searcher of a group has "member" attribute. if there are more results than MaxValRange, there will also be a "member;range=..." attribute               
         ///  we can cache the result and don't fear from changes through Add/Remove/Save because the completed/pending lists are looked up before the actual values are
         /// </summary>
         internal bool IsSmallGroup()

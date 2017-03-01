@@ -4,7 +4,7 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal class IndexerSymbol : PropertySymbol
+    internal sealed class IndexerSymbol : PropertySymbol
     {
     }
 }

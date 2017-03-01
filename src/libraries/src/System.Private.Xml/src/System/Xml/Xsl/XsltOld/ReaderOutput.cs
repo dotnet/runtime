@@ -343,7 +343,7 @@ namespace System.Xml.Xsl.XsltOld
                 if (_haveRecord)
                 {
                     CheckCurrentInfo();
-                    // check text nodes on whitespaces;
+                    // check text nodes on whitespace;
                     switch (this.NodeType)
                     {
                         case XmlNodeType.Text:

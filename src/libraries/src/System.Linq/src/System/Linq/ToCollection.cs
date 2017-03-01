@@ -177,8 +177,7 @@ namespace System.Linq
             return d;
         }
 
-#if netcoreapp11
-        public static HashSet<TSource> ToHashSet<TSource>(this IEnumerable<TSource> source) => source.ToHashSet(null);
+        public static HashSet<TSource> ToHashSet<TSource>(this IEnumerable<TSource> source) => source.ToHashSet(comparer: null);
 
         public static HashSet<TSource> ToHashSet<TSource>(this IEnumerable<TSource> source, IEqualityComparer<TSource> comparer)
         {
@@ -187,9 +186,8 @@ namespace System.Linq
                 throw new ArgumentNullException(nameof(source));
             }
 
-            // Don't pre-allocate based on knowledge of size as potentially many elements will be dropped.
+            // Don't pre-allocate based on knowledge of size, as potentially many elements will be dropped.
             return new HashSet<TSource>(source, comparer);
         }
-#endif
     }
 }

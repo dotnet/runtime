@@ -37,6 +37,7 @@ namespace System.Linq.Expressions.Tests
             for (int i = 0; i < values.Length; i++)
             {
                 VerifyArithmeticUnaryPlusInt(values[i], useInterpreter);
+                VerifyArithmeticMakeUnaryPlusInt(values[i], useInterpreter);
             }
         }
 
@@ -136,6 +137,16 @@ namespace System.Linq.Expressions.Tests
             Expression<Func<int>> e =
                 Expression.Lambda<Func<int>>(
                     Expression.UnaryPlus(Expression.Constant(value, typeof(int))),
+                    Enumerable.Empty<ParameterExpression>());
+            Func<int> f = e.Compile(useInterpreter);
+            Assert.Equal((int)(+value), f());
+        }
+
+        private static void VerifyArithmeticMakeUnaryPlusInt(int value, bool useInterpreter)
+        {
+            Expression<Func<int>> e =
+                Expression.Lambda<Func<int>>(
+                    Expression.MakeUnary(ExpressionType.UnaryPlus, Expression.Constant(value), null),
                     Enumerable.Empty<ParameterExpression>());
             Func<int> f = e.Compile(useInterpreter);
             Assert.Equal((int)(+value), f());

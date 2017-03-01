@@ -20,10 +20,34 @@ namespace System.Threading.Threads.Tests
         [Fact]
         public static void ConstructorTest()
         {
-            var t = new Thread(() => { });
-            t = new Thread(() => { }, 0);
-            t = new Thread(state => { });
-            t = new Thread(state => { }, 0);
+            Action<Thread> startThreadAndJoin =
+                t =>
+                {
+                    t.IsBackground = true;
+                    t.Start();
+                    Assert.True(t.Join(UnexpectedTimeoutMilliseconds));
+                };
+            Action<int> verifyStackSize =
+                stackSizeBytes =>
+                {
+                    // Try to stack-allocate an array to verify that close to the expected amount of stack space is actually
+                    // available
+                    int bufferSizeBytes = Math.Max(16 << 10, stackSizeBytes - (64 << 10));
+                    unsafe
+                    {
+                        byte* buffer = stackalloc byte[bufferSizeBytes];
+                        Volatile.Write(ref buffer[0], 0xff);
+                        Volatile.Write(ref buffer[bufferSizeBytes - 1], 0xff);
+                    }
+                };
+            startThreadAndJoin(new Thread(() => verifyStackSize(0)));
+            startThreadAndJoin(new Thread(() => verifyStackSize(0), 0));
+            startThreadAndJoin(new Thread(() => verifyStackSize(64 << 10), 64 << 10)); // 64 KB
+            startThreadAndJoin(new Thread(() => verifyStackSize(16 << 20), 16 << 20)); // 16 MB
+            startThreadAndJoin(new Thread(state => verifyStackSize(0)));
+            startThreadAndJoin(new Thread(state => verifyStackSize(0), 0));
+            startThreadAndJoin(new Thread(state => verifyStackSize(64 << 10), 64 << 10)); // 64 KB
+            startThreadAndJoin(new Thread(state => verifyStackSize(16 << 20), 16 << 20)); // 16 MB
 
             Assert.Throws<ArgumentNullException>(() => new Thread((ThreadStart)null));
             Assert.Throws<ArgumentNullException>(() => new Thread((ThreadStart)null, 0));
@@ -116,7 +140,7 @@ namespace System.Threading.Threads.Tests
 
         [Theory]
         [MemberData(nameof(ApartmentStateTest_MemberData))]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Expected behavior differs on Unix and Windows
         public static void GetSetApartmentStateTest_ChangeAfterThreadStarted_Windows(
             Func<Thread, ApartmentState> getApartmentState,
             Func<Thread, ApartmentState, int> setApartmentState,
@@ -138,7 +162,7 @@ namespace System.Threading.Threads.Tests
 
         [Theory]
         [MemberData(nameof(ApartmentStateTest_MemberData))]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Expected behavior differs on Unix and Windows
         public static void ApartmentStateTest_ChangeBeforeThreadStarted_Windows(
             Func<Thread, ApartmentState> getApartmentState,
             Func<Thread, ApartmentState, int> setApartmentState,
@@ -153,13 +177,13 @@ namespace System.Threading.Threads.Tests
             Assert.Equal(setType == 0 ? 0 : 2, setApartmentState(t, ApartmentState.MTA)); // cannot be changed more than once
             Assert.Equal(ApartmentState.STA, getApartmentState(t));
             t.Start();
-            t.Join(UnexpectedTimeoutMilliseconds);
+            Assert.True(t.Join(UnexpectedTimeoutMilliseconds));
             Assert.Equal(ApartmentState.STA, apartmentStateInThread);
         }
 
         [Theory]
         [MemberData(nameof(ApartmentStateTest_MemberData))]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Expected behavior differs on Unix and Windows
         public static void ApartmentStateTest_Unix(
             Func<Thread, ApartmentState> getApartmentState,
             Func<Thread, ApartmentState, int> setApartmentState,
@@ -269,7 +293,7 @@ namespace System.Threading.Threads.Tests
             var t = new Thread(() => otherThread = Thread.CurrentThread);
             t.IsBackground = true;
             t.Start();
-            t.Join(UnexpectedTimeoutMilliseconds);
+            Assert.True(t.Join(UnexpectedTimeoutMilliseconds));
 
             Assert.Equal(t, otherThread);
 
@@ -296,7 +320,7 @@ namespace System.Threading.Threads.Tests
 
             Assert.False(t.IsAlive);
             t.Start();
-            t.Join(UnexpectedTimeoutMilliseconds);
+            Assert.True(t.Join(UnexpectedTimeoutMilliseconds));
             Assert.True(isAliveWhenRunning);
             Assert.False(t.IsAlive);
         }
@@ -309,7 +333,7 @@ namespace System.Threading.Threads.Tests
             t.IsBackground = true;
             Assert.True(t.IsBackground);
             t.Start();
-            t.Join(UnexpectedTimeoutMilliseconds);
+            Assert.True(t.Join(UnexpectedTimeoutMilliseconds));
 
             // Cannot use this property after the thread is dead
             Assert.Throws<ThreadStateException>(() => t.IsBackground);
@@ -332,7 +356,7 @@ namespace System.Threading.Threads.Tests
             Assert.False(t.IsThreadPoolThread);
 
             t.Start();
-            t.Join(UnexpectedTimeoutMilliseconds);
+            Assert.True(t.Join(UnexpectedTimeoutMilliseconds));
             Assert.False(isThreadPoolThread);
 
             var e = new ManualResetEvent(false);

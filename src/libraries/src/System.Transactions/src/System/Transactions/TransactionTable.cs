@@ -276,7 +276,7 @@ namespace System.Transactions
             // references and reverse links are all strong references.  This allows the GC
             // to clean up old links in the list so that they don't need to be removed manually.
             // However if there is still a rooted strong reference to an old link in the
-            // chain that link wont fall off the list because there is a strong reference held
+            // chain that link won't fall off the list because there is a strong reference held
             // forward.
             //
 

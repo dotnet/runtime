@@ -1,28 +1,22 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{4AC5343E-6E31-4BA5-A795-0493AE7E9008}</ProjectGuid>
     <AssemblyName>System.Private.Uri</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!-- Suppress warnings for type conflicts between SafeFileHandle in partial facade and mscorlib -->
-    <NoWarn>0436</NoWarn>
-    <SkipCommonResourcesIncludes Condition="'$(TargetGroup)'=='uap101aot' or '$(TargetGroup)' == 'netcoreapp1.2corert'">true</SkipCommonResourcesIncludes>
-    <DefineConstants Condition="'$(TargetGroup)'=='netstandard1.0'">$(DefineConstants);netstandard10</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='uap101aot-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='uap101aot-Windows_NT-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.0-Unix-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.0-Unix-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.0-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.0-Windows_NT-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp1.2corert-Unix-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp1.2corert-Unix-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp1.2corert-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp1.2corert-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="$(CommonPath)\System\Diagnostics\Debug.cs" Condition="'$(TargetGroup)'!='uap101aot' and '$(TargetGroup)' != 'netcoreapp1.2corert'">
+    <Compile Include="$(CommonPath)\System\Diagnostics\Debug.cs" Condition="'$(TargetGroup)'!='uapaot' and '$(TargetGroup)' != 'netcoreapp1.2corert'">
       <Link>Common\System\Diagnostics\Debug.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Collections\Generic\ArrayBuilder.cs">
@@ -54,7 +48,7 @@
     <Compile Include="System\UriScheme.cs" />
     <Compile Include="System\UriSyntax.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetGroup)'=='netstandard1.0'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and ('$(TargetGroup)'=='netcoreapp' OR '$(TargetGroup)'=='uap')">
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
@@ -65,7 +59,7 @@
       <Link>Common\System\Diagnostics\Debug.Windows.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(TargetGroup)' == 'netstandard1.0'">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and ('$(TargetGroup)'=='netcoreapp' OR '$(TargetGroup)'=='uap')">
     <Compile Include="$(CommonPath)\System\Diagnostics\Debug.Unix.cs">
       <Link>Common\System\Diagnostics\Debug.Unix.cs</Link>
     </Compile>
@@ -109,14 +103,8 @@
       <Link>Common\Microsoft\Win32\SafeHandles\SafeFileHandleHelper.Unix.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='uap101aot' or '$(TargetGroup)' == 'netcoreapp1.2corert'">
+  <ItemGroup Condition="'$(TargetGroup)'=='uapaot' or '$(TargetGroup)' == 'netcoreapp1.2corert'">
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
-    <Compile Include="$(CommonPath)\System\SR.Core.cs">
-      <Link>Common\System\SR.Core.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Resources\NeutralResourcesLanguageAttribute.cs">
-      <Link>Common\System\Resources\NeutralResourcesLanguageAttribute.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <ReferenceFromRuntime Include="System.Private.CoreLib" />

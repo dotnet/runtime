@@ -10,7 +10,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal static class Operators
     {
-        private class OPINFO
+        private sealed class OPINFO
         {
             public OPINFO(TokenKind t, PredefinedName pn, ExpressionKind e, int c)
             {
@@ -115,21 +115,25 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             return OperatorKind.OP_NONE;
         }
-        public static bool HasMethodName(OperatorKind op)
+
+        private static bool HasMethodName(OperatorKind op)
         {
             //Debug.Assert(IsValid(op));
             return GetMethodName(op) != PredefinedName.PN_COUNT;
         }
-        public static PredefinedName GetMethodName(OperatorKind op)
+
+        private static PredefinedName GetMethodName(OperatorKind op)
         {
             //Debug.Assert(IsValid(op));
             return GetInfo(op).methodName;
         }
-        public static Name GetMethodName(NameManager namemgr, OperatorKind op)
+
+        private static Name GetMethodName(NameManager namemgr, OperatorKind op)
         {
             Debug.Assert(HasMethodName(op));
             return namemgr.GetPredefName(GetMethodName(op));
         }
+
         public static bool HasDisplayName(OperatorKind op)
         {
             //Debug.Assert(IsValid(op));

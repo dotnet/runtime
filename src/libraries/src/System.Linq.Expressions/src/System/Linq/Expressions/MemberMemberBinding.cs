@@ -131,6 +131,11 @@ namespace System.Linq.Expressions
             }
             else
             {
+                if (fi.DeclaringType == null)
+                {
+                    throw Error.NotAMemberOfAnyType(fi, nameof(member));
+                }
+
                 memberType = fi.FieldType;
             }
         }

@@ -96,7 +96,7 @@ namespace System.Xml
             else if (length < 65536)
             {
                 buffer[offset + 0] = (byte)(nodeType + 1 * 2); // WithEndElements interleave
-                buffer[offset + 1] = (byte)length;
+                buffer[offset + 1] = unchecked((byte)length);
                 length >>= 8;
                 buffer[offset + 2] = (byte)length;
                 Advance(3);

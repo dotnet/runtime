@@ -20,6 +20,9 @@ namespace System.Numerics
 
         private const double InverseOfLog10 = 0.43429448190325; // 1 / Log(10)
 
+        // This is the largest x for which (Hypot(x,x) + x) will not overflow. It is used for branching inside Sqrt.
+        private static readonly double s_sqrtRescaleThreshold = double.MaxValue / (Math.Sqrt(2.0) + 1.0);
+
         private double _real;
         private double _imaginary;
         
@@ -110,31 +113,46 @@ namespace System.Numerics
 
         public static double Abs(Complex value)
         {
-            if (double.IsInfinity(value._real) || double.IsInfinity(value._imaginary))
-            {
-                return double.PositiveInfinity;
-            }
+            return Hypot(value._real, value._imaginary);
+        }
 
-            // |value| == sqrt(a^2 + b^2)
-            // sqrt(a^2 + b^2) == a/a * sqrt(a^2 + b^2) = a * sqrt(a^2/a^2 + b^2/a^2)
-            // Using the above we can factor out the square of the larger component to dodge overflow.
-            double c = Math.Abs(value._real);
-            double d = Math.Abs(value._imaginary);
+        private static double Hypot(double a, double b)
+        {
+            // Using
+            //   sqrt(a^2 + b^2) = |a| * sqrt(1 + (b/a)^2)
+            // we can factor out the larger component to dodge overflow even when a * a would overflow.
 
-            if (c > d)
+            a = Math.Abs(a);
+            b = Math.Abs(b);
+
+            double small, large;
+            if (a < b)
             {
-                double r = d / c;
-                return c * Math.Sqrt(1.0 + r * r);
-            }
-            else if (d == 0.0)
-            {
-                return c;  // c is either 0.0 or NaN
+                small = a;
+                large = b;
             }
             else
             {
-                double r = c / d;
-                return d * Math.Sqrt(1.0 + r * r);
+                small = b;
+                large = a;
             }
+
+            if (small == 0.0)
+            {
+                return (large);
+            }
+            else if (double.IsPositiveInfinity(large) && !double.IsNaN(small))
+            {
+                // The NaN test is necessary so we don't return +inf when small=NaN and large=+inf.
+                // NaN in any other place returns NaN without any special handling.
+                return (double.PositiveInfinity);
+            }
+            else
+            {
+                double ratio = small / large;
+                return (large * Math.Sqrt(1.0 + ratio * ratio));
+            }
+
         }
 
         public static Complex Conjugate(Complex value)
@@ -205,17 +223,25 @@ namespace System.Numerics
 
         public static Complex Sin(Complex value)
         {
-            double a = value._real;
-            double b = value._imaginary;
-            return new Complex(Math.Sin(a) * Math.Cosh(b), Math.Cos(a) * Math.Sinh(b));
+            // We need both sinh and cosh of imaginary part. To avoid multiple calls to Math.Exp with the same value,
+            // we compute them both here from a single call to Math.Exp.
+            double p = Math.Exp(value._imaginary);
+            double q = 1.0 / p;
+            double sinh = (p - q) * 0.5;
+            double cosh = (p + q) * 0.5;
+            return new Complex(Math.Sin(value._real) * cosh, Math.Cos(value._real) * sinh);
+            // There is a known limitation with this algorithm: inputs that cause sinh and cosh to overflow, but for
+            // which sin or cos are small enough that sin * cosh or cos * sinh are still representable, nonetheless
+            // produce overflow. For example, Sin((0.01, 711.0)) should produce (~3.0E306, PositiveInfinity), but
+            // instead produces (PositiveInfinity, PositiveInfinity). 
         }
 
         [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Sinh", Justification = "Sinh is the name of a mathematical function.")]
         public static Complex Sinh(Complex value)
         {
-            double a = value._real;
-            double b = value._imaginary;
-            return new Complex(Math.Sinh(a) * Math.Cos(b), Math.Cosh(a) * Math.Sin(b));
+            // Use sinh(z) = -i sin(iz) to compute via sin(z).
+            Complex sin = Sin(new Complex(-value._imaginary, value._real));
+            return new Complex(sin._imaginary, -sin._real);
         }
 
         public static Complex Asin(Complex value)
@@ -227,19 +253,19 @@ namespace System.Numerics
             return (-ImaginaryOne) * Log(ImaginaryOne * value + Sqrt(One - value * value));
         }
 
-        public static Complex Cos(Complex value)
-        {
-            double a = value._real;
-            double b = value._imaginary;
-            return new Complex(Math.Cos(a) * Math.Cosh(b), -(Math.Sin(a) * Math.Sinh(b)));
+        public static Complex Cos(Complex value) {
+            double p = Math.Exp(value._imaginary);
+            double q = 1.0 / p;
+            double sinh = (p - q) * 0.5;
+            double cosh = (p + q) * 0.5;
+            return new Complex(Math.Cos(value._real) * cosh, -Math.Sin(value._real) * sinh);
         }
 
         [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Cosh", Justification = "Cosh is the name of a mathematical function.")]
         public static Complex Cosh(Complex value)
         {
-            double a = value._real;
-            double b = value._imaginary;
-            return new Complex(Math.Cosh(a) * Math.Cos(b), Math.Sinh(a) * Math.Sin(b));
+            // Use cosh(z) = cos(iz) to compute via cos(z).
+            return Cos(new Complex(-value._imaginary, value._real));
         }
 
         public static Complex Acos(Complex value)
@@ -253,13 +279,39 @@ namespace System.Numerics
 
         public static Complex Tan(Complex value)
         {
-            return (Sin(value) / Cos(value));
+            // tan z = sin z / cos z, but to avoid unnecessary repeated trig computations, use
+            //   tan z = (sin(2x) + i sinh(2y)) / (cos(2x) + cosh(2y))
+            // (see Abramowitz & Stegun 4.3.57 or derive by hand), and compute trig functions here.
+
+            // This approach does not work for |y| > ~355, because sinh(2y) and cosh(2y) overflow,
+            // even though their ratio does not. In that case, divide through by cosh to get:
+            //   tan z = (sin(2x) / cosh(2y) + i \tanh(2y)) / (1 + cos(2x) / cosh(2y))
+            // which correctly computes the (tiny) real part and the (normal-sized) imaginary part.
+            
+            double x2 = 2.0 * value._real;
+            double y2 = 2.0 * value._imaginary;
+            double p = Math.Exp(y2);
+            double q = 1.0 / p;
+            double cosh = (p + q) * 0.5;
+            if (Math.Abs(value._imaginary) <= 4.0)
+            {
+                double sinh = (p - q) * 0.5;
+                double D = Math.Cos(x2) + cosh;
+                return new Complex(Math.Sin(x2) / D, sinh / D);
+            }
+            else
+            {
+                double D = 1.0 + Math.Cos(x2) / cosh;
+                return new Complex(Math.Sin(x2) / cosh / D, Math.Tanh(y2) / D);
+            }
         }
 
         [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Tanh", Justification = "Tanh is the name of a mathematical function.")]
         public static Complex Tanh(Complex value)
         {
-            return (Sinh(value) / Cosh(value));
+            // Use tanh(z) = -i tan(iz) to compute via tan(z).
+            Complex tan = Tan(new Complex(-value._imaginary, value._real));
+            return new Complex(tan._imaginary, -tan._real);
         }
 
         public static Complex Atan(Complex value)
@@ -295,7 +347,90 @@ namespace System.Numerics
         [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Sqrt", Justification = "Sqrt is the name of a mathematical function.")]
         public static Complex Sqrt(Complex value)
         {
-            return FromPolarCoordinates(Math.Sqrt(value.Magnitude), value.Phase / 2.0);
+
+            if (value._imaginary == 0.0)
+            {
+                // Handle the trivial case quickly.
+                if (value._real < 0.0)
+                {
+                    return new Complex(0.0, Math.Sqrt(-value._real));
+                }
+                else
+                {
+                    return new Complex(Math.Sqrt(value._real), 0.0);
+                }
+            }
+            else
+            {
+
+                // One way to compute Sqrt(z) is just to call Pow(z, 0.5), which coverts to polar coordinates
+                // (sqrt + atan), halves the phase, and reconverts to cartesian coordinates (cos + sin).
+                // Not only is this more expensive than necessary, it also fails to preserve certain expected
+                // symmetries, such as that the square root of a pure negative is a pure imaginary, and that the
+                // square root of a pure imaginary has exactly equal real and imaginary parts. This all goes
+                // back to the fact that Math.PI is not stored with infinite precision, so taking half of Math.PI
+                // does not land us on an argument with cosine exactly equal to zero.
+
+                // To find a fast and symmetry-respecting formula for complex square root,
+                // note x + i y = \sqrt{a + i b} implies x^2 + 2 i x y - y^2 = a + i b,
+                // so x^2 - y^2 = a and 2 x y = b. Cross-substitute and use the quadratic formula to obtain
+                //   x = \sqrt{\frac{\sqrt{a^2 + b^2} + a}{2}}  y = \pm \sqrt{\frac{\sqrt{a^2 + b^2} - a}{2}}
+                // There is just one complication: depending on the sign on a, either x or y suffers from
+                // cancelation when |b| << |a|. We can get aroud this by noting that our formulas imply
+                // x^2 y^2 = b^2 / 4, so |x| |y| = |b| / 2. So after computing the one that doesn't suffer
+                // from cancelation, we can compute the other with just a division. This is basically just
+                // the right way to evaluate the quadratic formula without cancelation.
+
+                // All this reduces our total cost to two sqrts and a few flops, and it respects the desired
+                // symmetries. Much better than atan + cos + sin!
+
+                // The signs are a matter of choice of branch cut, which is traditionally taken so x > 0 and sign(y) = sign(b).
+      
+                // If the components are too large, Hypot will overflow, even though the subsequent sqrt would
+                // make the result representable. To avoid this, we re-scale (by exact powers of 2 for accuracy)
+                // when we encounter very large components to avoid intermediate infinities.
+                bool rescale = false;
+                if ((Math.Abs(value._real) >= s_sqrtRescaleThreshold) || (Math.Abs(value._imaginary) >= s_sqrtRescaleThreshold))
+                {
+                    if (double.IsInfinity(value._imaginary) && !double.IsNaN(value._real))
+                    {
+                        // We need to handle infinite imaginary parts specially because otherwise
+                        // our formulas below produce inf/inf = NaN. The NaN test is necessary
+                        // so that we return NaN rather than (+inf,inf) for (NaN,inf).
+                        return (new Complex(double.PositiveInfinity, value._imaginary));
+                    }
+                    else
+                    {
+                        value._real *= 0.25;
+                        value._imaginary *= 0.25;
+                        rescale = true;
+                    }
+                }
+ 
+                // This is the core of the algorithm. Everything else is special case handling.
+                double x, y;
+                if (value._real >= 0.0)
+                {
+                    x = Math.Sqrt((Hypot(value._real, value._imaginary) + value._real) * 0.5);
+                    y = value._imaginary / (2.0 * x);
+                }
+                else
+                {
+                    y = Math.Sqrt((Hypot(value._real, value._imaginary) - value._real) * 0.5);
+                    if (value._imaginary < 0.0) y = -y;
+                    x = value._imaginary / (2.0 * y);
+                }
+
+                if (rescale)
+                {
+                    x *= 2.0;
+                    y *= 2.0;
+                }
+
+                return new Complex(x, y);
+
+            }
+            
         }
 
         public static Complex Pow(Complex value, Complex power)

@@ -6,19 +6,18 @@
     <RootNamespace>System.Console</RootNamespace>
     <AssemblyName>System.Console</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net463'">true</IsPartialFacadeAssembly>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Unix-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Unix-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Windows_NT-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='net463-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='net463-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="FxCopBaseline.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+  <ItemGroup>
     <Compile Include="System\Console.cs" />
     <Compile Include="System\ConsoleCancelEventArgs.cs" />
     <Compile Include="System\ConsoleColor.cs" />
@@ -40,7 +39,7 @@
   </ItemGroup> 
   -->
   <!-- Windows : Win32 -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' == 'netcoreapp'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="System\ConsolePal.Windows.cs" />
     <Compile Include="$(CommonPath)\System\Text\OSEncoding.Windows.cs">
       <Link>Common\System\Text\OSEncoding.Windows.cs</Link>
@@ -52,13 +51,16 @@
       <Link>Common\System\Text\DBCSDecoder.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.Encoding.Constants.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.Encoding.Constants.cs</Link>
+      <Link>Common\Interop\Windows\Interop.Encoding.Constants.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetCPInfoEx.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.GetCPInfoEx.cs</Link>
+      <Link>Common\Interop\Windows\Interop.GetCPInfoEx.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.BOOL.cs">
+      <Link>Common\Interop\Windows\Interop.BOOL.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.Beep.cs">
       <Link>Common\Interop\Windows\Interop.Beep.cs</Link>
@@ -176,7 +178,7 @@
     </Compile>
   </ItemGroup>
   <!-- Unix -->
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' And '$(TargetGroup)' == 'netcoreapp'">
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true'">
     <Compile Include="System\ConsolePal.Unix.cs" />
     <Compile Include="System\TermInfo.cs" />
     <Compile Include="System\IO\StdInReader.cs" />
@@ -271,9 +273,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.StdinReady.cs">
       <Link>Common\Interop\Unix\Interop.StdinReady.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
-    <TargetingPackReference Include="mscorlib" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />

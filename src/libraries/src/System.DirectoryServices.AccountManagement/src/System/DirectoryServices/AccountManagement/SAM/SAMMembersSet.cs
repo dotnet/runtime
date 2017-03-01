@@ -14,13 +14,9 @@ using System.Runtime.InteropServices;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    // <SecurityKernel Critical="True" Ring="0">
-    // <Asserts Name="Declarative: [DirectoryServicesPermission(SecurityAction.Assert, Unrestricted = true)]" />
-    // </SecurityKernel>
 #pragma warning disable 618    // Have not migrated to v4 transparency yet
     [System.Security.SecurityCritical(System.Security.SecurityCriticalScope.Everything)]
 #pragma warning restore 618
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted = true)]
     internal class SAMMembersSet : BookmarkableResultSet
     {
         internal SAMMembersSet(string groupPath, UnsafeNativeMethods.IADsGroup group, bool recursive, SAMStoreCtx storeCtx, DirectoryEntry ctxBase)

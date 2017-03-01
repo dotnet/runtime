@@ -5,22 +5,17 @@
     <AssemblyName>System.Net.Sockets</AssemblyName>
     <ProjectGuid>{43311AFB-D7C4-4E5A-B1DE-855407F90D1B}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <EnableWinRT Condition="'$(TargetGroup)' == 'netcore50'">true</EnableWinRT>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net463'">true</IsPartialFacadeAssembly>
-    <AssemblyVersion Condition="'$(TargetGroup)' == 'netcore50'">4.1.1.0</AssemblyVersion>
-    <DefineConstants Condition="'$(TargetGroup)' == 'netcore50'">$(DefineConstants);netcore50</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)' == 'uap'">$(DefineConstants);uap</DefineConstants>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcore50-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcore50-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='uap-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='uap-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Unix-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Unix-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Windows_NT-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='net463-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='net463-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup>
-    <!-- SYSTEM_NET_SOCKETS_DLL is required to allow source-level code sharing for types defined within the 
+    <!-- SYSTEM_NET_SOCKETS_DLL is required to allow source-level code sharing for types defined within the
          System.Net.Internals namespace. -->
     <DefineConstants>$(DefineConstants);SYSTEM_NET_SOCKETS_DLL</DefineConstants>
   </PropertyGroup>
@@ -31,7 +26,7 @@
     <Compile Include="System\Net\Sockets\SocketReceiveMessageFromResult.cs" />
     <Compile Include="System\Net\Sockets\SocketTaskExtensions.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'netcore50'">
+  <ItemGroup>
     <!-- CoreCLR (All Operating Systems), .NET Native -->
     <Compile Include="System\Net\DnsAPMExtensions.cs" />
     <Compile Include="System\Net\SocketPerfCounters.cs" />
@@ -54,11 +49,10 @@
     <Compile Include="System\Net\Sockets\SocketOptionName.cs" />
     <Compile Include="System\Net\Sockets\SocketShutdown.cs" />
     <Compile Include="System\Net\Sockets\TCPClient.cs" />
-    <Compile Condition="'$(TargetGroup)' != 'netcore50'" Include="System\Net\Sockets\TCPClient.netstandard.cs" />
     <Compile Include="System\Net\Sockets\TCPListener.cs" />
     <Compile Include="System\Net\Sockets\TransportType.cs" />
     <Compile Include="System\Net\Sockets\UDPClient.cs" />
-    <Compile Condition="'$(TargetGroup)' != 'netcore50'" Include="System\Net\Sockets\UDPClient.netstandard.cs" />
+    <Compile Include="System\Net\Sockets\UDPClient.netstandard.cs" />
     <Compile Include="System\Net\Sockets\UdpReceiveResult.cs" />
     <Compile Include="System\Net\Sockets\AcceptOverlappedAsyncResult.cs" />
     <Compile Include="System\Net\Sockets\BaseOverlappedAsyncResult.cs" />
@@ -145,7 +139,7 @@
       <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' AND ('$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'netcore50')">
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
     <!-- Windows: CoreCLR and .NET Native -->
     <Compile Include="System\Net\Sockets\AcceptOverlappedAsyncResult.Windows.cs" />
     <Compile Include="System\Net\Sockets\BaseOverlappedAsyncResult.Windows.cs" />
@@ -157,9 +151,7 @@
     <Compile Include="System\Net\Sockets\Socket.Windows.cs" />
     <Compile Include="System\Net\Sockets\SocketAsyncEventArgs.Windows.cs" />
     <Compile Include="System\Net\Sockets\SocketPal.Windows.cs" />
-    <Compile Include="System\Net\Sockets\TCPClient.Windows.cs" />
     <Compile Include="System\Net\Sockets\TransmitFileAsyncResult.Windows.cs" />
-    <Compile Condition="'$(TargetGroup)' != 'netcore50'" Include="System\Net\Sockets\TCPClient.Windows.netstandard.cs" />
     <Compile Include="$(CommonPath)\System\Net\SafeCloseSocket.Windows.cs">
       <Link>Common\System\Net\SafeCloseSocket.Windows.cs</Link>
     </Compile>
@@ -230,12 +222,6 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WSAConnect.cs">
       <Link>Interop\Windows\Winsock\Interop.WSAConnect.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WSAEnumNetworkEvents.cs">
-      <Link>Interop\Windows\Winsock\Interop.WSAEnumNetworkEvents.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WSAEventSelect.cs">
-      <Link>Interop\Windows\Winsock\Interop.WSAEventSelect.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WSAGetOverlappedResult.cs">
       <Link>Interop\Windows\Winsock\Interop.WSAGetOverlappedResult.cs</Link>
     </Compile>
@@ -268,7 +254,7 @@
     </Compile>
   </ItemGroup>
   <!-- Windows : Win32 only -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(EnableWinRT)' != 'true' AND ('$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'netcore50')">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(EnableWinRT)' != 'true'">
     <Compile Include="$(CommonPath)\Interop\Windows\Winsock\SafeOverlappedFree.cs">
       <Link>Interop\Windows\Winsock\SafeOverlappedFree.cs</Link>
     </Compile>
@@ -312,8 +298,6 @@
     <Compile Include="System\Net\Sockets\SocketAsyncEngine.Unix.cs" />
     <Compile Include="System\Net\Sockets\SocketAsyncEventArgs.Unix.cs" />
     <Compile Include="System\Net\Sockets\SocketPal.Unix.cs" />
-    <Compile Include="System\Net\Sockets\TCPClient.Unix.cs" />
-    <Compile Condition="'$(TargetGroup)' != 'netcore50'" Include="System\Net\Sockets\TCPClient.Unix.netstandard.cs" />
     <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.Unix.cs">
       <Link>Common\System\Net\ContextAwareResult.Unix.cs</Link>
     </Compile>
@@ -434,22 +418,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Write.cs">
       <Link>Interop\Unix\System.Native\Interop.Write.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcore50'">
-    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeHandleMinusOneIsInvalid.cs">
-      <Link>Common\Microsoft\Win32\SafeHandles\SafeHandleMinusOneIsInvalid.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Shims\DBNull.cs">
-      <Link>Common\System\Net\Shims\DBNull.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
-    <!-- .NET Framework -->
-    <TargetingPackReference Include="mscorlib" />
-    <TargetingPackReference Include="System" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Win32.Primitives" />

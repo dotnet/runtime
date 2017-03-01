@@ -4,7 +4,7 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal class EXPRFUNCPTR : EXPR
+    internal sealed class EXPRFUNCPTR : EXPR
     {
         public MethWithInst mwi;
         public EXPR OptionalObject;

@@ -32,7 +32,7 @@ namespace System.Numerics.Tests
                 case "u~":
                     return new BigInteger(Not(bytes1).ToArray());
                 case "uLog10":
-                    factor = (int)BigInteger.Log(num1, 10);
+                    factor = unchecked((int)BigInteger.Log(num1, 10));
                     if (factor > 100)
                     {
                         for (int i = 0; i < factor - 100; i++)
@@ -50,7 +50,7 @@ namespace System.Numerics.Tests
                     }
                     return ApproximateBigInteger(result);
                 case "uLog":
-                    factor = (int)BigInteger.Log(num1, 10);
+                    factor = unchecked((int)BigInteger.Log(num1, 10));
                     if (factor > 100)
                     {
                         for (int i = 0; i < factor - 100; i++)

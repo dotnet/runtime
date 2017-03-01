@@ -49,7 +49,7 @@ namespace System.Tests
             fixed (byte* pBytes = bytes)
             {
                 // The address of a fixed byte[] should always be even
-                Debug.Assert((int)pBytes % 2 == 0);
+                Debug.Assert(unchecked((int)pBytes) % 2 == 0);
                 char* pCh = (char*)(pBytes + 1);
                 
                 // This should handle the odd address when trying to get
@@ -550,6 +550,20 @@ namespace System.Tests
         [InlineData("Goodbye", 0, "Hello", 0, 5, StringComparison.OrdinalIgnoreCase, -1)]
         [InlineData("HELLO", 2, "hello", 2, 3, StringComparison.OrdinalIgnoreCase, 0)]
         [InlineData("Hello", 2, "Goodbye", 2, 3, StringComparison.OrdinalIgnoreCase, -1)]
+        [InlineData("A", 0, "x", 0, 1, StringComparison.OrdinalIgnoreCase, -1)]
+        [InlineData("a", 0, "X", 0, 1, StringComparison.OrdinalIgnoreCase, -1)]
+        [InlineData("[", 0, "A", 0, 1, StringComparison.OrdinalIgnoreCase, 1)]
+        [InlineData("[", 0, "a", 0, 1, StringComparison.OrdinalIgnoreCase, 1)]
+        [InlineData("\\", 0, "A", 0, 1, StringComparison.OrdinalIgnoreCase, 1)]
+        [InlineData("\\", 0, "a", 0, 1, StringComparison.OrdinalIgnoreCase, 1)]
+        [InlineData("]", 0, "A", 0, 1, StringComparison.OrdinalIgnoreCase, 1)]
+        [InlineData("]", 0, "a", 0, 1, StringComparison.OrdinalIgnoreCase, 1)]
+        [InlineData("^", 0, "A", 0, 1, StringComparison.OrdinalIgnoreCase, 1)]
+        [InlineData("^", 0, "a", 0, 1, StringComparison.OrdinalIgnoreCase, 1)]
+        [InlineData("_", 0, "A", 0, 1, StringComparison.OrdinalIgnoreCase, 1)]
+        [InlineData("_", 0, "a", 0, 1, StringComparison.OrdinalIgnoreCase, 1)]
+        [InlineData("`", 0, "A", 0, 1, StringComparison.OrdinalIgnoreCase, 1)]
+        [InlineData("`", 0, "a", 0, 1, StringComparison.OrdinalIgnoreCase, 1)]
         [InlineData(null, 0, null, 0, 0, StringComparison.OrdinalIgnoreCase, 0)]
         [InlineData("Hello", 0, null, 0, 5, StringComparison.OrdinalIgnoreCase, 1)]
         [InlineData(null, 0, "Hello", 0, 5, StringComparison.OrdinalIgnoreCase, -1)]
@@ -799,6 +813,22 @@ namespace System.Tests
                 Assert.Equal(expected, s.EndsWith(value));
             }
             Assert.Equal(expected, s.EndsWith(value, comparisonType));
+        }
+
+        [Theory]
+        [InlineData("Hello", 'o', true)]
+        [InlineData("Hello", 'O', false)]
+        [InlineData("o", 'o', true)]
+        [InlineData("o", 'O', false)]
+        [InlineData("Hello", 'e', false)]
+        [InlineData("Hello", '\0', false)]
+        [InlineData("", '\0', false)]
+        [InlineData("\0", '\0', true)]
+        [InlineData("", 'a', false)]
+        [InlineData("abcdefghijklmnopqrstuvwxyz", 'z', true)]
+        public static void EndsWith(string s, char value, bool expected)
+        {
+            Assert.Equal(expected, s.EndsWith(value));
         }
 
         [Theory]
@@ -1627,7 +1657,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Join_ObjectArray_TestData))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework | TargetFrameworkMonikers.NetcoreUwp | TargetFrameworkMonikers.Netcoreapp1_0)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework | TargetFrameworkMonikers.NetcoreUwp)]
         public static void Join_ObjectArray(string separator, object[] values, string expected)
         {
             Assert.Equal(expected, string.Join(separator, values));
@@ -1636,7 +1666,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Join_ObjectArray_TestData))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp1_1)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp)]
         public static void Join_ObjectArray_WithNullIssue(string separator, object[] values, string expected)
         {
             string enumerableExpected = expected;
@@ -2080,6 +2110,22 @@ namespace System.Tests
                 Assert.Equal(expected, s.StartsWith(value));
             }
             Assert.Equal(expected, s.StartsWith(value, comparisonType));
+        }
+
+        [Theory]
+        [InlineData("Hello", 'H', true)]
+        [InlineData("Hello", 'h', false)]
+        [InlineData("H", 'H', true)]
+        [InlineData("H", 'h', false)]
+        [InlineData("Hello", 'e', false)]
+        [InlineData("Hello", '\0', false)]
+        [InlineData("", '\0', false)]
+        [InlineData("\0", '\0', true)]
+        [InlineData("", 'a', false)]
+        [InlineData("abcdefghijklmnopqrstuvwxyz", 'a', true)]
+        public static void StartsWith(string s, char value, bool expected)
+        {
+            Assert.Equal(expected, s.StartsWith(value));
         }
 
         [Theory]

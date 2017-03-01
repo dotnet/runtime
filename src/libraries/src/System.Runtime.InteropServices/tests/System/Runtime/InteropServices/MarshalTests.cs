@@ -31,7 +31,7 @@ namespace System.Runtime.InteropServices
 
         [Theory]
         [MemberData(nameof(StringData))]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // SecureStringToBSTR not supported on Unix
         public static void SecureStringToBSTR(string data)
         {
             using (SecureString str = ToSecureString(data))
@@ -270,6 +270,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
+#if netcoreapp
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Net46)]
         public static void GenerateGuidForType()
@@ -329,6 +330,14 @@ namespace System.Runtime.InteropServices
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Net46)]
+        public static void SetComObjectData()
+        {
+             Assert.Throws<PlatformNotSupportedException>(() => Marshal.SetComObjectData(null, null, null));        
+        }
+#endif // netcoreapp
+
+        [Fact]
         public static void Prelink()
         {
             Assert.Throws<ArgumentNullException>(() => Marshal.Prelink(null));
@@ -360,13 +369,6 @@ namespace System.Runtime.InteropServices
             Assert.Equal(s.Substring(0, len), s2);
 
             Marshal.FreeCoTaskMem(ptr);  
-        }
-
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Net46)]
-        public static void SetComObjectData()
-        {
-             Assert.Throws<PlatformNotSupportedException>(() => Marshal.SetComObjectData(null, null, null));        
         }
 
         [Fact]

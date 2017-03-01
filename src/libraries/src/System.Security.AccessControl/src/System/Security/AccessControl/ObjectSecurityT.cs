@@ -302,9 +302,6 @@ namespace System.Security.AccessControl
 
         // Use this in your own Persist after you have demanded any appropriate CAS permissions.
         // Note that you will want your version to be internal and use a specialized Safe Handle. 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <Asserts Name="Declarative: [SecurityPermission(SecurityAction.Assert, UnmanagedCode = true)]" />
-        // </SecurityKernel>
         protected internal void Persist(SafeHandle handle)
         {
             WriteLock();

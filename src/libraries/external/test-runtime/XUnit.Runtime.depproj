@@ -2,13 +2,13 @@
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <IsRuntimeAssembly>false</IsRuntimeAssembly>
     <!-- Given that xunit packages bring with them part of the framework, we need to specify a runtime in order to get the assets
          This RID value doesn't really matter, since the assets we are copying are not RID specific, so defaulting to Windows here
     -->
     <NugetRuntimeIdentifier>win7-x64</NugetRuntimeIdentifier>
     <OutputPath>$(RuntimePath)</OutputPath>
-    <XUnitConsoleRunnerVersion>2.2.0-beta2-build3300</XUnitConsoleRunnerVersion>
+    <XUnitRunnerPackageId Condition="'$(TargetGroup)' != 'netfx'">xunit.console.netcore</XUnitRunnerPackageId>
+    <XUnitRunnerPackageId Condition="'$(TargetGroup)' == 'netfx'">xunit.runner.console</XUnitRunnerPackageId>
   </PropertyGroup>
   <ItemGroup>
     <None Include="project.json" />
@@ -20,30 +20,31 @@
     <PackageToInclude Include="xunit.extensibility.execution"/>
     <PackageToInclude Include="xunit.runner.utility"/>
     <PackageToInclude Include="Microsoft.xunit.netcore.extensions"/>
-    <PackageToInclude Include="Microsoft.DotNet.xunit.performance.run.core"/>
+    <PackageToInclude Include="xunit.performance.core"/>
+    <PackageToInclude Include="xunit.performance.api"/>
+    <PackageToInclude Include="xunit.performance.execution"/>
+    <PackageToInclude Include="xunit.performance.metrics"/>
+    <PackageToInclude Include="Microsoft.Diagnostics.Tracing.TraceEvent"/>
+    <PackageToInclude Include="Microsoft.3rdpartytools.MarkdownLog"/>
     <PackageToInclude Include="Newtonsoft.Json"/>
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetGroup)' != 'netfx'">
-    <PackageToInclude Include="xunit.console.netcore"/>
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
-    <PackageToInclude Include="xunit.runner.console"/>
+    <PackageToInclude Include="$(XUnitRunnerPackageId)" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 
   <Target Name="AddXunitConsoleRunner" BeforeTargets="ResolveReferences" Condition="'$(TargetGroup)' == 'netfx'">
-    <Error Condition="!Exists('$(PackagesDir)xunit.runner.console\$(XUnitConsoleRunnerVersion)\tools\xunit.console.exe')"
-            Text="Error: looks the package $(PackagesDir)xunit.runner.console\$(XUnitConsoleRunnerVersion) not restored or missing xunit.console.exe."
+    <Error Condition="!Exists('$(PackagesDir)$(XUnitRunnerPackageId)\$(XUnitPackageVersion)\tools\xunit.console.exe')"
+            Text="Error: looks the package $(PackagesDir)$(XUnitRunnerPackageId)\$(XUnitPackageVersion) not restored or missing xunit.console.exe."
     />
     <ItemGroup>
-      <ReferenceCopyLocalPaths Include="$(PackagesDir)xunit.runner.console\$(XUnitConsoleRunnerVersion)\tools\*.*">
+      <ReferenceCopyLocalPaths 
+        Include="$(PackagesDir)$(XUnitRunnerPackageId)\$(XUnitPackageVersion)\tools\*.*"
+        Exclude="$(PackagesDir)$(XUnitRunnerPackageId)\$(XUnitPackageVersion)\tools\xunit.console.exe.config"
+      >
         <Private>false</Private>
-        <NuGetPackageId>xunit.runner.console</NuGetPackageId>
-        <NuGetPackageVersion>$(XUnitConsoleRunnerVersion)</NuGetPackageVersion>
+        <NuGetPackageId>$(XUnitRunnerPackageId)</NuGetPackageId>
+        <NuGetPackageVersion>$(XUnitPackageVersion)</NuGetPackageVersion>
       </ReferenceCopyLocalPaths>
     </ItemGroup>
-  </Target>
+</Target>
 </Project>

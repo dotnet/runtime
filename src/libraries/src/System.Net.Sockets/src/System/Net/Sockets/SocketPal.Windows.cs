@@ -20,10 +20,6 @@ namespace System.Net.Sockets
     {
         public const bool SupportsMultipleConnectAttempts = true;
 
-        private static readonly int s_protocolInformationSize = Marshal.SizeOf<Interop.Winsock.WSAPROTOCOL_INFO>();
-
-        public static int ProtocolInformationSize { get { return s_protocolInformationSize; } }
-
         private static void MicrosecondsToTimeValue(long microseconds, ref Interop.Winsock.TimeValue socketTime)
         {
             const int microcnv = 1000000;
@@ -189,7 +185,7 @@ namespace System.Net.Sockets
             }
             else
             {
-                fixed (byte* pinnedBuffer = buffer)
+                fixed (byte* pinnedBuffer = &buffer[0])
                 {
                     bytesSent = Interop.Winsock.send(
                         handle.DangerousGetHandle(),
@@ -234,7 +230,7 @@ namespace System.Net.Sockets
             }
             else
             {
-                fixed (byte* pinnedBuffer = buffer)
+                fixed (byte* pinnedBuffer = &buffer[0])
                 {
                     bytesSent = Interop.Winsock.sendto(
                         handle.DangerousGetHandle(),
@@ -440,7 +436,7 @@ namespace System.Net.Sockets
             }
             else
             {
-                fixed (byte* pinnedBuffer = buffer)
+                fixed (byte* pinnedBuffer = &buffer[0])
                 {
                     bytesReceived = Interop.Winsock.recvfrom(handle.DangerousGetHandle(), pinnedBuffer + offset, size, socketFlags, socketAddress, ref addressLength);
                 }

@@ -282,7 +282,7 @@ nameof(handle));
 
                 if (name != null)
                 {
-                    errorCode = (int)Interop.Advapi32.SetSecurityInfoByName(name, (uint)type, (uint)securityInformation, OwnerBinary, GroupBinary, DaclBinary, SaclBinary);
+                    errorCode = (int)Interop.Advapi32.SetSecurityInfoByName(name, (uint)type, unchecked((uint)securityInformation), OwnerBinary, GroupBinary, DaclBinary, SaclBinary);
                 }
                 else if (handle != null)
                 {

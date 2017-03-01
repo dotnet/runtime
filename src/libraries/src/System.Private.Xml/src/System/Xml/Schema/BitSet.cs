@@ -148,7 +148,7 @@ namespace System.Xml.Schema
             int h = 1234;
             for (int i = _bits.Length; --i >= 0;)
             {
-                h ^= (int)_bits[i] * (i + 1);
+                h ^= unchecked((int)_bits[i] * (i + 1));
             }
             return (int)((h >> 32) ^ h);
         }

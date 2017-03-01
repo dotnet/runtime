@@ -165,6 +165,22 @@ namespace System
         public void Handle(System.Func<System.Exception, bool> predicate) { }
         public override string ToString() { throw null; }
     }
+    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    public partial struct ArgIterator
+    {
+        public ArgIterator(System.RuntimeArgumentHandle arglist) { }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe ArgIterator(System.RuntimeArgumentHandle arglist, void *ptr) { }
+        public void End() { }
+        public override bool Equals(Object o) { throw null; }
+        public override int GetHashCode() { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public System.TypedReference GetNextArg() { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public System.TypedReference GetNextArg(System.RuntimeTypeHandle rth) { throw null; }
+        public unsafe System.RuntimeTypeHandle GetNextArgType() { throw null; }
+        public int GetRemainingCount() { throw null; }
+    }
     public partial class ArgumentException : System.SystemException, System.Runtime.Serialization.ISerializable
     {
         public ArgumentException() { }
@@ -1479,8 +1495,7 @@ namespace System
         public static bool TryParse(string s, out long result) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct IntPtr : System.Runtime.Serialization.ISerializable
-, IEquatable<IntPtr>
+    public partial struct IntPtr : System.Runtime.Serialization.ISerializable, IEquatable<IntPtr>
     {
         public static readonly System.IntPtr Zero;
         public IntPtr(int value) { throw null; }
@@ -1803,6 +1818,10 @@ namespace System
         public System.Reflection.Assembly RequestingAssembly { get { throw null; } }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    public partial struct RuntimeArgumentHandle
+    {
+    }
+    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct RuntimeFieldHandle : System.Runtime.Serialization.ISerializable
     {
         public override bool Equals(object obj) { throw null; }
@@ -1983,11 +2002,14 @@ namespace System
         public static string Concat(string str0, string str1) { throw null; }
         public static string Concat(string str0, string str1, string str2) { throw null; }
         public static string Concat(string str0, string str1, string str2, string str3) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static string Concat(object arg0, object arg1, object arg2, object arg3, __arglist) { throw null; } 
         public static string Concat(params string[] values) { throw null; }
         public static string Concat<T>(System.Collections.Generic.IEnumerable<T> values) { throw null; }
         public bool Contains(string value) { throw null; }
         public static System.String Copy(System.String str) { throw null; }
         public void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count) { }
+        public bool EndsWith(char value) { throw null; }
         public bool EndsWith(string value) { throw null; }
         public bool EndsWith(System.String value, bool ignoreCase, System.Globalization.CultureInfo culture) { throw null; }
         public bool EndsWith(string value, System.StringComparison comparisonType) { throw null; }
@@ -2064,6 +2086,7 @@ namespace System
         public string[] Split(char[] separator, System.StringSplitOptions options) { throw null; }
         public string[] Split(string[] separator, int count, System.StringSplitOptions options) { throw null; }
         public string[] Split(string[] separator, System.StringSplitOptions options) { throw null; }
+        public bool StartsWith(char value) { throw null; }
         public bool StartsWith(string value) { throw null; }
         public bool StartsWith(System.String value, bool ignoreCase, System.Globalization.CultureInfo culture) { throw null; }
         public bool StartsWith(string value, System.StringComparison comparisonType) { throw null; }
@@ -2741,6 +2764,20 @@ namespace System
         UInt32 = 10,
         UInt64 = 12,
     }
+    [System.CLSCompliantAttribute(false)]
+    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    public partial struct TypedReference
+    {
+        public override bool Equals(Object o) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public static System.Type GetTargetType(TypedReference value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.TypedReference MakeTypedReference(object target, System.Reflection.FieldInfo[] flds) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public unsafe static void SetTypedReference(System.TypedReference target, object value) { }
+        public static System.RuntimeTypeHandle TargetTypeToken(System.TypedReference value) { throw null; }
+        public unsafe static object ToObject(System.TypedReference value) { throw null; }
+    }
     public sealed partial class TypeInitializationException : System.SystemException
     {
         public TypeInitializationException(string fullTypeName, System.Exception innerException) { }
@@ -2898,8 +2935,7 @@ namespace System
     }
     [System.CLSCompliantAttribute(false)]
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct UIntPtr : System.Runtime.Serialization.ISerializable
-, IEquatable<UIntPtr>    
+    public partial struct UIntPtr : System.Runtime.Serialization.ISerializable, IEquatable<UIntPtr>    
     {
         public static readonly System.UIntPtr Zero;
         public UIntPtr(uint value) { throw null; }
@@ -5499,9 +5535,13 @@ namespace System.Reflection
         public virtual object GetRawConstantValue() { throw null; }
         public virtual Type[] GetRequiredCustomModifiers() { throw null; }
         public abstract object GetValue(object obj);
+        [System.CLSCompliantAttribute(false)]
+        public virtual object GetValueDirect(System.TypedReference obj) { throw null; }
         public override MemberTypes MemberType { get { throw null; } }
         public void SetValue(object obj, object value) { }
         public abstract void SetValue(object obj, object value, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Globalization.CultureInfo culture);
+        [System.CLSCompliantAttribute(false)]
+        public virtual void SetValueDirect(System.TypedReference obj, object value) { }
     }
     [System.FlagsAttribute]
     public enum GenericParameterAttributes
@@ -6360,7 +6400,8 @@ namespace System.Runtime.CompilerServices
         public static void ProbeForSufficientStack() { }
         public static bool TryEnsureSufficientExecutionStack() { throw null; }
         public static object GetUninitializedObject(Type type) { throw null; }
-   }
+        public static bool IsReferenceOrContainsReferences<T>() { throw null; }
+    }
     [System.AttributeUsageAttribute((System.AttributeTargets)(64), Inherited = false, AllowMultiple = false)]
     public partial class StateMachineAttribute : System.Attribute
     {

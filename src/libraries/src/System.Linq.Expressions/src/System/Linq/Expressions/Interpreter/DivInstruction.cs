@@ -30,7 +30,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    frame.Data[frame.StackIndex - 2] = (short)((short)l / (short)r);
+                    frame.Data[frame.StackIndex - 2] = unchecked((short)((short)l / (short)r));
                 }
                 frame.StackIndex--;
                 return 1;
@@ -172,7 +172,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public static Instruction Create(Type type)
         {
-            Debug.Assert(!type.GetTypeInfo().IsEnum);
+            Debug.Assert(!type.IsEnum);
             switch (type.GetNonNullableType().GetTypeCode())
             {
                 case TypeCode.Int16: return s_Int16 ?? (s_Int16 = new DivInt16());

@@ -97,7 +97,7 @@ namespace System.Net
             throw new NotSupportedException(SR.net_noseek);
         }
 
-        public override int Read([In, Out] byte[] buffer, int offset, int size)
+        public override int Read(byte[] buffer, int offset, int size)
         {
             throw new InvalidOperationException(SR.net_writeonlystream);
         }
@@ -427,7 +427,7 @@ namespace System.Net
                         {
                             flags |= Interop.HttpApi.HTTP_FLAGS.HTTP_SEND_RESPONSE_FLAG_DISCONNECT;
                         }
-                        fixed (void* pBuffer = s_chunkTerminator)
+                        fixed (void* pBuffer = &s_chunkTerminator[0])
                         {
                             Interop.HttpApi.HTTP_DATA_CHUNK* pDataChunk = null;
                             if (_httpContext.Response.BoundaryType == BoundaryType.Chunked)

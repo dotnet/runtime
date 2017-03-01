@@ -4,7 +4,7 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal class EXPRUNARYOP : EXPR
+    internal sealed class EXPRUNARYOP : EXPR
     {
         public EXPR Child;
         public EXPR OptionalUserDefinedCall;

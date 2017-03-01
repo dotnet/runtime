@@ -1,64 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!-- 
-    Microsoft ResX Schema 
-    
-    Version 2.0
-    
-    The primary goals of this format is to allow a simple XML format 
-    that is mostly human readable. The generation and parsing of the 
-    various data types are done through the TypeConverter classes 
-    associated with the data types.
-    
-    Example:
-    
-    ... ado.net/XML headers & schema ...
-    <resheader name="resmimetype">text/microsoft-resx</resheader>
-    <resheader name="version">2.0</resheader>
-    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
-    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
-    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
-    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
-    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
-        <value>[base64 mime encoded serialized .NET Framework object]</value>
-    </data>
-    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
-        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
-        <comment>This is a comment</comment>
-    </data>
-                
-    There are any number of "resheader" rows that contain simple 
-    name/value pairs.
-    
-    Each data row contains a name, and value. The row also contains a 
-    type or mimetype. Type corresponds to a .NET class that support 
-    text/value conversion through the TypeConverter architecture. 
-    Classes that don't support this are serialized and stored with the 
-    mimetype set.
-    
-    The mimetype is used for serialized objects, and tells the 
-    ResXResourceReader how to depersist the object. This is currently not 
-    extensible. For a given mimetype the value must be set accordingly:
-    
-    Note - application/x-microsoft.net.object.binary.base64 is the format 
-    that the ResXResourceWriter will generate, however the reader can 
-    read any of the formats listed below.
-    
-    mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
-            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
-            : and then encoded with base64 encoding.
-    
-    mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with 
-            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
-            : and then encoded with base64 encoding.
-
-    mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array 
-            : using a System.ComponentModel.TypeConverter
-            : and then encoded with base64 encoding.
-    -->
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -183,9 +124,6 @@
   <data name="TypeDescriptorSameAssociation" xml:space="preserve">
     <value>Cannot create an association when the primary and secondary objects are the same.</value>
   </data>
-  <data name="InvalidEx2BoundArgument" xml:space="preserve">
-    <value>Value of '{1}' is not valid for '{0}'. '{0}' should be greater than or equal to {2} and less than or equal to {3}.</value>
-  </data>
   <data name="InvalidColor" xml:space="preserve">
     <value>Color '{0}' is not valid.</value>
   </data>
@@ -216,74 +154,8 @@
   <data name="TimerSynchronizingObject" xml:space="preserve">
     <value>The object used to marshal the event handler calls issued when an interval has elapsed.</value>
   </data>
-  <data name="Async_AsyncEventArgs_Cancelled" xml:space="preserve">
-    <value>True if operation was cancelled.</value>
-  </data>
-  <data name="Async_AsyncEventArgs_Error" xml:space="preserve">
-    <value>Exception that occurred during operation.  Null if no error.</value>
-  </data>
-  <data name="Async_AsyncEventArgs_UserState" xml:space="preserve">
-    <value>User-supplied state to identify operation.</value>
-  </data>
-  <data name="Async_ExceptionOccurred" xml:space="preserve">
-    <value>An exception occurred during the operation, making the result invalid.  Check InnerException for exception details.</value>
-  </data> 
-  <data name="Async_OperationCancelled" xml:space="preserve">
-    <value>Operation has been cancelled.</value>
-  </data> 
-  <data name="Async_OperationAlreadyCompleted" xml:space="preserve">
-    <value>This operation has already had OperationCompleted called on it and further calls are illegal.</value>
-  </data> 
-  <data name="Async_ProgressChangedEventArgs_ProgressPercentage" xml:space="preserve">
-    <value>Percentage progress made in operation.</value>
-  </data> 
-  <data name="Async_ProgressChangedEventArgs_UserState" xml:space="preserve">
-    <value>User-supplied state to identify operation.</value>
-  </data> 
-  <data name="Async_NullDelegate" xml:space="preserve">
-    <value>A non-null SendOrPostCallback must be supplied.</value>
-  </data>
-  <data name="BackgroundWorker_Desc" xml:space="preserve">
-    <value>Executes an operation on a separate thread.</value>
-  </data>
-  <data name="BackgroundWorker_CancellationPending" xml:space="preserve">
-    <value>Has the user attempted to cancel the operation? To be accessed from DoWork event handler.</value>
-  </data>
-  <data name="BackgroundWorker_IsBusy" xml:space="preserve">
-    <value>Is the worker still currently working on a background operation?</value>
-  </data>
-  <data name="BackgroundWorker_ProgressChanged" xml:space="preserve">
-    <value>Raised when the worker thread indicates that some progress has been made.</value>
-  </data>
-  <data name="BackgroundWorker_WorkerDoesntReportProgress" xml:space="preserve">
-    <value>This BackgroundWorker states that it doesn't report progress. Modify WorkerReportsProgress to state that it does report progress.</value>
-  </data>
-  <data name="BackgroundWorker_RunWorkerCompleted" xml:space="preserve">
-    <value>Raised when the worker has completed (either through success, failure, or cancellation).</value>
-  </data>
-  <data name="BackgroundWorker_WorkerReportsProgress" xml:space="preserve">
-    <value>Whether the worker will report progress.</value>
-  </data>
-  <data name="BackgroundWorker_WorkerSupportsCancellation" xml:space="preserve">
-    <value>Whether the worker supports cancellation.</value>
-  </data>
-  <data name="PropertyCategoryAsynchronous" xml:space="preserve">
-    <value>Asynchronous</value>
-  </data>
-  <data name="BackgroundWorker_DoWorkEventArgs_Argument" xml:space="preserve">
-    <value>Argument passed into the worker handler from BackgroundWorker.RunWorkerAsync.</value>
-  </data>
-  <data name="BackgroundWorker_DoWorkEventArgs_Result" xml:space="preserve">
-    <value>Result from the worker function.</value>
-  </data>
   <data name="ToolboxItemAttributeFailedGetType" xml:space="preserve">
     <value>Failed to create ToolboxItem of type: {0}</value>
-  </data>
-  <data name="BackgroundWorker_WorkerDoesntSupportCancellation" xml:space="preserve">
-    <value>This BackgroundWorker states that it doesn't support cancellation. Modify WorkerSupportsCancellation to state that it does support cancellation.</value>
-  </data>
-  <data name="BackgroundWorker_WorkerAlreadyRunning" xml:space="preserve">
-    <value>This BackgroundWorker is currently busy and cannot run multiple tasks concurrently.</value>
   </data>
   <data name="PropertyTabAttributeBadPropertyTabScope" xml:space="preserve">
     <value>Scope must be PropertyTabScope.Document or PropertyTabScope.Component</value>
@@ -308,9 +180,6 @@
   </data>
   <data name="ErrorServiceExists" xml:space="preserve">
     <value>The service {0} already exists in the service container.</value>
-  </data>
-  <data name="ErrorBadExtenderType" xml:space="preserve">
-    <value>The {0} extender provider is not compatible with the {1} type.</value>
   </data>
   <data name="InvalidArgument" xml:space="preserve">
     <value>'{1}' is not a valid value for '{0}'.</value>

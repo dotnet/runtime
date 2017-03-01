@@ -64,6 +64,13 @@ namespace System.Numerics.Tests
             VerifyMagnitudePhaseProperties(Complex.ImaginaryOne, 1, Math.PI / 2);
         }
 
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public static void SqrtMinusOne()
+        {
+            Assert.Equal(Complex.Sqrt(-1.0), Complex.ImaginaryOne);
+        }
+
         public static IEnumerable<object[]> Valid_2_TestData()
         {
             foreach (double real in s_validDoubleValues)
@@ -219,15 +226,37 @@ namespace System.Numerics.Tests
                 foreach (double invalidImaginary in s_invalidDoubleValues)
                 {
                     yield return new object[] { RandomPositiveDouble(), invalidImaginary, Math.Abs(invalidImaginary) }; // Invalid imaginary
-                    yield return new object[] { invalidReal, invalidImaginary, (double.IsInfinity(invalidReal) || double.IsInfinity(invalidImaginary)) ? double.PositiveInfinity : double.NaN }; // Invalid real, invalid imaginary
+                    yield return new object[] { invalidReal, invalidImaginary, (double.IsNaN(invalidReal) || double.IsNaN(invalidImaginary)) ? double.NaN : double.PositiveInfinity }; // Invalid real, invalid imaginary
                 }
             }
 
+            // Simple known values.
+            yield return new object[] { 0.0, 0.0, 0.0 };
+            yield return new object[] { 1.0, -1.0, Math.Sqrt(2.0) };
+
+            // Values close to overflow or underflow don't, even though they would if explicit squares were taken.
+            // This test uses a 3-4-5 right triangle.
+            double max = double.MaxValue / 8.0;
+            double min = 1.0 / max;
+            yield return new object[] { 3.0 * max, 4.0 * max, 5.0 * max };
+            yield return new object[] { 3.0 * min, 4.0 * min, 5.0 * min };
+
+            // Infinities in any slot return +inf paired with any other argument except NaN.
+            yield return new object[] { double.NegativeInfinity, 0.0, double.PositiveInfinity };
+            yield return new object[] { double.MaxValue, double.NegativeInfinity, double.PositiveInfinity };
+            yield return new object[] { double.PositiveInfinity, double.NegativeInfinity, double.PositiveInfinity };
+
+            // NaN in any slot returns NaN.
             yield return new object[] { double.NaN, 0, double.NaN };  // Regression test: Complex.Abs() is inconsistent on NaN / Complex
+            yield return new object[] { 0.0, double.NaN, double.NaN };
+            yield return new object[] { double.MaxValue, double.NaN, double.NaN };
+            yield return new object[] { double.NaN, double.NegativeInfinity, double.NaN };
+            yield return new object[] { double.NaN, double.NaN, double.NaN };
         }
 
         [Theory]
         [MemberData(nameof(Abs_Advanced_TestData))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void Abs_Advanced(double real, double imaginary, double expected)
         {
             var complex = new Complex(real, imaginary);
@@ -350,16 +379,20 @@ namespace System.Numerics.Tests
 
         public static IEnumerable<object[]> ASin_Advanced_TestData()
         {
+            // Simple values
+            yield return new object[] { 0.0, 0.0, 0.0, 0.0 };
+            yield return new object[] { 1.0, 0.0, Math.PI / 2.0, 0.0 };
+            yield return new object[] { -1.0, 0.0, -Math.PI / 2.0, 0.0 };
+            yield return new object[] { 0.0, 1.0, 0.0, Math.Log(1.0 + Math.Sqrt(2.0)) };
+            yield return new object[] { 0.0, -1.0, 0.0, -Math.Log(1.0 + Math.Sqrt(2.0)) };
+
             yield return new object[] { -1234000000, 0, -1.5707963267948966, 21.62667394298955 }; // Real part is negative, imaginary part is 0
             yield return new object[] { 0, 1234000000, 0, 21.62667394298955 }; // Imaginary part is positive
 
-            // Boundary values
-            yield return new object[] { double.MaxValue, 0, double.NaN, double.NaN };
-            yield return new object[] { double.MinValue, 0, double.NaN, double.NaN };
-            yield return new object[] { 0, double.MaxValue, double.NaN, double.NaN };
-            yield return new object[] { 0, double.MinValue, double.NaN, double.NaN };
-            yield return new object[] { double.MaxValue, double.MaxValue, double.NaN, double.NaN };
-            yield return new object[] { double.MinValue, double.MinValue, double.NaN, double.NaN };
+            // Extreme values
+            yield return new object[] { double.MaxValue, 0.0, Math.PI / 2.0, Math.Log(2.0) + Math.Log(double.MaxValue) };
+            yield return new object[] { 0.0, double.MaxValue, 0.0, Math.Log(2.0) + Math.Log(double.MaxValue) };
+            yield return new object[] { double.MaxValue, double.MaxValue, Math.PI / 4.0, Math.Log(2.0 * Math.Sqrt(2.0)) + Math.Log(double.MaxValue) };
 
             // Invalid values
             foreach (double invalidReal in s_invalidDoubleValues)
@@ -373,6 +406,7 @@ namespace System.Numerics.Tests
             }
         }
 
+        [ActiveIssue(15455)]
         [Theory, MemberData("ASin_Advanced_TestData")]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void ASin_Advanced(double real, double imaginary, double expectedReal, double expectedImaginary)
@@ -1243,18 +1277,61 @@ namespace System.Numerics.Tests
 
         public static IEnumerable<object[]> Sqrt_TestData()
         {
+            // Simple known values.
             yield return new object[] { 0, 0, 0, 0 };
             yield return new object[] { 1, 0, 1, 0 };
+            yield return new object[] { -1, 0, 0, 1 };
             yield return new object[] { 0, 1, 0.707106781186547, 0.707106781186547 };
             yield return new object[] { 0, -1, 0.707106781186547, -0.707106781186547 };
 
-            yield return new object[] { double.MaxValue, 0, 1.34078079299426E+154, 0 };
+            // Extreme values don't overflow, even when intermediate quantities would if handled naively.
+            yield return new object[] { double.MaxValue, 0.0, Math.Sqrt(double.MaxValue), 0.0 };
+            yield return new object[] { -double.MaxValue, 0.0, 0.0, Math.Sqrt(double.MaxValue) };
             yield return new object[] { 0, double.MaxValue, 9.48075190810917E+153, 9.48075190810917E+153 };
             yield return new object[] { 0, double.MinValue, 9.48075190810917E+153, -9.48075190810917E+153 };
         }
 
-        [Theory, MemberData("Sqrt_TestData")]
+        public static IEnumerable<object> Sqrt_AdvancedTestData ()
+        {
+            // Extreme values don't overflow, even when intermediate quantities would if handled naively.
+            yield return new object[] { double.MaxValue, double.MaxValue, Math.Sqrt(Math.Sqrt(2.0)) * Math.Sqrt(double.MaxValue) * Math.Cos(Math.PI / 8.0), Math.Sqrt(Math.Sqrt(2.0)) * Math.Sqrt(double.MaxValue) * Math.Sin(Math.PI / 8.0) };
+
+            // Infinities produce the expected infinities.
+            yield return new object[] { double.PositiveInfinity, 0.0, double.PositiveInfinity, 0.0 };
+            yield return new object[] { double.NegativeInfinity, 0.0, 0.0, double.PositiveInfinity };
+            // We can determine signs for double infinities because we know which quadrants are mapped into which by sqrt.
+            yield return new object[] { double.PositiveInfinity, double.PositiveInfinity, double.PositiveInfinity, double.PositiveInfinity };
+            yield return new object[] { double.PositiveInfinity, double.NegativeInfinity, double.PositiveInfinity, double.NegativeInfinity };
+            yield return new object[] { double.NegativeInfinity, double.NegativeInfinity, double.PositiveInfinity, double.NegativeInfinity };
+            yield return new object[] { double.NegativeInfinity, double.PositiveInfinity, double.PositiveInfinity, double.PositiveInfinity };
+            yield return new object[] { RandomPositiveDouble(), double.PositiveInfinity, double.PositiveInfinity, double.PositiveInfinity };
+            yield return new object[] { RandomNegativeDouble(), double.PositiveInfinity, double.PositiveInfinity, double.PositiveInfinity };
+            yield return new object[] { RandomPositiveDouble(), double.NegativeInfinity, double.PositiveInfinity, double.NegativeInfinity };
+            yield return new object[] { RandomNegativeDouble(), double.NegativeInfinity, double.PositiveInfinity, double.NegativeInfinity };
+
+            // NaN in any component produces NaNs in both components (except arguably on real line).
+            yield return new object[] { 0.0, double.NaN, double.NaN, double.NaN };
+            yield return new object[] { double.MaxValue, double.NaN, double.NaN, double.NaN };
+            yield return new object[] { double.NegativeInfinity, double.NaN, double.NaN, double.NaN };
+            yield return new object[] { double.NaN, -double.MaxValue, double.NaN, double.NaN };
+            yield return new object[] { double.NaN, double.PositiveInfinity, double.NaN, double.NaN };
+            yield return new object[] { double.NaN, double.NaN, double.NaN, double.NaN };
+
+        }
+
+        [Theory]
+        [MemberData("Sqrt_TestData")]
         public static void Sqrt(double real, double imaginary, double expectedReal, double expectedImaginary)
+        {
+            var complex = new Complex(real, imaginary);
+            Complex result = Complex.Sqrt(complex);
+            VerifyRealImaginaryProperties(result, expectedReal, expectedImaginary);
+        }
+
+        [Theory]
+        [MemberData("Sqrt_AdvancedTestData")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public static void Sqrt_Advanced(double real, double imaginary, double expectedReal, double expectedImaginary)
         {
             var complex = new Complex(real, imaginary);
             Complex result = Complex.Sqrt(complex);
@@ -1283,14 +1360,34 @@ namespace System.Numerics.Tests
 
         public static IEnumerable<object[]> Tan_Advanced_TestData()
         {
+
+            // .NET does not compute simple trig functions of large values correctly, so we can't make any
+            // assertions about complex trig functions with large real parts.
+
+            yield return new object[] { 0.0, double.MaxValue, 0.0, 1.0 };
+            yield return new object[] { 0.0, -double.MaxValue, 0.0, -1.0 };
+
+            yield return new object[] { 0.0, double.PositiveInfinity, 0.0, 1.0 };
+            yield return new object[] { 0.0, double.NegativeInfinity, 0.0, -1.0 };
+
+            yield return new object[] { 0.0, double.NaN, double.NaN, double.NaN };
+            yield return new object[] { double.NaN, 0.0, double.NaN, double.NaN };
+            yield return new object[] { double.NaN, double.PositiveInfinity, double.NaN, double.NaN };
+            yield return new object[] { double.NaN, double.NaN, double.NaN, double.NaN };
+
+            yield return new object[] { 0.0, 750.0, 0.0, 1.0 };
+
+        }
+
+        public static IEnumerable<object[]> Tan_Legacy_TestData()
+        {
+            // These tests validate legacy .NET behavior.
+
             yield return new object[] { double.MaxValue, 0, Math.Sin(double.MaxValue) / Math.Cos(double.MaxValue), 0 };
             yield return new object[] { double.MinValue, 0, Math.Sin(double.MinValue) / Math.Cos(double.MinValue), 0 };
 
             yield return new object[] { 0, double.MaxValue, double.NaN, double.NaN };
             yield return new object[] { 0, double.MinValue, double.NaN, double.NaN };
-
-            yield return new object[] { double.MaxValue, double.MaxValue, double.NaN, double.NaN };
-            yield return new object[] { double.MinValue, double.MinValue, double.NaN, double.NaN };
 
             foreach (double invalidReal in s_invalidDoubleValues)
             {
@@ -1304,6 +1401,7 @@ namespace System.Numerics.Tests
         }
 
         [Theory, MemberData("Tan_Advanced_TestData")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void Tan_Advanced(double real, double imaginary, double expectedReal, double expectedImaginary)
         {
             var complex = new Complex(real, imaginary);
@@ -1311,16 +1409,15 @@ namespace System.Numerics.Tests
             VerifyRealImaginaryProperties(result, expectedReal, expectedImaginary);
         }
 
-        public static IEnumerable<object[]> Tanh_Basic_TestData()
-        {
-            // Boundary values
-            yield return new object[] { double.MaxValue, 0 };
-            yield return new object[] { double.MaxValue, double.MaxValue };
-            yield return new object[] { double.MinValue, double.MinValue };
+        [Theory, MemberData("Tan_Legacy_TestData")]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
+        public static void Tan_Legacy (double real, double imaginary, double expectedReal, double expectedImaginary) {
+            var complex = new Complex(real, imaginary);
+            Complex result = Complex.Tan(complex);
+            VerifyRealImaginaryProperties(result, expectedReal, expectedImaginary);
         }
 
         [Theory]
-        [MemberData(nameof(Tanh_Basic_TestData))]
         [MemberData(nameof(Primitives_2_TestData))]
         [MemberData(nameof(SmallRandom_2_TestData))]
         public static void Tanh_Basic(double real, double imaginary)
@@ -1336,10 +1433,32 @@ namespace System.Numerics.Tests
 
         public static IEnumerable<object[]> Tanh_Advanced_TestData()
         {
+            // .NET does not compute simple trig functions of large values correctly, so we can't make any
+            // assertions about complex hyperbolic trig functions with large imaginary parts.
+
+            yield return new object[] { double.MaxValue, 0.0, 1.0, 0.0 };
+            yield return new object[] { -double.MaxValue, 0.0, -1.0, 0.0 };
+
+            yield return new object[] { double.PositiveInfinity, 0.0, 1.0, 0.0 };
+            yield return new object[] { double.NegativeInfinity, 0.0, -1.0, 0.0 };
+
+            yield return new object[] { double.NaN, 0.0, double.NaN, double.NaN };
+            yield return new object[] { double.PositiveInfinity, double.NaN, double.NaN, double.NaN };
+            yield return new object[] { 0.0, double.NaN, double.NaN, double.NaN };
+            yield return new object[] { double.NaN, double.NaN, double.NaN, double.NaN };
+
+            yield return new object[] { -750.0, 0.0, -1.0, 0.0 };
+        }
+
+        public static IEnumerable<object[]> Tanh_Legacy_TestData()
+        {
+            // These tests validate legacy .NET behavior.
+
             // Boundary values
             yield return new object[] { double.MinValue, 0, double.NaN, double.NaN };
             yield return new object[] { 0, double.MaxValue, 0, Math.Sin(double.MaxValue) / Math.Cos(double.MaxValue) };
             yield return new object[] { 0, double.MinValue, 0, Math.Sin(double.MinValue) / Math.Cos(double.MinValue) };
+
 
             // Invalid values
             foreach (double invalidReal in s_invalidDoubleValues)
@@ -1354,8 +1473,17 @@ namespace System.Numerics.Tests
         }
 
         [Theory, MemberData("Tanh_Advanced_TestData")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void Tanh_Advanced(double real, double imaginary, double expectedReal, double expectedImaginary)
         {
+            var complex = new Complex(real, imaginary);
+            Complex result = Complex.Tanh(complex);
+            VerifyRealImaginaryProperties(result, expectedReal, expectedImaginary);
+        }
+
+        [Theory, MemberData("Tanh_Legacy_TestData")]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
+        public static void Tanh_Legacy (double real, double imaginary, double expectedReal, double expectedImaginary) {
             var complex = new Complex(real, imaginary);
             Complex result = Complex.Tanh(complex);
             VerifyRealImaginaryProperties(result, expectedReal, expectedImaginary);

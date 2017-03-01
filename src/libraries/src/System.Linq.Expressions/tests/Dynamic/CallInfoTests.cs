@@ -12,112 +12,77 @@ namespace System.Dynamic.Tests
     public class CallInfoTests
     {
         [Fact]
-        public void NullNames()
+        public void Ctor_NullNames_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("argNames", () => new CallInfo(0, default(IEnumerable<string>)));
             Assert.Throws<ArgumentNullException>("argNames", () => new CallInfo(0, default(string[])));
         }
 
-        [Fact]
-        public void NegativeCount()
+        [Theory]
+        [InlineData(-1, new string[0])]
+        [InlineData(2, new string[] { "foo", "bar", "baz", "quux", "quuux" })]
+        public void Ctor_CountLessThanArgNamesCount_ThrowsArgumentException(int argCount, string[] argNames)
         {
-            Assert.Throws<ArgumentException>(null, () => new CallInfo(-1));
+            Assert.Throws<ArgumentException>(null, () => new CallInfo(argCount, argNames));
         }
 
         [Fact]
-        public void CountLessThanNameCount()
-        {
-            Assert.Throws<ArgumentException>(null, () => new CallInfo(2, "foo", "bar", "baz", "quux", "quuux"));
-        }
-
-        [Fact]
-        public void NullItem()
+        public void Ctor_NullItemInArgNames_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("argNames[1]", () => new CallInfo(3, "foo", null, "bar"));
             Assert.Throws<ArgumentNullException>(
                 "argNames[0]", () => new CallInfo(3, Enumerable.Repeat(default(string), 2)));
         }
 
-        [Fact]
-        public void ArgumentCountMatches()
+        [Theory]
+        [InlineData(0, new string[0])]
+        [InlineData(1, new string[0])]
+        [InlineData(5, new string[] { "foo", "bar", "baz", "quux", "quuux" })]
+        public void Ctor_Int_String(int argCount, string[] argNames)
         {
-            for (int i = 0; i != 10; ++i)
+            var info1 = new CallInfo(argCount, argNames);
+            Assert.Equal(argCount, info1.ArgumentCount);
+            Assert.Equal(argNames, info1.ArgumentNames);
+
+            var info2 = new CallInfo(argCount, (IEnumerable<string>)argNames);
+            Assert.Equal(argCount, info2.ArgumentCount);
+            Assert.Equal(argNames, info2.ArgumentNames);
+        }
+
+        public static IEnumerable<object[]> Equals_TestData()
+        {
+            CallInfo basicCallInfo = new CallInfo(1, new string[0]);
+            yield return new object[] { basicCallInfo, new CallInfo(1, new string[0]), true };
+            yield return new object[] { basicCallInfo, basicCallInfo, true };
+            yield return new object[] { basicCallInfo, new CallInfo(0, new string[0]), false };
+            yield return new object[] { basicCallInfo, new CallInfo(1, new string[] { "foo" }), false };
+
+            yield return new object[] { new CallInfo(2, new string[] { "foo", "bar" }), new CallInfo(2, new string[] { "foo", "bar" }), true};
+            yield return new object[] { new CallInfo(2, new string[] { "foo", "bar" }), new CallInfo(2, new string[] { "foo", "baz" }), false };
+            yield return new object[] { new CallInfo(2, new string[] { "foo", "bar" }), new CallInfo(3, new string[] { "foo", "bar" }), false };
+
+            yield return new object[] { basicCallInfo, "CallInfo", false };
+            yield return new object[] { basicCallInfo, new object(), false };
+            yield return new object[] { basicCallInfo, null, false };
+        }
+
+        [Theory]
+        [MemberData(nameof(Equals_TestData))]
+        public static void Equals_GetHashCode_ReturnsExpected(CallInfo info, object obj, bool expected)
+        {
+            Assert.Equal(expected, info.Equals(obj));
+
+            if (obj is CallInfo)
             {
-                var info = new CallInfo(i);
-                Assert.Equal(i, info.ArgumentCount);
+                // Failure at this point is not definitely a bug,
+                // but should be considered a concern unless it can be
+                // convincingly ruled a fluke.
+                Assert.Equal(expected, info.GetHashCode().Equals(obj.GetHashCode()));
             }
         }
 
         [Fact]
-        public void ArgumentNamesMatch()
-        {
-            var info = new CallInfo(5, "foo", "bar", "baz", "quux", "quuux");
-            Assert.Equal(new[] {"foo", "bar", "baz", "quux", "quuux"}, info.ArgumentNames);
-        }
-
-        [Fact]
-        public void EqualityBasedOnNamesAndCount()
-        {
-            string[] names = new[] {"foo", "bar", "baz", "quux", "quuux"};
-            for (int i = 0; i <= names.Length; ++i)
-            {
-                for (int j = 0; j != 3; ++j)
-                {
-                    for (int x = 0; x <= names.Length; ++x)
-                    {
-                        for (int y = 0; y != 3; ++y)
-                        {
-                            var info0 = new CallInfo(i + j, names.Take(i));
-                            var info1 = new CallInfo(x + y, names.Take(x));
-                            Assert.Equal(i == x & j == y, info0.Equals(info1));
-                        }
-                    }
-                }
-            }
-        }
-
-        [Fact]
-        public void HashCodeBasedOnEquality()
-        {
-            string[] names = new[] {"foo", "bar", "baz", "quux", "quuux"};
-            for (int i = 0; i <= names.Length; ++i)
-            {
-                for (int j = 0; j != 3; ++j)
-                {
-                    for (int x = 0; x <= names.Length; ++x)
-                    {
-                        for (int y = 0; y != 3; ++y)
-                        {
-                            var info0 = new CallInfo(i + j, names.Take(i));
-                            var info1 = new CallInfo(x + y, names.Take(x));
-                            if (info0.Equals(info1))
-                            {
-                                Assert.Equal(info0.GetHashCode(), info1.GetHashCode());
-                            }
-                            else
-                            {
-                                // Failure at this point is not definitely a bug,
-                                // but should be considered a concern unless it can be
-                                // convincingly ruled a fluke.
-                                Assert.NotEqual(info0.GetHashCode(), info1.GetHashCode());
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        [Fact]
-        public void NotEqualToNonCallInfo()
-        {
-            var info = new CallInfo(0);
-            Assert.False(info.Equals(null));
-            Assert.False(info.Equals("CallInfo"));
-            Assert.False(info.Equals(23));
-        }
-
-        [Fact]
-        public void FreshCopyOfNamesMadeEnumerable()
+        public void Ctor_Enumerable_MakesReadOnlyCopy()
         {
             List<string> nameList = new List<string> {"foo", "bar"};
             ReadOnlyCollection<string> nameReadOnly = nameList.AsReadOnly();
@@ -128,7 +93,7 @@ namespace System.Dynamic.Tests
         }
 
         [Fact]
-        public void FreshCopyOfNamesMadeArray()
+        public void Ctor_Array_MakesReadOnlyCopy()
         {
             string[] nameArray = {"foo", "bar"};
             var nameReadOnly = new ReadOnlyCollection<string>(nameArray);

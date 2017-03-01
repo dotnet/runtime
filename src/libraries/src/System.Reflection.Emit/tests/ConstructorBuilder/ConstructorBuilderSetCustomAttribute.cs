@@ -56,7 +56,7 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void SetCustomAttribute_NullCustomAtributeBuilder_ThrowsArgumentNullException()
+        public void SetCustomAttribute_NullCustomAttributeBuilder_ThrowsArgumentNullException()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
             ConstructorBuilder constructor = type.DefineConstructor(MethodAttributes.Public, CallingConventions.Standard, new Type[0]);

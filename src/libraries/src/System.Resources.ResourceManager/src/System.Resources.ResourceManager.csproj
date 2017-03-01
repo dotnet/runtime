@@ -3,38 +3,18 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <AssemblyName>System.Resources.ResourceManager</AssemblyName>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' != 'uap101aot'">true</IsPartialFacadeAssembly>
-    <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' != 'uap101aot'">None</ResourcesSourceOutputDirectory>
-    <SkipCommonResourcesIncludes Condition="'$(TargetGroup)'=='uap101aot'">true</SkipCommonResourcesIncludes>
-    <AllowUnsafeBlocks Condition="'$(TargetGroup)' == 'uap101aot'">true</AllowUnsafeBlocks>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <ProjectGuid>{3E7810B2-2802-4867-B223-30427F3F2D5B}</ProjectGuid>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='net463-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='net463-Windows_NT-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='uap101aot-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='uap101aot-Windows_NT-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)' == 'uap101aot'">
-    <Compile Include="System\Resources\MissingManifestResourceException.cs" />
-    <Compile Include="System\Resources\NeutralResourcesLanguageAttribute.cs" />
-    <Compile Include="System\Resources\ResourceManager.cs" />
-    <Compile Include="System\Resources\SatelliteContractVersionAttribute.cs" />
-    <Compile Include="$(CommonPath)\System\HResults.cs">
-      <Link>Common\System\HResults.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\SR.Core.cs">
-      <Link>Common\System\SR.Core.cs</Link>
-    </Compile>
-    <TargetingPackReference Include="System.Private.CoreLib.WinRTInterop" />
-    <ProjectReference Include="$(SourceDir)/mscorlib.WinRT-Facade/mscorlib.WinRT-Facade.csproj" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
-    <TargetingPackReference Include="System.Private.CoreLib" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net463'">
-    <TargetingPackReference Include="mscorlib" />
-  </ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <Reference Include="System.Diagnostics.Tools" />
     <ReferenceFromRuntime Include="System.Private.CoreLib" />

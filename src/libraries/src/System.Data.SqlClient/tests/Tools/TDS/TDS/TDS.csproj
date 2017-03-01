@@ -7,10 +7,8 @@
     <AssemblyName>Microsoft.SqlServer.TDS</AssemblyName>
     <ClsCompliant>false</ClsCompliant>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Unix_Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Windows_Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="AllHeaders\TDSQueryNotificationsHeader.cs" />
     <Compile Include="AllHeaders\TDSTraceHeader.cs" />
@@ -107,7 +105,6 @@
     <Compile Include="TDSUtilities.cs" />
     <Compile Include="TDSVersion.cs" />
     <Compile Include="TransactionIsolationLevelType.cs" />
-    <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

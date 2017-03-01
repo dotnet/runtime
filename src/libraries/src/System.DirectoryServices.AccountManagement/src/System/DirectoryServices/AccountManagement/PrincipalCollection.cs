@@ -9,20 +9,11 @@ using System.Collections.Generic;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.LinkDemand, Unrestricted = true)]
     public class PrincipalCollection : ICollection<Principal>, ICollection, IEnumerable<Principal>, IEnumerable
     {
         //
         // ICollection
         //
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="CheckDisposed():Void" />
-        // <SatisfiesLinkDemand Name="PrincipalCollectionEnumerator..ctor(System.DirectoryServices.AccountManagement.ResultSet,System.DirectoryServices.AccountManagement.PrincipalCollection,System.Collections.Generic.List`1<System.DirectoryServices.AccountManagement.Principal>,System.Collections.Generic.List`1<System.DirectoryServices.AccountManagement.Principal>,System.Collections.Generic.List`1<System.DirectoryServices.AccountManagement.Principal>,System.Collections.Generic.List`1<System.DirectoryServices.AccountManagement.Principal>)" />
-        // <SatisfiesLinkDemand Name="PrincipalCollectionEnumerator.get_Current():System.DirectoryServices.AccountManagement.Principal" />
-        // <SatisfiesLinkDemand Name="PrincipalCollectionEnumerator.MoveNext():System.Boolean" />
-        // <ReferencesCritical Name="Method: PrincipalCollectionEnumerator.get_Current():System.DirectoryServices.AccountManagement.Principal" Ring="1" />
-        // <ReferencesCritical Name="Method: PrincipalCollectionEnumerator.MoveNext():System.Boolean" Ring="1" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         void ICollection.CopyTo(Array array, int index)
         {
@@ -105,9 +96,6 @@ namespace System.DirectoryServices.AccountManagement
 
         int ICollection.Count
         {
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="get_Count():Int32" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
@@ -117,9 +105,6 @@ namespace System.DirectoryServices.AccountManagement
 
         bool ICollection.IsSynchronized
         {
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="get_IsSynchronized():Boolean" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
@@ -129,9 +114,6 @@ namespace System.DirectoryServices.AccountManagement
 
         object ICollection.SyncRoot
         {
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="get_SyncRoot():Object" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
@@ -158,9 +140,6 @@ namespace System.DirectoryServices.AccountManagement
         //
         // IEnumerable
         //
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="GetEnumerator():IEnumerator`1<System.DirectoryServices.AccountManagement.Principal>" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         IEnumerator IEnumerable.GetEnumerator()
         {
@@ -185,12 +164,6 @@ namespace System.DirectoryServices.AccountManagement
 
         public int Count
         {
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="CheckDisposed():Void" />
-            // <SatisfiesLinkDemand Name="PrincipalCollectionEnumerator..ctor(System.DirectoryServices.AccountManagement.ResultSet,System.DirectoryServices.AccountManagement.PrincipalCollection,System.Collections.Generic.List`1<System.DirectoryServices.AccountManagement.Principal>,System.Collections.Generic.List`1<System.DirectoryServices.AccountManagement.Principal>,System.Collections.Generic.List`1<System.DirectoryServices.AccountManagement.Principal>,System.Collections.Generic.List`1<System.DirectoryServices.AccountManagement.Principal>)" />
-            // <SatisfiesLinkDemand Name="PrincipalCollectionEnumerator.MoveNext():System.Boolean" />
-            // <ReferencesCritical Name="Method: PrincipalCollectionEnumerator.MoveNext():System.Boolean" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
@@ -243,10 +216,6 @@ namespace System.DirectoryServices.AccountManagement
         //
         // IEnumerable<Principal>
         //
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="CheckDisposed():Void" />
-        // <SatisfiesLinkDemand Name="PrincipalCollectionEnumerator..ctor(System.DirectoryServices.AccountManagement.ResultSet,System.DirectoryServices.AccountManagement.PrincipalCollection,System.Collections.Generic.List`1<System.DirectoryServices.AccountManagement.Principal>,System.Collections.Generic.List`1<System.DirectoryServices.AccountManagement.Principal>,System.Collections.Generic.List`1<System.DirectoryServices.AccountManagement.Principal>,System.Collections.Generic.List`1<System.DirectoryServices.AccountManagement.Principal>)" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         public IEnumerator<Principal> GetEnumerator()
         {
@@ -265,38 +234,24 @@ namespace System.DirectoryServices.AccountManagement
         // Add
         //
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="Add(Principal):Void" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         public void Add(UserPrincipal user)
         {
             Add((Principal)user);
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="Add(Principal):Void" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         public void Add(GroupPrincipal group)
         {
             Add((Principal)group);
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="Add(Principal):Void" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         public void Add(ComputerPrincipal computer)
         {
             Add((Principal)computer);
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="CheckDisposed():Void" />
-        // <SatisfiesLinkDemand Name="Contains(Principal):Boolean" />
-        // <SatisfiesLinkDemand Name="MarkChange():Void" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         public void Add(Principal principal)
         {
@@ -342,11 +297,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="CheckDisposed():Void" />
-        // <SatisfiesLinkDemand Name="Principal.FindByIdentity(System.DirectoryServices.AccountManagement.PrincipalContext,System.DirectoryServices.AccountManagement.IdentityType,System.String):System.DirectoryServices.AccountManagement.Principal" />
-        // <SatisfiesLinkDemand Name="Add(Principal):Void" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         public void Add(PrincipalContext context, IdentityType identityType, string identityValue)
         {
@@ -375,13 +325,6 @@ namespace System.DirectoryServices.AccountManagement
         //
         // Clear
         //
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="CheckDisposed():Void" />
-        // <SatisfiesLinkDemand Name="Principal.GetStoreCtxToUse():System.DirectoryServices.AccountManagement.StoreCtx" />
-        // <SatisfiesLinkDemand Name="MarkChange():Void" />
-        // <ReferencesCritical Name="Field: owningGroup" Ring="1" />
-        // <ReferencesCritical Name="Method: Principal.GetStoreCtxToUse():System.DirectoryServices.AccountManagement.StoreCtx" Ring="1" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         public void Clear()
         {
@@ -420,41 +363,24 @@ namespace System.DirectoryServices.AccountManagement
         // Remove
         //
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="Remove(Principal):Boolean" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         public bool Remove(UserPrincipal user)
         {
             return Remove((Principal)user);
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="Remove(Principal):Boolean" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         public bool Remove(GroupPrincipal group)
         {
             return Remove((Principal)group);
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="Remove(Principal):Boolean" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         public bool Remove(ComputerPrincipal computer)
         {
             return Remove((Principal)computer);
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="CheckDisposed():Void" />
-        // <SatisfiesLinkDemand Name="Principal.GetStoreCtxToUse():System.DirectoryServices.AccountManagement.StoreCtx" />
-        // <SatisfiesLinkDemand Name="MarkChange():Void" />
-        // <SatisfiesLinkDemand Name="Contains(Principal):Boolean" />
-        // <ReferencesCritical Name="Field: owningGroup" Ring="1" />
-        // <ReferencesCritical Name="Method: Principal.GetStoreCtxToUse():System.DirectoryServices.AccountManagement.StoreCtx" Ring="1" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         public bool Remove(Principal principal)
         {
@@ -524,11 +450,6 @@ namespace System.DirectoryServices.AccountManagement
             return removed;
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="CheckDisposed():Void" />
-        // <SatisfiesLinkDemand Name="Principal.FindByIdentity(System.DirectoryServices.AccountManagement.PrincipalContext,System.DirectoryServices.AccountManagement.IdentityType,System.String):System.DirectoryServices.AccountManagement.Principal" />
-        // <SatisfiesLinkDemand Name="Remove(Principal):Boolean" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         public bool Remove(PrincipalContext context, IdentityType identityType, string identityValue)
         {
@@ -644,42 +565,24 @@ namespace System.DirectoryServices.AccountManagement
             return false;
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="Contains(Principal):Boolean" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         public bool Contains(UserPrincipal user)
         {
             return Contains((Principal)user);
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="Contains(Principal):Boolean" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         public bool Contains(GroupPrincipal group)
         {
             return Contains((Principal)group);
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="Contains(Principal):Boolean" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         public bool Contains(ComputerPrincipal computer)
         {
             return Contains((Principal)computer);
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="Principal.GetStoreCtxToUse():System.DirectoryServices.AccountManagement.StoreCtx" />
-        // <SatisfiesLinkDemand Name="ContainsNativeTest(Principal):Boolean" />
-        // <SatisfiesLinkDemand Name="ContainsEnumTest(Principal):Boolean" />
-        // <ReferencesCritical Name="Field: owningGroup" Ring="1" />
-        // <ReferencesCritical Name="Method: Principal.GetStoreCtxToUse():System.DirectoryServices.AccountManagement.StoreCtx" Ring="1" />
-        // <ReferencesCritical Name="Method: ContainsNativeTest(Principal):Boolean" Ring="1" />
-        // <ReferencesCritical Name="Method: ContainsEnumTest(Principal):Boolean" Ring="1" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         public bool Contains(Principal principal)
         {
@@ -703,11 +606,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="CheckDisposed():Void" />
-        // <SatisfiesLinkDemand Name="Principal.FindByIdentity(System.DirectoryServices.AccountManagement.PrincipalContext,System.DirectoryServices.AccountManagement.IdentityType,System.String):System.DirectoryServices.AccountManagement.Principal" />
-        // <SatisfiesLinkDemand Name="Contains(Principal):Boolean" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         public bool Contains(PrincipalContext context, IdentityType identityType, string identityValue)
         {
@@ -735,9 +633,6 @@ namespace System.DirectoryServices.AccountManagement
 
         // Constructs a fresh PrincipalCollection based on the supplied ResultSet.
         // The ResultSet may not be null (use an EmptySet instead).
-        // <SecurityKernel Critical="True" Ring="1">
-        // <ReferencesCritical Name="Field: owningGroup" Ring="1" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         internal PrincipalCollection(BookmarkableResultSet results, GroupPrincipal owningGroup)
         {

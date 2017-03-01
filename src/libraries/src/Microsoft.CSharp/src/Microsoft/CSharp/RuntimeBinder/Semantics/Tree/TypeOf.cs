@@ -4,7 +4,7 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal class EXPRTYPEOF : EXPR
+    internal sealed class EXPRTYPEOF : EXPR
     {
         public EXPRTYPEORNAMESPACE SourceType;
         public EXPRTYPEORNAMESPACE GetSourceType() { return SourceType; }

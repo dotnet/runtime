@@ -5,10 +5,12 @@
     <ProjectGuid>{C6257381-C624-494A-A9D9-5586E60856EA}</ProjectGuid>
     <RootNamespace>System.Composition</RootNamespace>
     <AssemblyName>System.Composition.AttributedModel</AssemblyName>
-    <PackageTargetFramework>netstandard1.0;portable-net45+win8+wp8+wpa81</PackageTargetFramework>
+    <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard1.0'">netstandard1.0;portable-net45+win8+wp8+wpa81</PackageTargetFramework>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.0-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.0-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System\Composition\Convention\AttributedModelProvider.cs" />
     <Compile Include="System\Composition\ExportAttribute.cs" />
@@ -24,7 +26,7 @@
     <Compile Include="System\Composition\SharedAttribute.cs" />
     <Compile Include="System\Composition\SharingBoundaryAttribute.cs" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.0'">
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Reflection" />

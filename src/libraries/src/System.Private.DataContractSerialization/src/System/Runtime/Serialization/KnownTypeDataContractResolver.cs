@@ -29,7 +29,7 @@ namespace System.Runtime.Serialization
                 typeNamespace = null;
                 return false;
             }
-            if (declaredType != null && declaredType.GetTypeInfo().IsInterface && CollectionDataContract.IsCollectionInterface(declaredType))
+            if (declaredType != null && declaredType.IsInterface && CollectionDataContract.IsCollectionInterface(declaredType))
             {
                 typeName = null;
                 typeNamespace = null;

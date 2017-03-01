@@ -4,7 +4,7 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal class EXPRCLASS : EXPRTYPEORNAMESPACE
+    internal sealed class EXPRCLASS : EXPRTYPEORNAMESPACE
     {
     }
 }

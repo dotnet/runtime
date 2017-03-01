@@ -422,7 +422,7 @@ extern "C" const char* SystemNative_StrErrorR(int32_t platformErrno, char* buffe
     }
 
     // The only other valid error codes are 0 for success or EINVAL for
-    // an unkown error, but in the latter case a reasonable string (e.g
+    // an unknown error, but in the latter case a reasonable string (e.g
     // "Unknown error: 0x123") is returned.
     assert(error == 0 || error == EINVAL);
     return buffer;

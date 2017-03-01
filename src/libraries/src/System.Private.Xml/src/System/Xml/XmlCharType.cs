@@ -1293,8 +1293,7 @@ namespace System.Xml
         private static bool InRange(int value, int start, int end)
         {
             Debug.Assert(start <= end);
-            return (uint)(value - start) <= (uint)(end - start);
+            return unchecked((uint)(value - start) <= (uint)(end - start));
         }
     }
 }
-

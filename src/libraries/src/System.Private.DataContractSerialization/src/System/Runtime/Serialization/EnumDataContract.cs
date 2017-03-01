@@ -118,7 +118,7 @@ namespace System.Runtime.Serialization
                 this.StableName = DataContract.GetStableName(type, out _hasDataContract);
                 Type baseType = Enum.GetUnderlyingType(type);
                 ImportBaseType(baseType);
-                IsFlags = type.GetTypeInfo().IsDefined(Globals.TypeOfFlagsAttribute, false);
+                IsFlags = type.IsDefined(Globals.TypeOfFlagsAttribute, false);
                 ImportDataMembers();
 
                 XmlDictionary dictionary = new XmlDictionary(2 + Members.Count);

@@ -35,6 +35,7 @@
     <ToolsDir Condition="'$(UseToolRuntimeForToolsDir)'=='true'">$(ToolRuntimePath)</ToolsDir>
     <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)Tools/</ToolsDir>
     <ToolRuntimePath Condition="'$(ToolRuntimePath)'==''">$(ToolsDir)</ToolRuntimePath>
+    <IlasmToolPath>$(ToolsDir)ilasm/ilasm</IlasmToolPath>
 
     <!-- needs to be defined all the time to avoid indexing every file from the root -->
     <GeneratedProjectJsonDir>$(ObjDir)generated</GeneratedProjectJsonDir>
@@ -47,22 +48,22 @@
 
   <Import Project="$(ToolRuntimePath)BuildVersion.targets" Condition="Exists('$(ToolRuntimePath)BuildVersion.targets')" />
 
-  <PropertyGroup>
-    <GenFacadesArgs>-ignoreBuildAndRevisionMismatch</GenFacadesArgs>
-  </PropertyGroup>
-
   <!-- Import Build tools common props file where repo-independent properties are found -->
   <Import Project="$(ToolsDir)Build.Common.props" Condition="Exists('$(ToolsDir)Build.Common.props')" />
 
   <PropertyGroup>
-    <BuildToolsTargets45 Condition="'$(OsEnvironment)'=='Windows_NT'">true</BuildToolsTargets45>
+    <BuildToolsTargetsDesktop Condition="'$(RunningOnCore)' != 'true'">true</BuildToolsTargetsDesktop>
   </PropertyGroup>
-
-  <Import Project="$(MSBuildThisFileDirectory)targetingpacks.props" />
 
   <!-- Enable the analyzers for this repo -->
   <PropertyGroup>
     <EnableDotnetAnalyzers Condition="'$(EnableDotnetAnalyzers)'==''">true</EnableDotnetAnalyzers>
+  </PropertyGroup>
+
+  <!-- Default properties for CI builds -->
+  <PropertyGroup Condition="'$(IsCIBuild)' == 'true'">
+    <WithoutCategories>IgnoreForCI</WithoutCategories>
+    <EnableDumpling Condition="'$(RunningOnUnix)' == 'true'">true</EnableDumpling>
   </PropertyGroup>
 
   <!-- Provides package dependency version properties and verification/auto-upgrade configuration -->
@@ -78,16 +79,12 @@
     <BlockReflectionAttribute>true</BlockReflectionAttribute>
   </PropertyGroup>
 
-  <!-- Import packaging props -->
-  <Import Project="$(MSBuildThisFileDirectory)Packaging.props"/>
-
   <!-- list of nuget package sources passed to dnu -->
   <ItemGroup Condition="'$(ExcludeInternetFeeds)' != 'true'">
     <!-- Example to consume local CoreCLR package:
-         /t:BatchRestorePackages /p:OverridePackageSource=C:\coreclr\bin\Product\Windows_NT.x64.Debug\.nuget\pkg
+         /p:OverridePackageSource=C:\coreclr\bin\Product\Windows_NT.x64.Debug\.nuget\pkg
     -->
     <DnuSourceList Include="$(OverridePackageSource)" />
-    <DnuSourceList Condition="'$(BuildTestsAgainstPackages)' == 'true'" Include="$(PackagesDrops)" />
     <!-- Need to escape double forward slash (%2F) or MSBuild will normalize to one slash on Unix. -->
     <!-- Including buildtools to pull in TestSuite packages and repackaged xunit dependencies-->
     <DnuSourceList Include="https:%2F%2Fdotnet.myget.org/F/dotnet-buildtools/api/v3/index.json" />
@@ -95,18 +92,11 @@
     <DnuSourceList Include="https:%2F%2Fapi.nuget.org/v3/index.json" />
   </ItemGroup>
 
-  <!-- This is the directory where we dynamically generate project.json's for our test build package dependencies -->
-  <PropertyGroup Condition="'$(BuildTestsAgainstPackages)' == 'true'">
-    <BuildTestsAgainstPackagesIdentityRegex>$(CoreFxVersionsIdentityRegex)</BuildTestsAgainstPackagesIdentityRegex>
-    <SkipVerifyPackageVersions>true</SkipVerifyPackageVersions>
-  </PropertyGroup>
-
   <!-- list of directories to perform batch restore -->
   <ItemGroup>
     <DnuRestoreDir Include="$(MSBuildThisFileDirectory)src" />
     <DnuRestoreDir Include="$(MSBuildThisFileDirectory)pkg" />
     <DnuRestoreDir Include="$(MSBuildThisFileDirectory)layout" />
-    <DnuRestoreDir Condition="'$(BuildTestsAgainstPackages)' == 'true'" Include="$(GeneratedProjectJsonDir)" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -150,7 +140,7 @@
       See Documentation/coding-guidelines/project-guidelines.md for more details on our configurations.
     -->
     <TargetGroup Condition="'$(TargetGroup)' == ''">netcoreapp</TargetGroup>
-    <OSGroup Condition="'$(OSGroup)' == ''">$(OSEnvironment)</OSGroup>
+    <OSGroup Condition="'$(OSGroup)' == ''">$(DefaultOSGroup)</OSGroup>
     <ConfigurationGroup Condition="'$(ConfigurationGroup)' == ''">Debug</ConfigurationGroup>
     <ArchGroup Condition="'$(ArchGroup)' == ''">x64</ArchGroup>
 
@@ -158,11 +148,25 @@
     <BuildConfiguration Condition="'$(BuildConfiguration)' == ''">$(TargetGroup)-$(OSGroup)-$(ConfigurationGroup)-$(ArchGroup)</BuildConfiguration>
     <BuildConfigurationImportFile>$(ToolsDir)/configuration/configuration.props</BuildConfigurationImportFile>
 
+    <!-- if PKGPROJ doesn't set BuildConfigurations, make sure it only builds for TargetGroup=package or BuildAllConfigurations -->
+    <BuildConfigurations Condition="'$(MSBuildProjectExtension)' == '.pkgproj' AND '$(BuildConfigurations)' == ''">package</BuildConfigurations>
+
     <!-- Need to try and keep the same logic as the native builds as we need this for packaging -->
     <NativeBinDir>$(BinDir)$(OSGroup).$(ArchGroup).$(ConfigurationGroup)/native</NativeBinDir>
   </PropertyGroup>
 
   <Import Project="$(BuildConfigurationImportFile)" Condition="Exists('$(BuildConfigurationImportFile)')" />
+
+  <!-- Import packaging props -->
+  <Import Project="$(MSBuildThisFileDirectory)Packaging.props"/>
+
+  <!-- set properties for each vertical -->
+  <PropertyGroup>
+    <BuildingNETCoreAppVertical Condition="'$(BuildingNETCoreAppVertical)' == '' AND ('$(_bc_TargetGroup)'=='netcoreapp' OR '$(BuildAllConfigurations)' == 'true')">true</BuildingNETCoreAppVertical>
+    <BuildingNETFxVertical Condition="'$(BuildingNETCoreAppVertical)' == '' AND ('$(_bc_TargetGroup)'=='netfx' OR '$(BuildAllConfigurations)' == 'true')">true</BuildingNETFxVertical>
+    <BuildingUAPVertical Condition="'$(BuildingUAPVertical)' == '' AND ('$(_bc_TargetGroup)'=='uap' OR '$(BuildAllConfigurations)' == 'true')">true</BuildingUAPVertical>
+    <BuildingUAPAOTVertical Condition="'$(BuildingUAPAOTVertical)' == '' AND ('$(_bc_TargetGroup)'=='uapaot' OR '$(BuildAllConfigurations)' == 'true')">true</BuildingUAPAOTVertical>
+  </PropertyGroup>
 
   <!-- Set up Default symbol and optimization for Configuration -->
   <Choose>
@@ -172,6 +176,7 @@
         <Optimize Condition="'$(Optimize)' == ''">false</Optimize>
         <DebugType Condition="'$(DebugType)' == ''">full</DebugType>
         <DefineConstants>$(DefineConstants),DEBUG,TRACE</DefineConstants>
+        <CheckForOverflowUnderflow Condition="'$(CheckForOverflowUnderflow)' == ''">true</CheckForOverflowUnderflow>
       </PropertyGroup>
     </When>
     <When Condition="'$(ConfigurationGroup)' == 'Release'">
@@ -183,14 +188,6 @@
       </PropertyGroup>
     </When>
   </Choose>
-
-  <!-- Default Test platform to deploy the netstandard compiled tests to -->
-  <PropertyGroup>
-    <DefaultTestTFM>netcoreapp1.1</DefaultTestTFM>
-    <TestTFM Condition="'$(TestTFM)'==''">$(DefaultTestTFM)</TestTFM>
-    <!-- we default FilterToTestTFM to DefaultTestTFM if it is not explicity defined -->
-    <FilterToTestTFM Condition="'$(FilterToTestTFM)'==''">$(DefaultTestTFM)</FilterToTestTFM>
-  </PropertyGroup>
 
   <PropertyGroup>
     <IsRedistAssembly Condition="'$(IsRedistAssembly)'=='' AND ($(MSBuildProjectFullPath.Contains('\redist\')) OR $(MSBuildProjectFullPath.Contains('/redist/')))">true</IsRedistAssembly>
@@ -235,8 +232,6 @@
   <PropertyGroup>
     <OSPlatformConfig>$(OSGroup).$(Platform).$(ConfigurationGroup)</OSPlatformConfig>
     <TargetOutputRelPath Condition="'$(TargetGroup)'!=''">$(TargetGroup)/</TargetOutputRelPath>
-    <TestTargetOutputRelPath Condition="'$(TestTargetOutputRelPath)'=='' And '$(TargetGroup)'!='' And '$(TestTFM)'!=''">$(TargetGroup).$(TestTFM)/</TestTargetOutputRelPath>
-    <TestTargetOutputRelPath Condition="'$(TestTargetOutputRelPath)'=='' And '$(TargetGroup)'=='' And '$(TestTFM)'!=''">default.$(TestTFM)/</TestTargetOutputRelPath>
 
     <BaseOutputPath Condition="'$(BaseOutputPath)'==''">$(BinDir)</BaseOutputPath>
 
@@ -248,12 +243,35 @@
 
     <RuntimePath Condition="'$(RuntimePath)' == ''">$(BinDir)runtime/$(BuildConfiguration)/</RuntimePath>
     <RefRootPath>$(BinDir)ref/</RefRootPath>
-    <RefPath>$(RefRootPath)$(_bc_TargetGroup)/</RefPath>
+    <BuildConfigurationRefPath>$(RefRootPath)$(_bc_TargetGroup)/</BuildConfigurationRefPath>
+    <BuildConfigurationRefPath Condition="$(_bc_TargetGroup.EndsWith('aot'))">$(RefRootPath)$(_bc_TargetGroup.TrimEnd('aot'))/</BuildConfigurationRefPath>
+    <RefPath>$(RefRootPath)$(TargetGroup)/</RefPath>
+    <RefPath Condition="$(TargetGroup.EndsWith('aot'))">$(RefRootPath)$(TargetGroup.TrimEnd('aot'))/</RefPath>
     <NetStandardRefPath>$(RefRootPath)netstandard/</NetStandardRefPath>
     <NetFxRefPath>$(RefRootPath)netfx/</NetFxRefPath>
 
+    <!-- project file to use when resolving ReferenceFromRuntime items -->
+    <RuntimeProjectFile Condition="'$(RuntimeProjectFile)' == ''">$(ProjectDir)\external\runtime\runtime.depproj</RuntimeProjectFile>
+
+    <!-- Paths to binplace package content -->
+    <NETCoreAppPackageRefPath>$(BinDir)pkg\netcoreapp\ref</NETCoreAppPackageRefPath>
+    <NETCoreAppPackageRuntimePath>$(BinDir)pkg\netcoreapp\lib</NETCoreAppPackageRuntimePath>
+    <UAPPackageRefPath>$(BinDir)pkg\uap\ref</UAPPackageRefPath>
+    <UAPPackageRuntimePath>$(BinDir)pkg\uap\lib</UAPPackageRuntimePath>
+    <UAPAOTPackageRuntimePath>$(BinDir)pkg\uapaot\lib</UAPAOTPackageRuntimePath>
+
+    <!-- We add extra binplacing for the test shared framework until we can get hardlinking with the runtime directory working on all platforms -->
+    <BinPlaceTestSharedFramework Condition="'$(_bc_TargetGroup)' == 'netcoreapp'">true</BinPlaceTestSharedFramework>
+    <BinPlaceILCInputFolder Condition="'$(_bc_TargetGroup)' == 'uapaot' And '$(BinPlaceILCInputFolder)' == ''">true</BinPlaceILCInputFolder>
+
+    <NETCoreAppTestSharedFxVersion>9.9.9</NETCoreAppTestSharedFxVersion>
+    <NETCoreAppTestRootPath>$(BinDir)testhost/$(BuildConfiguration)/</NETCoreAppTestRootPath>
+    <NETCoreAppTestHostFxrPath>$(NETCoreAppTestRootPath)host/fxr/$(NETCoreAppTestSharedFxVersion)/</NETCoreAppTestHostFxrPath>
+    <NETCoreAppTestSharedFrameworkPath>$(NETCoreAppTestRootPath)shared/Microsoft.NETCore.App/$(NETCoreAppTestSharedFxVersion)/</NETCoreAppTestSharedFrameworkPath>
+    <ILCFXInputFolder>$(NETCoreAppTestRootPath)ILCInputFolder</ILCFXInputFolder>
+
     <!-- Constructed shared fx path for testing -->
-    <TestSharedFxDir>$(ToolsDir)testdotnetcli</TestSharedFxDir>
+    <TestSharedFxDir Condition="'$(BinPlaceTestSharedFramework)' == 'true'">$(NETCoreAppTestRootPath)</TestSharedFxDir>
 
     <PackagesBasePath Condition="'$(PackagesBasePath)'==''">$(BinDir)$(OSPlatformConfig)</PackagesBasePath>
     <PackageOutputPath Condition="'$(PackageOutputPath)'==''">$(PackageOutputRoot)$(ConfigurationGroup)/</PackageOutputPath>

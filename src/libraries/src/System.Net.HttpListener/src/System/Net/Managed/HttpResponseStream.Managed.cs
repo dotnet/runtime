@@ -277,7 +277,7 @@ namespace System.Net
             }
         }
 
-        public override int Read([In, Out] byte[] buffer, int offset, int count)
+        public override int Read(byte[] buffer, int offset, int count)
         {
             throw new NotSupportedException(SR.net_writeonlystream);
         }

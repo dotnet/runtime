@@ -34,15 +34,7 @@ namespace System.DirectoryServices.AccountManagement
         private static SDSCache s_domainCache = new SDSCache(false);
         private static SDSCache s_localMachineCache = new SDSCache(true);
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="PrincipalContext.get_Disposed():System.Boolean" />
-        // <SatisfiesLinkDemand Name="PrincipalContext..ctor(System.DirectoryServices.AccountManagement.ContextType,System.String,System.String,System.DirectoryServices.AccountManagement.ContextOptions,System.String,System.String)" />
-        // <ReferencesCritical Name="Method: NetCred.get_Domain():System.String" Ring="1" />
-        // <ReferencesCritical Name="Method: PrincipalContext.get_Disposed():System.Boolean" Ring="1" />
-        // <Asserts Name="Declarative: [DirectoryServicesPermission(SecurityAction.Assert, Unrestricted = true)]" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
-        [System.DirectoryServices.DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted = true)]
         public PrincipalContext GetContext(string name, NetCred credentials, ContextOptions contextOptions)
         {
             string contextName = name;

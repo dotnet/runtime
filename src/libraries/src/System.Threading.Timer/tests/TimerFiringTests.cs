@@ -140,7 +140,7 @@ public partial class TimerFiringTests
         TimerCallback tc = new TimerCallback((object o) => are.Set());
         var t = new Timer(tc, null, 1, 500);
         Assert.True(are.WaitOne(MaxPositiveTimeoutInMs), "Failed to get first timer fire");
-        t = null; // Remove our refence so the timer can be GC'd 
+        t = null; // Remove our reference so the timer can be GC'd 
         GC.Collect();
         GC.WaitForPendingFinalizers();
         GC.Collect();

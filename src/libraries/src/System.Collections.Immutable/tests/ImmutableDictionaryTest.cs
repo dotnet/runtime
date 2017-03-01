@@ -91,6 +91,18 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
+        public void ContainsValue_NoSuchValue_ReturnsFalse()
+        {
+            ImmutableDictionary<int, string> dictionary = new Dictionary<int, string>
+            {
+                { 1, "a" },
+                { 2, "b" }
+            }.ToImmutableDictionary();
+            Assert.False(dictionary.ContainsValue("c"));
+            Assert.False(dictionary.ContainsValue(null));
+        }
+
+        [Fact]
         public void EnumeratorWithHashCollisionsTest()
         {
             var emptyMap = Empty<int, GenericParameterHelper>(new BadHasher<int>());
@@ -337,6 +349,33 @@ namespace System.Collections.Immutable.Tests
 
             object rootNode = DebuggerAttributes.GetFieldValue(ImmutableDictionary.Create<string, string>(), "_root");
             DebuggerAttributes.ValidateDebuggerDisplayReferences(rootNode);
+        }
+
+        [Fact]
+        public void Clear_NoComparer_ReturnsEmptyWithoutComparer()
+        {
+            ImmutableDictionary<string, int> dictionary = new Dictionary<string, int>
+            {
+                { "a", 1 }
+            }.ToImmutableDictionary();
+            Assert.Same(ImmutableDictionary<string, int>.Empty, dictionary.Clear());
+            Assert.NotEmpty(dictionary);
+        }
+
+        [Fact]
+        public void Clear_HasComparer_ReturnsEmptyWithOriginalComparer()
+        {
+            ImmutableDictionary<string, int> dictionary = new Dictionary<string, int>
+            {
+                { "a", 1 }
+            }.ToImmutableDictionary(StringComparer.OrdinalIgnoreCase);
+
+            ImmutableDictionary<string, int> clearedDictionary = dictionary.Clear();
+            Assert.NotSame(ImmutableDictionary<string, int>.Empty, clearedDictionary.Clear());
+            Assert.NotEmpty(dictionary);
+
+            clearedDictionary = clearedDictionary.Add("a", 1);
+            Assert.True(clearedDictionary.ContainsKey("A"));
         }
 
         protected override IImmutableDictionary<TKey, TValue> Empty<TKey, TValue>()

@@ -54,7 +54,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 #if DEBUG
                 // Validate our chain.
                 Declaration pdecl;
-                for (pdecl = _declFirst; pdecl != null && pdecl.declNext != null; pdecl = pdecl.declNext)
+                for (pdecl = _declFirst; pdecl?.declNext != null; pdecl = pdecl.declNext)
                 { }
                 Debug.Assert(pdecl == null || (pdecl == _declLast && pdecl.declNext == null));
 #endif

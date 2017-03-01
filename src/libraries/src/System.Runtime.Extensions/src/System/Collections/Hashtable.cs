@@ -408,17 +408,20 @@ namespace System.Collections
         // add incr each time through a loop.
         private uint InitHash(Object key, int hashsize, out uint seed, out uint incr)
         {
-            // Hashcode must be positive.  Also, we must not use the sign bit, since
-            // that is used for the collision bit.
-            uint hashcode = (uint)GetHash(key) & 0x7FFFFFFF;
-            seed = (uint)hashcode;
-            // Restriction: incr MUST be between 1 and hashsize - 1, inclusive for
-            // the modular arithmetic to work correctly.  This guarantees you'll
-            // visit every bucket in the table exactly once within hashsize 
-            // iterations.  Violate this and it'll cause obscure bugs forever.
-            // If you change this calculation for h2(key), update putEntry too!
-            incr = (uint)(1 + ((seed * HashPrime) % ((uint)hashsize - 1)));
-            return hashcode;
+            unchecked
+            {
+                // Hashcode must be positive.  Also, we must not use the sign bit, since
+                // that is used for the collision bit.
+                uint hashcode = (uint)GetHash(key) & 0x7FFFFFFF;
+                seed = (uint)hashcode;
+                // Restriction: incr MUST be between 1 and hashsize - 1, inclusive for
+                // the modular arithmetic to work correctly.  This guarantees you'll
+                // visit every bucket in the table exactly once within hashsize
+                // iterations.  Violate this and it'll cause obscure bugs forever.
+                // If you change this calculation for h2(key), update putEntry too!
+                incr = (uint)(1 + ((seed * HashPrime) % ((uint)hashsize - 1)));
+                return hashcode;
+            }
         }
 
         // Adds an entry with the given key and value to this hashtable. An
@@ -1040,7 +1043,7 @@ namespace System.Collections
             Debug.Assert(hashcode >= 0, "hashcode >= 0");  // make sure collision bit (sign bit) wasn't set.
 
             uint seed = (uint)hashcode;
-            uint incr = (uint)(1 + ((seed * HashPrime) % ((uint)newBuckets.Length - 1)));
+            uint incr = unchecked((uint)(1 + ((seed * HashPrime) % ((uint)newBuckets.Length - 1))));
             int bucketNumber = (int)(seed % (uint)newBuckets.Length);
             do
             {

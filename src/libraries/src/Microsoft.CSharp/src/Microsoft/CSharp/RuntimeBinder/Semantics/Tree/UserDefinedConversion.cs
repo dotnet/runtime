@@ -4,7 +4,7 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal class EXPRUSERDEFINEDCONVERSION : EXPR
+    internal sealed class EXPRUSERDEFINEDCONVERSION : EXPR
     {
         public EXPR Argument;
         public EXPR UserDefinedCall;

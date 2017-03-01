@@ -43,10 +43,13 @@ namespace System.Net
 
         public static unsafe uint GetIPv4Address(byte[] buffer)
         {
-            return (uint)((buffer[4] & 0x000000FF) |
-                (buffer[5] << 8 & 0x0000FF00) |
-                (buffer[6] << 16 & 0x00FF0000) |
-                (buffer[7] << 24));
+            unchecked
+            {
+                return (uint)((buffer[4] & 0x000000FF) |
+                    (buffer[5] << 8 & 0x0000FF00) |
+                    (buffer[6] << 16 & 0x00FF0000) |
+                    (buffer[7] << 24));
+            }
         }
 
         public static unsafe void GetIPv6Address(byte[] buffer, byte[] address, out uint scope)
@@ -56,10 +59,11 @@ namespace System.Net
                 address[i] = buffer[8 + i];
             }
 
-            scope = (uint)((buffer[27] << 24) +
+            scope = unchecked((uint)(
+                (buffer[27] << 24) +
                 (buffer[26] << 16) +
                 (buffer[25] << 8) +
-                (buffer[24]));
+                (buffer[24])));
         }
 
         public static unsafe void SetIPv4Address(byte[] buffer, uint address)
@@ -79,11 +83,14 @@ namespace System.Net
             buffer[6] = (byte)0;
             buffer[7] = (byte)0;
 
-            // Scope serialization
-            buffer[24] = (byte)scope;
-            buffer[25] = (byte)(scope >> 8);
-            buffer[26] = (byte)(scope >> 16);
-            buffer[27] = (byte)(scope >> 24);
+            unchecked
+            {
+                // Scope serialization
+                buffer[24] = (byte)scope;
+                buffer[25] = (byte)(scope >> 8);
+                buffer[26] = (byte)(scope >> 16);
+                buffer[27] = (byte)(scope >> 24);
+            }
 
             // Address serialization
             for (int i = 0; i < address.Length; i++)

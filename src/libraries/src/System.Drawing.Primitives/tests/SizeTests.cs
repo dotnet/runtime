@@ -94,9 +94,13 @@ namespace System.Drawing.PrimitivesTests
         {
             Size sz1 = new Size(width, height);
             Size sz2 = new Size(height, width);
+            Size addExpected, subExpected;
 
-            Size addExpected = new Size(width + height, height + width);
-            Size subExpected = new Size(width - height, height - width);
+            unchecked
+            {
+                addExpected = new Size(width + height, height + width);
+                subExpected = new Size(width - height, height - width);
+            }
 
             Assert.Equal(addExpected, sz1 + sz2);
             Assert.Equal(subExpected, sz1 - sz2);
@@ -112,9 +116,14 @@ namespace System.Drawing.PrimitivesTests
         public void PointFMathematicalTest(float width, float height)
         {
             SizeF szF = new SizeF(width, height);
-            Size pCeiling = new Size((int)Math.Ceiling(width), (int)Math.Ceiling(height));
-            Size pTruncate = new Size((int)width, (int)height);
-            Size pRound = new Size((int)Math.Round(width), (int)Math.Round(height));
+            Size pCeiling, pTruncate, pRound;
+
+            unchecked
+            {
+                pCeiling = new Size((int)Math.Ceiling(width), (int)Math.Ceiling(height));
+                pTruncate = new Size((int)width, (int)height);
+                pRound = new Size((int)Math.Round(width), (int)Math.Round(height));
+            }
 
             Assert.Equal(pCeiling, Size.Ceiling(szF));
             Assert.Equal(pRound, Size.Round(szF));
@@ -129,7 +138,7 @@ namespace System.Drawing.PrimitivesTests
         public void EqualityTest(int width, int height)
         {
             Size p1 = new Size(width, height);
-            Size p2 = new Size(width - 1, height - 1);
+            Size p2 = new Size(unchecked(width - 1), unchecked(height - 1));
             Size p3 = new Size(width, height);
 
             Assert.True(p1 == p3);

@@ -15,6 +15,7 @@ using System.Text;
 using System.Linq.Parallel;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Linq.Parallel
 {
@@ -70,6 +71,7 @@ namespace System.Linq.Parallel
         /// We never expect this method to be called. ArrayMergeHelper is intended to be used when we want
         /// to consume the results using GetResultsAsArray().
         /// </summary>
+        [ExcludeFromCodeCoverage]
         public IEnumerator<TInputOutput> GetEnumerator()
         {
             Debug.Fail("ArrayMergeHelper<>.GetEnumerator() is not intended to be used. Call GetResultsAsArray() instead.");

@@ -10,14 +10,9 @@ using System.Security.Permissions;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    // <SecurityKernel Critical="True" Ring="0">
-    // <SatisfiesLinkDemand Name="Principal" />
-    // </SecurityKernel>
 #pragma warning disable 618    // Have not migrated to v4 transparency yet
     [System.Security.SecurityCritical(System.Security.SecurityCriticalScope.Everything)]
 #pragma warning restore 618
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.LinkDemand, Unrestricted = true)]
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.InheritanceDemand, Unrestricted = true)]
     [DirectoryRdnPrefix("CN")]
     public class AuthenticablePrincipal : Principal
     {

@@ -1196,7 +1196,7 @@ namespace System.Data
         }
 
         /// <summary>
-        ///     is the character a white space character?
+        ///     is the character a whitespace character?
         ///     Consider using CharacterInfo().IsWhiteSpace(ch) (System.Globalization)
         /// </summary>
         private bool IsWhiteSpace(char ch)

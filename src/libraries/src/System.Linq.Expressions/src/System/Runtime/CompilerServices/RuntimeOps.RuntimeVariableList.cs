@@ -110,7 +110,7 @@ namespace System.Runtime.CompilerServices
                 }
 
                 // Return the variable storage
-                return (IStrongBox)result[(int)closureKey];
+                return (IStrongBox)result[unchecked((int)closureKey)];
             }
         }
     }

@@ -5,5 +5,8 @@
     <AssemblyVersion>4.1.0.0</AssemblyVersion>
     <IsNETCoreApp>true</IsNETCoreApp>
     <IsNETCoreAppRef>false</IsNETCoreAppRef>
+    <IsUAP>true</IsUAP>
+    <IsUAPRef>false</IsUAPRef>
+    <IsDesktopFacade>true</IsDesktopFacade>
   </PropertyGroup>
 </Project>

@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal class ExprVisitorBase
+    internal abstract class ExprVisitorBase
     {
         public EXPR Visit(EXPR pExpr)
         {
@@ -31,7 +31,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        protected EXPRSTMT DispatchStatementList(EXPRSTMT expr)
+        private EXPRSTMT DispatchStatementList(EXPRSTMT expr)
         {
             Debug.Assert(expr != null);
 
@@ -55,11 +55,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 if (pexpr == first)
                 {
-                    first = (result == null) ? null : result.asSTMT();
+                    first = result?.asSTMT();
                 }
                 else
                 {
-                    pexpr.SetOptionalNextStatement((result == null) ? null : result.asSTMT());
+                    pexpr.SetOptionalNextStatement(result?.asSTMT());
                 }
 
                 // A transformation may return back a list of statements (or
@@ -82,7 +82,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        protected bool IsCachedExpr(EXPR pExpr, out EXPR pTransformedExpr)
+        private bool IsCachedExpr(EXPR pExpr, out EXPR pTransformedExpr)
         {
             pTransformedExpr = null;
             return false;
@@ -90,7 +90,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        protected EXPR CacheExprMapping(EXPR pExpr, EXPR pTransformedExpr)
+        private EXPR CacheExprMapping(EXPR pExpr, EXPR pTransformedExpr)
         {
             return pTransformedExpr;
         }
@@ -265,7 +265,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     throw Error.InternalCompilerError();
             }
         }
-        protected void VisitChildren(EXPR pExpr)
+        private void VisitChildren(EXPR pExpr)
         {
             Debug.Assert(pExpr != null);
 

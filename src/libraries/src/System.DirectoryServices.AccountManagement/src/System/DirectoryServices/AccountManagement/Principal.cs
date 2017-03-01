@@ -13,8 +13,6 @@ using System.Collections;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.LinkDemand, Unrestricted = true)]
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.InheritanceDemand, Unrestricted = true)]
     [System.Diagnostics.DebuggerDisplay("Name ( {Name} )")]
     abstract public class Principal : IDisposable
     {
@@ -22,9 +20,6 @@ namespace System.DirectoryServices.AccountManagement
         // Public properties
         //
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="get_Name():String" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         public override string ToString()
         {
@@ -34,10 +29,6 @@ namespace System.DirectoryServices.AccountManagement
         // Context property
         public PrincipalContext Context
         {
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="CheckDisposedOrDeleted():Void" />
-            // <ReferencesCritical Name="Field: ctx" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecuritySafeCritical]
             get
             {
@@ -54,11 +45,6 @@ namespace System.DirectoryServices.AccountManagement
         // ContextType property
         public ContextType ContextType
         {
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="CheckDisposedOrDeleted():Void" />
-            // <SatisfiesLinkDemand Name="PrincipalContext.get_ContextType():System.DirectoryServices.AccountManagement.ContextType" />
-            // <ReferencesCritical Name="Field: ctx" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
@@ -84,22 +70,12 @@ namespace System.DirectoryServices.AccountManagement
 
         public string Description
         {
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="HandleGet<System.String>(String&, String, LoadState&):String" />
-            // <ReferencesCritical Name="Method: HandleGet(T&, String, LoadState&):T" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
                 return HandleGet<string>(ref _description, PropertyNames.PrincipalDescription, ref _descriptionChanged);
             }
 
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="GetStoreCtxToUse():StoreCtx" />
-            // <SatisfiesLinkDemand Name="HandleSet<System.String>(String&, String, LoadState&, String):Void" />
-            // <ReferencesCritical Name="Method: GetStoreCtxToUse():StoreCtx" Ring="1" />
-            // <ReferencesCritical Name="Method: HandleSet(T&, T, LoadState&, String):Void" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             set
             {
@@ -120,22 +96,12 @@ namespace System.DirectoryServices.AccountManagement
 
         public string DisplayName
         {
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="HandleGet<System.String>(String&, String, LoadState&):String" />
-            // <ReferencesCritical Name="Method: HandleGet(T&, String, LoadState&):T" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
                 return HandleGet<string>(ref _displayName, PropertyNames.PrincipalDisplayName, ref _displayNameChanged);
             }
 
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="GetStoreCtxToUse():StoreCtx" />
-            // <SatisfiesLinkDemand Name="HandleSet<System.String>(String&, String, LoadState&, String):Void" />
-            // <ReferencesCritical Name="Method: GetStoreCtxToUse():StoreCtx" Ring="1" />
-            // <ReferencesCritical Name="Method: HandleSet(T&, T, LoadState&, String):Void" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             set
             {
@@ -158,22 +124,12 @@ namespace System.DirectoryServices.AccountManagement
 
         public string SamAccountName
         {
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="HandleGet<System.String>(String&, String, LoadState&):String" />
-            // <ReferencesCritical Name="Method: HandleGet(T&, String, LoadState&):T" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
                 return HandleGet<string>(ref _samName, PropertyNames.PrincipalSamAccountName, ref _samNameChanged);
             }
 
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="GetStoreCtxToUse():StoreCtx" />
-            // <SatisfiesLinkDemand Name="HandleSet<System.String>(String&, String, LoadState&, String):Void" />
-            // <ReferencesCritical Name="Method: GetStoreCtxToUse():StoreCtx" Ring="1" />
-            // <ReferencesCritical Name="Method: HandleSet(T&, T, LoadState&, String):Void" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             set
             {
@@ -195,22 +151,12 @@ namespace System.DirectoryServices.AccountManagement
         private LoadState _userPrincipalNameChanged = LoadState.NotSet;    // change-tracking           
         public string UserPrincipalName
         {
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="HandleGet<System.String>(String&, String, LoadState&):String" />
-            // <ReferencesCritical Name="Method: HandleGet(T&, String, LoadState&):T" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
                 return HandleGet<string>(ref _userPrincipalName, PropertyNames.PrincipalUserPrincipalName, ref _userPrincipalNameChanged);
             }
 
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="GetStoreCtxToUse():StoreCtx" />
-            // <SatisfiesLinkDemand Name="HandleSet<System.String>(String&, String, LoadState&, String):Void" />
-            // <ReferencesCritical Name="Method: GetStoreCtxToUse():StoreCtx" Ring="1" />
-            // <ReferencesCritical Name="Method: HandleSet(T&, T, LoadState&, String):Void" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             set
             {
@@ -230,10 +176,6 @@ namespace System.DirectoryServices.AccountManagement
 
         public SecurityIdentifier Sid
         {
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="HandleGet<System.Security.Principal.SecurityIdentifier>(SecurityIdentifier&, String, LoadState&):SecurityIdentifier" />
-            // <ReferencesCritical Name="Method: HandleGet(T&, String, LoadState&):T" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
@@ -249,10 +191,6 @@ namespace System.DirectoryServices.AccountManagement
         private LoadState _guidChanged = LoadState.NotSet;
         public Nullable<Guid> Guid
         {
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="HandleGet<System.Nullable`1<System.Guid>>(Nullable`1<System.Guid>&, String, LoadState&):Nullable`1<System.Guid>" />
-            // <ReferencesCritical Name="Method: HandleGet(T&, String, LoadState&):T" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
@@ -268,10 +206,6 @@ namespace System.DirectoryServices.AccountManagement
         private LoadState _distinguishedNameChanged = LoadState.NotSet;
         public string DistinguishedName
         {
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="HandleGet<System.String>(String&, String, LoadState&):String" />
-            // <ReferencesCritical Name="Method: HandleGet(T&, String, LoadState&):T" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
@@ -288,10 +222,6 @@ namespace System.DirectoryServices.AccountManagement
 
         public string StructuralObjectClass
         {
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="HandleGet<System.String>(String&, String, LoadState&):String" />
-            // <ReferencesCritical Name="Method: HandleGet(T&, String, LoadState&):T" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
@@ -307,12 +237,6 @@ namespace System.DirectoryServices.AccountManagement
 
         public string Name
         {
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="PrincipalContext.get_ContextType():System.DirectoryServices.AccountManagement.ContextType" />
-            // <SatisfiesLinkDemand Name="HandleGet<System.String>(String&, String, LoadState&):String" />
-            // <ReferencesCritical Name="Field: ctx" Ring="1" />
-            // <ReferencesCritical Name="Method: HandleGet(T&, String, LoadState&):T" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
@@ -334,14 +258,6 @@ namespace System.DirectoryServices.AccountManagement
                     return HandleGet<string>(ref _name, PropertyNames.PrincipalName, ref _nameChanged);
                 }
             }
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="GetStoreCtxToUse():StoreCtx" />
-            // <SatisfiesLinkDemand Name="PrincipalContext.get_ContextType():System.DirectoryServices.AccountManagement.ContextType" />
-            // <SatisfiesLinkDemand Name="HandleSet<System.String>(String&, String, LoadState&, String):Void" />
-            // <ReferencesCritical Name="Method: GetStoreCtxToUse():StoreCtx" Ring="1" />
-            // <ReferencesCritical Name="Field: ctx" Ring="1" />
-            // <ReferencesCritical Name="Method: HandleSet(T&, T, LoadState&, String):Void" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             set
             {
@@ -382,37 +298,18 @@ namespace System.DirectoryServices.AccountManagement
         // Public methods
         //
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="FindByIdentityWithType(PrincipalContext, Type, String):Principal" />
-        // <ReferencesCritical Name="Method: FindByIdentityWithType(PrincipalContext, Type, String):Principal" Ring="1" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         public static Principal FindByIdentity(PrincipalContext context, string identityValue)
         {
             return FindByIdentityWithType(context, typeof(Principal), identityValue);
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="FindByIdentityWithType(PrincipalContext, Type, IdentityType, String):Principal" />
-        // <ReferencesCritical Name="Method: FindByIdentityWithType(PrincipalContext, Type, IdentityType, String):Principal" Ring="1" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         public static Principal FindByIdentity(PrincipalContext context, IdentityType identityType, string identityValue)
         {
             return FindByIdentityWithType(context, typeof(Principal), identityType, identityValue);
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="CheckDisposedOrDeleted():Void" />
-        // <SatisfiesLinkDemand Name="CheckFakePrincipal():Void" />
-        // <SatisfiesLinkDemand Name="GetStoreCtxToUse():StoreCtx" />
-        // <SatisfiesLinkDemand Name="PrincipalContext.ContextForType(System.Type):System.DirectoryServices.AccountManagement.StoreCtx" />
-        // <SatisfiesLinkDemand Name="PrincipalContext.get_QueryCtx():System.DirectoryServices.AccountManagement.StoreCtx" />
-        // <ReferencesCritical Name="Field: ctx" Ring="1" />
-        // <ReferencesCritical Name="Method: GetStoreCtxToUse():StoreCtx" Ring="1" />
-        // <ReferencesCritical Name="Method: PrincipalContext.ContextForType(System.Type):System.DirectoryServices.AccountManagement.StoreCtx" Ring="1" />
-        // <ReferencesCritical Name="Method: PrincipalContext.get_QueryCtx():System.DirectoryServices.AccountManagement.StoreCtx" Ring="1" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         public void Save()
         {
@@ -451,19 +348,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="CheckDisposedOrDeleted():Void" />
-        // <SatisfiesLinkDemand Name="CheckFakePrincipal():Void" />
-        // <SatisfiesLinkDemand Name="PrincipalContext.get_ContextType():System.DirectoryServices.AccountManagement.ContextType" />
-        // <SatisfiesLinkDemand Name="Save():Void" />
-        // <SatisfiesLinkDemand Name="GetStoreCtxToUse():StoreCtx" />
-        // <SatisfiesLinkDemand Name="PrincipalContext.ContextForType(System.Type):System.DirectoryServices.AccountManagement.StoreCtx" />
-        // <SatisfiesLinkDemand Name="PrincipalContext.set_QueryCtx(System.DirectoryServices.AccountManagement.StoreCtx):System.Void" />
-        // <ReferencesCritical Name="Field: ctx" Ring="1" />
-        // <ReferencesCritical Name="Method: GetStoreCtxToUse():StoreCtx" Ring="1" />
-        // <ReferencesCritical Name="Method: PrincipalContext.ContextForType(System.Type):System.DirectoryServices.AccountManagement.StoreCtx" Ring="1" />
-        // <ReferencesCritical Name="Method: PrincipalContext.set_QueryCtx(System.DirectoryServices.AccountManagement.StoreCtx):System.Void" Ring="1" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         public void Save(PrincipalContext context)
         {
@@ -579,13 +463,6 @@ namespace System.DirectoryServices.AccountManagement
             _ctx.QueryCtx = newStoreCtx;  // so Updates go to the right StoreCtx
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="CheckDisposedOrDeleted():Void" />
-        // <SatisfiesLinkDemand Name="CheckFakePrincipal():Void" />
-        // <SatisfiesLinkDemand Name="PrincipalContext.get_QueryCtx():System.DirectoryServices.AccountManagement.StoreCtx" />
-        // <ReferencesCritical Name="Field: ctx" Ring="1" />
-        // <ReferencesCritical Name="Method: PrincipalContext.get_QueryCtx():System.DirectoryServices.AccountManagement.StoreCtx" Ring="1" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         public void Delete()
         {
@@ -630,11 +507,6 @@ namespace System.DirectoryServices.AccountManagement
             return base.GetHashCode();
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="CheckDisposedOrDeleted():Void" />
-        // <SatisfiesLinkDemand Name="CheckFakePrincipal():Void" />
-        // <SatisfiesLinkDemand Name="get_UnderlyingObject():Object" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         public object GetUnderlyingObject()
         {
@@ -652,15 +524,6 @@ namespace System.DirectoryServices.AccountManagement
             return this.UnderlyingObject;
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="CheckDisposedOrDeleted():Void" />
-        // <SatisfiesLinkDemand Name="CheckFakePrincipal():Void" />
-        // <SatisfiesLinkDemand Name="PrincipalContext.ContextForType(System.Type):System.DirectoryServices.AccountManagement.StoreCtx" />
-        // <SatisfiesLinkDemand Name="PrincipalContext.get_QueryCtx():System.DirectoryServices.AccountManagement.StoreCtx" />
-        // <ReferencesCritical Name="Field: ctx" Ring="1" />
-        // <ReferencesCritical Name="Method: PrincipalContext.ContextForType(System.Type):System.DirectoryServices.AccountManagement.StoreCtx" Ring="1" />
-        // <ReferencesCritical Name="Method: PrincipalContext.get_QueryCtx():System.DirectoryServices.AccountManagement.StoreCtx" Ring="1" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         public Type GetUnderlyingObjectType()
         {
@@ -689,22 +552,12 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="GetGroupsHelper():ResultSet" />
-        // <SatisfiesLinkDemand Name="PrincipalSearchResult`1<System.DirectoryServices.AccountManagement.Principal>..ctor(System.DirectoryServices.AccountManagement.ResultSet)" />
-        // <ReferencesCritical Name="Method: GetGroupsHelper():ResultSet" Ring="1" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         public PrincipalSearchResult<Principal> GetGroups()
         {
             return new PrincipalSearchResult<Principal>(GetGroupsHelper());
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="GetGroupsHelper(PrincipalContext):ResultSet" />
-        // <SatisfiesLinkDemand Name="PrincipalSearchResult`1<System.DirectoryServices.AccountManagement.Principal>..ctor(System.DirectoryServices.AccountManagement.ResultSet)" />
-        // <ReferencesCritical Name="Method: GetGroupsHelper(PrincipalContext):ResultSet" Ring="1" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         public PrincipalSearchResult<Principal> GetGroups(PrincipalContext contextToQuery)
         {
@@ -714,11 +567,6 @@ namespace System.DirectoryServices.AccountManagement
             return new PrincipalSearchResult<Principal>(GetGroupsHelper(contextToQuery));
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="CheckDisposedOrDeleted():Void" />
-        // <SatisfiesLinkDemand Name="GroupPrincipal.get_Members():System.DirectoryServices.AccountManagement.PrincipalCollection" />
-        // <SatisfiesLinkDemand Name="PrincipalCollection.Contains(System.DirectoryServices.AccountManagement.Principal):System.Boolean" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         public bool IsMemberOf(GroupPrincipal group)
         {
@@ -731,11 +579,6 @@ namespace System.DirectoryServices.AccountManagement
             return group.Members.Contains(this);
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="CheckDisposedOrDeleted():Void" />
-        // <SatisfiesLinkDemand Name="GroupPrincipal.FindByIdentity(System.DirectoryServices.AccountManagement.PrincipalContext,System.DirectoryServices.AccountManagement.IdentityType,System.String):System.DirectoryServices.AccountManagement.GroupPrincipal" />
-        // <SatisfiesLinkDemand Name="IsMemberOf(GroupPrincipal):Boolean" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         public bool IsMemberOf(PrincipalContext context, IdentityType identityType, string identityValue)
         {
@@ -764,10 +607,6 @@ namespace System.DirectoryServices.AccountManagement
         //
         // IDisposable
         //
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="get_UnderlyingObject():Object" />
-        // <SatisfiesLinkDemand Name="get_UnderlyingSearchObject():Object" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         public virtual void Dispose()
         {
@@ -808,13 +647,6 @@ namespace System.DirectoryServices.AccountManagement
         private ExtensionCache _extensionCache = new ExtensionCache();
         private LoadState _extensionCacheChanged = LoadState.NotSet;
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="GetUnderlyingObjectType():Type" />
-        // <SatisfiesLinkDemand Name="GetUnderlyingObject():Object" />
-        // <SatisfiesLinkDemand Name="DirectoryEntry.get_Properties():System.DirectoryServices.PropertyCollection" />
-        // <SatisfiesLinkDemand Name="PropertyCollection.get_Item(System.String):System.DirectoryServices.PropertyValueCollection" />
-        // <SatisfiesLinkDemand Name="PropertyValueCollection.CopyTo(System.Object[],System.Int32):System.Void" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         protected object[] ExtensionGet(string attribute)
         {
@@ -889,9 +721,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="ValidateExtensionObject(Object):Void" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         protected void ExtensionSet(string attribute, object value)
         {
@@ -908,9 +737,6 @@ namespace System.DirectoryServices.AccountManagement
             _extensionCacheChanged = LoadState.Changed;
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="ValidateExtensionObject(Object):Void" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         internal void AdvancedFilterSet(string attribute, object value, Type objectType, MatchType mt)
         {
@@ -969,19 +795,11 @@ namespace System.DirectoryServices.AccountManagement
         internal protected PrincipalContext ContextRaw
         {
             //[StrongNameIdentityPermission(SecurityAction.LinkDemand,  PublicKey = Microsoft.Internal.BuildInfo.WINDOWS_PUBLIC_KEY_STRING)]                
-            // <SecurityKernel Critical="True" Ring="1">
-            // <ReferencesCritical Name="Field: ctx" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             { return _ctx; }
 
             //[StrongNameIdentityPermission(SecurityAction.LinkDemand,  PublicKey = Microsoft.Internal.BuildInfo.WINDOWS_PUBLIC_KEY_STRING)]                    
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="PrincipalContext.CheckDisposed():System.Void" />
-            // <ReferencesCritical Name="Method: PrincipalContext.CheckDisposed():System.Void" Ring="1" />
-            // <ReferencesCritical Name="Field: ctx" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             set
             {
@@ -1018,13 +836,6 @@ namespace System.DirectoryServices.AccountManagement
         // returns the appropriate StoreCtx from the PrincipalContext that we should use for
         // all StoreCtx-related operations.
         // Returns null if no context has been set yet.
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="PrincipalContext.ContextForType(System.Type):System.DirectoryServices.AccountManagement.StoreCtx" />
-        // <SatisfiesLinkDemand Name="PrincipalContext.get_QueryCtx():System.DirectoryServices.AccountManagement.StoreCtx" />
-        // <ReferencesCritical Name="Field: ctx" Ring="1" />
-        // <ReferencesCritical Name="Method: PrincipalContext.ContextForType(System.Type):System.DirectoryServices.AccountManagement.StoreCtx" Ring="1" />
-        // <ReferencesCritical Name="Method: PrincipalContext.get_QueryCtx():System.DirectoryServices.AccountManagement.StoreCtx" Ring="1" />
-        // </SecurityKernel>
         [System.Security.SecuritySafeCritical]
         internal StoreCtx GetStoreCtxToUse()
         {
@@ -1126,10 +937,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="FindByIdentityWithTypeHelper(PrincipalContext, Type, Nullable`1<System.DirectoryServices.AccountManagement.IdentityType>, String, DateTime):Principal" />
-        // <ReferencesCritical Name="Method: FindByIdentityWithTypeHelper(PrincipalContext, Type, Nullable`1<System.DirectoryServices.AccountManagement.IdentityType>, String, DateTime):Principal" Ring="1" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Advanced)]
         protected static Principal FindByIdentityWithType(PrincipalContext context, Type principalType, string identityValue)
@@ -1143,10 +950,6 @@ namespace System.DirectoryServices.AccountManagement
             return FindByIdentityWithTypeHelper(context, principalType, null, identityValue, DateTime.UtcNow);
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="FindByIdentityWithTypeHelper(PrincipalContext, Type, Nullable`1<System.DirectoryServices.AccountManagement.IdentityType>, String, DateTime):Principal" />
-        // <ReferencesCritical Name="Method: FindByIdentityWithTypeHelper(PrincipalContext, Type, Nullable`1<System.DirectoryServices.AccountManagement.IdentityType>, String, DateTime):Principal" Ring="1" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Advanced)]
         protected static Principal FindByIdentityWithType(PrincipalContext context, Type principalType, IdentityType identityType, string identityValue)
@@ -1163,10 +966,6 @@ namespace System.DirectoryServices.AccountManagement
             return FindByIdentityWithTypeHelper(context, principalType, identityType, identityValue, DateTime.UtcNow);
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="PrincipalContext.get_QueryCtx():System.DirectoryServices.AccountManagement.StoreCtx" />
-        // <ReferencesCritical Name="Method: PrincipalContext.get_QueryCtx():System.DirectoryServices.AccountManagement.StoreCtx" Ring="1" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         private static Principal FindByIdentityWithTypeHelper(PrincipalContext context, Type principalType, Nullable<IdentityType> identityType, string identityValue, DateTime refDate)
         {
@@ -1187,8 +986,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // </SecurityKernel>
         [System.Security.SecuritySafeCritical]
         private ResultSet GetGroupsHelper()
         {
@@ -1211,8 +1008,6 @@ namespace System.DirectoryServices.AccountManagement
             return resultSet;
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // </SecurityKernel>
         [System.Security.SecuritySafeCritical]
         private ResultSet GetGroupsHelper(PrincipalContext contextToQuery)
         {
@@ -1231,11 +1026,6 @@ namespace System.DirectoryServices.AccountManagement
         // If we're the result of a query and our properties haven't been loaded yet, do so now
         // We'd like this to be marked protected AND internal, but that's not possible, so we'll settle for
         // internal and treat it as if it were also protected.
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="PrincipalContext.get_QueryCtx():System.DirectoryServices.AccountManagement.StoreCtx" />
-        // <ReferencesCritical Name="Field: ctx" Ring="1" />
-        // <ReferencesCritical Name="Method: PrincipalContext.get_QueryCtx():System.DirectoryServices.AccountManagement.StoreCtx" Ring="1" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         internal void LoadIfNeeded(string principalPropertyName)
         {
@@ -1279,11 +1069,6 @@ namespace System.DirectoryServices.AccountManagement
         //
         // We'd like this to be marked protected AND internal, but that's not possible, so we'll settle for
         // internal and treat it as if it were also protected.        
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="CheckDisposedOrDeleted():Void" />
-        // <SatisfiesLinkDemand Name="LoadIfNeeded(String):Void" />
-        // <ReferencesCritical Name="Method: LoadIfNeeded(String):Void" Ring="1" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         internal T HandleGet<T>(ref T currentValue, string name, ref LoadState state)
         {
@@ -1305,9 +1090,6 @@ namespace System.DirectoryServices.AccountManagement
 
         // We'd like this to be marked protected AND internal, but that's not possible, so we'll settle for
         // internal and treat it as if it were also protected.
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="CheckDisposedOrDeleted():Void" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         internal void HandleSet<T>(ref T currentValue, T newValue, ref LoadState state, string name)
         {

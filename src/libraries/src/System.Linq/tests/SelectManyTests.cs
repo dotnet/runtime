@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.Linq.Tests
 {
-    public class SelectManyTests : EnumerableTests
+    public partial class SelectManyTests : EnumerableTests
     {
         [Fact]
         public void EmptySource()

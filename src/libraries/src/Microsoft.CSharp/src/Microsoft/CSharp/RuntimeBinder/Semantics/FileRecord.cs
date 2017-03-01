@@ -4,7 +4,7 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal class FileRecord
+    internal abstract class FileRecord
     {
     }
 }

@@ -16,16 +16,21 @@ internal static partial class Interop
             [In] SafeHandle Event,
             [In] AsyncEventBits NetworkEvents);
 
-        [DllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
-        internal static extern SocketError WSAEventSelect(
-            [In] SafeCloseSocket socketHandle,
-            [In] IntPtr Event,
-            [In] AsyncEventBits NetworkEvents);
-
-        [DllImport(Interop.Libraries.Ws2_32, ExactSpelling = true, SetLastError = true)]
-        internal static extern SocketError WSAEventSelect(
-            [In] IntPtr handle,
-            [In] IntPtr Event,
-            [In] AsyncEventBits NetworkEvents);
+        [Flags]
+        internal enum AsyncEventBits
+        {
+            FdNone = 0,
+            FdRead = 1 << 0,
+            FdWrite = 1 << 1,
+            FdOob = 1 << 2,
+            FdAccept = 1 << 3,
+            FdConnect = 1 << 4,
+            FdClose = 1 << 5,
+            FdQos = 1 << 6,
+            FdGroupQos = 1 << 7,
+            FdRoutingInterfaceChange = 1 << 8,
+            FdAddressListChange = 1 << 9,
+            FdAllEvents = (1 << 10) - 1,
+        }
     }
 }

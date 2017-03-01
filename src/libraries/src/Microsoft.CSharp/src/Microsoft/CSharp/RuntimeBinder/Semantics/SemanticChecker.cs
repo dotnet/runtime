@@ -161,7 +161,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         //
         // Utility methods
         //
-        protected ACCESSERROR CheckAccessCore(Symbol symCheck, AggregateType atsCheck, Symbol symWhere, CType typeThru)
+        private ACCESSERROR CheckAccessCore(Symbol symCheck, AggregateType atsCheck, Symbol symWhere, CType typeThru)
         {
             Debug.Assert(symCheck != null);
             Debug.Assert(atsCheck == null || symCheck.parent == atsCheck.getAggregate());

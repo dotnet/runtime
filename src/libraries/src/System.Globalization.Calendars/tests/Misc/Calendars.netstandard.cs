@@ -14,18 +14,18 @@ namespace System.Globalization.Tests
         public static IEnumerable<object[]> Calendars_TestData()
         {
             //                              Calendar               yearHasLeapMonth        CalendarAlgorithmType 
-            yield return new object[] { new ChineseLunisolarCalendar()  , 0     , CalendarAlgorithmType.LunisolarCalendar   };
+            yield return new object[] { new ChineseLunisolarCalendar()  , 2017  , CalendarAlgorithmType.LunisolarCalendar   };
             yield return new object[] { new GregorianCalendar()         , 0     , CalendarAlgorithmType.SolarCalendar       };
             yield return new object[] { new HebrewCalendar()            , 5345  , CalendarAlgorithmType.LunisolarCalendar   };
             yield return new object[] { new HijriCalendar()             , 0     , CalendarAlgorithmType.LunarCalendar       };
             yield return new object[] { new JapaneseCalendar()          , 0     , CalendarAlgorithmType.SolarCalendar       };
-            yield return new object[] { new JapaneseLunisolarCalendar() , 0     , CalendarAlgorithmType.LunisolarCalendar   };
+            yield return new object[] { new JapaneseLunisolarCalendar() , 29    , CalendarAlgorithmType.LunisolarCalendar   };
             yield return new object[] { new JulianCalendar()            , 0     , CalendarAlgorithmType.SolarCalendar       };
             yield return new object[] { new KoreanCalendar()            , 0     , CalendarAlgorithmType.SolarCalendar       };
-            yield return new object[] { new KoreanLunisolarCalendar()   , 0     , CalendarAlgorithmType.LunisolarCalendar   };
+            yield return new object[] { new KoreanLunisolarCalendar()   , 2017  , CalendarAlgorithmType.LunisolarCalendar   };
             yield return new object[] { new PersianCalendar()           , 0     , CalendarAlgorithmType.SolarCalendar       };
             yield return new object[] { new TaiwanCalendar()            , 0     , CalendarAlgorithmType.SolarCalendar       };
-            yield return new object[] { new TaiwanLunisolarCalendar()   , 0     , CalendarAlgorithmType.LunisolarCalendar   };
+            yield return new object[] { new TaiwanLunisolarCalendar()   , 106   , CalendarAlgorithmType.LunisolarCalendar   };
             yield return new object[] { new ThaiBuddhistCalendar()      , 0     , CalendarAlgorithmType.SolarCalendar       };
             yield return new object[] { new UmAlQuraCalendar()          , 0     , CalendarAlgorithmType.LunarCalendar       };
         }
@@ -37,7 +37,7 @@ namespace System.Globalization.Tests
             Calendar cloned = (Calendar) calendar.Clone();
             Assert.Equal(calendar.GetType(), cloned.GetType());
         }
-
+        
         [Theory]
         [MemberData(nameof(Calendars_TestData))]
         public static void GetLeapMonthTest(Calendar calendar, int yearHasLeapMonth, CalendarAlgorithmType algorithmType)

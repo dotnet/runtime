@@ -599,7 +599,7 @@ namespace System.Numerics.Tests
         {
             Quaternion a = new Quaternion(1.0f, 2.0f, 3.0f, 4.0f);
 
-            int expected = a.X.GetHashCode() + a.Y.GetHashCode() + a.Z.GetHashCode() + a.W.GetHashCode();
+            int expected = unchecked(a.X.GetHashCode() + a.Y.GetHashCode() + a.Z.GetHashCode() + a.W.GetHashCode());
             int actual = a.GetHashCode();
             Assert.Equal(expected, actual);
         }

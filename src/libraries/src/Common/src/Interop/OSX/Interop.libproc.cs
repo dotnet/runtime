@@ -26,7 +26,7 @@ internal static partial class Interop
         private static int PROC_PIDLISTTHREADS_SIZE = (Marshal.SizeOf<uint>() * 2);
 
         // Constants from sys\resource.h
-        private const int RUSAGE_SELF = 0;
+        private const int RUSAGE_INFO_V3 = 3;
 
         // Defines from proc_info.h
         internal enum ThreadRunState
@@ -199,7 +199,7 @@ internal static partial class Interop
                 // To make sure it isn't #2, when the result == size, increase the buffer and try again
                 processes = new int[(int)(numProcesses * 1.10)];
 
-                fixed (int* pBuffer = processes)
+                fixed (int* pBuffer = &processes[0])
                 {
                     numProcesses = proc_listallpids(pBuffer, processes.Length * Marshal.SizeOf<int>());
                     if (numProcesses <= 0)
@@ -371,7 +371,7 @@ internal static partial class Interop
             do
             {
                 threadIds = new ulong[size];
-                fixed (ulong* pBuffer = threadIds)
+                fixed (ulong* pBuffer = &threadIds[0])
                 {
                     result = proc_pidinfo(pid, PROC_PIDLISTTHREADS, 0, pBuffer, Marshal.SizeOf<ulong>() * threadIds.Length);
                 }
@@ -449,18 +449,14 @@ internal static partial class Interop
         /// Gets the rusage information for the process identified by the PID
         /// </summary>
         /// <param name="pid">The process to retrieve the rusage for</param>
-        /// <param name="flavor">Should be RUSAGE_SELF to specify getting the info for the specified process</param>
-        /// <param name="rusage_info_t">A buffer to be filled with rusage_info data</param>
+        /// <param name="flavor">Specifies the type of struct that is passed in to <paramref>buffer</paramref>. Should be RUSAGE_INFO_V3 to specify a rusage_info_v3 struct.</param>
+        /// <param name="buffer">A buffer to be filled with rusage_info data</param>
         /// <returns>Returns 0 on success; on fail, -1 and errno is set with the error code</returns>
-        /// <remarks>
-        /// We need to use IntPtr here for the buffer since the function signature uses 
-        /// void* and not a strong type even though it returns a rusage_info struct
-        /// </remarks>
         [DllImport(Interop.Libraries.libproc, SetLastError = true)]
         private static extern unsafe int proc_pid_rusage(
             int pid,
             int flavor,
-            rusage_info_v3* rusage_info_t);
+            rusage_info_v3* buffer);
 
         /// <summary>
         /// Gets the rusage information for the process identified by the PID
@@ -480,7 +476,7 @@ internal static partial class Interop
             rusage_info_v3 info = new rusage_info_v3();
 
             // Get the PIDs rusage info
-            int result = proc_pid_rusage(pid, RUSAGE_SELF, &info);
+            int result = proc_pid_rusage(pid, RUSAGE_INFO_V3, &info);
             if (result < 0)
             {
                 throw new InvalidOperationException(SR.RUsageFailure);
