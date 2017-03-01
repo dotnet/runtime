@@ -15,6 +15,7 @@ namespace System.Security.Cryptography
         private const string AssemblyName_Csp = "System.Security.Cryptography.Csp";
         private const string AssemblyName_Pkcs = "System.Security.Cryptography.Pkcs";
         private const string AssemblyName_X509Certificates = "System.Security.Cryptography.X509Certificates";
+        private const string AssemblyName_Xml = "System.Security.Cryptography.Xml";
 
         private const BindingFlags ConstructorDefault = BindingFlags.Instance | BindingFlags.Public | BindingFlags.CreateInstance;
 
@@ -255,9 +256,6 @@ namespace System.Security.Cryptography
                 ht.Add("1.3.6.1.4.1.311.88.2.1", "System.Security.Cryptography.Pkcs.Pkcs9DocumentName, " + AssemblyName_Pkcs);
                 ht.Add("1.3.6.1.4.1.311.88.2.2", "System.Security.Cryptography.Pkcs.Pkcs9DocumentDescription, " + AssemblyName_Pkcs);
 
-                s_defaultNameHT = ht;
-                return s_defaultNameHT;
-
                 // Types in Desktop but currently unsupported in CoreFx:
                 // Type HMACRIPEMD160Type = typeof(System.Security.Cryptography.HMACRIPEMD160);
                 // Type MAC3DESType = typeof(System.Security.Cryptography.MACTripleDES);
@@ -276,31 +274,35 @@ namespace System.Security.Cryptography
                 // string SHA256CryptoServiceProviderType = "System.Security.Cryptography.SHA256CryptoServiceProvider, " + AssemblyName_Csp;
                 // string SHA384CryptoSerivceProviderType = "System.Security.Cryptography.SHA384CryptoServiceProvider, " + AssemblyName_Csp;
                 // string SHA512CryptoServiceProviderType = "System.Security.Cryptography.SHA512CryptoServiceProvider, " + AssemblyName_Csp;
-                // string DpapiDataProtectorType = "System.Security.Cryptography.DpapiDataProtector, " + AssemblyRef.SystemSecurity;
+                // string DpapiDataProtectorType = "System.Security.Cryptography.DpapiDataProtector, " + AssemblyName_Xml;
+
                 // Xml Dsig Transforms
                 // First arg must match the constants defined in System.Security.Cryptography.Xml.SignedXml
-                // ht.Add("http://www.w3.org/TR/2001/REC-xml-c14n-20010315", "System.Security.Cryptography.Xml.XmlDsigC14NTransform, " + AssemblyRef.SystemSecurity);
-                // ht.Add("http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments", "System.Security.Cryptography.Xml.XmlDsigC14NWithCommentsTransform, " + AssemblyRef.SystemSecurity);
-                // ht.Add("http://www.w3.org/2001/10/xml-exc-c14n#", "System.Security.Cryptography.Xml.XmlDsigExcC14NTransform, " + AssemblyRef.SystemSecurity);
-                // ht.Add("http://www.w3.org/2001/10/xml-exc-c14n#WithComments", "System.Security.Cryptography.Xml.XmlDsigExcC14NWithCommentsTransform, " + AssemblyRef.SystemSecurity);
-                // ht.Add("http://www.w3.org/2000/09/xmldsig#base64", "System.Security.Cryptography.Xml.XmlDsigBase64Transform, " + AssemblyRef.SystemSecurity);
-                // ht.Add("http://www.w3.org/TR/1999/REC-xpath-19991116", "System.Security.Cryptography.Xml.XmlDsigXPathTransform, " + AssemblyRef.SystemSecurity);
-                // ht.Add("http://www.w3.org/TR/1999/REC-xslt-19991116", "System.Security.Cryptography.Xml.XmlDsigXsltTransform, " + AssemblyRef.SystemSecurity);
-                // ht.Add("http://www.w3.org/2000/09/xmldsig#enveloped-signature", "System.Security.Cryptography.Xml.XmlDsigEnvelopedSignatureTransform, " + AssemblyRef.SystemSecurity);
+                ht.Add("http://www.w3.org/TR/2001/REC-xml-c14n-20010315", "System.Security.Cryptography.Xml.XmlDsigC14NTransform, " + AssemblyName_Xml);
+                ht.Add("http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments", "System.Security.Cryptography.Xml.XmlDsigC14NWithCommentsTransform, " + AssemblyName_Xml);
+                ht.Add("http://www.w3.org/2001/10/xml-exc-c14n#", "System.Security.Cryptography.Xml.XmlDsigExcC14NTransform, " + AssemblyName_Xml);
+                ht.Add("http://www.w3.org/2001/10/xml-exc-c14n#WithComments", "System.Security.Cryptography.Xml.XmlDsigExcC14NWithCommentsTransform, " + AssemblyName_Xml);
+                ht.Add("http://www.w3.org/2000/09/xmldsig#base64", "System.Security.Cryptography.Xml.XmlDsigBase64Transform, " + AssemblyName_Xml);
+                ht.Add("http://www.w3.org/TR/1999/REC-xpath-19991116", "System.Security.Cryptography.Xml.XmlDsigXPathTransform, " + AssemblyName_Xml);
+                ht.Add("http://www.w3.org/TR/1999/REC-xslt-19991116", "System.Security.Cryptography.Xml.XmlDsigXsltTransform, " + AssemblyName_Xml);
+                ht.Add("http://www.w3.org/2000/09/xmldsig#enveloped-signature", "System.Security.Cryptography.Xml.XmlDsigEnvelopedSignatureTransform, " + AssemblyName_Xml);
                 // the decryption transform
-                // ht.Add("http://www.w3.org/2002/07/decrypt#XML", "System.Security.Cryptography.Xml.XmlDecryptionTransform, " + AssemblyRef.SystemSecurity);
+                ht.Add("http://www.w3.org/2002/07/decrypt#XML", "System.Security.Cryptography.Xml.XmlDecryptionTransform, " + AssemblyName_Xml);
                 // Xml licence transform.
-                // ht.Add("urn:mpeg:mpeg21:2003:01-REL-R-NS:licenseTransform", "System.Security.Cryptography.Xml.XmlLicenseTransform, " + AssemblyRef.SystemSecurity);
+                ht.Add("urn:mpeg:mpeg21:2003:01-REL-R-NS:licenseTransform", "System.Security.Cryptography.Xml.XmlLicenseTransform, " + AssemblyName_Xml);
                 // Xml Dsig KeyInfo
                 // First arg (the key) is formed as elem.NamespaceURI + " " + elem.LocalName
-                // ht.Add("http://www.w3.org/2000/09/xmldsig# X509Data", "System.Security.Cryptography.Xml.KeyInfoX509Data, " + AssemblyRef.SystemSecurity);
-                // ht.Add("http://www.w3.org/2000/09/xmldsig# KeyName", "System.Security.Cryptography.Xml.KeyInfoName, " + AssemblyRef.SystemSecurity);
-                // ht.Add("http://www.w3.org/2000/09/xmldsig# KeyValue/DSAKeyValue", "System.Security.Cryptography.Xml.DSAKeyValue, " + AssemblyRef.SystemSecurity);
-                // ht.Add("http://www.w3.org/2000/09/xmldsig# KeyValue/RSAKeyValue", "System.Security.Cryptography.Xml.RSAKeyValue, " + AssemblyRef.SystemSecurity);
-                // ht.Add("http://www.w3.org/2000/09/xmldsig# RetrievalMethod", "System.Security.Cryptography.Xml.KeyInfoRetrievalMethod, " + AssemblyRef.SystemSecurity);
+                ht.Add("http://www.w3.org/2000/09/xmldsig# X509Data", "System.Security.Cryptography.Xml.KeyInfoX509Data, " + AssemblyName_Xml);
+                ht.Add("http://www.w3.org/2000/09/xmldsig# KeyName", "System.Security.Cryptography.Xml.KeyInfoName, " + AssemblyName_Xml);
+                ht.Add("http://www.w3.org/2000/09/xmldsig# KeyValue/DSAKeyValue", "System.Security.Cryptography.Xml.DSAKeyValue, " + AssemblyName_Xml);
+                ht.Add("http://www.w3.org/2000/09/xmldsig# KeyValue/RSAKeyValue", "System.Security.Cryptography.Xml.RSAKeyValue, " + AssemblyName_Xml);
+                ht.Add("http://www.w3.org/2000/09/xmldsig# RetrievalMethod", "System.Security.Cryptography.Xml.KeyInfoRetrievalMethod, " + AssemblyName_Xml);
                 // Xml EncryptedKey
-                // ht.Add("http://www.w3.org/2001/04/xmlenc# EncryptedKey", "System.Security.Cryptography.Xml.KeyInfoEncryptedKey, " + AssemblyRef.SystemSecurity);
+                ht.Add("http://www.w3.org/2001/04/xmlenc# EncryptedKey", "System.Security.Cryptography.Xml.KeyInfoEncryptedKey, " + AssemblyName_Xml);
                 // ht.Add("http://www.w3.org/2001/04/xmldsig-more#hmac-ripemd160", HMACRIPEMD160Type);
+
+                s_defaultNameHT = ht;
+                return s_defaultNameHT;
             }
         }
 
