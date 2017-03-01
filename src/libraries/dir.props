@@ -35,6 +35,7 @@
     <ToolsDir Condition="'$(UseToolRuntimeForToolsDir)'=='true'">$(ToolRuntimePath)</ToolsDir>
     <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)Tools/</ToolsDir>
     <ToolRuntimePath Condition="'$(ToolRuntimePath)'==''">$(ToolsDir)</ToolRuntimePath>
+    <IlasmToolPath>$(ToolsDir)ilasm/ilasm</IlasmToolPath>
 
     <!-- needs to be defined all the time to avoid indexing every file from the root -->
     <GeneratedProjectJsonDir>$(ObjDir)generated</GeneratedProjectJsonDir>
