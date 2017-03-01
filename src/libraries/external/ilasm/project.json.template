@@ -1,0 +1,14 @@
+﻿{
+  "frameworks": {
+    "{TFM}": {
+      "dependencies": {
+        "Microsoft.NETCore.Platforms": "2.0.0-beta-25027-01",
+        "Microsoft.NETCore.Runtime.CoreCLR": "2.0.0-beta-25028-02",
+        "Microsoft.NETCore.ILAsm": "2.0.0-beta-25028-02",
+      }
+    }
+  },
+  "runtimes": {
+    "{RID}": {}
+  }
+}

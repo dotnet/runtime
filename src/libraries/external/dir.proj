@@ -14,6 +14,7 @@
     <Project Include="harvestPackages/harvestPackages.depproj" />
     <Project Include="portable\portable.depproj" />
     <Project Include="uapaotredist/uapaotredist.depproj" />
+    <Project Include="ilasm/ilasm.depproj" />
   </ItemGroup>
 
   <Import Project="../dir.traversal.targets" />
