@@ -484,6 +484,22 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<ArgumentException>("cases", () => Expression.Switch(typeof(int), Expression.Constant(0), Expression.Constant(1), comparer, Enumerable.Repeat(Expression.SwitchCase(Expression.Empty(), Expression.Constant(0)), 1)));
         }
 
+        private class GenClass<T>
+        {
+            public static bool WithinTwo(int x, int y) => Math.Abs(x - y) < 2;
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void OpenGenericMethodDeclarer(bool useInterpreter)
+        {
+            Expression switchVal = Expression.Constant(30);
+            Expression defaultExp = Expression.Constant(0);
+            SwitchCase switchCase = Expression.SwitchCase(Expression.Constant(1), Expression.Constant(2));
+            MethodInfo method = typeof(GenClass<>).GetMethod(nameof(GenClass<int>.WithinTwo), BindingFlags.Static | BindingFlags.Public);
+            Assert.Throws<ArgumentException>(
+                "comparison", () => Expression.Switch(switchVal, defaultExp, method, switchCase));
+        }
+
         static bool WithinTen(int x, int y) => Math.Abs(x - y) < 10;
 
         [Theory, ClassData(typeof(CompilationTypes))]
