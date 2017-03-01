@@ -1716,7 +1716,13 @@ protected:
     PER_HEAP
     void card_bundle_clear(size_t cardb);
     PER_HEAP
+    void card_bundle_set (size_t cardb);
+    PER_HEAP
     void card_bundles_set (size_t start_cardb, size_t end_cardb);
+    PER_HEAP
+    void verify_card_bundle_bits_set(size_t first_card_word, size_t last_card_word);
+    PER_HEAP
+    void verify_card_bundles();
     PER_HEAP
     BOOL card_bundle_set_p (size_t cardb);
     PER_HEAP
@@ -4310,12 +4316,14 @@ dynamic_data* gc_heap::dynamic_data_of (int gen_number)
 #define card_size ((size_t)(OS_PAGE_SIZE/card_word_width))
 #endif // BIT64
 
+// Returns the index of the card word a card is in
 inline
 size_t card_word (size_t card)
 {
     return card / card_word_width;
 }
 
+// Returns the index of a card within its card word
 inline
 unsigned card_bit (size_t card)
 {

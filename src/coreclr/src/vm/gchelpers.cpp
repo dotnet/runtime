@@ -1101,15 +1101,31 @@ OBJECTREF AllocateObject(MethodTable *pMT
 
 
 #if defined(_WIN64)
-// Card byte shift is different on 64bit.
-#define card_byte_shift     11
+    static const int card_byte_shift        = 11;
+    static const int card_bundle_byte_shift = 21;
 #else
-#define card_byte_shift     10
+    static const int card_byte_shift        = 10;
+
+    #ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+        #error Manually managed card bundles are currently only implemented for AMD64.
+    #endif
 #endif
 
 #define card_byte(addr) (((size_t)(addr)) >> card_byte_shift)
 #define card_bit(addr)  (1 << ((((size_t)(addr)) >> (card_byte_shift - 3)) & 7))
 
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+#define card_bundle_byte(addr) (((size_t)(addr)) >> card_bundle_byte_shift)
+
+static void SetCardBundleByte(BYTE* addr)
+{
+    BYTE* cbByte = (BYTE *)VolatileLoadWithoutBarrier(&g_card_bundle_table) + card_bundle_byte(addr);
+    if (*cbByte != 0xFF)
+    {
+        *cbByte = 0xFF;
+    }
+}
+#endif
 
 #ifdef FEATURE_USE_ASM_GC_WRITE_BARRIERS
 
@@ -1261,6 +1277,10 @@ extern "C" HCIMPL2_RAW(VOID, JIT_CheckedWriteBarrier, Object **dst, Object *ref)
             CheckedAfterAlreadyDirtyFilter++;
 #endif
             *pCardByte = 0xFF;
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+            SetCardBundleByte((BYTE*)dst);
+#endif
         }
     }
 }
@@ -1316,6 +1336,11 @@ extern "C" HCIMPL2_RAW(VOID, JIT_WriteBarrier, Object **dst, Object *ref)
             UncheckedAfterAlreadyDirtyFilter++;
 #endif
             *pCardByte = 0xFF;
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+            SetCardBundleByte((BYTE*)dst);
+#endif
+
         }
     }
 }
@@ -1366,15 +1391,22 @@ void ErectWriteBarrier(OBJECTREF *dst, OBJECTREF ref)
     }
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
-    if((BYTE*) OBJECTREFToObject(ref) >= g_ephemeral_low && (BYTE*) OBJECTREFToObject(ref) < g_ephemeral_high)
+    if ((BYTE*) OBJECTREFToObject(ref) >= g_ephemeral_low && (BYTE*) OBJECTREFToObject(ref) < g_ephemeral_high)
     {
         // VolatileLoadWithoutBarrier() is used here to prevent fetch of g_card_table from being reordered 
         // with g_lowest/highest_address check above. See comment in code:gc_heap::grow_brick_card_tables.
         BYTE* pCardByte = (BYTE *)VolatileLoadWithoutBarrier(&g_card_table) + card_byte((BYTE *)dst);
-        if(*pCardByte != 0xFF)
+        if (*pCardByte != 0xFF)
+        {
             *pCardByte = 0xFF;
+            
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+            SetCardBundleByte((BYTE*)dst);
+#endif
+
+        }
     }
-}        
+}
 #include <optdefault.h>
 
 void ErectWriteBarrierForMT(MethodTable **dst, MethodTable *ref)
@@ -1408,6 +1440,11 @@ void ErectWriteBarrierForMT(MethodTable **dst, MethodTable *ref)
             if( !((*pCardByte) & card_bit((BYTE *)dst)) )
             {
                 *pCardByte = 0xFF;
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+                SetCardBundleByte((BYTE*)dst);
+#endif
+
             }
         }
     }
@@ -1443,7 +1480,6 @@ SetCardsAfterBulkCopy(Object **start, size_t len)
     {
         return;
     }
-
 
     // Don't optimize the Generation 0 case if we are checking for write barrier violations
     // since we need to update the shadow heap even in the generation 0 case.
@@ -1488,6 +1524,26 @@ SetCardsAfterBulkCopy(Object **start, size_t len)
         clumpCount--;
     }
     while (clumpCount != 0);
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+    size_t startBundleByte = startAddress >> card_bundle_byte_shift;
+    size_t endBundleByte = (endAddress + (1 << card_bundle_byte_shift) - 1) >> card_bundle_byte_shift;
+    size_t bundleByteCount = endBundleByte - startBundleByte;
+
+    uint8_t* pBundleByte = ((uint8_t*)VolatileLoadWithoutBarrier(&g_card_bundle_table)) + startBundleByte;
+
+    do
+    {
+        if (*pBundleByte != 0xFF)
+        {
+            *pBundleByte = 0xFF;
+        }
+
+        pBundleByte++;
+        bundleByteCount--;
+    }
+    while (bundleByteCount != 0);
+#endif
 }
 
 #if defined(_MSC_VER) && defined(_TARGET_X86_)
