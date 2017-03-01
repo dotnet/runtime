@@ -471,7 +471,7 @@ namespace System.Diagnostics.Tracing
 
             // Determine our session from what is in the registry.  
             string regKey = @"\Microsoft\Windows\CurrentVersion\Winevt\Publishers\{" + m_providerId + "}";
-            if (System.Runtime.InteropServices.Marshal.SizeOf(typeof(IntPtr)) == 8)
+            if (sizeof(IntPtr) == 8)
                 regKey = @"Software" + @"\Wow6432Node" + regKey;
             else
                 regKey = @"Software" + regKey;
@@ -547,7 +547,7 @@ namespace System.Diagnostics.Tracing
             {
 #if (!ES_BUILD_PCL && !PROJECTN && !FEATURE_PAL)
                 string regKey = @"\Microsoft\Windows\CurrentVersion\Winevt\Publishers\{" + m_providerId + "}";
-                if (System.Runtime.InteropServices.Marshal.SizeOf(typeof(IntPtr)) == 8)
+                if (sizeof(IntPtr) == 8)
                     regKey = @"HKEY_LOCAL_MACHINE\Software" + @"\Wow6432Node" + regKey;
                 else
                     regKey = @"HKEY_LOCAL_MACHINE\Software" + regKey;

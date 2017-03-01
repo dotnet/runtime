@@ -17,11 +17,6 @@ namespace System.Net.Sockets
 {
     public partial class SocketAsyncEventArgs : EventArgs, IDisposable
     {
-        // Struct sizes needed for some custom marshaling.
-        internal static readonly int s_controlDataSize = Marshal.SizeOf<Interop.Winsock.ControlData>();
-        internal static readonly int s_controlDataIPv6Size = Marshal.SizeOf<Interop.Winsock.ControlDataIPv6>();
-        internal static readonly int s_wsaMsgSize = Marshal.SizeOf<Interop.Winsock.WSAMsg>();
-
         // Buffer,Offset,Count property variables.
         private WSABuffer _wsaBuffer;
         private IntPtr _ptrSingleBuffer;
@@ -378,7 +373,7 @@ namespace System.Net.Sockets
             return ProcessIOCPResult(socketError == SocketError.Success, bytesTransferred);
         }
 
-        private void InnerStartOperationReceiveMessageFrom()
+        private unsafe void InnerStartOperationReceiveMessageFrom()
         {
             // WSARecvMsg uses a WSAMsg descriptor.
             // The WSAMsg buffer is pinned with a GCHandle to avoid complicating the use of Overlapped.
@@ -391,7 +386,7 @@ namespace System.Net.Sockets
             // Create and pin a WSAMessageBuffer if none already.
             if (_wsaMessageBuffer == null)
             {
-                _wsaMessageBuffer = new byte[s_wsaMsgSize];
+                _wsaMessageBuffer = new byte[sizeof(Interop.Winsock.WSAMsg)];
                 _wsaMessageBufferGCHandle = GCHandle.Alloc(_wsaMessageBuffer, GCHandleType.Pinned);
                 _ptrWSAMessageBuffer = Marshal.UnsafeAddrOfPinnedArrayElement(_wsaMessageBuffer, 0);
             }
@@ -401,21 +396,21 @@ namespace System.Net.Sockets
             bool ipv4 = (_currentSocket.AddressFamily == AddressFamily.InterNetwork || (ipAddress != null && ipAddress.IsIPv4MappedToIPv6)); // DualMode
             bool ipv6 = _currentSocket.AddressFamily == AddressFamily.InterNetworkV6;
 
-            if (ipv4 && (_controlBuffer == null || _controlBuffer.Length != s_controlDataSize))
+            if (ipv4 && (_controlBuffer == null || _controlBuffer.Length != sizeof(Interop.Winsock.ControlData)))
             {
                 if (_controlBufferGCHandle.IsAllocated)
                 {
                     _controlBufferGCHandle.Free();
                 }
-                _controlBuffer = new byte[s_controlDataSize];
+                _controlBuffer = new byte[sizeof(Interop.Winsock.ControlData)];
             }
-            else if (ipv6 && (_controlBuffer == null || _controlBuffer.Length != s_controlDataIPv6Size))
+            else if (ipv6 && (_controlBuffer == null || _controlBuffer.Length != sizeof(Interop.Winsock.ControlDataIPv6)))
             {
                 if (_controlBufferGCHandle.IsAllocated)
                 {
                     _controlBufferGCHandle.Free();
                 }
-                _controlBuffer = new byte[s_controlDataIPv6Size];
+                _controlBuffer = new byte[sizeof(Interop.Winsock.ControlDataIPv6)];
             }
             if (!_controlBufferGCHandle.IsAllocated)
             {
@@ -1098,7 +1093,7 @@ namespace System.Net.Sockets
                     SocketOptionLevel.Socket,
                     SocketOptionName.UpdateAcceptContext,
                     ref handle,
-                    Marshal.SizeOf(handle));
+                    IntPtr.Size);
 
                 if (socketError == SocketError.SocketError)
                 {
@@ -1148,12 +1143,12 @@ namespace System.Net.Sockets
         {
             Interop.Winsock.WSAMsg* PtrMessage = (Interop.Winsock.WSAMsg*)Marshal.UnsafeAddrOfPinnedArrayElement(_wsaMessageBuffer, 0);
 
-            if (_controlBuffer.Length == s_controlDataSize)
+            if (_controlBuffer.Length == sizeof(Interop.Winsock.ControlData))
             {
                 // IPv4.
                 _receiveMessageFromPacketInfo = SocketPal.GetIPPacketInformation((Interop.Winsock.ControlData*)PtrMessage->controlBuffer.Pointer);
             }
-            else if (_controlBuffer.Length == s_controlDataIPv6Size)
+            else if (_controlBuffer.Length == sizeof(Interop.Winsock.ControlDataIPv6))
             {
                 // IPv6.
                 _receiveMessageFromPacketInfo = SocketPal.GetIPPacketInformation((Interop.Winsock.ControlDataIPv6*)PtrMessage->controlBuffer.Pointer);
