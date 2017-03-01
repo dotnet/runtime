@@ -31,9 +31,9 @@ set "__args= %*"
 set processedArgs=
 set __unprocessedBuildArgs=
 set __RunArgs=
-set __BuildAgainstPackages=
 set __BuildAgainstPackagesArg=
 set __RuntimeId=
+set __ZipTests=
 
 :Arg_Loop
 if "%1" == "" goto ArgsDone
@@ -54,9 +54,10 @@ if /i "%1" == "checked"               (set __BuildType=Checked&set processedArgs
 if /i "%1" == "skipmanaged"           (set __SkipManaged=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "updateinvalidpackages" (set __UpdateInvalidPackagesArg=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "toolset_dir"           (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
-if /i "%1" == "buildagainstpackages"  (set __BuildAgainstPackages=1&set __BuildAgainstPackagesArg=-BuildTestsAgainstPackages&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "buildagainstpackages"  (set __ZipTests=1&set __BuildAgainstPackagesArg=-BuildTestsAgainstPackages&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "ziptests"              (set __ZipTests=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "runtimeid"             (set __RuntimeId=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
-if /i "%1" == "Exclude"              (set __Exclude=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
+if /i "%1" == "Exclude"               (set __Exclude=%2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 
 if [!processedArgs!]==[] (
   call set __UnprocessedBuildArgs=!__args!
@@ -195,7 +196,7 @@ set __msbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%"
 
 set "__TestWorkingDir=%__RootBinDir%\tests\%__BuildOS%.%__BuildArch%.%__BuildType%"
 
-if not defined __BuildAgainstPackages goto SkipRestoreProduct
+if not defined __BuildAgainstPackagesArg goto SkipRestoreProduct
 REM =========================================================================================
 REM ===
 REM === Restore product binaries from packages
@@ -322,7 +323,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-if not defined __BuildAgainstPackages goto SkipPrepForPublish
+if not defined __ZipTests goto SkipPrepForPublish
 
 set __BuildLogRootName=Helix_Prep
 set __BuildLog=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%.log
@@ -376,6 +377,7 @@ echo     rhel.7-x64: Builds overlay for RHEL 7 or CentOS
 echo     ubuntu.14.04-x64: Builds overlay for Ubuntu 14.04
 echo     ubuntu.16.04-x64: Builds overlay for Ubuntu 16.04
 echo     ubuntu.16.10-x64: Builds overlay for Ubuntu 16.10
+echo ziptests: zips CoreCLR tests & Core_Root for a Helix run
 echo Exclude- Optional parameter - specify location of default exclusion file (defaults to tests\issues.targets if not specified)
 echo     Set to "" to disable default exclusion file.
 echo -- ... : all arguments following this tag will be passed directly to msbuild.
