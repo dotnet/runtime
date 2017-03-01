@@ -12,9 +12,18 @@
                    Apply="$(BaseLinePackageDependencies)">
       <Output TaskParameter="BaseLinedDependencies" ItemName="_BaseLinedStaticDependencies" />
     </ApplyBaseLine>
+
+    <ApplyPreReleaseSuffix Condition="'@(_BaseLinedStaticDependencies)' != ''" 
+                           OriginalPackages="@(_BaseLinedStaticDependencies)" 
+                           StablePackages="@(StablePackage)"
+                           PackageIndexes="@(PackageIndex)"
+                           PreReleaseSuffix="$(VersionSuffix)">
+      <Output TaskParameter="UpdatedPackages" ItemName="_SuffixedStaticDependencies"/>
+    </ApplyPreReleaseSuffix>
+    
     <ItemGroup>
       <Dependency Remove="@(Dependency)" />
-      <Dependency Include="@(_BaseLinedStaticDependencies)" />
+      <Dependency Include="@(_SuffixedStaticDependencies)" />
     </ItemGroup>
   </Target>
 </Project>
