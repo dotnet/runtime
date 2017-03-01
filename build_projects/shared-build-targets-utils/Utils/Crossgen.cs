@@ -55,8 +55,8 @@ namespace Microsoft.DotNet.Cli.Build
             else if (_targetRID == "win10-arm64")
             {
                 // workaround https://github.com/dotnet/coreclr/issues/9884
-                // ridCrossgen = Path.Combine(crossgenPackagePath, "tools", "x86_arm", $"crossgen{Constants.ExeSuffix}");
-                ridCrossgen = Path.Combine(crossgenPackagePath, "tools", "x86_AnyCPU", $"crossgen{Constants.ExeSuffix}");
+                // ridCrossgen = Path.Combine(crossgenPackagePath, "tools", "x64_arm", $"crossgen{Constants.ExeSuffix}");
+                ridCrossgen = Path.Combine(crossgenPackagePath, "tools", "x64_AnyCPU", $"crossgen{Constants.ExeSuffix}");
             }
             else
             {
