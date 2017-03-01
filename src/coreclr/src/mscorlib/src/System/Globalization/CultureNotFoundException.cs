@@ -2,20 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
-
 using System;
 using System.Runtime.Serialization;
 using System.Threading;
-using System.Diagnostics.Contracts;
 
 namespace System.Globalization
 {
     [Serializable]
-    public partial class CultureNotFoundException : ArgumentException, ISerializable
+    public class CultureNotFoundException : ArgumentException, ISerializable
     {
-        private string m_invalidCultureName; // unrecognized culture name
-        private Nullable<int> m_invalidCultureId;   // unrecognized culture Lcid
+        private string _invalidCultureName; // unrecognized culture name
+        private int? _invalidCultureId;     // unrecognized culture Lcid
 
         public CultureNotFoundException()
             : base(DefaultMessage)
@@ -37,64 +34,59 @@ namespace System.Globalization
         {
         }
 
-        public CultureNotFoundException(String paramName, int invalidCultureId, String message)
-            : base(message, paramName)
-        {
-            m_invalidCultureId = invalidCultureId;
-        }
-
-        public CultureNotFoundException(String message, int invalidCultureId, Exception innerException)
-            : base(message, innerException)
-        {
-            m_invalidCultureId = invalidCultureId;
-        }
-
         public CultureNotFoundException(String paramName, string invalidCultureName, String message)
             : base(message, paramName)
         {
-            m_invalidCultureName = invalidCultureName;
+            _invalidCultureName = invalidCultureName;
         }
 
         public CultureNotFoundException(String message, string invalidCultureName, Exception innerException)
             : base(message, innerException)
         {
-            m_invalidCultureName = invalidCultureName;
+            _invalidCultureName = invalidCultureName;
         }
 
-        protected CultureNotFoundException(SerializationInfo info, StreamingContext context) : base(info, context)
+        public CultureNotFoundException(string message, int invalidCultureId, Exception innerException)
+            : base(message, innerException)
         {
-            m_invalidCultureId = (Nullable<int>)info.GetValue("InvalidCultureId", typeof(Nullable<int>));
-            m_invalidCultureName = (string)info.GetValue("InvalidCultureName", typeof(string));
+            _invalidCultureId = invalidCultureId;
+        }
+
+        public CultureNotFoundException(string paramName, int invalidCultureId, string message)
+            : base(message, paramName)
+        {
+            _invalidCultureId = invalidCultureId;
+        }
+
+        protected CultureNotFoundException(SerializationInfo info, StreamingContext context)
+            : base(info, context)
+        {
+            _invalidCultureId = (int?)info.GetValue("InvalidCultureId", typeof(int?));
+            _invalidCultureName = (string)info.GetValue("InvalidCultureName", typeof(string));
         }
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
-            Contract.EndContractBlock();
             base.GetObjectData(info, context);
-            Nullable<int> invalidCultureId = null;
-            invalidCultureId = m_invalidCultureId;
-            info.AddValue("InvalidCultureId", invalidCultureId, typeof(Nullable<int>));
-            info.AddValue("InvalidCultureName", m_invalidCultureName, typeof(string));
+            info.AddValue("InvalidCultureId", _invalidCultureId, typeof(int?));
+            info.AddValue("InvalidCultureName", _invalidCultureName, typeof(string));
         }
+
         public virtual Nullable<int> InvalidCultureId
         {
-            get { return m_invalidCultureId; }
+            get { return _invalidCultureId; }
         }
 
         public virtual string InvalidCultureName
         {
-            get { return m_invalidCultureName; }
+            get { return _invalidCultureName; }
         }
 
         private static String DefaultMessage
         {
             get
             {
-                return Environment.GetResourceString("Argument_CultureNotSupported");
+                return SR.Argument_CultureNotSupported;
             }
         }
 
@@ -102,12 +94,9 @@ namespace System.Globalization
         {
             get
             {
-                if (InvalidCultureId != null)
-                {
-                    return String.Format(CultureInfo.InvariantCulture,
-                                        "{0} (0x{0:x4})", (int)InvalidCultureId);
-                }
-                return InvalidCultureName;
+                return InvalidCultureId != null ?
+                    String.Format(CultureInfo.InvariantCulture, "{0} (0x{0:x4})", (int)InvalidCultureId) :
+                    InvalidCultureName;
             }
         }
 
@@ -116,13 +105,14 @@ namespace System.Globalization
             get
             {
                 String s = base.Message;
-                if (
-                    m_invalidCultureId != null ||
-                    m_invalidCultureName != null)
+                if (_invalidCultureId != null || _invalidCultureName != null)
                 {
-                    String valueMessage = Environment.GetResourceString("Argument_CultureInvalidIdentifier", FormatedInvalidCultureId);
+                    String valueMessage = SR.Format(SR.Argument_CultureInvalidIdentifier, FormatedInvalidCultureId);
                     if (s == null)
+                    {
                         return valueMessage;
+                    }
+
                     return s + Environment.NewLine + valueMessage;
                 }
                 return s;

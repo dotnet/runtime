@@ -146,19 +146,6 @@ namespace System.Threading
         [ThreadStatic]
         internal static CultureInfo m_CurrentUICulture;
 
-        private static AsyncLocal<CultureInfo> s_asyncLocalCurrentCulture;
-        private static AsyncLocal<CultureInfo> s_asyncLocalCurrentUICulture;
-
-        private static void AsyncLocalSetCurrentCulture(AsyncLocalValueChangedArgs<CultureInfo> args)
-        {
-            m_CurrentCulture = args.CurrentValue;
-        }
-
-        private static void AsyncLocalSetCurrentUICulture(AsyncLocalValueChangedArgs<CultureInfo> args)
-        {
-            m_CurrentUICulture = args.CurrentValue;
-        }
-
         // Adding an empty default ctor for annotation purposes
         internal Thread() { }
 
@@ -451,71 +438,19 @@ namespace System.Threading
             get
             {
                 Contract.Ensures(Contract.Result<CultureInfo>() != null);
-#if FEATURE_APPX && !FEATURE_COREFX_GLOBALIZATION
-                if (AppDomain.IsAppXModel())
-                {
-                    return CultureInfo.GetCultureInfoForUserPreferredLanguageInAppX() ?? GetCurrentUICultureNoAppX();
-                }
-                else
-#endif
-                {
-                    return GetCurrentUICultureNoAppX();
-                }
+                return CultureInfo.CurrentUICulture;
             }
 
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
-                Contract.EndContractBlock();
-
-                //If they're trying to use a Culture with a name that we can't use in resource lookup,
-                //don't even let them set it on the thread.
-                CultureInfo.VerifyCultureName(value, true);
-
                 // If you add more pre-conditions to this method, check to see if you also need to 
                 // add them to CultureInfo.DefaultThreadCurrentUICulture.set.
 
                 if (m_CurrentUICulture == null && m_CurrentCulture == null)
                     nativeInitCultureAccessors();
 
-                if (!AppContextSwitches.NoAsyncCurrentCulture)
-                {
-                    if (s_asyncLocalCurrentUICulture == null)
-                    {
-                        Interlocked.CompareExchange(ref s_asyncLocalCurrentUICulture, new AsyncLocal<CultureInfo>(AsyncLocalSetCurrentUICulture), null);
-                    }
-
-                    // this one will set m_CurrentUICulture too
-                    s_asyncLocalCurrentUICulture.Value = value;
-                }
-                else
-                {
-                    m_CurrentUICulture = value;
-                }
+                CultureInfo.CurrentUICulture = value;
             }
-        }
-
-        internal CultureInfo GetCurrentUICultureNoAppX()
-        {
-            Contract.Ensures(Contract.Result<CultureInfo>() != null);
-
-#if FEATURE_COREFX_GLOBALIZATION
-            return CultureInfo.CurrentUICulture;
-#else
-
-            // Fetch a local copy of m_CurrentUICulture to 
-            // avoid race conditions that malicious user can introduce
-            if (m_CurrentUICulture == null)
-            {
-                CultureInfo appDomainDefaultUICulture = CultureInfo.DefaultThreadCurrentUICulture;
-                return (appDomainDefaultUICulture != null ? appDomainDefaultUICulture : CultureInfo.UserDefaultUICulture);
-            }
-
-            return m_CurrentUICulture;
-#endif
         }
 
         // This returns the exposed context for a given context ID.
@@ -537,25 +472,11 @@ namespace System.Threading
             get
             {
                 Contract.Ensures(Contract.Result<CultureInfo>() != null);
-
-#if FEATURE_APPX && !FEATURE_COREFX_GLOBALIZATION
-                if (AppDomain.IsAppXModel())
-                {
-                    return CultureInfo.GetCultureInfoForUserPreferredLanguageInAppX() ?? GetCurrentCultureNoAppX();
-                }
-                else
-#endif
-                {
-                    return GetCurrentCultureNoAppX();
-                }
+                return CultureInfo.CurrentCulture;
             }
 
             set
             {
-                if (null == value)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
                 Contract.EndContractBlock();
 
                 // If you add more pre-conditions to this method, check to see if you also need to 
@@ -563,40 +484,9 @@ namespace System.Threading
 
                 if (m_CurrentCulture == null && m_CurrentUICulture == null)
                     nativeInitCultureAccessors();
-
-                if (!AppContextSwitches.NoAsyncCurrentCulture)
-                {
-                    if (s_asyncLocalCurrentCulture == null)
-                    {
-                        Interlocked.CompareExchange(ref s_asyncLocalCurrentCulture, new AsyncLocal<CultureInfo>(AsyncLocalSetCurrentCulture), null);
-                    }
-                    // this one will set m_CurrentCulture too
-                    s_asyncLocalCurrentCulture.Value = value;
-                }
-                else
-                {
-                    m_CurrentCulture = value;
-                }
+                
+                CultureInfo.CurrentCulture = value;
             }
-        }
-
-        private CultureInfo GetCurrentCultureNoAppX()
-        {
-#if FEATURE_COREFX_GLOBALIZATION
-            return CultureInfo.CurrentCulture;
-#else
-            Contract.Ensures(Contract.Result<CultureInfo>() != null);
-
-            // Fetch a local copy of m_CurrentCulture to 
-            // avoid race conditions that malicious user can introduce
-            if (m_CurrentCulture == null)
-            {
-                CultureInfo appDomainDefaultCulture = CultureInfo.DefaultThreadCurrentCulture;
-                return (appDomainDefaultCulture != null ? appDomainDefaultCulture : CultureInfo.UserDefaultCulture);
-            }
-
-            return m_CurrentCulture;
-#endif
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]

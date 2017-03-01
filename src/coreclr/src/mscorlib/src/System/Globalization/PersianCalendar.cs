@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
@@ -50,24 +49,6 @@ namespace System.Globalization
         internal static DateTime minDate = new DateTime(622, 3, 22);
         internal static DateTime maxDate = DateTime.MaxValue;
 
-        /*=================================GetDefaultInstance==========================
-        **Action: Internal method to provide a default intance of PersianCalendar.  Used by NLS+ implementation
-        **       and other calendars.
-        **Returns:
-        **Arguments:
-        **Exceptions:
-        ============================================================================*/
-        /*
-        internal static Calendar GetDefaultInstance() {
-            if (m_defaultInstance == null) {
-                m_defaultInstance = new PersianCalendar();
-            }
-            return (m_defaultInstance);
-        }
-        */
-
-
-
         public override DateTime MinSupportedDateTime
         {
             get
@@ -76,7 +57,6 @@ namespace System.Globalization
             }
         }
 
-
         public override DateTime MaxSupportedDateTime
         {
             get
@@ -84,10 +64,6 @@ namespace System.Globalization
                 return (maxDate);
             }
         }
-
-        // Return the type of the Persian calendar.
-        //
-
 
         public override CalendarAlgorithmType AlgorithmType
         {
@@ -104,19 +80,19 @@ namespace System.Globalization
         }
 
 
-        internal override int BaseCalendarID
+        internal override CalendarId BaseCalendarID
         {
             get
             {
-                return (CAL_GREGORIAN);
+                return CalendarId.GREGORIAN;
             }
         }
 
-        internal override int ID
+        internal override CalendarId ID
         {
             get
             {
-                return (CAL_PERSIAN);
+                return CalendarId.PERSIAN;
             }
         }
 
@@ -139,10 +115,10 @@ namespace System.Globalization
                 yearStart += ordinalDay;
                 return yearStart;
             }
-            throw new ArgumentOutOfRangeException(null, Environment.GetResourceString("ArgumentOutOfRange_BadYearMonthDay"));
+            throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadYearMonthDay);
         }
 
-        static internal void CheckTicksRange(long ticks)
+        internal static void CheckTicksRange(long ticks)
         {
             if (ticks < minDate.Ticks || ticks > maxDate.Ticks)
             {
@@ -150,21 +126,21 @@ namespace System.Globalization
                             "time",
                             String.Format(
                                 CultureInfo.InvariantCulture,
-                                Environment.GetResourceString("ArgumentOutOfRange_CalendarRange"),
+                                SR.ArgumentOutOfRange_CalendarRange,
                                 minDate,
                                 maxDate));
             }
         }
 
-        static internal void CheckEraRange(int era)
+        internal static void CheckEraRange(int era)
         {
             if (era != CurrentEra && era != PersianEra)
             {
-                throw new ArgumentOutOfRangeException(nameof(era), Environment.GetResourceString("ArgumentOutOfRange_InvalidEraValue"));
+                throw new ArgumentOutOfRangeException(nameof(era), SR.ArgumentOutOfRange_InvalidEraValue);
             }
         }
 
-        static internal void CheckYearRange(int year, int era)
+        internal static void CheckYearRange(int year, int era)
         {
             CheckEraRange(era);
             if (year < 1 || year > MaxCalendarYear)
@@ -173,13 +149,13 @@ namespace System.Globalization
                             nameof(year),
                             String.Format(
                                 CultureInfo.CurrentCulture,
-                                Environment.GetResourceString("ArgumentOutOfRange_Range"),
+                                SR.ArgumentOutOfRange_Range,
                                 1,
                                 MaxCalendarYear));
             }
         }
 
-        static internal void CheckYearMonthRange(int year, int month, int era)
+        internal static void CheckYearMonthRange(int year, int month, int era)
         {
             CheckYearRange(year, era);
             if (year == MaxCalendarYear)
@@ -190,7 +166,7 @@ namespace System.Globalization
                                 nameof(month),
                                 String.Format(
                                     CultureInfo.CurrentCulture,
-                                    Environment.GetResourceString("ArgumentOutOfRange_Range"),
+                                    SR.ArgumentOutOfRange_Range,
                                     1,
                                     MaxCalendarMonth));
                 }
@@ -198,7 +174,7 @@ namespace System.Globalization
 
             if (month < 1 || month > 12)
             {
-                throw new ArgumentOutOfRangeException(nameof(month), Environment.GetResourceString("ArgumentOutOfRange_Month"));
+                throw new ArgumentOutOfRangeException(nameof(month), SR.ArgumentOutOfRange_Month);
             }
         }
 
@@ -285,7 +261,7 @@ namespace System.Globalization
             }
 
             // Incorrect part value.
-            throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_DateTimeParsing"));
+            throw new InvalidOperationException(SR.InvalidOperation_DateTimeParsing);
         }
 
         // Returns the DateTime resulting from adding the given number of
@@ -315,7 +291,7 @@ namespace System.Globalization
                             nameof(months),
                             String.Format(
                                 CultureInfo.CurrentCulture,
-                                Environment.GetResourceString("ArgumentOutOfRange_Range"),
+                                SR.ArgumentOutOfRange_Range,
                                 -120000,
                                 120000));
             }
@@ -496,7 +472,7 @@ namespace System.Globalization
                             nameof(day),
                             String.Format(
                                 CultureInfo.CurrentCulture,
-                                Environment.GetResourceString("ArgumentOutOfRange_Day"),
+                                SR.ArgumentOutOfRange_Day,
                                 daysInMonth,
                                 month));
             }
@@ -551,12 +527,12 @@ namespace System.Globalization
             int daysInMonth = GetDaysInMonth(year, month, era);
             if (day < 1 || day > daysInMonth)
             {
-                BCLDebug.Log("year = " + year + ", month = " + month + ", day = " + day);
+                // BCLDebug.Log("year = " + year + ", month = " + month + ", day = " + day);
                 throw new ArgumentOutOfRangeException(
                             nameof(day),
                             String.Format(
                                 CultureInfo.CurrentCulture,
-                                Environment.GetResourceString("ArgumentOutOfRange_Day"),
+                                SR.ArgumentOutOfRange_Day,
                                 daysInMonth,
                                 month));
             }
@@ -569,7 +545,7 @@ namespace System.Globalization
             }
             else
             {
-                throw new ArgumentOutOfRangeException(null, Environment.GetResourceString("ArgumentOutOfRange_BadYearMonthDay"));
+                throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadYearMonthDay);
             }
         }
 
@@ -595,7 +571,7 @@ namespace System.Globalization
                                 nameof(value),
                                 String.Format(
                                     CultureInfo.CurrentCulture,
-                                    Environment.GetResourceString("ArgumentOutOfRange_Range"),
+                                    SR.ArgumentOutOfRange_Range,
                                     99,
                                     MaxCalendarYear));
                 }
@@ -610,7 +586,7 @@ namespace System.Globalization
             if (year < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(year),
-                    Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                    SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             Contract.EndContractBlock();
 
@@ -625,7 +601,7 @@ namespace System.Globalization
                             nameof(year),
                             String.Format(
                                 CultureInfo.CurrentCulture,
-                                Environment.GetResourceString("ArgumentOutOfRange_Range"),
+                                SR.ArgumentOutOfRange_Range,
                                 1,
                                 MaxCalendarYear));
             }

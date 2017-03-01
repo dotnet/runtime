@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Runtime.InteropServices;
+using System;
 
 namespace System.Globalization
 {
@@ -10,9 +10,9 @@ namespace System.Globalization
     [Serializable]
     public class DaylightTime
     {
-        internal DateTime m_start;
-        internal DateTime m_end;
-        internal TimeSpan m_delta;
+        private readonly DateTime _start;
+        private readonly DateTime _end;
+        private readonly TimeSpan _delta;
 
         private DaylightTime()
         {
@@ -20,37 +20,19 @@ namespace System.Globalization
 
         public DaylightTime(DateTime start, DateTime end, TimeSpan delta)
         {
-            m_start = start;
-            m_end = end;
-            m_delta = delta;
+            _start = start;
+            _end = end;
+            _delta = delta;
         }
 
         // The start date of a daylight saving period.
-        public DateTime Start
-        {
-            get
-            {
-                return m_start;
-            }
-        }
+        public DateTime Start => _start;
 
         // The end date of a daylight saving period.
-        public DateTime End
-        {
-            get
-            {
-                return m_end;
-            }
-        }
+        public DateTime End => _end;
 
         // Delta to stardard offset in ticks.
-        public TimeSpan Delta
-        {
-            get
-            {
-                return m_delta;
-            }
-        }
+        public TimeSpan Delta => _delta;
     }
 
     // Value type version of DaylightTime
@@ -63,8 +45,8 @@ namespace System.Globalization
             Delta = delta;
         }
 
-        public DateTime Start { get; }
-        public DateTime End { get; }
-        public TimeSpan Delta { get; }
+        public readonly DateTime Start;
+        public readonly DateTime End;
+        public readonly TimeSpan Delta;
     }
 }

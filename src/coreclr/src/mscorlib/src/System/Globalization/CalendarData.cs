@@ -2,34 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
-using System;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
-using System.Runtime.Versioning;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 
 namespace System.Globalization
 {
-    //
     // List of calendar data
     // Note the we cache overrides.
     // Note that localized names (resource names) aren't available from here.
     //
     //  NOTE: Calendars depend on the locale name that creates it.  Only a few
-    //            properties are available without locales using CalendarData.GetCalendar(int)
+    //        properties are available without locales using CalendarData.GetCalendar(CalendarData)
 
-    // StructLayout is needed here otherwise compiler can re-arrange the fields.
-    // We have to keep this in-sync with the definition in calendardata.h
-    //
-    // WARNING WARNING WARNING
-    //
-    // WARNING: Anything changed here also needs to be updated on the native side (object.h see type CalendarDataBaseObject)
-    // WARNING: The type loader will rearrange class member offsets so the mscorwks!CalendarDataBaseObject
-    // WARNING: must be manually structured to match the true loaded class layout
-    //
-    internal class CalendarData
+    internal partial class CalendarData
     {
         // Max calendars
         internal const int MAX_CALENDARS = 23;
@@ -110,18 +94,16 @@ namespace System.Globalization
             return invariant;
         }
 
-
-
         //
         // Get a bunch of data for a calendar
         //
-        internal CalendarData(String localeName, int calendarId, bool bUseUserOverrides)
+        internal CalendarData(String localeName, CalendarId calendarId, bool bUseUserOverrides)
         {
-            // Call nativeGetCalendarData to populate the data
             this.bUseUserOverrides = bUseUserOverrides;
-            if (!nativeGetCalendarData(this, localeName, calendarId))
+
+            if (!LoadCalendarDataFromSystem(localeName, calendarId))
             {
-                Debug.Assert(false, "[CalendarData] nativeGetCalendarData call isn't expected to fail for calendar " + calendarId + " locale " + localeName);
+                Debug.Assert(false, "[CalendarData] LoadCalendarDataFromSystem call isn't expected to fail for calendar " + calendarId + " locale " + localeName);
 
                 // Something failed, try invariant for missing parts
                 // This is really not good, but we don't want the callers to crash.
@@ -145,15 +127,9 @@ namespace System.Globalization
                 // Genitive and Leap names can follow the fallback below
             }
 
-            // Clean up the escaping of the formats
-            this.saShortDates = CultureData.ReescapeWin32Strings(this.saShortDates);
-            this.saLongDates = CultureData.ReescapeWin32Strings(this.saLongDates);
-            this.saYearMonths = CultureData.ReescapeWin32Strings(this.saYearMonths);
-            this.sMonthDay = CultureData.ReescapeWin32String(this.sMonthDay);
-
-            if ((CalendarId)calendarId == CalendarId.TAIWAN)
+            if (calendarId == CalendarId.TAIWAN)
             {
-                if (CultureInfo.IsTaiwanSku)
+                if (SystemSupportsTaiwaneseCalendar())
                 {
                     // We got the month/day names from the OS (same as gregorian), but the native name is wrong
                     this.sNativeName = "\x4e2d\x83ef\x6c11\x570b\x66c6";
@@ -165,11 +141,11 @@ namespace System.Globalization
             }
 
             // Check for null genitive names (in case unmanaged side skips it for non-gregorian calendars, etc)
-            if (this.saMonthGenitiveNames == null || String.IsNullOrEmpty(this.saMonthGenitiveNames[0]))
+            if (this.saMonthGenitiveNames == null || this.saMonthGenitiveNames.Length == 0 || String.IsNullOrEmpty(this.saMonthGenitiveNames[0]))
                 this.saMonthGenitiveNames = this.saMonthNames;              // Genitive month names (same as month names for invariant)
-            if (this.saAbbrevMonthGenitiveNames == null || String.IsNullOrEmpty(this.saAbbrevMonthGenitiveNames[0]))
+            if (this.saAbbrevMonthGenitiveNames == null || this.saAbbrevMonthGenitiveNames.Length == 0 || String.IsNullOrEmpty(this.saAbbrevMonthGenitiveNames[0]))
                 this.saAbbrevMonthGenitiveNames = this.saAbbrevMonthNames;    // Abbreviated genitive month names (same as abbrev month names for invariant)
-            if (this.saLeapYearMonthNames == null || String.IsNullOrEmpty(this.saLeapYearMonthNames[0]))
+            if (this.saLeapYearMonthNames == null || this.saLeapYearMonthNames.Length == 0 || String.IsNullOrEmpty(this.saLeapYearMonthNames[0]))
                 this.saLeapYearMonthNames = this.saMonthNames;
 
             InitializeEraNames(localeName, calendarId);
@@ -177,7 +153,7 @@ namespace System.Globalization
             InitializeAbbreviatedEraNames(localeName, calendarId);
 
             // Abbreviated English Era Names are only used for the Japanese calendar.
-            if (calendarId == (int)CalendarId.JAPAN)
+            if (calendarId == CalendarId.JAPAN)
             {
                 this.saAbbrevEnglishEraNames = JapaneseCalendar.EnglishEraNames();
             }
@@ -192,10 +168,10 @@ namespace System.Globalization
             this.iCurrentEra = this.saEraNames.Length;
         }
 
-        private void InitializeEraNames(string localeName, int calendarId)
+        private void InitializeEraNames(string localeName, CalendarId calendarId)
         {
             // Note that the saEraNames only include "A.D."  We don't have localized names for other calendars available from windows
-            switch ((CalendarId)calendarId)
+            switch (calendarId)
             {
                 // For Localized Gregorian we really expect the data from the OS.
                 case CalendarId.GREGORIAN:
@@ -238,7 +214,7 @@ namespace System.Globalization
                     break;
 
                 case CalendarId.TAIWAN:
-                    if (CultureInfo.IsTaiwanSku)
+                    if (SystemSupportsTaiwaneseCalendar())
                     {
                         this.saEraNames = new String[] { "\x4e2d\x83ef\x6c11\x570b" };
                     }
@@ -275,14 +251,14 @@ namespace System.Globalization
             }
         }
 
-        private void InitializeAbbreviatedEraNames(string localeName, int calendarId)
+        private void InitializeAbbreviatedEraNames(string localeName, CalendarId calendarId)
         {
             // Note that the saAbbrevEraNames only include "AD"  We don't have localized names for other calendars available from windows
-            switch ((CalendarId)calendarId)
+            switch (calendarId)
             {
                 // For Localized Gregorian we really expect the data from the OS.
                 case CalendarId.GREGORIAN:
-                    // Fallback for culture.dll missing            
+                    // Fallback for CoreCLR < Win7 or culture.dll missing            
                     if (this.saAbbrevEraNames == null || this.saAbbrevEraNames.Length == 0 || String.IsNullOrEmpty(this.saAbbrevEraNames[0]))
                     {
                         this.saAbbrevEraNames = new String[] { "AD" };
@@ -337,7 +313,7 @@ namespace System.Globalization
             }
         }
 
-        internal static CalendarData GetCalendarData(int calendarId)
+        internal static CalendarData GetCalendarData(CalendarId calendarId)
         {
             //
             // Get a calendar.
@@ -347,48 +323,45 @@ namespace System.Globalization
             //
 
             // Get a culture name
+            // TODO: Note that this doesn't handle the new calendars (lunisolar, etc)
             String culture = CalendarIdToCultureName(calendarId);
 
             // Return our calendar
-            return CultureInfo.GetCultureInfo(culture).m_cultureData.GetCalendar(calendarId);
+            return CultureInfo.GetCultureInfo(culture)._cultureData.GetCalendar(calendarId);
         }
 
-        //
-        // Helper methods
-        //
-        private static String CalendarIdToCultureName(int calendarId)
+        private static String CalendarIdToCultureName(CalendarId calendarId)
         {
-            // note that this doesn't handle the new calendars (lunisolar, etc)
             switch (calendarId)
             {
-                case Calendar.CAL_GREGORIAN_US:
+                case CalendarId.GREGORIAN_US:
                     return "fa-IR";             // "fa-IR" Iran
 
-                case Calendar.CAL_JAPAN:
+                case CalendarId.JAPAN:
                     return "ja-JP";             // "ja-JP" Japan
 
-                case Calendar.CAL_TAIWAN:       // zh-TW Taiwan
-                    return "zh-TW";
+                case CalendarId.TAIWAN:
+                    return "zh-TW";             // zh-TW Taiwan
 
-                case Calendar.CAL_KOREA:
+                case CalendarId.KOREA:
                     return "ko-KR";             // "ko-KR" Korea
 
-                case Calendar.CAL_HIJRI:
-                case Calendar.CAL_GREGORIAN_ARABIC:
-                case Calendar.CAL_UMALQURA:
+                case CalendarId.HIJRI:
+                case CalendarId.GREGORIAN_ARABIC:
+                case CalendarId.UMALQURA:
                     return "ar-SA";             // "ar-SA" Saudi Arabia
 
-                case Calendar.CAL_THAI:
+                case CalendarId.THAI:
                     return "th-TH";             // "th-TH" Thailand
 
-                case Calendar.CAL_HEBREW:
+                case CalendarId.HEBREW:
                     return "he-IL";             // "he-IL" Israel
 
-                case Calendar.CAL_GREGORIAN_ME_FRENCH:
+                case CalendarId.GREGORIAN_ME_FRENCH:
                     return "ar-DZ";             // "ar-DZ" Algeria
 
-                case Calendar.CAL_GREGORIAN_XLIT_ENGLISH:
-                case Calendar.CAL_GREGORIAN_XLIT_FRENCH:
+                case CalendarId.GREGORIAN_XLIT_ENGLISH:
+                case CalendarId.GREGORIAN_XLIT_FRENCH:
                     return "ar-IQ";             // "ar-IQ"; Iraq
 
                 default:
@@ -398,19 +371,6 @@ namespace System.Globalization
 
             return "en-US";
         }
-
-
-        // Get native two digit year max
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern int nativeGetTwoDigitYearMax(int calID);
-
-        // Call native side to load our calendar data
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern bool nativeGetCalendarData(CalendarData data, String localeName, int calendar);
-
-        // Call native side to figure out which calendars are allowed
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern int nativeGetCalendars(String localeName, bool useUserOverride, [In, Out] int[] calendars);
     }
 }
 

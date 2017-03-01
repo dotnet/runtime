@@ -182,9 +182,6 @@ namespace NewApis
     GetLocaleInfoEx (__in LPCWSTR lpLocaleName, __in LCTYPE LCType, __out_ecount_opt(cchData) LPWSTR lpLCData, __in int cchData)
     {
         _ASSERTE((lpLCData == NULL && cchData == 0) || (lpLCData != NULL && cchData > 0));
-        // ComNlsInfo::nativeInitCultureData calls GetLocaleInfoEx with LcType LOCALE_SNAME
-        // to determine if this is a valid culture. We shouldn't assert in this case, but 
-        // all others we should.
         _ASSERTE(LCType == LOCALE_SNAME || NotLeakingFrameworkOnlyCultures(lpLocaleName));
         int retVal;
         
