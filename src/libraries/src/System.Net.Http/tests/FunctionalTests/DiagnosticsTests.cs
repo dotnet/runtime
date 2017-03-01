@@ -337,6 +337,7 @@ namespace System.Net.Http.Functional.Tests
                         Assert.NotNull(kvp.Value);
                         Assert.NotNull(Activity.Current);
                         Assert.Equal(parentActivity, Activity.Current.Parent);
+                        Assert.True(Activity.Current.Duration != TimeSpan.Zero);
                         GetPropertyValueFromAnonymousTypeInstance<HttpResponseMessage>(kvp.Value, "Response");
 
                         activityStopLogged = true;

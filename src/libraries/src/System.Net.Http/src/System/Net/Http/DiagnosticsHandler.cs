@@ -118,6 +118,7 @@ namespace System.Net.Http
                 //always stop activity if it was started
                 if (activity != null)
                 {
+                    activity.SetEndTime(DateTime.UtcNow);
                     s_diagnosticListener.StopActivity(activity, new
                     {
                         Response = responseTask.Status == TaskStatus.RanToCompletion ? responseTask.Result : null,
