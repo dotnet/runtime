@@ -90,6 +90,13 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
+        [Fact]
+        public static void CheckUnaryArithmeticOnesComplementNullableBooleanTest()
+        {
+            Expression operand = Expression.Variable(typeof(bool?));
+            Assert.Throws<InvalidOperationException>(() => Expression.OnesComplement(operand));
+        }
+
         #endregion
 
         #region Test verifiers
