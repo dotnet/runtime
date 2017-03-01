@@ -120,7 +120,7 @@ internal static partial class Interop
 
             if (ret == 0)
             {
-                throw CreateExceptionForCCError(osStatus, OSStatus);
+                throw CreateExceptionForOSStatus(osStatus);
             }
 
             Debug.Fail($"SecKeyImportEphemeral returned {ret}");
@@ -249,20 +249,7 @@ internal static partial class Interop
 
 namespace System.Security.Cryptography.Apple
 {
-    internal sealed class SafeSecKeyRefHandle : SafeHandle
+    internal sealed class SafeSecKeyRefHandle : SafeKeychainItemHandle
     {
-        internal SafeSecKeyRefHandle()
-            : base(IntPtr.Zero, ownsHandle: true)
-        {
-        }
-
-        protected override bool ReleaseHandle()
-        {
-            Interop.CoreFoundation.CFRelease(handle);
-            SetHandle(IntPtr.Zero);
-            return true;
-        }
-
-        public override bool IsInvalid => handle == IntPtr.Zero;
     }
 }

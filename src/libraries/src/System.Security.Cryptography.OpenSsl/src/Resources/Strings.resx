@@ -135,6 +135,9 @@
   <data name="Cryptography_CurveNotSupported" xml:space="preserve">
     <value>The specified curve '{0}' or its parameters are not valid for this platform.</value>
   </data>
+  <data name="Cryptography_Der_Invalid_Encoding" xml:space="preserve">
+    <value>ASN1 corrupted data.</value>
+  </data>
   <data name="Cryptography_InvalidDsaParameters_MissingFields" xml:space="preserve">
     <value>The specified DSA parameters are not valid; P, Q, G and Y are all required.</value>
   </data>

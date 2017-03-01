@@ -25,14 +25,13 @@ internal static partial class Interop
 
         internal static SafeChannelBindingHandle QueryChannelBinding(SafeSslHandle context, ChannelBindingKind bindingType)
         {
+            Debug.Assert(
+                bindingType != ChannelBindingKind.Endpoint,
+                "Endpoint binding should be handled by EndpointChannelBindingToken");
+
             SafeChannelBindingHandle bindingHandle;
             switch (bindingType)
             {
-                case ChannelBindingKind.Endpoint:
-                    bindingHandle = new SafeChannelBindingHandle(bindingType);
-                    QueryEndPointChannelBinding(context, bindingHandle);
-                    break;
-
                 case ChannelBindingKind.Unique:
                     bindingHandle = new SafeChannelBindingHandle(bindingType);
                     QueryUniqueChannelBinding(context, bindingHandle);
@@ -288,37 +287,6 @@ internal static partial class Interop
         #endregion
 
         #region private methods
-
-        private static void QueryEndPointChannelBinding(SafeSslHandle context, SafeChannelBindingHandle bindingHandle)
-        {
-            using (SafeX509Handle certSafeHandle = GetPeerCertificate(context))
-            {
-                if (certSafeHandle == null || certSafeHandle.IsInvalid)
-                {
-                    throw CreateSslException(SR.net_ssl_invalid_certificate);
-                }
-
-                bool gotReference = false;
-
-                try
-                {
-                    certSafeHandle.DangerousAddRef(ref gotReference);
-                    using (X509Certificate2 cert = new X509Certificate2(certSafeHandle.DangerousGetHandle()))
-                    using (HashAlgorithm hashAlgo = GetHashForChannelBinding(cert))
-                    {
-                        byte[] bindingHash = hashAlgo.ComputeHash(cert.RawData);
-                        bindingHandle.SetCertHash(bindingHash);
-                    }
-                }
-                finally
-                {
-                    if (gotReference)
-                    {
-                        certSafeHandle.DangerousRelease();
-                    }
-                }
-            }
-        }
 
         private static void QueryUniqueChannelBinding(SafeSslHandle context, SafeChannelBindingHandle bindingHandle)
         {

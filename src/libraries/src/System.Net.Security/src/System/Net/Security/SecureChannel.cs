@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.Security;
 using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
@@ -869,6 +868,8 @@ namespace System.Net.Security
                     _headerSize = streamSizes.Header;
                     _trailerSize = streamSizes.Trailer;
                     _maxDataSize = checked(streamSizes.MaximumMessage - (_headerSize + _trailerSize));
+
+                    Debug.Assert(_maxDataSize > 0, "_maxDataSize > 0");
                 }
                 catch (Exception e) when (!ExceptionCheck.IsFatal(e))
                 {
@@ -1012,6 +1013,7 @@ namespace System.Net.Security
                     }
 
                     sslPolicyErrors |= CertificateValidationPal.VerifyCertificateProperties(
+                        _securityContext,
                         chain,
                         remoteCertificateEx,
                         _checkCertName,

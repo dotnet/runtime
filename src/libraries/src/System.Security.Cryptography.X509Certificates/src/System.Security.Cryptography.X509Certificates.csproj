@@ -130,10 +130,12 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true'">
+    <Compile Include="Microsoft\Win32\SafeHandles\SafePasswordHandle.Unix.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' AND '$(TargetsOSX)' != 'true' ">
     <Compile Include="Internal\Cryptography\Pal.Unix\CertCollectionLoader.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\CertificateAssetDownloader.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\CertificatePal.cs" />
-    <Compile Include="Internal\Cryptography\Pal.Unix\CertificatePolicy.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\ChainPal.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\CollectionBackedStoreProvider.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\CrlCache.cs" />
@@ -148,10 +150,9 @@
     <Compile Include="Internal\Cryptography\Pal.Unix\PkcsFormatReader.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\SingleCertLoader.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\StorePal.cs" />
-    <Compile Include="Internal\Cryptography\Pal.Unix\X500NameEncoder.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Unix\X500NameEncoder.OpenSslDecode.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\X509Pal.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\X509Persistence.cs" />
-    <Compile Include="Microsoft\Win32\SafeHandles\SafePasswordHandle.Unix.cs" />
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
@@ -278,12 +279,106 @@
     <Compile Include="$(CommonPath)\System\IO\PersistedFiles.Names.Unix.cs">
       <Link>Common\System\IO\PersistedFiles.Names.Unix.cs</Link>
     </Compile>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' AND '$(IsPartialFacadeAssembly)' != 'true'">
+    <Compile Include="$(CommonPath)\Internal\Cryptography\AsymmetricAlgorithmHelpers.cs">
+      <Link>Common\Internal\Cryptography\AsymmetricAlgorithmHelpers.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.CoreFoundation.cs">
+      <Link>Common\Interop\OSX\Interop.CoreFoundation.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.CoreFoundation.CFArray.cs">
+      <Link>Common\Interop\OSX\Interop.CoreFoundation.CFArray.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.CoreFoundation.CFData.cs">
+      <Link>Common\Interop\OSX\Interop.CoreFoundation.CFData.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.CoreFoundation.CFDate.cs">
+      <Link>Common\Interop\OSX\Interop.CoreFoundation.CFDate.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.CoreFoundation.CFError.cs">
+      <Link>Common\Interop\OSX\Interop.CoreFoundation.CFError.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.CoreFoundation.CFString.cs">
+      <Link>Common\Interop\OSX\Interop.CoreFoundation.CFString.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.Libraries.cs">
+      <Link>Common\Interop\OSX\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Ecc.cs">
+      <Link>Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Ecc.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Err.cs">
+      <Link>Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Err.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Keychain.cs">
+      <Link>Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Keychain.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.PAL_HashAlgorithm.cs">
+      <Link>Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.PAL_HashAlgorithm.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.RSA.cs">
+      <Link>Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.RSA.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecErr.cs">
+      <Link>Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecErr.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecErrMessage.cs">
+      <Link>Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecErrMessage.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.cs">
+      <Link>Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.Export.cs">
+      <Link>Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.SecKeyRef.Export.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Trust.cs">
+      <Link>Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.Trust.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.X509.cs">
+      <Link>Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.X509.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.X509Chain.cs">
+      <Link>Common\Interop\OSX\System.Security.Cryptography.Native.Apple\Interop.X509Chain.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\ECDsaSecurityTransforms.cs">
+      <Link>Common\System\Security\Cryptography\ECDsaSecurityTransforms.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\KeyBlobHelpers.cs">
+      <Link>Common\System\Security\Cryptography\KeyBlobHelpers.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\RSASecurityTransforms.cs">
+      <Link>Common\System\Security\Cryptography\RSASecurityTransforms.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\SecKeyPair.cs">
+      <Link>Common\System\Security\Cryptography\SecKeyPair.cs</Link>
+    </Compile>
+    <Compile Include="Internal\Cryptography\Pal.OSX\CertificatePal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\ChainPal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\FindPal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\StorePal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\StorePal.AppleTrustStore.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\StorePal.AppleKeychainStore.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\StorePal.ExportPal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\StorePal.LoaderPal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.OSX\X509Pal.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Unix\X500NameEncoder.ManagedDecode.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true'">
     <Compile Include="$(CommonPath)\System\Security\Cryptography\DerEncoder.cs">
       <Link>Common\System\Security\Cryptography\DerEncoder.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Security\Cryptography\DerSequenceReader.cs">
       <Link>Common\System\Security\Cryptography\DerSequenceReader.cs</Link>
     </Compile>
+    <Compile Include="Internal\Cryptography\Pal.Unix\CertificatePolicy.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Unix\ChainVerifier.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Unix\ManagedCertificateFinder.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Unix\ManagedX509ExtensionProcessor.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Unix\X500NameEncoder.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />
@@ -297,13 +392,15 @@
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Runtime.Numerics" />
     <Reference Include="System.Security.Cryptography.Algorithms" />
-    <Reference Include="System.Security.Cryptography.Cng" />
-    <Reference Include="System.Security.Cryptography.Csp" />
     <Reference Include="System.Security.Cryptography.Encoding" />
     <Reference Include="System.Security.Cryptography.Primitives" />
     <Reference Include="System.Threading" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Reference Include="System.Security.Cryptography.Cng" />
+    <Reference Include="System.Security.Cryptography.Csp" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' AND '$(TargetsOSX)' != 'true'">
     <Reference Include="System.Security.Cryptography.OpenSsl" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

@@ -28,6 +28,9 @@
     <DefineConstants>$(DefineConstants);NETNative;NETNative_SystemNetHttp</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+  <PropertyGroup Condition=" '$(TargetsOSX)' == 'true' ">
+    <DefineConstants>$(DefineConstants);SYSNETHTTP_NO_OPENSSL</DefineConstants>
+  </PropertyGroup>
   <!-- Shims -->
   <ItemGroup>
     <Compile Include="Shims\Uri.cs" />
@@ -179,10 +182,8 @@
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="System\Net\Http\HttpClientHandler.Unix.cs" />
     <Compile Include="System\Net\Http\Unix\CurlHandler.cs" />
-    <Compile Include="System\Net\Http\Unix\CurlHandler.ClientCertificateProvider.cs" />
     <Compile Include="System\Net\Http\Unix\CurlHandler.EasyRequest.cs" />
     <Compile Include="System\Net\Http\Unix\CurlHandler.MultiAgent.cs" />
-    <Compile Include="System\Net\Http\Unix\CurlHandler.SslProvider.cs" />
     <Compile Include="System\Net\Http\Unix\CurlException.cs" />
     <Compile Include="System\Net\Http\Unix\CurlHandler.CurlResponseMessage.cs" />
     <Compile Include="System\Net\Http\Unix\CurlResponseHeaderReader.cs" />
@@ -191,12 +192,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\SecurityProtocol.cs">
       <Link>Common\System\Net\SecurityProtocol.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Security\CertificateValidation.Unix.cs">
-      <Link>Common\System\Net\Security\CertificateValidation.Unix.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
-      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Errors.cs">
       <Link>Common\Interop\Unix\Interop.Errors.cs</Link>
@@ -279,6 +274,11 @@
     <Compile Include="$(CommonPath)\System\Net\Http\TlsCertificateExtensions.cs">
       <Link>Common\System\Net\Http\TlsCertificateExtensions</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
+      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' AND '$(TargetsOSX)' != 'true' ">
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.ASN1.cs</Link>
     </Compile>
@@ -318,9 +318,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.X509StoreCtx.cs">
       <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.X509StoreCtx.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Security.Cryptography.Native\Interop.X509ChannelBindingHash.cs">
-      <Link>Common\Interop\Unix\System.Security.Cryptography.Native\Interop.X509ChannelBindingHash.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Net.Security.Native\Interop.Initialization.cs">
       <Link>Common\Interop\Unix\System.Net.Security.Native\Interop.Initialization.cs</Link>
     </Compile>
@@ -342,6 +339,14 @@
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\Asn1SafeHandles.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\Asn1SafeHandles.Unix.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Security\CertificateValidation.Unix.cs">
+      <Link>Common\System\Net\Security\CertificateValidation.Unix.cs</Link>
+    </Compile>
+    <Compile Include="System\Net\Http\Unix\CurlHandler.ClientCertificateProvider.cs" />
+    <Compile Include="System\Net\Http\Unix\CurlHandler.SslProvider.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
+    <Compile Include="System\Net\Http\OSX\CurlHandler.SslProvider.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'uap'">
     <Reference Include="Windows" />
