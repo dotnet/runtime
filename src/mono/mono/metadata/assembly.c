@@ -1753,7 +1753,7 @@ mono_assembly_open_a_lot (const char *filename, MonoImageOpenStatus *status, gbo
 	}
 
 	if (!image)
-		image = mono_image_open_full (fname, status, refonly);
+		image = mono_image_open_a_lot (fname, status, refonly, load_from_context);
 
 	if (!image){
 		if (*status == MONO_IMAGE_OK)

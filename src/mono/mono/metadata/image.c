@@ -1253,7 +1253,7 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 	if (!mono_image_load_cli_data (image))
 		goto invalid_image;
 
-	if (!image->ref_only && is_problematic_image (image)) {
+	if (!image->ref_only && !image->load_from_context && is_problematic_image (image)) {
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Denying load of problematic image %s", image->name);
 		*status = MONO_IMAGE_IMAGE_INVALID;
 		goto invalid_image;
@@ -1286,7 +1286,7 @@ invalid_image:
 
 static MonoImage *
 do_mono_image_open (const char *fname, MonoImageOpenStatus *status,
-					gboolean care_about_cli, gboolean care_about_pecoff, gboolean refonly, gboolean metadata_only)
+					gboolean care_about_cli, gboolean care_about_pecoff, gboolean refonly, gboolean metadata_only, gboolean load_from_context)
 {
 	MonoCLIImageInfo *iinfo;
 	MonoImage *image;
@@ -1330,6 +1330,7 @@ do_mono_image_open (const char *fname, MonoImageOpenStatus *status,
 	image->name = mono_path_resolve_symlinks (fname);
 	image->ref_only = refonly;
 	image->metadata_only = metadata_only;
+	image->load_from_context = load_from_context;
 	image->ref_count = 1;
 	/* if MONO_SECURITY_MODE_CORE_CLR is set then determine if this image is platform code */
 	image->core_clr_platform_code = mono_security_core_clr_determine_platform_image (image);
@@ -1527,6 +1528,12 @@ mono_image_open_from_module_handle (HMODULE module_handle, char* fname, gboolean
 MonoImage *
 mono_image_open_full (const char *fname, MonoImageOpenStatus *status, gboolean refonly)
 {
+	return mono_image_open_a_lot (fname, status, refonly, FALSE);
+}
+
+MonoImage *
+mono_image_open_a_lot (const char *fname, MonoImageOpenStatus *status, gboolean refonly, gboolean load_from_context)
+{
 	MonoImage *image;
 	GHashTable *loaded_images = get_loaded_images_hash (refonly);
 	char *absfname;
@@ -1625,7 +1632,7 @@ mono_image_open_full (const char *fname, MonoImageOpenStatus *status, gboolean r
 	mono_images_unlock ();
 
 	// Image not loaded, load it now
-	image = do_mono_image_open (fname, status, TRUE, TRUE, refonly, FALSE);
+	image = do_mono_image_open (fname, status, TRUE, TRUE, refonly, FALSE, load_from_context);
 	if (image == NULL)
 		return NULL;
 
@@ -1664,7 +1671,7 @@ mono_pe_file_open (const char *fname, MonoImageOpenStatus *status)
 {
 	g_return_val_if_fail (fname != NULL, NULL);
 	
-	return do_mono_image_open (fname, status, FALSE, TRUE, FALSE, FALSE);
+	return do_mono_image_open (fname, status, FALSE, TRUE, FALSE, FALSE, FALSE);
 }
 
 /**
@@ -1681,7 +1688,7 @@ mono_image_open_raw (const char *fname, MonoImageOpenStatus *status)
 {
 	g_return_val_if_fail (fname != NULL, NULL);
 	
-	return do_mono_image_open (fname, status, FALSE, FALSE, FALSE, FALSE);
+	return do_mono_image_open (fname, status, FALSE, FALSE, FALSE, FALSE, FALSE);
 }
 
 /*
@@ -1692,7 +1699,7 @@ mono_image_open_raw (const char *fname, MonoImageOpenStatus *status)
 MonoImage *
 mono_image_open_metadata_only (const char *fname, MonoImageOpenStatus *status)
 {
-	return do_mono_image_open (fname, status, TRUE, TRUE, FALSE, TRUE);
+	return do_mono_image_open (fname, status, TRUE, TRUE, FALSE, TRUE, FALSE);
 }
 
 void
