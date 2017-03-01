@@ -1,9 +1,6 @@
 <?xml version="1.0"?>
 <Include xmlns="http://schemas.microsoft.com/wix/2006/wi">
 
-  <?define Servicing_Key_SP   =   "0" ?>
-  <?define Servicing_Key_SPIndex   =   "0" ?>
-  <?define Servicing_Key_SPName   =   "Beta" ?>
   <?define Dotnet_ProductVersion   =   "$(var.BuildVersion)" ?>
   <?define Dotnet_BuildVersion   =   "$(var.BuildVersion)" ?>
   <?define Manufacturer     =   "Microsoft Corporation" ?>
