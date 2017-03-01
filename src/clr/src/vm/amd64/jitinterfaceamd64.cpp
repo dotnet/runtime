@@ -20,6 +20,7 @@
 extern uint8_t* g_ephemeral_low;
 extern uint8_t* g_ephemeral_high;
 extern uint32_t* g_card_table;
+extern uint32_t* g_card_bundle_table;
 
 // Patch Labels for the various write barriers
 EXTERN_C void JIT_WriteBarrier_End();
@@ -27,17 +28,26 @@ EXTERN_C void JIT_WriteBarrier_End();
 EXTERN_C void JIT_WriteBarrier_PreGrow64(Object **dst, Object *ref);
 EXTERN_C void JIT_WriteBarrier_PreGrow64_Patch_Label_Lower();
 EXTERN_C void JIT_WriteBarrier_PreGrow64_Patch_Label_CardTable();
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+EXTERN_C void JIT_WriteBarrier_PreGrow64_Patch_Label_CardBundleTable();
+#endif
 EXTERN_C void JIT_WriteBarrier_PreGrow64_End();
 
 EXTERN_C void JIT_WriteBarrier_PostGrow64(Object **dst, Object *ref);
 EXTERN_C void JIT_WriteBarrier_PostGrow64_Patch_Label_Lower();
 EXTERN_C void JIT_WriteBarrier_PostGrow64_Patch_Label_Upper();
 EXTERN_C void JIT_WriteBarrier_PostGrow64_Patch_Label_CardTable();
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+EXTERN_C void JIT_WriteBarrier_PostGrow64_Patch_Label_CardBundleTable();
+#endif
 EXTERN_C void JIT_WriteBarrier_PostGrow64_End();
 
 #ifdef FEATURE_SVR_GC
 EXTERN_C void JIT_WriteBarrier_SVR64(Object **dst, Object *ref);
 EXTERN_C void JIT_WriteBarrier_SVR64_PatchLabel_CardTable();
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+EXTERN_C void JIT_WriteBarrier_SVR64_PatchLabel_CardBundleTable();
+#endif
 EXTERN_C void JIT_WriteBarrier_SVR64_End();
 #endif // FEATURE_SVR_GC
 
@@ -46,6 +56,9 @@ EXTERN_C void JIT_WriteBarrier_WriteWatch_PreGrow64(Object **dst, Object *ref);
 EXTERN_C void JIT_WriteBarrier_WriteWatch_PreGrow64_Patch_Label_WriteWatchTable();
 EXTERN_C void JIT_WriteBarrier_WriteWatch_PreGrow64_Patch_Label_Lower();
 EXTERN_C void JIT_WriteBarrier_WriteWatch_PreGrow64_Patch_Label_CardTable();
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+EXTERN_C void JIT_WriteBarrier_WriteWatch_PreGrow64_Patch_Label_CardBundleTable();
+#endif
 EXTERN_C void JIT_WriteBarrier_WriteWatch_PreGrow64_End();
 
 EXTERN_C void JIT_WriteBarrier_WriteWatch_PostGrow64(Object **dst, Object *ref);
@@ -53,20 +66,26 @@ EXTERN_C void JIT_WriteBarrier_WriteWatch_PostGrow64_Patch_Label_WriteWatchTable
 EXTERN_C void JIT_WriteBarrier_WriteWatch_PostGrow64_Patch_Label_Lower();
 EXTERN_C void JIT_WriteBarrier_WriteWatch_PostGrow64_Patch_Label_Upper();
 EXTERN_C void JIT_WriteBarrier_WriteWatch_PostGrow64_Patch_Label_CardTable();
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+EXTERN_C void JIT_WriteBarrier_WriteWatch_PostGrow64_Patch_Label_CardBundleTable();
+#endif
 EXTERN_C void JIT_WriteBarrier_WriteWatch_PostGrow64_End();
 
 #ifdef FEATURE_SVR_GC
 EXTERN_C void JIT_WriteBarrier_WriteWatch_SVR64(Object **dst, Object *ref);
 EXTERN_C void JIT_WriteBarrier_WriteWatch_SVR64_PatchLabel_WriteWatchTable();
 EXTERN_C void JIT_WriteBarrier_WriteWatch_SVR64_PatchLabel_CardTable();
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+EXTERN_C void JIT_WriteBarrier_WriteWatch_SVR64_PatchLabel_CardBundleTable();
+#endif
 EXTERN_C void JIT_WriteBarrier_WriteWatch_SVR64_End();
 #endif // FEATURE_SVR_GC
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 
 WriteBarrierManager g_WriteBarrierManager;
 
-// Use this somewhat hokey macro to concantonate the function start with the patch 
-// label, this allows the code below to look relatively nice, but relies on the 
+// Use this somewhat hokey macro to concatenate the function start with the patch
+// label. This allows the code below to look relatively nice, but relies on the
 // naming convention which we have established for these helpers.
 #define CALC_PATCH_LOCATION(func,label,offset)      CalculatePatchLocation((PVOID)func, (PVOID)func##_##label, offset)
 
@@ -76,8 +95,9 @@ WriteBarrierManager::WriteBarrierManager() :
     LIMITED_METHOD_CONTRACT;
 }
 
-#ifndef CODECOVERAGE        // Deactivate alignment validation for code coverage builds 
-                            // because the instrumentation tool will not preserve alignmant constraits and we will fail.
+#ifndef CODECOVERAGE        // Deactivate alignment validation for code coverage builds
+                            // because the instrumentation tool will not preserve alignment
+                            // constraints and we will fail.
 
 void WriteBarrierManager::Validate()
 {
@@ -96,21 +116,41 @@ void WriteBarrierManager::Validate()
 
     PBYTE pLowerBoundImmediate, pUpperBoundImmediate, pCardTableImmediate;
 
-    pLowerBoundImmediate  = CALC_PATCH_LOCATION(JIT_WriteBarrier_PreGrow64, Patch_Label_Lower, 2);
-    pCardTableImmediate   = CALC_PATCH_LOCATION(JIT_WriteBarrier_PreGrow64, Patch_Label_CardTable, 2);
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+    PBYTE pCardBundleTableImmediate;
+#endif
+
+    pLowerBoundImmediate      = CALC_PATCH_LOCATION(JIT_WriteBarrier_PreGrow64, Patch_Label_Lower, 2);
+    pCardTableImmediate       = CALC_PATCH_LOCATION(JIT_WriteBarrier_PreGrow64, Patch_Label_CardTable, 2);
+
     _ASSERTE_ALL_BUILDS("clr/src/VM/AMD64/JITinterfaceAMD64.cpp", (reinterpret_cast<UINT64>(pLowerBoundImmediate) & 0x7) == 0);
     _ASSERTE_ALL_BUILDS("clr/src/VM/AMD64/JITinterfaceAMD64.cpp", (reinterpret_cast<UINT64>(pCardTableImmediate) & 0x7) == 0);
 
-    pLowerBoundImmediate  = CALC_PATCH_LOCATION(JIT_WriteBarrier_PostGrow64, Patch_Label_Lower, 2);
-    pUpperBoundImmediate  = CALC_PATCH_LOCATION(JIT_WriteBarrier_PostGrow64, Patch_Label_Upper, 2);
-    pCardTableImmediate   = CALC_PATCH_LOCATION(JIT_WriteBarrier_PostGrow64, Patch_Label_CardTable, 2);
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+    pCardBundleTableImmediate = CALC_PATCH_LOCATION(JIT_WriteBarrier_PreGrow64, Patch_Label_CardBundleTable, 2);
+    _ASSERTE_ALL_BUILDS("clr/src/VM/AMD64/JITinterfaceAMD64.cpp", (reinterpret_cast<UINT64>(pCardBundleTableImmediate) & 0x7) == 0);
+#endif
+
+    pLowerBoundImmediate      = CALC_PATCH_LOCATION(JIT_WriteBarrier_PostGrow64, Patch_Label_Lower, 2);
+    pUpperBoundImmediate      = CALC_PATCH_LOCATION(JIT_WriteBarrier_PostGrow64, Patch_Label_Upper, 2);
+    pCardTableImmediate       = CALC_PATCH_LOCATION(JIT_WriteBarrier_PostGrow64, Patch_Label_CardTable, 2);
     _ASSERTE_ALL_BUILDS("clr/src/VM/AMD64/JITinterfaceAMD64.cpp", (reinterpret_cast<UINT64>(pLowerBoundImmediate) & 0x7) == 0);
     _ASSERTE_ALL_BUILDS("clr/src/VM/AMD64/JITinterfaceAMD64.cpp", (reinterpret_cast<UINT64>(pUpperBoundImmediate) & 0x7) == 0);
     _ASSERTE_ALL_BUILDS("clr/src/VM/AMD64/JITinterfaceAMD64.cpp", (reinterpret_cast<UINT64>(pCardTableImmediate) & 0x7) == 0);
 
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+    pCardBundleTableImmediate = CALC_PATCH_LOCATION(JIT_WriteBarrier_PostGrow64, Patch_Label_CardBundleTable, 2);
+    _ASSERTE_ALL_BUILDS("clr/src/VM/AMD64/JITinterfaceAMD64.cpp", (reinterpret_cast<UINT64>(pCardBundleTableImmediate) & 0x7) == 0);
+#endif
+
 #ifdef FEATURE_SVR_GC
-    pCardTableImmediate   = CALC_PATCH_LOCATION(JIT_WriteBarrier_SVR64, PatchLabel_CardTable, 2);
+    pCardTableImmediate        = CALC_PATCH_LOCATION(JIT_WriteBarrier_SVR64, PatchLabel_CardTable, 2);
     _ASSERTE_ALL_BUILDS("clr/src/VM/AMD64/JITinterfaceAMD64.cpp", (reinterpret_cast<UINT64>(pCardTableImmediate) & 0x7) == 0);
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+    pCardBundleTableImmediate  = CALC_PATCH_LOCATION(JIT_WriteBarrier_SVR64, PatchLabel_CardBundleTable, 2);
+    _ASSERTE_ALL_BUILDS("clr/src/VM/AMD64/JITinterfaceAMD64.cpp", (reinterpret_cast<UINT64>(pCardBundleTableImmediate) & 0x7) == 0);
+#endif // FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
 #endif // FEATURE_SVR_GC
 
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
@@ -119,24 +159,41 @@ void WriteBarrierManager::Validate()
     pWriteWatchTableImmediate = CALC_PATCH_LOCATION(JIT_WriteBarrier_WriteWatch_PreGrow64, Patch_Label_WriteWatchTable, 2);
     pLowerBoundImmediate = CALC_PATCH_LOCATION(JIT_WriteBarrier_WriteWatch_PreGrow64, Patch_Label_Lower, 2);
     pCardTableImmediate = CALC_PATCH_LOCATION(JIT_WriteBarrier_WriteWatch_PreGrow64, Patch_Label_CardTable, 2);
+
     _ASSERTE_ALL_BUILDS("clr/src/VM/AMD64/JITinterfaceAMD64.cpp", (reinterpret_cast<UINT64>(pWriteWatchTableImmediate) & 0x7) == 0);
     _ASSERTE_ALL_BUILDS("clr/src/VM/AMD64/JITinterfaceAMD64.cpp", (reinterpret_cast<UINT64>(pLowerBoundImmediate) & 0x7) == 0);
     _ASSERTE_ALL_BUILDS("clr/src/VM/AMD64/JITinterfaceAMD64.cpp", (reinterpret_cast<UINT64>(pCardTableImmediate) & 0x7) == 0);
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+    pCardBundleTableImmediate = CALC_PATCH_LOCATION(JIT_WriteBarrier_WriteWatch_PreGrow64, Patch_Label_CardBundleTable, 2);
+    _ASSERTE_ALL_BUILDS("clr/src/VM/AMD64/JITinterfaceAMD64.cpp", (reinterpret_cast<UINT64>(pCardBundleTableImmediate) & 0x7) == 0);
+#endif
 
     pWriteWatchTableImmediate = CALC_PATCH_LOCATION(JIT_WriteBarrier_WriteWatch_PostGrow64, Patch_Label_WriteWatchTable, 2);
     pLowerBoundImmediate = CALC_PATCH_LOCATION(JIT_WriteBarrier_WriteWatch_PostGrow64, Patch_Label_Lower, 2);
     pUpperBoundImmediate = CALC_PATCH_LOCATION(JIT_WriteBarrier_WriteWatch_PostGrow64, Patch_Label_Upper, 2);
     pCardTableImmediate = CALC_PATCH_LOCATION(JIT_WriteBarrier_WriteWatch_PostGrow64, Patch_Label_CardTable, 2);
+
     _ASSERTE_ALL_BUILDS("clr/src/VM/AMD64/JITinterfaceAMD64.cpp", (reinterpret_cast<UINT64>(pWriteWatchTableImmediate) & 0x7) == 0);
     _ASSERTE_ALL_BUILDS("clr/src/VM/AMD64/JITinterfaceAMD64.cpp", (reinterpret_cast<UINT64>(pLowerBoundImmediate) & 0x7) == 0);
     _ASSERTE_ALL_BUILDS("clr/src/VM/AMD64/JITinterfaceAMD64.cpp", (reinterpret_cast<UINT64>(pUpperBoundImmediate) & 0x7) == 0);
     _ASSERTE_ALL_BUILDS("clr/src/VM/AMD64/JITinterfaceAMD64.cpp", (reinterpret_cast<UINT64>(pCardTableImmediate) & 0x7) == 0);
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+    pCardBundleTableImmediate = CALC_PATCH_LOCATION(JIT_WriteBarrier_WriteWatch_PostGrow64, Patch_Label_CardBundleTable, 2);
+    _ASSERTE_ALL_BUILDS("clr/src/VM/AMD64/JITinterfaceAMD64.cpp", (reinterpret_cast<UINT64>(pCardBundleTableImmediate) & 0x7) == 0);
+#endif
 
 #ifdef FEATURE_SVR_GC
     pWriteWatchTableImmediate = CALC_PATCH_LOCATION(JIT_WriteBarrier_WriteWatch_SVR64, PatchLabel_WriteWatchTable, 2);
     pCardTableImmediate = CALC_PATCH_LOCATION(JIT_WriteBarrier_WriteWatch_SVR64, PatchLabel_CardTable, 2);
     _ASSERTE_ALL_BUILDS("clr/src/VM/AMD64/JITinterfaceAMD64.cpp", (reinterpret_cast<UINT64>(pWriteWatchTableImmediate) & 0x7) == 0);
     _ASSERTE_ALL_BUILDS("clr/src/VM/AMD64/JITinterfaceAMD64.cpp", (reinterpret_cast<UINT64>(pCardTableImmediate) & 0x7) == 0);
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+    pCardBundleTableImmediate = CALC_PATCH_LOCATION(JIT_WriteBarrier_WriteWatch_SVR64, PatchLabel_CardBundleTable, 2);
+    _ASSERTE_ALL_BUILDS("clr/src/VM/AMD64/JITinterfaceAMD64.cpp", (reinterpret_cast<UINT64>(pCardBundleTableImmediate) & 0x7) == 0);
+#endif // FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
 #endif // FEATURE_SVR_GC
 #endif // FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
 }
@@ -242,36 +299,51 @@ void WriteBarrierManager::ChangeWriteBarrierTo(WriteBarrierType newWriteBarrier,
     {
         case WRITE_BARRIER_PREGROW64:
         {
-            m_pLowerBoundImmediate  = CALC_PATCH_LOCATION(JIT_WriteBarrier_PreGrow64, Patch_Label_Lower, 2);
-            m_pCardTableImmediate   = CALC_PATCH_LOCATION(JIT_WriteBarrier_PreGrow64, Patch_Label_CardTable, 2);
+            m_pLowerBoundImmediate      = CALC_PATCH_LOCATION(JIT_WriteBarrier_PreGrow64, Patch_Label_Lower, 2);
+            m_pCardTableImmediate       = CALC_PATCH_LOCATION(JIT_WriteBarrier_PreGrow64, Patch_Label_CardTable, 2);
 
             // Make sure that we will be bashing the right places (immediates should be hardcoded to 0x0f0f0f0f0f0f0f0f0).
             _ASSERTE_ALL_BUILDS("clr/src/VM/AMD64/JITinterfaceAMD64.cpp", 0xf0f0f0f0f0f0f0f0 == *(UINT64*)m_pLowerBoundImmediate);
             _ASSERTE_ALL_BUILDS("clr/src/VM/AMD64/JITinterfaceAMD64.cpp", 0xf0f0f0f0f0f0f0f0 == *(UINT64*)m_pCardTableImmediate);
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+            m_pCardBundleTableImmediate = CALC_PATCH_LOCATION(JIT_WriteBarrier_PreGrow64, Patch_Label_CardBundleTable, 2);
+            _ASSERTE_ALL_BUILDS("clr/src/VM/AMD64/JITinterfaceAMD64.cpp", 0xf0f0f0f0f0f0f0f0 == *(UINT64*)m_pCardBundleTableImmediate);
+#endif
             break;
         }
 
         case WRITE_BARRIER_POSTGROW64:
         {
-            m_pLowerBoundImmediate  = CALC_PATCH_LOCATION(JIT_WriteBarrier_PostGrow64, Patch_Label_Lower, 2);
-            m_pUpperBoundImmediate  = CALC_PATCH_LOCATION(JIT_WriteBarrier_PostGrow64, Patch_Label_Upper, 2);
-            m_pCardTableImmediate   = CALC_PATCH_LOCATION(JIT_WriteBarrier_PostGrow64, Patch_Label_CardTable, 2);
+            m_pLowerBoundImmediate      = CALC_PATCH_LOCATION(JIT_WriteBarrier_PostGrow64, Patch_Label_Lower, 2);
+            m_pUpperBoundImmediate      = CALC_PATCH_LOCATION(JIT_WriteBarrier_PostGrow64, Patch_Label_Upper, 2);
+            m_pCardTableImmediate       = CALC_PATCH_LOCATION(JIT_WriteBarrier_PostGrow64, Patch_Label_CardTable, 2);
 
             // Make sure that we will be bashing the right places (immediates should be hardcoded to 0x0f0f0f0f0f0f0f0f0).
             _ASSERTE_ALL_BUILDS("clr/src/VM/AMD64/JITinterfaceAMD64.cpp", 0xf0f0f0f0f0f0f0f0 == *(UINT64*)m_pLowerBoundImmediate);
             _ASSERTE_ALL_BUILDS("clr/src/VM/AMD64/JITinterfaceAMD64.cpp", 0xf0f0f0f0f0f0f0f0 == *(UINT64*)m_pCardTableImmediate);
             _ASSERTE_ALL_BUILDS("clr/src/VM/AMD64/JITinterfaceAMD64.cpp", 0xf0f0f0f0f0f0f0f0 == *(UINT64*)m_pUpperBoundImmediate);
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+            m_pCardBundleTableImmediate = CALC_PATCH_LOCATION(JIT_WriteBarrier_PostGrow64, Patch_Label_CardBundleTable, 2);
+            _ASSERTE_ALL_BUILDS("clr/src/VM/AMD64/JITinterfaceAMD64.cpp", 0xf0f0f0f0f0f0f0f0 == *(UINT64*)m_pCardBundleTableImmediate);
+#endif
             break;
         }
 
 #ifdef FEATURE_SVR_GC
         case WRITE_BARRIER_SVR64:
         {
-            m_pCardTableImmediate   = CALC_PATCH_LOCATION(JIT_WriteBarrier_SVR64, PatchLabel_CardTable, 2);
+            m_pCardTableImmediate       = CALC_PATCH_LOCATION(JIT_WriteBarrier_SVR64, PatchLabel_CardTable, 2);
 
             // Make sure that we will be bashing the right places (immediates should be hardcoded to 0x0f0f0f0f0f0f0f0f0).
             _ASSERTE_ALL_BUILDS("clr/src/VM/AMD64/JITinterfaceAMD64.cpp", 0xf0f0f0f0f0f0f0f0 == *(UINT64*)m_pCardTableImmediate);
-                        break;
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+            m_pCardBundleTableImmediate = CALC_PATCH_LOCATION(JIT_WriteBarrier_SVR64, PatchLabel_CardBundleTable, 2);
+            _ASSERTE_ALL_BUILDS("clr/src/VM/AMD64/JITinterfaceAMD64.cpp", 0xf0f0f0f0f0f0f0f0 == *(UINT64*)m_pCardBundleTableImmediate);
+#endif
+            break;
         }
 #endif // FEATURE_SVR_GC
 
@@ -286,6 +358,11 @@ void WriteBarrierManager::ChangeWriteBarrierTo(WriteBarrierType newWriteBarrier,
             _ASSERTE_ALL_BUILDS("clr/src/VM/AMD64/JITinterfaceAMD64.cpp", 0xf0f0f0f0f0f0f0f0 == *(UINT64*)m_pWriteWatchTableImmediate);
             _ASSERTE_ALL_BUILDS("clr/src/VM/AMD64/JITinterfaceAMD64.cpp", 0xf0f0f0f0f0f0f0f0 == *(UINT64*)m_pLowerBoundImmediate);
             _ASSERTE_ALL_BUILDS("clr/src/VM/AMD64/JITinterfaceAMD64.cpp", 0xf0f0f0f0f0f0f0f0 == *(UINT64*)m_pCardTableImmediate);
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+            m_pCardBundleTableImmediate = CALC_PATCH_LOCATION(JIT_WriteBarrier_WriteWatch_PreGrow64, Patch_Label_CardBundleTable, 2);
+            _ASSERTE_ALL_BUILDS("clr/src/VM/AMD64/JITinterfaceAMD64.cpp", 0xf0f0f0f0f0f0f0f0 == *(UINT64*)m_pCardBundleTableImmediate);
+#endif
             break;
         }
 
@@ -301,6 +378,11 @@ void WriteBarrierManager::ChangeWriteBarrierTo(WriteBarrierType newWriteBarrier,
             _ASSERTE_ALL_BUILDS("clr/src/VM/AMD64/JITinterfaceAMD64.cpp", 0xf0f0f0f0f0f0f0f0 == *(UINT64*)m_pLowerBoundImmediate);
             _ASSERTE_ALL_BUILDS("clr/src/VM/AMD64/JITinterfaceAMD64.cpp", 0xf0f0f0f0f0f0f0f0 == *(UINT64*)m_pCardTableImmediate);
             _ASSERTE_ALL_BUILDS("clr/src/VM/AMD64/JITinterfaceAMD64.cpp", 0xf0f0f0f0f0f0f0f0 == *(UINT64*)m_pUpperBoundImmediate);
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+            m_pCardBundleTableImmediate = CALC_PATCH_LOCATION(JIT_WriteBarrier_WriteWatch_PostGrow64, Patch_Label_CardBundleTable, 2);
+            _ASSERTE_ALL_BUILDS("clr/src/VM/AMD64/JITinterfaceAMD64.cpp", 0xf0f0f0f0f0f0f0f0 == *(UINT64*)m_pCardBundleTableImmediate);
+#endif
             break;
         }
 
@@ -313,6 +395,11 @@ void WriteBarrierManager::ChangeWriteBarrierTo(WriteBarrierType newWriteBarrier,
             // Make sure that we will be bashing the right places (immediates should be hardcoded to 0x0f0f0f0f0f0f0f0f0).
             _ASSERTE_ALL_BUILDS("clr/src/VM/AMD64/JITinterfaceAMD64.cpp", 0xf0f0f0f0f0f0f0f0 == *(UINT64*)m_pWriteWatchTableImmediate);
             _ASSERTE_ALL_BUILDS("clr/src/VM/AMD64/JITinterfaceAMD64.cpp", 0xf0f0f0f0f0f0f0f0 == *(UINT64*)m_pCardTableImmediate);
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+            m_pCardBundleTableImmediate = CALC_PATCH_LOCATION(JIT_WriteBarrier_WriteWatch_SVR64, PatchLabel_CardBundleTable, 2);
+            _ASSERTE_ALL_BUILDS("clr/src/VM/AMD64/JITinterfaceAMD64.cpp", 0xf0f0f0f0f0f0f0f0 == *(UINT64*)m_pCardBundleTableImmediate);
+#endif
             break;
         }
 #endif // FEATURE_SVR_GC
@@ -504,15 +591,14 @@ void WriteBarrierManager::UpdateEphemeralBounds(bool isRuntimeSuspended)
 
 void WriteBarrierManager::UpdateWriteWatchAndCardTableLocations(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
 {
-    // If we are told that we require an upper bounds check (GC did some heap
-    // reshuffling), we need to switch to the WriteBarrier_PostGrow function for
-    // good.
+    // If we are told that we require an upper bounds check (GC did some heap reshuffling),
+    // we need to switch to the WriteBarrier_PostGrow function for good.
 
     WriteBarrierType newType;
     if (NeedDifferentWriteBarrier(bReqUpperBoundsCheck, &newType))
     {
         ChangeWriteBarrierTo(newType, isRuntimeSuspended);
-        return; 
+        return;
     }
 
 #ifdef _DEBUG
@@ -548,6 +634,14 @@ void WriteBarrierManager::UpdateWriteWatchAndCardTableLocations(bool isRuntimeSu
         *(UINT64*)m_pCardTableImmediate = (size_t)g_card_table;
         fFlushCache = true;
     }
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+    if (*(UINT64*)m_pCardBundleTableImmediate != (size_t)g_card_bundle_table)
+    {
+        *(UINT64*)m_pCardBundleTableImmediate = (size_t)g_card_bundle_table;
+        fFlushCache = true;
+    }
+#endif
 
     if (fFlushCache)
     {
