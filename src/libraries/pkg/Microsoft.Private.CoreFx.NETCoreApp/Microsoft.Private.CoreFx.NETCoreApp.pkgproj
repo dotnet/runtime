@@ -51,10 +51,12 @@
     <!-- force a missing file if ref build is absent -->
     <File Include="$(RefBinDir)/MISSING_REF_BUILD" Condition="'@(FileToPackage)' == ''" />
 
-    <Dependency Include="@(BuildRID->'runtime.%(Identity).$(Id)')">
+    <_buildRIDWithMetadata Include="@(BuildRID)">
       <TargetRuntime>%(Identity)</TargetRuntime>
       <Version>$(PackageVersion)</Version>
-    </Dependency>
+    </_buildRIDWithMetadata>
+    <Dependency Include="@(_buildRIDWithMetadata->'runtime.%(Identity).$(Id)')" />
+
     <Dependency Include="Microsoft.NETCore.Platforms">
       <Version>$(PlatformPackageVersion)</Version>
     </Dependency>
