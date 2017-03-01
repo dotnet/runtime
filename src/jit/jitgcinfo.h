@@ -295,7 +295,11 @@ public:
     // references, building up mappings from tuples of <reg/offset X byref/pinning> to the corresponding
     // slot id (in the two member fields declared above).  In the "do work" mode, we use these slot ids to
     // actually declare live ranges to the encoder.
-    void gcMakeRegPtrTable(GcInfoEncoder* gcInfoEncoder, unsigned codeSize, unsigned prologSize, MakeRegPtrMode mode);
+    void gcMakeRegPtrTable(GcInfoEncoder* gcInfoEncoder,
+                           unsigned       codeSize,
+                           unsigned       prologSize,
+                           MakeRegPtrMode mode,
+                           unsigned*      callCntRef);
 #endif
 
 #ifdef JIT32_GCENCODER
