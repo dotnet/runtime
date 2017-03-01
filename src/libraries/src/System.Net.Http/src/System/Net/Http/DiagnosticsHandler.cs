@@ -40,17 +40,9 @@ namespace System.Net.Http
 
             Activity activity = null;
             Guid loggingRequestId = Guid.Empty;
-            
-            //cache IsEnabled result for Activity name
-            if (!s_activityEventIsChecked)
-            {
-                s_activityIsEnabled = s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityName);
-                s_activityEventIsChecked = true;
-            }
 
-            if (Activity.Current != null && //without parent activity, we cannot instrument the request
-                s_activityIsEnabled &&  //Activity events are enabled
-                s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityName, request)) //user wants THIS request to be instumented
+            // If System.Net.Http.Activity is on see if we should log the start (or just log the activity)
+            if (s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityName, request))
             {
                 activity = new Activity(DiagnosticsHandlerLoggingStrings.ActivityName);
                 //Only send start event to users who subscribed for it, but start activity anyway
@@ -62,10 +54,29 @@ namespace System.Net.Http
                 {
                     activity.Start();
                 }
+            }
+            //if Activity events are disabled, try to write System.Net.Http.Request event (deprecated)
+            else if (s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.RequestWriteNameDeprecated))
+            {
+                long timestamp = Stopwatch.GetTimestamp();
+                loggingRequestId = Guid.NewGuid();
+                s_diagnosticListener.Write(DiagnosticsHandlerLoggingStrings.RequestWriteNameDeprecated,
+                    new
+                    {
+                        Request = request,
+                        LoggingRequestId = loggingRequestId,
+                        Timestamp = timestamp
+                    }
+                );
+            }
 
-                request.Headers.Add(DiagnosticsHandlerLoggingStrings.RequestIdHeaderName, activity.Id);
+            // If we are on at all, we propagate any activity information.  
+            Activity currentActivity = Activity.Current;
+            if (currentActivity != null)
+            {
+                request.Headers.Add(DiagnosticsHandlerLoggingStrings.RequestIdHeaderName, currentActivity.Id);
                 //we expect baggage to be empty or contain a few items
-                using (IEnumerator<KeyValuePair<string, string>> e = activity.Baggage.GetEnumerator())
+                using (IEnumerator<KeyValuePair<string, string>> e = currentActivity.Baggage.GetEnumerator())
                 {
                     if (e.MoveNext())
                     {
@@ -79,20 +90,6 @@ namespace System.Net.Http
                         request.Headers.Add(DiagnosticsHandlerLoggingStrings.CorrelationContextHeaderName, baggage);
                     }
                 }
-            }
-            //if Activity events are disabled, try to write System.Net.Http.Request event (deprecated)
-            else if (!s_activityIsEnabled && s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.RequestWriteNameDeprecated))
-            {
-                long timestamp = Stopwatch.GetTimestamp();
-                loggingRequestId = Guid.NewGuid();
-                s_diagnosticListener.Write(DiagnosticsHandlerLoggingStrings.RequestWriteNameDeprecated,
-                    new
-                    {
-                        Request = request,
-                        LoggingRequestId = loggingRequestId,
-                        Timestamp = timestamp
-                    }
-                );
             }
 
             Task<HttpResponseMessage> responseTask = base.SendAsync(request, cancellationToken);
@@ -128,7 +125,7 @@ namespace System.Net.Http
                     });
                 }
                 //if Activity events are disabled, try to write System.Net.Http.Response event (deprecated)
-                else if (!s_activityIsEnabled && s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ResponseWriteNameDeprecated))
+                else if (s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ResponseWriteNameDeprecated))
                 {
                     long timestamp = Stopwatch.GetTimestamp();
                     s_diagnosticListener.Write(DiagnosticsHandlerLoggingStrings.ResponseWriteNameDeprecated,
@@ -147,8 +144,6 @@ namespace System.Net.Http
 
         #region private
 
-        private static bool s_activityIsEnabled = false;
-        private static bool s_activityEventIsChecked = false;
         private static readonly DiagnosticListener s_diagnosticListener =
             new DiagnosticListener(DiagnosticsHandlerLoggingStrings.DiagnosticListenerName);
 
