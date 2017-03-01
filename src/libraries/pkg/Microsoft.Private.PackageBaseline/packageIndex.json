@@ -4656,7 +4656,7 @@
         "4.0.2.0": "4.3.0"
       }
     },
-    "System.Transactions": {
+    "System.Transactions.Local": {
       "BaselineVersion": "4.4.0",
       "InboxOn": {
         "netcoreapp2.0": "4.0.0.0",
