@@ -119,6 +119,22 @@ LEAF_ENTRY JIT_WriteBarrier, _TEXT
 
     UpdateCardTable:
         mov     byte ptr [rdi + rax], 0FFh
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+        NOP_2_BYTE // padding for alignment of constant
+        shr     rdi, 0x0A
+
+        movabs  rax, 0xF0F0F0F0F0F0F0F0
+        cmp     byte ptr [rdi + rax], 0FFh
+
+        .byte 0x75, 0x02
+        // jne     UpdateCardBundle_WriteWatch_PostGrow64
+        REPRET
+
+    UpdateCardBundle_WriteWatch_PostGrow64:
+        mov     byte ptr [rdi + rax], 0FFh
+#endif
+
         ret
 
     .balign 16
@@ -163,12 +179,31 @@ LEAF_ENTRY JIT_WriteBarrier, _TEXT
         // Touch the card table entry, if not already dirty.
         shr     rdi, 0Bh
         cmp     byte ptr [rdi + rax], 0FFh
-        // jne     UpdateCardTable
         .byte 0x75, 0x02
+        // jne     UpdateCardTable
         REPRET
 
     UpdateCardTable:
         mov     byte ptr [rdi + rax], 0FFh
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+        NOP_6_BYTE // padding for alignment of constant
+
+        movabs  rax, 0xF0F0F0F0F0F0F0F0
+
+        // Touch the card bundle, if not already dirty.
+        // rdi is already shifted by 0xB, so shift by 0xA more
+        shr     rdi, 0x0A
+        cmp     byte ptr [rdi + rax], 0FFh
+
+        .byte 0x75, 0x02 
+        // jne     UpdateCardBundle
+        REPRET
+
+    UpdateCardBundle:
+        mov     byte ptr [rdi + rax], 0FFh
+#endif
+
         ret
 
     .balign 16
@@ -303,16 +338,36 @@ LEAF_ENTRY JIT_ByRefWriteBarrier, _TEXT
         // Check if we need to update the card table
         // Calc pCardByte
         shr     rcx, 0x0B
+        
         PREPARE_EXTERNAL_VAR g_card_table, rax
-        add     rcx, [rax]
+        mov     rax, [rax]
 
         // Check if this card is dirty
-        cmp     byte ptr [rcx], 0FFh
+        cmp     byte ptr [rcx + rax], 0FFh
+
         jne     UpdateCardTable_ByRefWriteBarrier
         REPRET
 
     UpdateCardTable_ByRefWriteBarrier:
+        mov     byte ptr [rcx + rax], 0FFh
+
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+        // Shift rcx by 0x0A more to get the card bundle byte (we shifted by 0x0B already)
+        shr     rcx, 0x0A
+        
+        PREPARE_EXTERNAL_VAR g_card_bundle_table, rax
+        add     rcx, [rax]
+
+        // Check if this bundle byte is dirty
+        cmp     byte ptr [rcx], 0FFh
+
+        jne     UpdateCardBundle_ByRefWriteBarrier
+        REPRET
+
+    UpdateCardBundle_ByRefWriteBarrier:
         mov     byte ptr [rcx], 0FFh
+#endif
+
         ret
 
     .balign 16
