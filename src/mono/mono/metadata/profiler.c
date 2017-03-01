@@ -1147,7 +1147,7 @@ mono_profiler_coverage_get (MonoProfiler *prof, MonoMethod *method, MonoProfileC
 			if (debug_minfo) {
 				MonoDebugSourceLocation *location;
 
-				location = mono_debug_symfile_lookup_location (debug_minfo, offset);
+				location = mono_debug_method_lookup_location (debug_minfo, offset);
 				if (location) {
 					entry.line = location->row;
 					entry.col = location->column;

@@ -21,7 +21,6 @@
 #endif
 
 #include <mono/metadata/mono-endian.h>
-#include <mono/metadata/debug-mono-symfile.h>
 #include <mono/metadata/mono-debug-debugger.h>
 
 #ifndef HOST_WIN32
@@ -1581,11 +1580,11 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method,
 
 		prev_il_offset = il_offset;
 
-		loc = mono_debug_symfile_lookup_location (minfo, il_offset);
+		loc = mono_debug_method_lookup_location (minfo, il_offset);
 		if (!loc)
 			continue;
 		if (!loc->source_file) {
-			mono_debug_symfile_free_location (loc);
+			mono_debug_free_source_location (loc);
 			continue;
 		}
 
@@ -1633,7 +1632,7 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method,
 			prev_native_offset = i;
 		}
 
-		mono_debug_symfile_free_location (loc);
+		mono_debug_free_source_location (loc);
 		first = FALSE;
 	}
 
@@ -1797,7 +1796,7 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 
 	minfo = mono_debug_lookup_method (method);
 	if (minfo)
-		loc = mono_debug_symfile_lookup_location (minfo, 0);
+		loc = mono_debug_method_lookup_location (minfo, 0);
 
 	/* Subprogram */
 	names = g_new0 (char *, sig->param_count);
@@ -1818,7 +1817,7 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 		emit_uleb128 (w, file_index + 1);
 		emit_uleb128 (w, loc->row);
 
-		mono_debug_symfile_free_location (loc);
+		mono_debug_free_source_location (loc);
 		loc = NULL;
 	} else {
 		emit_uleb128 (w, 0);

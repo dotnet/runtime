@@ -9116,7 +9116,7 @@ emit_dbg_loc (EmitContext *ctx, LLVMBuilderRef builder, const unsigned char *cil
 		MonoDebugSourceLocation *loc;
 		LLVMValueRef loc_md;
 
-		loc = mono_debug_symfile_lookup_location (ctx->minfo, cil_code - cfg->header->code);
+		loc = mono_debug_method_lookup_location (ctx->minfo, cil_code - cfg->header->code);
 
 		if (loc) {
 #if LLVM_API_VERSION > 100
@@ -9134,7 +9134,7 @@ emit_dbg_loc (EmitContext *ctx, LLVMBuilderRef builder, const unsigned char *cil
 			loc_md = LLVMMDNode (md_args, nmd_args);
 			LLVMSetCurrentDebugLocation (builder, loc_md);
 #endif
-			mono_debug_symfile_free_location (loc);
+			mono_debug_free_source_location (loc);
 		}
 	}
 }

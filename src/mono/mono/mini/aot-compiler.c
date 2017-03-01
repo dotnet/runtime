@@ -5246,11 +5246,11 @@ compute_line_numbers (MonoMethod *method, int code_size, MonoDebugMethodJitInfo 
 		if (il_offset == -1 || il_offset == prev_il_offset)
 			continue;
 		prev_il_offset = il_offset;
-		loc = mono_debug_symfile_lookup_location (minfo, il_offset);
+		loc = mono_debug_method_lookup_location (minfo, il_offset);
 		if (!(loc && loc->source_file))
 			continue;
 		if (loc->row == prev_line) {
-			mono_debug_symfile_free_location (loc);
+			mono_debug_free_source_location (loc);
 			continue;
 		}
 		prev_line = loc->row;
@@ -5349,7 +5349,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 				options = "";
 			prologue_end = TRUE;
 			fprintf (acfg->fp, ".loc %d %d 0%s\n", findex, loc->row, options);
-			mono_debug_symfile_free_location (loc);
+			mono_debug_free_source_location (loc);
 		}
 
 		skip = FALSE;
