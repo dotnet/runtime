@@ -34,7 +34,7 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests ConnectAsyncUnixDomainSocketEndPoint seccess on Unix
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Tests ConnectAsyncUnixDomainSocketEndPoint success on Unix
         public async Task Socket_ConnectAsyncUnixDomainSocketEndPoint_Success()
         {
             string path = null;
@@ -193,6 +193,67 @@ namespace System.Net.Sockets.Tests
                         }
                     }
                 }
+            }
+            finally
+            {
+                try { File.Delete(path); }
+                catch { }
+            }
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Theory]
+        [InlineData(5000, 1, 1, false)]
+        [InlineData(5000, 1, 1, true)]
+        public async Task Socket_SendReceiveAsync_PropagateToStream_Success(int iterations, int writeBufferSize, int readBufferSize, bool shutdownUnusedDirections)
+        {             
+            var writeBuffer = new byte[writeBufferSize * iterations];
+            new Random().NextBytes(writeBuffer);
+            var readData = new MemoryStream();
+
+            string path = GetRandomNonExistingFilePath();
+            var endPoint = new UnixDomainSocketEndPoint(path);
+            try
+            {
+                using (var server = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
+                using (var client = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified))
+                {
+                    server.Bind(endPoint);
+                    server.Listen(1);
+
+                    Task clientReceives = Task.Run(async () =>
+                    {
+                        await client.ConnectAsync(endPoint);
+
+                        int bytesRead;
+                        byte[] buffer = new byte[readBufferSize];
+                        while ((bytesRead = await client.ReceiveAsync(new ArraySegment<byte>(buffer), SocketFlags.None)) > 0)
+                        {
+                            readData.Write(buffer, 0, bytesRead);
+                        }
+                    });
+
+                    using (Socket accepted = await server.AcceptAsync())
+                    {
+                        if (shutdownUnusedDirections)
+                        {
+                            server.Shutdown(SocketShutdown.Receive);
+                            client.Shutdown(SocketShutdown.Send);
+                        }
+
+                        for (int iter = 0; iter < iterations; iter++)
+                        {
+                            Task<int> sendTask = accepted.SendAsync(new ArraySegment<byte>(writeBuffer, iter * writeBufferSize, writeBufferSize), SocketFlags.None);
+                            await await Task.WhenAny(clientReceives, sendTask);
+                            Assert.Equal(writeBufferSize, await sendTask);
+                        }
+                    }
+
+                    await clientReceives;
+                }
+
+                Assert.Equal(writeBuffer.Length, readData.Length);
+                Assert.Equal(writeBuffer, readData.ToArray());
             }
             finally
             {
