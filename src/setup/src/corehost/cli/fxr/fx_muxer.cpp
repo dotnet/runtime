@@ -772,10 +772,12 @@ int fx_muxer_t::parse_args_and_execute(
         known_opts.push_back(_X("--depsfile"));
         known_opts.push_back(_X("--runtimeconfig"));
     }
+
     if (mode == host_mode_t::muxer)
     {
         known_opts.push_back(_X("--fx-version"));
         known_opts.push_back(_X("--roll-forward-on-no-candidate-fx"));
+        known_opts.push_back(_X("--additional-deps"));
     }
 
     // Parse the known arguments if any.
@@ -856,11 +858,13 @@ int fx_muxer_t::read_config_and_execute(
     pal::string_t opts_roll_fwd_on_no_candidate_fx = _X("--roll-forward-on-no-candidate-fx");
     pal::string_t opts_deps_file = _X("--depsfile");
     pal::string_t opts_probe_path = _X("--additionalprobingpath");
+    pal::string_t opts_additional_deps = _X("--additional-deps");
     pal::string_t opts_runtime_config = _X("--runtimeconfig");
 
     pal::string_t fx_version = get_last_known_arg(opts, opts_fx_version, _X(""));
     pal::string_t roll_fwd_on_no_candidate_fx = get_last_known_arg(opts, opts_roll_fwd_on_no_candidate_fx, _X(""));
     pal::string_t deps_file = get_last_known_arg(opts, opts_deps_file, _X(""));
+    pal::string_t additional_deps = get_last_known_arg(opts, opts_additional_deps, _X(""));
     pal::string_t runtime_config = get_last_known_arg(opts, opts_runtime_config, _X(""));
     std::vector<pal::string_t> spec_probe_paths = opts.count(opts_probe_path) ? opts.find(opts_probe_path)->second : std::vector<pal::string_t>();
 
@@ -918,7 +922,18 @@ int fx_muxer_t::read_config_and_execute(
         roll_fwd_on_no_candidate_fx_val = pal::xtoi(roll_fwd_on_no_candidate_fx.c_str());
     }
 
+    pal::string_t additional_deps_serialized;
+    
     bool is_portable = config.get_portable();
+    if (is_portable) {
+        additional_deps_serialized = additional_deps;
+        if (additional_deps_serialized.empty())
+        {
+            // additional_deps_serialized stays empty if DOTNET_ADDITIONAL_DEPS env var is not defined
+            pal::getenv(_X("DOTNET_ADDITIONAL_DEPS"), &additional_deps_serialized);
+        }
+    }
+
     pal::string_t fx_dir = is_portable ? resolve_fx_dir(mode, own_dir, config, fx_version, roll_fwd_on_no_candidate_fx_val) : _X("");
 
     trace::verbose(_X("Executing as a %s app as per config file [%s]"),
@@ -930,7 +945,7 @@ int fx_muxer_t::read_config_and_execute(
         return CoreHostLibMissingFailure;
     }
 
-    corehost_init_t init(deps_file, probe_realpaths, fx_dir, mode, config);
+    corehost_init_t init(deps_file, additional_deps_serialized, probe_realpaths, fx_dir, mode, config);
     return execute_app(impl_dir, &init, new_argc, new_argv);
 }
 
