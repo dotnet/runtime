@@ -559,6 +559,7 @@ sgen_nursery_is_object_alive (GCObject *obj)
 
 typedef struct {
 	gboolean is_split;
+	gboolean is_parallel;
 
 	GCObject* (*alloc_for_promotion) (GCVTable vtable, GCObject *obj, size_t objsize, gboolean has_references);
 
@@ -578,7 +579,7 @@ typedef struct {
 
 extern SgenMinorCollector sgen_minor_collector;
 
-void sgen_simple_nursery_init (SgenMinorCollector *collector);
+void sgen_simple_nursery_init (SgenMinorCollector *collector, gboolean parallel);
 void sgen_split_nursery_init (SgenMinorCollector *collector);
 
 /* Updating references */

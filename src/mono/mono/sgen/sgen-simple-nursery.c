@@ -93,9 +93,10 @@ fill_serial_with_concurrent_major_ops (SgenObjectOperations *ops)
 }
 
 void
-sgen_simple_nursery_init (SgenMinorCollector *collector)
+sgen_simple_nursery_init (SgenMinorCollector *collector, gboolean parallel)
 {
 	collector->is_split = FALSE;
+	collector->is_parallel = parallel;
 
 	collector->alloc_for_promotion = alloc_for_promotion;
 

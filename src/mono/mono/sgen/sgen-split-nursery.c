@@ -452,6 +452,7 @@ void
 sgen_split_nursery_init (SgenMinorCollector *collector)
 {
 	collector->is_split = TRUE;
+	collector->is_parallel = FALSE;
 
 	collector->alloc_for_promotion = minor_alloc_for_promotion;
 

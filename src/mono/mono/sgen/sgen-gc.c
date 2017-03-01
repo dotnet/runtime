@@ -3003,11 +3003,13 @@ sgen_gc_init (void)
 	sgen_client_init ();
 
 	if (!minor_collector_opt) {
-		sgen_simple_nursery_init (&sgen_minor_collector);
+		sgen_simple_nursery_init (&sgen_minor_collector, FALSE);
 	} else {
 		if (!strcmp (minor_collector_opt, "simple")) {
 		use_simple_nursery:
-			sgen_simple_nursery_init (&sgen_minor_collector);
+			sgen_simple_nursery_init (&sgen_minor_collector, FALSE);
+		} else if (!strcmp (minor_collector_opt, "simple-par")) {
+			sgen_simple_nursery_init (&sgen_minor_collector, TRUE);
 		} else if (!strcmp (minor_collector_opt, "split")) {
 			sgen_split_nursery_init (&sgen_minor_collector);
 		} else {
