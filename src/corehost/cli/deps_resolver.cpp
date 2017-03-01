@@ -355,7 +355,7 @@ bool deps_resolver_t::resolve_tpa_list(
         }
     }
 
-    // Finally, if the deps file wasn't present or has missing entries, then
+    // If the deps file wasn't present or has missing entries, then
     // add the app local assemblies to the TPA.
     if (!m_deps->exists())
     {
@@ -366,6 +366,20 @@ bool deps_resolver_t::resolve_tpa_list(
         for (const auto& kv : local_assemblies)
         {
             add_tpa_asset(kv.first, kv.second, &items, output);
+        }
+    }
+
+    // If additional deps files were specified that need to be treated as part of the
+    // application, then add them to the mix as well.
+    for (const auto& additional_deps : m_additional_deps)
+    {
+        auto additional_deps_entries = additional_deps->get_entries(deps_entry_t::asset_types::runtime);
+        for (auto entry : additional_deps_entries)
+        {
+            if (!process_entry(m_app_dir, additional_deps.get(), entry))
+            {
+                return false;
+            }
         }
     }
 
@@ -400,6 +414,79 @@ void deps_resolver_t::init_known_entry_path(const deps_entry_t& entry, const pal
     {
         m_clrjit_path = path;
         return;
+    }
+}
+
+void deps_resolver_t::resolve_additional_deps(const hostpolicy_init_t& init)
+{
+    if (!m_portable)
+    {
+        // Additional deps.json support is only available for portable apps due to the following constraints:
+        //
+        // 1) Unlike Portable Apps, Standalone apps do not have details of the SharedFX and Version they target.
+        // 2) Unlike Portable Apps, Standalone apps do not have RID fallback graph that is required for looking up
+        //    the correct native assets from nuget packages.
+
+        return;
+    }
+
+    pal::string_t additional_deps_serialized = init.additional_deps_serialized;
+    pal::string_t fx_name = init.fx_name;
+    pal::string_t fx_ver = init.fx_ver;
+
+    if (additional_deps_serialized.empty())
+    {
+        return;
+    }
+
+    pal::string_t additional_deps_path;
+    pal::stringstream_t ss(additional_deps_serialized);
+
+    // Process the delimiter separated custom deps files.
+    while (std::getline(ss, additional_deps_path, PATH_SEPARATOR))
+    {
+        // If it's a single deps file, insert it in 'm_additional_deps_files'
+        if (ends_with(additional_deps_path, _X(".deps.json"), false))
+        {
+            if (pal::file_exists(additional_deps_path))
+            {
+                trace::verbose(_X("Using specified additional deps.json: '%s'"), 
+                    additional_deps_path.c_str());
+                    
+                m_additional_deps_files.push_back(additional_deps_path);
+            }
+            else
+            {
+                trace::warning(_X("Warning: Specified additional deps.json does not exist: '%s'"), 
+                    additional_deps_path.c_str());
+            }
+        }
+        else
+        {
+            // We'll search deps files in 'base_dir'/shared/fx_name/fx_ver
+            append_path(&additional_deps_path, _X("shared"));
+            append_path(&additional_deps_path, fx_name.c_str());
+            append_path(&additional_deps_path, fx_ver.c_str());
+
+            // The resulting list will be empty if 'additional_deps_path' is not a valid directory path
+            std::vector<pal::string_t> list;
+            pal::readdir(additional_deps_path, _X("*.deps.json"), &list);
+            for (pal::string_t json_file : list)
+            {
+                pal::string_t json_full_path = additional_deps_path;
+                append_path(&json_full_path, json_file.c_str());
+                m_additional_deps_files.push_back(json_full_path);
+
+                trace::verbose(_X("Using specified additional deps.json: '%s'"), 
+                    json_full_path.c_str());
+            }
+        }
+    }
+
+    for (pal::string_t json_file : m_additional_deps_files)
+    {
+        m_additional_deps.push_back(std::unique_ptr<deps_json_t>(
+            new deps_json_t(true, json_file, m_fx_deps->get_rid_fallback_graph())));
     }
 }
 
@@ -508,6 +595,19 @@ bool deps_resolver_t::resolve_probe_dirs(
         (void) library_exists_in_dir(m_app_dir, LIBCORECLR_NAME, &m_coreclr_path);
 
         (void) library_exists_in_dir(m_app_dir, LIBCLRJIT_NAME, &m_clrjit_path);
+    }
+
+    // Handle any additional deps.json that were specified.
+    for (const auto& additional_deps : m_additional_deps)
+    {
+        const auto additional_deps_entries = additional_deps->get_entries(deps_entry_t::asset_types::runtime);
+        for (const auto entry : additional_deps_entries)
+        {
+            if (!add_package_cache_entry(entry, m_app_dir))
+            {
+                return false;
+            }
+        }
     }
     
     for (const auto& entry : fx_entries)
