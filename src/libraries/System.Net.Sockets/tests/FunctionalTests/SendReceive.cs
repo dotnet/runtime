@@ -214,12 +214,121 @@ namespace System.Net.Sockets.Tests
                     }
 
                     client.LingerState = new LingerOption(true, LingerTime);
-                    client.Shutdown(SocketShutdown.Both);
+                    client.Shutdown(SocketShutdown.Send);
                     await serverProcessingTask;
                 }
 
                 Assert.Equal(bytesSent, bytesReceived);
                 Assert.Equal(sentChecksum.Sum, receivedChecksum.Sum);
+            }
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Theory]
+        [MemberData(nameof(LoopbacksAndBuffers))]
+        public async Task SendRecv_Stream_TCP_MultipleConcurrentReceives(IPAddress listenAt, bool useMultipleBuffers)
+        {
+            using (var server = new Socket(listenAt.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
+            {
+                server.BindToAnonymousPort(listenAt);
+                server.Listen(1);
+
+                EndPoint clientEndpoint = server.LocalEndPoint;
+                using (var client = new Socket(clientEndpoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
+                {
+                    Task clientConnect = ConnectAsync(client, clientEndpoint);
+                    using (Socket remote = await AcceptAsync(server))
+                    {
+                        await clientConnect;
+
+                        if (useMultipleBuffers)
+                        {
+                            var bufferList1 = new List<ArraySegment<byte>> { new ArraySegment<byte>(new byte[1]), new ArraySegment<byte>(new byte[1]) };
+                            var bufferList2 = new List<ArraySegment<byte>> { new ArraySegment<byte>(new byte[1]), new ArraySegment<byte>(new byte[1]) };
+                            var bufferList3 = new List<ArraySegment<byte>> { new ArraySegment<byte>(new byte[1]) };
+
+                            Task<int> receive1 = ReceiveAsync(client, bufferList1);
+                            Task<int> receive2 = ReceiveAsync(client, bufferList2);
+                            Task<int> receive3 = ReceiveAsync(client, bufferList3);
+
+                            await Task.WhenAll(
+                                SendAsync(remote, new ArraySegment<byte>(new byte[] { 1, 2, 3, 4, 5 })),
+                                receive1, receive2, receive3);
+
+                            Assert.InRange(receive1.Result + receive2.Result + receive3.Result, 3, 5);
+                        }
+                        else
+                        {
+                            var buffer1 = new ArraySegment<byte>(new byte[1]);
+                            var buffer2 = new ArraySegment<byte>(new byte[1]);
+                            var buffer3 = new ArraySegment<byte>(new byte[1]);
+
+                            Task<int> receive1 = ReceiveAsync(client, buffer1);
+                            Task<int> receive2 = ReceiveAsync(client, buffer2);
+                            Task<int> receive3 = ReceiveAsync(client, buffer3);
+
+                            await Task.WhenAll(
+                                SendAsync(remote, new ArraySegment<byte>(new byte[] { 1, 2, 3 })),
+                                receive1, receive2, receive3);
+
+                            Assert.Equal(3, receive1.Result + receive2.Result + receive3.Result);
+                        }
+                    }
+                }
+            }
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Theory]
+        [MemberData(nameof(LoopbacksAndBuffers))]
+        public async Task SendRecv_Stream_TCP_MultipleConcurrentSends(IPAddress listenAt, bool useMultipleBuffers)
+        {
+            using (var server = new Socket(listenAt.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
+            {
+                server.BindToAnonymousPort(listenAt);
+                server.Listen(1);
+
+                EndPoint clientEndpoint = server.LocalEndPoint;
+                using (var client = new Socket(clientEndpoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
+                {
+                    Task clientConnect = ConnectAsync(client, clientEndpoint);
+                    using (Socket remote = await AcceptAsync(server))
+                    {
+                        await clientConnect;
+
+                        Task<int> send1, send2, send3;
+                        if (useMultipleBuffers)
+                        {
+                            var bufferList1 = new List<ArraySegment<byte>> { new ArraySegment<byte>(new byte[1000000]), new ArraySegment<byte>(new byte[1000000]) };
+                            var bufferList2 = new List<ArraySegment<byte>> { new ArraySegment<byte>(new byte[1000000]), new ArraySegment<byte>(new byte[1000000]) };
+                            var bufferList3 = new List<ArraySegment<byte>> { new ArraySegment<byte>(new byte[1000000]) };
+
+                            send1 = SendAsync(client, bufferList1);
+                            send2 = SendAsync(client, bufferList2);
+                            send3 = SendAsync(client, bufferList3);
+                        }
+                        else
+                        {
+                            var buffer1 = new ArraySegment<byte>(new byte[2000000]);
+                            var buffer2 = new ArraySegment<byte>(new byte[2000000]);
+                            var buffer3 = new ArraySegment<byte>(new byte[1000000]);
+
+                            send1 = SendAsync(client, buffer1);
+                            send2 = SendAsync(client, buffer2);
+                            send3 = SendAsync(client, buffer3);
+                        }
+
+                        int receivedTotal = 0;
+                        int received;
+                        var receiveBuffer = new ArraySegment<byte>(new byte[1000000]);
+                        while (receivedTotal < 5000000)
+                        {
+                            if ((received = await ReceiveAsync(remote, receiveBuffer)) == 0) break;
+                            receivedTotal += received;
+                        }
+                        Assert.Equal(5000000, receivedTotal);
+                    }
+                }
             }
         }
 
@@ -270,7 +379,7 @@ namespace System.Net.Sockets.Tests
 
                     using (var client = new Socket(clientEndpoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
                     {
-                        await client.ConnectAsync(clientEndpoint.Address, clientEndpoint.Port);
+                        await ConnectAsync(client, clientEndpoint);
 
                         if (pollBeforeOperation)
                         {
@@ -494,7 +603,8 @@ namespace System.Net.Sockets.Tests
                 }
             });
 
-            Assert.True(Task.WaitAll(new[] { serverTask, clientTask }, TestTimeout));
+            Assert.True(Task.WaitAll(new[] { serverTask, clientTask }, TestTimeout),
+                $"Time out waiting for serverTask ({serverTask.Status}) and clientTask ({clientTask.Status})");
 
             Assert.Equal(bytesSent, bytesReceived);
             Assert.Equal(sentChecksum.Sum, receivedChecksum.Sum);
