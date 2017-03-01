@@ -66,6 +66,7 @@ init_nursery (SgenFragmentAllocator *allocator, char *start, char *end)
 #define collector_pin_object(obj, queue) sgen_pin_object (obj, queue);
 #define COLLECTOR_SERIAL_ALLOC_FOR_PROMOTION alloc_for_promotion
 
+#define COPY_OR_MARK_PARALLEL
 #include "sgen-copy-object.h"
 
 #define SGEN_SIMPLE_NURSERY
@@ -80,6 +81,19 @@ fill_serial_ops (SgenObjectOperations *ops)
 	FILL_MINOR_COLLECTOR_SCAN_OBJECT (ops);
 }
 
+#define SGEN_SIMPLE_PAR_NURSERY
+
+#include "sgen-minor-copy-object.h"
+#include "sgen-minor-scan-object.h"
+
+static void
+fill_parallel_ops (SgenObjectOperations *ops)
+{
+	ops->copy_or_mark_object = SERIAL_COPY_OBJECT;
+	FILL_MINOR_COLLECTOR_SCAN_OBJECT (ops);
+}
+
+#undef SGEN_SIMPLE_PAR_NURSERY
 #define SGEN_CONCURRENT_MAJOR
 
 #include "sgen-minor-copy-object.h"
@@ -109,6 +123,7 @@ sgen_simple_nursery_init (SgenMinorCollector *collector, gboolean parallel)
 
 	fill_serial_ops (&collector->serial_ops);
 	fill_serial_with_concurrent_major_ops (&collector->serial_ops_with_concurrent_major);
+	fill_parallel_ops (&collector->parallel_ops);
 }
 
 

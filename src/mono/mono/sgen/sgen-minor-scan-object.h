@@ -18,6 +18,12 @@ extern guint64 stat_scan_object_called_nursery;
 
 #if defined(SGEN_SIMPLE_NURSERY)
 
+#ifdef SGEN_SIMPLE_PAR_NURSERY
+#define SERIAL_SCAN_OBJECT simple_par_nursery_serial_scan_object
+#define SERIAL_SCAN_VTYPE simple_par_nursery_serial_scan_vtype
+#define SERIAL_SCAN_PTR_FIELD simple_par_nursery_serial_scan_ptr_field
+#define SERIAL_DRAIN_GRAY_STACK simple_par_nursery_serial_drain_gray_stack
+#else
 #ifdef SGEN_CONCURRENT_MAJOR
 #define SERIAL_SCAN_OBJECT simple_nursery_serial_with_concurrent_major_scan_object
 #define SERIAL_SCAN_VTYPE simple_nursery_serial_with_concurrent_major_scan_vtype
@@ -28,6 +34,7 @@ extern guint64 stat_scan_object_called_nursery;
 #define SERIAL_SCAN_VTYPE simple_nursery_serial_scan_vtype
 #define SERIAL_SCAN_PTR_FIELD simple_nursery_serial_scan_ptr_field
 #define SERIAL_DRAIN_GRAY_STACK simple_nursery_serial_drain_gray_stack
+#endif
 #endif
 
 #elif defined (SGEN_SPLIT_NURSERY)
@@ -104,16 +111,31 @@ SERIAL_SCAN_PTR_FIELD (GCObject *full_object, GCObject **ptr, SgenGrayQueue *que
 static gboolean
 SERIAL_DRAIN_GRAY_STACK (SgenGrayQueue *queue)
 {
-        for (;;) {
-                GCObject *obj;
-                SgenDescriptor desc;
+#ifdef SGEN_SIMPLE_PAR_NURSERY
+	int i;
+	/*
+	 * We do bounded iteration so we can switch to optimized context
+	 * when we are the last worker remaining.
+	 */
+	for (i = 0; i < 32; i++) {
+#else
+	for (;;) {
+#endif
+		GCObject *obj;
+		SgenDescriptor desc;
 
-                GRAY_OBJECT_DEQUEUE_SERIAL (queue, &obj, &desc);
-                if (!obj)
-                        return TRUE;
+#ifdef SGEN_SIMPLE_PAR_NURSERY
+		GRAY_OBJECT_DEQUEUE_PARALLEL (queue, &obj, &desc);
+#else
+		GRAY_OBJECT_DEQUEUE_SERIAL (queue, &obj, &desc);
+#endif
+		if (!obj)
+			return TRUE;
 
-                SERIAL_SCAN_OBJECT (obj, desc, queue);
-        }
+		SERIAL_SCAN_OBJECT (obj, desc, queue);
+	}
+
+	return FALSE;
 }
 
 #define FILL_MINOR_COLLECTOR_SCAN_OBJECT(ops)	do {			\
