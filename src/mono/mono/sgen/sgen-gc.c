@@ -1867,7 +1867,8 @@ major_copy_or_mark_from_roots (SgenGrayQueue *gc_thread_gray_queue, size_t *old_
 
 	SGEN_ASSERT (0, sgen_workers_all_done (), "Why are the workers not done when we start or finish a major collection?");
 	if (mode == COPY_OR_MARK_FROM_ROOTS_FINISH_CONCURRENT) {
-		sgen_workers_set_num_active_workers (0);
+		if (object_ops_par != NULL)
+			sgen_workers_set_num_active_workers (0);
 		if (sgen_workers_have_idle_work ()) {
 			/*
 			 * We force the finish of the worker with the new object ops context
@@ -1912,8 +1913,11 @@ major_copy_or_mark_from_roots (SgenGrayQueue *gc_thread_gray_queue, size_t *old_
 
 	if (mode == COPY_OR_MARK_FROM_ROOTS_FINISH_CONCURRENT) {
 		int i, split_count = sgen_workers_get_job_split_count ();
+		gboolean parallel = object_ops_par != NULL;
 
-		gray_queue_redirect (gc_thread_gray_queue);
+		/* If we're not parallel we finish the collection on the gc thread */
+		if (parallel)
+			gray_queue_redirect (gc_thread_gray_queue);
 
 		/* Mod union card table */
 		for (i = 0; i < split_count; i++) {
@@ -1921,27 +1925,29 @@ major_copy_or_mark_from_roots (SgenGrayQueue *gc_thread_gray_queue, size_t *old_
 
 			psj = (ParallelScanJob*)sgen_thread_pool_job_alloc ("scan mod union cardtable", job_scan_major_mod_union_card_table, sizeof (ParallelScanJob));
 			psj->scan_job.ops = object_ops_par ? object_ops_par : object_ops_nopar;
-			psj->scan_job.gc_thread_gray_queue = NULL;
+			psj->scan_job.gc_thread_gray_queue = gc_thread_gray_queue;
 			psj->job_index = i;
-			sgen_workers_enqueue_job (&psj->scan_job.job, TRUE);
+			sgen_workers_enqueue_job (&psj->scan_job.job, parallel);
 
 			psj = (ParallelScanJob*)sgen_thread_pool_job_alloc ("scan LOS mod union cardtable", job_scan_los_mod_union_card_table, sizeof (ParallelScanJob));
 			psj->scan_job.ops = object_ops_par ? object_ops_par : object_ops_nopar;
-			psj->scan_job.gc_thread_gray_queue = NULL;
+			psj->scan_job.gc_thread_gray_queue = gc_thread_gray_queue;
 			psj->job_index = i;
-			sgen_workers_enqueue_job (&psj->scan_job.job, TRUE);
+			sgen_workers_enqueue_job (&psj->scan_job.job, parallel);
 		}
 
-		/*
-		 * If we enqueue a job while workers are running we need to sgen_workers_ensure_awake
-		 * in order to make sure that we are running the idle func and draining all worker
-		 * gray queues. The operation of starting workers implies this, so we start them after
-		 * in order to avoid doing this operation twice. The workers will drain the main gray
-		 * stack that contained roots and pinned objects and also scan the mod union card
-		 * table.
-		 */
-		sgen_workers_start_all_workers (object_ops_nopar, object_ops_par, NULL);
-		sgen_workers_join ();
+		if (parallel) {
+			/*
+			 * If we enqueue a job while workers are running we need to sgen_workers_ensure_awake
+			 * in order to make sure that we are running the idle func and draining all worker
+			 * gray queues. The operation of starting workers implies this, so we start them after
+			 * in order to avoid doing this operation twice. The workers will drain the main gray
+			 * stack that contained roots and pinned objects and also scan the mod union card
+			 * table.
+			 */
+			sgen_workers_start_all_workers (object_ops_nopar, object_ops_par, NULL);
+			sgen_workers_join ();
+		}
 	}
 
 	sgen_pin_stats_report ();
