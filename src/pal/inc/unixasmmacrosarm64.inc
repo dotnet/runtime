@@ -43,6 +43,7 @@ C_FUNC(\Name\()_End):
 
 .macro PROLOG_STACK_ALLOC Size
         sub sp, sp, \Size
+        .cfi_adjust_cfa_offset \Size
 .endm
 
 .macro EPILOG_STACK_FREE Size
@@ -66,7 +67,6 @@ C_FUNC(\Name\()_End):
         .cfi_rel_offset \reg2, \ofs + 8
         .ifc \reg1, fp
         mov fp, sp
-        .cfi_def_cfa_register fp
         .endif
 .endm
 
@@ -77,7 +77,6 @@ C_FUNC(\Name\()_End):
         .cfi_rel_offset \reg2, 8
         .ifc \reg1, fp
         mov fp, sp
-        .cfi_def_cfa_register fp
         .endif
 .endm
 
