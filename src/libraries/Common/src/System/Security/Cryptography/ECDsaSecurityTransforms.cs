@@ -9,6 +9,7 @@ using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
     public partial class ECDsa : AsymmetricAlgorithm
     {
         /// <summary>
@@ -44,10 +45,9 @@ namespace System.Security.Cryptography
             ecdsa.ImportParameters(parameters);
             return ecdsa;
         }
-
+#endif
         internal static partial class ECDsaImplementation
         {
-            // TODO: Name this for real.
             public sealed partial class ECDsaSecurityTransforms : ECDsa
             {
                 private SecKeyPair _keys;
@@ -55,6 +55,16 @@ namespace System.Security.Cryptography
                 public ECDsaSecurityTransforms()
                 {
                     KeySize = 521;
+                }
+
+                internal ECDsaSecurityTransforms(SafeSecKeyRefHandle publicKey)
+                {
+                    SetKey(SecKeyPair.PublicOnly(publicKey));
+                }
+
+                internal ECDsaSecurityTransforms(SafeSecKeyRefHandle publicKey, SafeSecKeyRefHandle privateKey)
+                {
+                    SetKey(SecKeyPair.PublicPrivatePair(publicKey, privateKey));
                 }
 
                 public override KeySizes[] LegalKeySizes
@@ -316,7 +326,9 @@ namespace System.Security.Cryptography
                 }
             }
         }
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
     }
+#endif
 
     internal static class EcKeyBlobHelpers
     {

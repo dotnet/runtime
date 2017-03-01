@@ -37,6 +37,12 @@ namespace System.Net.Security.Tests
                 return true;
             }
 
+            // On macOS, the null cipher (no encryption) is not supported.
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                return false;
+            }
+
             // On Unix, it depends on how openssl was built.  So we ask openssl if it has any.
             try
             {

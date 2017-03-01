@@ -20,6 +20,9 @@ internal static partial class Interop
 
         private static readonly SafeCreateHandle s_nullExportString = new SafeCreateHandle();
 
+        private static readonly SafeCreateHandle s_emptyExportString =
+            CoreFoundation.CFStringCreateWithCString("");
+
         [DllImport(Libraries.AppleCryptoNative)]
         private static extern int AppleCryptoNative_SecKeyExport(
             SafeSecKeyRefHandle key,
@@ -67,7 +70,7 @@ internal static partial class Interop
             {
                 if (ret == 0)
                 {
-                    throw CreateExceptionForCCError(osStatus, OSStatus);
+                    throw CreateExceptionForOSStatus(osStatus);
                 }
 
                 if (ret != 1)

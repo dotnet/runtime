@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -11,7 +10,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace Internal.Cryptography.Pal
 {
-    internal sealed class OpenSslX509Encoder : IX509Pal
+    internal sealed class OpenSslX509Encoder : ManagedX509ExtensionProcessor, IX509Pal
     {
         public AsymmetricAlgorithm DecodePublicKey(Oid oid, byte[] encodedKeyValue, byte[] encodedParameters, ICertificatePal certificatePal)
         {
@@ -153,24 +152,7 @@ namespace Internal.Cryptography.Pal
             throw new CryptographicException();
         }
 
-        public byte[] EncodeX509KeyUsageExtension(X509KeyUsageFlags keyUsages)
-        {
-            // The numeric values of X509KeyUsageFlags mean that if we interpret it as a little-endian
-            // ushort it will line up with the flags in the spec.
-            ushort ushortValue = unchecked((ushort)(int)keyUsages);
-            byte[] data = BitConverter.GetBytes(ushortValue);
-
-            // RFC 3280 section 4.2.1.3 (https://tools.ietf.org/html/rfc3280#section-4.2.1.3) defines
-            // digitalSignature (0) through decipherOnly (8), making 9 named bits.
-            const int namedBitsCount = 9;
-
-            // The expected output of this method isn't the SEQUENCE value, but just the payload bytes.
-            byte[][] segments = DerEncoder.SegmentedEncodeNamedBitList(data, namedBitsCount);
-            Debug.Assert(segments.Length == 3);
-            return ConcatenateArrays(segments);
-        }
-
-        public void DecodeX509KeyUsageExtension(byte[] encoded, out X509KeyUsageFlags keyUsages)
+        public override void DecodeX509KeyUsageExtension(byte[] encoded, out X509KeyUsageFlags keyUsages)
         {
             using (SafeAsn1BitStringHandle bitString = Interop.Crypto.DecodeAsn1BitString(encoded, encoded.Length))
             {
@@ -223,54 +205,7 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        public bool SupportsLegacyBasicConstraintsExtension
-        {
-            get { return false; }
-        }
-
-        public byte[] EncodeX509BasicConstraints2Extension(
-            bool certificateAuthority,
-            bool hasPathLengthConstraint,
-            int pathLengthConstraint)
-        {
-            //BasicConstraintsSyntax::= SEQUENCE {
-            //    cA BOOLEAN DEFAULT FALSE,
-            //    pathLenConstraint INTEGER(0..MAX) OPTIONAL,
-            //    ... }
-
-            List<byte[][]> segments = new List<byte[][]>(2);
-
-            if (certificateAuthority)
-            {
-                segments.Add(DerEncoder.SegmentedEncodeBoolean(true));
-            }
-
-            if (hasPathLengthConstraint)
-            {
-                byte[] pathLengthBytes = BitConverter.GetBytes(pathLengthConstraint);
-                // Little-Endian => Big-Endian
-                Array.Reverse(pathLengthBytes);
-                segments.Add(DerEncoder.SegmentedEncodeUnsignedInteger(pathLengthBytes));
-            }
-
-            return DerEncoder.ConstructSequence(segments);
-        }
-
-        public void DecodeX509BasicConstraintsExtension(
-            byte[] encoded,
-            out bool certificateAuthority,
-            out bool hasPathLengthConstraint,
-            out int pathLengthConstraint)
-        {
-            // No RFC nor ITU document describes the layout of the 2.5.29.10 structure,
-            // and OpenSSL doesn't have a decoder for it, either.
-            //
-            // Since it was never published as a standard (2.5.29.19 replaced it before publication)
-            // there shouldn't be too many people upset that we can't decode it for them on Unix.
-            throw new PlatformNotSupportedException(SR.NotSupported_LegacyBasicConstraints);
-        }
-
-        public void DecodeX509BasicConstraints2Extension(
+        public override void DecodeX509BasicConstraints2Extension(
             byte[] encoded,
             out bool certificateAuthority,
             out bool hasPathLengthConstraint,
@@ -287,25 +222,7 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        public byte[] EncodeX509EnhancedKeyUsageExtension(OidCollection usages)
-        {
-            //extKeyUsage EXTENSION ::= {
-            //    SYNTAX SEQUENCE SIZE(1..MAX) OF KeyPurposeId
-            //    IDENTIFIED BY id - ce - extKeyUsage }
-            //
-            //KeyPurposeId::= OBJECT IDENTIFIER
-
-            List<byte[][]> segments = new List<byte[][]>(usages.Count);
-
-            foreach (Oid usage in usages)
-            {
-                segments.Add(DerEncoder.SegmentedEncodeOid(usage));
-            }
-
-            return DerEncoder.ConstructSequence(segments);
-        }
-
-        public void DecodeX509EnhancedKeyUsageExtension(byte[] encoded, out OidCollection usages)
+        public override void DecodeX509EnhancedKeyUsageExtension(byte[] encoded, out OidCollection usages)
         {
             OidCollection oids = new OidCollection();
 
@@ -333,80 +250,6 @@ namespace Internal.Cryptography.Pal
             usages = oids;
         }
 
-        public byte[] EncodeX509SubjectKeyIdentifierExtension(byte[] subjectKeyIdentifier)
-        {
-            //subjectKeyIdentifier EXTENSION ::= {
-            //    SYNTAX SubjectKeyIdentifier
-            //    IDENTIFIED BY id - ce - subjectKeyIdentifier }
-            //
-            //SubjectKeyIdentifier::= KeyIdentifier
-            //
-            //KeyIdentifier ::= OCTET STRING
-
-            byte[][] segments = DerEncoder.SegmentedEncodeOctetString(subjectKeyIdentifier);
-
-            // The extension is not a sequence, just the octet string
-            return ConcatenateArrays(segments);
-        }
-
-        public void DecodeX509SubjectKeyIdentifierExtension(byte[] encoded, out byte[] subjectKeyIdentifier)
-        {
-            subjectKeyIdentifier = DecodeX509SubjectKeyIdentifierExtension(encoded);
-        }
-
-        internal static byte[] DecodeX509SubjectKeyIdentifierExtension(byte[] encoded)
-        {
-            DerSequenceReader reader = DerSequenceReader.CreateForPayload(encoded);
-            return reader.ReadOctetString();
-        }
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "SHA1 is required for Compat")]
-        public byte[] ComputeCapiSha1OfPublicKey(PublicKey key)
-        {
-            // The CapiSha1 value is the SHA-1 of the SubjectPublicKeyInfo field, inclusive
-            // of the DER structural bytes.
-
-            //SubjectPublicKeyInfo::= SEQUENCE {
-            //    algorithm AlgorithmIdentifier{ { SupportedAlgorithms} },
-            //    subjectPublicKey BIT STRING,
-            //    ... }
-            //
-            //AlgorithmIdentifier{ ALGORITHM: SupportedAlgorithms} ::= SEQUENCE {
-            //    algorithm ALGORITHM.&id({ SupportedAlgorithms}),
-            //    parameters ALGORITHM.&Type({ SupportedAlgorithms}
-            //    { @algorithm}) OPTIONAL,
-            //    ... }
-            //
-            //ALGORITHM::= CLASS {
-            //    &Type OPTIONAL,
-            //    &id OBJECT IDENTIFIER UNIQUE }
-            //WITH SYNTAX {
-            //    [&Type]
-            //IDENTIFIED BY &id }
-
-            // key.EncodedKeyValue corresponds to SubjectPublicKeyInfo.subjectPublicKey, except it
-            // has had the BIT STRING envelope removed.
-            //
-            // key.EncodedParameters corresponds to AlgorithmIdentifier.Parameters precisely
-            // (DER NULL for RSA, DER Constructed SEQUENCE for DSA)
-
-            byte[] empty = Array.Empty<byte>();
-            byte[][] algorithmOid = DerEncoder.SegmentedEncodeOid(key.Oid);
-            // Because ConstructSegmentedSequence doesn't look to see that it really is tag+length+value (but does check
-            // that the array has length 3), just hide the joined TLV triplet in the last element.
-            byte[][] segmentedParameters = { empty, empty, key.EncodedParameters.RawData };
-            byte[][] algorithmIdentifier = DerEncoder.ConstructSegmentedSequence(algorithmOid, segmentedParameters);
-            byte[][] subjectPublicKey = DerEncoder.SegmentedEncodeBitString(key.EncodedKeyValue.RawData);
-
-            using (SHA1 hash = SHA1.Create())
-            {
-                return hash.ComputeHash(
-                    DerEncoder.ConstructSequence(
-                        algorithmIdentifier,
-                        subjectPublicKey));
-            }
-        }
-
         private static RSA BuildRsaPublicKey(byte[] encodedData)
         {
             using (SafeRsaHandle rsaHandle = Interop.Crypto.DecodeRsaPublicKey(encodedData, encodedData.Length))
@@ -418,28 +261,6 @@ namespace Internal.Cryptography.Pal
                 rsa.ImportParameters(rsaParameters);
                 return rsa;
             }
-        }
-
-        private static byte[] ConcatenateArrays(byte[][] segments)
-        {
-            int length = 0;
-
-            foreach (byte[] segment in segments)
-            {
-                length += segment.Length;
-            }
-
-            byte[] concatenated = new byte[length];
-
-            int offset = 0;
-
-            foreach (byte[] segment in segments)
-            {
-                Buffer.BlockCopy(segment, 0, concatenated, offset, segment.Length);
-                offset += segment.Length;
-            }
-
-            return concatenated;
         }
     }
 }

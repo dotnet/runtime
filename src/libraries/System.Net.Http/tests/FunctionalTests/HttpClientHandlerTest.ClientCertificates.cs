@@ -138,12 +138,8 @@ namespace System.Net.Http.Functional.Tests
         }
 
         private static bool BackendSupportsCustomCertificateHandling =>
-            RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ||
-            (CurlSslVersionDescription()?.StartsWith("OpenSSL") ?? false);
+            HttpClientHandler_ServerCertificates_Test.BackendSupportsCustomCertificateHandling;
 
         private static bool BackendDoesNotSupportCustomCertificateHandling => !BackendSupportsCustomCertificateHandling;
-
-        [DllImport("System.Net.Http.Native", EntryPoint = "HttpNative_GetSslVersionDescription")]
-        private static extern string CurlSslVersionDescription();
     }
 }

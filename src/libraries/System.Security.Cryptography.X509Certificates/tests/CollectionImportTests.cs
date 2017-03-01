@@ -116,6 +116,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 X509Certificate2Collection collection = ic.Collection;
                 Assert.Equal(1, collection.Count);
+
+                Assert.Equal("D5B5BC1C458A558845BFF51CB4DFF31C", collection[0].SerialNumber);
             }
         }
 
@@ -126,6 +128,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 X509Certificate2Collection collection = ic.Collection;
                 Assert.Equal(1, collection.Count);
+
+                Assert.Equal("D5B5BC1C458A558845BFF51CB4DFF31C", collection[0].SerialNumber);
             }
         }
 
@@ -136,6 +140,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 X509Certificate2Collection collection = ic.Collection;
                 Assert.Equal(1, collection.Count);
+
+                Assert.Equal("D5B5BC1C458A558845BFF51CB4DFF31C", collection[0].SerialNumber);
             }
         }
 
@@ -146,6 +152,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 X509Certificate2Collection collection = ic.Collection;
                 Assert.Equal(1, collection.Count);
+
+                Assert.Equal("D5B5BC1C458A558845BFF51CB4DFF31C", collection[0].SerialNumber);
             }
         }
 

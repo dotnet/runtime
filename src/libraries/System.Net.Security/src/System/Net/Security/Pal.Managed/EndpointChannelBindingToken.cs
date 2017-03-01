@@ -2,21 +2,39 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
+using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
-
-internal static partial class Interop
+namespace System.Net.Security
 {
-    internal static partial class OpenSsl
+    internal static class EndpointChannelBindingToken
     {
-        internal static HashAlgorithm GetHashForChannelBinding(X509Certificate2 cert)
+        internal static ChannelBinding Build(SafeDeleteContext securityContext)
+        {
+            using (X509Certificate2 cert = CertificateValidationPal.GetRemoteCertificate(securityContext))
+            {
+                if (cert == null)
+                    return null;
+
+                SafeChannelBindingHandle bindingHandle = new SafeChannelBindingHandle(ChannelBindingKind.Unique);
+
+                using (HashAlgorithm hashAlgo = GetHashForChannelBinding(cert))
+                {
+                    byte[] bindingHash = hashAlgo.ComputeHash(cert.RawData);
+                    bindingHandle.SetCertHash(bindingHash);
+                }
+
+                return bindingHandle;
+            }
+        }
+
+        private static HashAlgorithm GetHashForChannelBinding(X509Certificate2 cert)
         {
             Oid signatureAlgorithm = cert.SignatureAlgorithm;
             switch (signatureAlgorithm.Value)
             {
-                // RFC 5929 4.1 says that MD5 and SHA1 both upgrade to EvpSha256 for cbt calculation
+                // RFC 5929 4.1 says that MD5 and SHA1 both upgrade to SHA256 for cbt calculation
                 case "1.2.840.113549.2.5": // MD5
                 case "1.2.840.113549.1.1.4": // MD5RSA
                 case "1.3.14.3.2.26": // SHA1
