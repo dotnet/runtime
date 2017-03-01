@@ -235,9 +235,6 @@
     <MscorlibSources Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\Runtime\InteropServices\DispatchWrapper.cs" />
     <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ICustomFactory.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Runtime\InteropServices\StringBuffer.cs" />
-  </ItemGroup>
   <ItemGroup Condition="'$(FeatureClassicCominterop)' == 'true'">
     <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ITypeLibConverter.cs" />
   </ItemGroup>
@@ -832,7 +829,6 @@
     <MscorlibSources Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\Threading\Tasks\IAsyncCausalityTracerStatics.cs" />
   </ItemGroup>
   <ItemGroup>
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Threading\DeferredDisposableLifetime.cs" />
     <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Threading\ClrThreadPoolBoundHandle.cs" />
     <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Threading\ClrThreadPoolBoundHandleOverlapped.cs" />
     <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Threading\ClrThreadPoolPreAllocatedOverlapped.cs" />
@@ -1073,9 +1069,6 @@
   </ItemGroup>
   <ItemGroup>
     <MscorlibSources Include="$(BclSourcesRoot)\System\Numerics\Hashing\HashHelpers.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Security\CryptographicException.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' != 'true'">
     <MscorlibSources Include="$(CoreFxSourcesRoot)\System\HResults.cs" />
