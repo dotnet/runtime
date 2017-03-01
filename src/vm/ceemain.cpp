@@ -39,25 +39,25 @@
 // 
 //*************************************************************************************************
 //
-// * Introduction to the rutnime file:../../doc/BookOfTheRuntime/Introduction/BOTR%20Introduction.docx 
+// * Introduction to the runtime file:../../doc/BookOfTheRuntime/Introduction/botr-faq.md
 //
 // #MajorDataStructures. The major data structures associated with the runtime are
 //     * code:Thread (see file:threads.h#ThreadClass) - the additional thread state the runtime needs.
 //     * code:AppDomain - The managed version of a process
-//     * code:Assembly - The unit of deployment and versioing (may be several DLLs but often is only one).
-//     * code:Module -represents a Module (DLL or EXE).
+//     * code:Assembly - The unit of deployment and versioning (may be several DLLs but often is only one).
+//     * code:Module - represents a Module (DLL or EXE).
 //     * code:MethodTable - represents the 'hot' part of a type (needed during normal execution)
 //     * code:EEClass - represents the 'cold' part of a type (used during compilation, interop, ...)
 //     * code:MethodDesc - represents a Method
 //     * code:FieldDesc - represents a Field.
-//     * code:Object - represents a object on the GC heap alloated with code:Alloc 
+//     * code:Object - represents a object on the GC heap allocated with code:Alloc 
 // 
 // * ECMA specifications
 //     * Partition I Concepts
 //         http://download.microsoft.com/download/D/C/1/DC1B219F-3B11-4A05-9DA3-2D0F98B20917/Partition%20I%20Architecture.doc
 //     * Partition II Meta Data
 //         http://download.microsoft.com/download/D/C/1/DC1B219F-3B11-4A05-9DA3-2D0F98B20917/Partition%20II%20Metadata.doc
-//     * Parition III IL
+//     * Partition III IL
 //         http://download.microsoft.com/download/D/C/1/DC1B219F-3B11-4A05-9DA3-2D0F98B20917/Partition%20III%20CIL.doc
 //  
 //  * Serge Liden (worked on the CLR and owned ILASM / ILDASM for a long time wrote a good book on IL
@@ -76,7 +76,7 @@
 // * code:ICorJitCompiler#EEToJitInterface - This is the interface from the the EE to the Just in time (JIT)
 //     compiler. The interface to the JIT is relatively simple (compileMethod), however the EE provides a
 //     rich set of callbacks so the JIT can get all the information it needs. See also
-//     file:../../doc/BookOfTheRuntime/JIT/JIT%20Design.doc for general information on the JIT.
+//     file:../../Documentation/botr/ryujit-overview.md for general information on the JIT.
 // 
 // * code:VirtualCallStubManager - This is the main class that implements interface dispatch
 // 
@@ -85,36 +85,22 @@
 //     and will call the JIT compiler if the code does not yet exist.
 //     
 //  * NGEN - NGen stands for Native code GENeration and it is the runtime way of precomiling IL and IL
-//      Meta-data into native code and runtime data structures. See
-//      file:../../doc/BookOfTheRuntime/NGEN/NGENDesign.doc for an overview. At compilation time the most
+//      Meta-data into native code and runtime data structures. At compilation time the most
 //      fundamental data structures is the code:ZapNode which represents something that needs to go into the
 //      NGEN image.
 //      
 //   * What is cooperative / preemtive mode ? file:threads.h#CooperativeMode and
-//       file:threads.h#SuspendingTheRuntime
-//   * Garbage collection - file:gc.cpp#Overview
+//       file:threads.h#SuspendingTheRuntime and file:../../Documentation/botr/threading.md
+//   * Garbage collection - file:gc.cpp#Overview and file:../../Documentation/botr/garbage-collection.md
 //   * code:AppDomain - The managed version of a process.
-//   * Calling Into the runtime (FCALLs QCalls) file:../../doc/BookOfTheRuntime/mscorlib/mscorlibDesign.doc
-//   * Exceptions - file:../../doc/BookOfTheRuntime/ManagedEH\Design.doc. The most important routine to start
-//       with is code:COMPlusFrameHandler which is the routine that we hook up to get called when an unanaged
+//   * Calling Into the runtime (FCALLs QCalls) file:../../Documentation/botr/mscorlib.md
+//   * Exceptions - file:../../Documentation/botr/exceptions.md. The most important routine to start
+//       with is code:COMPlusFrameHandler which is the routine that we hook up to get called when an unmanaged
 //       exception happens.
-//   * Constrain Execution Regions (reliability) file:../../doc/BookOfTheRuntime/CER/CERDesign.doc)
-//   * Assembly Loading file:../../doc/BookOfTheRuntime/AssemblyLoader/AssemblyLoader.doc
-//   * Fusion and loading files file:../../doc/BookOfTheRuntime/AssemblyLoader/FusionDesign.doc
-//   * Strings file:../../doc/BookOfTheRuntime/BCL/SystemStringDesign.doc
-//   * Profiling file:../../doc/BookOfTheRuntime/DiagnosticServices/ProfilingAPIDesign.doc
-//   * Remoting file:../../doc/BookOfTheRuntime/EERemotingSupport/RemotingDesign.doc
-//   * Managed Debug Assitants file:../../doc/BookOfTheRuntime/MDA/MDADesign.doc
+//   * Assembly Loading file:../../Documentation/botr/type-loader.md
+//   * Profiling file:../../Documentation/botr/profiling.md and file:../../Documentation/botr/profilability.md
 //   * FCALLS QCALLS (calling into the runtime from managed code)
-//       file:../../doc/BookOfTheRuntime/Mscorlib/MscorlibDesign.doc
-//   * Reflection file:../../doc/BookOfTheRuntime/Reflection/ReflectionDesign.doc
-//   * Security
-//     * file:../../doc/BookOfTheRuntime/RuntimeSecurity/RuntimeSecurityDesign.doc
-//     * file:../../doc/BookOfTheRuntime/LoadtimeSecurity/DeclarativeSecurity-Design.doc
-//     * file:../../doc/BookOfTheRuntime/LoadtimeSecurity/StrongName.doc
-//     * file:../../doc/BookOfTheRuntime/RuntimeSecurity/ClickOnce Activation.doc
-//     * file:../../doc/BookOfTheRuntime/RuntimeSecurity/Cryptography.doc
-//     * file:../../doc/BookOfTheRuntime/RuntimeSecurity/DemandEvalDesign.doc
+//       file:../../Documentation/botr/mscorlib.md
 //   * Event Tracing for Windows
 //     * file:../inc/eventtrace.h#EventTracing -
 //     * This is the main file dealing with event tracing in CLR
