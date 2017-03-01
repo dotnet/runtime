@@ -359,7 +359,7 @@
       "value": "$(PB_DockerRepository):$(PB_DockerTag)"
     },
     "PB_DockerRepository": {
-      "value": "chcosta/dotnetcore"
+      "value": "microsoft/dotnet-buildtools-prereqs"
     },
     "PB_DockerTag": {
       "value": "ubuntu1404_cross_prereqs_v2",
