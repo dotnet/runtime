@@ -43,7 +43,6 @@ C_FUNC(\Name\()_End):
 
 .macro PROLOG_STACK_ALLOC Size
         sub sp, sp, \Size
-        .cfi_adjust_cfa_offset \Size
 .endm
 
 .macro EPILOG_STACK_FREE Size
@@ -67,6 +66,7 @@ C_FUNC(\Name\()_End):
         .cfi_rel_offset \reg2, \ofs + 8
         .ifc \reg1, fp
         mov fp, sp
+        .cfi_def_cfa_register fp
         .endif
 .endm
 
@@ -77,6 +77,7 @@ C_FUNC(\Name\()_End):
         .cfi_rel_offset \reg2, 8
         .ifc \reg1, fp
         mov fp, sp
+        .cfi_def_cfa_register fp
         .endif
 .endm
 
@@ -191,19 +192,10 @@ C_FUNC(\Name\()_End):
 .macro SAVE_ARGUMENT_REGISTERS reg, ofs
 
         stp                    x0, x1, [\reg, #(\ofs)]
-       .cfi_rel_offset x0, \ofs
-       .cfi_rel_offset x1, \ofs + 8
         stp                    x2, x3, [\reg, #(\ofs + 16)]
-       .cfi_rel_offset x2, \ofs + 16
-       .cfi_rel_offset x3, \ofs + 24
         stp                    x4, x5, [\reg, #(\ofs + 32)]
-       .cfi_rel_offset x4, \ofs + 32
-       .cfi_rel_offset x5, \ofs + 40
         stp                    x6, x7, [\reg, #(\ofs + 48)]
-       .cfi_rel_offset x6, \ofs + 48
-       .cfi_rel_offset x7, \ofs + 56
         str                    x8, [\reg, #(\ofs + 64)]
-       .cfi_rel_offset x8, \ofs + 64
 
 .endm
 
@@ -211,53 +203,28 @@ C_FUNC(\Name\()_End):
 .macro SAVE_FLOAT_ARGUMENT_REGISTERS reg, ofs
 
         stp                    d0, d1, [\reg, #(\ofs)]
-       .cfi_rel_offset d0, \ofs + 0
-       .cfi_rel_offset d1, \ofs + 8
         stp                    d2, d3, [\reg, #(\ofs + 16)]
-       .cfi_rel_offset d2, \ofs + 16
-       .cfi_rel_offset d3, \ofs + 24
         stp                    d4, d5, [\reg, #(\ofs + 32)]
-       .cfi_rel_offset d4, \ofs + 32
-       .cfi_rel_offset d5, \ofs + 40
         stp                    d6, d7, [\reg, #(\ofs + 48)]
-       .cfi_rel_offset d6, \ofs + 48
-       .cfi_rel_offset d7, \ofs + 56
 
 .endm
 
 .macro RESTORE_ARGUMENT_REGISTERS reg, ofs
 
         ldp                    x0, x1, [\reg, #(\ofs)]
-        .cfi_restore x0
-        .cfi_restore x1
         ldp                    x2, x3, [\reg, #(\ofs + 16)]
-        .cfi_restore x2
-        .cfi_restore x3
         ldp                    x4, x5, [\reg, #(\ofs + 32)]
-        .cfi_restore x4
-        .cfi_restore x5
         ldp                    x6, x7, [\reg, #(\ofs + 48)]
-        .cfi_restore x6
-        .cfi_restore x7
         ldr                    x8, [\reg, #(\ofs + 64)]
-        .cfi_restore x8
 
 .endm
 
 .macro RESTORE_FLOAT_ARGUMENT_REGISTERS reg, ofs
 
         ldp                    d0, d1, [\reg, #(\ofs)]
-        .cfi_restore d0
-        .cfi_restore d1
         ldp                    d2, d3, [\reg, #(\ofs + 16)]
-        .cfi_restore d2
-        .cfi_restore d3
         ldp                    d4, d5, [\reg, #(\ofs + 32)]
-        .cfi_restore d4
-        .cfi_restore d5
         ldp                    d6, d7, [\reg, #(\ofs + 48)]
-        .cfi_restore d6
-        .cfi_restore d7
 
 .endm
 
