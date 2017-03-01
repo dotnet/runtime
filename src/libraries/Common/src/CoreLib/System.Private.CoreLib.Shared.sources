@@ -68,6 +68,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)\System\IO\FileStream.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)\System\IO\Path.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)\System\IO\PathInternal.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\System\Runtime\InteropServices\StringBuffer.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\System\Security\CryptographicException.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)\System\Threading\DeferredDisposableLifetime.cs"/>
   </ItemGroup>
   <ItemGroup Condition="$(TargetsWindows)">
     <Compile Include="$(MSBuildThisFileDirectory)\System\IO\FileStream.Win32.cs"/>
