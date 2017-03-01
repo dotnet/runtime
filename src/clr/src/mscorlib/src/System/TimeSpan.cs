@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -404,6 +404,48 @@ namespace System
         {
             return t1.Add(t2);
         }
+
+        public static TimeSpan operator *(TimeSpan timeSpan, double factor)
+        {
+            if (double.IsNaN(factor))
+            {
+                throw new ArgumentException(Environment.GetResourceString("Arg_CannotBeNaN"), nameof(factor));
+            }
+
+            // Rounding to the nearest tick is as close to the result we would have with unlimited
+            // precision as possible, and so likely to have the least potential to surprise.
+            double ticks = Math.Round(timeSpan.Ticks * factor);
+            if (ticks > long.MaxValue | ticks < long.MinValue)
+            {
+                throw new OverflowException(Environment.GetResourceString("Overflow_TimeSpanTooLong"));
+            }
+
+            return FromTicks((long)ticks);
+        }
+
+        public static TimeSpan operator *(double factor, TimeSpan timeSpan) => timeSpan * factor;
+
+        public static TimeSpan operator /(TimeSpan timeSpan, double divisor)
+        {
+            if (double.IsNaN(divisor))
+            {
+                throw new ArgumentException(Environment.GetResourceString("Arg_CannotBeNaN"), nameof(divisor));
+            }
+
+            double ticks = Math.Round(timeSpan.Ticks / divisor);
+            if (ticks > long.MaxValue | ticks < long.MinValue || double.IsNaN(ticks))
+            {
+                throw new OverflowException(Environment.GetResourceString("Overflow_TimeSpanTooLong"));
+            }
+
+            return FromTicks((long)ticks);
+        }
+
+        // Using floating-point arithmetic directly means that infinities can be returned, which is reasonable
+        // if we consider TimeSpan.FromHours(1) / TimeSpan.Zero asks how many zero-second intervals there are in
+        // an hour for which ∞ is the mathematic correct answer. Having TimeSpan.Zero / TimeSpan.Zero return NaN
+        // is perhaps less useful, but no less useful than an exception.
+        public static double operator /(TimeSpan t1, TimeSpan t2) => t1.Ticks / (double)t2.Ticks;
 
         public static bool operator ==(TimeSpan t1, TimeSpan t2)
         {
