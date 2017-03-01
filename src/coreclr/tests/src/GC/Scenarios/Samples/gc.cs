@@ -273,16 +273,21 @@ class Application {
     static public ResurrectObj ResObjHolder;    // Defaults to null
 
 
-    // This method demonstrates how the GC supports resurrection.
+    // These methods demonstrate how the GC supports resurrection.
     // NOTE: Resurrection is discouraged.
-    private static void ResurrectionDemo() {
-        Display(0, "\n\nDemo start: Object Resurrection.", +1);
-
+    private static void ResurrectionInit() {
         // Create a ResurrectionObj
         ResurrectObj obj = new ResurrectObj("Resurrection");
 
         // Destroy all strong references to the new ResurrectionObj
         obj = null;
+    }
+
+    private static void ResurrectionDemo() {
+        Display(0, "\n\nDemo start: Object Resurrection.", +1);
+
+        // Create a ResurrectionObj and drop it on the floor.
+        ResurrectionInit();
 
         // Force the GC to determine that the object is unreachable.
         Collect();
