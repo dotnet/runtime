@@ -211,6 +211,11 @@ internal static class SR
         get { return Environment.GetResourceString("Argument_InvalidCharSequence"); }
     }
 
+    public static string Argument_InvalidCharSequenceNoIndex
+    {
+        get { return Environment.GetResourceString("Argument_InvalidCharSequenceNoIndex"); }
+    }
+
     public static string Argument_InvalidCultureName
     {
         get { return Environment.GetResourceString("Argument_InvalidCultureName"); }

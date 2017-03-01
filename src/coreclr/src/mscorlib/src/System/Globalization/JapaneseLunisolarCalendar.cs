@@ -70,10 +70,11 @@ namespace System.Globalization
             }
         }
 
-        private static readonly int[,] yinfo =
+        private static readonly int[,] s_yinfo =
         {
-/*Y            LM        Lmon    Lday        DaysPerMonth    D1    D2    D3    D4    D5    D6    D7    D8    D9    D10    D11    D12    D13    #Days
-1960    */{    6    ,    1    ,    28    ,    44368    },/*    30    29    30    29    30    30    29    30    29    30    29    30    29    384
+            /*Y            LM        Lmon    Lday        DaysPerMonth    D1    D2    D3    D4    D5    D6    D7    D8    D9    D10    D11    D12    D13    #Days
+            1960    */
+          {    6    ,    1    ,    28    ,    44368    },/*    30    29    30    29    30    30    29    30    29    30    29    30    29    384
 1961    */{    0    ,    2    ,    15    ,    43856    },/*    30    29    30    29    30    29    30    30    29    30    29    30    0    355
 1962    */{    0    ,    2    ,    5     ,    19808    },/*    29    30    29    29    30    30    29    30    29    30    30    29    0    354
 1963    */{    4    ,    1    ,    25    ,    42352    },/*    30    29    30    29    29    30    29    30    29    30    30    30    29    384
@@ -205,21 +206,21 @@ namespace System.Globalization
             }
         }
 
-        internal override int GetYearInfo(int LunarYear, int Index)
+        internal override int GetYearInfo(int lunarYear, int index)
         {
-            if ((LunarYear < MIN_LUNISOLAR_YEAR) || (LunarYear > MAX_LUNISOLAR_YEAR))
+            if ((lunarYear < MIN_LUNISOLAR_YEAR) || (lunarYear > MAX_LUNISOLAR_YEAR))
             {
                 throw new ArgumentOutOfRangeException(
                             "year",
                             String.Format(
                                 CultureInfo.CurrentCulture,
-                                Environment.GetResourceString("ArgumentOutOfRange_Range"),
+                                SR.ArgumentOutOfRange_Range,
                                 MIN_LUNISOLAR_YEAR,
                                 MAX_LUNISOLAR_YEAR));
             }
             Contract.EndContractBlock();
 
-            return yinfo[LunarYear - MIN_LUNISOLAR_YEAR, Index];
+            return s_yinfo[lunarYear - MIN_LUNISOLAR_YEAR, index];
         }
 
         internal override int GetYear(int year, DateTime time)
@@ -282,19 +283,19 @@ namespace System.Globalization
             return (helper.GetEra(time));
         }
 
-        internal override int BaseCalendarID
+        internal override CalendarId BaseCalendarID
         {
             get
             {
-                return (CAL_JAPAN);
+                return (CalendarId.JAPAN);
             }
         }
 
-        internal override int ID
+        internal override CalendarId ID
         {
             get
             {
-                return (CAL_JAPANESELUNISOLAR);
+                return (CalendarId.JAPANESELUNISOLAR);
             }
         }
 

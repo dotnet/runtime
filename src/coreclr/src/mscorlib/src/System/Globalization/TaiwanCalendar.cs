@@ -2,27 +2,24 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 
 namespace System.Globalization
 {
-    /* SSS_DROP_BEGIN */ /* SSS_WARNINGS_OFF */
-                         /*=================================TaiwanCalendar==========================
-                         **
-                         ** Taiwan calendar is based on the Gregorian calendar.  And the year is an offset to Gregorian calendar.
-                         ** That is,
-                         **      Taiwan year = Gregorian year - 1911.  So 1912/01/01 A.D. is Taiwan 1/01/01
-                         **
-                         **  Calendar support range:
-                         **      Calendar    Minimum     Maximum
-                         **      ==========  ==========  ==========
-                         **      Gregorian   1912/01/01  9999/12/31
-                         **      Taiwan      01/01/01    8088/12/31
-                         ============================================================================*/
-                         /* SSS_WARNINGS_ON */ /* SSS_DROP_END */
+    /*=================================TaiwanCalendar==========================
+    **
+    ** Taiwan calendar is based on the Gregorian calendar.  And the year is an offset to Gregorian calendar.
+    ** That is,
+    **      Taiwan year = Gregorian year - 1911.  So 1912/01/01 A.D. is Taiwan 1/01/01
+    **
+    **  Calendar support range:
+    **      Calendar    Minimum     Maximum
+    **      ==========  ==========  ==========
+    **      Gregorian   1912/01/01  9999/12/31
+    **      Taiwan      01/01/01    8088/12/31
+    ============================================================================*/
 
     [Serializable]
     public class TaiwanCalendar : Calendar
@@ -39,7 +36,7 @@ namespace System.Globalization
         //m_EraInfo[0] = new EraInfo(1, new DateTime(1912, 1, 1).Ticks, 1911, 1, GregorianCalendar.MaxYear - 1911);
 
         // Initialize our era info.
-        static internal EraInfo[] taiwanEraInfo = new EraInfo[] {
+        internal static EraInfo[] taiwanEraInfo = new EraInfo[] {
             new EraInfo( 1, 1912, 1, 1, 1911, 1, GregorianCalendar.MaxYear - 1911)    // era #, start year/month/day, yearOffset, minEraYear 
         };
 
@@ -83,9 +80,6 @@ namespace System.Globalization
             }
         }
 
-        // Return the type of the Taiwan calendar.
-        //
-
         public override CalendarAlgorithmType AlgorithmType
         {
             get
@@ -94,6 +88,8 @@ namespace System.Globalization
             }
         }
 
+        // Return the type of the Taiwan calendar.
+        //
 
         public TaiwanCalendar()
         {
@@ -103,16 +99,16 @@ namespace System.Globalization
             }
             catch (ArgumentException e)
             {
-                throw new TypeInitializationException(this.GetType().FullName, e);
+                throw new TypeInitializationException(this.GetType().ToString(), e);
             }
             helper = new GregorianCalendarHelper(this, taiwanEraInfo);
         }
 
-        internal override int ID
+        internal override CalendarId ID
         {
             get
             {
-                return (CAL_TAIWAN);
+                return CalendarId.TAIWAN;
             }
         }
 
@@ -252,7 +248,7 @@ namespace System.Globalization
                                 "year",
                                 String.Format(
                                     CultureInfo.CurrentCulture,
-                                    Environment.GetResourceString("ArgumentOutOfRange_Range"),
+                                    SR.ArgumentOutOfRange_Range,
                                     99,
                                     helper.MaxYear));
                 }
@@ -268,7 +264,7 @@ namespace System.Globalization
             if (year <= 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(year),
-                    Environment.GetResourceString("ArgumentOutOfRange_NeedPosNum"));
+                    SR.ArgumentOutOfRange_NeedPosNum);
             }
             Contract.EndContractBlock();
 
@@ -278,7 +274,7 @@ namespace System.Globalization
                             nameof(year),
                             String.Format(
                                 CultureInfo.CurrentCulture,
-                                Environment.GetResourceString("ArgumentOutOfRange_Range"),
+                                SR.ArgumentOutOfRange_Range,
                                 1,
                                 helper.MaxYear));
             }

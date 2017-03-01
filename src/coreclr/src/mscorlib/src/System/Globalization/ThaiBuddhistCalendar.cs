@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
@@ -21,12 +20,11 @@ namespace System.Globalization
     **      Thai        0544/01/01  10542/12/31
     ============================================================================*/
 
-
     [Serializable]
     public class ThaiBuddhistCalendar : Calendar
     {
         // Initialize our era info.
-        static internal EraInfo[] thaiBuddhistEraInfo = new EraInfo[] {
+        internal static EraInfo[] thaiBuddhistEraInfo = new EraInfo[] {
             new EraInfo( 1, 1, 1, 1, -543, 544, GregorianCalendar.MaxYear + 543)     // era #, start year/month/day, yearOffset, minEraYear 
         };
 
@@ -35,8 +33,6 @@ namespace System.Globalization
         //
 
         public const int ThaiBuddhistEra = 1;
-
-        //internal static Calendar m_defaultInstance;
 
         internal GregorianCalendarHelper helper;
 
@@ -57,9 +53,6 @@ namespace System.Globalization
             }
         }
 
-        // Return the type of the Thai Buddhist calendar.
-        //
-
         public override CalendarAlgorithmType AlgorithmType
         {
             get
@@ -73,11 +66,11 @@ namespace System.Globalization
             helper = new GregorianCalendarHelper(this, thaiBuddhistEraInfo);
         }
 
-        internal override int ID
+        internal override CalendarId ID
         {
             get
             {
-                return (CAL_THAI);
+                return (CalendarId.THAI);
             }
         }
 
@@ -218,7 +211,7 @@ namespace System.Globalization
                                 "year",
                                 String.Format(
                                     CultureInfo.CurrentCulture,
-                                    Environment.GetResourceString("ArgumentOutOfRange_Range"),
+                                    SR.ArgumentOutOfRange_Range,
                                     99,
                                     helper.MaxYear));
                 }
@@ -232,7 +225,7 @@ namespace System.Globalization
             if (year < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(year),
-                    Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                    SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             Contract.EndContractBlock();
 

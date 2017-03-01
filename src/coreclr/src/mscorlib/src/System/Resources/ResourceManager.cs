@@ -39,7 +39,7 @@ namespace System.Resources
     // allowing us to ask for a WinRT-specific ResourceManager.
     // It is important to have WindowsRuntimeResourceManagerBase as regular class with virtual methods and default implementations. 
     // Defining WindowsRuntimeResourceManagerBase as abstract class or interface will cause issues when adding more methods to it 
-    // because it’ll create dependency between mscorlib and System.Runtime.WindowsRuntime which will require always shipping both DLLs together. 
+    // because itï¿½ll create dependency between mscorlib and System.Runtime.WindowsRuntime which will require always shipping both DLLs together. 
     // Also using interface or abstract class will not play nice with FriendAccessAllowed.
     //
     [FriendAccessAllowed]
@@ -1133,11 +1133,11 @@ namespace System.Resources
             else
 #endif // FEATURE_APPX
             {
-                if (null == culture)
+                if (culture == null)
                 {
                     // When running inside AppX we want to ignore the languages list when trying to come up with our CurrentUICulture.
                     // This line behaves the same way as CultureInfo.CurrentUICulture would have in .NET 4
-                    culture = Thread.CurrentThread.GetCurrentUICultureNoAppX();
+                    culture = CultureInfo.GetCurrentUICultureNoAppX();
                 }
 
                 ResourceSet last = GetFirstResourceSet(culture);
@@ -1226,7 +1226,7 @@ namespace System.Resources
             {
                 // When running inside AppX we want to ignore the languages list when trying to come up with our CurrentUICulture.
                 // This line behaves the same way as CultureInfo.CurrentUICulture would have in .NET 4
-                culture = Thread.CurrentThread.GetCurrentUICultureNoAppX();
+                culture = CultureInfo.GetCurrentUICultureNoAppX();
             }
 
             ResourceSet last = GetFirstResourceSet(culture);

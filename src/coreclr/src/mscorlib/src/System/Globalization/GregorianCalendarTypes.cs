@@ -6,14 +6,16 @@ using System;
 
 namespace System.Globalization
 {
+    // Note: The values of the members of this enum must match the coresponding values
+    // in the CalendarId enum (since we cast between GregorianCalendarTypes and CalendarId).
     [Serializable]
     public enum GregorianCalendarTypes
     {
-        Localized = Calendar.CAL_GREGORIAN,
-        USEnglish = Calendar.CAL_GREGORIAN_US,
-        MiddleEastFrench = Calendar.CAL_GREGORIAN_ME_FRENCH,
-        Arabic = Calendar.CAL_GREGORIAN_ARABIC,
-        TransliteratedEnglish = Calendar.CAL_GREGORIAN_XLIT_ENGLISH,
-        TransliteratedFrench = Calendar.CAL_GREGORIAN_XLIT_FRENCH,
+        Localized = CalendarId.GREGORIAN,
+        USEnglish = CalendarId.GREGORIAN_US,
+        MiddleEastFrench = CalendarId.GREGORIAN_ME_FRENCH,
+        Arabic = CalendarId.GREGORIAN_ARABIC,
+        TransliteratedEnglish = CalendarId.GREGORIAN_XLIT_ENGLISH,
+        TransliteratedFrench = CalendarId.GREGORIAN_XLIT_FRENCH,
     }
 }

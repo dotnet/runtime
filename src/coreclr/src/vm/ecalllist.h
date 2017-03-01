@@ -888,7 +888,6 @@ FCFuncStart(gCalendarDataFuncs)
 FCFuncEnd()
 
 FCFuncStart(gCultureDataFuncs)
-    FCFuncElement("nativeInitCultureData", COMNlsInfo::nativeInitCultureData)
     FCFuncElement("nativeGetNumberFormatInfoValues", COMNlsInfo::nativeGetNumberFormatInfoValues)
     FCFuncElement("nativeEnumTimeFormats", CalendarData::nativeEnumTimeFormats)
     FCFuncElement("LCIDToLocaleName", COMNlsInfo::LCIDToLocaleName)
