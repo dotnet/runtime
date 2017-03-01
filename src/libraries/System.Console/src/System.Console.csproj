@@ -51,13 +51,16 @@
       <Link>Common\System\Text\DBCSDecoder.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.Encoding.Constants.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.Encoding.Constants.cs</Link>
+      <Link>Common\Interop\Windows\Interop.Encoding.Constants.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetCPInfoEx.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.GetCPInfoEx.cs</Link>
+      <Link>Common\Interop\Windows\Interop.GetCPInfoEx.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.BOOL.cs">
+      <Link>Common\Interop\Windows\Interop.BOOL.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.Beep.cs">
       <Link>Common\Interop\Windows\Interop.Beep.cs</Link>
