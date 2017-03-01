@@ -62,6 +62,10 @@ typedef gsize mono_thread_start_return_t;
 
 typedef gsize (*MonoThreadStart)(gpointer);
 
+#if !defined(__HAIKU__)
+#define MONO_THREADS_PLATFORM_HAS_ATTR_SETSCHED
+#endif /* !defined(__HAIKU__) */
+
 #endif /* #ifdef HOST_WIN32 */
 
 #ifndef MONO_INFINITE_WAIT
@@ -478,6 +482,9 @@ gint mono_threads_suspend_get_suspend_signal (void);
 gint mono_threads_suspend_get_restart_signal (void);
 gint mono_threads_suspend_get_abort_signal (void);
 
+#if defined(USE_POSIX_BACKEND)
+void mono_threads_platform_reset_priority (pthread_attr_t *attr);
+#endif /* defined(USE_POSIX_BACKEND) */
 int mono_threads_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_data, gsize* const stack_size, MonoNativeThreadId *out_tid);
 void mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize);
 void mono_threads_platform_init (void);

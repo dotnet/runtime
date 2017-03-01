@@ -20,7 +20,9 @@
 #endif
 
 #if defined(_POSIX_VERSION)
+#ifdef HAVE_SYS_ERRNO_H
 #include <sys/errno.h>
+#endif
 #include <sys/param.h>
 #include <errno.h>
 #ifdef HAVE_SYS_TYPES_H
@@ -30,6 +32,9 @@
 #include <sys/sysctl.h>
 #endif
 #include <sys/resource.h>
+#endif
+#if defined(__HAIKU__)
+#include <os/kernel/OS.h>
 #endif
 #if defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
 #include <sys/proc.h>
@@ -155,9 +160,20 @@ mono_process_list (int *size)
 		*size = res;
 	return buf;
 #elif defined(__HAIKU__)
-	/* FIXME: Add back the code from 9185fcc305e43428d0f40f3ee37c8a405d41c9ae */
-	g_assert_not_reached ();
-	return NULL;
+	int32 cookie = 0;
+	int32 i = 0;
+	team_info ti;
+	system_info si;
+
+	get_system_info(&si);
+	void **buf = g_calloc(si.used_teams, sizeof(void*));
+
+	while (get_next_team_info(&cookie, &ti) == B_OK && i < si.used_teams) {
+		buf[i++] = GINT_TO_POINTER (ti.team);
+	}
+	*size = i;
+
+	return buf;
 #else
 	const char *name;
 	void **buf = NULL;

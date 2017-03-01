@@ -334,9 +334,13 @@ case "$host" in
 		CPPFLAGS="$CPPFLAGS -D_REENTRANT -D_THREAD_SAFE"
 		libmono_cflags="-D_REENTRANT -D_THREAD_SAFE"
 		libdl=
-		LIBS="$LIBS -lnetwork"
+		LIBS="$LIBS -lnetwork -ltextencoding"
 		need_link_unlink=yes
 		AC_DEFINE(PTHREAD_POINTER_ID)
+		dnl Haiku does not support static TLS with __thread
+		with_tls=pthread
+		dnl Boehm is too much work to backport Haiku support for
+		support_boehm=no
 		libgc_threads=pthreads
 		use_sigposix=yes
 		;;
@@ -1913,6 +1917,10 @@ if test x$host_win32 = xno; then
 # and libpthread does not exist
 #
 	case "${host}" in
+		*-*-*haiku*)
+			dnl Haiku has pthread in libroot (libc equiv)
+			AC_CHECK_LIB(pthread, main, LIBS="$LIBS")
+		;;
 		*-*-*freebsd*)
 			AC_CHECK_LIB(pthread, main, LIBS="$LIBS -pthread")
 		;;
@@ -2322,6 +2330,10 @@ if test x$host_win32 = xno; then
 		AC_MSG_RESULT(no)
 	])
 			
+	dnl **********************************
+	dnl *** Checks for proclib         ***
+	dnl **********************************
+	AC_CHECK_HEADER(sys/errno.h, [AC_DEFINE(HAVE_SYS_ERRNO_H, 1, Define to 1 if you have the <sys/errno.h> header file.)])
 	dnl **********************************
 	dnl *** Checks for MonoPosixHelper ***
 	dnl **********************************

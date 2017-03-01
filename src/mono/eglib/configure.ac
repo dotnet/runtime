@@ -94,6 +94,9 @@ arm*-darwin*|aarch64*-*)
 i*86-*-darwin*)
     ORDER=G_LITTLE_ENDIAN
     ;;
+*-*-haiku*)
+    LDFLAGS="$LDFLAGS -ltextencoding"
+    ;;
 *-*-openbsd*)
     CFLAGS="$CFLAGS -pthread"
     LDFLAGS="$LDFLAGS -pthread"
