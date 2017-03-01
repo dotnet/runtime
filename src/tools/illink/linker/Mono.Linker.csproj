@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="14.0">
+  <Import Project="NetCore.props" Condition=" $(Configuration.StartsWith('netcore')) " /> 
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -29,7 +30,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
-  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" Condition=" ! $(TargetFramework.StartsWith('netcore'))" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
@@ -37,7 +38,7 @@
   <Target Name="AfterBuild">
   </Target>
   -->
-  <ItemGroup>
+  <ItemGroup Condition=" ! $(Configuration.StartsWith('netcore')) ">
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml" />
@@ -63,6 +64,7 @@
     <Compile Include="Mono.Linker\AssemblyAction.cs" />
     <Compile Include="Mono.Linker\AssemblyInfo.cs" />
     <Compile Include="Mono.Linker\AssemblyResolver.cs" />
+    <Compile Include="Mono.Linker\DirectoryAssemblyResolver.cs" />
     <Compile Include="Mono.Linker\Driver.cs" />
     <Compile Include="Mono.Linker\LinkContext.cs" />
     <Compile Include="Mono.Linker\MethodAction.cs" />
@@ -91,12 +93,16 @@
       <LogicalName>System.Core.xml</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
+
+  
   <ItemGroup>
     <None Include="Makefile" />
     <None Include="README" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\cecil\Mono.Cecil.csproj">
+      <SetConfiguration Condition=" '$(Configuration)' == 'netcore_Debug' ">Configuration=netstandard_Debug</SetConfiguration>
+      <SetConfiguration Condition=" '$(Configuration)' == 'netcore_Release' ">Configuration=netstandard_Release</SetConfiguration>
       <Project>{D68133BD-1E63-496E-9EDE-4FBDBF77B486}</Project>
       <Name>Mono.Cecil</Name>
     </ProjectReference>

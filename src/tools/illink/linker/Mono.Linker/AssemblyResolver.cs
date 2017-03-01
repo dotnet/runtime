@@ -33,7 +33,11 @@ using Mono.Cecil;
 
 namespace Mono.Linker {
 
+#if NET_CORE
+	public class AssemblyResolver : DirectoryAssemblyResolver {
+#else
 	public class AssemblyResolver : BaseAssemblyResolver {
+#endif
 
 		IDictionary _assemblies;
 
