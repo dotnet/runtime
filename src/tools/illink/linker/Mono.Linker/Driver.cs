@@ -88,27 +88,21 @@ namespace Mono.Linker {
 					Usage ("Expecting an option, got instead: " + token);
 
 				if (token [0] == '-' && token [1] == '-') {
+
 					if (token.Length < 3)
 						Usage ("Option is too short");
 
-					switch (token) {
-					case "--version":
+					switch (token [2]) {
+					case 'v':
 						Version ();
 						break;
-					case "--about":
+					case 'a':
 						About ();
-						break;
-					case "--user-action":
-						context.UserAction = ParseAssemblyAction (GetParam ());
-						break;
-					case "--core-action":
-						context.CoreAction = ParseAssemblyAction (GetParam ());
 						break;
 					default:
 						Usage (null);
 						break;
 					}
-					continue;
 				}
 
 				switch (token [1]) {
@@ -266,7 +260,6 @@ namespace Mono.Linker {
 		{
 			LinkContext context = new LinkContext (pipeline);
 			context.CoreAction = AssemblyAction.Skip;
-			context.UserAction = AssemblyAction.Link;
 			context.OutputDirectory = "output";
 			return context;
 		}
@@ -281,10 +274,8 @@ namespace Mono.Linker {
 			Console.WriteLine ("   --about     About the {0}", _linker);
 			Console.WriteLine ("   --version   Print the version number of the {0}", _linker);
 			Console.WriteLine ("   -out        Specify the output directory, default to `output'");
-			Console.WriteLine ("   --core-action <action> Action on the core assemblies, skip, copy or link, default to skip");
-			Console.WriteLine ("   --user-action <action> Action on the user assemblies, skip, copy or link, default to link");
-			Console.WriteLine ("   -c <action> Same as --core-action");
-			Console.WriteLine ("   -p <action> <assembly name> Action per assembly");
+			Console.WriteLine ("   -c          Action on the core assemblies, skip, copy or link, default to skip");
+			Console.WriteLine ("   -p          Action per assembly");
 			Console.WriteLine ("   -s          Add a new step to the pipeline.");
 			Console.WriteLine ("   -t          Keep assemblies in which only type forwarders are referenced.");
 			Console.WriteLine ("   -d          Add a directory where the linker will look for assemblies");

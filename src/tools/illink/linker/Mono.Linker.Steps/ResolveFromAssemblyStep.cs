@@ -67,7 +67,7 @@ namespace Mono.Linker.Steps {
 		{
 			TryReadSymbols (context, assembly);
 
-			context.SetAction (assembly, action);
+			context.Annotations.SetAction (assembly, action);
 		}
 
 		static void TryReadSymbols (LinkContext context, AssemblyDefinition assembly)
@@ -133,7 +133,7 @@ namespace Mono.Linker.Steps {
 
 		void ProcessExecutable (AssemblyDefinition assembly)
 		{
-			SetAction (Context, assembly, Context.UserAction);
+			SetAction (Context, assembly, AssemblyAction.Link);
 
 			Annotations.Push (assembly);
 
