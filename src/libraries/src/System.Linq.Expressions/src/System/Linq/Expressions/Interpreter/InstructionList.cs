@@ -867,11 +867,6 @@ namespace System.Linq.Expressions.Interpreter
             Emit(NegateCheckedInstruction.Create(type));
         }
 
-        public void EmitOnesComplement(Type type)
-        {
-            Emit(OnesComplementInstruction.Create(type));
-        }
-
         public void EmitIncrement(Type type)
         {
             Emit(IncrementInstruction.Create(type));
