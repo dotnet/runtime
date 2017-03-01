@@ -23,7 +23,7 @@ namespace System.Security.Cryptography.Xml
         internal static byte[] TripleDESKeyWrapEncrypt(byte[] rgbKey, byte[] rgbWrappedKeyData)
         {
             // checksum the key
-            SHA1CryptoServiceProvider sha = new SHA1CryptoServiceProvider();
+            var sha = SHA1.Create();
             byte[] rgbCKS = sha.ComputeHash(rgbWrappedKeyData);
 
             // generate a random IV
@@ -76,7 +76,7 @@ namespace System.Security.Cryptography.Xml
             // checksum the key
             byte[] rgbWrappedKeyData = new byte[rgbWKCKS.Length - 8];
             Buffer.BlockCopy(rgbWKCKS, 0, rgbWrappedKeyData, 0, rgbWrappedKeyData.Length);
-            SHA1CryptoServiceProvider sha = new SHA1CryptoServiceProvider();
+            var sha = SHA1.Create();
             byte[] rgbCKS = sha.ComputeHash(rgbWrappedKeyData);
             for (int index = rgbWrappedKeyData.Length, index1 = 0; index < rgbWKCKS.Length; index++, index1++)
                 if (rgbWKCKS[index] != rgbCKS[index1])
