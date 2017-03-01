@@ -98,6 +98,10 @@ class DacHeapWalker;
 
 #define MP_LOCKS
 
+#ifdef FEATURE_MANUALLY_MANAGED_CARD_BUNDLES
+extern "C" uint32_t* g_gc_card_bundle_table;
+#endif
+
 extern "C" uint32_t* g_gc_card_table;
 extern "C" uint8_t* g_gc_lowest_address;
 extern "C" uint8_t* g_gc_highest_address;

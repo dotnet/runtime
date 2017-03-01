@@ -77,6 +77,10 @@ struct WriteBarrierParameters
     // card table. Used for WriteBarrierOp::Initialize and WriteBarrierOp::StompResize.
     uint32_t* card_table;
 
+    // The new card bundle table location. May or may not be the same as the previous
+    // card bundle table. Used for WriteBarrierOp::Initialize and WriteBarrierOp::StompResize.
+    uint32_t* card_bundle_table;
+
     // The heap's new low boundary. May or may not be the same as the previous
     // value. Used for WriteBarrierOp::Initialize and WriteBarrierOp::StompResize.
     uint8_t* lowest_address;
