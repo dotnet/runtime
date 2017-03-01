@@ -28,6 +28,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using Mono.Cecil;
 
@@ -46,7 +47,7 @@ namespace Mono.Linker {
 		}
 
 		public AssemblyResolver ()
-			: this (new Hashtable ())
+			: this (new Dictionary<string, AssemblyDefinition> (StringComparer.OrdinalIgnoreCase))
 		{
 		}
 
