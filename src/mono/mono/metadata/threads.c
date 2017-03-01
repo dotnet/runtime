@@ -2630,53 +2630,27 @@ is_running_protected_wrapper (void)
 	return found;
 }
 
-static gboolean
-request_thread_stop (MonoInternalThread *thread)
-{
-	LOCK_THREAD (thread);
-
-	if ((thread->state & ThreadState_StopRequested) != 0 ||
-		(thread->state & ThreadState_Stopped) != 0)
-	{
-		UNLOCK_THREAD (thread);
-		return FALSE;
-	}
-	
-	/* Make sure the thread is awake */
-	mono_thread_resume (thread);
-
-	thread->state |= ThreadState_StopRequested;
-	thread->state &= ~ThreadState_AbortRequested;
-	
-	UNLOCK_THREAD (thread);
-	return TRUE;
-}
-
-/**
- * mono_thread_internal_stop:
- *
- * Request thread @thread to stop.
- *
- * @thread MUST NOT be the current thread.
- */
 void
-mono_thread_internal_stop (MonoInternalThread *thread)
-{
-	g_assert (thread != mono_thread_internal_current ());
-
-	if (!request_thread_stop (thread))
-		return;
-	
-	async_abort_internal (thread, TRUE);
-}
-
-void mono_thread_stop (MonoThread *thread)
+mono_thread_stop (MonoThread *thread)
 {
 	MonoInternalThread *internal = thread->internal_thread;
 
-	if (!request_thread_stop (internal))
+	LOCK_THREAD (internal);
+
+	if (internal->state & (ThreadState_StopRequested | ThreadState_Stopped))
+	{
+		UNLOCK_THREAD (internal);
 		return;
-	
+	}
+
+	/* Make sure the internal is awake */
+	mono_thread_resume (internal);
+
+	internal->state |= ThreadState_StopRequested;
+	internal->state &= ~ThreadState_AbortRequested;
+
+	UNLOCK_THREAD (internal);
+
 	if (internal == mono_thread_internal_current ()) {
 		MonoError error;
 		self_abort_internal (&error);

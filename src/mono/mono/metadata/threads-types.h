@@ -176,7 +176,6 @@ MonoInternalThread *mono_thread_internal_current (void);
 
 void mono_thread_internal_check_for_interruption_critical (MonoInternalThread *thread);
 
-void mono_thread_internal_stop (MonoInternalThread *thread);
 void mono_thread_internal_abort (MonoInternalThread *thread);
 void mono_thread_internal_suspend_for_shutdown (MonoInternalThread *thread);
 
