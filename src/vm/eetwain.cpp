@@ -5913,6 +5913,14 @@ ULONG32 EECodeManager::GetStackParameterSize(EECodeInfo * pCodeInfo)
     } CONTRACTL_END;
 
 #if defined(_TARGET_X86_)
+#if defined(WIN64EXCEPTIONS)
+    if (pCodeInfo->IsFunclet())
+    {
+        // Funclet has no stack argument
+        return 0;
+    }
+#endif // WIN64EXCEPTIONS
+
     GCInfoToken gcInfoToken = pCodeInfo->GetGCInfoToken();
     unsigned    dwOffset = pCodeInfo->GetRelOffset();
 
