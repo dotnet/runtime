@@ -1141,8 +1141,7 @@ static const IgnoredAssembly ignored_assemblies [] = {
 	IGNORED_ASSEMBLY (0x358C9723, SYS_GLOBALIZATION_EXT, "5FCD54F0-4B97-4259-875D-30E481F02EA2", "4.0.1 net46"),
 	IGNORED_ASSEMBLY (0x450A096A, SYS_GLOBALIZATION_EXT, "E9FCFF5B-4DE1-4BDC-9CE8-08C640FC78CC", "4.3.0 net46"),
 	IGNORED_ASSEMBLY (0x1CBD59A2, SYS_IO_COMPRESSION, "44FCA06C-A510-4B3E-BDBF-D08D697EF65A", "4.1.0 net46"),
-	//System.IO.Compression.dll net46 4.3.0 has a fully managed impl. not banning
-	//IGNORED_ASSEMBLY (0x5E393C29, SYS_IO_COMPRESSION, "3A58A219-266B-47C3-8BE8-4E4F394147AB", "4.3.0 net46"),
+	IGNORED_ASSEMBLY (0x5E393C29, SYS_IO_COMPRESSION, "3A58A219-266B-47C3-8BE8-4E4F394147AB", "4.3.0 net46"),
 	IGNORED_ASSEMBLY (0x27726A90, SYS_NET_HTTP, "269B562C-CC15-4736-B1B1-68D4A43CAA98", "4.1.0 net46"),
 	IGNORED_ASSEMBLY (0x10CADA75, SYS_NET_HTTP, "EA2EC6DC-51DD-479C-BFC2-E713FB9E7E47", "4.1.1 net46"),
 	IGNORED_ASSEMBLY (0x8437178B, SYS_NET_HTTP, "C0E04D9C-70CF-48A6-A179-FBFD8CE69FD0", "4.3.0 net46"),
@@ -1253,10 +1252,14 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 	if (!mono_image_load_cli_data (image))
 		goto invalid_image;
 
-	if (!image->ref_only && !image->load_from_context && is_problematic_image (image)) {
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Denying load of problematic image %s", image->name);
-		*status = MONO_IMAGE_IMAGE_INVALID;
-		goto invalid_image;
+	if (!image->ref_only && is_problematic_image (image)) {
+		if (image->load_from_context) {
+			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Loading problematic image %s", image->name);
+		} else {
+			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Denying load of problematic image %s", image->name);
+			*status = MONO_IMAGE_IMAGE_INVALID;
+			goto invalid_image;
+		}
 	}
 
 	if (image->loader == &pe_loader && !image->metadata_only && !mono_verifier_verify_table_data (image, &errors))
