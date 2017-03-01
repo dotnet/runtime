@@ -4879,6 +4879,9 @@ namespace System.Net.Sockets
             {
                 NetEventSource.Fail(this, $"handle:{_handle}, Closing the handle threw ObjectDisposedException.");
             }
+
+            // Clean up any cached data
+            DisposeCachedTaskSocketAsyncEventArgs();
         }
 
         public void Dispose()

@@ -16,15 +16,16 @@ namespace System.Net.Sockets
     public class NetworkStream : Stream
     {
         // Used by the class to hold the underlying socket the stream uses.
-        private Socket _streamSocket;
+        private readonly Socket _streamSocket;
+
+        // Whether the stream should dispose of the socket when the stream is disposed
+        private readonly bool _ownsSocket;
 
         // Used by the class to indicate that the stream is m_Readable.
         private bool _readable;
 
         // Used by the class to indicate that the stream is writable.
         private bool _writeable;
-
-        private bool _ownsSocket;
 
         // Creates a new instance of the System.Net.Sockets.NetworkStream class for the specified System.Net.Sockets.Socket.
         public NetworkStream(Socket socket)
@@ -664,24 +665,45 @@ namespace System.Net.Sockets
         //     A Task<int> representing the read.
         public override Task<int> ReadAsync(byte[] buffer, int offset, int size, CancellationToken cancellationToken)
         {
-#if netcore50
+            bool canRead = CanRead; // Prevent race with Dispose.
+            if (_cleanedUp)
+            {
+                throw new ObjectDisposedException(this.GetType().FullName);
+            }
+            if (!canRead)
+            {
+                throw new InvalidOperationException(SR.net_writeonlystream);
+            }
+
+            // Validate input parameters.
+            if (buffer == null)
+            {
+                throw new ArgumentNullException(nameof(buffer));
+            }
+            if (offset < 0 || offset > buffer.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(offset));
+            }
+            if (size < 0 || size > buffer.Length - offset)
+            {
+                throw new ArgumentOutOfRangeException(nameof(size));
+            }
+
             if (cancellationToken.IsCancellationRequested)
             {
                 return Task.FromCanceled<int>(cancellationToken);
             }
 
-            return Task.Factory.FromAsync(
-                (bufferArg, offsetArg, sizeArg, callback, state) => ((NetworkStream)state).BeginRead(bufferArg, offsetArg, sizeArg, callback, state),
-                iar => ((NetworkStream)iar.AsyncState).EndRead(iar),
-                buffer,
-                offset,
-                size,
-                this);
-#else
-            // Use optimized Stream.ReadAsync that's more efficient than
-            // Task.Factory.FromAsync when NetworkStream overrides Begin/EndRead.
-            return base.ReadAsync(buffer, offset, size, cancellationToken);
-#endif
+            try
+            {
+                return _streamSocket.ReceiveAsync(new ArraySegment<byte>(buffer, offset, size), SocketFlags.None);
+            }
+            catch (Exception exception) when (!(exception is OutOfMemoryException))
+            {
+                // Some sort of error occurred on the socket call,
+                // set the SocketException as InnerException and throw.
+                throw new IOException(SR.Format(SR.net_io_readfailure, exception.Message), exception);
+            }
         }
 
         // WriteAsync - provide async write functionality.
@@ -701,24 +723,45 @@ namespace System.Net.Sockets
         //     A Task representing the write.
         public override Task WriteAsync(byte[] buffer, int offset, int size, CancellationToken cancellationToken)
         {
-#if netcore50
-            if (cancellationToken.IsCancellationRequested)
+            bool canWrite = CanWrite; // Prevent race with Dispose.
+            if (_cleanedUp)
             {
-                return Task.FromCanceled<int>(cancellationToken);
+                throw new ObjectDisposedException(this.GetType().FullName);
+            }
+            if (!canWrite)
+            {
+                throw new InvalidOperationException(SR.net_readonlystream);
             }
 
-            return Task.Factory.FromAsync(
-                (bufferArg, offsetArg, sizeArg, callback, state) => ((NetworkStream)state).BeginWrite(bufferArg, offsetArg, sizeArg, callback, state),
-                iar => ((NetworkStream)iar.AsyncState).EndWrite(iar),
-                buffer,
-                offset,
-                size,
-                this);
-#else
-            // Use optimized Stream.WriteAsync that's more efficient than
-            // Task.Factory.FromAsync when NetworkStream overrides Begin/EndWrite.
-            return base.WriteAsync(buffer, offset, size, cancellationToken);
-#endif
+            // Validate input parameters.
+            if (buffer == null)
+            {
+                throw new ArgumentNullException(nameof(buffer));
+            }
+            if (offset < 0 || offset > buffer.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(offset));
+            }
+            if (size < 0 || size > buffer.Length - offset)
+            {
+                throw new ArgumentOutOfRangeException(nameof(size));
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
+
+            try
+            {
+                return _streamSocket.SendAsync(new ArraySegment<byte>(buffer, offset, size), SocketFlags.None);
+            }
+            catch (Exception exception) when (!(exception is OutOfMemoryException))
+            {
+                // Some sort of error occurred on the socket call,
+                // set the SocketException as InnerException and throw.
+                throw new IOException(SR.Format(SR.net_io_writefailure, exception.Message), exception);
+            }
         }
 
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
