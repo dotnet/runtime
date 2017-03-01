@@ -2,9 +2,6 @@
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <NugetRuntimeIdentifier Condition="'$(OSGroup)' == 'Unix' AND '$(RunningOnUnix)' != 'true'">ubuntu.14.04-x64</NugetRuntimeIdentifier>
-    <!-- WORKAROUND: Force external packages to be restored for x64 until arm packages are fully broughtup-->
-    <NugetRuntimeIdentifier Condition="'$(ArchGroup)' == 'armel'">$(RuntimeOS)-x64</NugetRuntimeIdentifier>
     <OutputPath>$(ToolsDir)ilasm</OutputPath>
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
