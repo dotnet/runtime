@@ -70,10 +70,10 @@ namespace System.Text.RegularExpressions.Tests
             // Actual - "abc(?(1)111|222)"
             yield return new object[] { "(abbc)(?(1)111|222)", "abbc222", RegexOptions.None, 0, 7, false, string.Empty };
 
-            // "x" option. Removes unescaped white space from the pattern: Actual - " ([^/]+) ","x"
+            // "x" option. Removes unescaped whitespace from the pattern: Actual - " ([^/]+) ","x"
             yield return new object[] { "            ((.)+)      ", "abc", RegexOptions.IgnorePatternWhitespace, 0, 3, true, "abc" };
 
-            // "x" option. Removes unescaped white space from the pattern. : Actual - "\x20([^/]+)\x20","x"
+            // "x" option. Removes unescaped whitespace from the pattern. : Actual - "\x20([^/]+)\x20","x"
             yield return new object[] { "\x20([^/]+)\x20\x20\x20\x20\x20\x20\x20", " abc       ", RegexOptions.IgnorePatternWhitespace, 0, 10, true, " abc      " };
 
             // Turning on case insensitive option in mid-pattern : Actual - "aaa(?i:match this)bbb"
@@ -137,7 +137,7 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { @"foo\d+", "0123456789foo4567890foo         ", RegexOptions.RightToLeft, 10, 22, true, "foo4567890" };
             yield return new object[] { @"foo\d+", "0123456789foo4567890foo         ", RegexOptions.RightToLeft, 10, 4, true, "foo4" };
 
-            // Trim leading and trailing white spaces
+            // Trim leading and trailing whitespace
             yield return new object[] { @"\s*(.*?)\s*$", " Hello World ", RegexOptions.None, 0, 13, true, " Hello World " };
 
             // < in group

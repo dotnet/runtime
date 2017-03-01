@@ -13,7 +13,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
         {
         }
 
-        internal NameManager(NameTable nameTable)
+        private NameManager(NameTable nameTable)
         {
             _names = nameTable;
             InitKnownNames();

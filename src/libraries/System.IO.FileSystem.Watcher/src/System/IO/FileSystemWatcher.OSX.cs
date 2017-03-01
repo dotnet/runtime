@@ -212,7 +212,7 @@ namespace System.IO
                 }
 
                 // Take the CFStringRef and put it into an array to pass to the EventStream
-                SafeCreateHandle arrPaths = Interop.CoreFoundation.CFArrayCreate(new CFStringRef[1] { path.DangerousGetHandle() }, 1);
+                SafeCreateHandle arrPaths = Interop.CoreFoundation.CFArrayCreate(new CFStringRef[1] { path.DangerousGetHandle() }, (UIntPtr)1);
                 if (arrPaths.IsInvalid)
                 {
                     path.Dispose();

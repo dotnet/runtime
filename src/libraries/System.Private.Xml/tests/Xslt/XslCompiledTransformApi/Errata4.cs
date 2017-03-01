@@ -22,7 +22,7 @@ namespace System.Xml.Tests
             _output = output;
         }
 
-        private Random _rand = new Random((int)DateTime.Now.Ticks);
+        private Random _rand = new Random(unchecked((int)DateTime.Now.Ticks));
 
         #region private const string xmlDocTemplate = ...
 

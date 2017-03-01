@@ -5,8 +5,8 @@
     always be net45 (because we use Mono to run our tests and Mono needs to load the net45 version)
   -->
   <PropertyGroup>
-    <CodeAnalyzerDir Condition="'$(CodeAnalyzerDir)'=='' and '$(OSEnvironment)'=='Windows_NT'">$(ToolsDir)net45/analyzers/</CodeAnalyzerDir>
-    <CodeAnalyzerDir Condition="'$(CodeAnalyzerDir)'=='' and '$(OSEnvironment)'!='Windows_NT'">$(ToolsDir)analyzers/</CodeAnalyzerDir>
+    <CodeAnalyzerDir Condition="'$(CodeAnalyzerDir)'=='' and '$(RunningOnCore)'!='true'">$(ToolsDir)net46/analyzers/</CodeAnalyzerDir>
+    <CodeAnalyzerDir Condition="'$(CodeAnalyzerDir)'=='' and '$(RunningOnCore)'=='true'">$(ToolsDir)analyzers/</CodeAnalyzerDir>
   </PropertyGroup>
 
   <!-- PInvokeChecker data files-->

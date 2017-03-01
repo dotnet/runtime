@@ -5,13 +5,11 @@
     <ProjectGuid>{396D6EBF-60BD-4DAF-8783-FB403E070A57}</ProjectGuid>
     <!-- Test expects an un-signed assembly -->
     <SkipSigning>true</SkipSigning>
-    <NoWarn>0436</NoWarn>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="TestClass.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

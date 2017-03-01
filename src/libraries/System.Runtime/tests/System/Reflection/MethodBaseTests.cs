@@ -35,6 +35,22 @@ namespace System.Reflection.Tests
             Assert.Equal("T", m.GetGenericArguments()[0].Name);
         }
 
+        [Fact]
+        public static void Test_GetCurrentMethod_Inlineable()
+        {
+            // Verify that the result is not affected by inlining optimizations
+            MethodBase m = GetCurrentMethod_InlineableWrapper();
+            Assert.Equal("GetCurrentMethod_InlineableWrapper", m.Name);
+            Assert.True(m.IsStatic);
+            Assert.False(m.IsPublic);
+            Assert.True(m.DeclaringType == typeof(MethodBaseTests));
+        }
+
+        private static MethodBase GetCurrentMethod_InlineableWrapper()
+        {
+            return MethodBase.GetCurrentMethod();
+        }
+
         [Theory]
         [InlineData("MyOtherMethod", BindingFlags.Static | BindingFlags.Public, "MyOtherMethod", BindingFlags.Static | BindingFlags.Public, true)]  // Same methods
         [InlineData("MyOtherMethod", BindingFlags.Static | BindingFlags.Public, "MyOtherMethod", BindingFlags.Static | BindingFlags.NonPublic, false)]  // Two methods of the same name

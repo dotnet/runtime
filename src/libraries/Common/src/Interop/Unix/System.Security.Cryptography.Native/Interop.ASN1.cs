@@ -93,7 +93,7 @@ internal static partial class Interop
             // so make sure to leave room for it.
             int initialBytesNeeded = bytesNeeded;
             byte[] bufHeap = new byte[bytesNeeded + 1];
-            fixed (byte* buf = bufHeap)
+            fixed (byte* buf = &bufHeap[0])
             {
                 bytesNeeded = ObjObj2Txt(buf, bufHeap.Length, asn1ObjectPtr);
 

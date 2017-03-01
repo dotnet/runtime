@@ -149,7 +149,7 @@ namespace System.Net.Sockets
             }
             else
             {
-                errorCode = handle.AsyncContext.ReceiveAsync(_bufferList, _socketFlags, out bytesReceived, out flags, TransferCompletionCallback);
+                errorCode = handle.AsyncContext.ReceiveAsync(_bufferListInternal, _socketFlags, out bytesReceived, out flags, TransferCompletionCallback);
             }
 
             if (errorCode != SocketError.IOPending)
@@ -178,7 +178,7 @@ namespace System.Net.Sockets
             }
             else
             {
-                errorCode = handle.AsyncContext.ReceiveFromAsync(_bufferList, _socketFlags, _socketAddress.Buffer, ref socketAddressLen, out bytesReceived, out flags, TransferCompletionCallback);
+                errorCode = handle.AsyncContext.ReceiveFromAsync(_bufferListInternal, _socketFlags, _socketAddress.Buffer, ref socketAddressLen, out bytesReceived, out flags, TransferCompletionCallback);
             }
 
             if (errorCode != SocketError.IOPending)
@@ -248,7 +248,7 @@ namespace System.Net.Sockets
             }
             else
             {
-                errorCode = handle.AsyncContext.SendAsync(_bufferList, _socketFlags, out bytesSent, TransferCompletionCallback);
+                errorCode = handle.AsyncContext.SendAsync(_bufferListInternal, _socketFlags, out bytesSent, TransferCompletionCallback);
             }
 
             if (errorCode != SocketError.IOPending)
@@ -287,7 +287,7 @@ namespace System.Net.Sockets
             }
             else
             {
-                errorCode = handle.AsyncContext.SendToAsync(_bufferList, _socketFlags, _socketAddress.Buffer, ref socketAddressLen, out bytesSent, TransferCompletionCallback);
+                errorCode = handle.AsyncContext.SendToAsync(_bufferListInternal, _socketFlags, _socketAddress.Buffer, ref socketAddressLen, out bytesSent, TransferCompletionCallback);
             }
 
             if (errorCode != SocketError.IOPending)

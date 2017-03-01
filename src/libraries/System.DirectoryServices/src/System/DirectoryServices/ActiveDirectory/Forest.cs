@@ -839,7 +839,7 @@ namespace System.DirectoryServices.ActiveDirectory
         }
 
         //
-        // Returns a DomainController object for the DC that holds the the specified FSMO role
+        // Returns a DomainController object for the DC that holds the specified FSMO role
         //
         private DomainController GetRoleOwner(ActiveDirectoryRole role)
         {

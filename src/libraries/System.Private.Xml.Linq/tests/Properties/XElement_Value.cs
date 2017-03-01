@@ -185,7 +185,7 @@ namespace CoreXml.Test.XLinq
                 //[Variation(Priority = 0, Desc = "GET: Mixed content", Params = new object[] { "<X>t0<A>t1<B/><B xmlns='a'><![CDATA[t2]]></B><C>t3</C></A>t00</X>" })]
                 //[Variation(Priority = 1, Desc = "GET: Mixed content - empty CDATA", Params = new object[] { "<X>t0<A>t1<B/><B xmlns='a'><![CDATA[]]></B><C>t3</C></A>t00</X>" })]
                 //[Variation(Priority = 1, Desc = "GET: Mixed content - empty XText", Params = new object[] { "<X>t0<A>t1<B/><B xmlns='a'><![CDATA[]]></B><C></C></A>t00</X>" })]
-                //[Variation(Priority = 1, Desc = "GET: Mixed content - whitespaces", Params = new object[] { "<X>t0<A>t1\n<B/><B xmlns='a'>\t<![CDATA[]]> </B>\n<C></C></A>t00</X>" })]
+                //[Variation(Priority = 1, Desc = "GET: Mixed content - whitespace", Params = new object[] { "<X>t0<A>t1\n<B/><B xmlns='a'>\t<![CDATA[]]> </B>\n<C></C></A>t00</X>" })]
                 //[Variation(Priority = 1, Desc = "GET: Mixed content - no text nodes", Params = new object[] { "<X>t0<A Id='a0'><B/><B xmlns='a'><?Pi c?></B><!--commm--><C></C></A>t00</X>" })]
                 //[Variation(Priority = 0, Desc = "GET: Empty string node", Params = new object[] { "<X>t0<A></A>t00</X>" })]
                 //[Variation(Priority = 0, Desc = "GET: Empty string node", Params = new object[] { "<X>t0<A/>t00</X>" })]
@@ -292,7 +292,7 @@ namespace CoreXml.Test.XLinq
                 //  ~ set null
                 //  ~ set empty string
                 //  ~ set string 
-                //  :: verify the replaced nodes prperties, node content, node value
+                //  :: verify the replaced nodes properties, node content, node value
                 //  ~ replace:
                 //      ~ no content
                 //      ~ empty string

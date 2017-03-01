@@ -64,11 +64,16 @@ build-tests
 build -debug -buildArch=x64
 ```
 
+- Building the src and then building and running the tests
+```
+build -tests
+```
+
 - Building for different target frameworks
 ```
-build -framework netcoreapp
-build -framework netfx
-build -framework uap
+build -framework=netcoreapp
+build -framework=netfx
+build -framework=uap
 ```
 
 ###Build Native
@@ -123,7 +128,7 @@ build-tests -skiptests
 
 - The following builds and runs all tests for netcoreapp in release configuration.
 ```
-build-tests -release -framework netcoreapp
+build-tests -release -framework=netcoreapp
 ```
 
 - The following example shows the argument `--`. Everything that is after it is not going to be processed and it is going to be passed as it is.
@@ -305,3 +310,24 @@ msbuild /t:BuildAndTest /p:TargetGroup=uap
 In this case, your test will get executed within the context of a wrapper UWP application, targeting the Managed uap as opposed to the .NET Native version.
 
 The CoreFX build and test suite is a work in progress, as are the [building and testing instructions](../README.md). The .NET Core team and the community are improving Linux and OS X support on a daily basis and are adding more tests for all platforms. See [CoreFX Issues](https://github.com/dotnet/corefx/issues) to find out about specific work items or report issues.
+
+## Testing with private CoreCLR bits
+
+    1) Go to your repo directory containing the shared runtime:
+          cd <root>\corefx\bin\testhost\netcoreapp-Windows_NT-Debug-x64\shared\Microsoft.NETCore.App\9.9.9
+	   (the directory under testhost will vary based on the build of corefx you're testing)
+    2) Copy your private runtime bits to this directory, overwriting the ones already there:
+          copy /y <root>\coreclr\bin\Product\Windows_NT.x64.Release\*.dll .
+    3) Copy the PDBs for your runtime (optional, but required for code coverage):
+          copy /y <root>\coreclr\bin\Product\Windows_NT.x64.Release\PDB\*.pdb .
+    3) Delete the native images that were copied (optional, but required for code coverage):
+          del *.ni.*   (don't delete xuNIt bits!)
+    4) Edit Microsoft.NETCore.App.deps.json to remove this line (if and only if (3) is done):
+          "runtimes/win7-x64/native/System.Private.CoreLib.ni.dll": {},
+    5) Run the tests by any means you please - the custom binaries manually copied shouldn't get overwritten.
+
+If you prefer, you can use a Debug build of System.Private.CoreLib, but if you do you must also use a Debug build of the native portions of the runtime, e.g. coreclr.dll. Tests with a Debug runtime will execute much more slowly than with Release runtime bits.
+
+To collect code coverage that includes types in System.Private.CoreLib.dll, you'll need to follow the above steps, then
+
+`msbuild /t:rebuildandtest /p:Coverage=true /p:CodeCoverageAssemblies="System.Private.CoreLib"`

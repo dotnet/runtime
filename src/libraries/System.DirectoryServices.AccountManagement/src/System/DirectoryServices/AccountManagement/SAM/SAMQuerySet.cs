@@ -12,13 +12,9 @@ using System.Text.RegularExpressions;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    // <SecurityKernel Critical="True" Ring="0">
-    // <Asserts Name="Declarative: [DirectoryServicesPermission(SecurityAction.Assert, Unrestricted = true)]" />
-    // </SecurityKernel>
 #pragma warning disable 618    // Have not migrated to v4 transparency yet
     [System.Security.SecurityCritical(System.Security.SecurityCriticalScope.Everything)]
 #pragma warning restore 618
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted = true)]
     internal class SAMQuerySet : ResultSet
     {
         // We will iterate over all principals under ctxBase, returning only those which are in the list of types and which
@@ -210,13 +206,9 @@ namespace System.DirectoryServices.AccountManagement
     // The matcher routines for query-by-example support
     //
 
-    // <SecurityKernel Critical="True" Ring="0">
-    // <Asserts Name="Declarative: [DirectoryServicesPermission(SecurityAction.Assert, Unrestricted = true)]" />
-    // </SecurityKernel>
 #pragma warning disable 618    // Have not migrated to v4 transparency yet
     [System.Security.SecurityCritical(System.Security.SecurityCriticalScope.Everything)]
 #pragma warning restore 618
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted = true)]
     internal class QbeMatcher : SAMMatcher
     {
         private QbeFilterDescription _propertiesToMatch;
@@ -710,13 +702,9 @@ namespace System.DirectoryServices.AccountManagement
     // The matcher routines for FindBy* support
     //
 
-    // <SecurityKernel Critical="True" Ring="0">
-    // <Asserts Name="Declarative: [DirectoryServicesPermission(SecurityAction.Assert, Unrestricted = true)]" />
-    // </SecurityKernel>
 #pragma warning disable 618    // Have not migrated to v4 transparency yet
     [System.Security.SecurityCritical(System.Security.SecurityCriticalScope.Everything)]
 #pragma warning restore 618
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted = true)]
     internal class FindByDateMatcher : SAMMatcher
     {
         internal enum DateProperty
@@ -855,13 +843,9 @@ namespace System.DirectoryServices.AccountManagement
         }
     }
 
-    // <SecurityKernel Critical="True" Ring="0">
-    // <Asserts Name="Declarative: [DirectoryServicesPermission(SecurityAction.Assert, Unrestricted = true)]" />
-    // </SecurityKernel>
 #pragma warning disable 618    // Have not migrated to v4 transparency yet
     [System.Security.SecurityCritical(System.Security.SecurityCriticalScope.Everything)]
 #pragma warning restore 618
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted = true)]
     internal class GroupMemberMatcher : SAMMatcher
     {
         private byte[] _memberSidToMatch;
@@ -916,7 +900,7 @@ namespace System.DirectoryServices.AccountManagement
                 }
             }
 
-            // We tried all the members in the group and didnt' get a match on any
+            // We tried all the members in the group and didn't get a match on any
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMQuerySet", "SamMatcher: Matches: no match, group={0}", groupDE.Path);
             return false;
         }

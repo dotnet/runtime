@@ -76,7 +76,7 @@ namespace System.Security.Cryptography
                 }
 
                 byte[] rsaBlob = new byte[blobSize];
-                fixed (byte* pRsaBlob = rsaBlob)
+                fixed (byte* pRsaBlob = &rsaBlob[0])
                 {
                     // Build the header
                     BCRYPT_RSAKEY_BLOB* pBcryptBlob = (BCRYPT_RSAKEY_BLOB*)pRsaBlob;
@@ -148,7 +148,7 @@ namespace System.Security.Cryptography
                 if (rsaBlob.Length < sizeof(BCRYPT_RSAKEY_BLOB))
                     throw ErrorCode.E_FAIL.ToCryptographicException();
 
-                fixed (byte* pRsaBlob = rsaBlob)
+                fixed (byte* pRsaBlob = &rsaBlob[0])
                 {
                     BCRYPT_RSAKEY_BLOB* pBcryptBlob = (BCRYPT_RSAKEY_BLOB*)pRsaBlob;
 

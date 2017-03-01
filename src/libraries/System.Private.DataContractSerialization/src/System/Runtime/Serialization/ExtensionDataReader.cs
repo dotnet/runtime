@@ -530,7 +530,7 @@ namespace System.Runtime.Serialization
         }
     }
 
-#if USE_REFEMIT
+#if USE_REFEMIT || NET_NATIVE
     public class AttributeData
 #else
     internal class AttributeData
@@ -542,7 +542,7 @@ namespace System.Runtime.Serialization
         public string value;
     }
 
-#if USE_REFEMIT
+#if USE_REFEMIT || NET_NATIVE
     public class ElementData
 #else
     internal class ElementData

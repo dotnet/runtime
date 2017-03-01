@@ -17,8 +17,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 
-using Res = System.SR;
-
 
 namespace System.Data.SqlClient
 {
@@ -414,7 +412,7 @@ namespace System.Data.SqlClient
             string[] parts;
             try
             {
-                parts = MultipartIdentifier.ParseMultipartIdentifier(this.DestinationTableName, "[\"", "]\"", Res.SQL_BulkCopyDestinationTableName, true);
+                parts = MultipartIdentifier.ParseMultipartIdentifier(this.DestinationTableName, "[\"", "]\"", SR.SQL_BulkCopyDestinationTableName, true);
             }
             catch (Exception e)
             {

@@ -9,6 +9,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     // method expression. There is exactly one of these.
     // ----------------------------------------------------------------------------
 
-    internal class BoundLambdaType : CType
+    internal sealed class BoundLambdaType : CType
     { };
 }

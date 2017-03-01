@@ -15,9 +15,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     // to the best applicable method in the group.
     // ----------------------------------------------------------------------------
 
-    internal partial class ExpressionBinder
+    internal sealed partial class ExpressionBinder
     {
-        internal class GroupToArgsBinder
+        internal sealed class GroupToArgsBinder
         {
             private enum Result
             {
@@ -139,7 +139,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 return _pExprBinder.GetErrorContext();
             }
-            public static CType GetTypeQualifier(EXPRMEMGRP pGroup)
+            private static CType GetTypeQualifier(EXPRMEMGRP pGroup)
             {
                 Debug.Assert(pGroup != null);
 
@@ -679,7 +679,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     MethodOrPropertySymbol pMethProp,
                     EXPR pObject)
             {
-                return FindMostDerivedMethod(GetSymbolLoader(), pMethProp, pObject != null ? pObject.type : null);
+                return FindMostDerivedMethod(GetSymbolLoader(), pMethProp, pObject?.type);
             }
 
             /////////////////////////////////////////////////////////////////////////////////
@@ -719,9 +719,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
 
                 // Now get the slot method.
-                if (method.swtSlot != null && method.swtSlot.Meth() != null)
+                var slotMethod = method.swtSlot?.Meth();
+                if (slotMethod != null)
                 {
-                    method = method.swtSlot.Meth();
+                    method = slotMethod;
                 }
 
                 if (!pType.IsAggregateType())
@@ -759,7 +760,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 // If we get here, it means we can have two cases: one is that we have 
                 // a delegate. This is because the delegate invoke method is virtual and is 
-                // an override, but we wont have the slots set up correctly, and will 
+                // an override, but we won't have the slots set up correctly, and will 
                 // not find the base type in the inheritance hierarchy. The second is that
                 // we're calling off of the base itself.
                 Debug.Assert(method.parent.IsAggregateSymbol());
@@ -772,7 +773,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             private bool HasOptionalParameters()
             {
                 MethodOrPropertySymbol methprop = FindMostDerivedMethod(_pCurrentSym, _pGroup.GetOptionalObject());
-                return methprop != null ? methprop.HasOptionalParameters() : false;
+                return methprop != null && methprop.HasOptionalParameters();
             }
 
             /////////////////////////////////////////////////////////////////////////////////

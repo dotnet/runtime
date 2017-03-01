@@ -19,7 +19,7 @@ namespace System.IO
         private const char LastAnsi = (char)255;
         private const char Delete = (char)127;
 
-        // Trim trailing white spaces, tabs etc but don't be aggressive in removing everything that has UnicodeCategory of trailing space.
+        // Trim trailing whitespace, tabs etc but don't be aggressive in removing everything that has UnicodeCategory of trailing space.
         // string.WhitespaceChars will trim more aggressively than what the underlying FS does (for ex, NTFS, FAT).
         private static readonly char[] s_trimEndChars =
         {

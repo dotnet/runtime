@@ -488,12 +488,16 @@ namespace System.Data.SqlTypes
             // m_data2 = *pInt++; // mid part
 
             int[] bits = decimal.GetBits(value);
+            uint sgnscl;
 
-            uint sgnscl = (uint)bits[3];
-            _data1 = (uint)bits[0];
-            _data2 = (uint)bits[1];
-            _data3 = (uint)bits[2];
-            _data4 = s_uiZero;
+            unchecked
+            {
+                sgnscl = (uint)bits[3];
+                _data1 = (uint)bits[0];
+                _data2 = (uint)bits[1];
+                _data3 = (uint)bits[2];
+                _data4 = s_uiZero;
+            }
 
             // set the sign bit
             _bStatus |= ((sgnscl & 0x80000000) == 0x80000000) ? s_bNegative : (byte)0;
@@ -523,7 +527,7 @@ namespace System.Data.SqlTypes
             // set the null bit
             _bStatus = s_bNotNull;
 
-            uint uiValue = (uint)value;
+            uint uiValue = unchecked((uint)value);
 
             // set the sign bit
             if (value < 0)
@@ -548,7 +552,7 @@ namespace System.Data.SqlTypes
             // set the null bit
             _bStatus = s_bNotNull;
 
-            ulong dwl = (ulong)value;
+            ulong dwl = unchecked((ulong)value);
 
             // set the sign bit
             if (value < 0)
@@ -861,7 +865,11 @@ namespace System.Data.SqlTypes
             {
                 if (IsNull)
                     throw new SqlNullValueException();
-                return new int[4] { (int)_data1, (int)_data2, (int)_data3, (int)_data4 };
+
+                unchecked
+                {
+                    return new int[4] { (int)_data1, (int)_data2, (int)_data3, (int)_data4 };
+                }
             }
         }
 
@@ -1135,7 +1143,10 @@ namespace System.Data.SqlTypes
             if ((int)_data4 != 0 || _bScale > 28)
                 throw new OverflowException(SQLResource.s_conversionOverflowMessage);
 
-            return new decimal((int)_data1, (int)_data2, (int)_data3, !IsPositive, _bScale);
+            unchecked
+            {
+                return new decimal((int)_data1, (int)_data2, (int)_data3, !IsPositive, _bScale);
+            }
         }
 
         // Implicit conversion from Decimal to SqlDecimal
@@ -1272,7 +1283,7 @@ namespace System.Data.SqlTypes
                     if (iulData < culOp2)
                         dwlAccum += rglData2[iulData];
 
-                    rglData1[iulData] = (uint)dwlAccum; // equiv to mod x_lInt32Base
+                    rglData1[iulData] = unchecked((uint)dwlAccum); // equiv to mod x_lInt32Base
                     dwlAccum >>= 32; // equiv to div x_lInt32Base
                 }
 
@@ -1317,7 +1328,7 @@ namespace System.Data.SqlTypes
                     if (iulData < culOp2)
                         dwlAccum -= rglData2[iulData];
 
-                    rglData1[iulData] = (uint)dwlAccum; // equiv to mod BaseUI4
+                    rglData1[iulData] = unchecked((uint)dwlAccum); // equiv to mod BaseUI4
                     if (rglData1[iulData] != 0)
                         iulLastNonZero = iulData;
                     dwlAccum >>= 32; // equiv to /= BaseUI4
@@ -1474,7 +1485,7 @@ namespace System.Data.SqlTypes
                         dwlNextAccum = 0;
 
                     // Update result and accum
-                    rgulRes[idRes++] = (uint)(dwlAccum);// & x_ulInt32BaseForMod); // equiv to mod x_lInt32Base
+                    rgulRes[idRes++] = unchecked((uint)dwlAccum);// & x_ulInt32BaseForMod); // equiv to mod x_lInt32Base
                     dwlAccum = (dwlAccum >> 32) + dwlNextAccum; // equiv to div BaseUI4 + dwlNAccum
 
                     // dwlNextAccum can't overflow next iteration
@@ -2137,8 +2148,8 @@ namespace System.Data.SqlTypes
                     dwlNextAccum = s_ulInt32Base;   // how much to add to dwlAccum after div x_dwlBaseUI4
                 else
                     dwlNextAccum = 0;
-                rguiData[iData] = (uint)dwlAccum;           // equivalent to mod x_dwlBaseUI4
-                dwlAccum = (dwlAccum >> 32) + dwlNextAccum; // equivalent to div x_dwlBaseUI4
+                rguiData[iData] = unchecked((uint)dwlAccum); // equivalent to mod x_dwlBaseUI4
+                dwlAccum = (dwlAccum >> 32) + dwlNextAccum;  // equivalent to div x_dwlBaseUI4
             }
 
             // If any carry,

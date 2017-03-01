@@ -587,7 +587,7 @@ namespace System.Threading.Tests
             Task[] tasks = new Task[totalWaiters];
 
             const int ITERS = 10;
-            int randSeed = (int)DateTime.Now.Ticks;
+            int randSeed = unchecked((int)DateTime.Now.Ticks);
             for (int i = 0; i < syncWaiters; i++)
             {
                 tasks[i] = Task.Run(delegate

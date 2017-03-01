@@ -156,7 +156,6 @@ namespace System.IO.Tests
             Assert.Equal(str1, sr.ReadToEnd());
         }
 
-#if netstandard17
         [Fact]
         public static void Closed_DisposedExceptions()
         {
@@ -164,7 +163,6 @@ namespace System.IO.Tests
             sr.Close();
             ValidateDisposedExceptions(sr);
         }
-#endif //netstandard17
 
         [Fact]
         public static void Disposed_DisposedExceptions()

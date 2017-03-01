@@ -15,14 +15,15 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Text;
+
 #if MANAGED_SNI
 using System.Data.SqlClient.SNI;
+using System.Net.Security;
+using System.Net;
 #endif
 
 namespace System.Data.SqlClient
 {
-    using Res = System.SR;
-
     sealed internal class LastIOTimer
     {
         internal long _value;
@@ -242,6 +243,11 @@ namespace System.Data.SqlClient
         // Set to true to enable checking the call stacks match when packet retry occurs.
         internal static bool _checkNetworkPacketRetryStacks;
 #pragma warning restore 0649
+#endif
+
+#if MANAGED_SNI
+
+        internal SspiClientContextStatus sspiClientContextStatus = new SspiClientContextStatus();
 #endif
 
         //////////////////
@@ -770,9 +776,9 @@ namespace System.Data.SqlClient
         }
 
 #if MANAGED_SNI
-        internal void CreateConnectionHandle(string serverName, bool ignoreSniOpenTimeout, long timerExpire, out byte[] instanceName, byte[] spnBuffer, bool flushCache, bool async, bool parallel)
+        internal void CreateConnectionHandle(string serverName, bool ignoreSniOpenTimeout, long timerExpire, out byte[] instanceName, ref byte[] spnBuffer, bool flushCache, bool async, bool parallel, bool isIntegratedSecurity)
         {
-            _sessionHandle = SNIProxy.Singleton.CreateConnectionHandle(this, serverName, ignoreSniOpenTimeout, timerExpire, out instanceName, spnBuffer, flushCache, async, parallel);
+            _sessionHandle = SNIProxy.Singleton.CreateConnectionHandle(this, serverName, ignoreSniOpenTimeout, timerExpire, out instanceName, ref spnBuffer, flushCache, async, parallel, isIntegratedSecurity);
             if(_sessionHandle == null)
             {
                 _parser.ProcessSNIError(this);
@@ -785,7 +791,6 @@ namespace System.Data.SqlClient
                 _sessionHandle.SetAsyncCallbacks(ReceiveAsyncCallbackDispatcher, SendAsyncCallbackDispatcher);
             }
         }
-
 #else
         private SNINativeMethodWrapper.ConsumerInfo CreateConsumerInfo(bool async)
         {
@@ -1257,7 +1262,7 @@ namespace System.Data.SqlClient
                         int remainingData = _inBytesRead - _inBytesUsed;
                         if ((temp.Length < _inBytesUsed + remainingData) || (_inBuff.Length < remainingData))
                         {
-                            string errormessage = Res.GetString(Res.SQL_InvalidInternalPacketSize) + ' ' + temp.Length + ", " + _inBytesUsed + ", " + remainingData + ", " + _inBuff.Length;
+                            string errormessage = SR.GetString(SR.SQL_InvalidInternalPacketSize) + ' ' + temp.Length + ", " + _inBytesUsed + ", " + remainingData + ", " + _inBuff.Length;
                             throw SQL.InvalidInternalPacketSize(errormessage);
                         }
                         Buffer.BlockCopy(temp, _inBytesUsed, _inBuff, 0, remainingData);
@@ -2806,7 +2811,7 @@ namespace System.Data.SqlClient
                     if (_inBuff.Length < dataSize)
                     {
                         Debug.Assert(true, "Unexpected dataSize on Read");
-                        throw SQL.InvalidInternalPacketSize(Res.GetString(Res.SqlMisc_InvalidArraySizeMessage));
+                        throw SQL.InvalidInternalPacketSize(SR.GetString(SR.SqlMisc_InvalidArraySizeMessage));
                     }
 
                     _lastSuccessfulIOTimer._value = DateTime.UtcNow.Ticks;

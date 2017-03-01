@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#if !NET46
 using System.Buffers;
+#endif
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.IO;
@@ -688,6 +690,17 @@ namespace System.Net.Http
                 return base.WriteAsync(buffer, offset, count, cancellationToken);
             }
 
+            public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+            {
+                CheckSize(count);
+                return base.BeginWrite(buffer, offset, count, callback, state);
+            }
+
+            public override void EndWrite(IAsyncResult asyncResult)
+            {
+                base.EndWrite(asyncResult);
+            }
+
             public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
             {
                 ArraySegment<byte> buffer;
@@ -819,6 +832,12 @@ namespace System.Net.Http
                 Write(buffer, offset, count);
                 return Task.CompletedTask;
             }
+
+            public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState) =>
+                TaskToApm.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), asyncCallback, asyncState);
+
+            public override void EndWrite(IAsyncResult asyncResult) =>
+                TaskToApm.End(asyncResult);
 
             public override void WriteByte(byte value)
             {

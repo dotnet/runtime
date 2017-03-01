@@ -188,7 +188,7 @@ namespace System.Linq.Expressions
             }
             TypeUtils.ValidateType(type, nameof(type));
 
-            if (!type.GetTypeInfo().IsValueType)
+            if (!type.IsValueType)
             {
                 ConstructorInfo ci = type.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).SingleOrDefault(c => c.GetParametersCached().Length == 0);
                 if (ci == null)

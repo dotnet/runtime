@@ -68,7 +68,7 @@ internal partial class Interop
                 flags |= FORMAT_MESSAGE_FROM_HMODULE;
             }
 
-            int result = FormatMessage(flags, moduleHandle, (uint)errorCode, 0, sb, sb.Capacity, null);
+            int result = FormatMessage(flags, moduleHandle, unchecked((uint)errorCode), 0, sb, sb.Capacity, null);
             if (result != 0)
             {
                 int i = sb.Length;

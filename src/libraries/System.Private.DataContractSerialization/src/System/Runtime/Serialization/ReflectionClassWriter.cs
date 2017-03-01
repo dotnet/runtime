@@ -37,9 +37,8 @@ namespace System.Runtime.Serialization
         {
             Type memberType = type;
             object memberValue = value;
-            TypeInfo memberTypeInfo = memberType.GetTypeInfo();
-            bool originValueIsNullableOfT = (memberTypeInfo.IsGenericType && memberType.GetGenericTypeDefinition() == Globals.TypeOfNullable);
-            if (memberTypeInfo.IsValueType && !originValueIsNullableOfT)
+            bool originValueIsNullableOfT = (memberType.IsGenericType && memberType.GetGenericTypeDefinition() == Globals.TypeOfNullable);
+            if (memberType.IsValueType && !originValueIsNullableOfT)
             {
                 PrimitiveDataContract primitiveContract = primitiveContractForParamType;
                 if (primitiveContract != null && !writeXsiType)
@@ -82,7 +81,7 @@ namespace System.Runtime.Serialization
                     {
                         if (memberValue == null &&
                             (memberType == Globals.TypeOfObject
-                            || (originValueIsNullableOfT && memberType.GetTypeInfo().IsValueType)))
+                            || (originValueIsNullableOfT && memberType.IsValueType)))
                         {
                             context.WriteNull(xmlWriter, memberType, DataContract.IsTypeSerializable(memberType));
                         }
@@ -141,7 +140,7 @@ namespace System.Runtime.Serialization
             {
                 obj = DateTimeOffsetAdapter.GetDateTimeOffsetAdapter((DateTimeOffset)obj);
             }
-            else if (type.GetTypeInfo().IsGenericType && type.GetGenericTypeDefinition() == Globals.TypeOfKeyValuePair)
+            else if (type.IsGenericType && type.GetGenericTypeDefinition() == Globals.TypeOfKeyValuePair)
             {
                 obj = classContract.KeyValuePairAdapterConstructorInfo.Invoke(new object[] { obj });
             }

@@ -234,7 +234,7 @@ namespace System.Net.Http.Headers
                 return 0;
             }
 
-            // If there are no whitespace between <type> and <subtype> in <type>/<subtype> get the media type using
+            // If there is no whitespace between <type> and <subtype> in <type>/<subtype> get the media type using
             // one Substring call. Otherwise get substrings for <type> and <subtype> and combine them.
             int mediatTypeLength = current + subtypeLength - startIndex;
             if (typeLength + subtypeLength + 1 == mediatTypeLength)

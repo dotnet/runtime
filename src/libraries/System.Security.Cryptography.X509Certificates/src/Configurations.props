@@ -4,9 +4,7 @@
     <BuildConfigurations>
       netcoreapp-Unix;
       netcoreapp-Windows_NT;
-      net463-Windows_NT;
-      netcoreapp-Unix;
-      netcoreapp-Windows_NT;
+      uap-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

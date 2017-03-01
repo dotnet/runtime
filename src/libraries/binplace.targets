@@ -2,53 +2,154 @@
 <Project ToolsVersion="14.0" InitialTargets="CheckForBuildTools" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <PropertyGroup>
-    <IsRuntimeAssembly Condition="'$(IsRuntimeAssembly)'=='' AND '$(IsReferenceAssembly)' != 'true' AND '$(IsTestProject)' != 'true'">true</IsRuntimeAssembly>
+    <IsRuntimeAssembly Condition="'$(IsRuntimeAssembly)'=='' AND '$(IsReferenceAssembly)' != 'true' AND '$(BinPlaceRef)' != 'true' AND '$(IsTestProject)' != 'true'">true</IsRuntimeAssembly>
     <!-- Try to determine if this is a simple library without a ref project.
          https://github.com/dotnet/corefx/issues/14291 is tracking cleaning this up -->
     <IsRuntimeAndReferenceAssembly Condition="'$(IsRuntimeAndReferenceAssembly)' == '' and '$(IsRuntimeAssembly)' == 'true' and Exists('$(SourceDir)/$(AssemblyName)') and !Exists('$(SourceDir)/$(AssemblyName)/ref') and !$(AssemblyName.StartsWith('System.Private'))">true</IsRuntimeAndReferenceAssembly>
     <IsNETCoreAppRef Condition="'$(IsNETCoreAppRef)' == ''">$(IsNETCoreApp)</IsNETCoreAppRef>
-    <BinPlaceStuffDependsOn Condition="'$(IsReferenceAssembly)' == 'true' OR '$(IsRuntimeAndReferenceAssembly)' == 'true'">$(BinPlaceStuffDependsOn);BinPlaceReferenceAssembly</BinPlaceStuffDependsOn>
-    <BinPlaceStuffDependsOn Condition="'$(IsRuntimeAssembly)' == 'true' OR '$(IsRuntimeAndReferenceAssembly)' == 'true'">$(BinPlaceStuffDependsOn);BinPlaceRuntimeAssembly</BinPlaceStuffDependsOn>
+    <IsUAPRef Condition="'$(IsUAPRef)' == ''">$(IsUAP)</IsUAPRef>
+
+    <BuildingDesktopFacade Condition="'$(IsDesktopFacade)' == 'true' And ('$(TargetGroup)' == 'netfx' Or $(TargetGroup.StartsWith('net4')))" >true</BuildingDesktopFacade>
+
+    <!-- if building desktop facade, we don't bin place the refs -->
+    <BinPlaceRef Condition="'$(BinPlaceRef)' == '' And '$(BuildingDesktopFacade)' != 'true' And ('$(IsReferenceAssembly)' == 'true' OR '$(IsRuntimeAndReferenceAssembly)' == 'true')">true</BinPlaceRef>
+    <BinPlaceRuntime Condition="'$(BinPlaceRuntime)' == '' And ('$(IsRuntimeAssembly)' == 'true' OR '$(IsRuntimeAndReferenceAssembly)' == 'true')">true</BinPlaceRuntime>
+
+    <!-- if building desktop facade and bin placing the runtime, then we need to bin place the refs too -->
+    <BinPlaceRef Condition="'$(BuildingDesktopFacade)' == 'true' And '$(BinPlaceRuntime)' == 'true'">true</BinPlaceRef>
+
+    <BinPlaceUseHardlinksIfPossible Condition="'$(BinPlaceUseHardlinksIfPossible)' == ''">true</BinPlaceUseHardlinksIfPossible>
   </PropertyGroup>
 
-  <Target Name="BinPlaceStuff" DependsOnTargets="$(BinPlaceStuffDependsOn)" AfterTargets="CopyFilesToOutputDirectory">
-    <Message Importance="low" Text="IsRuntimeAssembly: $(IsRuntimeAssembly)" />
-    <Message Importance="low" Text="IsReferenceAssembly: $(IsReferenceAssembly)" />
-    <Message Importance="low" Text="IsRuntimeAndReferenceAssembly: $(IsRuntimeAndReferenceAssembly)" />
-  </Target>
+  <ItemGroup Condition="'@(BinPlaceConfiguration)' == ''">
+    <!-- binplace to directories for the target vertical -->
+    <BinPlaceConfiguration Include="$(BuildConfiguration)">
+      <RefPath>$(BuildConfigurationRefPath)</RefPath>
+      <RuntimePath>$(RuntimePath)</RuntimePath>
+    </BinPlaceConfiguration>
 
-  <Target Name="BinPlaceReferenceAssembly" DependsOnTargets="GetTargetingPackDir">
-    <Message Importance="low" Text="TargetingPackDir: @(TargetingPackDir)" />
-    <Copy Condition="'@(TargetingPackDir)' != ''" SourceFiles="$(TargetPath)" DestinationFolder="%(TargetingPackDir.Identity)" >
+    <!-- binplace to directories for packages -->
+    <BinPlaceConfiguration Condition="'$(IsNETCoreApp)' == 'true' AND '$(BuildingNETCoreAppVertical)' == 'true'" Include="netcoreapp-$(OSGroup)">
+      <PackageFileRefPath Condition="'$(IsNETCoreAppRef)' == 'true'">$(NETCoreAppPackageRefPath)</PackageFileRefPath>
+      <PackageFileRuntimePath>$(NETCoreAppPackageRuntimePath)</PackageFileRuntimePath>
+    </BinPlaceConfiguration>
+    <BinPlaceConfiguration Condition="'$(IsUAP)' == 'true' AND '$(BuildingUAPVertical)' == 'true'" Include="uap-$(OSGroup)">
+      <PackageFileRefPath Condition="'$(IsUAPRef)'=='true'">$(UAPPackageRefPath)</PackageFileRefPath>
+      <PackageFileRuntimePath>$(UAPPackageRuntimePath)</PackageFileRuntimePath>
+    </BinPlaceConfiguration>
+    <BinPlaceConfiguration Condition="'$(IsUAP)' == 'true' AND '$(BuildingUAPAOTVertical)' == 'true'" Include="uapaot-$(OSGroup)">
+      <PackageFileRefPath Condition="'$(IsUAPRef)'=='true'">$(UAPPackageRefPath)</PackageFileRefPath>
+      <PackageFileRuntimePath>$(UAPAOTPackageRuntimePath)</PackageFileRuntimePath>
+    </BinPlaceConfiguration>
+
+    <!-- Setup the shared framework directory for testing -->
+    <BinPlaceConfiguration Condition="'$(BinPlaceTestSharedFramework)' == 'true'" Include="netcoreapp-$(OSGroup)">
+      <RuntimePath>$(NETCoreAppTestSharedFrameworkPath)</RuntimePath>
+    </BinPlaceConfiguration>
+    <!-- Setup the ILCInputFolder directory for testing uapaot -->
+    <BinPlaceConfiguration Condition="'$(BinPlaceILCInputFolder)' == 'true'" Include="uapaot-$(OSGroup)">
+      <RuntimePath>$(ILCFXInputFolder)</RuntimePath>
+    </BinPlaceConfiguration>
+
+    <!-- binplace targeting packs which may be different from BuildConfiguration -->
+    <BinPlaceConfiguration Include="netstandard-$(OSGroup)">
+      <RefPath>$(RefRootPath)netstandard/</RefPath>
+    </BinPlaceConfiguration>
+    <BinPlaceConfiguration Condition="'$(BuildAllConfigurations)' == 'true'"
+                           Include="netcoreapp-$(OSGroup)">
+      <RefPath>$(RefRootPath)netcoreapp/</RefPath>
+    </BinPlaceConfiguration>
+    <BinPlaceConfiguration Condition="'$(BuildAllConfigurations)' == 'true'"
+                           Include="uap-$(OSGroup)">
+      <RefPath>$(RefRootPath)uap/</RefPath>
+    </BinPlaceConfiguration>
+    <BinPlaceConfiguration Condition="'$(BuildAllConfigurations)' == 'true'"
+                           Include="netfx-$(OSGroup)">
+      <RefPath>$(RefRootPath)netfx/</RefPath>
+    </BinPlaceConfiguration>
+  </ItemGroup>
+
+  <Target Name="BinPlace"
+          DependsOnTargets="GetBinPlaceDirs;BinPlaceFiles;BinPlaceProps"
+          AfterTargets="CopyFilesToOutputDirectory"
+          Condition="'$(BinPlaceRef)' == 'true' OR '$(BinPlaceRuntime)' == 'true'" />
+  
+  <Target Name="BinPlaceFiles"
+          Condition="'@(BinPlaceDir)' != ''"
+          DependsOnTargets="GetBinPlaceItems" >
+
+    <Message Importance="low" Text="BinPlaceDir: @(BinPlaceDir)" />
+
+    <Copy SourceFiles="@(BinPlaceItem)"
+          DestinationFolder="%(BinPlaceDir.Identity)" 
+          SkipUnchangedFiles="true"
+          OverwriteReadOnlyFiles="true"
+          Retries="$(CopyRetryCount)"
+          RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)"
+          UseHardlinksIfPossible="$(BinPlaceUseHardlinksIfPossible)">
       <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
     </Copy>
   </Target>
 
-  <Target Name="BinPlaceRuntimeAssembly" DependsOnTargets="GetRuntimeDir">
-    <Copy Condition="'@(RuntimeDir)' != ''" SourceFiles="$(TargetPath)" DestinationFolder="%(RuntimeDir.Identity)">
-      <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
-    </Copy>
-    <Copy Condition="'@(RuntimeDir)' != '' And Exists($(TargetPath.Replace('.dll', '.pdb')))" SourceFiles="$(TargetPath.Replace('.dll', '.pdb'))" DestinationFolder="%(RuntimeDir.Identity)">
-      <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
-    </Copy>
-  </Target>
-
-  <Target Name="GetTargetingPackDir">
-    <ItemGroup Condition="'$(NuGetTargetMoniker)' == '' Or $(NuGetTargetMoniker.Contains('NETCoreApp')) Or $(NuGetTargetMoniker.Contains('NETStandard')) Or $(NuGetTargetMoniker.Contains('UAP'))">
-      <TargetingPackDir Include="$(RefPath)" />
-      <TargetingPackDir Condition="'$(IsNETCoreAppRef)' == 'true'" Include="$(BinDir)netcoreapp\pkg\ref" />
+  <UsingTask TaskName="SaveItems" AssemblyFile="$(CoreFxToolsTaskDir)CoreFx.Tools.dll"/>
+  <Target Name="BinPlaceProps"
+          Condition="'@(PackageFileDir)' != ''"
+          DependsOnTargets="GetBinPlaceItems" >
+    <PropertyGroup>
+      <_propsFilename>$(TargetName)</_propsFilename>
+      <_propsFilename Condition="'$(_propsFilename)' == ''">$(MSBuildProjectName)</_propsFilename>
+      <_projectDirLength>$(ProjectDir.Length)</_projectDirLength>
+    </PropertyGroup>
+    
+    <ItemGroup>
+      <_itemsToSave Include="@(BinPlaceItem)">
+        <!-- intentionally empty: to be set by pkgproj -->
+        <TargetPath></TargetPath>
+      </_itemsToSave>
+      
+      <!-- Include source files. -->
+      <_itemsToSave Condition="'@(Compile)' != ''" Include="@(Compile->'%(FullPath)')">
+        <TargetPath>src</TargetPath>
+        <TargetPath Condition="$([System.String]::Copy('%(FullPath)').StartsWith('$(ProjectDir)'))">src/$([System.String]::Copy('%(FullPath)').Substring($(_projectDirLength)).Replace('\', '/'))</TargetPath>
+        <IsSourceCodeFile>true</IsSourceCodeFile>
+      </_itemsToSave>
     </ItemGroup>
-    <Error Condition="'@(TargetingPackDir)' == ''" Text="No targeting pack directory could be determined for NuGetTargetMoniker:$(NuGetTargetMoniker)" />
-    <Message Text="Got TargetingPackDir:@(TargetingPackDir) from NuGetTargetMoniker:$(NuGetTargetMoniker)" Importance="Low" />
+    
+    <Message Importance="low" Text="PackageFileDir: @(PackageFileDir)" />
+
+    <SaveItems ItemName="FileToPackage"
+               Items="@(_itemsToSave)"
+               Files="@(PackageFileDir->'%(Identity)\$(_propsFilename).props')" />
   </Target>
 
-  <Target Name="GetRuntimeDir">
-    <ItemGroup Condition="'$(NuGetTargetMoniker)' == '' Or $(NuGetTargetMoniker.Contains('NETCoreApp')) Or $(NuGetTargetMoniker.Contains('NETStandard'))">
-      <RuntimeDir Include="$(RuntimePath)" />
-      <RuntimeDir Condition="'$(IsNETCoreApp)' == 'true'" Include="$(BinDir)netcoreapp\pkg\lib" />
+  <Target Name="GetBinPlaceItems" DependsOnTargets="GetCopyToOutputDirectoryItems">
+    <ItemGroup>
+      <BinPlaceItem Condition="Exists('$(TargetPath)')" Include="$(TargetPath)" />
+      <BinPlaceItem Condition="Exists('$(TargetDir)$(TargetName).pdb')" Include="$(TargetDir)$(TargetName).pdb" />
+      <BinPlaceItem Condition="'$(BinPlaceReferenceCopyLocalPaths)' != 'false'" Include="@(ReferenceCopyLocalPaths)" />
+      <BinPlaceItem Condition="'$(BinPlaceCopyToOutputDirectoryItems)' != 'false'" Include="@(AllItemsFullPathWithTargetPath)" />
     </ItemGroup>
-    <Error Condition="'@(RuntimeDir)' == ''" Text="No Runtime directory could be determined for NuGetTargetMoniker:$(NuGetTargetMoniker)" />
-    <Message Text="Got RuntimeDir:@(RuntimeDir) from NuGetTargetMoniker:$(NuGetTargetMoniker)" Importance="Low" />
+  </Target>
+
+  <Target Name="GetBinPlaceDirs" DependsOnTargets="GetBuildConfigurations">
+    <!-- find which, if any, build configuration of this project is best
+         for each binplace configuration -->
+    <FindBestConfigurations Properties="@(Property)"
+                            PropertyValues="@(PropertyValue)"
+                            SupportedConfigurations="$(_AllBuildConfigurations)"
+                            Configurations="@(BinPlaceConfiguration)">
+      <Output TaskParameter="BestConfigurations" ItemName="_bestBinlaceConfigurations" />
+    </FindBestConfigurations>
+
+    <ItemGroup>
+      <_currentBinPlaceConfigurations Include="@(_bestBinlaceConfigurations)" Condition="'%(Identity)' == '$(Configuration)' OR '%(Identity)-$(ConfigurationGroup)' == '$(Configuration)'" />
+
+      <BinPlaceDir Condition="'$(BinPlaceRuntime)' == 'true'" Include="%(_currentBinPlaceConfigurations.RuntimePath)" />
+      <BinPlaceDir Condition="'$(BinPlaceRef)' == 'true'" Include="%(_currentBinPlaceConfigurations.RefPath)" />
+
+      <PackageFileDir Condition="'$(BinPlaceRuntime)' == 'true'" Include="%(_currentBinPlaceConfigurations.PackageFileRuntimePath)" />
+      <PackageFileDir Condition="'$(BinPlaceRef)' == 'true'" Include="%(_currentBinPlaceConfigurations.PackageFileRefPath)" />
+    </ItemGroup>
   </Target>
 
   <ItemGroup>

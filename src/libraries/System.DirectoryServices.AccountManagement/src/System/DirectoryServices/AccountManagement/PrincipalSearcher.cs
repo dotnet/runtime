@@ -10,31 +10,17 @@ using System.Globalization;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.LinkDemand, Unrestricted = true)]
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.InheritanceDemand, Unrestricted = true)]
     public class PrincipalSearcher : IDisposable
     {
         //
         // Public constructors
         //
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="SetDefaultPageSizeForContext():Void" />
-        // <ReferencesCritical Name="Method: SetDefaultPageSizeForContext():Void" Ring="1" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
-        [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Demand, Unrestricted = true)]
         public PrincipalSearcher()
         {
             SetDefaultPageSizeForContext();
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="Principal.get_Context():System.DirectoryServices.AccountManagement.PrincipalContext" />
-        // <SatisfiesLinkDemand Name="set_QueryFilter(Principal):Void" />
-        // <SatisfiesLinkDemand Name="SetDefaultPageSizeForContext():Void" />
-        // <ReferencesCritical Name="Field: ctx" Ring="1" />
-        // <ReferencesCritical Name="Method: SetDefaultPageSizeForContext():Void" Ring="1" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         public PrincipalSearcher(Principal queryFilter)
         {
@@ -52,10 +38,6 @@ namespace System.DirectoryServices.AccountManagement
         //
         public PrincipalContext Context
         {
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="CheckDisposed():Void" />
-            // <ReferencesCritical Name="Field: ctx" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecuritySafeCritical]
             get
             {
@@ -67,9 +49,6 @@ namespace System.DirectoryServices.AccountManagement
 
         public Principal QueryFilter
         {
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="CheckDisposed():Void" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
@@ -78,11 +57,6 @@ namespace System.DirectoryServices.AccountManagement
                 return _qbeFilter;
             }
 
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="CheckDisposed():Void" />
-            // <SatisfiesLinkDemand Name="Principal.get_Context():System.DirectoryServices.AccountManagement.PrincipalContext" />
-            // <ReferencesCritical Name="Field: ctx" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             set
             {
@@ -106,11 +80,6 @@ namespace System.DirectoryServices.AccountManagement
         //
 
         // Calls FindAll(false) to retrieve all matching results
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="CheckDisposed():Void" />
-        // <SatisfiesLinkDemand Name="FindAll(Boolean):PrincipalSearchResult`1<System.DirectoryServices.AccountManagement.Principal>" />
-        // <ReferencesCritical Name="Method: FindAll(Boolean):PrincipalSearchResult`1<System.DirectoryServices.AccountManagement.Principal>" Ring="1" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         public PrincipalSearchResult<Principal> FindAll()
         {
@@ -123,16 +92,6 @@ namespace System.DirectoryServices.AccountManagement
 
         // Calls FindAll(true) to retrieve at most one result, then retrieves the first (and only) result from the
         // FindResult<Principal> and returns it.
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="CheckDisposed():Void" />
-        // <SatisfiesLinkDemand Name="FindAll(Boolean):PrincipalSearchResult`1<System.DirectoryServices.AccountManagement.Principal>" />
-        // <SatisfiesLinkDemand Name="PrincipalSearchResult`1<System.DirectoryServices.AccountManagement.Principal>.GetEnumerator():System.Collections.Generic.IEnumerator`1<System.DirectoryServices.AccountManagement.Principal>" />
-        // <SatisfiesLinkDemand Name="FindResultEnumerator`1<System.DirectoryServices.AccountManagement.Principal>.MoveNext():System.Boolean" />
-        // <SatisfiesLinkDemand Name="FindResultEnumerator`1<System.DirectoryServices.AccountManagement.Principal>.get_Current():System.DirectoryServices.AccountManagement.Principal" />
-        // <ReferencesCritical Name="Method: FindAll(Boolean):PrincipalSearchResult`1<System.DirectoryServices.AccountManagement.Principal>" Ring="1" />
-        // <ReferencesCritical Name="Method: FindResultEnumerator`1.MoveNext():System.Boolean" Ring="1" />
-        // <ReferencesCritical Name="Method: FindResultEnumerator`1.get_Current():T" Ring="1" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         public Principal FindOne()
         {
@@ -168,14 +127,6 @@ namespace System.DirectoryServices.AccountManagement
         // Otherwise, calls StoreCtx.PushFilterToNativeSearcher to push the current QBE filter 
         // into underlyingSearcher (automatically constructing a fresh native searcher if underlyingSearcher is null),
         // and returns underlyingSearcher.
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="CheckDisposed():Void" />
-        // <SatisfiesLinkDemand Name="HasReferentialPropertiesSet():Boolean" />
-        // <SatisfiesLinkDemand Name="PrincipalContext.get_QueryCtx():System.DirectoryServices.AccountManagement.StoreCtx" />
-        // <ReferencesCritical Name="Method: HasReferentialPropertiesSet():Boolean" Ring="1" />
-        // <ReferencesCritical Name="Field: ctx" Ring="1" />
-        // <ReferencesCritical Name="Method: PrincipalContext.get_QueryCtx():System.DirectoryServices.AccountManagement.StoreCtx" Ring="1" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         public object GetUnderlyingSearcher()
         {
@@ -211,12 +162,6 @@ namespace System.DirectoryServices.AccountManagement
             return _underlyingSearcher;
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="CheckDisposed():Void" />
-        // <SatisfiesLinkDemand Name="PrincipalContext.get_QueryCtx():System.DirectoryServices.AccountManagement.StoreCtx" />
-        // <ReferencesCritical Name="Field: ctx" Ring="1" />
-        // <ReferencesCritical Name="Method: PrincipalContext.get_QueryCtx():System.DirectoryServices.AccountManagement.StoreCtx" Ring="1" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         public Type GetUnderlyingSearcherType()
         {
@@ -238,9 +183,6 @@ namespace System.DirectoryServices.AccountManagement
             return storeCtx.SearcherNativeType();
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="get_UnderlyingSearcher():Object" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         public virtual void Dispose()
         {
@@ -338,11 +280,6 @@ namespace System.DirectoryServices.AccountManagement
             return fr;
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="PrincipalContext.get_QueryCtx():System.DirectoryServices.AccountManagement.StoreCtx" />
-        // <ReferencesCritical Name="Field: ctx" Ring="1" />
-        // <ReferencesCritical Name="Method: PrincipalContext.get_QueryCtx():System.DirectoryServices.AccountManagement.StoreCtx" Ring="1" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         private void SetDefaultPageSizeForContext()
         {

@@ -5,7 +5,7 @@
     <ProjectReference Include="..\ref\System.Runtime.InteropServices.RuntimeInformation.csproj">
       <SupportedFramework>net45;netcore45;wpa81;netcoreapp1.0;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\System.Runtime.InteropServices.RuntimeInformation.builds" />
+    <ProjectReference Include="..\src\System.Runtime.InteropServices.RuntimeInformation.csproj" />
   </ItemGroup>
   <ItemGroup>
     <InboxOnTargetFramework Include="MonoAndroid10" />

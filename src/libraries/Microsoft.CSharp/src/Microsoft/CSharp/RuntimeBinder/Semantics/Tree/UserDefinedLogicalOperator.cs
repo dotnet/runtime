@@ -4,7 +4,7 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal class EXPRUSERLOGOP : EXPR
+    internal sealed class EXPRUSERLOGOP : EXPR
     {
         public EXPR TrueFalseCall;
         public EXPRCALL OperatorCall;

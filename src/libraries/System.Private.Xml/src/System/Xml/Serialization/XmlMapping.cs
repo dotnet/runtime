@@ -116,7 +116,7 @@ namespace System.Xml.Serialization
         {
             if (root == null)
             {
-                root = (XmlRootAttribute)XmlAttributes.GetAttr(type.GetTypeInfo(), typeof(XmlRootAttribute));
+                root = (XmlRootAttribute)XmlAttributes.GetAttr(type, typeof(XmlRootAttribute));
             }
             return type.FullName + ":" + (root == null ? String.Empty : root.Key) + ":" + (ns == null ? String.Empty : ns);
         }

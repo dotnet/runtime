@@ -4,7 +4,7 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal class EXPRTHISPOINTER : EXPRLOCAL
+    internal sealed class EXPRTHISPOINTER : EXPRLOCAL
     {
     }
 }

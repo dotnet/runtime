@@ -105,7 +105,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public static Instruction Create(Type type)
         {
-            Debug.Assert(!type.GetTypeInfo().IsEnum);
+            Debug.Assert(!type.IsEnum);
             switch (type.GetNonNullableType().GetTypeCode())
             {
                 case TypeCode.Int16: return s_Int16 ?? (s_Int16 = new NegateInt16());
@@ -216,7 +216,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public static Instruction Create(Type type)
         {
-            Debug.Assert(!type.GetTypeInfo().IsEnum);
+            Debug.Assert(!type.IsEnum);
             switch (type.GetNonNullableType().GetTypeCode())
             {
                 case TypeCode.Int16: return s_Int16 ?? (s_Int16 = new NegateCheckedInt16());

@@ -63,8 +63,8 @@ namespace System.Xml.Linq.Tests
 
         [InlineData("AAAAP", "AAAAQ", false)] // not equals, hashconflict
         [InlineData("AAAAP", "AAAAP", true)]  // equals
-        [InlineData("  ", " ", false)]        // Whitespaces (negative)
-        [InlineData(" ", " ", true)]          // Whitespaces
+        [InlineData("  ", " ", false)]        // Whitespace (negative)
+        [InlineData(" ", " ", true)]          // Whitespace
         [InlineData("", "", true)]            // Empty
         [Theory]
         public void Comment(string value1, string value2, bool checkHashCode)
@@ -96,8 +96,8 @@ namespace System.Xml.Linq.Tests
         [InlineData("same", "different", false)] // different
         [InlineData("same", "same", true)]       // same
         [InlineData("", "", true)]               // Empty
-        [InlineData(" ", " ", true)]             // Whitespaces
-        [InlineData("\n", " ", false)]           // Whitespaces (negative)
+        [InlineData(" ", " ", true)]             // Whitespace
+        [InlineData("\n", " ", false)]           // Whitespace (negative)
         [Theory]
         public void Text(string value1, string value2, bool checkHashCode)
         {
@@ -113,8 +113,8 @@ namespace System.Xml.Linq.Tests
         [InlineData("same", "different", false)] // different
         [InlineData("same", "same", true)]       // same
         [InlineData("", "", true)]               // Empty
-        [InlineData(" ", " ", true)]             // Whitespaces
-        [InlineData("\n", " ", false)]           // Whitespaces (negative)
+        [InlineData(" ", " ", true)]             // Whitespace
+        [InlineData("\n", " ", false)]           // Whitespace (negative)
         [Theory]
         public void CData(string value1, string value2, bool checkHashCode)
         {
@@ -157,13 +157,13 @@ namespace System.Xml.Linq.Tests
         }
 
         [InlineData("<A/>", "<A></A>", false)]                                            // smoke
-        [InlineData("<A/>", "<A Id='a'/>", false)]                                        // atribute missing
-        [InlineData("<A Id='a'/>", "<A Id='a'/>", true)]                                  // atributes
-        [InlineData("<A at='1' Id='a'/>", "<A Id='a' at='1'/>", false)]                   // atributes (same, different order)
-        [InlineData("<A at='1' Id='a'/>", "<A at='1' Id='a'/>", true)]                    // atributes (same, same order)
-        [InlineData("<A at='1' Id='a'/>", "<A at='1' Id='ab'/>", false)]                  // atributes (same, same order, different value)
-        [InlineData("<A p:at='1' xmlns:p='nsp'/>", "<A p:at='1' xmlns:p='nsp'/>", true)]  // atributes (same, same order, namespace decl)
-        [InlineData("<A p:at='1' xmlns:p='nsp'/>", "<A q:at='1' xmlns:q='nsp'/>", false)] // atributes (same, same order, namespace decl, different prefix)
+        [InlineData("<A/>", "<A Id='a'/>", false)]                                        // attribute missing
+        [InlineData("<A Id='a'/>", "<A Id='a'/>", true)]                                  // attributes
+        [InlineData("<A at='1' Id='a'/>", "<A Id='a' at='1'/>", false)]                   // attributes (same, different order)
+        [InlineData("<A at='1' Id='a'/>", "<A at='1' Id='a'/>", true)]                    // attributes (same, same order)
+        [InlineData("<A at='1' Id='a'/>", "<A at='1' Id='ab'/>", false)]                  // attributes (same, same order, different value)
+        [InlineData("<A p:at='1' xmlns:p='nsp'/>", "<A p:at='1' xmlns:p='nsp'/>", true)]  // attributes (same, same order, namespace decl)
+        [InlineData("<A p:at='1' xmlns:p='nsp'/>", "<A q:at='1' xmlns:q='nsp'/>", false)] // attributes (same, same order, namespace decl, different prefix)
         [InlineData("<A>text</A>", "<A>text</A>", true)]                                  // String content
         [InlineData("<A>text<?PI click?></A>", "<A><?PI click?>text</A>", false)]         // String + PI content (negative)
         [InlineData("<A>text<?PI click?></A>", "<A>text<?PI click?></A>", true)]          // String + PI content

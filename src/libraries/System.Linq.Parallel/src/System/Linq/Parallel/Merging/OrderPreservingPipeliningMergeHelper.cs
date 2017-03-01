@@ -10,6 +10,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -166,6 +167,7 @@ namespace System.Linq.Parallel
         // Returns the results as an array.
         //
 
+        [ExcludeFromCodeCoverage]
         public TOutput[] GetResultsAsArray()
         {
             Debug.Fail("An ordered pipelining merge is not intended to be used this way.");

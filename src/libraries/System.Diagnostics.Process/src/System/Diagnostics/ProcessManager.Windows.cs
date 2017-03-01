@@ -904,13 +904,13 @@ namespace System.Diagnostics
                         bufferSize,
                         out requiredSize);
 
-                    if ((uint)status == Interop.NtDll.STATUS_INFO_LENGTH_MISMATCH)
+                    if (unchecked((uint)status) == Interop.NtDll.STATUS_INFO_LENGTH_MISMATCH)
                     {
                         if (bufferHandle.IsAllocated) bufferHandle.Free();
                         buffer = null;
                         bufferSize = GetNewBufferSize(bufferSize, requiredSize);
                     }
-                } while ((uint)status == Interop.NtDll.STATUS_INFO_LENGTH_MISMATCH);
+                } while (unchecked((uint)status) == Interop.NtDll.STATUS_INFO_LENGTH_MISMATCH);
 
                 if (status < 0)
                 { // see definition of NT_SUCCESS(Status) in SDK

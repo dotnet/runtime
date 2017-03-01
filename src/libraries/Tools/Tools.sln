@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+VisualStudioVersion = 14.0.25123.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoreFx.Tools", "CoreFx.Tools\CoreFx.Tools.csproj", "{360F25FA-3CD9-4338-B961-A4F3122B88B2}"
 EndProject
@@ -18,13 +18,13 @@ EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
-		net45_Debug|Any CPU = net45_Debug|Any CPU
+		net46_Debug|Any CPU = net46_Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{360F25FA-3CD9-4338-B961-A4F3122B88B2}.Debug|Any CPU.ActiveCfg = net46_Debug|Any CPU
 		{360F25FA-3CD9-4338-B961-A4F3122B88B2}.Debug|Any CPU.Build.0 = net46_Debug|Any CPU
-		{360F25FA-3CD9-4338-B961-A4F3122B88B2}.net45_Debug|Any CPU.ActiveCfg = net46_Debug|Any CPU
-		{360F25FA-3CD9-4338-B961-A4F3122B88B2}.net45_Debug|Any CPU.Build.0 = net46_Debug|Any CPU
+		{360F25FA-3CD9-4338-B961-A4F3122B88B2}.net46_Debug|Any CPU.ActiveCfg = net46_Debug|Any CPU
+		{360F25FA-3CD9-4338-B961-A4F3122B88B2}.net46_Debug|Any CPU.Build.0 = net46_Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

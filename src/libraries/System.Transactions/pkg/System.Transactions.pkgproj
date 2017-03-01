@@ -5,7 +5,7 @@
     <ProjectReference Include="..\ref\System.Transactions.csproj">
       <SupportedFramework>net461;netcoreapp2.0;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\System.Transactions.builds" />
+    <ProjectReference Include="..\src\System.Transactions.csproj" />
     <InboxOnTargetFramework Include="net461">
       <AsFrameworkReference>true</AsFrameworkReference>
     </InboxOnTargetFramework>

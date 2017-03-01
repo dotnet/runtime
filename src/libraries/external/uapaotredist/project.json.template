@@ -1,0 +1,15 @@
+﻿{
+  "frameworks": {
+    "netcore50": {
+      "dependencies": {
+        "System.Diagnostics.Tracing": "4.3.0",
+        "System.Dynamic.Runtime": "4.0.11",
+        "System.Net.Requests": "4.0.11"
+      }
+    },
+  },
+
+  "runtimes": {
+    "{RID}": {}
+  }
+}

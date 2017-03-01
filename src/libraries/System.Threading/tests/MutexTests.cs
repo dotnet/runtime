@@ -58,7 +58,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // named semaphores aren't supported on Unix
         [Fact]
         public void Ctor_NameUsedByOtherSynchronizationPrimitive_Windows()
         {
@@ -113,7 +113,7 @@ namespace System.Threading.Tests
             Assert.False(Mutex.TryOpenExisting(name, out ignored));
         }
 
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // named semaphores aren't supported on Unix
         [Fact]
         public void OpenExisting_NameUsedByOtherSynchronizationPrimitive_Windows()
         {
@@ -190,7 +190,7 @@ namespace System.Threading.Tests
             };
 
             using (var mutex = new Mutex(false, mutexName))
-            using (var remote = RemoteInvoke(otherProcess, mutexName, fileName))
+            using (var remote = RemoteInvoke(otherProcess, mutexName, $"\"{fileName}\""))
             {
                 SpinWait.SpinUntil(() => File.Exists(fileName));
 

@@ -87,7 +87,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test the exceptional behavior when attempting to create a map so large it's not supported.
         /// </summary>
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // On Windows, too large capacity fails during CreateNew call
         [Fact]
         public void TooLargeCapacity_Windows()
         {
@@ -125,7 +125,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test to verify that map names are left unsupported on Unix.
         /// </summary>
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Check map names are unsupported on Unix
         [Theory]
         [MemberData(nameof(CreateValidMapNames))]
         public void MapNamesNotSupported_Unix(string mapName)
@@ -138,7 +138,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test to verify a variety of map names work correctly on Windows.
         /// </summary>
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Map names are unsupported on Unix
         [Theory]
         [MemberData(nameof(CreateValidMapNames))]
         [InlineData(null)]
@@ -162,7 +162,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// Test to verify map names are handled appropriately, causing a conflict when they're active but
         /// reusable in a sequential manner.
         /// </summary>
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)] // Tests reusability of map names on Windows
         [Theory]
         [MemberData(nameof(CreateValidMapNames))]
         public void ReusingNames_Windows(string name)
@@ -254,7 +254,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test to verify that two unrelated maps don't share data.
         /// </summary>
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Map names are unsupported on Unix
         [Theory]
         [MemberData(nameof(CreateValidMapNames))]
         [InlineData(null)]
@@ -307,7 +307,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test to verify expected capacity with regards to page size and automatically rounding up to the nearest.
         /// </summary>
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)] // Usable capacity limits with MMF APIs different on Windows and Unix
         [Fact]
         public void RoundedUpCapacity_Windows()
         {
@@ -326,7 +326,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// <summary>
         /// Test to verify expected capacity with regards to page size and automatically rounding up to the nearest.
         /// </summary>
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)] // Usable capacity limits with MMF APIs different on Windows and Unix
         [Fact]
         public void RoundedUpCapacity_Unix()
         {

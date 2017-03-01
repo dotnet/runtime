@@ -4214,7 +4214,7 @@ namespace System.Data
         }
 
         /// <summary>
-        /// Returns an array of all <see cref='System.Data.DataRow'/> objects that match the filter criteria, in the the
+        /// Returns an array of all <see cref='System.Data.DataRow'/> objects that match the filter criteria, in the
         /// specified sort order.
         /// </summary>
         public DataRow[] Select(string filterExpression, string sort)
@@ -4360,7 +4360,7 @@ namespace System.Data
                 && (-1 != proposedRecord)
                 && (-1 != row._newRecord))
             {
-                // DataRow will believe multiple edits occured and
+                // DataRow will believe multiple edits occurred and
                 // DataView.ListChanged event w/ ListChangedType.ItemChanged will raise DataRowView.PropertyChanged event and
                 // PropertyChangedEventArgs.PropertyName will now be empty string so
                 // WPF will refresh the entire row
@@ -4829,7 +4829,7 @@ namespace System.Data
             if (_colUnique != null)
                 return _colUnique;
 
-            // check to see if we can use already existant PrimaryKey
+            // check to see if we can use already existent PrimaryKey
             DataColumn[] pkey = PrimaryKey;
             if (pkey.Length == 1)
             {
@@ -6265,7 +6265,7 @@ namespace System.Data
             reader.Read();
             if (reader.NodeType == XmlNodeType.Whitespace)
             {
-                MoveToElement(reader, reader.Depth - 1 /*iCurrentDepth*/); // skip over whitespaces.
+                MoveToElement(reader, reader.Depth - 1 /*iCurrentDepth*/); // skip over whitespace.
             }
 
             newDt._fInLoadDiffgram = true;
@@ -6476,7 +6476,7 @@ namespace System.Data
 
                         if (DataSet == null && _tableNamespace == null)
                         {
-                            // for standalone table, clone wont get these correctly, since they may come with inheritance
+                            // for standalone table, clone won't get these correctly, since they may come with inheritance
                             _tableNamespace = tempTable.Namespace;
                         }
                     }

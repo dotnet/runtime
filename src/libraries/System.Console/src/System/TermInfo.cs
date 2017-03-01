@@ -453,9 +453,9 @@ namespace System
             /// <returns>The 16-bit value read.</returns>
             private static short ReadInt16(byte[] buffer, int pos)
             {
-                return (short)
+                return unchecked((short)
                     ((((int)buffer[pos + 1]) << 8) |
-                     ((int)buffer[pos] & 0xff));
+                     ((int)buffer[pos] & 0xff)));
             }
 
             /// <summary>Reads a string from the buffer starting at the specified position.</summary>
@@ -857,7 +857,7 @@ namespace System
 
                 // Allocate the needed space, format into it, and return the data as a string.
                 byte[] bytes = new byte[neededLength + 1]; // extra byte for the null terminator
-                fixed (byte* ptr = bytes)
+                fixed (byte* ptr = &bytes[0])
                 {
                     int length = stringArg != null ?
                         Interop.Sys.SNPrintF(ptr, bytes.Length, format, stringArg) :

@@ -3161,12 +3161,12 @@ namespace System.Xml.Xsl.Xslt
         {
             ISourceLineInfo result = null;
 
-            // Really EMPTY means no content at all, but for the sake of compatibility with MSXML we allow whitespaces
+            // Really EMPTY means no content at all, but for the sake of compatibility with MSXML we allow whitespace
             if (_input.MoveToFirstChild())
             {
                 do
                 {
-                    // NOTE: XmlNodeType.SignificantWhitespace are not allowed here
+                    // NOTE: XmlNodeType.SignificantWhitespace is not allowed here
                     if (_input.NodeType != XmlNodeType.Whitespace)
                     {
                         if (result == null)
@@ -3212,7 +3212,7 @@ namespace System.Xml.Xsl.Xslt
         // Namespaces of stylesheet can be overriden in template and to make this works correclety we
         // should attache them after NsDec of top level elements.
         // Toplevel element almost never contais NsDecl and in practice node duplication will not happened, but if they have
-        // we should copy NsDecls of stylesheet localy in toplevel elements.
+        // we should copy NsDecls of stylesheet locally in toplevel elements.
         private static NsDecl MergeNamespaces(NsDecl thisList, NsDecl parentList)
         {
             if (parentList == null)

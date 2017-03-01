@@ -420,7 +420,7 @@ namespace System.Security.Cryptography.Rsa.Tests
                 byte[] signature = rsa.SignData(TestData.HelloBytes, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
 
                 // Invalidate the signature.
-                signature[0] = (byte)~signature[0];
+                signature[0] = unchecked((byte)~signature[0]);
 
                 bool signatureMatched = rsa.VerifyData(TestData.HelloBytes, signature, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
                 Assert.False(signatureMatched);

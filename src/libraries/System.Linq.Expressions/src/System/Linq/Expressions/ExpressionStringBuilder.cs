@@ -738,14 +738,7 @@ namespace System.Linq.Expressions
             Out('[');
             // For 3.5 subclasses, print the NodeType.
             // For Extension nodes, print the class name.
-            if (node.NodeType == ExpressionType.Extension)
-            {
-                Out(node.GetType().FullName);
-            }
-            else
-            {
-                Out(node.NodeType.ToString());
-            }
+            Out(node.NodeType == ExpressionType.Extension ? node.GetType().FullName : node.NodeType.ToString());
             Out(']');
             return node;
         }

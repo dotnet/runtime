@@ -60,7 +60,7 @@ namespace Microsoft.Win32
 #else
     internal
 #endif
-    sealed partial class RegistryKey : IDisposable
+    sealed partial class RegistryKey : MarshalByRefObject, IDisposable
     {
         private void ClosePerfDataKey()
         {
@@ -86,7 +86,7 @@ namespace Microsoft.Win32
             }
         }
 
-        private unsafe RegistryKey CreateSubKeyInternalCore(string subkey, bool writable, RegistryOptions registryOptions)
+        private unsafe RegistryKey CreateSubKeyInternalCore(string subkey, RegistryKeyPermissionCheck permissionCheck, object registrySecurityObj, RegistryOptions registryOptions)
         {
             Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = default(Interop.Kernel32.SECURITY_ATTRIBUTES);
             int disposition = 0;
@@ -98,14 +98,17 @@ namespace Microsoft.Win32
                 0,
                 null,
                 (int)registryOptions /* specifies if the key is volatile */,
-                (int)GetRegistryKeyRights(writable) | (int)_regView,
+                GetRegistryKeyAccess(permissionCheck != RegistryKeyPermissionCheck.ReadSubTree) | (int)_regView,
                 ref secAttrs,
                 out result,
                 out disposition);
 
             if (ret == 0 && !result.IsInvalid)
             {
-                RegistryKey key = new RegistryKey(result, writable, false, _remoteKey, false, _regView);
+                RegistryKey key = new RegistryKey(result, (permissionCheck != RegistryKeyPermissionCheck.ReadSubTree), false, _remoteKey, false, _regView);
+                CheckPermission(RegistryInternalCheck.CheckSubTreePermission, subkey, false, permissionCheck);
+                key._checkMode = permissionCheck;
+
                 if (subkey.Length == 0)
                 {
                     key._keyName = _keyName;
@@ -207,6 +210,7 @@ namespace Microsoft.Win32
             SafeRegistryHandle srh = new SafeRegistryHandle(hKey, isPerf);
 
             RegistryKey key = new RegistryKey(srh, true, true, false, isPerf, view);
+            key._checkMode = RegistryKeyPermissionCheck.Default;
             key._keyName = s_hkeyNames[index];
             return key;
         }
@@ -241,18 +245,20 @@ namespace Microsoft.Win32
             }
 
             RegistryKey key = new RegistryKey(foreignHKey, true, false, true, ((IntPtr)hKey) == HKEY_PERFORMANCE_DATA, view);
+            key._checkMode = RegistryKeyPermissionCheck.Default;
             key._keyName = s_hkeyNames[index];
             return key;
         }
 
-        private RegistryKey InternalOpenSubKeyCore(string name, RegistryRights rights, bool throwOnPermissionFailure)
+        private RegistryKey InternalOpenSubKeyCore(string name, RegistryKeyPermissionCheck permissionCheck, int rights, bool throwOnPermissionFailure)
         {
             SafeRegistryHandle result = null;
-            int ret = Interop.Advapi32.RegOpenKeyEx(_hkey, name, 0, ((int)rights | (int)_regView), out result);
+            int ret = Interop.Advapi32.RegOpenKeyEx(_hkey, name, 0, (rights | (int)_regView), out result);
             if (ret == 0 && !result.IsInvalid)
             {
-                RegistryKey key = new RegistryKey(result, IsWritable((int)rights), false, _remoteKey, false, _regView);
+                RegistryKey key = new RegistryKey(result, (permissionCheck == RegistryKeyPermissionCheck.ReadWriteSubTree), false, _remoteKey, false, _regView);
                 key._keyName = _keyName + "\\" + name;
+                key._checkMode = permissionCheck;
                 return key;
             }
 
@@ -267,6 +273,46 @@ namespace Microsoft.Win32
             }
 
             // Return null if we didn't find the key.
+            return null;
+        }
+
+        private RegistryKey InternalOpenSubKeyCore(string name, bool writable, bool throwOnPermissionFailure)
+        {
+            SafeRegistryHandle result = null;
+            int ret = Interop.Advapi32.RegOpenKeyEx(_hkey, name, 0, (GetRegistryKeyAccess(writable) | (int)_regView), out result);
+            if (ret == 0 && !result.IsInvalid)
+            {
+                RegistryKey key = new RegistryKey(result, writable, false, _remoteKey, false, _regView);
+                key._checkMode = GetSubKeyPermissionCheck(writable);
+                key._keyName = _keyName + "\\" + name;
+                return key;
+            }
+
+            if (throwOnPermissionFailure)
+            {
+                // Return null if we didn't find the key.
+                if (ret == Interop.Errors.ERROR_ACCESS_DENIED || ret == Interop.Errors.ERROR_BAD_IMPERSONATION_LEVEL)
+                {
+                    // We need to throw SecurityException here for compatibility reasons,
+                    // although UnauthorizedAccessException will make more sense.
+                    ThrowHelper.ThrowSecurityException(SR.Security_RegistryPermission);
+                }
+            }
+
+            return null;
+        }
+
+        internal RegistryKey InternalOpenSubKeyWithoutSecurityChecksCore(string name, bool writable)
+        {
+            SafeRegistryHandle result = null;
+            int ret = Interop.Advapi32.RegOpenKeyEx(_hkey, name, 0, (GetRegistryKeyAccess(writable) | (int)_regView), out result);
+            if (ret == 0 && !result.IsInvalid)
+            {
+                RegistryKey key = new RegistryKey(result, writable, false, _remoteKey, false, _regView);
+                key._keyName = _keyName + "\\" + name;
+                return key;
+            }
+
             return null;
         }
 
@@ -308,7 +354,7 @@ namespace Microsoft.Win32
                 ret = Interop.Advapi32.RegOpenKeyEx(baseKey,
                     null,
                     0,
-                    (int)GetRegistryKeyRights(IsWritable()) | (int)_regView,
+                    GetRegistryKeyAccess(IsWritable()) | (int)_regView,
                     out result);
 
                 if (ret == 0 && !result.IsInvalid)
@@ -827,6 +873,14 @@ namespace Microsoft.Win32
             }
         }
 
+        private bool ContainsRegistryValueCore(string name)
+        {
+            int type = 0;
+            int datasize = 0;
+            int retval = Interop.Advapi32.RegQueryValueEx(_hkey, name, null, ref type, (byte[])null, ref datasize);
+            return retval == 0;
+        }
+
         /// <summary>
         /// After calling GetLastWin32Error(), it clears the last error field,
         /// so you must save the HResult and pass it to this method.  This method
@@ -890,6 +944,43 @@ namespace Microsoft.Win32
                               (int)RegistryRights.Delete |
                               (int)RegistryRights.TakeOwnership |
                               (int)RegistryRights.ChangePermissions)) != 0;
+        }
+
+        private static int GetRegistryKeyAccess(bool isWritable)
+        {
+            int winAccess;
+            if (!isWritable)
+            {
+                winAccess = Interop.Advapi32.RegistryOperations.KEY_READ;
+            }
+            else
+            {
+                winAccess = Interop.Advapi32.RegistryOperations.KEY_READ | Interop.Advapi32.RegistryOperations.KEY_WRITE;
+            }
+
+            return winAccess;
+        }
+
+        private static int GetRegistryKeyAccess(RegistryKeyPermissionCheck mode)
+        {
+            int winAccess = 0;
+            switch (mode)
+            {
+                case RegistryKeyPermissionCheck.ReadSubTree:
+                case RegistryKeyPermissionCheck.Default:
+                    winAccess = Interop.Advapi32.RegistryOperations.KEY_READ;
+                    break;
+
+                case RegistryKeyPermissionCheck.ReadWriteSubTree:
+                    winAccess = Interop.Advapi32.RegistryOperations.KEY_READ | Interop.Advapi32.RegistryOperations.KEY_WRITE;
+                    break;
+
+                default:
+                    Debug.Fail("unexpected code path");
+                    break;
+            }
+
+            return winAccess;
         }
     }
 }

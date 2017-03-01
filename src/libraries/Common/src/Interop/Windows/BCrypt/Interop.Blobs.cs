@@ -50,10 +50,13 @@ internal partial class Interop
             Debug.Assert(blob != null);
             Debug.Assert(offset >= 0);
 
-            blob[offset++] = ((byte)(value >> 24));
-            blob[offset++] = ((byte)(value >> 16));
-            blob[offset++] = ((byte)(value >> 8));
-            blob[offset++] = ((byte)(value));
+            unchecked
+            {
+                blob[offset++] = ((byte)(value >> 24));
+                blob[offset++] = ((byte)(value >> 16));
+                blob[offset++] = ((byte)(value >> 8));
+                blob[offset++] = ((byte)(value));
+            }
         }
 
         /// <summary>

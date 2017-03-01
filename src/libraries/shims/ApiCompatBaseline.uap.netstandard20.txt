@@ -1,0 +1,311 @@
+DEFAULT_APPNAME Error: 0 : Failed to find or load matching assembly 'System.IO.FileSystem.AccessControl'.
+DEFAULT_APPNAME Error: 0 : Failed to find or load matching assembly 'System.Security.AccessControl'.
+DEFAULT_APPNAME Error: 0 : Failed to find or load matching assembly 'System.Security.Cryptography.Xml'.
+DEFAULT_APPNAME Error: 0 : Failed to find or load matching assembly 'System.Security.Permissions'.
+DEFAULT_APPNAME Warning: 0 : Found 'System.Transactions' with PublicKeyToken 'b03f5f7f11d50a3a' instead of 'b77a5c561934e089'.
+DEFAULT_APPNAME Error: 0 : Unable to resolve assembly 'Assembly(Name=System.Security.AccessControl, Version=4.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)' referenced by the implementation assembly 'Assembly(Name=mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)'.
+DEFAULT_APPNAME Error: 0 : Unable to resolve assembly 'Assembly(Name=System.Security.Permissions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)' referenced by the implementation assembly 'Assembly(Name=mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)'.
+DEFAULT_APPNAME Error: 0 : Unable to resolve assembly 'Assembly(Name=System.IO.FileSystem.AccessControl, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)' referenced by the implementation assembly 'Assembly(Name=mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)'.
+DEFAULT_APPNAME Error: 0 : Unable to resolve assembly 'Assembly(Name=System.Security.Permissions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)' referenced by the implementation assembly 'Assembly(Name=System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)'.
+DEFAULT_APPNAME Error: 0 : Unable to resolve assembly 'Assembly(Name=System.Security.AccessControl, Version=4.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)' referenced by the implementation assembly 'Assembly(Name=Microsoft.Win32.Registry, Version=4.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)'.
+DEFAULT_APPNAME Error: 0 : Unable to resolve assembly 'Assembly(Name=System.Security.AccessControl, Version=4.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)' referenced by the implementation assembly 'Assembly(Name=System.IO.Pipes.AccessControl, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)'.
+DEFAULT_APPNAME Error: 0 : Unable to resolve assembly 'Assembly(Name=System.Security.AccessControl, Version=4.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)' referenced by the implementation assembly 'Assembly(Name=System.Threading.AccessControl, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)'.
+Compat issues with assembly Microsoft.Win32.Registry:
+CannotRemoveBaseTypeOrInterface : Type 'System.Security.AccessControl.RegistryAccessRule' does not inherit from base type 'System.Security.AccessControl.AccessRule' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Security.AccessControl.RegistryAuditRule' does not inherit from base type 'System.Security.AccessControl.AuditRule' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Security.AccessControl.RegistrySecurity' does not inherit from base type 'System.Security.AccessControl.NativeObjectSecurity' in the implementation but it does in the contract.
+Compat issues with assembly Microsoft.Win32.Registry.AccessControl:
+CannotRemoveBaseTypeOrInterface : Type 'System.Security.AccessControl.RegistryAccessRule' does not inherit from base type 'System.Security.AccessControl.AccessRule' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Security.AccessControl.RegistryAuditRule' does not inherit from base type 'System.Security.AccessControl.AuditRule' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Security.AccessControl.RegistrySecurity' does not inherit from base type 'System.Security.AccessControl.NativeObjectSecurity' in the implementation but it does in the contract.
+Compat issues with assembly netstandard:
+TypesMustExist : Type 'System.Net.AuthenticationSchemeSelector' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.HttpListener' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.HttpListenerBasicIdentity' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.HttpListenerContext' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.HttpListenerException' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.HttpListenerPrefixCollection' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.HttpListenerRequest' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.HttpListenerResponse' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.HttpListenerTimeoutManager' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mail.AlternateView' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mail.AlternateViewCollection' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mail.Attachment' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mail.AttachmentBase' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mail.AttachmentCollection' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mail.DeliveryNotificationOptions' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mail.LinkedResource' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mail.LinkedResourceCollection' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mail.MailAddress' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mail.MailAddressCollection' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mail.MailMessage' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mail.MailPriority' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mail.SendCompletedEventHandler' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mail.SmtpAccess' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mail.SmtpClient' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mail.SmtpDeliveryFormat' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mail.SmtpDeliveryMethod' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mail.SmtpException' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mail.SmtpFailedRecipientException' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mail.SmtpFailedRecipientsException' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mail.SmtpStatusCode' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mime.ContentDisposition' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mime.ContentType' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mime.DispositionTypeNames' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mime.MediaTypeNames' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mime.TransferEncoding' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.WebSockets.HttpListenerWebSocketContext' does not exist in the implementation but it does exist in the contract.
+Compat issues with assembly System:
+TypesMustExist : Type 'System.Net.AuthenticationSchemeSelector' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.HttpListener' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.HttpListenerBasicIdentity' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.HttpListenerContext' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.HttpListenerException' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.HttpListenerPrefixCollection' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.HttpListenerRequest' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.HttpListenerResponse' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.HttpListenerTimeoutManager' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mail.AlternateView' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mail.AlternateViewCollection' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mail.Attachment' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mail.AttachmentBase' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mail.AttachmentCollection' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mail.DeliveryNotificationOptions' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mail.LinkedResource' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mail.LinkedResourceCollection' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mail.MailAddress' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mail.MailAddressCollection' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mail.MailMessage' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mail.MailPriority' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mail.SendCompletedEventHandler' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mail.SmtpAccess' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mail.SmtpClient' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mail.SmtpDeliveryFormat' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mail.SmtpDeliveryMethod' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mail.SmtpException' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mail.SmtpFailedRecipientException' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mail.SmtpFailedRecipientsException' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mail.SmtpStatusCode' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mime.ContentDisposition' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mime.ContentType' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mime.DispositionTypeNames' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mime.MediaTypeNames' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mime.TransferEncoding' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.WebSockets.HttpListenerWebSocketContext' does not exist in the implementation but it does exist in the contract.
+Compat issues with assembly System.IO.FileSystem.AccessControl:
+TypesMustExist : Type 'System.IO.FileSystemAclExtensions' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.DirectoryObjectSecurity' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.DirectorySecurity' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.FileSecurity' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.FileSystemAccessRule' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.FileSystemAuditRule' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.FileSystemRights' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.FileSystemSecurity' does not exist in the implementation but it does exist in the contract.
+Compat issues with assembly System.IO.Pipes.AccessControl:
+CannotRemoveBaseTypeOrInterface : Type 'System.IO.Pipes.PipeAccessRule' does not inherit from base type 'System.Security.AccessControl.AccessRule' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.IO.Pipes.PipeAuditRule' does not inherit from base type 'System.Security.AccessControl.AuditRule' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.IO.Pipes.PipeSecurity' does not inherit from base type 'System.Security.AccessControl.NativeObjectSecurity' in the implementation but it does in the contract.
+Compat issues with assembly System.Security.AccessControl:
+TypesMustExist : Type 'System.Security.AccessControl.AccessControlActions' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.AccessControlModification' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.AccessControlSections' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.AccessControlType' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.AccessRule' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.AccessRule<T>' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.AceEnumerator' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.AceFlags' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.AceQualifier' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.AceType' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.AuditFlags' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.AuditRule' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.AuditRule<T>' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.AuthorizationRule' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.AuthorizationRuleCollection' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.CommonAce' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.CommonAcl' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.CommonObjectSecurity' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.CommonSecurityDescriptor' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.CompoundAce' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.CompoundAceType' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.ControlFlags' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.CustomAce' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.DiscretionaryAcl' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.GenericAce' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.GenericAcl' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.GenericSecurityDescriptor' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.InheritanceFlags' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.KnownAce' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.NativeObjectSecurity' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.ObjectAccessRule' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.ObjectAce' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.ObjectAceFlags' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.ObjectAuditRule' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.ObjectSecurity' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.ObjectSecurity<T>' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.PrivilegeNotHeldException' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.PropagationFlags' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.QualifiedAce' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.RawAcl' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.RawSecurityDescriptor' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.ResourceType' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.SecurityInfos' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.SystemAcl' does not exist in the implementation but it does exist in the contract.
+Compat issues with assembly System.Security.Cryptography.Xml:
+TypesMustExist : Type 'System.Security.Cryptography.Xml.CipherData' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.Xml.CipherReference' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.Xml.DataObject' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.Xml.DataReference' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.Xml.DSAKeyValue' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.Xml.EncryptedData' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.Xml.EncryptedKey' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.Xml.EncryptedReference' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.Xml.EncryptedType' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.Xml.EncryptedXml' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.Xml.EncryptionMethod' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.Xml.EncryptionProperty' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.Xml.EncryptionPropertyCollection' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.Xml.IRelDecryptor' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.Xml.KeyInfo' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.Xml.KeyInfoClause' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.Xml.KeyInfoEncryptedKey' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.Xml.KeyInfoName' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.Xml.KeyInfoNode' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.Xml.KeyInfoRetrievalMethod' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.Xml.KeyInfoX509Data' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.Xml.KeyReference' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.Xml.Reference' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.Xml.ReferenceList' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.Xml.RSAKeyValue' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.Xml.Signature' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.Xml.SignedInfo' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.Xml.SignedXml' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.Xml.Transform' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.Xml.TransformChain' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.Xml.XmlDecryptionTransform' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.Xml.XmlDsigBase64Transform' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.Xml.XmlDsigC14NTransform' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.Xml.XmlDsigC14NWithCommentsTransform' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.Xml.XmlDsigEnvelopedSignatureTransform' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.Xml.XmlDsigExcC14NTransform' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.Xml.XmlDsigExcC14NWithCommentsTransform' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.Xml.XmlDsigXPathTransform' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.Xml.XmlDsigXsltTransform' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.Xml.XmlLicenseTransform' does not exist in the implementation but it does exist in the contract.
+Compat issues with assembly System.Security.Permissions:
+TypesMustExist : Type 'System.Net.NetworkInformation.NetworkInformationAccess' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.NetworkInformation.NetworkInformationPermission' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.NetworkInformation.NetworkInformationPermissionAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.CodeAccessPermission' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.HostProtectionException' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.HostSecurityManager' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.HostSecurityManagerOptions' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.IEvidenceFactory' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.IPermission' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.ISecurityEncodable' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.ISecurityPolicyEncodable' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.IStackWalk' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.NamedPermissionSet' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.PermissionSet' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.PolicyLevelType' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.SecurityContext' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.SecurityContextSource' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.SecurityElement' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.SecurityManager' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.SecurityState' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.SecurityZone' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.XmlSyntaxException' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Permissions.CodeAccessSecurityAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Permissions.EnvironmentPermission' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Permissions.EnvironmentPermissionAccess' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Permissions.EnvironmentPermissionAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Permissions.FileDialogPermission' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Permissions.FileDialogPermissionAccess' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Permissions.FileDialogPermissionAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Permissions.FileIOPermission' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Permissions.FileIOPermissionAccess' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Permissions.GacIdentityPermission' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Permissions.GacIdentityPermissionAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Permissions.HostProtectionAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Permissions.HostProtectionResource' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Permissions.IUnrestrictedPermission' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Permissions.PermissionSetAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Permissions.PermissionState' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Permissions.PrincipalPermission' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Permissions.PrincipalPermissionAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Permissions.PublisherIdentityPermission' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Permissions.PublisherIdentityPermissionAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Permissions.ReflectionPermission' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Permissions.ReflectionPermissionAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Permissions.ReflectionPermissionFlag' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Permissions.RegistryPermission' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Permissions.RegistryPermissionAccess' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Permissions.RegistryPermissionAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Permissions.SecurityAction' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Permissions.SecurityAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Permissions.SecurityPermission' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Permissions.SecurityPermissionAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Permissions.SecurityPermissionFlag' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Permissions.SiteIdentityPermission' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Permissions.SiteIdentityPermissionAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Permissions.StrongNameIdentityPermission' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Permissions.StrongNameIdentityPermissionAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Permissions.StrongNamePublicKeyBlob' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Permissions.TypeDescriptorPermission' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Permissions.TypeDescriptorPermissionFlags' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Permissions.UIPermission' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Permissions.UIPermissionAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Permissions.UIPermissionClipboard' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Permissions.UIPermissionWindow' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Permissions.UrlIdentityPermission' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Permissions.UrlIdentityPermissionAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Permissions.ZoneIdentityPermission' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Permissions.ZoneIdentityPermissionAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Policy.AllMembershipCondition' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Policy.ApplicationDirectory' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Policy.ApplicationDirectoryMembershipCondition' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Policy.ApplicationTrust' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Policy.ApplicationTrustCollection' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Policy.ApplicationTrustEnumerator' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Policy.ApplicationVersionMatch' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Policy.CodeConnectAccess' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Policy.CodeGroup' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Policy.Evidence' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Policy.EvidenceBase' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Policy.FileCodeGroup' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Policy.FirstMatchCodeGroup' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Policy.GacInstalled' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Policy.GacMembershipCondition' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Policy.Hash' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Policy.HashMembershipCondition' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Policy.IIdentityPermissionFactory' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Policy.IMembershipCondition' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Policy.NetCodeGroup' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Policy.PermissionRequestEvidence' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Policy.PolicyException' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Policy.PolicyLevel' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Policy.PolicyStatement' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Policy.PolicyStatementAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Policy.Publisher' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Policy.PublisherMembershipCondition' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Policy.Site' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Policy.SiteMembershipCondition' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Policy.StrongName' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Policy.StrongNameMembershipCondition' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Policy.TrustManagerContext' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Policy.TrustManagerUIContext' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Policy.UnionCodeGroup' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Policy.Url' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Policy.UrlMembershipCondition' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Policy.Zone' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Policy.ZoneMembershipCondition' does not exist in the implementation but it does exist in the contract.
+Compat issues with assembly System.Threading.AccessControl:
+CannotRemoveBaseTypeOrInterface : Type 'System.Security.AccessControl.EventWaitHandleAccessRule' does not inherit from base type 'System.Security.AccessControl.AccessRule' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Security.AccessControl.EventWaitHandleAuditRule' does not inherit from base type 'System.Security.AccessControl.AuditRule' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Security.AccessControl.EventWaitHandleSecurity' does not inherit from base type 'System.Security.AccessControl.NativeObjectSecurity' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Security.AccessControl.MutexAccessRule' does not inherit from base type 'System.Security.AccessControl.AccessRule' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Security.AccessControl.MutexAuditRule' does not inherit from base type 'System.Security.AccessControl.AuditRule' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Security.AccessControl.MutexSecurity' does not inherit from base type 'System.Security.AccessControl.NativeObjectSecurity' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Security.AccessControl.SemaphoreAccessRule' does not inherit from base type 'System.Security.AccessControl.AccessRule' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Security.AccessControl.SemaphoreAuditRule' does not inherit from base type 'System.Security.AccessControl.AuditRule' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Security.AccessControl.SemaphoreSecurity' does not inherit from base type 'System.Security.AccessControl.NativeObjectSecurity' in the implementation but it does in the contract.
+Total Issues: 288

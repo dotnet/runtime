@@ -227,13 +227,13 @@ namespace System.Xml.Tests
 
             // for function Read57
             {
-                this.AddChild(new CVariation(Read57) { Attribute = new Variation("Parse xml with whitespaces nodes") });
+                this.AddChild(new CVariation(Read57) { Attribute = new Variation("Parse xml with whitespace nodes") });
             }
 
 
             // for function Read58
             {
-                this.AddChild(new CVariation(Read58) { Attribute = new Variation("Parse xml with whitespaces nodes and invalid char") });
+                this.AddChild(new CVariation(Read58) { Attribute = new Variation("Parse xml with whitespace nodes and invalid char") });
             }
 
 

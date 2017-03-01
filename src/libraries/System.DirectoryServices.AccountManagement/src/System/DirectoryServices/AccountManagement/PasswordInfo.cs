@@ -11,7 +11,6 @@ namespace System.DirectoryServices.AccountManagement
 #if TESTHOOK
     public class PasswordInfo
 #else
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.LinkDemand, Unrestricted = true)]
     internal class PasswordInfo
 #endif
     {
@@ -25,11 +24,6 @@ namespace System.DirectoryServices.AccountManagement
 
         public Nullable<DateTime> LastPasswordSet
         {
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="Principal.HandleGet<System.Nullable`1<System.DateTime>>(System.Nullable`1<System.DateTime>&,System.String,System.DirectoryServices.AccountManagement.LoadState&):System.Nullable`1<System.DateTime>" />
-            // <ReferencesCritical Name="Field: owningPrincipal" Ring="1" />
-            // <ReferencesCritical Name="Method: Principal.HandleGet(T&,System.String,System.DirectoryServices.AccountManagement.LoadState&):T" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
@@ -43,11 +37,6 @@ namespace System.DirectoryServices.AccountManagement
 
         public Nullable<DateTime> LastBadPasswordAttempt
         {
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="Principal.HandleGet<System.Nullable`1<System.DateTime>>(System.Nullable`1<System.DateTime>&,System.String,System.DirectoryServices.AccountManagement.LoadState&):System.Nullable`1<System.DateTime>" />
-            // <ReferencesCritical Name="Field: owningPrincipal" Ring="1" />
-            // <ReferencesCritical Name="Method: Principal.HandleGet(T&,System.String,System.DirectoryServices.AccountManagement.LoadState&):T" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
@@ -61,22 +50,12 @@ namespace System.DirectoryServices.AccountManagement
 
         public bool PasswordNotRequired
         {
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="Principal.HandleGet<System.Boolean>(System.Boolean&,System.String,System.DirectoryServices.AccountManagement.LoadState&):System.Boolean" />
-            // <ReferencesCritical Name="Field: owningPrincipal" Ring="1" />
-            // <ReferencesCritical Name="Method: Principal.HandleGet(T&,System.String,System.DirectoryServices.AccountManagement.LoadState&):T" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
                 return _owningPrincipal.HandleGet<bool>(ref _passwordNotRequired, PropertyNames.PwdInfoPasswordNotRequired, ref _passwordNotRequiredChanged);
             }
 
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="Principal.HandleSet<System.Boolean>(System.Boolean&,System.Boolean,System.DirectoryServices.AccountManagement.LoadState&,System.String):System.Void" />
-            // <ReferencesCritical Name="Field: owningPrincipal" Ring="1" />
-            // <ReferencesCritical Name="Method: Principal.HandleSet(T&,T,System.DirectoryServices.AccountManagement.LoadState&,System.String):System.Void" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             set
             {
@@ -91,22 +70,12 @@ namespace System.DirectoryServices.AccountManagement
 
         public bool PasswordNeverExpires
         {
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="Principal.HandleGet<System.Boolean>(System.Boolean&,System.String,System.DirectoryServices.AccountManagement.LoadState&):System.Boolean" />
-            // <ReferencesCritical Name="Field: owningPrincipal" Ring="1" />
-            // <ReferencesCritical Name="Method: Principal.HandleGet(T&,System.String,System.DirectoryServices.AccountManagement.LoadState&):T" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
                 return _owningPrincipal.HandleGet<bool>(ref _passwordNeverExpires, PropertyNames.PwdInfoPasswordNeverExpires, ref _passwordNeverExpiresChanged);
             }
 
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="Principal.HandleSet<System.Boolean>(System.Boolean&,System.Boolean,System.DirectoryServices.AccountManagement.LoadState&,System.String):System.Void" />
-            // <ReferencesCritical Name="Field: owningPrincipal" Ring="1" />
-            // <ReferencesCritical Name="Method: Principal.HandleSet(T&,T,System.DirectoryServices.AccountManagement.LoadState&,System.String):System.Void" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             set
             {
@@ -125,13 +94,6 @@ namespace System.DirectoryServices.AccountManagement
         // needed.  We read the status directly from the store and then cache it for use later.
         public bool UserCannotChangePassword
         {
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="Principal.HandleGet<System.Boolean>(System.Boolean&,System.String,System.DirectoryServices.AccountManagement.LoadState&):System.Boolean" />
-            // <SatisfiesLinkDemand Name="Principal.GetStoreCtxToUse():System.DirectoryServices.AccountManagement.StoreCtx" />
-            // <ReferencesCritical Name="Field: owningPrincipal" Ring="1" />
-            // <ReferencesCritical Name="Method: Principal.HandleGet(T&,System.String,System.DirectoryServices.AccountManagement.LoadState&):T" Ring="1" />
-            // <ReferencesCritical Name="Method: Principal.GetStoreCtxToUse():System.DirectoryServices.AccountManagement.StoreCtx" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
@@ -146,11 +108,6 @@ namespace System.DirectoryServices.AccountManagement
                 return _cannotChangePassword;
             }
 
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="Principal.HandleSet<System.Boolean>(System.Boolean&,System.Boolean,System.DirectoryServices.AccountManagement.LoadState&,System.String):System.Void" />
-            // <ReferencesCritical Name="Field: owningPrincipal" Ring="1" />
-            // <ReferencesCritical Name="Method: Principal.HandleSet(T&,T,System.DirectoryServices.AccountManagement.LoadState&,System.String):System.Void" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             set
             {
@@ -165,22 +122,12 @@ namespace System.DirectoryServices.AccountManagement
 
         public bool AllowReversiblePasswordEncryption
         {
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="Principal.HandleGet<System.Boolean>(System.Boolean&,System.String,System.DirectoryServices.AccountManagement.LoadState&):System.Boolean" />
-            // <ReferencesCritical Name="Field: owningPrincipal" Ring="1" />
-            // <ReferencesCritical Name="Method: Principal.HandleGet(T&,System.String,System.DirectoryServices.AccountManagement.LoadState&):T" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
                 return _owningPrincipal.HandleGet<bool>(ref _allowReversiblePasswordEncryption, PropertyNames.PwdInfoAllowReversiblePasswordEncryption, ref _allowReversiblePasswordEncryptionChanged);
             }
 
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="Principal.HandleSet<System.Boolean>(System.Boolean&,System.Boolean,System.DirectoryServices.AccountManagement.LoadState&,System.String):System.Void" />
-            // <ReferencesCritical Name="Field: owningPrincipal" Ring="1" />
-            // <ReferencesCritical Name="Method: Principal.HandleSet(T&,T,System.DirectoryServices.AccountManagement.LoadState&,System.String):System.Void" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             set
             {
@@ -195,11 +142,6 @@ namespace System.DirectoryServices.AccountManagement
 
         private string _storedNewPassword = null;
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="Principal.GetStoreCtxToUse():System.DirectoryServices.AccountManagement.StoreCtx" />
-        // <ReferencesCritical Name="Field: owningPrincipal" Ring="1" />
-        // <ReferencesCritical Name="Method: Principal.GetStoreCtxToUse():System.DirectoryServices.AccountManagement.StoreCtx" Ring="1" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         public void SetPassword(string newPassword)
         {
@@ -219,11 +161,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="Principal.GetStoreCtxToUse():System.DirectoryServices.AccountManagement.StoreCtx" />
-        // <ReferencesCritical Name="Field: owningPrincipal" Ring="1" />
-        // <ReferencesCritical Name="Method: Principal.GetStoreCtxToUse():System.DirectoryServices.AccountManagement.StoreCtx" Ring="1" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         public void ChangePassword(string oldPassword, string newPassword)
         {
@@ -244,11 +181,6 @@ namespace System.DirectoryServices.AccountManagement
 
         private bool _expirePasswordImmediately = false;
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="Principal.GetStoreCtxToUse():System.DirectoryServices.AccountManagement.StoreCtx" />
-        // <ReferencesCritical Name="Field: owningPrincipal" Ring="1" />
-        // <ReferencesCritical Name="Method: Principal.GetStoreCtxToUse():System.DirectoryServices.AccountManagement.StoreCtx" Ring="1" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         public void ExpirePasswordNow()
         {
@@ -265,11 +197,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="Principal.GetStoreCtxToUse():System.DirectoryServices.AccountManagement.StoreCtx" />
-        // <ReferencesCritical Name="Field: owningPrincipal" Ring="1" />
-        // <ReferencesCritical Name="Method: Principal.GetStoreCtxToUse():System.DirectoryServices.AccountManagement.StoreCtx" Ring="1" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         public void RefreshExpiredPassword()
         {
@@ -289,9 +216,6 @@ namespace System.DirectoryServices.AccountManagement
         //
         // Internal constructor
         //
-        // <SecurityKernel Critical="True" Ring="1">
-        // <ReferencesCritical Name="Field: owningPrincipal" Ring="1" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         internal PasswordInfo(AuthenticablePrincipal principal)
         {

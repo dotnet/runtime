@@ -281,6 +281,8 @@ namespace System.Linq.Expressions
                 }
             }
 
+            ValidateMethodInfo(mi, nameof(property));
+
             return MemberExpression.Make(expression, property);
         }
 
@@ -300,20 +302,24 @@ namespace System.Linq.Expressions
         private static PropertyInfo GetProperty(MethodInfo mi, string paramName, int index = -1)
         {
             Type type = mi.DeclaringType;
-            BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic;
-            flags |= (mi.IsStatic) ? BindingFlags.Static : BindingFlags.Instance;
-            PropertyInfo[] props = type.GetProperties(flags);
-            foreach (PropertyInfo pi in props)
+            if (type != null)
             {
-                if (pi.CanRead && CheckMethod(mi, pi.GetGetMethod(nonPublic: true)))
+                BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic;
+                flags |= (mi.IsStatic) ? BindingFlags.Static : BindingFlags.Instance;
+                PropertyInfo[] props = type.GetProperties(flags);
+                foreach (PropertyInfo pi in props)
                 {
-                    return pi;
-                }
-                if (pi.CanWrite && CheckMethod(mi, pi.GetSetMethod(nonPublic: true)))
-                {
-                    return pi;
+                    if (pi.CanRead && CheckMethod(mi, pi.GetGetMethod(nonPublic: true)))
+                    {
+                        return pi;
+                    }
+                    if (pi.CanWrite && CheckMethod(mi, pi.GetSetMethod(nonPublic: true)))
+                    {
+                        return pi;
+                    }
                 }
             }
+
             throw Error.MethodNotPropertyAccessor(mi.DeclaringType, mi.Name, paramName, index);
         }
 
@@ -327,7 +333,7 @@ namespace System.Linq.Expressions
             // same as that returned by reflection.
             // Check for this condition and try and get the method from reflection.
             Type type = method.DeclaringType;
-            if (type.GetTypeInfo().IsInterface && method.Name == propertyMethod.Name && type.GetMethod(method.Name) == propertyMethod)
+            if (type.IsInterface && method.Name == propertyMethod.Name && type.GetMethod(method.Name) == propertyMethod)
             {
                 return true;
             }

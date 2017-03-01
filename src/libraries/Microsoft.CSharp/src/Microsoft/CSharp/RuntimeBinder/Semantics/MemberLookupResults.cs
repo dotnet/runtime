@@ -14,7 +14,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
     internal partial class CMemberLookupResults
     {
-        public TypeArray ContainingTypes { get; }// Types that contain the member we're looking for.
+        private TypeArray ContainingTypes { get; }// Types that contain the member we're looking for.
 
         private readonly Name _pName; // The name that we're looking for.
 

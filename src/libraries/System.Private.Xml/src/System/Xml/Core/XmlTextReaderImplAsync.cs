@@ -1703,7 +1703,7 @@ namespace System.Xml
                 {
                     return ParseDocumentContentAsync_ReadData(needMoreChars);
                 }
-                // something else -> root level whitespaces
+                // something else -> root level whitespace
                 else
                 {
                     if (_fragmentType == XmlNodeType.Document)
@@ -2130,7 +2130,7 @@ namespace System.Xml
             }
 
             char ch = chars[pos];
-            // white space after element name -> there are probably some attributes
+            // whitespace after element name -> there are probably some attributes
             bool isWs;
 
             isWs = _xmlCharType.IsWhiteSpace(ch);
@@ -2361,7 +2361,7 @@ namespace System.Xml
                     return ThrowTagMismatchAsync(startTagNode);
                 }
 
-                // eat whitespaces
+                // eat whitespace
                 if (chars[pos] != '>')
                 {
                     char tmpCh;
@@ -2470,7 +2470,7 @@ namespace System.Xml
 
             for (;;)
             {
-                // eat whitespaces
+                // eat whitespace
                 int lineNoDelta = 0;
                 char tmpch0;
 
@@ -3128,9 +3128,9 @@ namespace System.Xml
             }
         }
 
-        // Parses text or white space node.
+        // Parses text or whitespace node.
         // Returns true if a node has been parsed and its data set to curNode. 
-        // Returns false when a white space has been parsed and ignored (according to current whitespace handling) or when parsing mode is not Full.
+        // Returns false when a whitespace has been parsed and ignored (according to current whitespace handling) or when parsing mode is not Full.
         // Also returns false if there is no text to be parsed.
         private async Task<bool> _ParseTextAsync(Task<ValueTuple<int, int, int, bool>> parseTask)
         {
@@ -5397,7 +5397,7 @@ namespace System.Xml
                     throw;
                 }
                 string innerMessage;
-#if SILVERLIGHT // This is to remove the second "An error occured" from "An error has occurred while opening external entity 'bla.ent': An error occurred."
+#if SILVERLIGHT // This is to remove the second "An error occurred" from "An error has occurred while opening external entity 'bla.ent': An error occurred."
                 innerMessage = string.Empty;
 #else 
                 innerMessage = e.Message;

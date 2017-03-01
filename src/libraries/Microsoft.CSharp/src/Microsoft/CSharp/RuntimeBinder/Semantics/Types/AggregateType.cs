@@ -88,7 +88,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             SetTypeArgsAll(pOuterTypeArgs);
         }
 
-        public void SetTypeArgsAll(TypeArray outerTypeArgs)
+        private void SetTypeArgsAll(TypeArray outerTypeArgs)
         {
             Debug.Assert(_pTypeArgsThis != null);
 
@@ -133,7 +133,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             _pTypeArgsAll = pTypeManager.ConcatenateTypeArrays(pCheckedOuterTypeArgs, _pTypeArgsThis);
         }
 
-        public bool AreAllTypeArgumentsUnitTypes(TypeArray typeArray)
+        private bool AreAllTypeArgumentsUnitTypes(TypeArray typeArray)
         {
             if (typeArray.Size == 0)
             {

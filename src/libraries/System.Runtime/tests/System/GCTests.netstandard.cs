@@ -90,38 +90,106 @@ namespace System.Tests
 
         [Fact]
         [OuterLoop]
-        public static void TryStartNoGCRegionNegTest()
+        public static void TryStartNoGCRegion_EndNoGCRegion_ThrowsInvalidOperationException()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.TimeOut = TimeoutMilliseconds;
             RemoteInvoke(() =>
                 {
                     Assert.Throws<InvalidOperationException>(() => GC.EndNoGCRegion());
-
-                    Assert.True(GC.TryStartNoGCRegion(1024));
-                    Assert.Throws<InvalidOperationException>(() => GC.TryStartNoGCRegion(1024));
-
-                    Assert.True(GC.TryStartNoGCRegion(1024, true));
-                    Assert.Throws<InvalidOperationException>(() => GC.TryStartNoGCRegion(1024, true));
-
-                    Assert.True(GC.TryStartNoGCRegion(1024, 1024));
-                    Assert.Throws<InvalidOperationException>(() => GC.TryStartNoGCRegion(1024, 1024));
-
-                    Assert.True(GC.TryStartNoGCRegion(1024, 1024, true));
-                    Assert.Throws<InvalidOperationException>(() => GC.TryStartNoGCRegion(1024, 1024, true));
-                    Assert.True(GC.TryStartNoGCRegion(1024, true));
-                    Assert.Equal(GCSettings.LatencyMode, GCLatencyMode.NoGCRegion);
-                    Assert.Throws<InvalidOperationException>(() => GCSettings.LatencyMode = GCLatencyMode.LowLatency);
-
-                    GC.EndNoGCRegion();
-
                     return SuccessExitCode;
-
                 }, options).Dispose();
         }
+
         [Fact]
         [OuterLoop]
-        public static void TryStartNoGCRegionPosTest()
+        public static void TryStartNoGCRegion_StartWhileInNoGCRegion()
+        {
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.TimeOut = TimeoutMilliseconds;
+            RemoteInvoke(() =>
+            {
+                Assert.True(GC.TryStartNoGCRegion(1024));
+                Assert.Throws<InvalidOperationException>(() => GC.TryStartNoGCRegion(1024));
+
+                Assert.Throws<InvalidOperationException>(() => GC.EndNoGCRegion());
+
+                return SuccessExitCode;
+            }, options).Dispose();
+        }
+
+        [Fact]
+        [OuterLoop]
+        public static void TryStartNoGCRegion_StartWhileInNoGCRegion_BlockingCollection()
+        {
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.TimeOut = TimeoutMilliseconds;
+            RemoteInvoke(() =>
+            {
+                Assert.True(GC.TryStartNoGCRegion(1024, true));
+                Assert.Throws<InvalidOperationException>(() => GC.TryStartNoGCRegion(1024, true));
+
+                Assert.Throws<InvalidOperationException>(() => GC.EndNoGCRegion());
+
+                return SuccessExitCode;
+            }, options).Dispose();
+        }
+
+        [Fact]
+        [OuterLoop]
+        public static void TryStartNoGCRegion_StartWhileInNoGCRegion_LargeObjectHeapSize()
+        {
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.TimeOut = TimeoutMilliseconds;
+            RemoteInvoke(() =>
+            {
+                Assert.True(GC.TryStartNoGCRegion(1024, 1024));
+                Assert.Throws<InvalidOperationException>(() => GC.TryStartNoGCRegion(1024, 1024));
+
+                Assert.Throws<InvalidOperationException>(() => GC.EndNoGCRegion());
+
+                return SuccessExitCode;
+            }, options).Dispose();
+        }
+
+        [Fact]
+        [OuterLoop]
+        public static void TryStartNoGCRegion_StartWhileInNoGCRegion_BlockingCollectionAndLOH()
+        {
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.TimeOut = TimeoutMilliseconds;
+            RemoteInvoke(() =>
+            {
+                Assert.True(GC.TryStartNoGCRegion(1024, 1024, true));
+                Assert.Throws<InvalidOperationException>(() => GC.TryStartNoGCRegion(1024, 1024, true));
+
+                Assert.Throws<InvalidOperationException>(() => GC.EndNoGCRegion());
+
+                return SuccessExitCode;
+            }, options).Dispose();
+        }
+
+        [Fact]
+        [OuterLoop]
+        public static void TryStartNoGCRegion_SettingLatencyMode_ThrowsInvalidOperationException()
+        {
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.TimeOut = TimeoutMilliseconds;
+            RemoteInvoke(() =>
+            {
+                Assert.True(GC.TryStartNoGCRegion(1024, true));
+                Assert.Equal(GCSettings.LatencyMode, GCLatencyMode.NoGCRegion);
+                Assert.Throws<InvalidOperationException>(() => GCSettings.LatencyMode = GCLatencyMode.LowLatency);
+
+                GC.EndNoGCRegion();
+
+                return SuccessExitCode;
+            }, options).Dispose();
+        }
+
+        [Fact]
+        [OuterLoop]
+        public static void TryStartNoGCRegion_SOHSize()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.TimeOut = TimeoutMilliseconds;
@@ -132,21 +200,60 @@ namespace System.Tests
                     Assert.Equal(GCSettings.LatencyMode, GCLatencyMode.NoGCRegion);
                     GC.EndNoGCRegion();
 
-                    Assert.True(GC.TryStartNoGCRegion(1024, true));
-                    Assert.Equal(GCSettings.LatencyMode, GCLatencyMode.NoGCRegion);
-                    GC.EndNoGCRegion();
-
-                    Assert.True(GC.TryStartNoGCRegion(1024, 1024));
-                    Assert.Equal(GCSettings.LatencyMode, GCLatencyMode.NoGCRegion);
-                    GC.EndNoGCRegion();
-
-                    Assert.True(GC.TryStartNoGCRegion(1024, 1024, true));
-                    Assert.Equal(GCSettings.LatencyMode, GCLatencyMode.NoGCRegion);
-                    GC.EndNoGCRegion();
-
                     return SuccessExitCode;
 
                 }, options).Dispose();
+        }
+
+        [Fact]
+        [OuterLoop]
+        public static void TryStartNoGCRegion_SOHSize_BlockingCollection()
+        {
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.TimeOut = TimeoutMilliseconds;
+            RemoteInvoke(() =>
+            {
+                Assert.True(GC.TryStartNoGCRegion(1024, true));
+                Assert.Equal(GCSettings.LatencyMode, GCLatencyMode.NoGCRegion);
+                GC.EndNoGCRegion();
+
+                return SuccessExitCode;
+
+            }, options).Dispose();
+        }
+
+        [Fact]
+        [OuterLoop]
+        public static void TryStartNoGCRegion_SOHSize_LOHSize()
+        {
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.TimeOut = TimeoutMilliseconds;
+            RemoteInvoke(() =>
+            {
+                Assert.True(GC.TryStartNoGCRegion(1024, 1024));
+                Assert.Equal(GCSettings.LatencyMode, GCLatencyMode.NoGCRegion);
+                GC.EndNoGCRegion();
+
+                return SuccessExitCode;
+
+            }, options).Dispose();
+        }
+
+        [Fact]
+        [OuterLoop]
+        public static void TryStartNoGCRegion_SOHSize_LOHSize_BlockingCollection()
+        {
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.TimeOut = TimeoutMilliseconds;
+            RemoteInvoke(() =>
+            {
+                Assert.True(GC.TryStartNoGCRegion(1024, 1024, true));
+                Assert.Equal(GCSettings.LatencyMode, GCLatencyMode.NoGCRegion);
+                GC.EndNoGCRegion();
+
+                return SuccessExitCode;
+
+            }, options).Dispose();
         }
 
         public static void TestWait(bool approach, int timeout)

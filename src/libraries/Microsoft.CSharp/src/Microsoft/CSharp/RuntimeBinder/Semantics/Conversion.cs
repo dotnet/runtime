@@ -39,7 +39,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         Neither = 3,
     }
 
-    internal partial class ExpressionBinder
+    internal sealed partial class ExpressionBinder
     {
         private delegate bool ConversionFunc(
             EXPR pSourceExpr,
@@ -339,7 +339,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         // returns true if an implicit conversion exists from source type to dest type. flags is an optional parameter.
-        public bool canConvert(CType src, CType dest, CONVERTTYPE flags)
+        private bool canConvert(CType src, CType dest, CONVERTTYPE flags)
         {
             EXPRCLASS exprDest = ExprFactory.MakeClass(dest);
             return BindImplicitConversion(null, src, exprDest, dest, flags);
@@ -351,12 +351,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         // returns true if a implicit conversion exists from source expr to dest type. flags is an optional parameter.
-        public bool canConvert(EXPR expr, CType dest)
+        private bool canConvert(EXPR expr, CType dest)
         {
             return canConvert(expr, dest, 0);
         }
 
-        public bool canConvert(EXPR expr, CType dest, CONVERTTYPE flags)
+        private bool canConvert(EXPR expr, CType dest, CONVERTTYPE flags)
         {
             EXPRCLASS exprDest = ExprFactory.MakeClass(dest);
             return BindImplicitConversion(expr, expr.type, exprDest, dest, flags);
@@ -364,12 +364,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         // performs an implicit conversion if it's possible. otherwise displays an error. flags is an optional parameter.
 
-        public EXPR mustConvertCore(EXPR expr, EXPRTYPEORNAMESPACE destExpr)
+        private EXPR mustConvertCore(EXPR expr, EXPRTYPEORNAMESPACE destExpr)
         {
             return mustConvertCore(expr, destExpr, 0);
         }
 
-        public EXPR mustConvertCore(EXPR expr, EXPRTYPEORNAMESPACE destExpr, CONVERTTYPE flags)
+        private EXPR mustConvertCore(EXPR expr, EXPRTYPEORNAMESPACE destExpr, CONVERTTYPE flags)
         {
             EXPR exprResult;
             CType dest = destExpr.TypeOrNamespace as CType;
@@ -452,7 +452,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return tryConvert(expr, dest, 0);
         }
 
-        public EXPR tryConvert(EXPR expr, CType dest, CONVERTTYPE flags)
+        private EXPR tryConvert(EXPR expr, CType dest, CONVERTTYPE flags)
         {
             EXPR exprResult;
             EXPRCLASS exprDest = ExprFactory.MakeClass(dest);
@@ -469,12 +469,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             return mustConvert(expr, dest, (CONVERTTYPE)0);
         }
-        public EXPR mustConvert(EXPR expr, CType dest, CONVERTTYPE flags)
+
+        private EXPR mustConvert(EXPR expr, CType dest, CONVERTTYPE flags)
         {
             EXPRCLASS exprClass = ExprFactory.MakeClass(dest);
             return mustConvert(expr, exprClass, flags);
         }
-        public EXPR mustConvert(EXPR expr, EXPRTYPEORNAMESPACE dest, CONVERTTYPE flags)
+        private EXPR mustConvert(EXPR expr, EXPRTYPEORNAMESPACE dest, CONVERTTYPE flags)
         {
             return mustConvertCore(expr, dest, flags);
         }
@@ -651,13 +652,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
  
             We currently implement (1). The spec needs to be tightened up.
         ***************************************************************************************************/
-        public bool BindGrpConversion(EXPRMEMGRP grp, CType typeDst, bool fReportErrors)
+        private bool BindGrpConversion(EXPRMEMGRP grp, CType typeDst, bool fReportErrors)
         {
             EXPRCALL dummy;
             return BindGrpConversion(grp, typeDst, false, out dummy, fReportErrors);
         }
 
-        public bool BindGrpConversion(EXPRMEMGRP grp, CType typeDst, bool needDest, out EXPRCALL pexprDst, bool fReportErrors)
+        private bool BindGrpConversion(EXPRMEMGRP grp, CType typeDst, bool needDest, out EXPRCALL pexprDst, bool fReportErrors)
         {
             pexprDst = null;
 
@@ -818,11 +819,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
          */
         private bool canConvertInstanceParamForExtension(EXPR exprSrc, CType typeDest)
         {
-            if (exprSrc == null || exprSrc.type == null)
-            {
-                return false;
-            }
-            return canConvertInstanceParamForExtension(exprSrc.type, typeDest);
+            CType typeSrc = exprSrc?.type;
+            return typeSrc != null && canConvertInstanceParamForExtension(typeSrc, typeDest);
         }
 
         private bool canConvertInstanceParamForExtension(CType typeSrc, CType typeDest)
@@ -1523,21 +1521,21 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     {
                         valueInt = (Int64)valueFlt;
                     }
-                    valueInt = (sbyte)(valueInt & 0xFF);
+                    valueInt = unchecked((sbyte)(valueInt & 0xFF));
                     break;
                 case FUNDTYPE.FT_I2:
                     if (!srcIntegral)
                     {
                         valueInt = (Int64)valueFlt;
                     }
-                    valueInt = (short)(valueInt & 0xFFFF);
+                    valueInt = unchecked((short)(valueInt & 0xFFFF));
                     break;
                 case FUNDTYPE.FT_I4:
                     if (!srcIntegral)
                     {
                         valueInt = (Int64)valueFlt;
                     }
-                    valueInt = (int)(valueInt & 0xFFFFFFFF);
+                    valueInt = unchecked((int)(valueInt & 0xFFFFFFFF));
                     break;
                 case FUNDTYPE.FT_I8:
                     if (!srcIntegral)
@@ -1570,7 +1568,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     if (!srcIntegral)
                     {
                         valueInt = (long)(ulong)valueFlt;
-                        // code below stolen from jit...
                         const double two63 = 2147483648.0 * 4294967296.0;
                         if (valueFlt < two63)
                         {

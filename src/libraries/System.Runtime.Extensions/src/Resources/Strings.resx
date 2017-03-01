@@ -1,64 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!-- 
-    Microsoft ResX Schema 
-    
-    Version 2.0
-    
-    The primary goals of this format is to allow a simple XML format 
-    that is mostly human readable. The generation and parsing of the 
-    various data types are done through the TypeConverter classes 
-    associated with the data types.
-    
-    Example:
-    
-    ... ado.net/XML headers & schema ...
-    <resheader name="resmimetype">text/microsoft-resx</resheader>
-    <resheader name="version">2.0</resheader>
-    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
-    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
-    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
-    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
-    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
-        <value>[base64 mime encoded serialized .NET Framework object]</value>
-    </data>
-    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
-        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
-        <comment>This is a comment</comment>
-    </data>
-                
-    There are any number of "resheader" rows that contain simple 
-    name/value pairs.
-    
-    Each data row contains a name, and value. The row also contains a 
-    type or mimetype. Type corresponds to a .NET class that support 
-    text/value conversion through the TypeConverter architecture. 
-    Classes that don't support this are serialized and stored with the 
-    mimetype set.
-    
-    The mimetype is used for serialized objects, and tells the 
-    ResXResourceReader how to depersist the object. This is currently not 
-    extensible. For a given mimetype the value must be set accordingly:
-    
-    Note - application/x-microsoft.net.object.binary.base64 is the format 
-    that the ResXResourceWriter will generate, however the reader can 
-    read any of the formats listed below.
-    
-    mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
-            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
-            : and then encoded with base64 encoding.
-    
-    mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with 
-            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
-            : and then encoded with base64 encoding.
-
-    mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array 
-            : using a System.ComponentModel.TypeConverter
-            : and then encoded with base64 encoding.
-    -->
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -147,23 +88,11 @@
   <data name="ArgumentOutOfRange_GenericPositive" xml:space="preserve">
     <value>Value must be positive.</value>
   </data>
-  <data name="ArgumentOutOfRange_StartIndex" xml:space="preserve">
-    <value>StartIndex cannot be less than zero.</value>
-  </data>
-  <data name="ArgumentOutOfRange_LengthTooLarge" xml:space="preserve">
-    <value>The specified length exceeds the maximum value of {0}.</value>
-  </data>
   <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
     <value>Non-negative number required.</value>
   </data>
   <data name="ArgumentOutOfRange_FileLengthTooBig" xml:space="preserve">
     <value>Specified file length was too large for the file system.</value>
-  </data>
-  <data name="Arg_InvalidSearchPattern" xml:space="preserve">
-    <value>Search pattern cannot contain \"..\" to move up directories and can be contained only internally in file/directory names, as in \"a..b\".</value>
-  </data>
-  <data name="Arg_PathGlobalRoot" xml:space="preserve">
-    <value>Paths that begin with \\\\?\\GlobalRoot are internal to the kernel and should not be opened by managed applications.</value>
   </data>
   <data name="Arg_PathIllegal" xml:space="preserve">
     <value>The path is not of a legal form.</value>
@@ -171,23 +100,14 @@
   <data name="Arg_PathIllegalUNC" xml:space="preserve">
     <value>The UNC path should be of the form \\\\server\\share.</value>
   </data>
-  <data name="Arg_Path2IsRooted" xml:space="preserve">
-    <value>Second path fragment must not be a drive or UNC name.</value>
-  </data>
   <data name="Argument_InvalidPathChars" xml:space="preserve">
     <value>Illegal characters in path.</value>
   </data>
   <data name="Argument_PathEmpty" xml:space="preserve">
     <value>Path cannot be the empty string or all whitespace.</value>
   </data>
-  <data name="Argument_MinMaxValue" xml:space="preserve">
-    <value>'{0}' cannot be greater than {1}.</value>
-  </data>
   <data name="Argument_PathFormatNotSupported" xml:space="preserve">
     <value>The given path's format is not supported.</value>
-  </data>
-  <data name="Argument_PathUriFormatNotSupported" xml:space="preserve">
-    <value>URI formats are not supported.</value>
   </data>
   <data name="ArgumentOutOfRange_MustBePositive" xml:space="preserve">
     <value>'{0}' must be greater than zero.</value>
@@ -228,9 +148,6 @@
   <data name="InvalidOperation_Cryptography" xml:space="preserve">
     <value>Unable to use cryptographic functionality.</value>
   </data>
-  <data name="UnknownError_Num" xml:space="preserve">
-    <value>Unknown error '{0}'.</value>
-  </data>
   <data name="Arg_EnumIllegalVal" xml:space="preserve">
     <value>Illegal enum value: {0}</value>
   </data>
@@ -239,87 +156,6 @@
   </data>
   <data name="InvalidOperation_GetVersion" xml:space="preserve">
     <value>OSVersion's call to GetVersionEx failed</value>
-  </data>
-  <data name="Argument_IllegalEnvVarName" xml:space="preserve">
-    <value>Environment variable name cannot contain equal character.</value>
-  </data>
-  <data name="Argument_LongEnvVarValue" xml:space="preserve">
-    <value>Environment variable name or value is too long.</value>
-  </data>
-  <data name="Argument_StringFirstCharIsZero" xml:space="preserve">
-    <value>The first char in the string is the null character.</value>
-  </data>
-  <data name="Argument_StringZeroLength" xml:space="preserve">
-    <value>String cannot be of zero length.</value>
-  </data>
-  <data name="Arg_RegSubKeyAbsent" xml:space="preserve">
-    <value>Cannot delete a subkey tree because the subkey does not exist.</value>
-  </data>
-  <data name="Arg_RegKeyDelHive" xml:space="preserve">
-    <value>Cannot delete a registry hive's subtree.</value>
-  </data>
-  <data name="Arg_RegKeyNoRemoteConnect" xml:space="preserve">
-    <value>No remote connection to '{0}' while trying to read the registry.</value>
-  </data>
-  <data name="Arg_RegKeyOutOfRange" xml:space="preserve">
-    <value>Registry HKEY was out of the legal range.</value>
-  </data>
-  <data name="Arg_RegKeyNotFound" xml:space="preserve">
-    <value>The specified registry key does not exist.</value>
-  </data>
-  <data name="Arg_RegKeyStrLenBug" xml:space="preserve">
-    <value>Registry key names should not be greater than 255 characters.</value>
-  </data>
-  <data name="Arg_RegValStrLenBug" xml:space="preserve">
-    <value>Registry value names should not be greater than 16,383 characters.</value>
-  </data>
-  <data name="Arg_RegBadKeyKind" xml:space="preserve">
-    <value>The specified RegistryValueKind is an invalid value.</value>
-  </data>
-  <data name="Arg_RegGetOverflowBug" xml:space="preserve">
-    <value>RegistryKey.GetValue does not allow a String that has a length greater than Int32.MaxValue.</value>
-  </data>
-  <data name="Arg_RegSetMismatchedKind" xml:space="preserve">
-    <value>The type of the value object did not match the specified RegistryValueKind or the object could not be properly converted.</value>
-  </data>
-  <data name="Arg_RegSetBadArrType" xml:space="preserve">
-    <value>RegistryKey.SetValue does not support arrays of type '{0}'. Only Byte[] and String[] are supported.</value>
-  </data>
-  <data name="Arg_RegSetStrArrNull" xml:space="preserve">
-    <value>RegistryKey.SetValue does not allow a String[] that contains a null String reference.</value>
-  </data>
-  <data name="Arg_RegInvalidKeyName" xml:space="preserve">
-    <value>Registry key name must start with a valid base key name.</value>
-  </data>
-  <data name="Arg_DllInitFailure" xml:space="preserve">
-    <value>One machine may not have remote administration enabled, or both machines may not be running the remote registry service.</value>
-  </data>
-  <data name="Arg_RegSubKeyValueAbsent" xml:space="preserve">
-    <value>No value exists with that name.</value>
-  </data>
-  <data name="Argument_InvalidRegistryOptionsCheck" xml:space="preserve">
-    <value>The specified RegistryOptions value is invalid.</value>
-  </data>
-  <data name="Argument_InvalidRegistryViewCheck" xml:space="preserve">
-    <value>The specified RegistryView value is invalid.</value>
-  </data>
-  <data name="Argument_InvalidRegistryKeyPermissionCheck" xml:space="preserve">
-    <value>The specified RegistryKeyPermissionCheck value is invalid.</value>
-  </data>
-  <data name="InvalidOperation_RegRemoveSubKey" xml:space="preserve">
-    <value>Registry key has subkeys and recursive removes are not supported by this method.</value>
-  </data>
-  <data name="ObjectDisposed_RegKeyClosed" xml:space="preserve">
-    <value>Cannot access a closed registry key.</value>
-  </data>
-  <data name="Security_RegistryPermission" xml:space="preserve">
-    <value>Requested registry access is not allowed.</value>
-  </data>
-  <data name="UnauthorizedAccess_RegistryKeyGeneric_Key" xml:space="preserve">
-    <value>Access to the registry key '{0}' is denied.</value>
-  </data>
-  <data name="UnauthorizedAccess_RegistryNoWrite" xml:space="preserve">
-    <value>Cannot write to the registry key.</value>
   </data>
   <data name="PersistedFiles_NoHomeDirectory" xml:space="preserve">
     <value>The home directory of the current user could not be determined.</value>
@@ -525,52 +361,7 @@
   <data name="Argument_InvalidFlag" xml:space="preserve">
     <value>Value of flags is invalid.</value>
   </data>
-  <data name="ObjectDisposed_FileClosed" xml:space="preserve">
-    <value>Cannot access a closed file.</value>
-  </data>
-  <data name="IO_EOF_ReadBeyondEOF" xml:space="preserve">
-    <value>Unable to read beyond the end of the stream.</value>
-  </data>
-  <data name="IO_IO_SeekBeforeBegin" xml:space="preserve">
-    <value>An attempt was made to move the position before the beginning of the stream.</value>
-  </data>
-  <data name="ArgumentOutOfRange_StreamLength" xml:space="preserve">
-    <value>Stream length must be non-negative and less than 2^31 - 1 - origin.</value>
-  </data>
-  <data name="NotSupported_MemStreamNotExpandable" xml:space="preserve">
-    <value>Memory stream is not expandable.</value>
-  </data>
-  <data name="IO_IO_StreamTooLong" xml:space="preserve">
-    <value>Stream was too long.</value>
-  </data>
-  <data name="ArgumentOutOfRange_NegativeCapacity" xml:space="preserve">
-    <value>Capacity must be positive.</value>
-  </data>
-  <data name="ArgumentOutOfRange_BinaryReaderFillBuffer" xml:space="preserve">
-    <value>The number of bytes requested does not fit into BinaryReader's internal buffer.</value>
-  </data>
-  <data name="Format_Bad7BitInt32" xml:space="preserve">
-    <value>Too many bytes in what should have been a 7 bit encoded Int32.</value>
-  </data>
-  <data name="UnauthorizedAccess_MemStreamBuffer" xml:space="preserve">
-    <value>MemoryStream's internal buffer cannot be accessed.</value>
-  </data>
-  <data name="Argument_InvalidSeekOrigin" xml:space="preserve">
-    <value>Invalid seek origin.</value>
-  </data>
-  <data name="ArgumentNull_Stream" xml:space="preserve">
-    <value>Stream cannot be null.</value>
-  </data>
-  <data name="Arg_EndOfStreamException" xml:space="preserve">
-    <value>Attempted to read past the end of the stream.</value>
-  </data>
   <data name="Arg_SurrogatesNotAllowedAsSingleChar" xml:space="preserve">
     <value>Unicode surrogate characters must be written out as pairs together in the same call, not individually. Consider passing in a character array instead.</value>
-  </data>
-  <data name="Arg_DecBitCtor" xml:space="preserve">
-    <value>Decimal byte array constructor requires an array of length four containing valid decimal bytes.</value>
-  </data>
-  <data name="IO_IO_InvalidStringLen_Len" xml:space="preserve">
-    <value>BinaryReader encountered an invalid string length of {0} characters.</value>
   </data>
 </root>

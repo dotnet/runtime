@@ -1133,7 +1133,7 @@ namespace System.Xml
                     localFrames.Push(currentFrame);
                     goto RecursiveCall;
                     // And we should return here when we return from the recursion
-                    //   but it's the samea s returning after the switch statement
+                    //   but it's the same as returning after the switch statement
 
                 case Token.GreaterThan:
                     Throw( curPos, SR.Xml_InvalidContentModel );

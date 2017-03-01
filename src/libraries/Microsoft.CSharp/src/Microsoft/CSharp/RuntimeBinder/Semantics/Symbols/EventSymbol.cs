@@ -16,7 +16,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     // private.
     // ----------------------------------------------------------------------------
 
-    internal class EventSymbol : Symbol
+    internal sealed class EventSymbol : Symbol
     {
         public EventInfo AssociatedEventInfo;
 

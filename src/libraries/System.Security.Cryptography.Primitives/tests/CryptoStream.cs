@@ -159,7 +159,6 @@ namespace System.Security.Cryptography.Encryption.Tests.Asymmetric
             }
         }
 
-#if netstandard17
         [Fact]
         public static void Clear()
         {
@@ -203,7 +202,6 @@ namespace System.Security.Cryptography.Encryption.Tests.Asymmetric
                 Assert.True(encryptStream.FlushCalled);
             }
         }
-#endif
 
         [Fact]
         public static void MultipleDispose()
@@ -220,7 +218,7 @@ namespace System.Security.Cryptography.Encryption.Tests.Asymmetric
                 Assert.Equal(false, output.CanRead);
             }
 
-#if netcoreapp11
+#if netcoreapp
             using (MemoryStream output = new MemoryStream())
             {
                 using (CryptoStream encryptStream = new CryptoStream(output, encryptor, CryptoStreamMode.Write, leaveOpen: false))

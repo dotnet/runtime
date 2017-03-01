@@ -22,17 +22,17 @@ namespace System.IO.MemoryMappedFiles.Tests
                 long capacity = acc.Capacity;
                 for (int i = 0; i < capacity; i++)
                 {
-                    acc.Write(i, (byte)i);
+                    acc.Write(i, unchecked((byte)i));
                 }
                 acc.Flush();
 
                 // Spawn and then wait for the other process, which will verify the data and write its own known pattern
-                RemoteInvoke(DataShared_OtherProcess, file.Path).Dispose();
+                RemoteInvoke(DataShared_OtherProcess, $"\"{file.Path}\"").Dispose();
 
                 // Now verify we're seeing the data from the other process
                 for (int i = 0; i < capacity; i++)
                 {
-                    Assert.Equal((byte)(capacity - i - 1), acc.ReadByte(i));
+                    Assert.Equal(unchecked((byte)(capacity - i - 1)), acc.ReadByte(i));
                 }
             }
         }
@@ -48,11 +48,11 @@ namespace System.IO.MemoryMappedFiles.Tests
                 long capacity = acc.Capacity;
                 for (int i = 0; i < capacity; i++)
                 {
-                    Assert.Equal((byte)i, acc.ReadByte(i));
+                    Assert.Equal(unchecked((byte)i), acc.ReadByte(i));
                 }
                 for (int i = 0; i < capacity; i++)
                 {
-                    acc.Write(i, (byte)(capacity - i - 1));
+                    acc.Write(i, unchecked((byte)(capacity - i - 1)));
                 }
                 acc.Flush();
                 return SuccessExitCode;

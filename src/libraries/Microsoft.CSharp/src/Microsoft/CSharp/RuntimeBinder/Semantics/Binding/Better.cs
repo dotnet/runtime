@@ -9,7 +9,7 @@ using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal partial class ExpressionBinder
+    internal sealed partial class ExpressionBinder
     {
         ////////////////////////////////////////////////////////////////////////////////
         // This table is used to implement the last set of 'better' conversion rules
@@ -38,7 +38,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             new byte[] /* OBJECT*/ {0,     0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,       0,       0}
         };
 
-        protected BetterType WhichMethodIsBetterTieBreaker(
+        private BetterType WhichMethodIsBetterTieBreaker(
             CandidateFunctionMember node1,
             CandidateFunctionMember node2,
             CType pTypeThrough,
@@ -203,7 +203,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         //
         // Returns Left if m1 is better, Right if m2 is better, or Neither/Same
 
-        protected BetterType WhichMethodIsBetter(
+        private BetterType WhichMethodIsBetter(
             CandidateFunctionMember node1,
             CandidateFunctionMember node2,
             CType pTypeThrough,
@@ -318,7 +318,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return betterMethod;
         }
 
-        protected BetterType WhichConversionIsBetter(EXPR arg, CType argType,
+        private BetterType WhichConversionIsBetter(EXPR arg, CType argType,
             CType p1, CType p2)
         {
             Debug.Assert(argType != null);
@@ -352,7 +352,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return WhichConversionIsBetter(argType, p1, p2);
         }
 
-        public BetterType WhichConversionIsBetter(CType argType,
+        private BetterType WhichConversionIsBetter(CType argType,
             CType p1, CType p2)
         {
             // 7.4.2.4 Better conversion from type
@@ -419,8 +419,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         ////////////////////////////////////////////////////////////////////////////////
         // Determine best method for overload resolution. Returns null if no best 
         // method, in which case two tying methods are returned for error reporting.
-
-        protected CandidateFunctionMember FindBestMethod(
+        private CandidateFunctionMember FindBestMethod(
             List<CandidateFunctionMember> list,
             CType pTypeThrough,
             ArgInfos args,

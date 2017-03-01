@@ -4,7 +4,7 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal class EXPRARRAYINDEX : EXPR
+    internal sealed class EXPRARRAYINDEX : EXPR
     {
         private EXPR _Array;
         public EXPR GetArray() { return _Array; }

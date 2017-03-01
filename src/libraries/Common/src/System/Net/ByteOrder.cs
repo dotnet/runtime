@@ -29,7 +29,7 @@ namespace System.Net
         public static void HostToNetworkBytes(this ushort host, byte[] bytes, int index)
         {
             bytes[index] = (byte)(host >> 8);
-            bytes[index + 1] = (byte)host;
+            bytes[index + 1] = unchecked((byte)host);
         }
 
         public static ushort NetworkToHost(this ushort network)

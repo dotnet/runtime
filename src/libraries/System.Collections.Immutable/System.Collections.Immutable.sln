@@ -9,35 +9,30 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Collections.Immutabl
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Collections.Immutable", "src\System.Collections.Immutable.csproj", "{1DD0FF15-6234-4BD6-850A-317F05479554}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{1CA59CB2-FE88-4510-92AC-3561026C3B13}"
-	ProjectSection(SolutionItems) = preProject
-		..\.nuget\packages.Windows_NT.config = ..\.nuget\packages.Windows_NT.config
-	EndProjectSection
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{D7979177-679D-4E56-919B-479871FA1BDF}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{E181070D-D93C-4B03-B1EB-133CEA43503E}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E893-4E87-987E-04EF0DCEAEFD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		DebugNETCoreAppnetstandard1.0netstandard1.3|AnyCPU = DebugNETCoreAppnetstandard1.0netstandard1.3|AnyCPU
-		ReleaseNETCoreAppnetstandard1.0netstandard1.3|AnyCPU = ReleaseNETCoreAppnetstandard1.0netstandard1.3|AnyCPU
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{95DFC527-4DC1-495E-97D7-E94EE1F7140D}.DebugNETCoreAppnetstandard1.0netstandard1.3|AnyCPU.ActiveCfg = netstandard1.3-Debug|Any CPU
-		{95DFC527-4DC1-495E-97D7-E94EE1F7140D}.DebugNETCoreAppnetstandard1.0netstandard1.3|AnyCPU.Build.0 = netstandard1.3-Debug|Any CPU
-		{95DFC527-4DC1-495E-97D7-E94EE1F7140D}.ReleaseNETCoreAppnetstandard1.0netstandard1.3|AnyCPU.ActiveCfg = netstandard1.3-Release|Any CPU
-		{95DFC527-4DC1-495E-97D7-E94EE1F7140D}.ReleaseNETCoreAppnetstandard1.0netstandard1.3|AnyCPU.Build.0 = netstandard1.3-Release|Any CPU
-		{1DD0FF15-6234-4BD6-850A-317F05479554}.DebugNETCoreAppnetstandard1.0netstandard1.3|AnyCPU.ActiveCfg = netstandard1.0-Debug|Any CPU
-		{1DD0FF15-6234-4BD6-850A-317F05479554}.DebugNETCoreAppnetstandard1.0netstandard1.3|AnyCPU.Build.0 = netstandard1.0-Debug|Any CPU
-		{1DD0FF15-6234-4BD6-850A-317F05479554}.ReleaseNETCoreAppnetstandard1.0netstandard1.3|AnyCPU.ActiveCfg = netstandard1.0-Release|Any CPU
-		{1DD0FF15-6234-4BD6-850A-317F05479554}.ReleaseNETCoreAppnetstandard1.0netstandard1.3|AnyCPU.Build.0 = netstandard1.0-Release|Any CPU
+		{95DFC527-4DC1-495E-97D7-E94EE1F7140D}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{95DFC527-4DC1-495E-97D7-E94EE1F7140D}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{95DFC527-4DC1-495E-97D7-E94EE1F7140D}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{95DFC527-4DC1-495E-97D7-E94EE1F7140D}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{1DD0FF15-6234-4BD6-850A-317F05479554}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{1DD0FF15-6234-4BD6-850A-317F05479554}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{1DD0FF15-6234-4BD6-850A-317F05479554}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{1DD0FF15-6234-4BD6-850A-317F05479554}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{95DFC527-4DC1-495E-97D7-E94EE1F7140D} = {95DFC527-4DC1-495E-97D7-E94EE1F7140D}
-		{1DD0FF15-6234-4BD6-850A-317F05479554} = {1DD0FF15-6234-4BD6-850A-317F05479554}
+		{95DFC527-4DC1-495E-97D7-E94EE1F7140D} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{1DD0FF15-6234-4BD6-850A-317F05479554} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 	EndGlobalSection
 EndGlobal

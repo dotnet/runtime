@@ -16,7 +16,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
-using Res = System.SR;
 #if MANAGED_SNI
 using System.Data.SqlClient.SNI;
 #endif
@@ -317,18 +316,16 @@ namespace System.Data.SqlClient
                 Debug.Assert(false, "SNI returned status != success, but no error thrown?");
             }
 
+            _sniSpnBuffer = null;
 #if !MANAGED_SNI
             if (integratedSecurity)
             {
                 LoadSSPILibrary();
+
                 // now allocate proper length of buffer
                 _sniSpnBuffer = new byte[SNINativeMethodWrapper.SniMaxComposedSpnLength];
             }
-            else
-            {
-                _sniSpnBuffer = null;
-            }
-#endif // MANAGED_SNI
+#endif
 
             byte[] instanceName = null;
 
@@ -340,7 +337,7 @@ namespace System.Data.SqlClient
 
 #if MANAGED_SNI
             _physicalStateObj.CreateConnectionHandle(serverInfo.ExtendedServerName, ignoreSniOpenTimeout, timerExpire,
-                        out instanceName, _sniSpnBuffer, false, true, fParallel);
+                        out instanceName, ref _sniSpnBuffer, false, true, fParallel, integratedSecurity);
 #else
             _physicalStateObj.CreatePhysicalSNIHandle(serverInfo.ExtendedServerName, ignoreSniOpenTimeout, timerExpire,
                         out instanceName, _sniSpnBuffer, false, true, fParallel);
@@ -403,11 +400,12 @@ namespace System.Data.SqlClient
 
                 // On Instance failure re-connect and flush SNI named instance cache.
                 _physicalStateObj.SniContext = SniContext.Snix_Connect;
+
 #if MANAGED_SNI
-                _physicalStateObj.CreateConnectionHandle(serverInfo.ExtendedServerName, ignoreSniOpenTimeout, timerExpire, out instanceName, _sniSpnBuffer, true, true, fParallel);
+                _physicalStateObj.CreateConnectionHandle(serverInfo.ExtendedServerName, ignoreSniOpenTimeout, timerExpire, out instanceName, ref _sniSpnBuffer, true, true, fParallel, integratedSecurity);
 #else
                 _physicalStateObj.CreatePhysicalSNIHandle(serverInfo.ExtendedServerName, ignoreSniOpenTimeout, timerExpire, out instanceName, _sniSpnBuffer, true, true, fParallel);
-#endif // MANAGED_SNI
+#endif
 
                 if (TdsEnums.SNI_SUCCESS != _physicalStateObj.Status)
                 {
@@ -752,7 +750,7 @@ namespace System.Data.SqlClient
 
             if (!_physicalStateObj.TryProcessHeader()) { throw SQL.SynchronousCallMayNotPend(); }
 
-            if(_physicalStateObj._inBytesPacket > TdsEnums.MAX_PACKET_SIZE || _physicalStateObj._inBytesPacket < 0)
+            if (_physicalStateObj._inBytesPacket > TdsEnums.MAX_PACKET_SIZE || _physicalStateObj._inBytesPacket < 0)
             {
                 throw SQL.InvalidPacketSize();
             }
@@ -1144,7 +1142,7 @@ namespace System.Data.SqlClient
                     serverVersion = _connHandler.ServerVersion;
                 }
 
-                if(temp.Count == 1 && temp[0].Exception != null)
+                if (temp.Count == 1 && temp[0].Exception != null)
                 {
                     exception = SqlException.CreateException(temp, serverVersion, _connHandler, temp[0].Exception);
                 }
@@ -3228,7 +3226,8 @@ namespace System.Data.SqlClient
 
             if (tdsType == TdsEnums.SQLUDT)
             {
-                if (!TryProcessUDTMetaData((SqlMetaDataPriv) rec, stateObj)) {
+                if (!TryProcessUDTMetaData((SqlMetaDataPriv)rec, stateObj))
+                {
                     return false;
                 }
             }
@@ -4121,7 +4120,7 @@ namespace System.Data.SqlClient
                     buffer[map[i]] = data.SqlValue;
                     if (stateObj._longlen != 0)
                     {
-                        throw new SqlTruncateException(Res.GetString(Res.SqlMisc_TruncationMaxDataMessage));
+                        throw new SqlTruncateException(SR.GetString(SR.SqlMisc_TruncationMaxDataMessage));
                     }
                 }
                 data.Clear();
@@ -6024,8 +6023,7 @@ namespace System.Data.SqlClient
             {
                 checked
                 {
-                    length += (userName.Length * 2) + encryptedPasswordLengthInBytes
-                    ;
+                    length += (userName.Length * 2) + encryptedPasswordLengthInBytes;
                 }
             }
             else
@@ -6041,7 +6039,14 @@ namespace System.Data.SqlClient
                     // byte[] buffer and 0 for the int length.
                     Debug.Assert(SniContext.Snix_Login == _physicalStateObj.SniContext, String.Format((IFormatProvider)null, "Unexpected SniContext. Expecting Snix_Login, actual value is '{0}'", _physicalStateObj.SniContext));
                     _physicalStateObj.SniContext = SniContext.Snix_LoginSspi;
+
+#if MANAGED_SNI
+                    SSPIData(null, ref outSSPIBuff);
+                    outSSPILength = outSSPIBuff != null ? (uint)outSSPIBuff.Length : 0;
+#else
                     SSPIData(null, 0, outSSPIBuff, ref outSSPILength);
+#endif
+
                     if (outSSPILength > Int32.MaxValue)
                     {
                         throw SQL.InvalidSSPIPacketSize();  // SqlBu 332503
@@ -6295,29 +6300,47 @@ namespace System.Data.SqlClient
             _physicalStateObj._messageStatus = 0;
         }// tdsLogin
 
+#if MANAGED_SNI
+        private void SSPIData(byte[] receivedBuff, ref byte[] sendBuff)
+        {
+            SNISSPIData(receivedBuff, ref sendBuff);
+        }
+#else
         private void SSPIData(byte[] receivedBuff, UInt32 receivedLength, byte[] sendBuff, ref UInt32 sendLength)
         {
             SNISSPIData(receivedBuff, receivedLength, sendBuff, ref sendLength);
         }
+#endif
 
+
+#if MANAGED_SNI
+        private void SNISSPIData(byte[] receivedBuff, ref byte[] sendBuff)
+        {
+            try
+            {
+                SNIProxy.Singleton.GenSspiClientContext(_physicalStateObj.sspiClientContextStatus, receivedBuff, ref sendBuff, _sniSpnBuffer);
+            }
+            catch (Exception e)
+            {
+                SSPIError(e.Message + "\n" + e.StackTrace, TdsEnums.GEN_CLIENT_CONTEXT);
+            }
+        }
+#else
         private void SNISSPIData(byte[] receivedBuff, UInt32 receivedLength, byte[] sendBuff, ref UInt32 sendLength)
         {
             if (receivedBuff == null)
             {
-                // we do not have SSPI data coming from server, so send over 0's for pointer and length
+                // if we do not have SSPI data coming from server, send over 0's for pointer and length
                 receivedLength = 0;
             }
+
             // we need to respond to the server's message with SSPI data
-#if MANAGED_SNI
-            if (0 != SNIProxy.Singleton.GenSspiClientContext(_physicalStateObj.Handle, receivedBuff, receivedLength, sendBuff, ref sendLength, _sniSpnBuffer, (uint)_sniSpnBuffer.Length)) 
-#else
             if (0 != SNINativeMethodWrapper.SNISecGenClientContext(_physicalStateObj.Handle, receivedBuff, receivedLength, sendBuff, ref sendLength, _sniSpnBuffer))
-#endif // MANAGED_SNI
             {
                 SSPIError(SQLMessage.SSPIGenerateError(), TdsEnums.GEN_CLIENT_CONTEXT);
             }
         }
-
+#endif
 
         private void ProcessSSPI(int receivedLength)
         {
@@ -6336,7 +6359,11 @@ namespace System.Data.SqlClient
             UInt32 sendLength = s_maxSSPILength;
 
             // make call for SSPI data
+#if MANAGED_SNI            
+            SSPIData(receivedBuff, ref sendBuff);
+#else
             SSPIData(receivedBuff, (UInt32)receivedLength, sendBuff, ref sendLength);
+#endif
 
             // DO NOT SEND LENGTH - TDS DOC INCORRECT!  JUST SEND SSPI DATA!
             _physicalStateObj.WriteByteArray(sendBuff, (int)sendLength, 0);
@@ -9390,56 +9417,70 @@ namespace System.Data.SqlClient
             return stateObj._longlen;
         }
 
-         private bool TryProcessUDTMetaData(SqlMetaDataPriv metaData, TdsParserStateObject stateObj) {
+        private bool TryProcessUDTMetaData(SqlMetaDataPriv metaData, TdsParserStateObject stateObj)
+        {
 
             ushort shortLength;
             byte byteLength;
 
-            if (!stateObj.TryReadUInt16(out shortLength)) { // max byte size
+            if (!stateObj.TryReadUInt16(out shortLength))
+            { // max byte size
                 return false;
             }
             metaData.length = shortLength;
 
             // database name
-            if (!stateObj.TryReadByte(out byteLength)) {
+            if (!stateObj.TryReadByte(out byteLength))
+            {
                 return false;
             }
-            if (byteLength != 0) {
-                if (!stateObj.TryReadString(byteLength, out metaData.udtDatabaseName)) {
+            if (byteLength != 0)
+            {
+                if (!stateObj.TryReadString(byteLength, out metaData.udtDatabaseName))
+                {
                     return false;
                 }
             }
 
             // schema name
-            if (!stateObj.TryReadByte(out byteLength)) {
+            if (!stateObj.TryReadByte(out byteLength))
+            {
                 return false;
             }
-            if (byteLength != 0) {
-                if (!stateObj.TryReadString(byteLength, out metaData.udtSchemaName)) {
+            if (byteLength != 0)
+            {
+                if (!stateObj.TryReadString(byteLength, out metaData.udtSchemaName))
+                {
                     return false;
                 }
             }
 
             // type name
-            if (!stateObj.TryReadByte(out byteLength)) {
+            if (!stateObj.TryReadByte(out byteLength))
+            {
                 return false;
             }
-            if (byteLength != 0) {
-                if (!stateObj.TryReadString(byteLength, out metaData.udtTypeName)) {
+            if (byteLength != 0)
+            {
+                if (!stateObj.TryReadString(byteLength, out metaData.udtTypeName))
+                {
                     return false;
                 }
             }
 
-            if (!stateObj.TryReadUInt16(out shortLength)) {
+            if (!stateObj.TryReadUInt16(out shortLength))
+            {
                 return false;
             }
-            if (shortLength != 0) {
-                if (!stateObj.TryReadString(shortLength, out metaData.udtAssemblyQualifiedName)) {
+            if (shortLength != 0)
+            {
+                if (!stateObj.TryReadString(shortLength, out metaData.udtAssemblyQualifiedName))
+                {
                     return false;
                 }
             }
 
             return true;
-        }       
+        }
     }    // tdsparser
 }//namespace

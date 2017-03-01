@@ -785,5 +785,14 @@ namespace System.Linq.Expressions.Tests
         {
             return var += val;
         }
+
+        [Fact]
+        public void OpenGenericDelegate()
+        {
+            Assert.Throws<ArgumentException>("delegateType", () => Expression.Lambda(typeof(Action<>), Expression.Empty()));
+            Assert.Throws<ArgumentException>("delegateType", () => Expression.Lambda(typeof(Action<>), Expression.Empty(), Enumerable.Empty<ParameterExpression>()));
+            Assert.Throws<ArgumentException>("delegateType", () => Expression.Lambda(typeof(Action<>), Expression.Empty(), false));
+            Assert.Throws<ArgumentException>("delegateType", () => Expression.Lambda(typeof(Action<>), Expression.Empty(), false, Enumerable.Empty<ParameterExpression>()));
+        }
     }
 }

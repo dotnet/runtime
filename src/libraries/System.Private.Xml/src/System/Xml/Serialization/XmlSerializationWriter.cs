@@ -1192,12 +1192,12 @@ namespace System.Xml.Serialization
                     }
                     else
                     {
-                        Type elementBaseType = elementType.GetTypeInfo().BaseType;
+                        Type elementBaseType = elementType.BaseType;
                         while (elementBaseType != null)
                         {
                             entry = GetTypeEntry(elementBaseType);
                             if (entry != null) break;
-                            elementBaseType = elementBaseType.GetTypeInfo().BaseType;
+                            elementBaseType = elementBaseType.BaseType;
                         }
                         if (entry != null)
                         {
@@ -1320,7 +1320,7 @@ namespace System.Xml.Serialization
             else
             {
                 // Enums always write xsi:type, so don't write it again here.
-                bool needXsiType = t != ambientType && !t.GetTypeInfo().IsEnum;
+                bool needXsiType = t != ambientType && !t.IsEnum;
                 TypeEntry entry = GetTypeEntry(t);
                 if (entry != null)
                 {
@@ -2031,7 +2031,7 @@ namespace System.Xml.Serialization
             Writer.Indent--;
             Writer.WriteLine("}");
 
-            if (!mapping.IsSoap && !mapping.TypeDesc.IsValueType && !mapping.TypeDesc.Type.GetTypeInfo().IsPrimitive)
+            if (!mapping.IsSoap && !mapping.TypeDesc.IsValueType && !mapping.TypeDesc.Type.IsPrimitive)
             {
                 Writer.WriteLine("TopLevelElement();");
             }
@@ -2178,7 +2178,7 @@ namespace System.Xml.Serialization
 
 #if DEBUG
                     // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
-                    if (methodName == null) throw new InvalidOperationException("deriaved from " + mapping.TypeDesc.FullName + ", " + SR.Format(SR.XmlInternalErrorMethod, derived.TypeDesc.Name) + Environment.StackTrace);
+                    if (methodName == null) throw new InvalidOperationException("derived from " + mapping.TypeDesc.FullName + ", " + SR.Format(SR.XmlInternalErrorMethod, derived.TypeDesc.Name) + Environment.StackTrace);
 #endif
 
                 Writer.Write(methodName);
@@ -3500,7 +3500,7 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    if (type.GetTypeInfo().IsEnum)
+                    if (type.IsEnum)
                     {
                         Writer.Write(((int)value).ToString(null, NumberFormatInfo.InvariantInfo));
                     }
@@ -3640,7 +3640,7 @@ namespace System.Xml.Serialization
             object oIsTypeDynamic = s_tableIsTypeDynamic[type];
             if (oIsTypeDynamic == null)
             {
-                Assembly assembly = type.GetTypeInfo().Assembly;
+                Assembly assembly = type.Assembly;
                 bool isTypeDynamic = assembly.IsDynamic /*|| string.IsNullOrEmpty(assembly.Location)*/;
                 if (!isTypeDynamic)
                 {
@@ -3648,7 +3648,7 @@ namespace System.Xml.Serialization
                     {
                         isTypeDynamic = IsTypeDynamic(type.GetElementType());
                     }
-                    else if (type.GetTypeInfo().IsGenericType)
+                    else if (type.IsGenericType)
                     {
                         Type[] parameterTypes = type.GetGenericArguments();
                         if (parameterTypes != null)
@@ -3892,7 +3892,7 @@ namespace System.Xml.Serialization
 
         private string WriteAssemblyInfo(Type type)
         {
-            string assemblyFullName = type.GetTypeInfo().Assembly.FullName;
+            string assemblyFullName = type.Assembly.FullName;
             string assemblyVariable = (string)_reflectionVariables[assemblyFullName];
             if (assemblyVariable == null)
             {
@@ -3901,7 +3901,7 @@ namespace System.Xml.Serialization
                 assemblyVariable = GenerateVariableName("assembly", assemblyName);
                 //writer.WriteLine("static "+ typeof(Assembly).FullName+" "+assemblyVariable+" = "+typeof(Assembly).FullName+".Load(");
                 _writer.Write("static " + typeof(Assembly).FullName + " " + assemblyVariable + " = " + "ResolveDynamicAssembly(");
-                WriteQuotedCSharpString(DynamicAssemblies.GetName(type.GetTypeInfo().Assembly)/*assemblyFullName*/);
+                WriteQuotedCSharpString(DynamicAssemblies.GetName(type.Assembly)/*assemblyFullName*/);
                 _writer.WriteLine(");");
                 _reflectionVariables.Add(assemblyFullName, assemblyVariable);
             }

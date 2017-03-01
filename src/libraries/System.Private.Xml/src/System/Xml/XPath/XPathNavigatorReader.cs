@@ -485,7 +485,7 @@ namespace System.Xml.XPath
             if (null == namespaceURI)
                 namespaceURI = string.Empty;
             // We need to clone the navigator and move the clone to the attribute to see whether the attribute exists, 
-            // because XPathNavigator.GetAttribute return string.Empty for both when the the attribute is not there or when 
+            // because XPathNavigator.GetAttribute return string.Empty for both when the attribute is not there or when 
             // it has an empty value. XmlReader.GetAttribute must return null if the attribute does not exist.
             if ((object)nav == (object)_nav)
                 nav = nav.Clone();

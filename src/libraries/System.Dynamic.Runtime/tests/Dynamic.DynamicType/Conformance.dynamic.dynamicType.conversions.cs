@@ -1569,7 +1569,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.conversions
 
     public class ConversionInRuntimeType
     {
-        private static bool NoPredefinedImplicitConversionButExistExplictConversion()
+        private static bool NoPredefinedImplicitConversionButExistExplicitConversion()
         {
             int failcount = 0;
             ulong origin = 100;
@@ -1592,7 +1592,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.conversions
             return failcount == 0;
         }
 
-        private static bool NoUserdefinedImplicitConversionButExistExplictConversion()
+        private static bool NoUserdefinedImplicitConversionButExistExplicitConversion()
         {
             int failcount = 0;
             C origin = new C(22);
@@ -1624,8 +1624,8 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.conversions
         public static int MainMethod()
         {
             int result = 0;
-            result += Verify.Eval(NoPredefinedImplicitConversionButExistExplictConversion);
-            result += Verify.Eval(NoUserdefinedImplicitConversionButExistExplictConversion);
+            result += Verify.Eval(NoPredefinedImplicitConversionButExistExplicitConversion);
+            result += Verify.Eval(NoUserdefinedImplicitConversionButExistExplicitConversion);
             return result;
         }
     }
@@ -5273,13 +5273,20 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.conversions
 
         public static int MainMethod(string[] args)
         {
+            ulong i, j;
             double x = ulong.MaxValue;
-            dynamic d = x;
-            ulong i = (ulong)x;
-            ulong j = (ulong)d;
-            Expression<Func<object, ulong>> lambda = foo => (ulong)(double)foo;
+            dynamic d;
+
+            unchecked
+            {
+                d = x;
+                i = (ulong)x;
+                j = (ulong)d;
+            }
+
+            Expression<Func<object, ulong>> lambda = foo => unchecked((ulong)(double)foo);
             ulong res = lambda.Compile()(x);
-            Func<object, ulong> lambda2 = foo => (ulong)(double)foo;
+            Func<object, ulong> lambda2 = foo => unchecked((ulong)(double)foo);
             ulong res2 = lambda2(x);
             if (i != j)
                 return 1;

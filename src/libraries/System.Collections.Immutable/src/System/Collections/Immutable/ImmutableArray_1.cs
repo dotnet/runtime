@@ -12,123 +12,8 @@ using System.Runtime.Versioning;
 
 namespace System.Collections.Immutable
 {
-    /// <summary>
-    /// A readonly array with O(1) indexable lookup time.
-    /// </summary>
-    /// <typeparam name="T">The type of element stored by the array.</typeparam>
-    /// <devremarks>
-    /// This type has a documented contract of being exactly one reference-type field in size.
-    /// Our own <see cref="ImmutableInterlocked"/> class depends on it, as well as others externally.
-    /// IMPORTANT NOTICE FOR MAINTAINERS AND REVIEWERS:
-    /// This type should be thread-safe. As a struct, it cannot protect its own fields
-    /// from being changed from one thread while its members are executing on other threads
-    /// because structs can change *in place* simply by reassigning the field containing
-    /// this struct. Therefore it is extremely important that
-    /// ** Every member should only dereference <c>this</c> ONCE. **
-    /// If a member needs to reference the array field, that counts as a dereference of <c>this</c>.
-    /// Calling other instance members (properties or methods) also counts as dereferencing <c>this</c>.
-    /// Any member that needs to use <c>this</c> more than once must instead
-    /// assign <c>this</c> to a local variable and use that for the rest of the code instead.
-    /// This effectively copies the one field in the struct to a local variable so that
-    /// it is insulated from other threads.
-    /// </devremarks>
-    [DebuggerDisplay("{DebuggerDisplay,nq}")]
-    [NonVersionable] // Applies to field layout
-    public partial struct ImmutableArray<T> : IReadOnlyList<T>, IList<T>, IEquatable<ImmutableArray<T>>, IImmutableList<T>, IList, IImmutableArray, IStructuralComparable, IStructuralEquatable
+    public partial struct ImmutableArray<T> : IReadOnlyList<T>, IList<T>, IEquatable<ImmutableArray<T>>, IList, IImmutableArray, IStructuralComparable, IStructuralEquatable, IImmutableList<T>
     {
-        /// <summary>
-        /// An empty (initialized) instance of <see cref="ImmutableArray{T}"/>.
-        /// </summary>
-        public static readonly ImmutableArray<T> Empty = new ImmutableArray<T>(new T[0]);
-
-        /// <summary>
-        /// The backing field for this instance. References to this value should never be shared with outside code.
-        /// </summary>
-        /// <remarks>
-        /// This would be private, but we make it internal so that our own extension methods can access it.
-        /// </remarks>
-        [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-        internal T[] array;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ImmutableArray{T}"/> struct
-        /// *without making a defensive copy*.
-        /// </summary>
-        /// <param name="items">The array to use. May be null for "default" arrays.</param>
-        internal ImmutableArray(T[] items)
-        {
-            this.array = items;
-        }
-
-        #region Operators
-
-        /// <summary>
-        /// Checks equality between two instances.
-        /// </summary>
-        /// <param name="left">The instance to the left of the operator.</param>
-        /// <param name="right">The instance to the right of the operator.</param>
-        /// <returns><c>true</c> if the values' underlying arrays are reference equal; <c>false</c> otherwise.</returns>
-        [NonVersionable]
-        public static bool operator ==(ImmutableArray<T> left, ImmutableArray<T> right)
-        {
-            return left.Equals(right);
-        }
-
-        /// <summary>
-        /// Checks inequality between two instances.
-        /// </summary>
-        /// <param name="left">The instance to the left of the operator.</param>
-        /// <param name="right">The instance to the right of the operator.</param>
-        /// <returns><c>true</c> if the values' underlying arrays are reference not equal; <c>false</c> otherwise.</returns>
-        [NonVersionable]
-        public static bool operator !=(ImmutableArray<T> left, ImmutableArray<T> right)
-        {
-            return !left.Equals(right);
-        }
-
-        /// <summary>
-        /// Checks equality between two instances.
-        /// </summary>
-        /// <param name="left">The instance to the left of the operator.</param>
-        /// <param name="right">The instance to the right of the operator.</param>
-        /// <returns><c>true</c> if the values' underlying arrays are reference equal; <c>false</c> otherwise.</returns>
-        public static bool operator ==(ImmutableArray<T>? left, ImmutableArray<T>? right)
-        {
-            return left.GetValueOrDefault().Equals(right.GetValueOrDefault());
-        }
-
-        /// <summary>
-        /// Checks inequality between two instances.
-        /// </summary>
-        /// <param name="left">The instance to the left of the operator.</param>
-        /// <param name="right">The instance to the right of the operator.</param>
-        /// <returns><c>true</c> if the values' underlying arrays are reference not equal; <c>false</c> otherwise.</returns>
-        public static bool operator !=(ImmutableArray<T>? left, ImmutableArray<T>? right)
-        {
-            return !left.GetValueOrDefault().Equals(right.GetValueOrDefault());
-        }
-
-        #endregion
-
-        /// <summary>
-        /// Gets the element at the specified index in the read-only list.
-        /// </summary>
-        /// <param name="index">The zero-based index of the element to get.</param>
-        /// <returns>The element at the specified index in the read-only list.</returns>
-        public T this[int index]
-        {
-            [NonVersionable]
-            get
-            {
-                // We intentionally do not check this.array != null, and throw NullReferenceException
-                // if this is called while uninitialized.
-                // The reason for this is perf.
-                // Length and the indexer must be absolutely trivially implemented for the JIT optimization
-                // of removing array bounds checking to work.
-                return this.array[index];
-            }
-        }
-
         /// <summary>
         /// Gets or sets the element at the specified index in the read-only list.
         /// </summary>
@@ -157,34 +42,6 @@ namespace System.Collections.Immutable
         bool ICollection<T>.IsReadOnly
         {
             get { return true; }
-        }
-
-        /// <summary>
-        /// Gets a value indicating whether this collection is empty.
-        /// </summary>
-        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        public bool IsEmpty
-        {
-            [NonVersionable]
-            get { return this.Length == 0; }
-        }
-
-        /// <summary>
-        /// Gets the number of elements in the array.
-        /// </summary>
-        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        public int Length
-        {
-            [NonVersionable]
-            get
-            {
-                // We intentionally do not check this.array != null, and throw NullReferenceException
-                // if this is called while uninitialized.
-                // The reason for this is perf.
-                // Length and the indexer must be absolutely trivially implemented for the JIT optimization
-                // of removing array bounds checking to work.
-                return this.array.Length;
-            }
         }
 
         /// <summary>
@@ -232,50 +89,6 @@ namespace System.Collections.Immutable
                 var self = this;
                 self.ThrowInvalidOperationIfNotInitialized();
                 return self[index];
-            }
-        }
-
-        /// <summary>
-        /// Gets a value indicating whether this struct was initialized without an actual array instance.
-        /// </summary>
-        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        public bool IsDefault
-        {
-            get { return this.array == null; }
-        }
-
-        /// <summary>
-        /// Gets a value indicating whether this struct is empty or uninitialized.
-        /// </summary>
-        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        public bool IsDefaultOrEmpty
-        {
-            get
-            {
-                var self = this;
-                return self.array == null || self.array.Length == 0;
-            }
-        }
-
-        /// <summary>
-        /// Gets an untyped reference to the array.
-        /// </summary>
-        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        Array IImmutableArray.Array
-        {
-            get { return this.array; }
-        }
-
-        /// <summary>
-        /// Gets the string to display in the debugger watches window for this instance.
-        /// </summary>
-        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private string DebuggerDisplay
-        {
-            get
-            {
-                var self = this;
-                return self.IsDefault ? "Uninitialized" : String.Format(CultureInfo.CurrentCulture, "Length = {0}", self.Length);
             }
         }
 
@@ -476,46 +289,6 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Copies the contents of this array to the specified array.
-        /// </summary>
-        /// <param name="destination">The array to copy to.</param>
-        [Pure]
-        public void CopyTo(T[] destination)
-        {
-            var self = this;
-            self.ThrowNullRefIfNotInitialized();
-            Array.Copy(self.array, 0, destination, 0, self.Length);
-        }
-
-        /// <summary>
-        /// Copies the contents of this array to the specified array.
-        /// </summary>
-        /// <param name="destination">The array to copy to.</param>
-        /// <param name="destinationIndex">The index into the destination array to which the first copied element is written.</param>
-        [Pure]
-        public void CopyTo(T[] destination, int destinationIndex)
-        {
-            var self = this;
-            self.ThrowNullRefIfNotInitialized();
-            Array.Copy(self.array, 0, destination, destinationIndex, self.Length);
-        }
-
-        /// <summary>
-        /// Copies the contents of this array to the specified array.
-        /// </summary>
-        /// <param name="sourceIndex">The index into this collection of the first element to copy.</param>
-        /// <param name="destination">The array to copy to.</param>
-        /// <param name="destinationIndex">The index into the destination array to which the first copied element is written.</param>
-        /// <param name="length">The number of elements to copy.</param>
-        [Pure]
-        public void CopyTo(int sourceIndex, T[] destination, int destinationIndex, int length)
-        {
-            var self = this;
-            self.ThrowNullRefIfNotInitialized();
-            Array.Copy(self.array, sourceIndex, destination, destinationIndex, length);
-        }
-
-        /// <summary>
         /// Returns a new array with the specified value inserted at the specified position.
         /// </summary>
         /// <param name="index">The 0-based index into the array at which the new item should be added.</param>
@@ -613,7 +386,7 @@ namespace System.Collections.Immutable
         {
             var self = this;
             self.ThrowNullRefIfNotInitialized();
-            ThrowNullRefIfNotInitialized(items);
+            items.ThrowNullRefIfNotInitialized();
             Requires.Range(index >= 0 && index <= self.Length, nameof(index));
 
             if (self.IsEmpty)
@@ -692,6 +465,7 @@ namespace System.Collections.Immutable
         public ImmutableArray<T> SetItem(int index, T item)
         {
             var self = this;
+            self.ThrowNullRefIfNotInitialized();
             Requires.Range(index >= 0 && index < self.Length, nameof(index));
 
             T[] tmp = new T[self.Length];
@@ -728,7 +502,7 @@ namespace System.Collections.Immutable
         public ImmutableArray<T> Replace(T oldValue, T newValue, IEqualityComparer<T> equalityComparer)
         {
             var self = this;
-            int index = self.IndexOf(oldValue, equalityComparer);
+            int index = self.IndexOf(oldValue, 0, self.Length, equalityComparer);
             if (index < 0)
             {
                 throw new ArgumentException(SR.CannotFindOldValue, nameof(oldValue));
@@ -764,7 +538,7 @@ namespace System.Collections.Immutable
         {
             var self = this;
             self.ThrowNullRefIfNotInitialized();
-            int index = self.IndexOf(item, equalityComparer);
+            int index = self.IndexOf(item, 0, self.Length, equalityComparer);
             return index < 0
                 ? self
                 : self.RemoveAt(index);
@@ -791,6 +565,7 @@ namespace System.Collections.Immutable
         public ImmutableArray<T> RemoveRange(int index, int length)
         {
             var self = this;
+            self.ThrowNullRefIfNotInitialized();
             Requires.Range(index >= 0 && index <= self.Length, nameof(index));
             Requires.Range(length >= 0 && index + length <= self.Length, nameof(length));
 
@@ -836,18 +611,18 @@ namespace System.Collections.Immutable
             self.ThrowNullRefIfNotInitialized();
             Requires.NotNull(items, nameof(items));
 
-            var indexesToRemove = new SortedSet<int>();
+            var indicesToRemove = new SortedSet<int>();
             foreach (var item in items)
             {
-                int index = self.IndexOf(item, equalityComparer);
-                while (index >= 0 && !indexesToRemove.Add(index) && index + 1 < self.Length)
+                int index = self.IndexOf(item, 0, self.Length, equalityComparer);
+                while (index >= 0 && !indicesToRemove.Add(index) && index + 1 < self.Length)
                 {
                     // This is a duplicate of one we've found. Try hard to find another instance in the list to remove.
                     index = self.IndexOf(item, index + 1, equalityComparer);
                 }
             }
 
-            return self.RemoveAtRange(indexesToRemove);
+            return self.RemoveAtRange(indicesToRemove);
         }
 
         /// <summary>
@@ -917,22 +692,22 @@ namespace System.Collections.Immutable
                 return self;
             }
 
-            List<int> removeIndexes = null;
+            List<int> removeIndices = null;
             for (int i = 0; i < self.array.Length; i++)
             {
                 if (match(self.array[i]))
                 {
-                    if (removeIndexes == null)
+                    if (removeIndices == null)
                     {
-                        removeIndexes = new List<int>();
+                        removeIndices = new List<int>();
                     }
 
-                    removeIndexes.Add(i);
+                    removeIndices.Add(i);
                 }
             }
 
-            return removeIndexes != null ?
-                self.RemoveAtRange(removeIndexes) :
+            return removeIndices != null ?
+                self.RemoveAtRange(removeIndices) :
                 self;
         }
 
@@ -1028,131 +803,6 @@ namespace System.Collections.Immutable
 
             return self;
         }
-
-        /// <summary>
-        /// Returns a builder that is populated with the same contents as this array.
-        /// </summary>
-        /// <returns>The new builder.</returns>
-        [Pure]
-        public ImmutableArray<T>.Builder ToBuilder()
-        {
-            var self = this;
-            if (self.Length == 0)
-            {
-                return new Builder(); // allow the builder to create itself with a reasonable default capacity
-            }
-
-            var builder = new Builder(self.Length);
-            builder.AddRange(self);
-            return builder;
-        }
-
-        /// <summary>
-        /// Returns an enumerator for the contents of the array.
-        /// </summary>
-        /// <returns>An enumerator.</returns>
-        [Pure]
-        public Enumerator GetEnumerator()
-        {
-            var self = this;
-            self.ThrowNullRefIfNotInitialized();
-            return new Enumerator(self.array);
-        }
-
-        /// <summary>
-        /// Returns a hash code for this instance.
-        /// </summary>
-        /// <returns>
-        /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.
-        /// </returns>
-        [Pure]
-        public override int GetHashCode()
-        {
-            var self = this;
-            return self.array == null ? 0 : self.array.GetHashCode();
-        }
-
-        /// <summary>
-        /// Determines whether the specified <see cref="Object"/> is equal to this instance.
-        /// </summary>
-        /// <param name="obj">The <see cref="Object"/> to compare with this instance.</param>
-        /// <returns>
-        ///   <c>true</c> if the specified <see cref="Object"/> is equal to this instance; otherwise, <c>false</c>.
-        /// </returns>
-        [Pure]
-        public override bool Equals(object obj)
-        {
-            IImmutableArray other = obj as IImmutableArray;
-            if (other != null)
-            {
-                return this.array == other.Array;
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// Indicates whether the current object is equal to another object of the same type.
-        /// </summary>
-        /// <param name="other">An object to compare with this object.</param>
-        /// <returns>
-        /// true if the current object is equal to the <paramref name="other"/> parameter; otherwise, false.
-        /// </returns>
-        [Pure]
-        [NonVersionable]
-        public bool Equals(ImmutableArray<T> other)
-        {
-            return this.array == other.array;
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ImmutableArray{T}"/> struct based on the contents
-        /// of an existing instance, allowing a covariant static cast to efficiently reuse the existing array.
-        /// </summary>
-        /// <param name="items">The array to initialize the array with. No copy is made.</param>
-        /// <remarks>
-        /// Covariant upcasts from this method may be reversed by calling the
-        /// <see cref="ImmutableArray{T}.As{TOther}"/>  or <see cref="ImmutableArray{T}.CastArray{TOther}"/>method.
-        /// </remarks>
-        [Pure]
-        public static ImmutableArray<T> CastUp<TDerived>(ImmutableArray<TDerived> items)
-            where TDerived : class, T
-        {
-            return new ImmutableArray<T>(items.array);
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ImmutableArray{T}"/> struct by casting the underlying
-        /// array to an array of type <typeparam name="TOther"/>.
-        /// </summary>
-        /// <exception cref="InvalidCastException">Thrown if the cast is illegal.</exception>
-        [Pure]
-        public ImmutableArray<TOther> CastArray<TOther>() where TOther : class
-        {
-            return new ImmutableArray<TOther>((TOther[])(object)array);
-        }
-
-        /// <summary>
-        /// Creates an immutable array for this array, cast to a different element type.
-        /// </summary>
-        /// <typeparam name="TOther">The type of array element to return.</typeparam>
-        /// <returns>
-        /// A struct typed for the base element type. If the cast fails, an instance
-        /// is returned whose <see cref="IsDefault"/> property returns <c>true</c>.
-        /// </returns>
-        /// <remarks>
-        /// Arrays of derived elements types can be cast to arrays of base element types
-        /// without reallocating the array.
-        /// These upcasts can be reversed via this same method, casting an array of base
-        /// element types to their derived types. However, downcasting is only successful
-        /// when it reverses a prior upcasting operation.
-        /// </remarks>
-        [Pure]
-        public ImmutableArray<TOther> As<TOther>() where TOther : class
-        {
-            return new ImmutableArray<TOther>(this.array as TOther[]);
-        }
-
         /// <summary>
         /// Filters the elements of this array to those assignable to the specified type.
         /// </summary>
@@ -1203,32 +853,6 @@ namespace System.Collections.Immutable
         bool ICollection<T>.Remove(T item)
         {
             throw new NotSupportedException();
-        }
-
-        /// <summary>
-        /// Returns an enumerator for the contents of the array.
-        /// </summary>
-        /// <returns>An enumerator.</returns>
-        /// <exception cref="InvalidOperationException">Thrown if the <see cref="IsDefault"/> property returns true.</exception>
-        [Pure]
-        IEnumerator<T> IEnumerable<T>.GetEnumerator()
-        {
-            var self = this;
-            self.ThrowInvalidOperationIfNotInitialized();
-            return EnumeratorObject.Create(self.array);
-        }
-
-        /// <summary>
-        /// Returns an enumerator for the contents of the array.
-        /// </summary>
-        /// <returns>An enumerator.</returns>
-        /// <exception cref="InvalidOperationException">Thrown if the <see cref="IsDefault"/> property returns true.</exception>
-        [Pure]
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            var self = this;
-            self.ThrowInvalidOperationIfNotInitialized();
-            return EnumeratorObject.Create(self.array);
         }
 
         /// <summary>
@@ -1566,7 +1190,9 @@ namespace System.Collections.Immutable
                 var theirs = other as IImmutableArray;
                 if (theirs != null)
                 {
-                    if (self.array == null && theirs.Array == null)
+                    otherArray = theirs.Array;
+
+                    if (self.array == null && otherArray == null)
                     {
                         return true;
                     }
@@ -1574,8 +1200,6 @@ namespace System.Collections.Immutable
                     {
                         return false;
                     }
-
-                    otherArray = theirs.Array;
                 }
             }
 
@@ -1617,16 +1241,16 @@ namespace System.Collections.Immutable
                 var theirs = other as IImmutableArray;
                 if (theirs != null)
                 {
-                    if (self.array == null && theirs.Array == null)
+                    otherArray = theirs.Array;
+
+                    if (self.array == null && otherArray == null)
                     {
                         return 0;
                     }
-                    else if (self.array == null ^ theirs.Array == null)
+                    else if (self.array == null ^ otherArray == null)
                     {
                         throw new ArgumentException(SR.ArrayInitializedStateNotEqual, nameof(other));
                     }
-
-                    otherArray = theirs.Array;
                 }
             }
 
@@ -1641,65 +1265,29 @@ namespace System.Collections.Immutable
 
         #endregion
 
-        /// <summary>
-        /// Throws a null reference exception if the array field is null.
-        /// </summary>
-        internal void ThrowNullRefIfNotInitialized()
-        {
-            // Force NullReferenceException if array is null by touching its Length.
-            // This way of checking has a nice property of requiring very little code
-            // and not having any conditions/branches.
-            // In a faulting scenario we are relying on hardware to generate the fault.
-            // And in the non-faulting scenario (most common) the check is virtually free since
-            // if we are going to do anything with the array, we will need Length anyways
-            // so touching it, and potentially causing a cache miss, is not going to be an
-            // extra expense.
-            var unused = this.array.Length;
-        }
 
         /// <summary>
-        /// Throws an <see cref="InvalidOperationException"/> if the <see cref="array"/> field is null, i.e. the
-        /// <see cref="IsDefault"/> property returns true.  The
-        /// <see cref="InvalidOperationException"/> message specifies that the operation cannot be performed
-        /// on a default instance of <see cref="ImmutableArray{T}"/>.
-        ///
-        /// This is intended for explicitly implemented interface method and property implementations.
+        /// Returns an array with items at the specified indices removed.
         /// </summary>
-        private void ThrowInvalidOperationIfNotInitialized()
-        {
-            if (this.IsDefault)
-            {
-                throw new InvalidOperationException(SR.InvalidOperationOnDefaultArray);
-            }
-        }
-
-        void IImmutableArray.ThrowInvalidOperationIfNotInitialized()
-        {
-            this.ThrowInvalidOperationIfNotInitialized();
-        }
-
-        /// <summary>
-        /// Returns an array with items at the specified indexes removed.
-        /// </summary>
-        /// <param name="indexesToRemove">A **sorted set** of indexes to elements that should be omitted from the returned array.</param>
+        /// <param name="indicesToRemove">A **sorted set** of indices to elements that should be omitted from the returned array.</param>
         /// <returns>The new array.</returns>
-        private ImmutableArray<T> RemoveAtRange(ICollection<int> indexesToRemove)
+        private ImmutableArray<T> RemoveAtRange(ICollection<int> indicesToRemove)
         {
             var self = this;
             self.ThrowNullRefIfNotInitialized();
-            Requires.NotNull(indexesToRemove, nameof(indexesToRemove));
+            Requires.NotNull(indicesToRemove, nameof(indicesToRemove));
 
-            if (indexesToRemove.Count == 0)
+            if (indicesToRemove.Count == 0)
             {
                 // Be sure to return a !IsDefault instance.
                 return self;
             }
 
-            var newArray = new T[self.Length - indexesToRemove.Count];
+            var newArray = new T[self.Length - indicesToRemove.Count];
             int copied = 0;
             int removed = 0;
             int lastIndexRemoved = -1;
-            foreach (var indexToRemove in indexesToRemove)
+            foreach (var indexToRemove in indicesToRemove)
             {
                 int copyLength = lastIndexRemoved == -1 ? indexToRemove : (indexToRemove - lastIndexRemoved - 1);
                 Debug.Assert(indexToRemove > lastIndexRemoved); // We require that the input be a sorted set.
@@ -1712,14 +1300,6 @@ namespace System.Collections.Immutable
             Array.Copy(self.array, copied + removed, newArray, copied, self.Length - (copied + removed));
 
             return new ImmutableArray<T>(newArray);
-        }
-
-        /// <summary>
-        /// Throws a <see cref="NullReferenceException"/> if the specified array is uninitialized.
-        /// </summary>
-        private static void ThrowNullRefIfNotInitialized(ImmutableArray<T> array)
-        {
-            array.ThrowNullRefIfNotInitialized();
         }
     }
 }

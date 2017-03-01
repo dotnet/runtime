@@ -1,31 +1,43 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{11AE73F7-3532-47B9-8FF6-B4F22D76456D}</ProjectGuid>
-    <UseOpenKey Condition="'$(UseOpenKey)'==''">true</UseOpenKey>
+    <UseOpenKey>true</UseOpenKey>
     <RootNamespace>System</RootNamespace>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netcoreapp-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.0-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.0-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.0-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.0-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'portable_net40+sl4+win8+wp8-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'portable_net40+sl4+win8+wp8-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetGroup)' != 'netcoreapp' And '$(TargetGroup)' != 'uap'">
     <Compile Include="System.ValueTuple.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'portable-net40+sl4+win8+wp8'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'portable_net40+sl4+win8+wp8'">
     <!-- Those files only serve to unblock the compilation given that this profile didn't have those attributes -->
     <Compile Include="System.Security.AllowPartiallyTrustedCallersAttribute.cs" />
     <Compile Include="System.Runtime.CompilerServices.ReferenceAssemblyAttribute.cs" />
+    <Compile Include="$(CommonPath)\System\Reflection\AssemblyMetadataAttribute.cs">
+      <Link>Common\System\Reflection\AssemblyMetadataAttribute.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' Or '$(TargetGroup)' == 'uap'">
     <Compile Include="System.ValueTuple.TypeForwards.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'portable-net40+sl4+win8+wp8'">
-    <TargetingPackReference Include="mscorlib" />
-    <TargetingPackReference Include="System" />
-    <TargetingPackReference Include="System.Core" />
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.0'">
+    <Reference Include="System.Runtime" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'portable_net40+sl4+win8+wp8'">
+    <Reference Include="mscorlib" />
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp' Or '$(TargetGroup)'=='uap'">
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />

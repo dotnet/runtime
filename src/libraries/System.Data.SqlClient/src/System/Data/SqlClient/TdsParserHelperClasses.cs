@@ -13,8 +13,6 @@ using System.Data.SqlTypes;
 using System.Diagnostics;
 using System.Text;
 
-using Res = System.SR;
-
 
 namespace System.Data.SqlClient
 {
@@ -600,7 +598,7 @@ namespace System.Data.SqlClient
         {
             if (null != _multipartName)
             {
-                string[] parts = MultipartIdentifier.ParseMultipartIdentifier(_multipartName, "[\"", "]\"", Res.SQL_TDSParserTableName, false);
+                string[] parts = MultipartIdentifier.ParseMultipartIdentifier(_multipartName, "[\"", "]\"", SR.SQL_TDSParserTableName, false);
                 _serverName = parts[0];
                 _catalogName = parts[1];
                 _schemaName = parts[2];

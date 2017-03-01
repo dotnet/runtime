@@ -64,7 +64,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.Equal("1.2.840.10040.4.1", pk.Oid.Value);
         }
 
-#if netstandard17
         [Fact]
         public static void TestPublicKey_Key_RSA()
         {
@@ -118,7 +117,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.Equal(expected_q, dsaParameters.Q);
             Assert.Equal(expected_y, dsaParameters.Y);
         }
-#endif
 
         [Fact]
         public static void TestEncodedKeyValue_RSA()
@@ -310,7 +308,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-#if netstandard17
         [Fact]
         public static void TestPublicKey_Key_ECDsa()
         {
@@ -320,7 +317,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Throws<NotSupportedException>(() => cert.PublicKey.Key);
             }
         }
-#endif
 
         [Fact]
         public static void TestECDsaPublicKey_ValidatesSignature()
@@ -452,28 +448,28 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Uses P/Invokes
         public static void TestKey_ECDsaCng256()
         {
             TestKey_ECDsaCng(TestData.ECDsa256Certificate, TestData.ECDsaCng256PublicKey);
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Uses P/Invokes
         public static void TestKey_ECDsaCng384()
         {
             TestKey_ECDsaCng(TestData.ECDsa384Certificate, TestData.ECDsaCng384PublicKey);
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Uses P/Invokes
         public static void TestKey_ECDsaCng521()
         {
             TestKey_ECDsaCng(TestData.ECDsa521Certificate, TestData.ECDsaCng521PublicKey);
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Uses P/Invokes
         public static void TestKey_BrainpoolP160r1()
         {
             if (PlatformDetection.WindowsVersion >= 10)

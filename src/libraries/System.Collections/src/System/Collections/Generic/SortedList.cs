@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System.Collections.Generic
 {
@@ -415,8 +416,14 @@ namespace System.Collections.Generic
             // clear does not change the capacity
             _version++;
             // Don't need to doc this but we clear the elements so that the gc can reclaim the references.
-            Array.Clear(_keys, 0, _size);
-            Array.Clear(_values, 0, _size);
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<TKey>())
+            {
+                Array.Clear(_keys, 0, _size);
+            }
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<TValue>())
+            {
+                Array.Clear(_values, 0, _size);
+            }
             _size = 0;
         }
 
@@ -590,7 +597,6 @@ namespace System.Collections.Generic
                     return _values[i];
 
                 throw new KeyNotFoundException();
-                // return default(TValue);
             }
             set
             {
@@ -707,8 +713,14 @@ namespace System.Collections.Generic
                 Array.Copy(_keys, index + 1, _keys, index, _size - index);
                 Array.Copy(_values, index + 1, _values, index, _size - index);
             }
-            _keys[_size] = default(TKey);
-            _values[_size] = default(TValue);
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<TKey>())
+            {
+                _keys[_size] = default(TKey);
+            }
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<TValue>())
+            {
+                _values[_size] = default(TValue);
+            }
             _version++;
         }
 

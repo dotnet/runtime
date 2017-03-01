@@ -235,6 +235,14 @@ namespace System.Data.Tests.Common
         }
 
         [Fact]
+        public void GetByDataSetColumn_String_InvalidArguments()
+        {
+            DataColumnMappingCollection dataColumnMappingCollection = new DataColumnMappingCollection();
+
+            Assert.Throws<IndexOutOfRangeException>(() => dataColumnMappingCollection.GetByDataSetColumn((string)null));
+        }
+
+        [Fact]
         public void GetColumnMappingBySchemaAction()
         {
             _columnMapCollection.AddRange(_cols);
@@ -282,6 +290,22 @@ namespace System.Data.Tests.Common
         }
 
         [Fact]
+        public void IndexOf_Object_IsNull()
+        {
+            DataColumnMappingCollection dataColumnMappingCollection = new DataColumnMappingCollection();
+
+            Assert.Equal(-1, dataColumnMappingCollection.IndexOf((object)null));
+        }
+
+        [Fact]
+        public void IndexOf_String_IsNull()
+        {
+            DataColumnMappingCollection dataColumnMappingCollection = new DataColumnMappingCollection();
+
+            Assert.Equal(-1, dataColumnMappingCollection.IndexOf((string)null));
+        }
+
+        [Fact]
         public void IndexOfDataSetColumn()
         {
             _columnMapCollection.AddRange(_cols);
@@ -308,6 +332,14 @@ namespace System.Data.Tests.Common
             _columnMapCollection.Insert(3, mymap);
             int ind = _columnMapCollection.IndexOfDataSetColumn("dataSetAge");
             Assert.Equal(3, ind);
+        }
+
+        [Fact]
+        public void Remove_DataColumnMapping_InvalidArguments()
+        {
+            DataColumnMappingCollection dataColumnMappingCollection = new DataColumnMappingCollection();
+
+            Assert.Throws<ArgumentNullException>(() => dataColumnMappingCollection.Remove((DataColumnMapping)null));
         }
 
         [Fact]
@@ -372,6 +404,14 @@ namespace System.Data.Tests.Common
         public void ToStringTest()
         {
             Assert.Equal("System.Data.Common.DataColumnMappingCollection", _columnMapCollection.ToString());
+        }
+
+        [Fact]
+        public void Insert_Int_DataColumnMapping_InvalidArguments()
+        {
+            DataColumnMappingCollection dataColumnMappingCollection = new DataColumnMappingCollection();
+
+            Assert.Throws<ArgumentNullException>(() => dataColumnMappingCollection.Insert(123, (DataColumnMapping)null));
         }
     }
 }

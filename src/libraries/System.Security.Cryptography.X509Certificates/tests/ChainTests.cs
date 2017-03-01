@@ -11,6 +11,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 {
     public static class ChainTests
     {
+        // #9293: Our Fedora and Ubuntu CI machines use NTFS for "tmphome", which causes our filesystem permissions checks to fail.
+        internal static bool IsReliableInCI { get; } =
+            !PlatformDetection.IsFedora23 &&
+            !PlatformDetection.IsFedora24 &&
+            !PlatformDetection.IsFedora25 &&
+            !PlatformDetection.IsFedora26 &&
+            !PlatformDetection.IsUbuntu1604 &&
+            !PlatformDetection.IsUbuntu1610;
+
         private static bool TrustsMicrosoftDotComRoot
         {
             get
@@ -63,7 +72,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-#if netstandard17
         [PlatformSpecific(TestPlatforms.Windows)]
         [Fact]
         public static void VerifyChainFromHandle()
@@ -121,7 +129,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [Fact]
+        [ConditionalFact(nameof(IsReliableInCI))]
         public static void VerifyChainFromHandle_Unix()
         {
             using (var microsoftDotCom = new X509Certificate2(TestData.MicrosoftDotComSslCertBytes))
@@ -194,7 +202,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.True(valid, "Chain built validly after reset");
             }
         }
-#endif
 
         /// <summary>
         /// Tests that when a certificate chain has a root certification which is not trusted by the trust provider,

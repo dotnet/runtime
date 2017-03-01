@@ -74,7 +74,7 @@
         "scriptType": "inlineScript",
         "scriptName": "",
         "arguments": "$(PB_CloudDropAccountName) $(CloudDropAccessToken) $(PB_Label)",
-        "inlineScript": "param($account, $token, $container)\nif ($env:UseLegacyBuildScripts -eq \"true\")\n{\n  .\\sync.cmd /ab /p:CloudDropAccountName=$account /p:CloudDropAccessToken=$token /p:ContainerName=$container\n}\nelse\n{\n#  .\\sync.cmd -ab \"-AzureAccount=$account\" \"-AzureToken=$token\" \"-Container=$container\"\n  .\\init-tools.cmd\n  msbuild src\\syncAzure.proj /p:CloudDropAccountName=$account /p:CloudDropAccessToken=$token /p:ContainerName=$container\n}",
+        "inlineScript": "param($account, $token, $container)\n.\\sync.cmd -ab -- /p:CloudDropAccountName=$account /p:CloudDropAccessToken=$token /p:ContainerName=$container",
         "workingFolder": "$(Pipeline.SourcesDirectory)",
         "failOnStandardError": "false"
       }
@@ -93,8 +93,8 @@
       "inputs": {
         "scriptType": "inlineScript",
         "scriptName": "",
-        "arguments": "-ConfigGroup $(PB_ConfigurationGroup) -SymPkgGlob $(PB_AzureContainerSymbolPackageGlob) -PipelineSrcDir $(Pipeline.SourcesDirectory)",
-        "inlineScript": "param($ConfigGroup, $SymPkgGlob, $PipelineSrcDir)\nif ($ConfigGroup -ne \"Release\") { exit }\n\n& $env:Build_SourcesDirectory\\scripts\\DotNet-Trusted-Publish\\Embed-Index.ps1 `\n  $PipelineSrcDir\\packages\\AzureTransfer\\$ConfigGroup\\$SymPkgGlob `\n  $env:Build_StagingDirectory\\IndexedSymbolPackages",
+        "arguments": "-ConfigGroup $(PB_ConfigurationGroup) -SymPkgGlob $(PB_AzureContainerSymbolPackageGlob)",
+        "inlineScript": "param($ConfigGroup, $SymPkgGlob)\nif ($ConfigGroup -ne \"Release\") { exit }\n\n& $env:Build_SourcesDirectory\\scripts\\DotNet-Trusted-Publish\\Embed-Index.ps1 `\n  $SymPkgGlob `\n  $env:Build_StagingDirectory\\IndexedSymbolPackages",
         "workingFolder": "",
         "failOnStandardError": "true"
       }
@@ -115,6 +115,26 @@
         "scriptName": "",
         "arguments": "-OfficialBuildId $(OfficialBuildId)",
         "inlineScript": "param($OfficialBuildId)\n  msbuild build.proj /t:CreateOrUpdateCurrentVersionFile /p:OfficialBuildId=$OfficialBuildId /p:BuildVersionFile=bin\\obj\\BuildVersion-$OfficialBuildId.props",
+        "workingFolder": "$(Pipeline.SourcesDirectory)",
+        "failOnStandardError": "true"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Submit symbol server request",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "scriptType": "inlineScript",
+        "scriptName": "",
+        "arguments": "-ConfigGroup $(PB_ConfigurationGroup) -SymPkgGlob $(PB_AzureContainerSymbolPackageGlob) -Branch $(SourceBranch)",
+        "inlineScript": "param($ConfigGroup, $SymPkgGlob, $Branch)\nif ($ConfigGroup -ne \"Release\") { exit }\n$archive = $Branch.StartsWith(\"release/\")\n\nmsbuild build.proj `\n/t:SubmitSymbolsRequest `\n/p:SymbolPackagesToPublishGlob=$SymPkgGlob `\n/p:IndexSymbols=true `\n/p:ArchiveSymbols=$archive",
         "workingFolder": "$(Pipeline.SourcesDirectory)",
         "failOnStandardError": "true"
       }
@@ -174,7 +194,7 @@
         "scriptType": "inlineScript",
         "scriptName": "",
         "arguments": "-ghAuthToken $(PB_DotNetBuildBotAccessToken) -root $(Pipeline.SourcesDirectory) -cg $(PB_ConfigurationGroup)",
-        "inlineScript": "param($ghAuthToken, $root, $cg)\nif ($cg -ne \"Release\") { exit }\ncd $root\n. $root\\UpdatePublishedVersions.ps1 `\n  -gitHubUser dotnet-helix-bot -gitHubEmail dotnet-helix-bot@microsoft.com `\n  -gitHubAuthToken $ghAuthToken `\n  -versionsRepoOwner $env:PB_VersionsRepoOwner -versionsRepo versions `\n  -versionsRepoPath build-info/dotnet/$env:PB_GitHubRepositoryName/$env:SourceBranch `\n  -nupkgPath $root\\packages\\AzureTransfer\\$cg\\$env:PB_AzureContainerPackageGlob",
+        "inlineScript": "param($ghAuthToken, $root, $cg)\nif ($cg -ne \"Release\") { exit }\ncd $root\n. $root\\build-managed.cmd -- /t:UpdatePublishedVersions `\n/p:GitHubUser=dotnet-helix-bot `\n/p:GitHubEmail=dotnet-helix-bot@microsoft.com `\n/p:GitHubAuthToken=$ghAuthToken `\n/p:VersionsRepoOwner=$env:PB_VersionsRepoOwner `\n/p:VersionsRepo=versions `\n/p:VersionsRepoPath=build-info/dotnet/$env:PB_GitHubRepositoryName/$env:SourceBranch `\n/p:NupkgPath=$root\\packages\\AzureTransfer\\$cg\\$env:PB_AzureContainerPackageGlob",
         "workingFolder": "",
         "failOnStandardError": "true"
       }
@@ -218,7 +238,7 @@
         "toLowerCase": "true",
         "detailedLog": "false",
         "usePat": "false",
-        "retentionDays": "30",
+        "retentionDays": "",
         "dropMetadataContainerName": "DropMetadata"
       }
     }
@@ -291,10 +311,6 @@
     "MyGetApiKey": {
       "value": null,
       "isSecret": true
-    },
-    "PB_VstsFeedUrl": {
-      "value": "https://devdiv.pkgs.visualstudio.com/DefaultCollection/_packaging/dotnet-core-test/nuget/v3/index.json",
-      "allowOverride": true
     },
     "VstsPat": {
       "value": null,
@@ -378,7 +394,7 @@
       "allowOverride": true
     },
     "PB_AzureContainerSymbolPackageGlob": {
-      "value": "symbols\\*.nupkg",
+      "value": "$(Pipeline.SourcesDirectory)\\packages\\AzureTransfer\\$(PB_ConfigurationGroup)\\symbols\\*.nupkg",
       "allowOverride": true
     },
     "PB_GitHubRepositoryName": {
@@ -391,6 +407,30 @@
     },
     "PB_ToolPackageSource": {
       "value": "https://www.myget.org/F/dagood-test-buildtools/api/v3/index.json"
+    },
+    "SymbolsProject": {
+      "value": "CLR"
+    },
+    "SymbolsStatusMail": {
+      "value": "dagood;mawilkie"
+    },
+    "SymbolsUserName": {
+      "value": "dlab"
+    },
+    "SymbolsRelease": {
+      "value": "rtm"
+    },
+    "SymbolsProductGroup": {
+      "value": "Visual_Studio"
+    },
+    "SymbolsProductName": {
+      "value": "dotnetcore"
+    },
+    "SymbolPublishDestinationDir": {
+      "value": "\\\\cpvsbuild\\drops\\DotNetCore\\$(PB_VsoRepositoryName)\\$(PB_Label)\\"
+    },
+    "PB_VsoRepositoryName": {
+      "value": "DotNet-CoreFX-Trusted"
     }
   },
   "retentionRules": [

@@ -353,7 +353,7 @@ namespace System.IO.Pipes
             int r = 0;
             int numBytesRead = 0;
 
-            fixed (byte* p = buffer)
+            fixed (byte* p = &buffer[0])
             {
                 if (_isAsync)
                 {
@@ -403,7 +403,7 @@ namespace System.IO.Pipes
             int numBytesWritten = 0;
             int r = 0;
 
-            fixed (byte* p = buffer)
+            fixed (byte* p = &buffer[0])
             {
                 if (_isAsync)
                 {

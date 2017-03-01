@@ -12,7 +12,6 @@ namespace System.DirectoryServices.AccountManagement
 #if TESTHOOK
     public class AccountInfo
 #else
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.LinkDemand, Unrestricted = true)]
     internal class AccountInfo
 #endif
     {
@@ -26,11 +25,6 @@ namespace System.DirectoryServices.AccountManagement
 
         public Nullable<DateTime> AccountLockoutTime
         {
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="Principal.HandleGet<System.Nullable`1<System.DateTime>>(System.Nullable`1<System.DateTime>&,System.String,System.DirectoryServices.AccountManagement.LoadState&):System.Nullable`1<System.DateTime>" />
-            // <ReferencesCritical Name="Field: owningPrincipal" Ring="1" />
-            // <ReferencesCritical Name="Method: Principal.HandleGet(T&,System.String,System.DirectoryServices.AccountManagement.LoadState&):T" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
@@ -44,11 +38,6 @@ namespace System.DirectoryServices.AccountManagement
 
         public Nullable<DateTime> LastLogon
         {
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="Principal.HandleGet<System.Nullable`1<System.DateTime>>(System.Nullable`1<System.DateTime>&,System.String,System.DirectoryServices.AccountManagement.LoadState&):System.Nullable`1<System.DateTime>" />
-            // <ReferencesCritical Name="Field: owningPrincipal" Ring="1" />
-            // <ReferencesCritical Name="Method: Principal.HandleGet(T&,System.String,System.DirectoryServices.AccountManagement.LoadState&):T" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
@@ -62,13 +51,6 @@ namespace System.DirectoryServices.AccountManagement
 
         public PrincipalValueCollection<string> PermittedWorkstations
         {
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="Principal.GetStoreCtxToUse():System.DirectoryServices.AccountManagement.StoreCtx" />
-            // <SatisfiesLinkDemand Name="Principal.HandleGet<System.DirectoryServices.AccountManagement.PrincipalValueCollection`1<System.String>>(System.DirectoryServices.AccountManagement.PrincipalValueCollection`1<System.String>&,System.String,System.DirectoryServices.AccountManagement.LoadState&):System.DirectoryServices.AccountManagement.PrincipalValueCollection`1<System.String>" />
-            // <ReferencesCritical Name="Field: owningPrincipal" Ring="1" />
-            // <ReferencesCritical Name="Method: Principal.GetStoreCtxToUse():System.DirectoryServices.AccountManagement.StoreCtx" Ring="1" />
-            // <ReferencesCritical Name="Method: Principal.HandleGet(T&,System.String,System.DirectoryServices.AccountManagement.LoadState&):T" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
@@ -91,22 +73,12 @@ namespace System.DirectoryServices.AccountManagement
 
         public byte[] PermittedLogonTimes
         {
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="Principal.HandleGet<System.Byte[]>(System.Byte[]&,System.String,System.DirectoryServices.AccountManagement.LoadState&):System.Byte[]" />
-            // <ReferencesCritical Name="Field: owningPrincipal" Ring="1" />
-            // <ReferencesCritical Name="Method: Principal.HandleGet(T&,System.String,System.DirectoryServices.AccountManagement.LoadState&):T" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
                 return _owningPrincipal.HandleGet<byte[]>(ref _permittedLogonTimes, PropertyNames.AcctInfoPermittedLogonTimes, ref _permittedLogonTimesLoaded);
             }
 
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="Principal.GetStoreCtxToUse():System.DirectoryServices.AccountManagement.StoreCtx" />
-            // <ReferencesCritical Name="Field: owningPrincipal" Ring="1" />
-            // <ReferencesCritical Name="Method: Principal.GetStoreCtxToUse():System.DirectoryServices.AccountManagement.StoreCtx" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             set
             {
@@ -137,24 +109,12 @@ namespace System.DirectoryServices.AccountManagement
 
         public Nullable<DateTime> AccountExpirationDate
         {
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="Principal.HandleGet<System.Nullable`1<System.DateTime>>(System.Nullable`1<System.DateTime>&,System.String,System.DirectoryServices.AccountManagement.LoadState&):System.Nullable`1<System.DateTime>" />
-            // <ReferencesCritical Name="Field: owningPrincipal" Ring="1" />
-            // <ReferencesCritical Name="Method: Principal.HandleGet(T&,System.String,System.DirectoryServices.AccountManagement.LoadState&):T" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
                 return _owningPrincipal.HandleGet<Nullable<DateTime>>(ref _expirationDate, PropertyNames.AcctInfoExpirationDate, ref _expirationDateChanged);
             }
 
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="Principal.GetStoreCtxToUse():System.DirectoryServices.AccountManagement.StoreCtx" />
-            // <SatisfiesLinkDemand Name="Principal.HandleSet<System.Nullable`1<System.DateTime>>(System.Nullable`1<System.DateTime>&,System.Nullable`1<System.DateTime>,System.DirectoryServices.AccountManagement.LoadState&,System.String):System.Void" />
-            // <ReferencesCritical Name="Field: owningPrincipal" Ring="1" />
-            // <ReferencesCritical Name="Method: Principal.GetStoreCtxToUse():System.DirectoryServices.AccountManagement.StoreCtx" Ring="1" />
-            // <ReferencesCritical Name="Method: Principal.HandleSet(T&,T,System.DirectoryServices.AccountManagement.LoadState&,System.String):System.Void" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             set
             {
@@ -172,24 +132,12 @@ namespace System.DirectoryServices.AccountManagement
 
         public bool SmartcardLogonRequired
         {
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="Principal.HandleGet<System.Boolean>(System.Boolean&,System.String,System.DirectoryServices.AccountManagement.LoadState&):System.Boolean" />
-            // <ReferencesCritical Name="Field: owningPrincipal" Ring="1" />
-            // <ReferencesCritical Name="Method: Principal.HandleGet(T&,System.String,System.DirectoryServices.AccountManagement.LoadState&):T" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
                 return _owningPrincipal.HandleGet<bool>(ref _smartcardLogonRequired, PropertyNames.AcctInfoSmartcardRequired, ref _smartcardLogonRequiredChanged);
             }
 
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="Principal.GetStoreCtxToUse():System.DirectoryServices.AccountManagement.StoreCtx" />
-            // <SatisfiesLinkDemand Name="Principal.HandleSet<System.Boolean>(System.Boolean&,System.Boolean,System.DirectoryServices.AccountManagement.LoadState&,System.String):System.Void" />
-            // <ReferencesCritical Name="Field: owningPrincipal" Ring="1" />
-            // <ReferencesCritical Name="Method: Principal.GetStoreCtxToUse():System.DirectoryServices.AccountManagement.StoreCtx" Ring="1" />
-            // <ReferencesCritical Name="Method: Principal.HandleSet(T&,T,System.DirectoryServices.AccountManagement.LoadState&,System.String):System.Void" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             set
             {
@@ -207,24 +155,12 @@ namespace System.DirectoryServices.AccountManagement
 
         public bool DelegationPermitted
         {
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="Principal.HandleGet<System.Boolean>(System.Boolean&,System.String,System.DirectoryServices.AccountManagement.LoadState&):System.Boolean" />
-            // <ReferencesCritical Name="Field: owningPrincipal" Ring="1" />
-            // <ReferencesCritical Name="Method: Principal.HandleGet(T&,System.String,System.DirectoryServices.AccountManagement.LoadState&):T" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
                 return _owningPrincipal.HandleGet<bool>(ref _delegationPermitted, PropertyNames.AcctInfoDelegationPermitted, ref _delegationPermittedChanged);
             }
 
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="Principal.GetStoreCtxToUse():System.DirectoryServices.AccountManagement.StoreCtx" />
-            // <SatisfiesLinkDemand Name="Principal.HandleSet<System.Boolean>(System.Boolean&,System.Boolean,System.DirectoryServices.AccountManagement.LoadState&,System.String):System.Void" />
-            // <ReferencesCritical Name="Field: owningPrincipal" Ring="1" />
-            // <ReferencesCritical Name="Method: Principal.GetStoreCtxToUse():System.DirectoryServices.AccountManagement.StoreCtx" Ring="1" />
-            // <ReferencesCritical Name="Method: Principal.HandleSet(T&,T,System.DirectoryServices.AccountManagement.LoadState&,System.String):System.Void" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             set
             {
@@ -242,11 +178,6 @@ namespace System.DirectoryServices.AccountManagement
 
         public int BadLogonCount
         {
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="Principal.HandleGet<System.Int32>(System.Int32&,System.String,System.DirectoryServices.AccountManagement.LoadState&):System.Int32" />
-            // <ReferencesCritical Name="Field: owningPrincipal" Ring="1" />
-            // <ReferencesCritical Name="Method: Principal.HandleGet(T&,System.String,System.DirectoryServices.AccountManagement.LoadState&):T" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
@@ -260,24 +191,12 @@ namespace System.DirectoryServices.AccountManagement
 
         public string HomeDirectory
         {
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="Principal.HandleGet<System.String>(System.String&,System.String,System.DirectoryServices.AccountManagement.LoadState&):System.String" />
-            // <ReferencesCritical Name="Field: owningPrincipal" Ring="1" />
-            // <ReferencesCritical Name="Method: Principal.HandleGet(T&,System.String,System.DirectoryServices.AccountManagement.LoadState&):T" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
                 return _owningPrincipal.HandleGet<string>(ref _homeDirectory, PropertyNames.AcctInfoHomeDirectory, ref _homeDirectoryChanged);
             }
 
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="Principal.GetStoreCtxToUse():System.DirectoryServices.AccountManagement.StoreCtx" />
-            // <SatisfiesLinkDemand Name="Principal.HandleSet<System.String>(System.String&,System.String,System.DirectoryServices.AccountManagement.LoadState&,System.String):System.Void" />
-            // <ReferencesCritical Name="Field: owningPrincipal" Ring="1" />
-            // <ReferencesCritical Name="Method: Principal.GetStoreCtxToUse():System.DirectoryServices.AccountManagement.StoreCtx" Ring="1" />
-            // <ReferencesCritical Name="Method: Principal.HandleSet(T&,T,System.DirectoryServices.AccountManagement.LoadState&,System.String):System.Void" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             set
             {
@@ -295,24 +214,12 @@ namespace System.DirectoryServices.AccountManagement
 
         public string HomeDrive
         {
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="Principal.HandleGet<System.String>(System.String&,System.String,System.DirectoryServices.AccountManagement.LoadState&):System.String" />
-            // <ReferencesCritical Name="Field: owningPrincipal" Ring="1" />
-            // <ReferencesCritical Name="Method: Principal.HandleGet(T&,System.String,System.DirectoryServices.AccountManagement.LoadState&):T" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
                 return _owningPrincipal.HandleGet<string>(ref _homeDrive, PropertyNames.AcctInfoHomeDrive, ref _homeDriveChanged);
             }
 
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="Principal.GetStoreCtxToUse():System.DirectoryServices.AccountManagement.StoreCtx" />
-            // <SatisfiesLinkDemand Name="Principal.HandleSet<System.String>(System.String&,System.String,System.DirectoryServices.AccountManagement.LoadState&,System.String):System.Void" />
-            // <ReferencesCritical Name="Field: owningPrincipal" Ring="1" />
-            // <ReferencesCritical Name="Method: Principal.GetStoreCtxToUse():System.DirectoryServices.AccountManagement.StoreCtx" Ring="1" />
-            // <ReferencesCritical Name="Method: Principal.HandleSet(T&,T,System.DirectoryServices.AccountManagement.LoadState&,System.String):System.Void" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             set
             {
@@ -330,24 +237,12 @@ namespace System.DirectoryServices.AccountManagement
 
         public string ScriptPath
         {
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="Principal.HandleGet<System.String>(System.String&,System.String,System.DirectoryServices.AccountManagement.LoadState&):System.String" />
-            // <ReferencesCritical Name="Field: owningPrincipal" Ring="1" />
-            // <ReferencesCritical Name="Method: Principal.HandleGet(T&,System.String,System.DirectoryServices.AccountManagement.LoadState&):T" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
                 return _owningPrincipal.HandleGet<string>(ref _scriptPath, PropertyNames.AcctInfoScriptPath, ref _scriptPathChanged);
             }
 
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="Principal.GetStoreCtxToUse():System.DirectoryServices.AccountManagement.StoreCtx" />
-            // <SatisfiesLinkDemand Name="Principal.HandleSet<System.String>(System.String&,System.String,System.DirectoryServices.AccountManagement.LoadState&,System.String):System.Void" />
-            // <ReferencesCritical Name="Field: owningPrincipal" Ring="1" />
-            // <ReferencesCritical Name="Method: Principal.GetStoreCtxToUse():System.DirectoryServices.AccountManagement.StoreCtx" Ring="1" />
-            // <ReferencesCritical Name="Method: Principal.HandleSet(T&,T,System.DirectoryServices.AccountManagement.LoadState&,System.String):System.Void" Ring="1" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             set
             {
@@ -362,12 +257,6 @@ namespace System.DirectoryServices.AccountManagement
         //
         // Methods exposed to the public through AuthenticablePrincipal
         //
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="Principal.get_Context():System.DirectoryServices.AccountManagement.PrincipalContext" />
-        // <SatisfiesLinkDemand Name="Principal.GetStoreCtxToUse():System.DirectoryServices.AccountManagement.StoreCtx" />
-        // <ReferencesCritical Name="Field: owningPrincipal" Ring="1" />
-        // <ReferencesCritical Name="Method: Principal.GetStoreCtxToUse():System.DirectoryServices.AccountManagement.StoreCtx" Ring="1" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         public bool IsAccountLockedOut()
         {
@@ -386,12 +275,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="Principal.get_Context():System.DirectoryServices.AccountManagement.PrincipalContext" />
-        // <SatisfiesLinkDemand Name="Principal.GetStoreCtxToUse():System.DirectoryServices.AccountManagement.StoreCtx" />
-        // <ReferencesCritical Name="Field: owningPrincipal" Ring="1" />
-        // <ReferencesCritical Name="Method: Principal.GetStoreCtxToUse():System.DirectoryServices.AccountManagement.StoreCtx" Ring="1" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         public void UnlockAccount()
         {
@@ -411,10 +294,6 @@ namespace System.DirectoryServices.AccountManagement
         //
         // Internal constructor
         //
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="PrincipalValueCollection`1<System.String>..ctor()" />
-        // <ReferencesCritical Name="Field: owningPrincipal" Ring="1" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         internal AccountInfo(AuthenticablePrincipal principal)
         {
@@ -434,9 +313,6 @@ namespace System.DirectoryServices.AccountManagement
         // Loading with query results
         //
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="PrincipalValueCollection`1<System.String>.Load(System.Collections.Generic.List`1<System.String>):System.Void" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         internal void LoadValueIntoProperty(string propertyName, object value)
         {
@@ -511,9 +387,6 @@ namespace System.DirectoryServices.AccountManagement
         //
 
         // Given a property name, returns true if that property has changed since it was loaded, false otherwise.
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="PrincipalValueCollection`1<System.String>.get_Changed():System.Boolean" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         internal bool GetChangeStatusForProperty(string propertyName)
         {
@@ -596,9 +469,6 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         // Reset all change-tracking status for all properties on the object to "unchanged".
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="PrincipalValueCollection`1<System.String>.ResetTracking():System.Void" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         internal void ResetAllChangeStatus()
         {

@@ -1,0 +1,138 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ProjectGuid>{187503F4-BEF9-4369-A1B2-E3DC5D564E4E}</ProjectGuid>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netfx'">true</IsPartialFacadeAssembly>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the options -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' != 'netfx'">
+    <Compile Include="System\IO\Ports\Handshake.cs" />
+    <Compile Include="System\IO\Ports\InternalResources.cs" />
+    <Compile Include="System\IO\Ports\NativeMethods.cs" />
+    <Compile Include="System\IO\Ports\Parity.cs" />
+    <Compile Include="System\IO\Ports\SerialData.cs" />
+    <Compile Include="System\IO\Ports\SerialDataReceivedEventHandler.cs" />
+    <Compile Include="System\IO\Ports\SerialError.cs" />
+    <Compile Include="System\IO\Ports\SerialErrorReceivedEventArgs.cs" />
+    <Compile Include="System\IO\Ports\SerialErrorReceivedEventHandler.cs" />
+    <Compile Include="System\IO\Ports\SerialPinChange.cs" />
+    <Compile Include="System\IO\Ports\SerialPinChangedEventArgs.cs" />
+    <Compile Include="System\IO\Ports\SerialPinChangedEventHandler.cs" />
+    <Compile Include="System\IO\Ports\SerialPort.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="System\IO\Ports\SerialDataReceivedEventArgs.cs" />
+    <Compile Include="System\IO\Ports\SerialStream.cs" />
+    <Compile Include="System\IO\Ports\StopBits.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.DCB.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.DCB.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.COMMPROP.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.COMMPROP.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.COMMTIMEOUTS.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.COMMTIMEOUTS.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.COMSTAT.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.COMSTAT.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetCommState.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.SetCommState.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetCommBreak.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.SetCommBreak.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.ClearCommBreak.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.ClearCommBreak.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.EscapeCommFunction.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.EscapeCommFunction.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetCommTimeouts.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.SetCommTimeouts.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetCommModemStatus.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.GetCommModemStatus.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.ClearCommError.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.ClearCommError.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetCommProperties.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.GetCommProperties.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetCommMask.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.SetCommMask.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.PurgeComm.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.PurgeComm.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetupComm.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.SetupComm.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetCommState.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.GetCommState.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.WaitCommEvent.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.WaitCommEvent.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CreateFile.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.CreateFile.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.ReadFile_SafeHandle_IntPtr.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.ReadFile_SafeHandle_IntPtr.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.ReadFile_SafeHandle_NativeOverlapped.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.ReadFile_SafeHandle_NativeOverlapped.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.WriteFile_SafeHandle_IntPtr.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.WriteFile_SafeHandle_IntPtr.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.WriteFile_SafeHandle_NativeOverlapped.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.WriteFile_SafeHandle_NativeOverlapped.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetOverlappedResult.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.GetOverlappedResult.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.FlushFileBuffers.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.FlushFileBuffers.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GenericOperations.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.GenericOperations.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SECURITY_ATTRIBUTES.cs">
+      <Link>Common\Interop\Windows\Interop.SECURITY_ATTRIBUTES.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.FileTypes.cs">
+      <Link>Common\Interop\Windows\Interop.FileTypes.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\IO\PathInternal.Windows.cs">
+      <Link>Common\System\IO\PathInternal.Windows.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetFileType_SafeHandle.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.GetFileType_SafeHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Errors.cs">
+      <Link>Common\Interop\Windows\Interop.Errors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.BOOL.cs">
+      <Link>Common\Interop\Windows\Interop.BOOL.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
+    <Reference Include="mscorlib" />
+    <Reference Include="System" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'netfx'">
+    <Reference Include="Microsoft.Win32.Registry" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

@@ -1,64 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!-- 
-    Microsoft ResX Schema 
-    
-    Version 2.0
-    
-    The primary goals of this format is to allow a simple XML format 
-    that is mostly human readable. The generation and parsing of the 
-    various data types are done through the TypeConverter classes 
-    associated with the data types.
-    
-    Example:
-    
-    ... ado.net/XML headers & schema ...
-    <resheader name="resmimetype">text/microsoft-resx</resheader>
-    <resheader name="version">2.0</resheader>
-    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
-    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
-    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
-    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
-    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
-        <value>[base64 mime encoded serialized .NET Framework object]</value>
-    </data>
-    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
-        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
-        <comment>This is a comment</comment>
-    </data>
-                
-    There are any number of "resheader" rows that contain simple 
-    name/value pairs.
-    
-    Each data row contains a name, and value. The row also contains a 
-    type or mimetype. Type corresponds to a .NET class that support 
-    text/value conversion through the TypeConverter architecture. 
-    Classes that don't support this are serialized and stored with the 
-    mimetype set.
-    
-    The mimetype is used for serialized objects, and tells the 
-    ResXResourceReader how to depersist the object. This is currently not 
-    extensible. For a given mimetype the value must be set accordingly:
-    
-    Note - application/x-microsoft.net.object.binary.base64 is the format 
-    that the ResXResourceWriter will generate, however the reader can 
-    read any of the formats listed below.
-    
-    mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
-            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
-            : and then encoded with base64 encoding.
-    
-    mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with 
-            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
-            : and then encoded with base64 encoding.
-
-    mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array 
-            : using a System.ComponentModel.TypeConverter
-            : and then encoded with base64 encoding.
-    -->
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -220,14 +161,8 @@
   <data name="Config_base_element_cannot_have_multiple_child_elements" xml:space="preserve">
     <value>The element &lt;{0}&gt; may only appear once in this section.</value>
   </data>
-  <data name="Config_base_element_default_collection_cannot_be_locked" xml:space="preserve">
-    <value>Locks on this collection must be placed on the parent object.</value>
-  </data>
   <data name="Config_base_element_locked" xml:space="preserve">
     <value>The element '{0}' has been locked in a higher level configuration.</value>
-  </data>
-  <data name="Config_base_expected_enum" xml:space="preserve">
-    <value>Invalid enum value.</value>
   </data>
   <data name="Config_base_expected_to_find_element" xml:space="preserve">
     <value>Expected to find an element.</value>
@@ -261,9 +196,6 @@
   </data>
   <data name="Config_base_required_attribute_missing" xml:space="preserve">
     <value>Required attribute '{0}' not found.</value>
-  </data>
-  <data name="Config_base_section_cannot_contain_cdata" xml:space="preserve">
-    <value>The configuration section cannot contain a CDATA element.</value>
   </data>
   <data name="Config_base_section_invalid_content" xml:space="preserve">
     <value>The configuration section cannot contain a CDATA or text element.</value>
@@ -316,9 +248,6 @@
   <data name="Config_client_config_init_error" xml:space="preserve">
     <value>Configuration system failed to initialize</value>
   </data>
-  <data name="Config_client_config_init_security" xml:space="preserve">
-    <value>Failed to initialize configuration because we didn't have necessary security requirements.</value>
-  </data>
   <data name="Config_client_config_too_many_configsections_elements" xml:space="preserve">
     <value>Only one &lt;configSections&gt; element allowed per config file and if present must be the first child of the root &lt;configuration&gt; element.</value>
   </data>
@@ -339,9 +268,6 @@
   </data>
   <data name="Config_empty_lock_attributes_except" xml:space="preserve">
     <value>The '{0}' attribute cannot be an empty string. {1}="*" may be used to lock all attributes.</value>
-  </data>
-  <data name="Config_empty_lock_attributes_except_effective" xml:space="preserve">
-    <value>The {0}="{1}" is invalid because the attributes have all been locked at a higher level. {2}="*" must be used to lock all attributes.</value>
   </data>
   <data name="Config_empty_lock_element_except" xml:space="preserve">
     <value>The '{0}' attribute cannot be an empty string. {1}="*" may be used to lock all elements.</value>
@@ -367,9 +293,6 @@
   <data name="Config_invalid_boolean_attribute" xml:space="preserve">
     <value>The property '{0}' must have value 'true' or 'false'.</value>
   </data>
-  <data name="Config_invalid_configurationsection_constructor" xml:space="preserve">
-    <value>Invalid constructor for ConfigurationSection.</value>
-  </data>
   <data name="Config_invalid_node_type" xml:space="preserve">
     <value>Invalid node type.</value>
   </data>
@@ -377,7 +300,7 @@
     <value>&lt;location&gt; sections are allowed only within &lt;configuration&gt; sections.</value>
   </data>
   <data name="Config_location_path_invalid_character" xml:space="preserve">
-    <value>&lt;location&gt; path attribute must be a relative virtual path.  It cannot contain any of '?' ':' '\\' '*' '"' '&lt;' '>' or '|'.</value>
+    <value>&lt;location&gt; path attribute must be a relative virtual path.  It cannot contain any of '?' ':' '\\' '*' '"' '&lt;' '&gt;' or '|'.</value>
   </data>
   <data name="Config_location_path_invalid_first_character" xml:space="preserve">
     <value>&lt;location&gt; path attribute must be a relative virtual path.  It cannot start with any of ' ' '.' '/' or '\\'.</value>
@@ -412,9 +335,6 @@
   <data name="Config_properties_may_not_be_derived_from_configuration_section" xml:space="preserve">
     <value>The Configuration property '{0}' may not be derived from ConfigurationSection.</value>
   </data>
-  <data name="Config_protection_section_not_found" xml:space="preserve">
-    <value>Protection Section not found.</value>
-  </data>
   <data name="Config_provider_must_implement_type" xml:space="preserve">
     <value>Provider must implement the class '{0}'.</value>
   </data>
@@ -429,9 +349,6 @@
   </data>
   <data name="Config_section_cannot_be_used_in_location" xml:space="preserve">
     <value>This section is not allowed in &lt;location&gt; elements.  This section has been marked allowLocation="false".</value>
-  </data>
-  <data name="Config_section_group_missing_public_constructor" xml:space="preserve">
-    <value>SectionGroup type does not have a public instance constructor that takes no arguments.</value>
   </data>
   <data name="Config_section_locked" xml:space="preserve">
     <value>This configuration section cannot be used at this path.  This happens when the site administrator has locked access to this section using &lt;location allowOverride="false"&gt; from an inherited configuration file.</value>
@@ -523,20 +440,11 @@
   <data name="Encryption_failed" xml:space="preserve">
     <value>Failed to encrypt the section '{0}' using provider '{1}'. Error message from the provider: {2}</value>
   </data>
-  <data name="Expect_bool_value_for_DoNotShowUI" xml:space="preserve">
-    <value>You must specify a boolean value for doNotShowUI.</value>
-  </data>
-  <data name="Expect_bool_value_for_useMachineProtection" xml:space="preserve">
-    <value>You must specify a boolean value for useMachineProtection.</value>
-  </data>
   <data name="IndexOutOfRange" xml:space="preserve">
     <value>Index {0} is out of range.</value>
   </data>
   <data name="Invalid_enum_value" xml:space="preserve">
     <value>The enumeration value must be one of the following: {0}.</value>
-  </data>
-  <data name="Key_container_doesnt_exist_or_access_denied" xml:space="preserve">
-    <value>The RSA key container could not be opened.</value>
   </data>
   <data name="Must_add_to_config_before_protecting_it" xml:space="preserve">
     <value>The configuration section must be added to a configuration hierarchy before you can protect it.</value>
@@ -585,12 +493,6 @@
   </data>
   <data name="Unrecognized_initialization_value" xml:space="preserve">
     <value>The configuration setting '{0}' was not recognized.</value>
-  </data>
-  <data name="UseMachineContainer_must_be_bool" xml:space="preserve">
-    <value>You must specify a boolean value for useMachineContainer.</value>
-  </data>
-  <data name="UseOAEP_must_be_bool" xml:space="preserve">
-    <value>You must specify a boolean value for useOAEP.</value>
   </data>
   <data name="Validation_scalar_range_violation_not_different" xml:space="preserve">
     <value>The value must be different than {0}.</value>
@@ -646,23 +548,8 @@
   <data name="WrongType_of_Protected_provider" xml:space="preserve">
     <value>The type specified does not extend ProtectedConfigurationProvider class.</value>
   </data>
-  <data name="Type_from_untrusted_assembly" xml:space="preserve">
-    <value>Type '{0}' cannot be instantiated under a partially trusted security policy (AllowPartiallyTrustedCallersAttribute is not present on the target assembly).</value>
-  </data>
   <data name="Config_element_locking_not_supported" xml:space="preserve">
     <value>Locking of elements or attributes within a configuration section is not supported for legacy section '{0}'.</value>
-  </data>
-  <data name="Config_element_null_instance" xml:space="preserve">
-    <value>The property '{0}' must not return null from the property's get method.  Typically the getter should return base["{1}"].</value>
-  </data>
-  <data name="ConfigurationPermissionBadXml" xml:space="preserve">
-    <value>Bad Xml {0}</value>
-  </data>
-  <data name="ConfigurationPermission_Denied" xml:space="preserve">
-    <value>Request for ConfigurationPermission failed while attempting to access configuration section '{0}'. To allow all callers to access the data for this section, set section attribute 'requirePermission' equal 'false' in the configuration file where this section is declared.</value>
-  </data>
-  <data name="Section_from_untrusted_assembly" xml:space="preserve">
-    <value>Configuration section '{0}' cannot be instantiated under a partially trusted security policy (AllowPartiallyTrustedCallersAttribute is not present on the configuration section handler).</value>
   </data>
   <data name="Protection_provider_syntax_error" xml:space="preserve">
     <value>A section using 'configProtectionProvider' may contain no other attributes.</value>
@@ -706,9 +593,6 @@
   <data name="Invalid_override_mode_declaration" xml:space="preserve">
     <value>A &lt;location&gt; tag may contain only one of the 'allowOverride' or 'overrideMode' attributes.</value>
   </data>
-  <data name="Config_cannot_edit_locked_configurationsection_when_mode_is_not_allow" xml:space="preserve">
-    <value>ConfigurationSection properties cannot be edited when locked but they can be unlocked by explicitly setting SectionInforamtion.OverrideMode to OverrideMode.Allow.</value>
-  </data>
   <data name="Machine_config_file_not_found" xml:space="preserve">
     <value>The machine.config file '{0}' was not found.</value>
   </data>
@@ -739,12 +623,6 @@
   <data name="UnknownUserLevel" xml:space="preserve">
     <value>Unknown ConfigurationUserLevel specified.</value>
   </data>
-  <data name="PositionOutOfRange" xml:space="preserve">
-    <value>Position cannot be less than zero.</value>
-  </data>
-  <data name="UnknownSeekOrigin" xml:space="preserve">
-    <value>Unknown SeekOrigin specified.</value>
-  </data>
   <data name="BothScopeAttributes" xml:space="preserve">
     <value>The setting {0} has both an ApplicationScopedSettingAttribute and a UserScopedSettingAttribute.</value>
   </data>
@@ -769,9 +647,6 @@
   <data name="AppSettingsReaderNoKey" xml:space="preserve">
     <value>The key '{0}' does not exist in the appSettings configuration section.</value>
   </data>
-  <data name="AppSettingsReaderNoParser" xml:space="preserve">
-    <value>Type '{0}' does not have a Parse method.</value>
-  </data>
   <data name="AppSettingsReaderCantParse" xml:space="preserve">
     <value>The value '{0}' was found in the appSettings configuration section for key '{1}', and this value is not a valid {2}.</value>
   </data>
@@ -789,5 +664,11 @@
   </data>
   <data name="Config_base_no_child_nodes" xml:space="preserve">
     <value>Child nodes not allowed.</value>
+  </data>
+  <data name="InvalidNullEmptyArgument" xml:space="preserve">
+    <value>Argument {0} cannot be null or zero-length.</value>
+  </data>
+  <data name="DuplicateFileName" xml:space="preserve">
+    <value>The file name '{0}' was already in the collection.</value>
   </data>
 </root>

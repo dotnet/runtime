@@ -2099,7 +2099,7 @@ namespace System.Data.Tests
 
             // No exception shud be thrown 
             // The filter created earlier (if cached), will raise an EvaluateException
-            // and so shouldnt be cached
+            // and so shouldn't be cached
             for (int i = 0; i < 5; ++i)
                 table.Rows.Add(new object[] { i });
 

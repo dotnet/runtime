@@ -85,7 +85,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     //
     // ----------------------------------------------------------------------------
 
-    internal class Symbol
+    internal abstract class Symbol
     {
         private SYMKIND _kind;     // the symbol kind
         private bool _isBogus;     // can't be used in our language -- unsupported type(s)
@@ -326,7 +326,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
         }
 
-        public Assembly GetAssembly()
+        private Assembly GetAssembly()
         {
             switch (_kind)
             {
@@ -354,7 +354,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         /*
          * returns the assembly id for the declaration of this symbol
          */
-        public bool InternalsVisibleTo(Assembly assembly)
+        private bool InternalsVisibleTo(Assembly assembly)
         {
             switch (_kind)
             {

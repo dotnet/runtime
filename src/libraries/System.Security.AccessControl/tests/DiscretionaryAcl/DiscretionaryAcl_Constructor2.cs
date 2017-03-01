@@ -70,40 +70,9 @@ namespace System.Security.AccessControl.Tests
         }
 
         [Fact]
-        public static void Constructor2_AdditionalTestCases()
+        public static void Constructor2_NegativeCapacity()
         {
-            DiscretionaryAcl discretionaryAcl = null;
-            bool isContainer = false;
-            bool isDS = false;
-            byte revision = 0;
-            int capacity = 0;
-
-            //case 1, capacity = -1
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                capacity = -1;
-                discretionaryAcl = new DiscretionaryAcl(isContainer, isDS, revision, capacity);
-            });
-
-            //case 2, capacity = Int32.MaxValue/2
-            Assert.Throws<OutOfMemoryException>(() =>
-            {
-                isContainer = true;
-                isDS = false;
-                revision = 0;
-                capacity = Int32.MaxValue / 2;
-                Assert.True(Constructor2(isContainer, isDS, revision, capacity));
-            });
-
-            //case 3, capacity = Int32.MaxValue
-            Assert.Throws<OutOfMemoryException>(() =>
-            {
-                isContainer = true;
-                isDS = true;
-                revision = 255;
-                capacity = Int32.MaxValue;
-                Assert.True(Constructor2(isContainer, isDS, revision, capacity));
-            });
+            Assert.Throws<ArgumentOutOfRangeException>(() => new DiscretionaryAcl(false, false, 0, -1));
         }
     }
 }

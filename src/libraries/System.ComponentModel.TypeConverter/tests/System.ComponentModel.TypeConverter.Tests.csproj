@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -7,10 +7,17 @@
     <DebugEngines>{2E36F1D4-B23C-435D-AB41-18E608940038}</DebugEngines>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.5-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.5-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' != 'netcoreapp' And '$(TargetGroup)' != 'netstandard'">
+    <Compile Include="Drawing\ColorConverterTests.cs" />
+    <Compile Include="Drawing\PointConverterTests.cs" />
+    <Compile Include="Drawing\RectangleConverterTests.cs" />
+    <Compile Include="Drawing\SizeConverterTests.cs" />
+    <Compile Include="Drawing\SizeFConverterTests.cs" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="ArrayConverterTests.cs" />
     <Compile Include="AttributeCollectionTests.cs" />
@@ -58,13 +65,6 @@
     <Compile Include="UInt32ConverterTests.cs" />
     <Compile Include="UInt64ConverterTests.cs" />
     <Compile Include="UriTypeConverterTests.cs" />
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetGroup)' == 'netstandard'">
-    <Compile Include="Drawing\ColorConverterTests.cs" />
-    <Compile Include="Drawing\PointConverterTests.cs" />
-    <Compile Include="Drawing\RectangleConverterTests.cs" />
-    <Compile Include="Drawing\SizeConverterTests.cs" />
-    <Compile Include="Drawing\SizeFConverterTests.cs" />
     <Compile Include="Drawing\StringTypeConverterTestBase.cs" />
     <Compile Include="TimerTests.cs" />
     <Compile Include="BindingListTests.cs" />

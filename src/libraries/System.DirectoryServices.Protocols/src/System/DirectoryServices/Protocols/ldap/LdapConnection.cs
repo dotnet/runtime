@@ -2,18 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#pragma warning disable 618
-[assembly: System.Net.WebPermission(System.Security.Permissions.SecurityAction.RequestMinimum, Unrestricted = true)]
-[assembly: System.Security.Permissions.SecurityPermission(System.Security.Permissions.SecurityAction.RequestMinimum, UnmanagedCode = true)]
-[assembly: System.Security.Permissions.SecurityPermission(System.Security.Permissions.SecurityAction.RequestMinimum, SkipVerification = true)]
-[assembly: System.Security.Permissions.EnvironmentPermission(System.Security.Permissions.SecurityAction.RequestMinimum, Unrestricted = true)]
-[assembly: System.Net.NetworkInformation.NetworkInformationPermission(System.Security.Permissions.SecurityAction.RequestMinimum, Unrestricted = true)]
-
-#pragma warning restore 618
-
 namespace System.DirectoryServices.Protocols
 {
     using System;
+    using System.Globalization;
     using System.Net;
     using System.Collections;
     using System.ComponentModel;
@@ -82,32 +74,18 @@ namespace System.DirectoryServices.Protocols
             s_retriever = new PartialResultsRetriever(s_waitHandle, s_partialResultsProcessor);
         }
 
-        [
-            DirectoryServicesPermission(SecurityAction.Demand, Unrestricted = true),
-        ]
         public LdapConnection(string server) : this(new LdapDirectoryIdentifier(server))
         {
         }
 
-        [
-            DirectoryServicesPermission(SecurityAction.Demand, Unrestricted = true)
-        ]
         public LdapConnection(LdapDirectoryIdentifier identifier) : this(identifier, null, AuthType.Negotiate)
         {
         }
 
-        [
-            DirectoryServicesPermission(SecurityAction.Demand, Unrestricted = true)
-        ]
         public LdapConnection(LdapDirectoryIdentifier identifier, NetworkCredential credential) : this(identifier, credential, AuthType.Negotiate)
         {
         }
 
-        [
-            DirectoryServicesPermission(SecurityAction.Demand, Unrestricted = true),
-            EnvironmentPermission(SecurityAction.Assert, Unrestricted = true),
-            SecurityPermission(SecurityAction.Assert, Flags = SecurityPermissionFlag.UnmanagedCode)
-        ]
         public LdapConnection(LdapDirectoryIdentifier identifier, NetworkCredential credential, AuthType authType)
         {
             _fd = new GetLdapResponseCallback(ConstructResponse);
@@ -121,7 +99,7 @@ namespace System.DirectoryServices.Protocols
 
             // if user wants to do anonymous bind, but specifies credential, error out
             if (AuthType == AuthType.Anonymous && (directoryCredential != null && ((directoryCredential.Password != null && directoryCredential.Password.Length != 0) || (directoryCredential.UserName != null && directoryCredential.UserName.Length != 0))))
-                throw new ArgumentException(Res.GetString(Res.InvalidAuthCredential));
+                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.InvalidAuthCredential));
 
             Init();
             _options = new LdapSessionOptions(this);
@@ -154,12 +132,12 @@ namespace System.DirectoryServices.Protocols
             {
                 if (value < TimeSpan.Zero)
                 {
-                    throw new ArgumentException(Res.GetString(Res.NoNegativeTime), "value");
+                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.NoNegativeTime), "value");
                 }
 
                 // prevent integer overflow
                 if (value.TotalSeconds > Int32.MaxValue)
-                    throw new ArgumentException(Res.GetString(Res.TimespanExceedMax), "value");
+                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.TimespanExceedMax), "value");
 
                 connectionTimeOut = value;
             }
@@ -196,11 +174,6 @@ namespace System.DirectoryServices.Protocols
 
         public override NetworkCredential Credential
         {
-            [
-                DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true),
-                EnvironmentPermission(SecurityAction.Assert, Unrestricted = true),
-                SecurityPermission(SecurityAction.Assert, Flags = SecurityPermissionFlag.UnmanagedCode)
-            ]
             set
             {
                 if (_bounded && !SameCredential(directoryCredential, value))
@@ -278,18 +251,12 @@ namespace System.DirectoryServices.Protocols
             }
         }
 
-        [
-           DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true)
-       ]
         public override DirectoryResponse SendRequest(DirectoryRequest request)
         {
             // no request specific timeout is specified, use the connection timeout
             return SendRequest(request, connectionTimeOut);
         }
 
-        [
-            DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true)
-        ]
         public DirectoryResponse SendRequest(DirectoryRequest request, TimeSpan requestTimeout)
         {
             if (this.disposed)
@@ -299,7 +266,7 @@ namespace System.DirectoryServices.Protocols
                 throw new ArgumentNullException("request");
 
             if (request is DsmlAuthRequest)
-                throw new NotSupportedException(Res.GetString(Res.DsmlAuthRequestNotSupported));
+                throw new NotSupportedException(String.Format(CultureInfo.CurrentCulture, SR.DsmlAuthRequestNotSupported));
 
             int messageID = 0;
             int error = SendRequestHelper(request, ref messageID);
@@ -336,17 +303,11 @@ namespace System.DirectoryServices.Protocols
             }
         }
 
-        [
-            DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true)
-        ]
         public IAsyncResult BeginSendRequest(DirectoryRequest request, PartialResultProcessing partialMode, AsyncCallback callback, object state)
         {
             return BeginSendRequest(request, connectionTimeOut, partialMode, callback, state);
         }
 
-        [
-            DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true)
-        ]
         public IAsyncResult BeginSendRequest(DirectoryRequest request, TimeSpan requestTimeout, PartialResultProcessing partialMode, AsyncCallback callback, object state)
         {
             int messageID = 0;
@@ -363,10 +324,10 @@ namespace System.DirectoryServices.Protocols
                 throw new InvalidEnumArgumentException("partialMode", (int)partialMode, typeof(PartialResultProcessing));
 
             if (partialMode != PartialResultProcessing.NoPartialResultSupport && !(request is SearchRequest))
-                throw new NotSupportedException(Res.GetString(Res.PartialResultsNotSupported));
+                throw new NotSupportedException(String.Format(CultureInfo.CurrentCulture, SR.PartialResultsNotSupported));
 
             if (partialMode == PartialResultProcessing.ReturnPartialResultsAndNotifyCallback && (callback == null))
-                throw new ArgumentException(Res.GetString(Res.CallBackIsNull), "callback");
+                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.CallBackIsNull), "callback");
 
             error = SendRequestHelper(request, ref messageID);
 
@@ -450,9 +411,6 @@ namespace System.DirectoryServices.Protocols
             }
         }
 
-        [
-            DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true)
-        ]
         public void Abort(IAsyncResult asyncResult)
         {
             if (this.disposed)
@@ -462,7 +420,7 @@ namespace System.DirectoryServices.Protocols
                 throw new ArgumentNullException("asyncResult");
 
             if (!(asyncResult is LdapAsyncResult))
-                throw new ArgumentException(Res.GetString(Res.NotReturnedAsyncResult, "asyncResult"));
+                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.NotReturnedAsyncResult, "asyncResult"));
 
             int messageId = -1;
 
@@ -471,7 +429,7 @@ namespace System.DirectoryServices.Protocols
             if (!result.partialResults)
             {
                 if (!s_asyncResultTable.Contains(asyncResult))
-                    throw new ArgumentException(Res.GetString(Res.InvalidAsyncResult));
+                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.InvalidAsyncResult));
 
                 messageId = (int)(s_asyncResultTable[asyncResult]);
 
@@ -501,10 +459,10 @@ namespace System.DirectoryServices.Protocols
                 throw new ArgumentNullException("asyncResult");
 
             if (!(asyncResult is LdapAsyncResult))
-                throw new ArgumentException(Res.GetString(Res.NotReturnedAsyncResult, "asyncResult"));
+                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.NotReturnedAsyncResult, "asyncResult"));
 
             if (!(asyncResult is LdapPartialAsyncResult))
-                throw new InvalidOperationException(Res.GetString(Res.NoPartialResults));
+                throw new InvalidOperationException(String.Format(CultureInfo.CurrentCulture, SR.NoPartialResults));
 
             return s_partialResultsProcessor.GetPartialResults((LdapPartialAsyncResult)asyncResult);
         }
@@ -518,7 +476,7 @@ namespace System.DirectoryServices.Protocols
                 throw new ArgumentNullException("asyncResult");
 
             if (!(asyncResult is LdapAsyncResult))
-                throw new ArgumentException(Res.GetString(Res.NotReturnedAsyncResult, "asyncResult"));
+                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.NotReturnedAsyncResult, "asyncResult"));
 
             LdapAsyncResult result = (LdapAsyncResult)asyncResult;
 
@@ -526,7 +484,7 @@ namespace System.DirectoryServices.Protocols
             {
                 // not a partial results
                 if (!s_asyncResultTable.Contains(asyncResult))
-                    throw new ArgumentException(Res.GetString(Res.InvalidAsyncResult));
+                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.InvalidAsyncResult));
 
                 // remove the asyncResult from our connection table
                 s_asyncResultTable.Remove(asyncResult);
@@ -643,10 +601,10 @@ namespace System.DirectoryServices.Protocols
                     // it is a compare request
                     DirectoryAttribute assertion = ((CompareRequest)request).Assertion;
                     if (assertion == null)
-                        throw new ArgumentException(Res.GetString(Res.WrongAssertionCompare));
+                        throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.WrongAssertionCompare));
 
                     if (assertion.Count != 1)
-                        throw new ArgumentException(Res.GetString(Res.WrongNumValuesCompare));
+                        throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.WrongNumValuesCompare));
 
                     // process the attribute
                     byte[] byteArray = assertion[0] as byte[];
@@ -739,7 +697,7 @@ namespace System.DirectoryServices.Protocols
                     {
                         // LdapConnection only supports ldap filter
                         if (filter is XmlDocument)
-                            throw new ArgumentException(Res.GetString(Res.InvalidLdapSearchRequestFilter));
+                            throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.InvalidLdapSearchRequestFilter));
                     }
                     string searchRequestFilter = (string)filter;
 
@@ -791,7 +749,7 @@ namespace System.DirectoryServices.Protocols
                 }
                 else
                 {
-                    throw new NotSupportedException(Res.GetString(Res.InvliadRequestType));
+                    throw new NotSupportedException(String.Format(CultureInfo.CurrentCulture, SR.InvliadRequestType));
                 }
 
                 // the asynchronous call itself timeout, this actually means that we time out the LDAP_OPT_SEND_TIMEOUT specified in the session option
@@ -961,7 +919,7 @@ namespace System.DirectoryServices.Protocols
 
             // currently ldap does not accept more than one certificate, so check here
             if (ClientCertificates.Count > 1)
-                throw new InvalidOperationException(Res.GetString(Res.InvalidClientCertificates));
+                throw new InvalidOperationException(String.Format(CultureInfo.CurrentCulture, SR.InvalidClientCertificates));
 
             // set the certificate callback routine here if user adds the certifcate to the certificate collection
             if (ClientCertificates.Count != 0)
@@ -1006,17 +964,11 @@ namespace System.DirectoryServices.Protocols
             }
         }
 
-        [
-            DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true)
-        ]
         public void Bind()
         {
             BindHelper(directoryCredential, false /* no need to reset credential */);
         }
 
-        [
-            DirectoryServicesPermission(SecurityAction.LinkDemand, Unrestricted = true)
-        ]
         public void Bind(NetworkCredential newCredential)
         {
             BindHelper(newCredential, true /* need to reset credential */);
@@ -1041,7 +993,7 @@ namespace System.DirectoryServices.Protocols
 
             // if user wants to do anonymous bind, but specifies credential, error out
             if (AuthType == AuthType.Anonymous && (newCredential != null && ((newCredential.Password != null && newCredential.Password.Length != 0) || (newCredential.UserName != null && newCredential.UserName.Length != 0))))
-                throw new InvalidOperationException(Res.GetString(Res.InvalidAuthCredential));
+                throw new InvalidOperationException(String.Format(CultureInfo.CurrentCulture, SR.InvalidAuthCredential));
 
             // set the credential
             if (needSetCredential)

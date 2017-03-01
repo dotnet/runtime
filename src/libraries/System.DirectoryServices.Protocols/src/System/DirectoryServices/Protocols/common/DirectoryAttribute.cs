@@ -5,7 +5,6 @@
 namespace System.DirectoryServices.Protocols
 {
     using System;
-    using System.Xml;
     using System.Collections;
     using System.ComponentModel;
     using System.Globalization;
@@ -23,7 +22,6 @@ namespace System.DirectoryServices.Protocols
 
         public DirectoryAttribute()
         {
-            Utility.CheckOSVersion();
         }
 
         public DirectoryAttribute(string name, string value) : this(name, (object)value)
@@ -71,80 +69,6 @@ namespace System.DirectoryServices.Protocols
             }
         }
 
-        internal DirectoryAttribute(XmlElement node)
-        {
-            // retrieve attribute name
-            string primaryXPath = "@dsml:name";
-            string secondaryXPath = "@name";
-            XmlNamespaceManager dsmlNS = NamespaceUtils.GetDsmlNamespaceManager();
-
-            XmlAttribute attrName = (XmlAttribute)node.SelectSingleNode(primaryXPath, dsmlNS);
-
-            if (attrName == null)
-            {
-                // try it without the namespace qualifier, in case the sender omitted it
-                attrName = (XmlAttribute)node.SelectSingleNode(secondaryXPath, dsmlNS);
-
-                if (attrName == null)
-                {
-                    // the element doesn't have a associated dn
-                    throw new DsmlInvalidDocumentException(Res.GetString(Res.MissingSearchResultEntryAttributeName));
-                }
-
-                _attributeName = attrName.Value;
-            }
-            else
-            {
-                _attributeName = attrName.Value;
-            }
-
-            // retrieve attribute value
-            XmlNodeList nodeList = node.SelectNodes("dsml:value", dsmlNS);
-
-            if (nodeList.Count != 0)
-            {
-                foreach (XmlNode valueNode in nodeList)
-                {
-                    Debug.Assert(valueNode is XmlElement);
-
-                    XmlAttribute valueType = (XmlAttribute)valueNode.SelectSingleNode("@xsi:type", dsmlNS);
-
-                    if (valueType == null)
-                    {
-                        // value type is string
-                        Add(valueNode.InnerText);
-                    }
-                    else
-                    {
-                        // value type is string
-                        if (string.Compare(valueType.Value, "xsd:string", StringComparison.OrdinalIgnoreCase) == 0)
-                            Add(valueNode.InnerText);
-                        else if (string.Compare(valueType.Value, "xsd:base64Binary", StringComparison.OrdinalIgnoreCase) == 0)
-                        {
-                            string base64EncodedValue = valueNode.InnerText;
-                            byte[] binaryValue;
-                            try
-                            {
-                                binaryValue = System.Convert.FromBase64String(base64EncodedValue);
-                            }
-                            catch (FormatException)
-                            {
-                                // server returned invalid base64
-                                throw new DsmlInvalidDocumentException(Res.GetString(Res.BadBase64Value));
-                            }
-
-                            Add(binaryValue);
-                        }
-                        else if (string.Compare(valueType.Value, "xsd:anyURI", StringComparison.OrdinalIgnoreCase) == 0)
-                        {
-                            Uri uri = new Uri(valueNode.InnerText);
-                            Add(uri);
-                        }
-                    }
-                }
-            }
-        }
-
         public string Name
         {
             get
@@ -177,7 +101,7 @@ namespace System.DirectoryServices.Protocols
                         results[i] = (byte[])List[i];
                     }
                     else
-                        throw new NotSupportedException(Res.GetString(Res.DirectoryAttributeConversion));
+                        throw new NotSupportedException(String.Format(CultureInfo.CurrentCulture, SR.DirectoryAttributeConversion));
                 }
 
                 return results;
@@ -195,13 +119,13 @@ namespace System.DirectoryServices.Protocols
                     else if (List[i] is byte[])
                         results[i] = s_encoder.GetString((byte[])List[i]);
                     else
-                        throw new NotSupportedException(Res.GetString(Res.DirectoryAttributeConversion));
+                        throw new NotSupportedException(String.Format(CultureInfo.CurrentCulture, SR.DirectoryAttributeConversion));
                 }
 
                 return results;
             }
             else
-                throw new ArgumentException(Res.GetString(Res.ValidDirectoryAttributeType), "valuesType");
+                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.ValidDirectoryAttributeType), "valuesType");
         }
 
         public object this[int index]
@@ -240,7 +164,7 @@ namespace System.DirectoryServices.Protocols
                 else if ((value is string) || (value is byte[]) || (value is Uri))
                     List[index] = value;
                 else
-                    throw new ArgumentException(Res.GetString(Res.ValidValueType), "value");
+                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.ValidValueType), "value");
             }
         }
 
@@ -265,7 +189,7 @@ namespace System.DirectoryServices.Protocols
                 throw new ArgumentNullException("value");
 
             if (!(value is string) && !(value is byte[]) && !(value is Uri))
-                throw new ArgumentException(Res.GetString(Res.ValidValueType), "value");
+                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.ValidValueType), "value");
 
             return List.Add(value);
         }
@@ -276,11 +200,11 @@ namespace System.DirectoryServices.Protocols
                 throw new ArgumentNullException("values");
 
             if (!(values is string[]) && !(values is byte[][]) && !(values is Uri[]))
-                throw new ArgumentException(Res.GetString(Res.ValidValuesType), "values");
+                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.ValidValuesType), "values");
 
             for (int i = 0; i < values.Length; i++)
                 if (values[i] == null)
-                    throw new ArgumentException(Res.GetString(Res.NullValueArray), "values");
+                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.NullValueArray), "values");
 
             InnerList.AddRange(values);
         }
@@ -334,73 +258,7 @@ namespace System.DirectoryServices.Protocols
                 throw new ArgumentNullException("value");
 
             if (!(value is string) && !(value is byte[]) && !(value is Uri))
-                throw new ArgumentException(Res.GetString(Res.ValidValueType), "value");
-        }
-
-        internal void ToXmlNodeCommon(XmlElement elemBase)
-        {
-            XmlDocument doc = elemBase.OwnerDocument;
-
-            XmlAttribute attrName = doc.CreateAttribute("name", null);
-            attrName.InnerText = Name;
-            elemBase.Attributes.Append(attrName);
-
-            // now create <value> child elements for each attribute value
-            if (Count != 0)
-            {
-                foreach (object o in InnerList)
-                {
-                    XmlElement elemValue = doc.CreateElement("value", DsmlConstants.DsmlUri);
-
-                    // Do the proper encoding, based on whether the object is a byte array
-                    // or something else (encoded as a string)
-                    if (o is byte[])
-                    {
-                        // base64 binary encoding
-                        elemValue.InnerText = System.Convert.ToBase64String((byte[])o);
-
-                        // append the "xsi:type=xsd:base64Binary" tag
-                        XmlAttribute attrXsiType = doc.CreateAttribute("xsi:type", DsmlConstants.XsiUri);
-                        attrXsiType.InnerText = "xsd:base64Binary";
-                        elemValue.Attributes.Append(attrXsiType);
-                    }
-                    else if (o is Uri)
-                    {
-                        elemValue.InnerText = o.ToString();
-
-                        // append the "xsi:type=xsd:anyURI" tag
-                        XmlAttribute attrXsiType = doc.CreateAttribute("xsi:type", DsmlConstants.XsiUri);
-                        attrXsiType.InnerText = "xsd:anyURI";
-                        elemValue.Attributes.Append(attrXsiType);
-                    }
-                    else
-                    {
-                        // string encoding
-                        elemValue.InnerText = o.ToString();
-
-                        // append the space tag
-                        if (elemValue.InnerText.StartsWith(" ", StringComparison.Ordinal) || elemValue.InnerText.EndsWith(" ", StringComparison.Ordinal))
-                        {
-                            XmlAttribute attrXsiType = doc.CreateAttribute("xml:space");
-                            attrXsiType.InnerText = "preserve";
-                            elemValue.Attributes.Append(attrXsiType);
-                        }
-                    }
-
-                    elemBase.AppendChild(elemValue);
-                }
-            }
-        }
-
-        internal XmlElement ToXmlNode(XmlDocument doc, string elementName)
-        {
-            // create the <attr> element
-            XmlElement elemAttr = doc.CreateElement(elementName, DsmlConstants.DsmlUri);
-
-            // attach the "name" attribute and the <value> child elements
-            ToXmlNodeCommon(elemAttr);
-
-            return elemAttr;
+                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.ValidValueType), "value");
         }
     }
 
@@ -427,39 +285,6 @@ namespace System.DirectoryServices.Protocols
             }
         }
 
-        internal XmlElement ToXmlNode(XmlDocument doc)
-        {
-            // create the <modification> element
-            XmlElement elemAttrMod = doc.CreateElement("modification", DsmlConstants.DsmlUri);
-
-            // attach the "name" attribute and the <value> child elements
-            ToXmlNodeCommon(elemAttrMod);
-
-            // attach the "operation" attribute
-            XmlAttribute attrName = doc.CreateAttribute("operation", null);
-
-            switch (Operation)
-            {
-                case DirectoryAttributeOperation.Replace:
-                    attrName.InnerText = "replace";
-                    break;
-
-                case DirectoryAttributeOperation.Add:
-                    attrName.InnerText = "add";
-                    break;
-
-                case DirectoryAttributeOperation.Delete:
-                    attrName.InnerText = "delete";
-                    break;
-
-                default:
-                    throw new InvalidEnumArgumentException("Operation", (int)Operation, typeof(DirectoryAttributeOperation));
-            }
-
-            elemAttrMod.Attributes.Append(attrName);
-
-            return elemAttrMod;
-        }
     }
 
     public class SearchResultAttributeCollection : DictionaryBase
@@ -515,7 +340,6 @@ namespace System.DirectoryServices.Protocols
     {
         public DirectoryAttributeCollection()
         {
-            Utility.CheckOSVersion();
         }
 
         public DirectoryAttribute this[int index]
@@ -527,7 +351,7 @@ namespace System.DirectoryServices.Protocols
             set
             {
                 if (value == null)
-                    throw new ArgumentException(Res.GetString(Res.NullDirectoryAttributeCollection));
+                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.NullDirectoryAttributeCollection));
 
                 List[index] = value;
             }
@@ -536,7 +360,7 @@ namespace System.DirectoryServices.Protocols
         public int Add(DirectoryAttribute attribute)
         {
             if (attribute == null)
-                throw new ArgumentException(Res.GetString(Res.NullDirectoryAttributeCollection));
+                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.NullDirectoryAttributeCollection));
 
             return List.Add(attribute);
         }
@@ -550,7 +374,7 @@ namespace System.DirectoryServices.Protocols
             {
                 if (c == null)
                 {
-                    throw new ArgumentException(Res.GetString(Res.NullDirectoryAttributeCollection));
+                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.NullDirectoryAttributeCollection));
                 }
             }
 
@@ -588,7 +412,7 @@ namespace System.DirectoryServices.Protocols
         public void Insert(int index, DirectoryAttribute value)
         {
             if (value == null)
-                throw new ArgumentException(Res.GetString(Res.NullDirectoryAttributeCollection));
+                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.NullDirectoryAttributeCollection));
 
             List.Insert(index, value);
         }
@@ -601,10 +425,10 @@ namespace System.DirectoryServices.Protocols
         protected override void OnValidate(Object value)
         {
             if (value == null)
-                throw new ArgumentException(Res.GetString(Res.NullDirectoryAttributeCollection));
+                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.NullDirectoryAttributeCollection));
 
             if (!(value is DirectoryAttribute))
-                throw new ArgumentException(Res.GetString(Res.InvalidValueType, "DirectoryAttribute"), "value");
+                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.InvalidValueType, "DirectoryAttribute"), "value");
         }
     }
 
@@ -612,7 +436,6 @@ namespace System.DirectoryServices.Protocols
     {
         public DirectoryAttributeModificationCollection()
         {
-            Utility.CheckOSVersion();
         }
 
         public DirectoryAttributeModification this[int index]
@@ -624,7 +447,7 @@ namespace System.DirectoryServices.Protocols
             set
             {
                 if (value == null)
-                    throw new ArgumentException(Res.GetString(Res.NullDirectoryAttributeCollection));
+                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.NullDirectoryAttributeCollection));
 
                 List[index] = value;
             }
@@ -633,7 +456,7 @@ namespace System.DirectoryServices.Protocols
         public int Add(DirectoryAttributeModification attribute)
         {
             if (attribute == null)
-                throw new ArgumentException(Res.GetString(Res.NullDirectoryAttributeCollection));
+                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.NullDirectoryAttributeCollection));
 
             return List.Add(attribute);
         }
@@ -647,7 +470,7 @@ namespace System.DirectoryServices.Protocols
             {
                 if (c == null)
                 {
-                    throw new ArgumentException(Res.GetString(Res.NullDirectoryAttributeCollection));
+                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.NullDirectoryAttributeCollection));
                 }
             }
 
@@ -685,7 +508,7 @@ namespace System.DirectoryServices.Protocols
         public void Insert(int index, DirectoryAttributeModification value)
         {
             if (value == null)
-                throw new ArgumentException(Res.GetString(Res.NullDirectoryAttributeCollection));
+                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.NullDirectoryAttributeCollection));
 
             List.Insert(index, value);
         }
@@ -698,10 +521,10 @@ namespace System.DirectoryServices.Protocols
         protected override void OnValidate(Object value)
         {
             if (value == null)
-                throw new ArgumentException(Res.GetString(Res.NullDirectoryAttributeCollection));
+                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.NullDirectoryAttributeCollection));
 
             if (!(value is DirectoryAttributeModification))
-                throw new ArgumentException(Res.GetString(Res.InvalidValueType, "DirectoryAttributeModification"), "value");
+                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.InvalidValueType, "DirectoryAttributeModification"), "value");
         }
     }
 }

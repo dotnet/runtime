@@ -475,6 +475,12 @@
         "linuxmint.18-x64": {
             "#import": [ "linuxmint.18", "ubuntu.16.04-x64" ]
         },
+        "linuxmint.18.1": {
+            "#import": [ "linuxmint.18" ]
+        },
+        "linuxmint.18.1-x64": {
+            "#import": [ "linuxmint.18.1", "linuxmint.18-x64" ]
+        },
 
         "fedora": {
             "#import": [ "linux" ]
@@ -495,6 +501,20 @@
         },
         "fedora.24-x64": {
             "#import": [ "fedora.24", "fedora-x64" ]
+        },
+
+        "fedora.25": {
+            "#import": [ "fedora" ]
+        },
+        "fedora.25-x64": {
+            "#import": [ "fedora.25", "fedora-x64" ]
+        },
+
+        "fedora.26": {
+            "#import": [ "fedora" ]
+        },
+        "fedora.26-x64": {
+            "#import": [ "fedora.26", "fedora-x64" ]
         },
 
         "opensuse": {

@@ -221,7 +221,7 @@ namespace System.Xml.Tests
             CError.Compare(DataReader.ReadToFollowing("child1"), true, "Cant find child1");
             CError.Compare(DataReader.ReadToFollowing("child2"), true, "Cant find child2");
             CError.Compare(DataReader.ReadToFollowing("child3"), true, "Cant find child3");
-            CError.Compare(DataReader.ReadToFollowing("child4"), true, "shouldnt find child4");
+            CError.Compare(DataReader.ReadToFollowing("child4"), true, "Shouldn't find child4");
             CError.Compare(DataReader.NodeType, XmlNodeType.Element, "Not on Element");
 
             while (DataReader.Read()) ;

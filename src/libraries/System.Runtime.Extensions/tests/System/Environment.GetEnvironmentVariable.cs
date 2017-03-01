@@ -18,7 +18,6 @@ namespace System.Tests
             Assert.Throws<ArgumentException>("variable", () => Environment.SetEnvironmentVariable("", "test"));
             Assert.Throws<ArgumentException>("value", () => Environment.SetEnvironmentVariable("test", new string('s', 65 * 1024)));
 
-#if netstandard17
             Assert.Throws<ArgumentException>("variable", () => Environment.SetEnvironmentVariable("", "test", EnvironmentVariableTarget.Machine));
             Assert.Throws<ArgumentNullException>("variable", () => Environment.SetEnvironmentVariable(null, "test", EnvironmentVariableTarget.User));
             Assert.Throws<ArgumentNullException>("variable", () => Environment.GetEnvironmentVariable(null, EnvironmentVariableTarget.Process));
@@ -29,7 +28,6 @@ namespace System.Tests
             {
                 Assert.Throws<ArgumentException>("variable", () => Environment.SetEnvironmentVariable(new string('s', 256), "value", EnvironmentVariableTarget.User));
             }
-#endif
         }
 
         [Fact]
@@ -149,13 +147,13 @@ namespace System.Tests
             }
         }
 
-#if netstandard17
         public void EnvironmentVariablesAreHashtable()
         {
             // On NetFX, the type returned was always Hashtable
             Assert.IsType<Hashtable>(Environment.GetEnvironmentVariables());
         }
 
+        [Theory]
         [InlineData(EnvironmentVariableTarget.Process)]
         [InlineData(EnvironmentVariableTarget.Machine)]
         [InlineData(EnvironmentVariableTarget.User)]
@@ -165,6 +163,7 @@ namespace System.Tests
             Assert.IsType<Hashtable>(Environment.GetEnvironmentVariables(target));
         }
 
+        [Theory]
         [InlineData(EnvironmentVariableTarget.Process)]
         [InlineData(EnvironmentVariableTarget.Machine)]
         [InlineData(EnvironmentVariableTarget.User)]
@@ -183,7 +182,6 @@ namespace System.Tests
             }
         }
 
-        [OuterLoop] // manipulating environment variables broader in scope than the process
         [Theory]
         [InlineData(EnvironmentVariableTarget.Process)]
         [InlineData(EnvironmentVariableTarget.Machine)]
@@ -199,21 +197,8 @@ namespace System.Tests
                 // Make sure the iterated value we got matches the one we get explicitly
                 Assert.NotNull(result.Key as string);
                 Assert.Equal(value, Environment.GetEnvironmentVariable(key, target));
-
-                try
-                {
-                    // Change it to something else.  Not all values can be changed and will silently
-                    // not change, so we don't re-check and assert for equality.
-                    Environment.SetEnvironmentVariable(key, value + "changed", target);
-                }
-                finally
-                {
-                    // Change it back
-                    Environment.SetEnvironmentVariable(key, value, target);
-                }
             }
         }
-#endif
 
         private static void SetEnvironmentVariableWithPInvoke(string name, string value)
         {

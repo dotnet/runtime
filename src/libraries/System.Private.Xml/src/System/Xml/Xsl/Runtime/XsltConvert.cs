@@ -402,7 +402,7 @@ namespace System.Xml.Xsl.Runtime
             if (clrType == XPathNavigatorArrayType) return XmlQueryTypeFactory.NodeSDod;
             if (clrType == XPathNavigatorType) return XmlQueryTypeFactory.NodeNotRtf;
             if (clrType == XPathNodeIteratorType) return XmlQueryTypeFactory.NodeSDod;
-            if (clrType.GetTypeInfo().IsEnum) return XmlQueryTypeFactory.DoubleX;
+            if (clrType.IsEnum) return XmlQueryTypeFactory.DoubleX;
             if (clrType == VoidType) return XmlQueryTypeFactory.Empty;
 
             return XmlQueryTypeFactory.ItemS;

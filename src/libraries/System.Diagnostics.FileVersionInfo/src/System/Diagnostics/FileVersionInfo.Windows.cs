@@ -21,7 +21,7 @@ namespace System.Diagnostics
             if (infoSize != 0)
             {
                 byte[] mem = new byte[infoSize];
-                fixed (byte* memPtr = mem)
+                fixed (byte* memPtr = &mem[0])
                 {
                     IntPtr memIntPtr = new IntPtr((void*)memPtr);
                     if (Interop.Version.GetFileVersionInfoEx(

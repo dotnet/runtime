@@ -9,27 +9,30 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.Metadata.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.Metadata", "src\System.Reflection.Metadata.csproj", "{F3E433C8-352F-4944-BF7F-765CE435370D}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{5C5F1FFD-CC57-4DFF-9CAF-0A2852323AD6}"
-	ProjectSection(SolutionItems) = preProject
-		..\.nuget\packages.Windows_NT.config = ..\.nuget\packages.Windows_NT.config
-	EndProjectSection
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E893-4E87-987E-04EF0DCEAEFD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		DebugNETCoreAppnetstandard1.1netstandard1.5|AnyCPU = DebugNETCoreAppnetstandard1.1netstandard1.5|AnyCPU
-		ReleaseNETCoreAppnetstandard1.1netstandard1.5|AnyCPU = ReleaseNETCoreAppnetstandard1.1netstandard1.5|AnyCPU
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{7061832A-E8CF-4AB6-A8DC-44D2F5A43A13}.DebugNETCoreAppnetstandard1.1netstandard1.5|AnyCPU.ActiveCfg = netstandard1.5-Debug|Any CPU
-		{7061832A-E8CF-4AB6-A8DC-44D2F5A43A13}.DebugNETCoreAppnetstandard1.1netstandard1.5|AnyCPU.Build.0 = netstandard1.5-Debug|Any CPU
-		{7061832A-E8CF-4AB6-A8DC-44D2F5A43A13}.ReleaseNETCoreAppnetstandard1.1netstandard1.5|AnyCPU.ActiveCfg = netstandard1.5-Release|Any CPU
-		{7061832A-E8CF-4AB6-A8DC-44D2F5A43A13}.ReleaseNETCoreAppnetstandard1.1netstandard1.5|AnyCPU.Build.0 = netstandard1.5-Release|Any CPU
-		{F3E433C8-352F-4944-BF7F-765CE435370D}.DebugNETCoreAppnetstandard1.1netstandard1.5|AnyCPU.ActiveCfg = netstandard1.1-Debug|Any CPU
-		{F3E433C8-352F-4944-BF7F-765CE435370D}.DebugNETCoreAppnetstandard1.1netstandard1.5|AnyCPU.Build.0 = netstandard1.1-Debug|Any CPU
-		{F3E433C8-352F-4944-BF7F-765CE435370D}.ReleaseNETCoreAppnetstandard1.1netstandard1.5|AnyCPU.ActiveCfg = netstandard1.1-Release|Any CPU
-		{F3E433C8-352F-4944-BF7F-765CE435370D}.ReleaseNETCoreAppnetstandard1.1netstandard1.5|AnyCPU.Build.0 = netstandard1.1-Release|Any CPU
+		{7061832A-E8CF-4AB6-A8DC-44D2F5A43A13}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{7061832A-E8CF-4AB6-A8DC-44D2F5A43A13}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{7061832A-E8CF-4AB6-A8DC-44D2F5A43A13}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{7061832A-E8CF-4AB6-A8DC-44D2F5A43A13}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{F3E433C8-352F-4944-BF7F-765CE435370D}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{F3E433C8-352F-4944-BF7F-765CE435370D}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{F3E433C8-352F-4944-BF7F-765CE435370D}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{F3E433C8-352F-4944-BF7F-765CE435370D}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{7061832A-E8CF-4AB6-A8DC-44D2F5A43A13} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{F3E433C8-352F-4944-BF7F-765CE435370D} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 	EndGlobalSection
 EndGlobal

@@ -93,7 +93,7 @@ All supported targets with unique windows/unix build for netcoreapp:
 A full or individual project build is centered around BuildConfiguration and will be setup in one of the following ways:
 
 1. `$(BuildConfiguration)` can directly be passed to the build.
-2. `$(Configuration)` can be passed to the build and `$(BuildConfiguration)` will be set to `$(Configuration)-$(ArchGroup)`. This is a convinence mechanism primarily to help with VS support because VS uses the `Configuration` property for switching between various configurations in the UI. NOTE: this only works well for individual projects and not the root builds.
+2. `$(Configuration)` can be passed to the build and `$(BuildConfiguration)` will be set to `$(Configuration)-$(ArchGroup)`. This is a convenience mechanism primarily to help with VS support because VS uses the `Configuration` property for switching between various configurations in the UI. NOTE: this only works well for individual projects and not the root builds.
 3. `$(TargetGroup), $(OSGroup), $(ConfigurationGroup), $(ArchGroup)` can individually be passed in to change the default value for just part of the `BuildConfiguration`.
 4. If nothing is passed to the build then we will default `BuildConfiguration` from the environment. Example: `netcoreapp-[OSGroup Running On]-Debug-x64`.
 
@@ -144,6 +144,16 @@ Project configurations that are unique for a few different target frameworks and
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap101-Release|AnyCPU'" />
 ```
 
+##Updating Configurations
+
+We have a build task that you can run to automatically update all the projects with the above boilerplate as well as updating all the solution files for the libraries. Whenever you change the list of configurations for a project you can regenerate all these for the entire repo by running:
+
+```
+msbuild build.proj /t:UpdateVSConfigurations
+```
+
+If you want to scope the geneneration you can either undo changes that you don't need or you can temporally limit the set of projects or directories by updating the item set in the UpdateVSConfigurations target in https://github.com/dotnet/corefx/blob/master/build.proj
+
 #Library project guidelines
 Library projects should use the following directory layout.
 
@@ -163,12 +173,12 @@ There are two types of reference assembly projects:
 
 1. Libraries that are contain APIs in netstandard
  - `BuildConfigurations` should contain non-netstandard configurations for the platforms they support.
- - Should use a relative path `<ProjectReference>` to the dependencies it has. Those depedencies should only be libraries with similar build configurations and be part of netstandard.
+ - Should use a relative path `<ProjectReference>` to the dependencies it has. Those dependencies should only be libraries with similar build configurations and be part of netstandard.
 <BR/>//**CONSIDER**: just using Reference with a custom task to pull from TP or turn to ProjectReference
 2. Libraries that are built on top of netstandard
  - `BuildConfigurations` should contain only netstandard configurations.
  - Should contain `<Reference Include='netstandard'>`
- - Anything outside of netstandard should use a relative path `<ProjectReference>` to its dependencies it has. Those depdencies should only be libraries that are built against netstandard as well.
+ - Anything outside of netstandard should use a relative path `<ProjectReference>` to its dependencies it has. Those dependencies should only be libraries that are built against netstandard as well.
 
 ###ref output
 The output for the ref project build will be a flat targeting pack folder in the following directory:

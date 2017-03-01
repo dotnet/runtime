@@ -90,7 +90,7 @@ internal static partial class Interop
             Debug.Assert((address.Length == IPv4AddressBytes) || (address.Length == IPv6AddressBytes), $"Unexpected address length: {address.Length}");
 
             int err;
-            fixed (byte* rawAddress = address)
+            fixed (byte* rawAddress = &address[0])
             {
                 int bufferLength = isIPv6 ? INET6_ADDRSTRLEN : INET_ADDRSTRLEN;
                 byte* buffer = stackalloc byte[bufferLength];

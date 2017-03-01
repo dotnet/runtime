@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -7,8 +7,8 @@
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.3-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard1.3-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <TargetingPackExclusions Include="System.Net.Http.WinHttpHandler" />
   </ItemGroup>
@@ -64,12 +64,6 @@
     <Compile Include="$(CommonPath)\System\Net\Http\HttpHandlerDefaults.cs">
       <Link>Common\System\Net\Http\HttpHandlerDefaults.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Http\HttpHandlerDiagnosticListenerExtensions.cs">
-      <Link>Common\System\Net\Http\HttpHandlerDiagnosticListenerExtensions.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\Http\HttpHandlerLoggingStrings.cs">
-      <Link>Common\System\Net\Http\HttpHandlerLoggingStrings.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Net\Http\NoWriteNoSeekStreamContent.cs">
       <Link>Common\System\Net\Http\NoWriteNoSeekStreamContent.cs</Link>
     </Compile>
@@ -78,6 +72,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\Threading\Tasks\RendezvousAwaitable.cs">
       <Link>Common\System\Threading\Tasks\RendezvousAwaitable.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
+      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
     <Compile Include="..\..\src\System\Net\Http\WinHttpAuthHelper.cs">
       <Link>ProductionCode\WinHttpAuthHelper.cs</Link>

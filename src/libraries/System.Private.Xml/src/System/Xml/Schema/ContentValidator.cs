@@ -805,7 +805,7 @@ namespace System.Xml.Schema
 
 #if EXPANDRANGE
     /// <summary>
-    /// Temporary node to occurance range. Will be expended to a sequence of terminals
+    /// Temporary node to occurrence range. Will be expended to a sequence of terminals
     /// </summary>
     sealed class RangeNode : InteriorNode {
         int min;

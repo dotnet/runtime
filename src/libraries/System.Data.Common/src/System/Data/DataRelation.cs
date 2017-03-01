@@ -58,7 +58,7 @@ namespace System.Data
         internal bool _nested = false;
 
         /// <summary>
-        /// this stores whether the the relationship should make sure that KeyConstraints and ForeignKeyConstraints
+        /// this stores whether the relationship should make sure that KeyConstraints and ForeignKeyConstraints
         /// exist when added to the ConstraintsCollections of the table.
         /// </summary>
         internal bool _createConstraints;

@@ -50,6 +50,7 @@ namespace System.Diagnostics
         private bool _exited;
         private int _exitCode;
 
+        private DateTime? _startTime;
         private DateTime _exitTime;
         private bool _haveExitTime;
 
@@ -198,6 +199,19 @@ namespace System.Diagnostics
                     }
                 }
                 return _exited;
+            }
+        }
+
+        /// <summary>Gets the time the associated process was started.</summary>
+        public DateTime StartTime
+        {
+            get
+            {
+                if (!_startTime.HasValue)
+                {
+                    _startTime = StartTimeCore;
+                }
+                return _startTime.Value;
             }
         }
 

@@ -154,7 +154,7 @@ namespace System.Linq.Expressions.Interpreter
                     return null;
             }
 
-            if (type.GetTypeInfo().IsEnum)
+            if (type.IsEnum)
             {
                 result = Enum.ToObject(type, result);
             }

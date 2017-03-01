@@ -35,6 +35,11 @@ Only use it when the parameters that you are passing to the script apply for bot
 
 For more information about the different options when building, run `build.cmd -?` and look at examples in the [developer-guide](../project-docs/developer-guide.md).
 
+### Running tests from the command line
+
+From the root, use `build-tests.cmd`.
+For more details, or to test an individual project, see the [developer guide topic](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/developer-guide.md).
+
 ### Running tests from Visual Studio
 
 1. Open solution of interest

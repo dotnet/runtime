@@ -50,18 +50,41 @@ namespace System.Diagnostics
         }
 
         /// <summary>Gets the time the associated process was started.</summary>
-        public DateTime StartTime
+        internal DateTime StartTimeCore
         {
             get
             {
-                // Get the RUsage data and convert the process start time (which is the number of
-                // nanoseconds elapse from boot to that the process started) to seconds.
-                EnsureState(State.HaveId);
-                Interop.libproc.rusage_info_v3 info = Interop.libproc.proc_pid_rusage(_processId);
-                double seconds = info.ri_proc_start_abstime / (double)NanoSecondToSecondFactor;
+                // Get the RUsage data and convert the process start time.
+                // To calculcate the process start time in OSX we call proc_pid_rusage() and use ri_proc_start_abstime.
+                //
+                // ri_proc_start_abstime is absolute time which is the time since some reference point. The reference point
+                // usually is the system boot time but this is not necessary true in all versions of OSX. For example in Sierra 
+                // Mac OS 10.12 the reference point is not really the boot time. To be always accurate in our calculations
+                // we don’t assume the reference point to be the boot time and instead we calculate it by calling GetTimebaseInfo
+                // which is a wrapper for native mach_absolute_time(). That method returns the current time referenced to the needed start point
+                // Then we can subtract the returned time from DateTime.UtcNow and we’ll get the exact reference point.
+                //
+                // The absolute time is measured by the bus cycle of the processor which is measured in nanoseconds multiplied 
+                // by some factor “numer / denom”. In most cases the factor is (1 / 1) but we have to get the factor and use it just 
+                // in case we run on a machine has different factor. To get the factor we call GetTimebaseInfo the wrapper for the 
+                // mach_timebase_info() which give us the factor. Then we multiply the factor by the absolute time and the divide
+                // the result by 10^9 to convert it from nanoseconds to seconds.
 
-                // Convert timespan from boot to process start datetime.
-                return BootTimeToDateTime(TimeSpan.FromSeconds(seconds));
+                EnsureState(State.HaveId);
+
+                uint numer, denom;
+                Interop.Sys.GetTimebaseInfo(out numer, out denom);
+                Interop.libproc.rusage_info_v3 info = Interop.libproc.proc_pid_rusage(_processId);
+                ulong absoluteTime;
+
+                if (!Interop.Sys.GetAbsoluteTime(out absoluteTime))
+                {
+                    throw new Win32Exception(SR.RUsageFailure);
+                }
+
+                // usually seconds will be negative
+                double seconds = (((long) info.ri_proc_start_abstime - (long) absoluteTime) * (double)numer / denom) / NanoSecondToSecondFactor;
+                return  DateTime.UtcNow.AddSeconds(seconds).ToLocalTime();
             }
         }
 

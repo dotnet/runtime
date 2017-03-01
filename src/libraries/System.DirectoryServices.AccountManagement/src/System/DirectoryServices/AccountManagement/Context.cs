@@ -227,10 +227,6 @@ namespace System.DirectoryServices.AccountManagement
             return true;
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="LdapConnection.Bind():System.Void" />
-        // <SatisfiesLinkDemand Name="LdapConnection.Bind(System.Net.NetworkCredential):System.Void" />
-        // </SecurityKernel>
         [System.Security.SecuritySafeCritical]
         private void lockedLdapBind(LdapConnection current, NetworkCredential creds, ContextOptions contextOptions)
         {
@@ -247,13 +243,7 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <Asserts Name="Declarative: [DirectoryServicesPermission(SecurityAction.Assert, Unrestricted = true)]" />
-        // <ReferencesCritical Name="Method: BindSam(String, String, String):Boolean" Ring="1" />
-        // <ReferencesCritical Name="Method: BindLdap(NetworkCredential, ContextOptions):Boolean" Ring="2" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
-        [DirectoryServicesPermission(SecurityAction.Assert, Unrestricted = true)]
         public bool Validate(string userName, string password)
         {
             NetworkCredential networkCredential = new NetworkCredential(userName, password);
@@ -323,13 +313,7 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <Asserts Name="Declarative: [DirectoryServicesPermission(SecurityAction.Assert, Unrestricted = true)]" />
-        // <ReferencesCritical Name="Method: BindSam(String, String, String):Boolean" Ring="1" />
-        // <ReferencesCritical Name="Method: BindLdap(NetworkCredential, ContextOptions):Boolean" Ring="2" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
-        [DirectoryServicesPermission(SecurityAction.Assert, Unrestricted = true)]
         public bool Validate(string userName, string password, ContextOptions connectionMethod)
         {
             // empty username and password on the local box
@@ -365,52 +349,39 @@ namespace System.DirectoryServices.AccountManagement
     // ********************************************
     [System.Security.Permissions.SecurityPermission(System.Security.Permissions.SecurityAction.Assert,
                                                 Flags = System.Security.Permissions.SecurityPermissionFlag.UnmanagedCode)]
-    // <SecurityKernel Critical="True" Ring="0">
-    // <Asserts Name="Declarative: [SecurityPermission(SecurityAction.Assert, Flags = SecurityPermissionFlag.UnmanagedCode)]" />
-    // </SecurityKernel>
 #pragma warning disable 618    // Have not migrated to v4 transparency yet
     [System.Security.SecurityCritical(System.Security.SecurityCriticalScope.Everything)]
 #pragma warning restore 618
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.LinkDemand, Unrestricted = true)]
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.InheritanceDemand, Unrestricted = true)]
-    //    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted=true)]
     public class PrincipalContext : IDisposable
     {
         //
         // Public Constructors
         //
 
-        [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Demand, Unrestricted = true)]
         public PrincipalContext(ContextType contextType) :
             this(contextType, null, null, PrincipalContext.GetDefaultOptionForStore(contextType), null, null)
         { }
 
-        [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Demand, Unrestricted = true)]
         public PrincipalContext(ContextType contextType, string name) :
             this(contextType, name, null, PrincipalContext.GetDefaultOptionForStore(contextType), null, null)
         { }
 
-        [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Demand, Unrestricted = true)]
         public PrincipalContext(ContextType contextType, string name, string container) :
             this(contextType, name, container, PrincipalContext.GetDefaultOptionForStore(contextType), null, null)
         { }
 
-        [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Demand, Unrestricted = true)]
         public PrincipalContext(ContextType contextType, string name, string container, ContextOptions options) :
             this(contextType, name, container, options, null, null)
         { }
 
-        [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Demand, Unrestricted = true)]
         public PrincipalContext(ContextType contextType, string name, string userName, string password) :
             this(contextType, name, null, PrincipalContext.GetDefaultOptionForStore(contextType), userName, password)
         { }
 
-        [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Demand, Unrestricted = true)]
         public PrincipalContext(ContextType contextType, string name, string container, string userName, string password) :
             this(contextType, name, container, PrincipalContext.GetDefaultOptionForStore(contextType), userName, password)
         { }
 
-        [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Demand, Unrestricted = true)]
         public PrincipalContext(
                     ContextType contextType, string name, string container, ContextOptions options, string userName, string password)
         {
@@ -589,7 +560,6 @@ namespace System.DirectoryServices.AccountManagement
         //
         // Private methods for initialization
         //                
-        [DirectoryServicesPermission(SecurityAction.Assert, Unrestricted = true)]
         private void Initialize()
         {
             if (!_initialized)
@@ -1126,7 +1096,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        [DirectoryServicesPermission(SecurityAction.Assert, Unrestricted = true)]
         internal void ReadServerConfig(string serverName, ref ServerProperties properties)
         {
             string[] proplist = new string[] { "msDS-PortSSL", "msDS-PortLDAP", "domainControllerFunctionality", "dnsHostName", "supportedCapabilities" };

@@ -75,7 +75,9 @@ namespace System.Text
         [System.Security.SecurityCritical]  // auto-generated
         protected override unsafe void LoadManagedCodePage()
         {
-            fixed (byte* pBytes = m_codePageHeader)
+            Debug.Assert(m_codePageHeader?.Length > 0);
+
+            fixed (byte* pBytes = &m_codePageHeader[0])
             {
                 CodePageHeader* pCodePage = (CodePageHeader*)pBytes;
                 // Should be loading OUR code page
@@ -116,7 +118,7 @@ namespace System.Text
                     s_codePagesEncodingDataStream.Read(buffer, 0, buffer.Length);
                 }
 
-                fixed (byte* pBuffer = buffer)
+                fixed (byte* pBuffer = &buffer[0])
                 {
                     char* pTemp = (char*)pBuffer;
                     for (int b = 0; b < 256; b++)

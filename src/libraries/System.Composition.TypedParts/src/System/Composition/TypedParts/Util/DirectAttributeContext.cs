@@ -18,15 +18,22 @@ namespace System.Composition.TypedParts.Util
 
             if (!(member is TypeInfo) && member.DeclaringType != reflectedType)
                 return EmptyArray<Attribute>.Value;
-
+#if netstandard10
+            return member.GetCustomAttributes(false);
+#else
             return Attribute.GetCustomAttributes(member, false);
+#endif
         }
 
         public override IEnumerable<Attribute> GetCustomAttributes(Type reflectedType, Reflection.ParameterInfo parameter)
         {
             if (reflectedType == null) throw new ArgumentNullException(nameof(reflectedType));
             if (parameter == null) throw new ArgumentNullException(nameof(parameter));
+#if netstandard10
+            return parameter.GetCustomAttributes(false);
+#else
             return Attribute.GetCustomAttributes(parameter, false);
+#endif
         }
     }
 }

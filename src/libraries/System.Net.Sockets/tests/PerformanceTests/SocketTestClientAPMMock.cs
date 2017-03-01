@@ -12,11 +12,10 @@ namespace System.Net.Sockets.Performance.Tests
     {
         public SocketTestClientAPM(
             ITestOutputHelper log,
-            string server,
-            int port,
+            EndPoint endpoint,
             int iterations,
             string message,
-            Stopwatch timeProgramStart) : base(log, server, port, iterations, message, timeProgramStart)
+            Stopwatch timeProgramStart) : base(log, endpoint, iterations, message, timeProgramStart)
         {
         }
 

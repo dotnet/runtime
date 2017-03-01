@@ -1807,5 +1807,34 @@ namespace System.Linq.Expressions.Tests
         }
 
         #endregion
+
+        public static IEnumerable<object[]> ObjectsAndTypes()
+        {
+            yield return new object[] { 3, typeof(int), typeof(int?) };
+            yield return new object[] { 3, typeof(int), typeof(long?) };
+            yield return new object[] { "3", typeof(IEnumerable<char>), typeof(string) };
+            yield return new object[] { Expression.Constant(3), typeof(Expression), typeof(ConstantExpression) };
+            yield return new object[] { Expression.Constant(3), typeof(Expression), typeof(BlockExpression) };
+        }
+
+        [Theory, PerCompilationType(nameof(ObjectsAndTypes))]
+        public static void MakeUnaryTypeAs(object value, Type sourceType, Type resultType, bool useInterpreter)
+        {
+            var instance = Expression.Constant(value, sourceType);
+            var lambda = Expression.Lambda<Func<object>>(
+                Expression.Convert(
+                    Expression.MakeUnary(ExpressionType.TypeAs, instance, resultType),
+                    typeof(object))
+                );
+            var func = lambda.Compile(useInterpreter);
+            if (resultType.IsInstanceOfType(value))
+            {
+                Assert.Equal(value, func());
+            }
+            else
+            {
+                Assert.Null(func());
+            }
+        }
     }
 }

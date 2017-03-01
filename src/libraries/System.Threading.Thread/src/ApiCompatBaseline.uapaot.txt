@@ -1,0 +1,4 @@
+MembersMustExist : Member 'System.Threading.Thread.CurrentPrincipal.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Threading.Thread.CurrentPrincipal.set(System.Security.Principal.IPrincipal)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Threading.Thread.GetDomain()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Threading.Thread.GetDomainID()' does not exist in the implementation but it does exist in the contract.

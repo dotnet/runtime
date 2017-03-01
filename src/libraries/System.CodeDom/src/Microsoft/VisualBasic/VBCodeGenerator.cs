@@ -1434,7 +1434,7 @@ namespace Microsoft.VisualBasic
             string eventName = e.Name;
             if (e.PrivateImplementationType != null)
             {
-                string impl = GetBaseTypeOutput(e.PrivateImplementationType);
+                string impl = GetBaseTypeOutput(e.PrivateImplementationType, preferBuiltInTypes: false);
                 impl = impl.Replace('.', '_');
                 e.Name = impl + "_" + e.Name;
             }
@@ -1561,7 +1561,7 @@ namespace Microsoft.VisualBasic
             string methodName = e.Name;
             if (e.PrivateImplementationType != null)
             {
-                string impl = GetBaseTypeOutput(e.PrivateImplementationType);
+                string impl = GetBaseTypeOutput(e.PrivateImplementationType, preferBuiltInTypes: false);
                 impl = impl.Replace('.', '_');
                 e.Name = impl + "_" + e.Name;
             }
@@ -1714,7 +1714,7 @@ namespace Microsoft.VisualBasic
             string propName = e.Name;
             if (e.PrivateImplementationType != null)
             {
-                string impl = GetBaseTypeOutput(e.PrivateImplementationType);
+                string impl = GetBaseTypeOutput(e.PrivateImplementationType, preferBuiltInTypes: false);
                 impl = impl.Replace('.', '_');
                 e.Name = impl + "_" + e.Name;
             }
@@ -2040,7 +2040,7 @@ namespace Microsoft.VisualBasic
         }
 
         // In VB, constraints are put right after the type paramater name.
-        // In C#, there is a seperate "where" statement
+        // In C#, there is a separate "where" statement
         private void OutputTypeParameterConstraints(CodeTypeParameter typeParameter)
         {
             CodeTypeReferenceCollection constraints = typeParameter.Constraints;
@@ -2399,80 +2399,56 @@ namespace Microsoft.VisualBasic
             return name;
         }
 
-        private string GetBaseTypeOutput(CodeTypeReference typeRef)
+        private string GetBaseTypeOutput(CodeTypeReference typeRef, bool preferBuiltInTypes = true)
         {
             string baseType = typeRef.BaseType;
 
-            if (baseType.Length == 0)
+            if (preferBuiltInTypes)
             {
-                return "Void";
+                if (baseType.Length == 0)
+                {
+                    return "Void";
+                }
+
+                string lowerCaseString = baseType.ToLowerInvariant();
+
+                switch (lowerCaseString)
+                {
+                    case "system.byte":
+                        return "Byte";
+                    case "system.sbyte":
+                        return "SByte";
+                    case "system.int16":
+                        return "Short";
+                    case "system.int32":
+                        return "Integer";
+                    case "system.int64":
+                        return "Long";
+                    case "system.uint16":
+                        return "UShort";
+                    case "system.uint32":
+                        return "UInteger";
+                    case "system.uint64":
+                        return "ULong";
+                    case "system.string":
+                        return "String";
+                    case "system.datetime":
+                        return "Date";
+                    case "system.decimal":
+                        return "Decimal";
+                    case "system.single":
+                        return "Single";
+                    case "system.double":
+                        return "Double";
+                    case "system.boolean":
+                        return "Boolean";
+                    case "system.char":
+                        return "Char";
+                    case "system.object":
+                        return "Object";
+                }
             }
-            else if (string.Equals(baseType, "System.Byte", StringComparison.OrdinalIgnoreCase))
-            {
-                return "Byte";
-            }
-            else if (string.Equals(baseType, "System.SByte", StringComparison.OrdinalIgnoreCase))
-            {
-                return "SByte";
-            }
-            else if (string.Equals(baseType, "System.Int16", StringComparison.OrdinalIgnoreCase))
-            {
-                return "Short";
-            }
-            else if (string.Equals(baseType, "System.Int32", StringComparison.OrdinalIgnoreCase))
-            {
-                return "Integer";
-            }
-            else if (string.Equals(baseType, "System.Int64", StringComparison.OrdinalIgnoreCase))
-            {
-                return "Long";
-            }
-            else if (string.Equals(baseType, "System.UInt16", StringComparison.OrdinalIgnoreCase))
-            {
-                return "UShort";
-            }
-            else if (string.Equals(baseType, "System.UInt32", StringComparison.OrdinalIgnoreCase))
-            {
-                return "UInteger";
-            }
-            else if (string.Equals(baseType, "System.UInt64", StringComparison.OrdinalIgnoreCase))
-            {
-                return "ULong";
-            }
-            else if (string.Equals(baseType, "System.String", StringComparison.OrdinalIgnoreCase))
-            {
-                return "String";
-            }
-            else if (string.Equals(baseType, "System.DateTime", StringComparison.OrdinalIgnoreCase))
-            {
-                return "Date";
-            }
-            else if (string.Equals(baseType, "System.Decimal", StringComparison.OrdinalIgnoreCase))
-            {
-                return "Decimal";
-            }
-            else if (string.Equals(baseType, "System.Single", StringComparison.OrdinalIgnoreCase))
-            {
-                return "Single";
-            }
-            else if (string.Equals(baseType, "System.Double", StringComparison.OrdinalIgnoreCase))
-            {
-                return "Double";
-            }
-            else if (string.Equals(baseType, "System.Boolean", StringComparison.OrdinalIgnoreCase))
-            {
-                return "Boolean";
-            }
-            else if (string.Equals(baseType, "System.Char", StringComparison.OrdinalIgnoreCase))
-            {
-                return "Char";
-            }
-            else if (string.Equals(baseType, "System.Object", StringComparison.OrdinalIgnoreCase))
-            {
-                return "Object";
-            }
-            else
-            {
+
                 var sb = new StringBuilder(baseType.Length + 10);
                 if ((typeRef.Options & CodeTypeReferenceOptions.GlobalReference) != 0)
                 {
@@ -2525,7 +2501,6 @@ namespace Microsoft.VisualBasic
                 }
 
                 return sb.ToString();
-            }
         }
 
         private string GetTypeOutputWithoutArrayPostFix(CodeTypeReference typeRef)

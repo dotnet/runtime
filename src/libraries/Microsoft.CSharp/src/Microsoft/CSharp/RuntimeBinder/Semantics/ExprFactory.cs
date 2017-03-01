@@ -95,7 +95,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             rval.SetOptionalArguments(pOptionalArguments);
             rval.SetOptionalArgumentDimensions(pOptionalArgumentDimensions);
             rval.dimSizes = pDimSizes;
-            rval.dimSize = pDimSizes != null ? pDimSizes.Length : 0;
+            rval.dimSize = pDimSizes?.Length ?? 0;
             Debug.Assert(rval != null);
             return (rval);
         }
@@ -174,7 +174,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 EXPR pObject,
                 MethPropWithInst mwi)
         {
-            Name pName = mwi.Sym != null ? mwi.Sym.name : null;
+            Name pName = mwi.Sym?.name;
             MethodOrPropertySymbol methProp = mwi.MethProp();
 
             CType pType = mwi.GetType();
@@ -183,7 +183,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 pType = GetTypes().GetErrorSym();
             }
 
-            return CreateMemGroup(0, pName, mwi.TypeArgs, methProp != null ? methProp.getKind() : SYMKIND.SK_MethodSymbol, mwi.GetType(), methProp, pObject, new CMemberLookupResults(GetGlobalSymbols().AllocParams(1, new CType[] { pType }), pName));
+            return CreateMemGroup(0, pName, mwi.TypeArgs, methProp?.getKind() ?? SYMKIND.SK_MethodSymbol, mwi.GetType(), methProp, pObject, new CMemberLookupResults(GetGlobalSymbols().AllocParams(1, new CType[] { pType }), pName));
         }
 
         public EXPRUSERDEFINEDCONVERSION CreateUserDefinedConversion(EXPR arg, EXPR call, MethWithInst mwi)
@@ -230,7 +230,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return CreateReturn(nFlags, pCurrentScope, pOptionalObject, pOptionalObject);
         }
 
-        public EXPRRETURN CreateReturn(EXPRFLAG nFlags, Scope pCurrentScope, EXPR pOptionalObject, EXPR pOptionalOriginalObject)
+        private EXPRRETURN CreateReturn(EXPRFLAG nFlags, Scope pCurrentScope, EXPR pOptionalObject, EXPR pOptionalOriginalObject)
         {
             Debug.Assert(0 == (nFlags &
                        ~(EXPRFLAG.EXF_ASLEAVE | EXPRFLAG.EXF_FINALLYBLOCKED | EXPRFLAG.EXF_RETURNISYIELD |
@@ -382,7 +382,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return rval;
         }
 
-        public EXPRTYPEOF CreateTypeOf(EXPRTYPEORNAMESPACE pSourceType)
+        private EXPRTYPEOF CreateTypeOf(EXPRTYPEORNAMESPACE pSourceType)
         {
             EXPRTYPEOF rval = new EXPRTYPEOF();
             rval.kind = ExpressionKind.EK_TYPEOF;
@@ -432,8 +432,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public EXPRCONCAT CreateConcat(EXPR op1, EXPR op2)
         {
-            Debug.Assert(op1 != null && op1.type != null);
-            Debug.Assert(op2 != null && op2.type != null);
+            Debug.Assert(op1?.type != null);
+            Debug.Assert(op2?.type != null);
             Debug.Assert(op1.type.isPredefType(PredefinedType.PT_STRING) || op2.type.isPredefType(PredefinedType.PT_STRING));
 
             CType type = op1.type;
@@ -501,7 +501,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return CreateZeroInit(exprClass);
         }
 
-        public EXPR CreateZeroInit(EXPRTYPEORNAMESPACE pTypeExpr)
+        private EXPR CreateZeroInit(EXPRTYPEORNAMESPACE pTypeExpr)
         {
             return CreateZeroInit(pTypeExpr, null, false);
         }
@@ -598,7 +598,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return CreateConstant(pType, constVal, null);
         }
 
-        public EXPRCONSTANT CreateConstant(CType pType, CONSTVAL constVal, EXPR pOriginal)
+        private EXPRCONSTANT CreateConstant(CType pType, CONSTVAL constVal, EXPR pOriginal)
         {
             EXPRCONSTANT rval = CreateConstant(pType);
             rval.setVal(constVal);
@@ -606,7 +606,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return (rval);
         }
 
-        public EXPRCONSTANT CreateConstant(CType pType)
+        private EXPRCONSTANT CreateConstant(CType pType)
         {
             EXPRCONSTANT rval = new EXPRCONSTANT();
             rval.kind = ExpressionKind.EK_CONSTANT;

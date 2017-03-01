@@ -3,5 +3,6 @@
   <Import Project="..\dir.props" />
   <PropertyGroup>
     <AssemblyVersion>4.0.2.0</AssemblyVersion>
+    <IsDesktopFacade>true</IsDesktopFacade>
   </PropertyGroup>
 </Project>

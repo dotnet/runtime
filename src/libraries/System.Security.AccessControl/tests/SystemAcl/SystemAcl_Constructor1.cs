@@ -23,37 +23,9 @@ namespace System.Security.AccessControl.Tests
         }
 
         [Fact]
-        public static void AdditionalTestCases()
+        public static void NegativeCapacity()
         {
-            SystemAcl systemAcl = null;
-            bool isContainer = false;
-            bool isDS = false;
-            int capacity = 0;
-
-            //case 1, capacity = -1
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                capacity = -1;
-                systemAcl = new SystemAcl(isContainer, isDS, capacity);
-            });
-
-            //case 2, capacity = Int32.MaxValue/2
-            Assert.Throws<OutOfMemoryException>(() =>
-            {
-                isContainer = true;
-                isDS = false;
-                capacity = Int32.MaxValue / 2;
-                TestConstructor(isContainer, isDS, capacity);
-            });
-
-            //case 3, capacity = Int32.MaxValue
-            Assert.Throws<OutOfMemoryException>(() =>
-            {
-                isContainer = true;
-                isDS = true;
-                capacity = Int32.MaxValue;
-                TestConstructor(isContainer, isDS, capacity);
-            });
+            Assert.Throws<ArgumentOutOfRangeException>(() => new SystemAcl(false, false, -1));
         }
 
         [Theory]

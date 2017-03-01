@@ -1,0 +1,13 @@
+Compat issues with assembly System.Reflection.Emit:
+TypesMustExist : Type 'System.Reflection.Emit.AssemblyBuilder' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Reflection.Emit.AssemblyBuilderAccess' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Reflection.Emit.ConstructorBuilder' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Reflection.Emit.EnumBuilder' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Reflection.Emit.EventBuilder' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Reflection.Emit.FieldBuilder' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Reflection.Emit.GenericTypeParameterBuilder' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Reflection.Emit.MethodBuilder' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Reflection.Emit.ModuleBuilder' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Reflection.Emit.PropertyBuilder' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Reflection.Emit.TypeBuilder' does not exist in the implementation but it does exist in the contract.
+Total Issues: 11

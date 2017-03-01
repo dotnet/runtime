@@ -118,12 +118,6 @@ namespace System.DirectoryServices.AccountManagement
         //
         // SID Utilities
         //        
-        //<SecurityKernel Critical="True" Ring="0">
-        //<CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.ConvertSidToStringSid(System.IntPtr,System.String&amp;):System.Boolean" />
-        //<SatisfiesLinkDemand Name="Marshal.GetLastWin32Error():System.Int32" />
-        //<SatisfiesLinkDemand Name="Marshal.FreeHGlobal(System.IntPtr):System.Void" />
-        //<ReferencesCritical Name="Method: ConvertByteArrayToIntPtr(Byte[]):IntPtr" Ring="1" />
-        //</SecurityKernel>        
         [System.Security.SecuritySafeCritical]
 
         internal static string ConvertSidToSDDL(byte[] sid)
@@ -162,11 +156,6 @@ namespace System.DirectoryServices.AccountManagement
 
         // The caller must call Marshal.FreeHGlobal on the returned
         // value to free it.
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="Marshal.AllocHGlobal(System.Int32):System.IntPtr" />
-        // <SatisfiesLinkDemand Name="Marshal.Copy(System.Byte[],System.Int32,System.IntPtr,System.Int32):System.Void" />
-        // <SatisfiesLinkDemand Name="Marshal.FreeHGlobal(System.IntPtr):System.Void" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         internal static IntPtr ConvertByteArrayToIntPtr(byte[] bytes)
         {
@@ -192,10 +181,6 @@ namespace System.DirectoryServices.AccountManagement
             return pBytes;
         }
 
-        //<SecurityKernel Critical="True" Ring="0">
-        //<CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.GetLengthSid(System.IntPtr):System.Int32" />
-        //<SatisfiesLinkDemand Name="Marshal.Copy(System.IntPtr,System.Byte[],System.Int32,System.Int32):System.Void" />
-        //</SecurityKernel>
         [System.Security.SecuritySafeCritical]
 
         internal static byte[] ConvertNativeSidToByteArray(IntPtr pSid)
@@ -207,10 +192,6 @@ namespace System.DirectoryServices.AccountManagement
             return sid;
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="Marshal.FreeHGlobal(System.IntPtr):System.Void" />
-        // <ReferencesCritical Name="Method: ConvertByteArrayToIntPtr(Byte[]):IntPtr" Ring="1" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         internal static SidType ClassifySID(byte[] sid)
         {
@@ -229,13 +210,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        //<SecurityKernel Critical="True" Ring="0">
-        //<CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.IsValidSid(System.IntPtr):System.Boolean" />
-        //<CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.GetSidIdentifierAuthority(System.IntPtr):System.IntPtr" />
-        //<CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.GetSidSubAuthority(System.IntPtr,System.Int32):System.IntPtr" />
-        //<SatisfiesLinkDemand Name="Marshal.PtrToStructure(System.IntPtr,System.Type):System.Object" />
-        //<SatisfiesLinkDemand Name="Marshal.ReadInt32(System.IntPtr):System.Int32" />
-        //</SecurityKernel>
         [System.Security.SecuritySafeCritical]
 
         internal static SidType ClassifySID(IntPtr pSid)
@@ -295,10 +269,6 @@ namespace System.DirectoryServices.AccountManagement
             return lastRid;
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="Marshal.FreeHGlobal(System.IntPtr):System.Void" />
-        // <ReferencesCritical Name="Method: ConvertByteArrayToIntPtr(Byte[]):IntPtr" Ring="1" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         internal static int GetLastRidFromSid(byte[] sid)
         {
@@ -322,10 +292,6 @@ namespace System.DirectoryServices.AccountManagement
         //
         //
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.EqualDomainSid(System.IntPtr,System.IntPtr,System.Boolean&):System.Boolean" />
-        // <SatisfiesLinkDemand Name="Marshal.FreeHGlobal(System.IntPtr):System.Void" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         internal static bool IsSamUser()
         {
@@ -390,21 +356,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        //<SecurityKernel Critical="True" Ring="0">
-        //<CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.GetCurrentThread():System.IntPtr" />
-        //<CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.OpenThreadToken(System.IntPtr,System.Int32,System.Boolean,System.IntPtr&amp;):System.Boolean" />
-        //<CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.GetCurrentProcess():System.IntPtr" />
-        //<CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.OpenProcessToken(System.IntPtr,System.Int32,System.IntPtr&amp;):System.Boolean" />
-        //<CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.GetTokenInformation(System.IntPtr,System.Int32,System.IntPtr,System.Int32,System.Int32&amp;):System.Boolean" />
-        //<CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.IsValidSid(System.IntPtr):System.Boolean" />
-        //<CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.GetLengthSid(System.IntPtr):System.Int32" />
-        //<CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.CopySid(System.Int32,System.IntPtr,System.IntPtr):System.Int32" />
-        //<CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.CloseHandle(System.IntPtr):System.Boolean" />
-        //<SatisfiesLinkDemand Name="Marshal.GetLastWin32Error():System.Int32" />
-        //<SatisfiesLinkDemand Name="Marshal.AllocHGlobal(System.Int32):System.IntPtr" />
-        //<SatisfiesLinkDemand Name="Marshal.PtrToStructure(System.IntPtr,System.Type):System.Object" />
-        //<SatisfiesLinkDemand Name="Marshal.FreeHGlobal(System.IntPtr):System.Void" />
-        //</SecurityKernel>
         [System.Security.SecuritySafeCritical]
 
         internal static IntPtr GetCurrentUserSid()
@@ -536,21 +487,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        //<SecurityKernel Critical="True" Ring="0">
-        //<CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.LsaOpenPolicy(System.IntPtr,System.IntPtr,System.Int32,System.IntPtr&amp;):System.Int32" />
-        //<CallsSuppressUnmanagedCode Name="SafeNativeMethods.LsaNtStatusToWinError(System.Int32):System.Int32" />
-        //<CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.LsaQueryInformationPolicy(System.IntPtr,System.Int32,System.IntPtr&amp;):System.Int32" />
-        //<CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.IsValidSid(System.IntPtr):System.Boolean" />
-        //<CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.GetLengthSid(System.IntPtr):System.Int32" />
-        //<CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.CopySid(System.Int32,System.IntPtr,System.IntPtr):System.Int32" />
-        //<CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.LsaClose(System.IntPtr):System.Int32" />
-        //<CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.LsaFreeMemory(System.IntPtr):System.Int32" />
-        //<SatisfiesLinkDemand Name="Marshal.SizeOf(System.Type):System.Int32" />
-        //<SatisfiesLinkDemand Name="Marshal.AllocHGlobal(System.Int32):System.IntPtr" />
-        //<SatisfiesLinkDemand Name="Marshal.StructureToPtr(System.Object,System.IntPtr,System.Boolean):System.Void" />
-        //<SatisfiesLinkDemand Name="Marshal.PtrToStructure(System.IntPtr,System.Type):System.Object" />
-        //<SatisfiesLinkDemand Name="Marshal.FreeHGlobal(System.IntPtr):System.Void" />
-        //</SecurityKernel>
         [System.Security.SecuritySafeCritical]
 
         internal static IntPtr GetMachineDomainSid()
@@ -632,9 +568,6 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         // Returns name in the form "domain\user"
-        //<SecurityKernel Critical="True" Ring="0">
-        //<Asserts Name="Declarative: [SecurityPermission(SecurityAction.Assert, Flags = SecurityPermissionFlag.ControlPrincipal)]" />
-        //</SecurityKernel>        
         [System.Security.Permissions.SecurityPermission(
                                         System.Security.Permissions.SecurityAction.Assert,
                                         Flags = System.Security.Permissions.SecurityPermissionFlag.ControlPrincipal)]
@@ -650,9 +583,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        //<SecurityKernel Critical="True" Ring="0">
-        //<Asserts Name="Declarative: [SecurityPermission(SecurityAction.Assert, Flags = SecurityPermissionFlag.ControlPrincipal)]" />
-        //</SecurityKernel>        
         [System.Security.Permissions.EnvironmentPermission(
                                         System.Security.Permissions.SecurityAction.Assert,
                                         Unrestricted = true)]
@@ -670,11 +600,6 @@ namespace System.DirectoryServices.AccountManagement
         //
         // Interop support
         //
-        //<SecurityKernel Critical="True" Ring="0">
-        //<CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.DsGetDcName(System.String,System.String,System.IntPtr,System.String,System.Int32,System.IntPtr&amp;):System.Int32" />
-        //<CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.NetApiBufferFree(System.IntPtr):System.Int32" />
-        //<SatisfiesLinkDemand Name="Marshal.PtrToStructure(System.IntPtr,System.Type):System.Object" />
-        //</SecurityKernel>        
         [System.Security.SecuritySafeCritical]
 
         internal static UnsafeNativeMethods.DomainControllerInfo GetDcName(string computerName, string domainName, string siteName, int flags)
@@ -707,14 +632,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        //<SecurityKernel Critical="True" Ring="0">
-        //<CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.LookupAccountSid(System.String,System.IntPtr,System.Text.StringBuilder,System.Int32&amp;,System.Text.StringBuilder,System.Int32&amp;,System.Int32&amp;):System.Boolean" />
-        //<SatisfiesLinkDemand Name="Marshal.GetLastWin32Error():System.Int32" />
-        //<SatisfiesLinkDemand Name="Marshal.FreeHGlobal(System.IntPtr):System.Void" />
-        //<ReferencesCritical Name="Method: ConvertByteArrayToIntPtr(Byte[]):IntPtr" Ring="1" />
-        //<ReferencesCritical Name="Method: BeginImpersonation(NetCred, IntPtr&amp;):Boolean" Ring="1" />
-        //<ReferencesCritical Name="Method: EndImpersonation(IntPtr):Void" Ring="1" />
-        //</SecurityKernel>
         [System.Security.SecurityCritical]
         internal static int LookupSid(string serverName, NetCred credentials, byte[] sid, out string name, out string domainName, out int accountUsage)
         {
@@ -785,14 +702,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        //<SecurityKernel Critical="True" Ring="0">
-        //<SatisfiesLinkDemand Name="GroupPrincipal.MakeGroup(System.DirectoryServices.AccountManagement.PrincipalContext):System.DirectoryServices.AccountManagement.GroupPrincipal" />
-        //<SatisfiesLinkDemand Name="Principal.LoadValueIntoProperty(System.String,System.Object):System.Void" />
-        //<ReferencesCritical Name="Method: ClassifySID(Byte[]):SidType" Ring="1" />
-        //<ReferencesCritical Name="Method: LookupSid(String, NetCred, Byte[], String&amp;, String&amp;, Int32&amp;):Int32" Ring="1" />
-        //<ReferencesCritical Name="Method: GroupPrincipal.MakeGroup(System.DirectoryServices.AccountManagement.PrincipalContext):System.DirectoryServices.AccountManagement.GroupPrincipal" Ring="1" />
-        //<ReferencesCritical Name="Method: ConvertSidToSDDL(Byte[]):String" Ring="1" />
-        //</SecurityKernel>
         [System.Security.SecuritySafeCritical]
 
         static internal Principal ConstructFakePrincipalFromSID(
@@ -865,14 +774,6 @@ namespace System.DirectoryServices.AccountManagement
         //
         // Impersonation
         //
-        //<SecurityKernel Critical="True" Ring="0">
-        //<CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.LogonUser(System.String,System.String,System.String,System.Int32,System.Int32,System.IntPtr&amp;):System.Int32" />
-        //<CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.ImpersonateLoggedOnUser(System.IntPtr):System.Int32" />
-        //<CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.CloseHandle(System.IntPtr):System.Boolean" />
-        //<SatisfiesLinkDemand Name="Marshal.GetLastWin32Error():System.Int32" />
-        //<ReferencesCritical Name="Method: NetCred.get_ParsedUserName():System.String" Ring="2" />
-        //<ReferencesCritical Name="Method: NetCred.get_Domain():System.String" Ring="2" />
-        //</SecurityKernel>        
         [System.Security.SecurityCritical]
         internal static bool BeginImpersonation(NetCred credential, out IntPtr hUserToken)
         {
@@ -941,10 +842,6 @@ namespace System.DirectoryServices.AccountManagement
             return true;
         }
 
-        //<SecurityKernel Critical="True" Ring="0">
-        //<CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.RevertToSelf():System.Int32" />
-        //<CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.CloseHandle(System.IntPtr):System.Boolean" />
-        //</SecurityKernel>
         [System.Security.SecurityCritical]
         internal static void EndImpersonation(IntPtr hUserToken)
         {
@@ -954,12 +851,6 @@ namespace System.DirectoryServices.AccountManagement
             UnsafeNativeMethods.CloseHandle(hUserToken);
         }
 
-        // <SecurityKernel TreatAsSafe="Directly applied from MetaData" Critical="True" Ring="0">
-        // <CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.DsRoleGetPrimaryDomainInformation(System.IntPtr,System.DirectoryServices.AccountManagement.UnsafeNativeMethods+DSROLE_PRIMARY_DOMAIN_INFO_LEVEL,System.IntPtr&):System.Int32" />
-        // <CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.DsRoleGetPrimaryDomainInformation(System.String,System.DirectoryServices.AccountManagement.UnsafeNativeMethods+DSROLE_PRIMARY_DOMAIN_INFO_LEVEL,System.IntPtr&):System.Int32" />
-        // <CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.DsRoleFreeMemory(System.IntPtr):System.Int32" />
-        // <SatisfiesLinkDemand Name="Marshal.PtrToStructure(System.IntPtr,System.Type):System.Object" />
-        // </SecurityKernel>
         [System.Security.SecuritySafeCritical]
         internal static bool IsMachineDC(String computerName)
         {
@@ -969,7 +860,7 @@ namespace System.DirectoryServices.AccountManagement
             try
             {
                 if (null == computerName)
-                    err = UnsafeNativeMethods.DsRoleGetPrimaryDomainInformation(IntPtr.Zero, UnsafeNativeMethods.DSROLE_PRIMARY_DOMAIN_INFO_LEVEL.DsRolePrimaryDomainInfoBasic, out dsRoleInfoPtr);
+                    err = UnsafeNativeMethods.DsRoleGetPrimaryDomainInformation(null, UnsafeNativeMethods.DSROLE_PRIMARY_DOMAIN_INFO_LEVEL.DsRolePrimaryDomainInfoBasic, out dsRoleInfoPtr);
                 else
                     err = UnsafeNativeMethods.DsRoleGetPrimaryDomainInformation(computerName, UnsafeNativeMethods.DSROLE_PRIMARY_DOMAIN_INFO_LEVEL.DsRolePrimaryDomainInfoBasic, out dsRoleInfoPtr);
 

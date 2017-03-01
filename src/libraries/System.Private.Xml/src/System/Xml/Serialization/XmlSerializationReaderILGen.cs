@@ -2741,7 +2741,7 @@ namespace System.Xml.Serialization
                 ilg.Ldc(1);
                 ilg.Add();
                 ilg.Stloc(localI);
-                if (CodeGenerator.IsNullableGenericType(arrayElementType) || arrayElementType.GetTypeInfo().IsValueType)
+                if (CodeGenerator.IsNullableGenericType(arrayElementType) || arrayElementType.IsValueType)
                 {
                     ilg.Ldelema(arrayElementType);
                 }
@@ -2809,7 +2809,7 @@ namespace System.Xml.Serialization
                 object oVar = ilg.GetVariable(match.Groups["locA1"].Value);
                 Type arrayElementType = ilg.GetVariableType(oVar).GetElementType();
                 ilg.ConvertValue(elementType, arrayElementType);
-                if (CodeGenerator.IsNullableGenericType(arrayElementType) || arrayElementType.GetTypeInfo().IsValueType)
+                if (CodeGenerator.IsNullableGenericType(arrayElementType) || arrayElementType.IsValueType)
                 {
                     ilg.Stobj(arrayElementType);
                 }
@@ -2824,7 +2824,7 @@ namespace System.Xml.Serialization
             {
                 int index = source.LastIndexOf(".Add(", StringComparison.Ordinal);
                 LocalBuilder localA = ilg.GetLocal(source.Substring(0, index));
-                Debug.Assert(!localA.LocalType.GetTypeInfo().IsGenericType || (localA.LocalType.GetGenericArguments().Length == 1 && localA.LocalType.GetGenericArguments()[0].IsAssignableFrom(elementType)));
+                Debug.Assert(!localA.LocalType.IsGenericType || (localA.LocalType.GetGenericArguments().Length == 1 && localA.LocalType.GetGenericArguments()[0].IsAssignableFrom(elementType)));
                 MethodInfo Add = localA.LocalType.GetMethod(
                      "Add",
                      CodeGenerator.InstanceBindingFlags,

@@ -294,7 +294,7 @@ namespace System.Transactions.Tests
 
                 using (TransactionScope scope2 = new TransactionScope(TransactionScopeOption.Suppress))
                 {
-                    /* Not transactional, so this WONT get committed */
+                    /* Not transactional, so this WON'T get committed */
                     irm2.Value = 20;
                     scope2.Complete();
                 }
@@ -350,7 +350,7 @@ namespace System.Transactions.Tests
 
                 using (TransactionScope scope2 = new TransactionScope(TransactionScopeOption.Suppress))
                 {
-                    /* Not transactional, so this WONT get committed */
+                    /* Not transactional, so this WON'T get committed */
                     irm2.Value = 4;
                     scope2.Complete();
                 }
@@ -511,7 +511,7 @@ namespace System.Transactions.Tests
                     irm2.Value = 20;
                     irm3.Value = 24;
 
-                    /* irm2 wont call Prepared or ForceRollback in
+                    /* irm2 won't call Prepared or ForceRollback in
 					 * its Prepare (), so TransactionManager will timeout
 					 * waiting for it 
 					 */

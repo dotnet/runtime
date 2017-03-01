@@ -181,7 +181,7 @@ namespace System.ComponentModel
                         {
                             _defaultValue = dva.Value;
                             // Default values for enums are often stored as their underlying integer type:
-                            if (_defaultValue != null && PropertyType.GetTypeInfo().IsEnum && PropertyType.GetTypeInfo().GetEnumUnderlyingType() == _defaultValue.GetType())
+                            if (_defaultValue != null && PropertyType.IsEnum && PropertyType.GetEnumUnderlyingType() == _defaultValue.GetType())
                             {
                                 _defaultValue = Enum.ToObject(PropertyType, _defaultValue);
                             }
@@ -289,7 +289,7 @@ namespace System.ComponentModel
                     {
                         // Default values for enums are often stored as their underlying integer type:
                         object defaultValue = ((DefaultValueAttribute)a).Value;
-                        bool storedAsUnderlyingType = defaultValue != null && PropertyType.GetTypeInfo().IsEnum && PropertyType.GetTypeInfo().GetEnumUnderlyingType() == defaultValue.GetType();
+                        bool storedAsUnderlyingType = defaultValue != null && PropertyType.IsEnum && PropertyType.GetEnumUnderlyingType() == defaultValue.GetType();
                         _defaultValue = storedAsUnderlyingType ?
                             Enum.ToObject(PropertyType, _defaultValue) :
                             defaultValue;
@@ -321,7 +321,7 @@ namespace System.ComponentModel
                             BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.GetProperty;
                             _propInfo = _componentClass.GetProperty(Name, bindingFlags, null, PropertyType, Array.Empty<Type>(), Array.Empty<ParameterModifier>());
 #else 
-                            _propInfo = _componentClass.GetTypeInfo().GetProperty(Name, PropertyType, Array.Empty<Type>(), Array.Empty<ParameterModifier>());
+                            _propInfo = _componentClass.GetProperty(Name, PropertyType, Array.Empty<Type>(), Array.Empty<ParameterModifier>());
 #endif
                         }
                         if (_propInfo != null)
@@ -404,13 +404,13 @@ namespace System.ComponentModel
 
                     if (_setMethod == null)
                     {
-                        for (Type t = ComponentType.GetTypeInfo().BaseType; t != null && t != typeof(object); t = t.GetTypeInfo().BaseType)
+                        for (Type t = ComponentType.BaseType; t != null && t != typeof(object); t = t.BaseType)
                         {
 #if VERIFY_REFLECTION_CHANGE
                             BindingFlags bindingFlags = BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance;
                             PropertyInfo p = t.GetProperty(name, bindingFlags, null, PropertyType, Array.Empty<Type>(), null);
 #endif
-                            PropertyInfo p = t.GetTypeInfo().GetProperty(name, PropertyType, Array.Empty<Type>(), null);
+                            PropertyInfo p = t.GetProperty(name, PropertyType, Array.Empty<Type>(), null);
                             if (p != null)
                             {
                                 _setMethod = p.SetMethod;
@@ -434,7 +434,7 @@ namespace System.ComponentModel
                             BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.GetProperty;
                             _propInfo = _componentClass.GetProperty(Name, bindingFlags, null, PropertyType, Array.Empty<Type>(), Array.Empty<ParameterModifier>());
 #else
-                            _propInfo = _componentClass.GetTypeInfo().GetProperty(Name, PropertyType, Array.Empty<Type>(), Array.Empty<ParameterModifier>());
+                            _propInfo = _componentClass.GetProperty(Name, PropertyType, Array.Empty<Type>(), Array.Empty<ParameterModifier>());
 #endif
                         }
                         if (_propInfo != null)
@@ -491,7 +491,7 @@ namespace System.ComponentModel
 
             // If there's an event called <propertyname>Changed, hook the caller's handler directly up to that on the component
             EventDescriptor changedEvent = ChangedEventValue;
-            if (changedEvent != null && changedEvent.EventType.GetTypeInfo().IsInstanceOfType(handler))
+            if (changedEvent != null && changedEvent.EventType.IsInstanceOfType(handler))
             {
                 changedEvent.AddEventHandler(component, handler);
             }
@@ -773,7 +773,7 @@ namespace System.ComponentModel
 
             // NOTE : Must look at method OR property, to handle the case of Extender properties...
             //
-            // Note : Because we are using BindingFlags.DeclaredOnly it is more effcient to re-aquire
+            // Note : Because we are using BindingFlags.DeclaredOnly it is more effcient to re-acquire
             //      : the property info, rather than use the one we have cached.  The one we have cached
             //      : may ave come from a base class, meaning we will request custom metadata for this
             //      : class twice.
@@ -787,7 +787,7 @@ namespace System.ComponentModel
             while (currentReflectType != null && currentReflectType != typeof(object))
             {
                 depth++;
-                currentReflectType = currentReflectType.GetTypeInfo().BaseType;
+                currentReflectType = currentReflectType.BaseType;
             }
 
             // Now build up an array in reverse order
@@ -820,11 +820,11 @@ namespace System.ComponentModel
                     if (IsExtender)
                     {
                         //receiverType is used to avoid ambitiousness when there are overloads for the get method.
-                        memberInfo = currentReflectType.GetTypeInfo().GetMethod("Get" + Name, new Type[] { _receiverType }, null);
+                        memberInfo = currentReflectType.GetMethod("Get" + Name, new Type[] { _receiverType }, null);
                     }
                     else
                     {
-                        memberInfo = currentReflectType.GetTypeInfo().GetProperty(Name, PropertyType, Array.Empty<Type>(), Array.Empty<ParameterModifier>());
+                        memberInfo = currentReflectType.GetProperty(Name, PropertyType, Array.Empty<Type>(), Array.Empty<ParameterModifier>());
                     }
 #endif
                     // Get custom attributes for the member info.
@@ -836,7 +836,7 @@ namespace System.ComponentModel
 
                     // Ready for the next loop iteration.
                     //
-                    currentReflectType = currentReflectType.GetTypeInfo().BaseType;
+                    currentReflectType = currentReflectType.BaseType;
                 }
 
                 // Look in the attribute stack for AttributeProviders
@@ -858,7 +858,7 @@ namespace System.ComponentModel
 
                                     if (!String.IsNullOrEmpty(sta.PropertyName))
                                     {
-                                        MemberInfo[] milist = specificType.GetTypeInfo().GetMember(sta.PropertyName);
+                                        MemberInfo[] milist = specificType.GetMember(sta.PropertyName);
                                         if (milist.Length > 0 && milist[0] != null)
                                         {
                                             stAttrs = ReflectTypeDescriptionProvider.ReflectGetAttributes(milist[0]);
@@ -1001,7 +1001,7 @@ namespace System.ComponentModel
             // If there's an event called <propertyname>Changed, we hooked the caller's
             // handler directly up to that on the component, so remove it now.
             EventDescriptor changedEvent = ChangedEventValue;
-            if (changedEvent != null && changedEvent.EventType.GetTypeInfo().IsInstanceOfType(handler))
+            if (changedEvent != null && changedEvent.EventType.IsInstanceOfType(handler))
             {
                 changedEvent.RemoveEventHandler(component, handler);
             }

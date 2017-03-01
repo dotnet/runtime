@@ -109,7 +109,7 @@ namespace System.Collections.Immutable
                 {
                     // this.index >= 0 && this.index < this.array.Length
                     // unsigned compare performs the range check above in one compare
-                    if ((uint)_index < (uint)_array.Length)
+                    if (unchecked((uint)_index) < (uint)_array.Length)
                     {
                         return _array[_index];
                     }

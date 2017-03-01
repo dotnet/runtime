@@ -123,11 +123,6 @@ namespace System.Diagnostics.Tracing
         /// Vista or above. If not a PlatformNotSupported exception will be thrown. If for some 
         /// reason the ETW Register call failed a NotSupported exception will be thrown. 
         /// </summary>
-        // <SecurityKernel Critical="True" Ring="0">
-        // <CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.ManifestEtw.EventRegister(System.Guid&,Microsoft.Win32.UnsafeNativeMethods.ManifestEtw+EtwEnableCallback,System.Void*,System.Int64&):System.UInt32" />
-        // <SatisfiesLinkDemand Name="Win32Exception..ctor(System.Int32)" />
-        // <ReferencesCritical Name="Method: EtwEnableCallBack(Guid&, Int32, Byte, Int64, Int64, Void*, Void*):Void" Ring="1" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         internal unsafe void Register(Guid providerGuid)
         {
@@ -143,7 +138,7 @@ namespace System.Diagnostics.Tracing
         }
 
         //
-        // implement Dispose Pattern to early deregister from ETW insted of waiting for 
+        // implement Dispose Pattern to early deregister from ETW instead of waiting for 
         // the finalizer to call deregistration.
         // Once the user is done with the provider it needs to call Close() or Dispose()
         // If neither are called the finalizer will unregister the provider anyway
@@ -154,9 +149,6 @@ namespace System.Diagnostics.Tracing
             GC.SuppressFinalize(this);
         }
 
-        // <SecurityKernel Critical="True" TreatAsSafe="Does not expose critical resource" Ring="1">
-        // <ReferencesCritical Name="Method: Deregister():Void" Ring="1" />
-        // </SecurityKernel>
         [System.Security.SecuritySafeCritical]
         protected virtual void Dispose(bool disposing)
         {
@@ -204,9 +196,6 @@ namespace System.Diagnostics.Tracing
         /// <summary>
         /// This method un-registers from ETW.
         /// </summary>
-        // <SecurityKernel Critical="True" Ring="0">
-        // <CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.ManifestEtw.EventUnregister(System.Int64):System.Int32" />
-        // </SecurityKernel>
         // TODO Check return code from UnsafeNativeMethods.ManifestEtw.EventUnregister
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1806:DoNotIgnoreMethodResults", MessageId = "Microsoft.Win32.UnsafeNativeMethods.ManifestEtw.EventUnregister(System.Int64)"), System.Security.SecurityCritical]
         private unsafe void Deregister()
@@ -223,10 +212,6 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <UsesUnsafeCode Name="Parameter filterData of type: Void*" />
-        // <UsesUnsafeCode Name="Parameter callbackContext of type: Void*" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         unsafe void EtwEnableCallBack(
                         [In] ref System.Guid sourceId,
@@ -665,26 +650,6 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <UsesUnsafeCode Name="Local intptrPtr of type: IntPtr*" />
-        // <UsesUnsafeCode Name="Local intptrPtr of type: Int32*" />
-        // <UsesUnsafeCode Name="Local longptr of type: Int64*" />
-        // <UsesUnsafeCode Name="Local uintptr of type: UInt32*" />
-        // <UsesUnsafeCode Name="Local ulongptr of type: UInt64*" />
-        // <UsesUnsafeCode Name="Local charptr of type: Char*" />
-        // <UsesUnsafeCode Name="Local byteptr of type: Byte*" />
-        // <UsesUnsafeCode Name="Local shortptr of type: Int16*" />
-        // <UsesUnsafeCode Name="Local sbyteptr of type: SByte*" />
-        // <UsesUnsafeCode Name="Local ushortptr of type: UInt16*" />
-        // <UsesUnsafeCode Name="Local floatptr of type: Single*" />
-        // <UsesUnsafeCode Name="Local doubleptr of type: Double*" />
-        // <UsesUnsafeCode Name="Local boolptr of type: Boolean*" />
-        // <UsesUnsafeCode Name="Local guidptr of type: Guid*" />
-        // <UsesUnsafeCode Name="Local decimalptr of type: Decimal*" />
-        // <UsesUnsafeCode Name="Local booleanptr of type: Boolean*" />
-        // <UsesUnsafeCode Name="Parameter dataDescriptor of type: EventData*" />
-        // <UsesUnsafeCode Name="Parameter dataBuffer of type: Byte*" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         private static unsafe object EncodeObject(ref object data, ref EventData* dataDescriptor, ref byte* dataBuffer, ref uint totalEventSize)
         /*++
@@ -915,23 +880,6 @@ namespace System.Diagnostics.Tracing
         /// <param name="eventPayload">
         /// Payload for the ETW event. 
         /// </param>
-        // <SecurityKernel Critical="True" Ring="0">
-        // <CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.ManifestEtw.EventWrite(System.Int64,EventDescriptor&,System.UInt32,System.Void*):System.UInt32" />
-        // <UsesUnsafeCode Name="Local dataBuffer of type: Byte*" />
-        // <UsesUnsafeCode Name="Local pdata of type: Char*" />
-        // <UsesUnsafeCode Name="Local userData of type: EventData*" />
-        // <UsesUnsafeCode Name="Local userDataPtr of type: EventData*" />
-        // <UsesUnsafeCode Name="Local currentBuffer of type: Byte*" />
-        // <UsesUnsafeCode Name="Local v0 of type: Char*" />
-        // <UsesUnsafeCode Name="Local v1 of type: Char*" />
-        // <UsesUnsafeCode Name="Local v2 of type: Char*" />
-        // <UsesUnsafeCode Name="Local v3 of type: Char*" />
-        // <UsesUnsafeCode Name="Local v4 of type: Char*" />
-        // <UsesUnsafeCode Name="Local v5 of type: Char*" />
-        // <UsesUnsafeCode Name="Local v6 of type: Char*" />
-        // <UsesUnsafeCode Name="Local v7 of type: Char*" />
-        // <ReferencesCritical Name="Method: EncodeObject(Object&, EventData*, Byte*):String" Ring="1" />
-        // </SecurityKernel>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity", Justification = "Performance-critical code")]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1045:DoNotPassTypesByReference")]
         [System.Security.SecurityCritical]
@@ -1127,9 +1075,6 @@ namespace System.Diagnostics.Tracing
         /// <param name="data">
         /// pointer  do the event data
         /// </param>
-        // <SecurityKernel Critical="True" Ring="0">
-        // <CallsSuppressUnmanagedCode Name="UnsafeNativeMethods.ManifestEtw.EventWrite(System.Int64,EventDescriptor&,System.UInt32,System.Void*):System.UInt32" />
-        // </SecurityKernel>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1045:DoNotPassTypesByReference")]
         [System.Security.SecurityCritical]
         protected internal unsafe bool WriteEvent(ref EventDescriptor eventDescriptor, Guid* activityID, Guid* childActivityID, int dataCount, IntPtr data)

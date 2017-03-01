@@ -5,5 +5,7 @@
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <IsNETCoreApp>true</IsNETCoreApp>
     <IsNETCoreAppRef>false</IsNETCoreAppRef>
+    <IsUAP>true</IsUAP>
+    <IsUAPRef>false</IsUAPRef>
   </PropertyGroup>
 </Project>

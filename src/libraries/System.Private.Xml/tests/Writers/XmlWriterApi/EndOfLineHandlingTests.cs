@@ -134,11 +134,11 @@ namespace System.Xml.Tests
         public int EOF_Handling_01()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
-            CError.Compare(wSettings.NewLineHandling, NewLineHandling.Replace, "Incorect default value for XmlWriterSettings.NewLineHandling");
+            CError.Compare(wSettings.NewLineHandling, NewLineHandling.Replace, "Incorrect default value for XmlWriterSettings.NewLineHandling");
 
             XmlWriter w = CreateWriter();
             w.Dispose();
-            CError.Compare(w.Settings.NewLineHandling, NewLineHandling.Replace, "Incorect default value for XmlWriter.Settings.NewLineHandling");
+            CError.Compare(w.Settings.NewLineHandling, NewLineHandling.Replace, "Incorrect default value for XmlWriter.Settings.NewLineHandling");
 
             return TEST_PASS;
         }
@@ -417,8 +417,8 @@ namespace System.Xml.Tests
             wSettings.Indent = true;
 
             XmlWriter w = CreateMemWriter(wSettings);
-            CError.Compare(w.Settings.NewLineChars, nl, "Incorect default value for XmlWriter.Settings.NewLineChars");
-            CError.Compare(w.Settings.IndentChars, "  ", "Incorect default value for XmlWriter.Settings.IndentChars");
+            CError.Compare(w.Settings.NewLineChars, nl, "Incorrect default value for XmlWriter.Settings.NewLineChars");
+            CError.Compare(w.Settings.IndentChars, "  ", "Incorrect default value for XmlWriter.Settings.IndentChars");
 
             w.WriteStartElement("root");
             w.WriteStartElement("foo");
@@ -523,7 +523,7 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "NewLine handling between attributes when NewLineOnAttributes=true; Entitize, '\\r\\n'", Params = new object[] { NewLineHandling.Entitize, "\r\n" }, id = 56, Pri = 1)]
-        //[Variation(Desc = "NewLine handling betwwen attributes when NewLineOnAttributes=true; Replace, '\\r\\n'", Params = new object[] { NewLineHandling.Replace, "\r\n" }, id = 57, Pri = 1)]
+        //[Variation(Desc = "NewLine handling between attributes when NewLineOnAttributes=true; Replace, '\\r\\n'", Params = new object[] { NewLineHandling.Replace, "\r\n" }, id = 57, Pri = 1)]
         //[Variation(Desc = "NewLine handling between attributes when NewLineOnAttributes=true; None, '\\r\\n'", Params = new object[] { NewLineHandling.None, "\r\n" }, id = 58, Pri = 1)]
         //[Variation(Desc = "NewLine handling between attributes when NewLineOnAttributes=true; Entitize, '\\r'", Params = new object[] { NewLineHandling.Entitize, "\r" }, id = 59, Pri = 2)]
         //[Variation(Desc = "NewLine handling between attributes when NewLineOnAttributes=true; Replace, '\\r'", Params = new object[] { NewLineHandling.Replace, "\r" }, id = 60, Pri = 2)]

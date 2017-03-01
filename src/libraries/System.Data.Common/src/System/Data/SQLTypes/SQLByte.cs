@@ -84,7 +84,7 @@ namespace System.Data.SqlTypes
         // Unary operators
         public static SqlByte operator ~(SqlByte x)
         {
-            return x.IsNull ? Null : new SqlByte((byte)~x._value);
+            return x.IsNull ? Null : new SqlByte(unchecked((byte)~x._value));
         }
 
 

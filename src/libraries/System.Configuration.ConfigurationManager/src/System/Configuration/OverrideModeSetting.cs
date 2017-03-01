@@ -33,7 +33,7 @@ namespace System.Configuration
             // Default for section is ALLOW
             s_sectionDefault = new OverrideModeSetting { _mode = (byte)OverrideMode.Allow };
 
-            // Default for location tags is INHERIT. Note that we do not make the value as existant in the XML or specified by the API
+            // Default for location tags is INHERIT. Note that we do not make the value as existent in the XML or specified by the API
             s_locationDefault = new OverrideModeSetting { _mode = (byte)OverrideMode.Inherit };
         }
 

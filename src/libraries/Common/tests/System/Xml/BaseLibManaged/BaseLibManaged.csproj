@@ -4,7 +4,6 @@
   <PropertyGroup>
     <ProjectGuid>{42F10363-C2A2-42B5-B7B9-1B5DBB0BC71E}</ProjectGuid>
     <RootNamespace>WebData.BaseLib</RootNamespace>
-    <NoWarn>0436</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
   </PropertyGroup>

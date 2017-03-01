@@ -1277,7 +1277,7 @@ namespace System.IO
             int r = 0;
             int numBytesRead = 0;
 
-            fixed (byte* p = bytes)
+            fixed (byte* p = &bytes[0])
             {
                 if (_useAsyncIO)
                     r = Interop.Kernel32.ReadFile(handle, p + offset, count, IntPtr.Zero, overlapped);
@@ -1322,7 +1322,7 @@ namespace System.IO
             int numBytesWritten = 0;
             int r = 0;
 
-            fixed (byte* p = bytes)
+            fixed (byte* p = &bytes[0])
             {
                 if (_useAsyncIO)
                     r = Interop.Kernel32.WriteFile(handle, p + offset, count, IntPtr.Zero, overlapped);

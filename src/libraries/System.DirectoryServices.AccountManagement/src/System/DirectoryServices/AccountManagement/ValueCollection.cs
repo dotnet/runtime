@@ -9,7 +9,6 @@ using System.Collections.Generic;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.LinkDemand, Unrestricted = true)]
     public class PrincipalValueCollection<T> : IList<T>, IList
     // T must be a ValueType or immutable ref type (such as string)
     {
@@ -18,9 +17,6 @@ namespace System.DirectoryServices.AccountManagement
         //
         bool IList.IsFixedSize
         {
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="PrincipalValueCollection`1<T>.get_IsFixedSize():System.Boolean" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
@@ -30,9 +26,6 @@ namespace System.DirectoryServices.AccountManagement
 
         bool IList.IsReadOnly
         {
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="PrincipalValueCollection`1<T>.get_IsReadOnly():System.Boolean" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
@@ -40,9 +33,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="PrincipalValueCollection`1<T>.get_Count():System.Int32" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         int IList.Add(object value)
         {
@@ -53,9 +43,6 @@ namespace System.DirectoryServices.AccountManagement
             return Count;
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="PrincipalValueCollection`1<T>.Clear():System.Void" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         void IList.Clear()
         {
@@ -70,9 +57,6 @@ namespace System.DirectoryServices.AccountManagement
             return _inner.Contains((T)value);
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="PrincipalValueCollection`1<T>.IndexOf(T):System.Int32" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         int IList.IndexOf(object value)
         {
@@ -82,9 +66,6 @@ namespace System.DirectoryServices.AccountManagement
             return IndexOf((T)value);
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="PrincipalValueCollection`1<T>.Insert(System.Int32,T):System.Void" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         void IList.Insert(int index, object value)
         {
@@ -102,9 +83,6 @@ namespace System.DirectoryServices.AccountManagement
             _inner.Remove((T)value);
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="PrincipalValueCollection`1<T>.RemoveAt(System.Int32):System.Void" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         void IList.RemoveAt(int index)
         {
@@ -113,18 +91,12 @@ namespace System.DirectoryServices.AccountManagement
 
         object IList.this[int index]
         {
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="PrincipalValueCollection`1<T>.get_Item(System.Int32):T" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
                 return this[index];
             }
 
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="PrincipalValueCollection`1<T>.set_Item(System.Int32,T):System.Void" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             set
             {
@@ -153,9 +125,6 @@ namespace System.DirectoryServices.AccountManagement
 
         bool ICollection.IsSynchronized
         {
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="PrincipalValueCollection`1<T>.get_IsSynchronized():System.Boolean" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
@@ -165,9 +134,6 @@ namespace System.DirectoryServices.AccountManagement
 
         object ICollection.SyncRoot
         {
-            // <SecurityKernel Critical="True" Ring="0">
-            // <SatisfiesLinkDemand Name="PrincipalValueCollection`1<T>.get_SyncRoot():System.Object" />
-            // </SecurityKernel>
             [System.Security.SecurityCritical]
             get
             {
@@ -194,9 +160,6 @@ namespace System.DirectoryServices.AccountManagement
         //
         // IEnumerable
         //
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="PrincipalValueCollection`1<T>.GetEnumerator():System.Collections.Generic.IEnumerator`1<T>" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         IEnumerator IEnumerable.GetEnumerator()
         {
@@ -398,9 +361,6 @@ namespace System.DirectoryServices.AccountManagement
         //
         // IEnumerable<T>
         //
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="ValueCollectionEnumerator`1<T>..ctor(System.DirectoryServices.AccountManagement.TrackedCollection`1<T>,System.Collections.Generic.List`1<System.DirectoryServices.AccountManagement.TrackedCollection`1+ValueEl>)" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         public IEnumerator<T> GetEnumerator()
         {

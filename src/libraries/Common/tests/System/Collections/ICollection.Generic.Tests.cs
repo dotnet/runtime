@@ -141,7 +141,7 @@ namespace System.Collections.Tests
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
-        public void ICollection_Generic_Add_DefaultValue(int count)
+        public virtual void ICollection_Generic_Add_DefaultValue(int count)
         {
             if (DefaultValueAllowed && !IsReadOnly && !AddRemoveClear_ThrowsNotSupported)
             {
@@ -374,7 +374,7 @@ namespace System.Collections.Tests
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
-        public void ICollection_Generic_Contains_DefaultValueOnCollectionContainingDefaultValue(int count)
+        public virtual void ICollection_Generic_Contains_DefaultValueOnCollectionContainingDefaultValue(int count)
         {
             if (DefaultValueAllowed && !IsReadOnly && !AddRemoveClear_ThrowsNotSupported)
             {
@@ -549,7 +549,7 @@ namespace System.Collections.Tests
 
         [Theory]
         [MemberData(nameof(ValidCollectionSizes))]
-        public void ICollection_Generic_Remove_DefaultValueContainedInCollection(int count)
+        public virtual void ICollection_Generic_Remove_DefaultValueContainedInCollection(int count)
         {
             if (!IsReadOnly && !AddRemoveClear_ThrowsNotSupported && DefaultValueAllowed && !Enumerable.Contains(InvalidValues, default(T)))
             {

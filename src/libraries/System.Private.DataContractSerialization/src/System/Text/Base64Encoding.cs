@@ -11,7 +11,7 @@ namespace System.Text
 {
     internal class Base64Encoding : Encoding
     {
-        private static byte[] s_char2val = new byte[128]
+        private static readonly byte[] s_char2val = new byte[128]
         {
             /*    0-15 */ 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
             /*   16-31 */ 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
@@ -23,8 +23,9 @@ namespace System.Text
             /* 112-127 */   41,   42,   43,   44,   45,   46,   47,   48,   49,   50,   51, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
         };
 
-        private static string s_val2char = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-        private static byte[] s_val2byte = new byte[]
+        private const string Val2Char = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+        
+        private static readonly byte[] s_val2byte = new byte[]
         {
             (byte)'A',(byte)'B',(byte)'C',(byte)'D',(byte)'E',(byte)'F',(byte)'G',(byte)'H',(byte)'I',(byte)'J',(byte)'K',(byte)'L',(byte)'M',(byte)'N',(byte)'O',(byte)'P',
             (byte)'Q',(byte)'R',(byte)'S',(byte)'T',(byte)'U',(byte)'V',(byte)'W',(byte)'X',(byte)'Y',(byte)'Z',(byte)'a',(byte)'b',(byte)'c',(byte)'d',(byte)'e',(byte)'f',
@@ -70,7 +71,7 @@ namespace System.Text
                 return 0;
             if ((count % 4) != 0)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new FormatException(SR.Format(SR.XmlInvalidBase64Length, count.ToString(NumberFormatInfo.CurrentInfo))));
-            fixed (byte* _char2val = s_char2val)
+            fixed (byte* _char2val = &s_char2val[0])
             {
                 fixed (char* _chars = &chars[index])
                 {
@@ -133,7 +134,7 @@ namespace System.Text
                 return 0;
             if ((charCount % 4) != 0)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new FormatException(SR.Format(SR.XmlInvalidBase64Length, charCount.ToString(NumberFormatInfo.CurrentInfo))));
-            fixed (byte* _char2val = s_char2val)
+            fixed (byte* _char2val = &s_char2val[0])
             {
                 fixed (char* _chars = &chars[charIndex])
                 {
@@ -211,7 +212,7 @@ namespace System.Text
                 return 0;
             if ((charCount % 4) != 0)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new FormatException(SR.Format(SR.XmlInvalidBase64Length, charCount.ToString(NumberFormatInfo.CurrentInfo))));
-            fixed (byte* _char2val = s_char2val)
+            fixed (byte* _char2val = &s_char2val[0])
             {
                 fixed (byte* _chars = &chars[charIndex])
                 {
@@ -248,10 +249,10 @@ namespace System.Text
                             pb[0] = (byte)((v1 << 2) | ((v2 >> 4) & 0x03));
                             if (byteCount > 1)
                             {
-                                pb[1] = (byte)((v2 << 4) | ((v3 >> 2) & 0x0F));
+                                pb[1] = unchecked((byte)((v2 << 4) | ((v3 >> 2) & 0x0F)));
                                 if (byteCount > 2)
                                 {
-                                    pb[2] = (byte)((v3 << 6) | ((v4 >> 0) & 0x3F));
+                                    pb[2] = unchecked((byte)((v3 << 6) | ((v4 >> 0) & 0x3F)));
                                 }
                             }
                             pb += byteCount;
@@ -303,7 +304,7 @@ namespace System.Text
 
             if (byteCount > 0)
             {
-                fixed (char* _val2char = s_val2char)
+                fixed (char* _val2char = Val2Char)
                 {
                     fixed (byte* _bytes = &bytes[byteIndex])
                     {
@@ -393,7 +394,7 @@ namespace System.Text
 
             if (byteCount > 0)
             {
-                fixed (byte* _val2byte = s_val2byte)
+                fixed (byte* _val2byte = &s_val2byte[0])
                 {
                     fixed (byte* _bytes = &bytes[byteIndex])
                     {

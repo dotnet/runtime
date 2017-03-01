@@ -90,7 +90,7 @@ namespace System.Threading
 
             public Invoker(SendOrPostCallback callback, object state)
             {
-                _executionContext = ExecutionContext.FastCapture();
+                _executionContext = ExecutionContext.Capture();
                 _callback = callback;
                 _state = state;
 
@@ -106,7 +106,7 @@ namespace System.Threading
                 if (_executionContext == null)
                     InvokeCore();
                 else
-                    ExecutionContext.Run(_executionContext, s_contextCallback, this, preserveSyncCtx: true);
+                    ExecutionContext.Run(_executionContext, s_contextCallback, this);
 
                 // If there was an ETW event that fired at the top of the winrt event handling loop, ETW listeners could
                 // use it as a marker of completion of the previous request. Since such an event does not exist we need to

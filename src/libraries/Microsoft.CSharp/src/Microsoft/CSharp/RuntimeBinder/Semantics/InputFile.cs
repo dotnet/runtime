@@ -18,7 +18,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     // and another for source files.
     // ----------------------------------------------------------------------------
 
-    internal class InputFile : FileRecord
+    internal sealed class InputFile : FileRecord
     {
         // Which aliases this INFILE is in. For source INFILESYMs, only bits kaidThisAssembly and kaidGlobal
         // should be set.

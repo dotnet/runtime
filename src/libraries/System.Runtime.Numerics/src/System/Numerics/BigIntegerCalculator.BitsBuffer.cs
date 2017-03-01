@@ -7,14 +7,17 @@ using System.Security;
 
 namespace System.Numerics
 {
+    // ATTENTION: always pass BitsBuffer by reference,
+    // it's a structure for performance reasons. Furthermore
+    // it's a mutable one, so use it only with care!
+
     internal static partial class BigIntegerCalculator
     {
-        /// <summary>
-        /// To spare memory allocations a buffer helps reusing memory!
-        /// We just create the target array twice and switch between every
-        /// operation. In order to not compute unnecessarily with all those
-        /// leading zeros we take care of the current actual length.
-        /// </summary>
+        // To spare memory allocations a buffer helps reusing memory!
+        // We just create the target array twice and switch between every
+        // operation. In order to not compute unnecessarily with all those
+        // leading zeros we take care of the current actual length.
+
         internal struct BitsBuffer
         {
             private uint[] _bits;
@@ -92,6 +95,7 @@ namespace System.Numerics
             {
                 // Executes a modulo operation using an optimized reducer.
                 // Thus, no need of any switching here, happens in-line.
+
                 _length = reducer.Reduce(_bits, _length);
             }
 
@@ -121,6 +125,7 @@ namespace System.Numerics
             {
                 // Executes a modulo operation using the divide operation.
                 // Thus, no need of any switching here, happens in-line.
+
                 if (_length >= modulus._length)
                 {
                     fixed (uint* b = _bits, m = modulus._bits)
@@ -144,7 +149,7 @@ namespace System.Numerics
                     Array.Clear(_bits, 2, _length - 2);
                 }
 
-                uint lo = (uint)value;
+                uint lo = unchecked((uint)value);
                 uint hi = (uint)(value >> 32);
 
                 _bits[0] = lo;
@@ -201,6 +206,7 @@ namespace System.Numerics
 
                 // Resets this and switches this and temp afterwards.
                 // The caller assumed an empty temp, the next will too.
+
                 Array.Clear(_bits, 0, _length);
 
                 uint[] t = temp._bits;

@@ -209,7 +209,7 @@ namespace System.IO.Tests
         #region PlatformSpecific
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Long path segment in search pattern throws PathTooLongException
         public void WindowsSearchPatternLongSegment()
         {
             // Create a path segment longer than the normal max of 255
@@ -243,7 +243,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Search pattern with double dots throws ArgumentException
         public void WindowsSearchPatternWithDoubleDots()
         {
             Assert.Throws<ArgumentException>(() => GetEntries(TestDirectory, Path.Combine("..ab ab.. .. abc..d", "abc..")));
@@ -253,7 +253,7 @@ namespace System.IO.Tests
 
         [ActiveIssue(11584)]
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Windows-invalid search patterns throw
         public void WindowsSearchPatternInvalid()
         {
             Assert.Throws<ArgumentException>(() => GetEntries(TestDirectory, "\0"));
@@ -296,7 +296,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Unix-invalid sarch patterns throw ArgumentException
         public void UnixSearchPatternInvalid()
         {
             Assert.Throws<ArgumentException>(() => GetEntries(TestDirectory, "\0"));
@@ -304,7 +304,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // ? in search pattern returns results
         public virtual void WindowsSearchPatternQuestionMarks()
         {
             string testDir1Str = GetTestFileName();
@@ -323,7 +323,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Whitespace in search pattern returns nothing
         public void WindowsSearchPatternWhitespace()
         {
             Assert.Empty(GetEntries(TestDirectory, "           "));
@@ -377,7 +377,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Unix-valid chars in file search patterns
         public void UnixSearchPatternFileValidChar()
         {
             if (TestFiles)
@@ -392,7 +392,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Unix-valid chars in directory search patterns
         public void UnixSearchPatternDirectoryValidChar()
         {
             if (TestDirectories)
@@ -407,7 +407,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Search pattern with DoubleDots on Unix
         public void UnixSearchPatternWithDoubleDots()
         {
             // search pattern is valid but directory doesn't exist

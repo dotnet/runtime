@@ -280,7 +280,7 @@ namespace System.Xml.Xsl.Xslt
                 QilIterator matchNodeIter = _f.For(matchingSet);
                 QilNode filterCurrent = _f.Filter(matchNodeIter, _f.Is(matchNodeIter, current));
                 nodeFilter.Body = _f.Not(_f.IsEmpty(filterCurrent));
-                //for passing type check, explict say the result is target type
+                //for passing type check, explicit say the result is target type
                 nodeFilter.Body = _f.And(_f.IsType(current, nodeFilter.XmlType), nodeFilter.Body);
             }
 

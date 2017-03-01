@@ -490,7 +490,7 @@ namespace System.Net
                     }
                     catch (HttpListenerException)
                     {
-                        // If an error occured while adding prefixes, free all resources allocated by previous steps.
+                        // If an error occurred while adding prefixes, free all resources allocated by previous steps.
                         DetachRequestQueueFromUrlGroup();
                         throw;
                     }
@@ -1901,7 +1901,7 @@ namespace System.Net
                 httpResponse.ReasonLength = (ushort)byteReason.Length;
 
                 byte[] byteContentLength = Encoding.Default.GetBytes("0");
-                fixed (byte* pContentLength = byteContentLength)
+                fixed (byte* pContentLength = &byteContentLength[0])
                 {
                     (&httpResponse.Headers.KnownHeaders)[(int)HttpResponseHeader.ContentLength].pRawValue = (sbyte*)pContentLength;
                     (&httpResponse.Headers.KnownHeaders)[(int)HttpResponseHeader.ContentLength].RawValueLength = (ushort)byteContentLength.Length;
@@ -2006,7 +2006,7 @@ namespace System.Net
             // is >128 we will get ERROR_MORE_DATA and call again
             int size = s_requestChannelBindStatusSize + 128;
 
-            Debug.Assert(size >= 0);
+            Debug.Assert(size > 0);
 
             byte[] blob = null;
             Interop.HttpApi.SafeLocalFreeChannelBinding token = null;
@@ -2017,7 +2017,7 @@ namespace System.Net
             do
             {
                 blob = new byte[size];
-                fixed (byte* blobPtr = blob)
+                fixed (byte* blobPtr = &blob[0])
                 {
                     // Http.sys team: ServiceName will always be null if 
                     // HTTP_RECEIVE_SECURE_CHANNEL_TOKEN flag is set.

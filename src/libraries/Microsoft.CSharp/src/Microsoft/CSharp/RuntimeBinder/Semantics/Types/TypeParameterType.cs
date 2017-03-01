@@ -8,7 +8,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     /////////////////////////////////////////////////////////////////////////////////
 
-    internal class TypeParameterType : CType
+    internal sealed class TypeParameterType : CType
     {
         public TypeParameterSymbol GetTypeParameterSymbol() { return _pTypeParameterSymbol; }
         public void SetTypeParameterSymbol(TypeParameterSymbol pTypePArameterSymbol) { _pTypeParameterSymbol = pTypePArameterSymbol; }

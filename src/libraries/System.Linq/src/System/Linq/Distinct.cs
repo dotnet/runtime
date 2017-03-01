@@ -98,11 +98,7 @@ namespace System.Linq
             private Set<TSource> FillSet()
             {
                 Set<TSource> set = new Set<TSource>(_comparer);
-                foreach (TSource element in _source)
-                {
-                    set.Add(element);
-                }
-
+                set.UnionWith(_source);
                 return set;
             }
 

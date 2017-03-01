@@ -29,7 +29,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     // parent is the containing namespace.
     // ----------------------------------------------------------------------------
 
-    internal class NamespaceSymbol : NamespaceOrAggregateSymbol
+    internal sealed class NamespaceSymbol : NamespaceOrAggregateSymbol
     {
         // Which assemblies and extern aliases contain this namespace.
         private HashSet<KAID> _bsetFilter;

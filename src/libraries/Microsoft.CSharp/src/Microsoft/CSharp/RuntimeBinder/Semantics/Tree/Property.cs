@@ -4,7 +4,7 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal class EXPRPROP : EXPR
+    internal sealed class EXPRPROP : EXPR
     {
         // If we have this.prop = 123, but the implementation of the property is in the
         // base class, then the object is of the base class type. Note that to get
@@ -14,13 +14,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // of the type we are actually calling through.  (We need to know the
         // "through" type to ensure that protected semantics are correctly enforced.)
 
-        public EXPR OptionalArguments;
+        private EXPR OptionalArguments;
         public EXPR GetOptionalArguments() { return OptionalArguments; }
         public void SetOptionalArguments(EXPR value) { OptionalArguments = value; }
-        public EXPRMEMGRP MemberGroup;
+        private EXPRMEMGRP MemberGroup;
         public EXPRMEMGRP GetMemberGroup() { return MemberGroup; }
         public void SetMemberGroup(EXPRMEMGRP value) { MemberGroup = value; }
-        public EXPR OptionalObjectThrough;
+        private EXPR OptionalObjectThrough;
         public EXPR GetOptionalObjectThrough() { return OptionalObjectThrough; }
         public void SetOptionalObjectThrough(EXPR value) { OptionalObjectThrough = value; }
 

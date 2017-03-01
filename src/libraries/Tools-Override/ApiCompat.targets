@@ -32,6 +32,7 @@
       <!-- Remove duplicate directories by batching over them -->
       <_DependencyDirectories Include="%(_DependencyDirectoriesTemp.Identity)" />
       <_ContractDependencyDirectories Include="@(ResolvedMatchingContract->'%(RootDir)%(Directory)')" />
+      <_ContractDependencyDirectories Include="$(ContractOutputPath)" />
     </ItemGroup>
 
     <PropertyGroup>

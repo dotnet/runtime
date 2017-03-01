@@ -23,14 +23,12 @@ namespace System.DirectoryServices.AccountManagement
         // Note that, since computer is a derived class of user in AD, if you don't want to confuse
         // computers with users, you must test an object for computer status before testing it for
         // user status.
-        [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted = true)]
         [System.Security.SecurityCritical]
         static internal bool IsOfObjectClass(DirectoryEntry de, string classToCompare)
         {
             return de.Properties["objectClass"].Contains(classToCompare);
         }
 
-        [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted = true)]
         [System.Security.SecurityCritical]
         static internal bool IsOfObjectClass(SearchResult sr, string classToCompare)
         {
@@ -38,7 +36,6 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         // Retrieves the name of the actual server that the DirectoryEntry is connected to
-        [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted = true)]
         [System.Security.SecurityCritical]
         static internal string GetServerName(DirectoryEntry de)
         {
@@ -366,11 +363,6 @@ namespace System.DirectoryServices.AccountManagement
             return sb.ToString();
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="Principal.GetStoreCtxToUse():System.DirectoryServices.AccountManagement.StoreCtx" />
-        // <ReferencesCritical Name="Method: Principal.GetStoreCtxToUse():System.DirectoryServices.AccountManagement.StoreCtx" Ring="1" />
-        // <ReferencesCritical Name="Method: ADStoreCtx.get_DnsForestName():System.String" Ring="1" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         static internal bool ArePrincipalsInSameForest(Principal p1, Principal p2)
         {
@@ -403,7 +395,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted = true)]
         [System.Security.SecurityCritical]
         static internal Principal DirectoryEntryAsPrincipal(DirectoryEntry de, ADStoreCtx storeCtx)
         {
@@ -423,7 +414,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted = true)]
         [System.Security.SecurityCritical]
         static internal Principal SearchResultAsPrincipal(SearchResult sr, ADStoreCtx storeCtx, object discriminant)
         {
@@ -449,15 +439,6 @@ namespace System.DirectoryServices.AccountManagement
         // domain or the current forest and the target domain's forest.
         // target domain must be the full DNS domain name of the target domain to make the string
         // compare below work properly.
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="Domain.GetComputerDomain():System.DirectoryServices.ActiveDirectory.Domain" />
-        // <SatisfiesLinkDemand Name="Domain.GetTrustRelationship(System.String):System.DirectoryServices.ActiveDirectory.TrustRelationshipInformation" />
-        // <SatisfiesLinkDemand Name="Forest.GetCurrentForest():System.DirectoryServices.ActiveDirectory.Forest" />
-        // <SatisfiesLinkDemand Name="Domain.GetDomain(System.DirectoryServices.ActiveDirectory.DirectoryContext):System.DirectoryServices.ActiveDirectory.Domain" />
-        // <SatisfiesLinkDemand Name="Domain.get_Forest():System.DirectoryServices.ActiveDirectory.Forest" />
-        // <SatisfiesLinkDemand Name="Forest.get_Name():System.String" />
-        // <SatisfiesLinkDemand Name="Forest.GetTrustRelationship(System.String):System.DirectoryServices.ActiveDirectory.ForestTrustRelationshipInformation" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         static internal bool VerifyOutboundTrust(string targetDomain, string username, string password)
         {
@@ -520,10 +501,6 @@ namespace System.DirectoryServices.AccountManagement
             return false;
         }
 
-        // <SecurityKernel Critical="True" Ring="0">
-        // <SatisfiesLinkDemand Name="DirectoryEntry.get_Properties():System.DirectoryServices.PropertyCollection" />
-        // <SatisfiesLinkDemand Name="PropertyCollection.get_Item(System.String):System.DirectoryServices.PropertyValueCollection" />
-        // </SecurityKernel>
         [System.Security.SecurityCritical]
         static internal string RetriveWkDn(DirectoryEntry deBase, string defaultNamingContext, string serverName, Byte[] wellKnownContainerGuid)
         {

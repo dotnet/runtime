@@ -39,7 +39,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
     }
 
-    internal class TypeTable
+    internal sealed class TypeTable
     {
         // Two way hashes
         private readonly Dictionary<KeyPair<AggregateSymbol, Name>, AggregateType> _pAggregateTable;

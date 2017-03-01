@@ -7,15 +7,15 @@ using System.Text;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal class EXPRCONSTANT : EXPR
+    internal sealed class EXPRCONSTANT : EXPR
     {
-        public EXPR OptionalConstructorCall;
+        private EXPR OptionalConstructorCall;
         public EXPR GetOptionalConstructorCall() { return OptionalConstructorCall; }
         public void SetOptionalConstructorCall(EXPR value) { OptionalConstructorCall = value; }
 
         private CONSTVAL _val;
 
-        public bool IsZero
+        private bool IsZero
         {
             get
             {
@@ -30,8 +30,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             get
             {
                 return _val;
-            }
-            set
+            } 
+            private set
             {
                 _val = value;
             }

@@ -132,32 +132,36 @@ namespace System.Drawing
         ///       Performs vector addition of two <see cref='System.Drawing.Size'/> objects.
         ///    </para>
         /// </summary>
-        public static Size Add(Size sz1, Size sz2) => new Size(sz1.Width + sz2.Width, sz1.Height + sz2.Height);
+        public static Size Add(Size sz1, Size sz2) =>
+            new Size(unchecked(sz1.Width + sz2.Width), unchecked(sz1.Height + sz2.Height));
 
         /// <summary>
         ///   Converts a SizeF to a Size by performing a ceiling operation on
         ///   all the coordinates.
         /// </summary>
-        public static Size Ceiling(SizeF value) => new Size((int)Math.Ceiling(value.Width), (int)Math.Ceiling(value.Height));
+        public static Size Ceiling(SizeF value) =>
+            new Size(unchecked((int)Math.Ceiling(value.Width)), unchecked((int)Math.Ceiling(value.Height)));
 
         /// <summary>
         ///    <para>
         ///       Contracts a <see cref='System.Drawing.Size'/> by another <see cref='System.Drawing.Size'/> .
         ///    </para>
         /// </summary>
-        public static Size Subtract(Size sz1, Size sz2) => new Size(sz1.Width - sz2.Width, sz1.Height - sz2.Height);
+        public static Size Subtract(Size sz1, Size sz2) =>
+            new Size(unchecked(sz1.Width - sz2.Width), unchecked(sz1.Height - sz2.Height));
 
         /// <summary>
         ///   Converts a SizeF to a Size by performing a truncate operation on
         ///   all the coordinates.
         /// </summary>
-        public static Size Truncate(SizeF value) => new Size((int)value.Width, (int)value.Height);
+        public static Size Truncate(SizeF value) => new Size(unchecked((int)value.Width), unchecked((int)value.Height));
 
         /// <summary>
         ///   Converts a SizeF to a Size by performing a round operation on
         ///   all the coordinates.
         /// </summary>
-        public static Size Round(SizeF value) => new Size((int)Math.Round(value.Width), (int)Math.Round(value.Height));
+        public static Size Round(SizeF value) =>
+            new Size(unchecked((int)Math.Round(value.Width)), unchecked((int)Math.Round(value.Height)));
 
         /// <summary>
         ///    <para>

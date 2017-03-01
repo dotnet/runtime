@@ -103,7 +103,7 @@ namespace System.Net.NetworkInformation
                     byte type, code;
                     unsafe
                     {
-                        fixed (byte* bytesPtr = receiveBuffer)
+                        fixed (byte* bytesPtr = &receiveBuffer[0])
                         {
                             int icmpHeaderOffset = ipHeaderLength;
                             IcmpHeader receivedHeader = *((IcmpHeader*)(bytesPtr + icmpHeaderOffset)); // Skip IP header.
@@ -262,7 +262,7 @@ namespace System.Net.NetworkInformation
                 sum = partialSum + carries;
             }
 
-            return (ushort)~sum;
+            return unchecked((ushort)~sum);
         }
     }
 }

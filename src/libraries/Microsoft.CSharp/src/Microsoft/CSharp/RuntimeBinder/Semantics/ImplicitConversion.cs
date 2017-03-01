@@ -8,13 +8,13 @@ using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal partial class ExpressionBinder
+    internal sealed partial class ExpressionBinder
     {
         // ----------------------------------------------------------------------------
         // BindImplicitConversion
         // ----------------------------------------------------------------------------
 
-        private class ImplicitConversion
+        private sealed class ImplicitConversion
         {
             public ImplicitConversion(ExpressionBinder binder, EXPR exprSrc, CType typeSrc, EXPRTYPEORNAMESPACE typeDest, bool needsExprDest, CONVERTTYPE flags)
             {
@@ -233,10 +233,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 //
                 // Every incoming dynamic operand should be implicitly convertible
                 // to any type that it is an instance of.
-
-                if (_exprSrc != null
-                    && _exprSrc.RuntimeObject != null
-                    && _typeDest.AssociatedSystemType.IsInstanceOfType(_exprSrc.RuntimeObject)
+                object srcRuntimeObject = _exprSrc?.RuntimeObject;
+                if (srcRuntimeObject != null
+                    && _typeDest.AssociatedSystemType.IsInstanceOfType(srcRuntimeObject)
                     && _binder.GetSemanticChecker().CheckTypeAccess(_typeDest, _binder.Context.ContextForMemberLookup()))
                 {
                     if (_needsExprDest)

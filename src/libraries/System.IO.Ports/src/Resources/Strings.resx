@@ -1,0 +1,172 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="IO_EOF_ReadBeyondEOF" xml:space="preserve">
+    <value>Unable to read beyond the end of the stream.</value>
+  </data>
+  <data name="BaseStream_Invalid_Not_Open" xml:space="preserve">
+    <value>The BaseStream is only available when the port is open.</value>
+  </data>
+  <data name="PortNameEmpty_String" xml:space="preserve">
+    <value>The PortName cannot be empty.</value>
+  </data>
+  <data name="Port_not_open" xml:space="preserve">
+    <value>The port is closed.</value>
+  </data>
+  <data name="Port_already_open" xml:space="preserve">
+    <value>The port is already open.</value>
+  </data>
+  <data name="Cant_be_set_when_open" xml:space="preserve">
+    <value>'{0}' cannot be set while the port is open.</value>
+  </data>
+  <data name="Max_Baud" xml:space="preserve">
+    <value>The maximum baud rate for the device is {0}.</value>
+  </data>
+  <data name="In_Break_State" xml:space="preserve">
+    <value>The port is in the break state and cannot be written to.</value>
+  </data>
+  <data name="Write_timed_out" xml:space="preserve">
+    <value>The write timed out.</value>
+  </data>
+  <data name="CantSetRtsWithHandshaking" xml:space="preserve">
+    <value>RtsEnable cannot be accessed if Handshake is set to RequestToSend or RequestToSendXOnXOff.</value>
+  </data>
+  <data name="NotSupportedEncoding" xml:space="preserve">
+    <value>SerialPort does not support encoding '{0}'.  The supported encodings include ASCIIEncoding, UTF8Encoding, UnicodeEncoding, UTF32Encoding, and most single or double byte code pages.  For a complete list please see the documentation.</value>
+  </data>
+  <data name="Arg_InvalidSerialPort" xml:space="preserve">
+    <value>The given port name does not start with COM/com or does not resolve to a valid serial port.</value>
+  </data>
+  <data name="Arg_InvalidSerialPortExtended" xml:space="preserve">
+    <value>The given port name is invalid.  It may be a valid port, but not a serial port.</value>
+  </data>
+  <data name="Argument_InvalidOffLen" xml:space="preserve">
+    <value>Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Bounds_Lower_Upper" xml:space="preserve">
+    <value>Argument must be between {0} and {1}.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Enum" xml:space="preserve">
+    <value>Enum value was out of legal range.</value>
+  </data>
+  <data name="ArgumentOutOfRange_NeedNonNegNumRequired" xml:space="preserve">
+    <value>Non-negative number required.</value>
+  </data>
+  <data name="ArgumentOutOfRange_NeedPosNum" xml:space="preserve">
+    <value>Positive number required.</value>
+  </data>
+  <data name="ArgumentOutOfRange_Timeout" xml:space="preserve">
+    <value>The timeout must be greater than or equal to -1.</value>
+  </data>
+  <data name="ArgumentOutOfRange_WriteTimeout" xml:space="preserve">
+    <value>The timeout must be either a positive number or -1.</value>
+  </data>
+  <data name="IndexOutOfRange_IORaceCondition" xml:space="preserve">
+    <value>Probable I/O race condition detected while copying memory.  The I/O package is not thread safe by default.  In multithreaded applications, a stream must be accessed in a thread-safe way, such as a thread-safe wrapper returned by TextReader's or TextWriter's Synchronized methods.  This also applies to classes like StreamWriter and StreamReader.</value>
+  </data>
+  <data name="IO_BindHandleFailed" xml:space="preserve">
+    <value>BindHandle for ThreadPool failed on this handle.</value>
+  </data>
+  <data name="IO_OperationAborted" xml:space="preserve">
+    <value>The I/O operation has been aborted because of either a thread exit or an application request.</value>
+  </data>
+  <data name="NotSupported_UnseekableStream" xml:space="preserve">
+    <value>Stream does not support seeking.</value>
+  </data>
+  <data name="IO_EOF_ReadBeyondEOF" xml:space="preserve">
+    <value>Unable to read beyond the end of the stream.</value>
+  </data>
+  <data name="ObjectDisposed_StreamClosed" xml:space="preserve">
+    <value>Can not access a closed Stream.</value>
+  </data>
+  <data name="InvalidNullEmptyArgument" xml:space="preserve">
+    <value>Argument {0} cannot be null or zero-length.</value>
+  </data>
+  <data name="Arg_WrongAsyncResult" xml:space="preserve">
+    <value>IAsyncResult object did not come from the corresponding async method on this type.</value>
+  </data>
+  <data name="InvalidOperation_EndReadCalledMultiple" xml:space="preserve">
+    <value>EndRead can only be called once for each asynchronous operation.</value>
+  </data>
+  <data name="InvalidOperation_EndWriteCalledMultiple" xml:space="preserve">
+    <value>EndWrite can only be called once for each asynchronous operation.</value>
+  </data>
+  <data name="IO_PortNotFound" xml:space="preserve">
+    <value>The specified port does not exist.</value>
+  </data>
+  <data name="IO_PortNotFoundFileName" xml:space="preserve">
+    <value>The port '{0}' does not exist.</value>
+  </data>
+  <data name="UnauthorizedAccess_IODenied_NoPathName" xml:space="preserve">
+    <value>Access to the port is denied.</value>
+  </data>
+  <data name="IO_PathTooLong" xml:space="preserve">
+    <value>The specified port name is too long.  The port name must be less than 260 characters.</value>
+  </data>
+  <data name="IO_SharingViolation_NoFileName" xml:space="preserve">
+    <value>The process cannot access the port because it is being used by another process.</value>
+  </data>
+  <data name="IO_SharingViolation_File" xml:space="preserve">
+    <value>The process cannot access the port '{0}' because it is being used by another process.</value>
+  </data>
+  <data name="UnauthorizedAccess_IODenied_Path" xml:space="preserve">
+    <value>Access to the port '{0}' is denied.</value>
+  </data>
+</root>

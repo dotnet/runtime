@@ -62,7 +62,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
         }
 
         /// <summary>
-        /// Testing multiple predicates - Return all CustomerIDs that have a Customer ID and and EmployeeIDs with an EmployeeID and a Freight equal to 12.75.
+        /// Testing multiple predicates - Return all CustomerIDs that have a Customer ID and EmployeeIDs with an EmployeeID and a Freight equal to 12.75.
         /// OrderIDs/CustomerIDs[CustomerID]/EmployeeIDs[EmployeeID][OrderDates/Freight=12.75]
         /// </summary>
         [Fact]
@@ -131,7 +131,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
         }
 
         /// <summary>
-        /// Testing multiple predicates - Return all CustomerIDs that have a Customer ID and and EmployeeIDs with an EmployeeID and a Freight equal to 12.75.
+        /// Testing multiple predicates - Return all CustomerIDs that have a Customer ID and EmployeeIDs with an EmployeeID and a Freight equal to 12.75.
         /// OrderIDs/CustomerIDs[CustomerID]/EmployeeIDs[EmployeeID][OrderDates/Freight=12.75]
         /// </summary>
         [Fact]

@@ -1003,11 +1003,14 @@ namespace System.Xml
         {
             byte[] buffer = new byte[5];
             buffer[0] = (byte)nodeType;
-            buffer[1] = (byte)length;
-            length >>= 8;
-            buffer[2] = (byte)length;
-            length >>= 8;
-            buffer[3] = (byte)length;
+            unchecked
+            {
+                buffer[1] = (byte)length;
+                length >>= 8;
+                buffer[2] = (byte)length;
+                length >>= 8;
+                buffer[3] = (byte)length;
+            }
             length >>= 8;
             buffer[4] = (byte)length;
             BufferReader.InsertBytes(buffer, 0, buffer.Length);

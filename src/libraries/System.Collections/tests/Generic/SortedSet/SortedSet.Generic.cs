@@ -30,6 +30,11 @@ namespace System.Collections.Tests
         protected override bool DefaultValueAllowed => true;
     }
 
+    public class SortedSet_Generic_Tests_int_With_NullComparer : SortedSet_Generic_Tests_int
+    {
+        protected override IComparer<int> GetIComparer() => null;
+    }
+
     [OuterLoop]
     public class SortedSet_Generic_Tests_EquatableBackwardsOrder : SortedSet_Generic_Tests<EquatableBackwardsOrder>
     {

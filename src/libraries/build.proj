@@ -16,6 +16,7 @@
   <ItemGroup>
     <Project Include="external\dir.proj" />
     <Project Include="src\dirs.proj" />
+    <Project Include="src\tests.builds" Condition="'$(BuildTests)'=='true'" />
     <!-- signing must happen before packaging -->
     <Project Include="src\sign.builds" />
     <Project Include="src\packages.builds" Condition="'$(BuildPackages)'=='true'" />
@@ -57,16 +58,22 @@
     <MSBuild Projects="@(ExternalProject)"
              ContinueOnError="ErrorAndContinue" />
   </Target>
-  
- <UsingTask TaskName="ValidateVSConfigurations" AssemblyFile="$(CoreFxToolsTaskDir)CoreFx.Tools.dll"/>
- <Target Name="ValidateVSConfigurations" DependsOnTargets="BuildCoreFxTools" Condition="'$(CheckProjectConfiguration)'=='true'">
-    <Message Importance="High" Text="Validating configurations for projects ..." />
+
+  <UsingTask TaskName="UpdateVSConfigurations" AssemblyFile="$(CoreFxToolsTaskDir)CoreFx.Tools.dll"/>
+  <Target Name="UpdateVSConfigurations" DependsOnTargets="BuildCoreFxTools">
+    <Message Importance="High" Text="Updating configurations for projects ..." />
     <ItemGroup>
-      <ProjectsToCheckHeaders Include="$(MSBuildThisFileDirectory)src/**/*.*proj" Exclude="@(ProjectExclusions)" />
+      <_projectsToUpdate Include="$(MSBuildThisFileDirectory)src/**/*.*csproj" Exclude="@(_projectsToExcludeFromUpdate)" />
+      <_projectsToUpdate Include="$(MSBuildThisFileDirectory)src/**/*.*ilproj" Exclude="@(_projectsToExcludeFromUpdate)" />
+      <_solutionsToUpdateFiles Include="$(MSBuildThisFileDirectory)src/*/dir.props" />
+      <_solutionsToUpdate Include="@(_solutionsToUpdateFiles->'%(RootDir)%(Directory)')" Exclude="@(_solutionsToExcludeFromUpdate)" />
+      <_solutionsToUpdate Include="$(MSBuildThisFileDirectory)src/System.ServiceProcess.ServiceController/" >
+        <ExcludePattern>TestNativeService</ExcludePattern>
+      </_solutionsToUpdate>
     </ItemGroup>
-    <ValidateVSConfigurations ProjectsToValidate="@(ProjectsToCheckHeaders)" />
-    <Message Importance="High" Text="Validating configurations for projects ... Done." />
- </Target>
+    <UpdateVSConfigurations ProjectsToUpdate="@(_projectsToUpdate)" SolutionsToUpdate="@(_solutionsToUpdate)" />
+    <Message Importance="High" Text="Updating configurations for projects ... Done." />
+  </Target>
 
   <!-- Override CleanAllProjects from dir.traversal.targets and just remove the full BinDir -->
   <Target Name="CleanAllProjects">

@@ -160,7 +160,7 @@ namespace System.Data.SqlClient.Tests
             IList list = CreateCollection();
             list.Add(new SqlBulkCopyColumnMapping());
 
-            // The following operations should really throw ArgumentExpection due to the
+            // The following operations should really throw ArgumentException due to the
             // mismatched types, but do not throw in the full framework.
             string bogus = "Bogus";
             list[0] = bogus;

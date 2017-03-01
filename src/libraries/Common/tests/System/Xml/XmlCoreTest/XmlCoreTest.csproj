@@ -5,12 +5,9 @@
     <ProjectGuid>{89701565-F68B-46D9-BD78-95B0F052C50B}</ProjectGuid>
     <AssemblyName>XmlCoreTest</AssemblyName>
     <RootNamespace>XmlCoreTest.Common</RootNamespace>
-    <NoWarn>0436</NoWarn>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
-  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="AsyncUtil.cs" />
     <Compile Include="CustomWriter.cs" />
@@ -32,9 +29,6 @@
   <ItemGroup>
     <ProjectReference Include="..\ModuleCore\ModuleCore.csproj" />
     <ProjectReference Include="..\XmlDiff\XmlDiff.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="project.json" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

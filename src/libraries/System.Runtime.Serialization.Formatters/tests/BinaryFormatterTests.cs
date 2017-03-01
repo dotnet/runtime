@@ -737,7 +737,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
                     b.Serialize(output, b.Deserialize(input));
                     return SuccessExitCode;
                 }
-            }, outputPath, inputPath).Dispose();
+            }, $"\"{outputPath}\"", $"\"{inputPath}\"").Dispose();
 
             // Deserialize what the other process serialized and compare it to the original
             using (FileStream fs = File.OpenRead(inputPath))

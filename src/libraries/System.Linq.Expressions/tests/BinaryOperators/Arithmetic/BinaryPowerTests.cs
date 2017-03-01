@@ -363,42 +363,42 @@ namespace System.Linq.Expressions.Tests
 
         public static byte PowerByte(byte a, byte b)
         {
-            return (byte)Math.Pow(a, b);
+            return unchecked((byte)Math.Pow(a, b));
         }
 
         public static sbyte PowerSByte(sbyte a, sbyte b)
         {
-            return (sbyte)Math.Pow(a, b);
+            return unchecked((sbyte)Math.Pow(a, b));
         }
 
         public static ushort PowerUShort(ushort a, ushort b)
         {
-            return (ushort)Math.Pow(a, b);
+            return unchecked((ushort)Math.Pow(a, b));
         }
 
         public static short PowerShort(short a, short b)
         {
-            return (short)Math.Pow(a, b);
+            return unchecked((short)Math.Pow(a, b));
         }
 
         public static uint PowerUInt(uint a, uint b)
         {
-            return (uint)Math.Pow(a, b);
+            return unchecked((uint)Math.Pow(a, b));
         }
 
         public static int PowerInt(int a, int b)
         {
-            return (int)Math.Pow(a, b);
+            return unchecked((int)Math.Pow(a, b));
         }
 
         public static ulong PowerULong(ulong a, ulong b)
         {
-            return (ulong)Math.Pow(a, b);
+            return unchecked((ulong)Math.Pow(a, b));
         }
 
         public static long PowerLong(long a, long b)
         {
-            return (long)Math.Pow(a, b);
+            return unchecked((long)Math.Pow(a, b));
         }
 
         public static float PowerFloat(float a, float b)
@@ -418,7 +418,7 @@ namespace System.Linq.Expressions.Tests
 
         public static char PowerChar(char a, char b)
         {
-            return (char)Math.Pow(a, b);
+            return unchecked((char)Math.Pow(a, b));
         }
 
         #endregion
