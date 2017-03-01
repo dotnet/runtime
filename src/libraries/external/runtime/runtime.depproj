@@ -43,4 +43,27 @@
           UseHardlinksIfPossible="true" />
 
   </Target>
+
+  <Target Name="OverrideRuntime"
+          Condition="'$(CoreCLROverridePath)' != '' and Exists('$(CoreCLROverridePath)')"
+          AfterTargets="ResolveNuGetPackages;FilterNugetPackages">
+    <PropertyGroup>
+      <CoreCLRPDBOverridePath Condition="'$(CoreCLRPDBOverridePath)' == '' and Exists('$(CoreCLROverridePath)/PDB')">$(CoreCLROverridePath)/PDB</CoreCLRPDBOverridePath>
+      <ExcludeNativeImages Condition="'$(ExcludeNativeImages)' == '' and '$(Coverage)' == 'true'">true</ExcludeNativeImages>
+    </PropertyGroup>
+    <ItemGroup>
+      <CoreCLRFiles Include="$(CoreCLROverridePath)/*.*" />
+      <CoreCLRPDBFiles Condition="'$(CoreCLRPDBOverridePath)' != ''" Include="$(CoreCLRPDBOverridePath)/*.pdb" />
+
+      <_ReferenceCopyLocalPathsToRemove Include="@(ReferenceCopyLocalPaths)" Condition="'@(CoreCLRFiles->'%(FileName)%(Extension)')' == '%(FileName)%(Extension)'" />
+      <ReferenceCopyLocalPaths Remove="@(_ReferenceCopyLocalPathsToRemove)" />
+      <ReferenceCopyLocalPaths Include="@(CoreCLRFiles);@(CoreCLRPDBFiles)" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(ExcludeNativeImages)' == 'true'">
+      <ReferenceCopyLocalPathsNativeImages Remove="@(ReferenceCopyLocalPaths)" Condition="$([System.String]::Copy('%(Filename)%(Extension)').Contains('.ni.'))" />
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPathsNativeImages)" />
+    </ItemGroup>
+
+  </Target>
 </Project>
