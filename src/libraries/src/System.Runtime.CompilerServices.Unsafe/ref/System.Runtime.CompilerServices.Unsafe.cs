@@ -29,10 +29,14 @@ namespace System.Runtime.CompilerServices
         public static void InitBlockUnaligned(ref byte startAddress, byte value, uint byteCount) { }
         public unsafe static void InitBlockUnaligned(void* startAddress, byte value, uint byteCount) { }
         public unsafe static T Read<T>(void* source) { throw null; }
+        public unsafe static T ReadUnaligned<T>(void* source) { throw null; }
+        public static T ReadUnaligned<T>(ref byte source) { throw null; }
         public static int SizeOf<T>() { throw null; }
         public static ref T SubtractByteOffset<T>(ref T source, System.IntPtr byteOffset) { throw null; }
         public static ref T Subtract<T>(ref T source, int elementOffset) { throw null; }
         public static ref T Subtract<T>(ref T source, System.IntPtr elementOffset) { throw null; }
         public unsafe static void Write<T>(void* destination, T value) { }
+        public unsafe static void WriteUnaligned<T>(void* destination, T value) { }
+        public static void WriteUnaligned<T>(ref byte destination, T value) { }
     }
 }
