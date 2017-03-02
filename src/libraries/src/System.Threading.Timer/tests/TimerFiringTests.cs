@@ -134,20 +134,6 @@ public partial class TimerFiringTests
     }
 
     [Fact]
-    public void Running_Timer_CanBeFinalizedAndStopsFiring()
-    {
-        AutoResetEvent are = new AutoResetEvent(false);
-        TimerCallback tc = new TimerCallback((object o) => are.Set());
-        var t = new Timer(tc, null, 1, 500);
-        Assert.True(are.WaitOne(MaxPositiveTimeoutInMs), "Failed to get first timer fire");
-        t = null; // Remove our reference so the timer can be GC'd 
-        GC.Collect();
-        GC.WaitForPendingFinalizers();
-        GC.Collect();
-        Assert.False(are.WaitOne(500), "Should not have received a timer fire after it was collected");
-    }
-
-    [Fact]
     public void MultpleTimers_PeriodicTimerIsntBlockedByBlockedCallback()
     {
         int callbacks = 2;
