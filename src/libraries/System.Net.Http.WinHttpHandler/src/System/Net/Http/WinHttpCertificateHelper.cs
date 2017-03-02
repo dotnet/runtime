@@ -54,7 +54,7 @@ namespace System.Net.Http
                         ~Interop.Crypt32.CertChainPolicyIgnoreFlags.CERT_CHAIN_POLICY_IGNORE_INVALID_NAME_FLAG;
                         
                     var status = new Interop.Crypt32.CERT_CHAIN_POLICY_STATUS();
-                    status.cbSize = (uint)Marshal.SizeOf<Interop.Crypt32.CERT_CHAIN_POLICY_STATUS>();
+                    status.cbSize = (uint)sizeof(Interop.Crypt32.CERT_CHAIN_POLICY_STATUS);
                     if (Interop.Crypt32.CertVerifyCertificateChainPolicy(
                             (IntPtr)Interop.Crypt32.CertChainPolicy.CERT_CHAIN_POLICY_SSL,
                             chain.SafeHandle,

@@ -1238,14 +1238,14 @@ namespace System.IO.Ports
         // Initializes unmananged DCB struct, to be called after opening communications resource.
         // assumes we have already: baudRate, parity, dataBits, stopBits
         // should only be called in SerialStream(...)
-        private void InitializeDCB(int baudRate, Parity parity, int dataBits, StopBits stopBits, bool discardNull)
+        private unsafe void InitializeDCB(int baudRate, Parity parity, int dataBits, StopBits stopBits, bool discardNull)
         {
             // first get the current dcb structure setup
             if (Interop.Kernel32.GetCommState(_handle, ref _dcb) == false)
             {
                 InternalResources.WinIOError();
             }
-            _dcb.DCBlength = (uint)Marshal.SizeOf(_dcb);
+            _dcb.DCBlength = (uint)sizeof(Interop.Kernel32.DCB);
 
             // set parameterized properties
             _dcb.BaudRate = (uint)baudRate;

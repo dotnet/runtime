@@ -81,10 +81,16 @@ namespace System.Tests
 
         private class FinalizerTest
         {
+            [System.Runtime.CompilerServices.MethodImplAttribute(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+            private static void MakeAndDropTest()
+            {
+                new TestObject();
+            }
+
             public static void Run()
             {
-                var obj = new TestObject();
-                obj = null;
+                MakeAndDropTest();
+
                 GC.Collect();
 
                 // Make sure Finalize() is called
@@ -112,12 +118,17 @@ namespace System.Tests
 
         private class KeepAliveTest
         {
+            [System.Runtime.CompilerServices.MethodImplAttribute(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+            private static void MakeAndDropDNKA()
+            {
+                new DoNotKeepAliveObject();
+            }
+
             public static void Run()
             {
                 var keepAlive = new KeepAliveObject();
 
-                var doNotKeepAlive = new DoNotKeepAliveObject();
-                doNotKeepAlive = null;
+                MakeAndDropDNKA();
 
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
@@ -157,14 +168,19 @@ namespace System.Tests
 
         private class KeepAliveNullTest
         {
-            public static void Run()
+            [System.Runtime.CompilerServices.MethodImplAttribute(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+            private static void MakeAndNull()
             {
                 var obj = new TestObject();
                 obj = null;
+            }
+
+            public static void Run()
+            {
+                MakeAndNull();
 
                 GC.Collect();
                 GC.WaitForPendingFinalizers();
-                GC.KeepAlive(obj);
 
                 Assert.True(TestObject.Finalized);
             }

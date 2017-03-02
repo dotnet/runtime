@@ -63,6 +63,26 @@
         ret
   } // end of method Unsafe::Read
 
+  .method public hidebysig static !!T ReadUnaligned<T>(void* source) cil managed aggressiveinlining
+  {
+        .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
+        .maxstack 1
+        ldarg.0        
+        unaligned. 0x1
+        ldobj !!T
+        ret
+  } // end of method Unsafe::ReadUnaligned
+  
+  .method public hidebysig static !!T ReadUnaligned<T>(uint8& source) cil managed aggressiveinlining
+  {
+        .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
+        .maxstack 1
+        ldarg.0        
+        unaligned. 0x1
+        ldobj !!T
+        ret
+  } // end of method Unsafe::ReadUnaligned
+  
   .method public hidebysig static void Write<T>(void* destination,
                                                  !!T 'value') cil managed aggressiveinlining
   {
@@ -73,6 +93,30 @@
         stobj !!T
         ret
   } // end of method Unsafe::Write
+
+  .method public hidebysig static void WriteUnaligned<T>(void* destination,
+                                                 !!T 'value') cil managed aggressiveinlining
+  {
+        .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
+        .maxstack 2
+        ldarg.0
+        ldarg.1
+        unaligned. 0x01
+        stobj !!T
+        ret
+  } // end of method Unsafe::WriteUnaligned
+
+  .method public hidebysig static void WriteUnaligned<T>(uint8& destination,
+                                                 !!T 'value') cil managed aggressiveinlining
+  {
+        .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
+        .maxstack 2
+        ldarg.0
+        ldarg.1        
+        unaligned. 0x01
+        stobj !!T
+        ret
+  } // end of method Unsafe::WriteUnaligned
 
   .method public hidebysig static void Copy<T>(void* destination,
                                                 !!T& source) cil managed aggressiveinlining

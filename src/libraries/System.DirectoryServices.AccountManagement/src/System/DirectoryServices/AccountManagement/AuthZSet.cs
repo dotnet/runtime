@@ -149,7 +149,7 @@ namespace System.DirectoryServices.AccountManagement
                                 // each native SID_AND_ATTRIBUTES into a managed SID_AND_ATTR.
                                 UnsafeNativeMethods.SID_AND_ATTR[] groups = new UnsafeNativeMethods.SID_AND_ATTR[groupCount];
 
-                                IntPtr currentItem = new IntPtr(pBuffer.ToInt64() + Marshal.SizeOf(typeof(UnsafeNativeMethods.TOKEN_GROUPS)) - Marshal.SizeOf(typeof(IntPtr)));
+                                IntPtr currentItem = new IntPtr(pBuffer.ToInt64() + Marshal.SizeOf(typeof(UnsafeNativeMethods.TOKEN_GROUPS)) - IntPtr.Size);
 
                                 for (int i = 0; i < groupCount; i++)
                                 {

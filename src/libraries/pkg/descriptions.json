@@ -1875,7 +1875,7 @@
     ]
   },
   {
-    "Name": "System.Transactions",
+    "Name": "System.Transactions.Local",
     "Description": "Provides classes that allow you to write your own transactional application and resource manager.",
     "CommonTypes": [
       "System.Transactions.Transaction",

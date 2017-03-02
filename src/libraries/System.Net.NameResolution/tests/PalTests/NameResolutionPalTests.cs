@@ -4,6 +4,7 @@
 
 using System.Net.Sockets;
 using System.Net.Test.Common;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Net.NameResolution.PalTests
@@ -154,7 +155,6 @@ namespace System.Net.NameResolution.PalTests
             Assert.NotNull(name);
         }
 
-        [ActiveIssue(10764, TestPlatforms.AnyUnix)]
         [Fact]
         public void TryGetAddrInfo_HostName_TryGetNameInfo()
         {
@@ -168,6 +168,14 @@ namespace System.Net.NameResolution.PalTests
             Assert.NotNull(hostEntry);
 
             string name = NameResolutionPal.TryGetNameInfo(hostEntry.AddressList[0], out error, out nativeErrorCode);
+            if (error == SocketError.HostNotFound)
+            {
+                // On Unix, getaddrinfo returns private ipv4 address for hostname. If the OS doesn't have the
+                // dns lookup entry for this address, getnameinfo returns host not found.
+                Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX));
+                return;
+            }
+
             Assert.Equal(SocketError.Success, error);
             Assert.NotNull(name);
         }

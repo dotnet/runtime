@@ -233,7 +233,7 @@ namespace System.Security.Cryptography.Xml
                     {
                         XmlElement transformElement = transformNode as XmlElement;
                         string algorithm = Utils.GetAttribute(transformElement, "Algorithm", SignedXml.XmlDsigNamespaceUrl);
-                        Transform transform = CryptoConfig.CreateFromName(algorithm) as Transform;
+                        Transform transform = CryptoHelpers.CreateFromName(algorithm) as Transform;
                         if (transform == null)
                             throw new CryptographicException(SR.Cryptography_Xml_UnknownTransform);
                         AddTransform(transform);
@@ -302,7 +302,7 @@ namespace System.Security.Cryptography.Xml
         {
             // refList is a list of elements that might be targets of references
             // Now's the time to create our hashing algorithm
-            _hashAlgorithm = CryptoConfig.CreateFromName(_digestMethod) as HashAlgorithm;
+            _hashAlgorithm = CryptoHelpers.CreateFromName(_digestMethod) as HashAlgorithm;
             if (_hashAlgorithm == null)
                 throw new CryptographicException(SR.Cryptography_Xml_CreateHashAlgorithmFailed);
 

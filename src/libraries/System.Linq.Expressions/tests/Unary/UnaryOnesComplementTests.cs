@@ -93,6 +93,13 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Fact]
+        public static void CheckUnaryArithmeticOnesComplementBooleanTest()
+        {
+            Expression operand = Expression.Variable(typeof(bool));
+            Assert.Throws<InvalidOperationException>(() => Expression.OnesComplement(operand));
+        }
+
+        [Fact]
         public static void ToStringTest()
         {
             UnaryExpression e = Expression.OnesComplement(Expression.Parameter(typeof(int), "x"));

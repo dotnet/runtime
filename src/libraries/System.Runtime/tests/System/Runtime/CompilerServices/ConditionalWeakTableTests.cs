@@ -183,8 +183,8 @@ namespace System.Runtime.CompilerServices.Tests
             });
         }
 
-        [Fact]
-        public static void AddRemove_DropValue()
+        [System.Runtime.CompilerServices.MethodImplAttribute(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        static WeakReference GetWeakCondTabRef(out ConditionalWeakTable<object, object> cwt_out, out object key_out)
         {
             var key = new object();
             var value = new object();
@@ -194,9 +194,20 @@ namespace System.Runtime.CompilerServices.Tests
             cwt.Add(key, value);
             cwt.Remove(key);
 
+            // Return 3 values to the caller, drop everything else on the floor.
+            cwt_out = cwt;
+            key_out = key;
+            return new WeakReference(value);
+        }
+
+        [Fact]
+        public static void AddRemove_DropValue()
+        {
             // Verify that the removed entry is not keeping the value alive
-            var wrValue = new WeakReference(value);
-            value = null;
+            ConditionalWeakTable<object, object> cwt;
+            object key;
+
+            var wrValue = GetWeakCondTabRef(out cwt, out key);
 
             GC.Collect();
             Assert.False(wrValue.IsAlive);
@@ -205,52 +216,66 @@ namespace System.Runtime.CompilerServices.Tests
             GC.KeepAlive(key);
         }
 
-        [Fact]
-        public static void GetOrCreateValue()
+        [System.Runtime.CompilerServices.MethodImplAttribute(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        static void GetWeakRefPair(out WeakReference<object> key_out, out WeakReference<object> val_out)
         {
             var cwt = new ConditionalWeakTable<object, object>();
             var key = new object();
-            object obj = null;
 
             object value = cwt.GetOrCreateValue(key);
 
             Assert.True(cwt.TryGetValue(key, out value));
             Assert.Equal(value, cwt.GetValue(key, k => new object()));
 
-            var wrValue = new WeakReference<object>(value, false);
-            var wrkey = new WeakReference<object>(key, false);
-            key = null;
-            value = null;
+            val_out = new WeakReference<object>(value, false);
+            key_out = new WeakReference<object>(key, false);
+        }
+
+        [Fact]
+        public static void GetOrCreateValue()
+        {
+            WeakReference<object> wrValue;
+            WeakReference<object> wrKey;
+
+            GetWeakRefPair(out wrKey, out wrValue);
 
             GC.Collect();
 
             // key and value must be collected
+            object obj;
             Assert.False(wrValue.TryGetTarget(out obj));
-            Assert.False(wrkey.TryGetTarget(out obj));
+            Assert.False(wrKey.TryGetTarget(out obj));
         }
 
-        [Fact]
-        public static void GetValue()
+        [System.Runtime.CompilerServices.MethodImplAttribute(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        static void GetWeakRefValPair(out WeakReference<object> key_out, out WeakReference<object> val_out)
         {
             var cwt = new ConditionalWeakTable<object, object>();
             var key = new object();
-            object obj = null;
 
             object value = cwt.GetValue(key, k => new object());
 
             Assert.True(cwt.TryGetValue(key, out value));
             Assert.Equal(value, cwt.GetOrCreateValue(key));
 
-            WeakReference<object> wrValue = new WeakReference<object>(value, false);
-            WeakReference<object> wrkey = new WeakReference<object>(key, false);
-            key = null;
-            value = null;
+            val_out = new WeakReference<object>(value, false);
+            key_out = new WeakReference<object>(key, false);
+        }
+
+        [Fact]
+        public static void GetValue()
+        {
+            WeakReference<object> wrValue;
+            WeakReference<object> wrKey;
+
+            GetWeakRefValPair(out wrKey, out wrValue);
 
             GC.Collect();
 
             // key and value must be collected
+            object obj;
             Assert.False(wrValue.TryGetTarget(out obj));
-            Assert.False(wrkey.TryGetTarget(out obj));
+            Assert.False(wrKey.TryGetTarget(out obj));
         }
 
         [Theory]
