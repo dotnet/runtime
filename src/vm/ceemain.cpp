@@ -39,7 +39,7 @@
 // 
 //*************************************************************************************************
 //
-// * Introduction to the runtime file:../../doc/BookOfTheRuntime/Introduction/botr-faq.md
+// * Introduction to the runtime file:../../Documentation/botr/botr-faq.md
 //
 // #MajorDataStructures. The major data structures associated with the runtime are
 //     * code:Thread (see file:threads.h#ThreadClass) - the additional thread state the runtime needs.
