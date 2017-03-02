@@ -59,7 +59,16 @@ typedef void (*MonoThreadCleanupFunc) (MonoNativeThreadId tid);
 /* INFO has type MonoThreadInfo* */
 typedef void (*MonoThreadNotifyPendingExcFunc) (gpointer info);
 
-MonoInternalThread* mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer arg, gboolean threadpool_thread, guint32 stack_size, MonoError *error);
+typedef enum {
+	MONO_THREAD_CREATE_FLAGS_NONE         = 0x0,
+	MONO_THREAD_CREATE_FLAGS_THREADPOOL   = 0x1,
+	MONO_THREAD_CREATE_FLAGS_DEBUGGER     = 0x2,
+	MONO_THREAD_CREATE_FLAGS_FORCE_CREATE = 0x4,
+	MONO_THREAD_CREATE_FLAGS_SMALL_STACK  = 0x8,
+} MonoThreadCreateFlags;
+
+MonoInternalThread*
+mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer arg, MonoThreadCreateFlags flags, MonoError *error);
 
 void mono_threads_install_cleanup (MonoThreadCleanupFunc func);
 

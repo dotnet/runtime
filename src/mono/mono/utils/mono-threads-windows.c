@@ -183,22 +183,22 @@ mono_threads_suspend_get_abort_signal (void)
 
 #if defined (HOST_WIN32)
 
-int
-mono_threads_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_data, gsize* const stack_size, MonoNativeThreadId *out_tid)
+gboolean
+mono_thread_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_data, gsize* const stack_size, MonoNativeThreadId *tid)
 {
 	HANDLE result;
 	DWORD thread_id;
 
 	result = CreateThread (NULL, stack_size ? *stack_size : 0, (LPTHREAD_START_ROUTINE) thread_fn, thread_data, 0, &thread_id);
 	if (!result)
-		return -1;
+		return FALSE;
 
 	/* A new handle is open when attaching
 	 * the thread, so we don't need this one */
 	CloseHandle (result);
 
-	if (out_tid)
-		*out_tid = thread_id;
+	if (tid)
+		*tid = thread_id;
 
 	if (stack_size) {
 		// TOOD: Use VirtualQuery to get correct value 
@@ -206,7 +206,7 @@ mono_threads_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_
 		*stack_size = 2 * 1024 * 1024;
 	}
 
-	return 0;
+	return TRUE;
 }
 
 

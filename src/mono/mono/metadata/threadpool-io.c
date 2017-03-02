@@ -556,7 +556,7 @@ initialize (void)
 		g_error ("initialize: backend->init () failed");
 
 	MonoError error;
-	if (!mono_thread_create_internal (mono_get_root_domain (), selector_thread, NULL, TRUE, SMALL_STACK, &error))
+	if (!mono_thread_create_internal (mono_get_root_domain (), selector_thread, NULL, MONO_THREAD_CREATE_FLAGS_THREADPOOL | MONO_THREAD_CREATE_FLAGS_SMALL_STACK, &error))
 		g_error ("initialize: mono_thread_create_internal () failed due to %s", mono_error_get_message (&error));
 }
 

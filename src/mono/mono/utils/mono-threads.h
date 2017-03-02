@@ -408,9 +408,6 @@ mono_thread_info_describe_interrupt_token (THREAD_INFO_TYPE *info, GString *text
 gboolean
 mono_thread_info_is_live (THREAD_INFO_TYPE *info);
 
-MonoThreadHandle*
-mono_threads_create_thread (MonoThreadStart start, gpointer arg, gsize * const stack_size, MonoNativeThreadId *out_tid);
-
 int
 mono_threads_get_max_stack_size (void);
 
@@ -481,10 +478,10 @@ gint mono_threads_suspend_get_suspend_signal (void);
 gint mono_threads_suspend_get_restart_signal (void);
 gint mono_threads_suspend_get_abort_signal (void);
 
-#if defined(USE_POSIX_BACKEND)
-void mono_threads_platform_reset_priority (pthread_attr_t *attr);
-#endif /* defined(USE_POSIX_BACKEND) */
-int mono_threads_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_data, gsize* const stack_size, MonoNativeThreadId *out_tid);
+gboolean
+mono_thread_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_data,
+	gsize* const stack_size, MonoNativeThreadId *tid);
+
 void mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize);
 void mono_threads_platform_init (void);
 gboolean mono_threads_platform_in_critical_region (MonoNativeThreadId tid);

@@ -475,12 +475,18 @@ transport_send (int fd, guint8 *data, int len)
 static void
 transport_start_receive (void)
 {
+	MonoError error;
+	MonoInternalThread *internal;
+
 	transport_connect ();
 
 	if (!listen_fd)
 		return;
 
-	receiver_thread_handle = mono_threads_create_thread (receiver_thread, NULL, NULL, NULL);
+	internal = mono_thread_create_internal (mono_get_root_domain (), receiver_thread, NULL, MONO_THREAD_CREATE_FLAGS_NONE, &error);
+	mono_error_assert_ok (&error);
+
+	receiver_thread_handle = mono_threads_open_thread_handle (internal->handle);
 	g_assert (receiver_thread_handle);
 }
 
@@ -492,8 +498,15 @@ receiver_thread (void *arg)
 	guint8 buffer [256];
 	guint8 *p, *p_end;
 	MonoObject *exc;
+	MonoInternalThread *internal;
 
-	mono_native_thread_set_name (mono_native_thread_id_get (), "Attach receiver");
+	internal = mono_thread_internal_current ();
+	mono_thread_set_name_internal (internal, mono_string_new (mono_domain_get (), "Attach receiver"), TRUE, FALSE, &error);
+	mono_error_assert_ok (&error);
+	/* Ask the runtime to not abort this thread */
+	//internal->flags |= MONO_THREAD_FLAG_DONT_MANAGE;
+	/* Ask the runtime to not wait for this thread */
+	internal->state |= ThreadState_Background;
 
 	printf ("attach: Listening on '%s'...\n", server_uri);
 
@@ -504,14 +517,6 @@ receiver_thread (void *arg)
 			return 0;
 
 		printf ("attach: Connected.\n");
-
-		MonoThread *thread = mono_thread_attach (mono_get_root_domain ());
-		mono_thread_set_name_internal (thread->internal_thread, mono_string_new (mono_get_root_domain (), "Attach receiver"), TRUE, FALSE, &error);
-		mono_error_assert_ok (&error);
-		/* Ask the runtime to not abort this thread */
-		//mono_thread_current ()->flags |= MONO_THREAD_FLAG_DONT_MANAGE;
-		/* Ask the runtime to not wait for this thread */
-		thread->internal_thread->state |= ThreadState_Background;
 
 		while (TRUE) {
 			char *cmd, *agent_name, *agent_args;
