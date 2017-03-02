@@ -144,7 +144,7 @@ static const AssemblyVersionMap framework_assemblies [] = {
 	{"System.Management", 0},
 	{"System.Messaging", 0},
 	{"System.Net", 2},
-	{"System.Net.Http", 3},
+	{"System.Net.Http", 4},
 	{"System.Numerics.Vectors", 3},
 	{"System.Runtime.InteropServices.RuntimeInformation", 2},
 	{"System.Runtime.Remoting", 0},
