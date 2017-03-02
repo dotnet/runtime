@@ -1556,6 +1556,25 @@ sgen_worker_clear_free_block_lists (WorkerData *worker)
 }
 
 static void
+sgen_worker_clear_free_block_lists_evac (WorkerData *worker)
+{
+	int i, j;
+
+	if (!worker->free_block_lists)
+		return;
+
+	for (i = 0; i < MS_BLOCK_TYPE_MAX; i++) {
+		for (j = 0; j < num_block_obj_sizes; j++) {
+			if (((MSBlockInfo***) worker->free_block_lists) [i][j])
+				SGEN_ASSERT (0, !((MSBlockInfo***) worker->free_block_lists) [i][j]->next_free, "Why do we have linked free blocks on the workers");
+
+			if (evacuate_block_obj_sizes [j])
+				((MSBlockInfo***) worker->free_block_lists) [i][j] = NULL;
+		}
+	}
+}
+
+static void
 sweep_start (void)
 {
 	int i;
@@ -2037,6 +2056,9 @@ major_start_major_collection (void)
 		sgen_evacuation_freelist_blocks (&free_block_lists [0][i], i);
 		sgen_evacuation_freelist_blocks (&free_block_lists [MS_BLOCK_FLAG_REFS][i], i);
 	}
+
+	/* We expect workers to have very few blocks on the freelist, just evacuate them */
+	sgen_workers_foreach (sgen_worker_clear_free_block_lists_evac);
 
 	if (lazy_sweep && concurrent_sweep) {
 		/*
