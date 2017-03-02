@@ -6432,7 +6432,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         eeGetSig(pResolvedToken->token, info.compScopeHnd, impTokenLookupContextHandle, &calliSig);
 
         callRetTyp = JITtype2varType(calliSig.retType);
-        clsHnd     = calliSig.retTypeClass;
 
         call = impImportIndirectCall(&calliSig, ilOffset);
 
@@ -7715,7 +7714,7 @@ DONE_CALL:
                         unsigned   calliSlot  = lvaGrabTemp(true DEBUGARG("calli"));
                         LclVarDsc* varDsc     = &lvaTable[calliSlot];
                         varDsc->lvVerTypeInfo = tiRetVal;
-                        impAssignTempGen(calliSlot, call, clsHnd, (unsigned)CHECK_SPILL_NONE);
+                        impAssignTempGen(calliSlot, call, tiRetVal.GetClassHandle(), (unsigned)CHECK_SPILL_NONE);
                         // impAssignTempGen can change src arg list and return type for call that returns struct.
                         var_types type = genActualType(lvaTable[calliSlot].TypeGet());
                         call           = gtNewLclvNode(calliSlot, type);
