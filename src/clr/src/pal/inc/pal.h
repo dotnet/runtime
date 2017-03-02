@@ -1794,6 +1794,15 @@ typedef struct _CONTEXT {
 // support any other values in the ExtendedRegisters) but we might as well be as accurate as we can.
 #define CONTEXT_EXREG_XMM_OFFSET 160
 
+typedef struct _KNONVOLATILE_CONTEXT {
+
+    DWORD Edi;
+    DWORD Esi;
+    DWORD Ebx;
+    DWORD Ebp;
+
+} KNONVOLATILE_CONTEXT, *PKNONVOLATILE_CONTEXT;
+
 typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
 
     // The ordering of these fields should be aligned with that
