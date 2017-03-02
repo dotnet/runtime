@@ -33,11 +33,6 @@ GetTypeInfoFromTypeHandle(TypeHandle typeHandle, NotifyGdb::PTK_TypeInfoMap pTyp
         case ELEMENT_TYPE_I1:
         case ELEMENT_TYPE_U1:
         case ELEMENT_TYPE_CHAR:
-            typeInfo = new (nothrow) ByteTypeInfo(typeHandle, CorElementTypeToDWEncoding[corType]);
-            if (typeInfo == nullptr)
-                return nullptr;
-            typeInfo->m_type_size = CorTypeInfo::Size(corType);
-            break;
         case ELEMENT_TYPE_VOID:
         case ELEMENT_TYPE_BOOLEAN:
         case ELEMENT_TYPE_I2:
@@ -50,7 +45,7 @@ GetTypeInfoFromTypeHandle(TypeHandle typeHandle, NotifyGdb::PTK_TypeInfoMap pTyp
         case ELEMENT_TYPE_R8:
         case ELEMENT_TYPE_U:
         case ELEMENT_TYPE_I:
-            typeInfo = new (nothrow) PrimitiveTypeInfo(typeHandle, CorElementTypeToDWEncoding[corType]);
+            typeInfo = new (nothrow) ByteTypeInfo(typeHandle, CorElementTypeToDWEncoding[corType]);
             if (typeInfo == nullptr)
                 return nullptr;
 
@@ -69,13 +64,16 @@ GetTypeInfoFromTypeHandle(TypeHandle typeHandle, NotifyGdb::PTK_TypeInfoMap pTyp
             if (typeInfo == nullptr)
                 return nullptr;
 
-            typeInfo->m_type_size = typeHandle.AsMethodTable()->GetClass()->GetSize();
+            if (pMT->IsValueType())
+                typeInfo->m_type_size = typeHandle.GetSize();
+            else
+                typeInfo->m_type_size = typeHandle.AsMethodTable()->GetClass()->GetSize();
 
             RefTypeInfo* refTypeInfo = nullptr;
             if (!typeHandle.IsValueType())
             {
                 // name the type
-                refTypeInfo = new (nothrow) RefTypeInfo(typeHandle, typeInfo);
+                refTypeInfo = new (nothrow) NamedRefTypeInfo(typeHandle, typeInfo);
                 if (refTypeInfo == nullptr)
                 {
                     return nullptr;
@@ -86,8 +84,11 @@ GetTypeInfoFromTypeHandle(TypeHandle typeHandle, NotifyGdb::PTK_TypeInfoMap pTyp
 
                 pTypeMap->Add(refTypeInfo->GetTypeKey(), refTypeInfo);
             }
+            else
+            {
+                pTypeMap->Add(typeInfo->GetTypeKey(), typeInfo);
+            }
 
-            pTypeMap->Add(typeInfo->GetTypeKey(), typeInfo);
             typeInfo->CalculateName();
 
             //
@@ -131,7 +132,7 @@ GetTypeInfoFromTypeHandle(TypeHandle typeHandle, NotifyGdb::PTK_TypeInfoMap pTyp
                 if (pMT->IsString() && i == 1)
                 {
                     TypeInfoBase* elemTypeInfo = info->members[1].m_member_type;
-                    TypeInfoBase* arrayTypeInfo = new (nothrow) ArrayTypeInfo(typeHandle.MakeSZArray(), 0, elemTypeInfo);
+                    TypeInfoBase* arrayTypeInfo = new (nothrow) ArrayTypeInfo(typeHandle.MakeSZArray(), 1, elemTypeInfo);
                     if (arrayTypeInfo == nullptr)
                         return nullptr;
                     info->members[1].m_member_type = arrayTypeInfo;
@@ -164,13 +165,13 @@ GetTypeInfoFromTypeHandle(TypeHandle typeHandle, NotifyGdb::PTK_TypeInfoMap pTyp
         case ELEMENT_TYPE_ARRAY:
         case ELEMENT_TYPE_SZARRAY:
         {
-            typeInfo = new (nothrow) ClassTypeInfo(typeHandle, 2);
+            typeInfo = new (nothrow) ClassTypeInfo(typeHandle, pMT->GetRank() == 1 ? 2 : 3);
             if (typeInfo == nullptr)
                 return nullptr;
             typeInfo->m_type_size = pMT->GetClass()->GetSize();
 
             typeInfo->CalculateName();
-            RefTypeInfo *refTypeInfo = new (nothrow) RefTypeInfo(typeHandle, typeInfo);
+            RefTypeInfo *refTypeInfo = new (nothrow) NamedRefTypeInfo(typeHandle, typeInfo);
             if (refTypeInfo == nullptr)
             {
                 return nullptr;
@@ -185,7 +186,7 @@ GetTypeInfoFromTypeHandle(TypeHandle typeHandle, NotifyGdb::PTK_TypeInfoMap pTyp
                 TypeHandle(MscorlibBinder::GetElementType(ELEMENT_TYPE_I4)), pTypeMap);
 
             TypeInfoBase* valTypeInfo = GetTypeInfoFromTypeHandle(typeHandle.GetTypeParam(), pTypeMap);
-            TypeInfoBase* arrayTypeInfo = new (nothrow) ArrayTypeInfo(typeHandle, 0, valTypeInfo);
+            TypeInfoBase* arrayTypeInfo = new (nothrow) ArrayTypeInfo(typeHandle, 1, valTypeInfo);
             if (arrayTypeInfo == nullptr)
                 return nullptr;
 
@@ -201,7 +202,20 @@ GetTypeInfoFromTypeHandle(TypeHandle typeHandle, NotifyGdb::PTK_TypeInfoMap pTyp
             strcpy(info->members[1].m_member_name, "m_Data");
             info->members[1].m_member_offset = ArrayBase::GetDataPtrOffset(pMT);
             info->members[1].m_member_type = arrayTypeInfo;
-            info->members[1].m_member_type->m_type_size = sizeof(TADDR);
+
+            if (pMT->GetRank() != 1)
+            {
+                TypeHandle dwordArray(MscorlibBinder::GetElementType(ELEMENT_TYPE_I4));
+                TypeInfoBase* arrayTypeInfo = new (nothrow) ArrayTypeInfo(dwordArray.MakeSZArray(), pMT->GetRank(), lengthTypeInfo);
+                if (arrayTypeInfo == nullptr)
+                    return nullptr;
+
+                info->members[2].m_member_name = new (nothrow) char[9];
+                strcpy(info->members[2].m_member_name, "m_Bounds");
+                info->members[2].m_member_offset = ArrayBase::GetBoundsOffset(pMT);
+                info->members[2].m_member_type = arrayTypeInfo;
+                info->members[2].m_member_type->m_type_size = pMT->GetRank() * sizeof(DWORD);
+            }
 
             return refTypeInfo;
         }
@@ -750,6 +764,9 @@ const unsigned char AbbrevTable[] = {
     18, DW_TAG_inheritance, DW_CHILDREN_no, DW_AT_type, DW_FORM_ref4, DW_AT_data_member_location, DW_FORM_data1,
         0, 0,
 
+    19, DW_TAG_subrange_type, DW_CHILDREN_no,
+        DW_AT_upper_bound, DW_FORM_udata, 0, 0,
+
     0
 };
 
@@ -930,11 +947,33 @@ void TypeInfoBase::CalculateName()
 {
     // name the type
     SString sName;
-    typeHandle.GetName(sName);
+
+    const TypeString::FormatFlags formatFlags = static_cast<TypeString::FormatFlags>(
+        TypeString::FormatNamespace |
+        TypeString::FormatAngleBrackets);
+
+    TypeString::AppendType(sName, typeHandle, formatFlags);
+
     StackScratchBuffer buffer;
     const UTF8 *utf8 = sName.GetUTF8(buffer);
-    m_type_name = new char[strlen(utf8) + 1];
-    strcpy(m_type_name, utf8);
+    if (typeHandle.IsValueType())
+    {
+        m_type_name = new char[strlen(utf8) + 1];
+        strcpy(m_type_name, utf8);
+    }
+    else
+    {
+        m_type_name = new char[strlen(utf8) + 1 + 2];
+        strcpy(m_type_name, "__");
+        strcpy(m_type_name + 2, utf8);
+    }
+
+    // Fix nested names
+    for (char *p = m_type_name; *p; ++p)
+    {
+        if (*p == '+')
+            *p = '.';
+    }
 }
 
 void TypeInfoBase::SetTypeHandle(TypeHandle handle)
@@ -965,6 +1004,11 @@ void TypeDefInfo::DumpStrings(char *ptr, int &offset)
 
 void TypeDefInfo::DumpDebugInfo(char *ptr, int &offset)
 {
+    if (m_typedef_type_offset != 0)
+    {
+        return;
+    }
+
     if (ptr != nullptr)
     {
         DebugInfoTypeDef buf;
@@ -981,18 +1025,36 @@ void TypeDefInfo::DumpDebugInfo(char *ptr, int &offset)
     offset += sizeof(DebugInfoTypeDef);
 }
 
+static const char *GetCSharpTypeName(TypeInfoBase *typeInfo)
+{
+    switch(typeInfo->GetTypeHandle().GetSignatureCorElementType())
+    {
+        case ELEMENT_TYPE_I1: return "sbyte";
+        case ELEMENT_TYPE_U1:  return "byte";
+        case ELEMENT_TYPE_CHAR: return "char";
+        case ELEMENT_TYPE_VOID: return "void";
+        case ELEMENT_TYPE_BOOLEAN: return "bool";
+        case ELEMENT_TYPE_I2: return "short";
+        case ELEMENT_TYPE_U2: return "ushort";
+        case ELEMENT_TYPE_I4: return "int";
+        case ELEMENT_TYPE_U4: return "uint";
+        case ELEMENT_TYPE_I8: return "long";
+        case ELEMENT_TYPE_U8: return "ulong";
+        case ELEMENT_TYPE_R4: return "float";
+        case ELEMENT_TYPE_R8: return "double";
+        default: return typeInfo->m_type_name;
+    }
+}
+
 void ByteTypeInfo::DumpStrings(char* ptr, int& offset)
 {
     PrimitiveTypeInfo::DumpStrings(ptr, offset);
-    m_typedef_info->m_typedef_name = new (nothrow) char[strlen(m_type_name) + 1];
-    if (strcmp(m_type_name, "System.Byte") == 0)
-        strcpy(m_typedef_info->m_typedef_name, "byte");
-    else if (strcmp(m_type_name, "System.SByte") == 0)
-        strcpy(m_typedef_info->m_typedef_name, "sbyte");
-    else if (strcmp(m_type_name, "char16_t") == 0)
-        strcpy(m_typedef_info->m_typedef_name, "char");
-    else
-        strcpy(m_typedef_info->m_typedef_name, m_type_name);
+    if (!m_typedef_info->m_typedef_name)
+    {
+        const char *typeName = GetCSharpTypeName(this);
+        m_typedef_info->m_typedef_name = new (nothrow) char[strlen(typeName) + 1];
+        strcpy(m_typedef_info->m_typedef_name, typeName);
+    }
     m_typedef_info->DumpStrings(ptr, offset);
 }
 
@@ -1408,6 +1470,37 @@ void RefTypeInfo::DumpDebugInfo(char* ptr, int& offset)
         m_type_offset = 0;
     }
 }
+
+void NamedRefTypeInfo::DumpDebugInfo(char* ptr, int& offset)
+{
+    if (m_type_offset != 0)
+    {
+        return;
+    }
+    m_type_offset = offset;
+    offset += sizeof(DebugInfoRefType) + sizeof(DebugInfoTypeDef);
+    m_value_type->DumpDebugInfo(ptr, offset);
+    if (ptr != nullptr)
+    {
+        DebugInfoRefType refType;
+        refType.m_type_abbrev = 9;
+        refType.m_ref_type = m_value_type->m_type_offset;
+        refType.m_byte_size = m_type_size;
+        memcpy(ptr + m_type_offset, &refType, sizeof(DebugInfoRefType));
+
+        DebugInfoTypeDef bugTypeDef;
+        bugTypeDef.m_typedef_abbrev = 3;
+        bugTypeDef.m_typedef_name = m_value_type->m_type_name_offset + 2;
+        bugTypeDef.m_typedef_type = m_type_offset;
+        memcpy(ptr + m_type_offset + sizeof(DebugInfoRefType), &bugTypeDef, sizeof(DebugInfoTypeDef));
+        m_type_offset += sizeof(DebugInfoRefType);
+    }
+    else
+    {
+        m_type_offset = 0;
+    }
+}
+
 void ClassTypeInfo::DumpDebugInfo(char* ptr, int& offset)
 {
     if (m_type_offset != 0)
@@ -1516,23 +1609,13 @@ void ArrayTypeInfo::DumpDebugInfo(char* ptr, int& offset)
     offset += sizeof(DebugInfoArrayType);
 
     char tmp[16] = { 0 };
-    int len = Leb128Encode(static_cast<int32_t>(m_count_offset), tmp, sizeof(tmp));
+    int len = Leb128Encode(static_cast<uint32_t>(m_count - 1), tmp + 1, sizeof(tmp) - 1);
     if (ptr != nullptr)
     {
-        char buf[64];
-        buf[0] = 11; // DW_TAG_subrange_type abbrev
-        buf[1] = len + 3;
-        buf[2] = DW_OP_push_object_address;
-        buf[3] = DW_OP_plus_uconst;
-        for (int j = 0; j < len; j++)
-        {
-            buf[j + 4] = tmp[j];
-        }
-        buf[len + 4] = DW_OP_deref;
-
-        memcpy(ptr + offset, buf, len + 5);
+        tmp[0] = 19; // DW_TAG_subrange_type abbrev with const upper bound
+        memcpy(ptr + offset, tmp, len + 1);
     }
-    offset += (len + 5);
+    offset += len + 1;
 
     if (ptr != nullptr)
     {

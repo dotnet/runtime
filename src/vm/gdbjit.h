@@ -190,7 +190,7 @@ class TypeDefInfo : public DwarfDumpable
 {
 public:
     TypeDefInfo(char *typedef_name,int typedef_type):
-    m_typedef_name(typedef_name), m_typedef_type(typedef_type) {}
+    m_typedef_name(typedef_name), m_typedef_type(typedef_type), m_typedef_type_offset(0) {}
     void DumpStrings(char* ptr, int& offset) override;
     void DumpDebugInfo(char* ptr, int& offset) override;
     virtual ~TypeDefInfo()
@@ -234,6 +234,16 @@ public:
     void DumpStrings(char* ptr, int& offset) override;
     void DumpDebugInfo(char* ptr, int& offset) override;
     TypeInfoBase *m_value_type;
+};
+
+class NamedRefTypeInfo: public RefTypeInfo
+{
+public:
+    NamedRefTypeInfo(TypeHandle typeHandle, TypeInfoBase *value_type)
+        : RefTypeInfo(typeHandle, value_type)
+    {
+    }
+    void DumpDebugInfo(char* ptr, int& offset) override;
 };
 
 class ClassTypeInfo: public TypeInfoBase
@@ -284,9 +294,9 @@ public:
 class ArrayTypeInfo: public TypeInfoBase
 {
 public:
-    ArrayTypeInfo(TypeHandle typeHandle, int countOffset, TypeInfoBase* elemType)
+    ArrayTypeInfo(TypeHandle typeHandle, int count, TypeInfoBase* elemType)
         : TypeInfoBase(typeHandle),
-          m_count_offset(countOffset),
+          m_count(count),
           m_elem_type(elemType)
     {
     }
@@ -301,7 +311,7 @@ public:
 
     void DumpDebugInfo(char* ptr, int& offset) override;
 
-    int m_count_offset;
+    int m_count;
     TypeInfoBase *m_elem_type;
 };
 
