@@ -174,11 +174,11 @@ function cross_build_core_setup_with_docker {
         # TODO: For arm, we are going to embed RootFS inside Docker image.
         case $__linuxCodeName in
         trusty)
-            __dockerImage=" chcosta/dotnetcore:ubuntu1404_cross_prereqs_v1"
+            __dockerImage=" microsoft/dotnet-buildtools-prereqs:ubuntu1404_cross_prereqs_v1"
             __runtimeOS="ubuntu.14.04"
         ;;
         xenial)
-            __dockerImage=" chcosta/dotnetcore:ubuntu1604_cross_prereqs_v1"
+            __dockerImage=" microsoft/dotnet-buildtools-prereqs:ubuntu1604_cross_prereqs_v1"
             __runtimeOS="ubuntu.16.04"
         ;;
         *)
