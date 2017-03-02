@@ -29,18 +29,18 @@ Initialize an HMAC to the correct key and start state.
 
 Returns 1 on success, 0 on error.
 */
-extern "C" int AppleCryptoNative_HmacInit(HmacCtx* ctx, uint8_t* pbKey, int32_t cbKey);
+extern "C" int32_t AppleCryptoNative_HmacInit(HmacCtx* ctx, uint8_t* pbKey, int32_t cbKey);
 
 /*
 Add data into the HMAC
 
 Returns 1 on success, 0 on error.
 */
-extern "C" int AppleCryptoNative_HmacUpdate(HmacCtx* ctx, uint8_t* pbData, int32_t cbData);
+extern "C" int32_t AppleCryptoNative_HmacUpdate(HmacCtx* ctx, uint8_t* pbData, int32_t cbData);
 
 /*
 Complete the HMAC and copy the result into pbOutput.
 
 Returns 1 on success, 0 on error.
 */
-extern "C" int AppleCryptoNative_HmacFinal(HmacCtx* ctx, uint8_t* pbOutput);
+extern "C" int32_t AppleCryptoNative_HmacFinal(HmacCtx* ctx, uint8_t* pbOutput);

@@ -300,7 +300,7 @@ AppleCryptoNative_SslIsHostnameMatch(SSLContextRef sslContext, CFStringRef cfHos
 
     SecTrustRef trust = nullptr;
     osStatus = SecTrustCreateWithCertificates(certs, sslPolicy, &trust);
-    int ret = INT_MIN;
+    int32_t ret = INT_MIN;
 
     if (osStatus == noErr)
     {
@@ -363,7 +363,7 @@ extern "C" int32_t AppleCryptoNative_SslGetProtocolVersion(SSLContextRef sslCont
         return errSecParam;
 
     SSLProtocol protocol = kSSLProtocolUnknown;
-    int osStatus = SSLGetNegotiatedProtocolVersion(sslContext, &protocol);
+    OSStatus osStatus = SSLGetNegotiatedProtocolVersion(sslContext, &protocol);
 
     if (osStatus == noErr)
     {

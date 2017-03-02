@@ -97,7 +97,7 @@ extern "C" int32_t AppleCryptoNative_RsaDecryptOaep(SecKeyRef privateKey,
         return kErrorBadInput;
     }
 
-    int ret = kErrorSeeError;
+    int32_t ret = kErrorSeeError;
     SecTransformRef decryptor = SecDecryptTransformCreate(privateKey, pErrorOut);
 
     if (decryptor != nullptr)
@@ -126,7 +126,7 @@ extern "C" int32_t AppleCryptoNative_RsaDecryptPkcs(
         return kErrorBadInput;
     }
 
-    int ret = kErrorSeeError;
+    int32_t ret = kErrorSeeError;
     SecTransformRef decryptor = SecDecryptTransformCreate(privateKey, pErrorOut);
 
     if (decryptor != nullptr)
@@ -159,7 +159,7 @@ extern "C" int32_t AppleCryptoNative_RsaEncryptOaep(SecKeyRef publicKey,
         return kErrorBadInput;
     }
 
-    int ret = kErrorSeeError;
+    int32_t ret = kErrorSeeError;
     SecTransformRef encryptor = SecEncryptTransformCreate(publicKey, pErrorOut);
 
     if (encryptor != nullptr)
@@ -188,7 +188,7 @@ extern "C" int32_t AppleCryptoNative_RsaEncryptPkcs(
         return kErrorBadInput;
     }
 
-    int ret = kErrorSeeError;
+    int32_t ret = kErrorSeeError;
     SecTransformRef encryptor = SecEncryptTransformCreate(publicKey, pErrorOut);
 
     if (encryptor != nullptr)
@@ -217,7 +217,7 @@ static int32_t ExecuteCFDataTransform(
 
     CFTypeRef xformOutput = nullptr;
     CFDataRef cfData = nullptr;
-    int ret = INT_MIN;
+    int32_t ret = INT_MIN;
 
     cfData = CFDataCreateWithBytesNoCopy(nullptr, pbData, cbData, kCFAllocatorNull);
 

@@ -38,7 +38,7 @@ static CCHmacAlgorithm PalAlgorithmToAppleAlgorithm(PAL_HashAlgorithm algorithm)
     }
 }
 
-static int GetHmacOutputSize(PAL_HashAlgorithm algorithm)
+static int32_t GetHmacOutputSize(PAL_HashAlgorithm algorithm)
 {
     switch (algorithm)
     {
@@ -79,7 +79,7 @@ extern "C" HmacCtx* AppleCryptoNative_HmacCreate(PAL_HashAlgorithm algorithm, in
     return hmacCtx;
 }
 
-extern "C" int AppleCryptoNative_HmacInit(HmacCtx* ctx, uint8_t* pbKey, int32_t cbKey)
+extern "C" int32_t AppleCryptoNative_HmacInit(HmacCtx* ctx, uint8_t* pbKey, int32_t cbKey)
 {
     if (ctx == nullptr || cbKey < 0)
         return 0;
@@ -91,7 +91,7 @@ extern "C" int AppleCryptoNative_HmacInit(HmacCtx* ctx, uint8_t* pbKey, int32_t 
     return 1;
 }
 
-extern "C" int AppleCryptoNative_HmacUpdate(HmacCtx* ctx, uint8_t* pbData, int32_t cbData)
+extern "C" int32_t AppleCryptoNative_HmacUpdate(HmacCtx* ctx, uint8_t* pbData, int32_t cbData)
 {
     if (cbData == 0)
         return 1;
@@ -103,7 +103,7 @@ extern "C" int AppleCryptoNative_HmacUpdate(HmacCtx* ctx, uint8_t* pbData, int32
     return 1;
 }
 
-extern "C" int AppleCryptoNative_HmacFinal(HmacCtx* ctx, uint8_t* pbOutput)
+extern "C" int32_t AppleCryptoNative_HmacFinal(HmacCtx* ctx, uint8_t* pbOutput)
 {
     if (ctx == nullptr || pbOutput == nullptr)
         return 0;
