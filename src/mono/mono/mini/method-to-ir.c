@@ -13,6 +13,7 @@
 
 #include <config.h>
 #include <mono/utils/mono-compiler.h>
+#include "mini.h"
 
 #ifndef DISABLE_JIT
 
@@ -35,7 +36,6 @@
 #endif
 
 #include <mono/utils/memcheck.h>
-#include "mini.h"
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/attrdefs.h>
@@ -141,8 +141,6 @@ static int stind_to_store_membase (int opcode);
 
 int mono_op_to_op_imm (int opcode);
 int mono_op_to_op_imm_noemul (int opcode);
-
-MONO_API MonoInst* mono_emit_native_call (MonoCompile *cfg, gconstpointer func, MonoMethodSignature *sig, MonoInst **args);
 
 static int inline_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **sp,
 						  guchar *ip, guint real_offset, gboolean inline_always);
@@ -14547,6 +14545,9 @@ NOTES
 
 #else /* !DISABLE_JIT */
 
-MONO_EMPTY_SOURCE_FILE (method_to_ir);
+void
+mono_set_break_policy (MonoBreakPolicyFunc policy_callback)
+{
+}
 
 #endif /* !DISABLE_JIT */

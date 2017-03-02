@@ -802,4 +802,7 @@ mini_emit_class_check (MonoCompile *cfg, int klass_reg, MonoClass *klass)
 	mini_emit_class_check_inst (cfg, klass_reg, klass, NULL);
 }
 
+#else
+
+MONO_EMPTY_SOURCE_FILE (type_checking);
 #endif

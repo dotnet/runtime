@@ -264,7 +264,6 @@ mono_domain_set_internal
 mono_domain_try_type_resolve
 mono_domain_try_unload
 mono_domain_unload
-mono_emit_native_call
 mono_environment_exitcode_get
 mono_environment_exitcode_set
 mono_error_cleanup
@@ -465,7 +464,6 @@ mono_images_init
 mono_init
 mono_init_from_assembly
 mono_init_version
-mono_inst_name
 mono_install_assembly_load_hook
 mono_install_assembly_postload_refonly_search_hook
 mono_install_assembly_postload_search_hook
@@ -754,7 +752,6 @@ mono_register_bundled_assemblies
 mono_register_config_for_assembly
 mono_register_machine_config
 mono_register_symfile_for_assembly
-mono_replace_ins
 mono_runtime_class_init
 mono_runtime_cleanup
 mono_runtime_delegate_invoke
