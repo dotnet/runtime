@@ -44,7 +44,7 @@ namespace Span
             public T[] C0;
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
+        /*[MethodImpl(MethodImplOptions.NoInlining)]
         static void TestFillAllSpan(Span<byte> span)
         {
             for (int i = 0; i < span.Length; ++i) {
@@ -203,12 +203,12 @@ namespace Span
 
             QuickSortArray(data, lo, i - 1);
             QuickSortArray(data, i + 1, hi);
-        }
+        }*/
         #endregion
 
         // XUNIT-PERF tests
         #region XUNIT-PERF tests
-        [Benchmark]
+        /*[Benchmark]
         public static void FillAllSpan()
         {
             byte[] a = new byte[Size];
@@ -350,7 +350,7 @@ namespace Span
                     }
                 }
             }
-        }
+        }*/
         #endregion
 
         // TestSpanAPIs (For comparison with Array and Slow Span)
@@ -859,7 +859,7 @@ namespace Span
         
         // EXE-based testing
         #region EXE-base testing
-        static void FillAllSpanBase()
+        /*static void FillAllSpanBase()
         {
             byte[] a = new byte[Size];
             Span<byte> s = new Span<byte>(a);
@@ -945,7 +945,7 @@ namespace Span
                 Array.Copy(unsortedData, data, Size);
                 TestBubbleSortArray(data);
             }
-        }
+        }*/
         #endregion
 
         static double Bench(Action f)
@@ -962,10 +962,10 @@ namespace Span
         }
 
         static IEnumerable<object[]> TestFuncs = MakeArgs(
-            "FillAllSpanBase", "FillAllArrayBase",
+            /*"FillAllSpanBase", "FillAllArrayBase",
             "FillAllReverseSpanBase", "FillAllReverseArrayBase",
             "BubbleSortSpanBase", "BubbleSortArrayBase",
-            "QuickSortSpanBase", "QuickSortArrayBase"
+            "QuickSortSpanBase", "QuickSortArrayBase"*/
         );
 
         static Action LookupFunc(object o)
