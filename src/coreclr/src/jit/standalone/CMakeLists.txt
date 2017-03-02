@@ -16,6 +16,7 @@ endif(WIN32)
 add_library_clr(clrjit
    SHARED
    ${SHARED_LIB_SOURCES}
+   ${JIT_ARCH_SOURCES}
 )
 
 add_dependencies(clrjit jit_exports)
