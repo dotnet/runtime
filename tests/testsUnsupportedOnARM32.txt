@@ -1,3 +1,4 @@
+CoreMangLib/cti/system/reflection/emit/DynMethodJumpStubTests/DynMethodJumpStubTests/DynMethodJumpStubTests.sh
 JIT/Directed/tailcall/tailcall/tailcall.sh
 JIT/Methodical/tailcall_v4/hijacking/hijacking.sh
 JIT/Methodical/tailcall_v4/smallFrame/smallFrame.sh

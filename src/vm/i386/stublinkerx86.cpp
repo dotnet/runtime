@@ -6537,6 +6537,22 @@ TADDR FixupPrecode::GetMethodDesc()
 }
 #endif
 
+#ifdef FIXUP_PRECODE_PREALLOCATE_DYNAMIC_METHOD_JUMP_STUBS
+PCODE FixupPrecode::GetDynamicMethodEntryJumpStub()
+{
+    _ASSERTE(((PTR_MethodDesc)GetMethodDesc())->IsLCGMethod());
+
+    // m_PrecodeChunkIndex has a value inverted to the order of precodes in memory (the precode at the lowest address has the
+    // highest index, and the precode at the highest address has the lowest index). To map a precode to its jump stub by memory
+    // order, invert the precode index to get the jump stub index.
+    UINT32 count = ((PTR_MethodDesc)GetMethodDesc())->GetMethodDescChunk()->GetCount();
+    _ASSERTE(m_PrecodeChunkIndex < count);
+    SIZE_T jumpStubIndex = count - 1 - m_PrecodeChunkIndex;
+
+    return GetBase() + sizeof(PTR_MethodDesc) + jumpStubIndex * BACK_TO_BACK_JUMP_ALLOCATE_SIZE;
+}
+#endif // FIXUP_PRECODE_PREALLOCATE_DYNAMIC_METHOD_JUMP_STUBS
+
 #ifdef DACCESS_COMPILE
 void FixupPrecode::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
@@ -6656,10 +6672,17 @@ void FixupPrecode::Init(MethodDesc* pMD, LoaderAllocator *pLoaderAllocator, int 
 
     _ASSERTE(GetMethodDesc() == (TADDR)pMD);
 
+    PCODE target = (PCODE)GetEEFuncEntryPoint(PrecodeFixupThunk);
+#ifdef FIXUP_PRECODE_PREALLOCATE_DYNAMIC_METHOD_JUMP_STUBS
+    if (pMD->IsLCGMethod())
+    {
+        m_rel32 = rel32UsingPreallocatedJumpStub(&m_rel32, target, GetDynamicMethodEntryJumpStub());
+        return;
+    }
+#endif // FIXUP_PRECODE_PREALLOCATE_DYNAMIC_METHOD_JUMP_STUBS
     if (pLoaderAllocator != NULL)
     {
-        m_rel32 = rel32UsingJumpStub(&m_rel32,
-            GetEEFuncEntryPoint(PrecodeFixupThunk), NULL /* pMD */, pLoaderAllocator);
+        m_rel32 = rel32UsingJumpStub(&m_rel32, target, NULL /* pMD */, pLoaderAllocator);
     }
 }
 
@@ -6689,7 +6712,12 @@ BOOL FixupPrecode::SetTargetInterlocked(TADDR target, TADDR expected)
     pOldValue[offsetof(FixupPrecode,m_op)] = X86_INSTR_CALL_REL32;
     pNewValue[offsetof(FixupPrecode,m_op)] = X86_INSTR_JMP_REL32;
 
-    *(INT32*)(&pNewValue[offsetof(FixupPrecode,m_rel32)]) = rel32UsingJumpStub(&m_rel32, target, pMD);
+    *(INT32*)(&pNewValue[offsetof(FixupPrecode, m_rel32)]) =
+#ifdef FIXUP_PRECODE_PREALLOCATE_DYNAMIC_METHOD_JUMP_STUBS
+        pMD->IsLCGMethod() ?
+            rel32UsingPreallocatedJumpStub(&m_rel32, target, GetDynamicMethodEntryJumpStub()) :
+#endif // FIXUP_PRECODE_PREALLOCATE_DYNAMIC_METHOD_JUMP_STUBS
+            rel32UsingJumpStub(&m_rel32, target, pMD);
 
     _ASSERTE(IS_ALIGNED(this, sizeof(INT64)));
     EnsureWritableExecutablePages(this, sizeof(INT64));
