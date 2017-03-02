@@ -189,11 +189,15 @@ function cross_build_corefx_with_docker {
         # TODO: For arm, we are going to embed RootFS inside Docker image.
         case $__linuxCodeName in
         trusty)
-            __dockerImage=" microsoft/dotnet-buildtools-prereqs:ubuntu1404_cross_prereqs_v1"
+            __dockerImage=" microsoft/dotnet-buildtools-prereqs:ubuntu1404_cross_prereqs_v2"
+            __skipRootFS=1
+            __dockerEnvironmentVariables="-e ROOTFS_DIR=/crossrootfs/arm"
             __runtimeOS="ubuntu.14.04"
         ;;
         xenial)
-            __dockerImage=" microsoft/dotnet-buildtools-prereqs:ubuntu1604_cross_prereqs_v1"
+            __dockerImage=" microsoft/dotnet-buildtools-prereqs:ubuntu1604_cross_prereqs_v2"
+            __skipRootFS=1
+            __dockerEnvironmentVariables="-e ROOTFS_DIR=/crossrootfs/arm"
             __runtimeOS="ubuntu.16.04"
         ;;
         *)
@@ -215,7 +219,7 @@ function cross_build_corefx_with_docker {
     else
         exit_with_error "ERROR: unknown buildArch $__buildArch" false
     fi
-    __dockerCmd="sudo docker run --privileged -i --rm -v $__currentWorkingDirectory:/opt/corefx -w /opt/corefx $__dockerImage"
+    __dockerCmd="sudo docker run ${__dockerEnvironmentVariables} --privileged -i --rm -v $__currentWorkingDirectory:/opt/corefx -w /opt/corefx $__dockerImage"
 
     if [ $__skipRootFS == 0 ]; then
         # Build rootfs
