@@ -4989,6 +4989,25 @@ GenTreePtr Compiler::impImportLdvirtftn(GenTreePtr              thisPtr,
         NO_WAY("Virtual call to a function added via EnC is not supported");
     }
 
+#if COR_JIT_EE_VERSION > 460
+    // CoreRT generic virtual method
+    if (((pCallInfo->sig.callConv & CORINFO_CALLCONV_GENERIC) != 0) && IsTargetAbi(CORINFO_CORERT_ABI))
+    {
+        GenTreePtr runtimeMethodHandle = nullptr;
+        if (pCallInfo->exactContextNeedsRuntimeLookup)
+        {
+            runtimeMethodHandle =
+                impRuntimeLookupToTree(pResolvedToken, &pCallInfo->codePointerLookup, pCallInfo->hMethod);
+        }
+        else
+        {
+            runtimeMethodHandle = gtNewIconEmbMethHndNode(pResolvedToken->hMethod);
+        }
+        return gtNewHelperCallNode(CORINFO_HELP_GVMLOOKUP_FOR_SLOT, TYP_I_IMPL, GTF_EXCEPT,
+                                   gtNewArgList(thisPtr, runtimeMethodHandle));
+    }
+#endif // COR_JIT_EE_VERSION
+
 #ifdef FEATURE_READYTORUN_COMPILER
     if (opts.IsReadyToRun())
     {
@@ -6772,30 +6791,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 thisPtr = impCloneExpr(thisPtr, &thisPtrCopy, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
                                        nullptr DEBUGARG("LDVIRTFTN this pointer"));
 
-                GenTreePtr fptr = nullptr;
-                bool       coreRTGenericVirtualMethod =
-                    ((sig->callConv & CORINFO_CALLCONV_GENERIC) != 0) && IsTargetAbi(CORINFO_CORERT_ABI);
-#if COR_JIT_EE_VERSION > 460
-                if (coreRTGenericVirtualMethod)
-                {
-                    GenTreePtr runtimeMethodHandle = nullptr;
-                    if (callInfo->exactContextNeedsRuntimeLookup)
-                    {
-                        runtimeMethodHandle =
-                            impRuntimeLookupToTree(pResolvedToken, &callInfo->codePointerLookup, methHnd);
-                    }
-                    else
-                    {
-                        runtimeMethodHandle = gtNewIconEmbMethHndNode(pResolvedToken->hMethod);
-                    }
-                    fptr = gtNewHelperCallNode(CORINFO_HELP_GVMLOOKUP_FOR_SLOT, TYP_I_IMPL, GTF_EXCEPT,
-                                               gtNewArgList(thisPtr, runtimeMethodHandle));
-                }
-                else
-#endif // COR_JIT_EE_VERSION
-                {
-                    fptr = impImportLdvirtftn(thisPtr, pResolvedToken, callInfo);
-                }
+                GenTreePtr fptr = impImportLdvirtftn(thisPtr, pResolvedToken, callInfo);
 
                 if (compDonotInline())
                 {
@@ -6816,8 +6812,9 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 call->gtCall.gtCallObjp = thisPtrCopy;
                 call->gtFlags |= GTF_EXCEPT | (fptr->gtFlags & GTF_GLOB_EFFECT);
 
-                if (coreRTGenericVirtualMethod)
+                if (((sig->callConv & CORINFO_CALLCONV_GENERIC) != 0) && IsTargetAbi(CORINFO_CORERT_ABI))
                 {
+                    // CoreRT generic virtual method: need to handle potential fat function pointers
                     addFatPointerCandidate(call->AsCall());
                 }
 #ifdef FEATURE_READYTORUN_COMPILER
