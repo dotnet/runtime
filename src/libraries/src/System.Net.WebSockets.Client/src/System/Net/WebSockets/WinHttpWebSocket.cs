@@ -230,7 +230,7 @@ namespace System.Net.WebSockets
                 sessionHandle,
                 Interop.WinHttp.WINHTTP_OPTION_ASSURED_NON_BLOCKING_CALLBACKS,
                 ref optionAssuredNonBlockingTrue,
-                (uint)Marshal.SizeOf<uint>()))
+                (uint)sizeof(uint)))
             {
                 WinHttpException.ThrowExceptionUsingLastError();
             }

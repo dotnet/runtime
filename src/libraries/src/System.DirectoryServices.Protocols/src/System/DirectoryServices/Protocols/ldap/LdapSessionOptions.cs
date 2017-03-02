@@ -768,11 +768,11 @@ namespace System.DirectoryServices.Protocols
                     {
                         controlPtr = Marshal.AllocHGlobal(structSize);
                         Marshal.StructureToPtr(managedServerControls[i], controlPtr, false);
-                        tempPtr = (IntPtr)((long)serverControlArray + Marshal.SizeOf(typeof(IntPtr)) * i);
+                        tempPtr = (IntPtr)((long)serverControlArray + IntPtr.Size * i);
                         Marshal.WriteIntPtr(tempPtr, controlPtr);
                     }
 
-                    tempPtr = (IntPtr)((long)serverControlArray + Marshal.SizeOf(typeof(IntPtr)) * managedServerControls.Length);
+                    tempPtr = (IntPtr)((long)serverControlArray + IntPtr.Size * managedServerControls.Length);
                     Marshal.WriteIntPtr(tempPtr, (IntPtr)0);
                 }
 
@@ -785,10 +785,10 @@ namespace System.DirectoryServices.Protocols
                     {
                         controlPtr = Marshal.AllocHGlobal(structSize);
                         Marshal.StructureToPtr(managedClientControls[i], controlPtr, false);
-                        tempPtr = (IntPtr)((long)clientControlArray + Marshal.SizeOf(typeof(IntPtr)) * i);
+                        tempPtr = (IntPtr)((long)clientControlArray + IntPtr.Size * i);
                         Marshal.WriteIntPtr(tempPtr, controlPtr);
                     }
-                    tempPtr = (IntPtr)((long)clientControlArray + Marshal.SizeOf(typeof(IntPtr)) * managedClientControls.Length);
+                    tempPtr = (IntPtr)((long)clientControlArray + IntPtr.Size * managedClientControls.Length);
                     Marshal.WriteIntPtr(tempPtr, (IntPtr)0);
                 }
 
@@ -861,7 +861,7 @@ namespace System.DirectoryServices.Protocols
                     //release the memory from the heap
                     for (int i = 0; i < managedServerControls.Length; i++)
                     {
-                        IntPtr tempPtr = Marshal.ReadIntPtr(serverControlArray, Marshal.SizeOf(typeof(IntPtr)) * i);
+                        IntPtr tempPtr = Marshal.ReadIntPtr(serverControlArray, IntPtr.Size * i);
                         if (tempPtr != (IntPtr)0)
                             Marshal.FreeHGlobal(tempPtr);
                     }
@@ -888,7 +888,7 @@ namespace System.DirectoryServices.Protocols
                     // release the memor from the heap
                     for (int i = 0; i < managedClientControls.Length; i++)
                     {
-                        IntPtr tempPtr = Marshal.ReadIntPtr(clientControlArray, Marshal.SizeOf(typeof(IntPtr)) * i);
+                        IntPtr tempPtr = Marshal.ReadIntPtr(clientControlArray, IntPtr.Size * i);
                         if (tempPtr != (IntPtr)0)
                             Marshal.FreeHGlobal(tempPtr);
                     }

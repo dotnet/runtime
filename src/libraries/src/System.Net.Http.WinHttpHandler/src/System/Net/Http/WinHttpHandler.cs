@@ -745,7 +745,7 @@ namespace System.Net.Http
                             sessionHandle,
                             Interop.WinHttp.WINHTTP_OPTION_ASSURED_NON_BLOCKING_CALLBACKS,
                             ref optionAssuredNonBlockingTrue,
-                            (uint)Marshal.SizeOf<uint>()))
+                            (uint)sizeof(uint)))
                         {
                             // This option is not available on downlevel Windows versions. While it improves
                             // performance, we can ignore the error that the option is not available.

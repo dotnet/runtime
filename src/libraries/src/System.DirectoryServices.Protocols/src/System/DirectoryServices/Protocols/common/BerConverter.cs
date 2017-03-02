@@ -542,11 +542,11 @@ namespace System.DirectoryServices.Protocols
                         IntPtr valPtr = Marshal.AllocHGlobal(structSize);
                         Marshal.StructureToPtr(managedBerVal[i], valPtr, false);
 
-                        tempPtr = (IntPtr)((long)berValArray + Marshal.SizeOf(typeof(IntPtr)) * i);
+                        tempPtr = (IntPtr)((long)berValArray + IntPtr.Size * i);
                         Marshal.WriteIntPtr(tempPtr, valPtr);
                     }
 
-                    tempPtr = (IntPtr)((long)berValArray + Marshal.SizeOf(typeof(IntPtr)) * i);
+                    tempPtr = (IntPtr)((long)berValArray + IntPtr.Size * i);
                     Marshal.WriteIntPtr(tempPtr, (IntPtr)0);
                 }
 
@@ -560,7 +560,7 @@ namespace System.DirectoryServices.Protocols
                 {
                     for (int i = 0; i < tempValue.Length; i++)
                     {
-                        IntPtr ptr = Marshal.ReadIntPtr(berValArray, Marshal.SizeOf(typeof(IntPtr)) * i);
+                        IntPtr ptr = Marshal.ReadIntPtr(berValArray, IntPtr.Size * i);
                         if (ptr != (IntPtr)0)
                             Marshal.FreeHGlobal(ptr);
                     }
@@ -601,7 +601,7 @@ namespace System.DirectoryServices.Protocols
                             binaryList.Add(berArray);
 
                             i++;
-                            tempPtr = Marshal.ReadIntPtr(ptrResult, i * Marshal.SizeOf(typeof(IntPtr)));
+                            tempPtr = Marshal.ReadIntPtr(ptrResult, i * IntPtr.Size);
                         }
 
                         result = new byte[binaryList.Count][];

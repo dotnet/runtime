@@ -20,11 +20,6 @@ namespace System.Net.Sockets
         private byte[] _controlBuffer;
         internal byte[] _messageBuffer;
 
-        private static readonly int s_controlDataSize = Marshal.SizeOf<Interop.Winsock.ControlData>();
-        private static readonly int s_controlDataIPv6Size = Marshal.SizeOf<Interop.Winsock.ControlDataIPv6>();
-        private static readonly int s_wsaBufferSize = Marshal.SizeOf<WSABuffer>();
-        private static readonly int s_wsaMsgSize = Marshal.SizeOf<Interop.Winsock.WSAMsg>();
-
         private IntPtr GetSocketAddressSizePtr()
         {
             return Marshal.UnsafeAddrOfPinnedArrayElement(_socketAddress.Buffer, _socketAddress.GetAddressSizeOffset());
@@ -41,10 +36,10 @@ namespace System.Net.Sockets
         // These calls are outside the runtime and are unmanaged code, so we need
         // to prepare specific structures and ints that lie in unmanaged memory
         // since the overlapped calls may complete asynchronously.
-        internal void SetUnmanagedStructures(byte[] buffer, int offset, int size, Internals.SocketAddress socketAddress, SocketFlags socketFlags)
+        internal unsafe void SetUnmanagedStructures(byte[] buffer, int offset, int size, Internals.SocketAddress socketAddress, SocketFlags socketFlags)
         {
-            _messageBuffer = new byte[s_wsaMsgSize];
-            _wsaBufferArray = new byte[s_wsaBufferSize];
+            _messageBuffer = new byte[sizeof(Interop.Winsock.WSAMsg)];
+            _wsaBufferArray = new byte[sizeof(WSABuffer)];
 
             bool ipv4, ipv6;
             Socket.GetIPProtocolInformation(((Socket)AsyncObject).AddressFamily, socketAddress, out ipv4, out ipv6);
@@ -52,11 +47,11 @@ namespace System.Net.Sockets
             // Prepare control buffer.
             if (ipv4)
             {
-                _controlBuffer = new byte[s_controlDataSize];
+                _controlBuffer = new byte[sizeof(Interop.Winsock.ControlData)];
             }
             else if (ipv6)
             {
-                _controlBuffer = new byte[s_controlDataIPv6Size];
+                _controlBuffer = new byte[sizeof(Interop.Winsock.ControlDataIPv6)];
             }
 
             // Pin buffers.
@@ -101,12 +96,12 @@ namespace System.Net.Sockets
 
         private unsafe void InitIPPacketInformation()
         {
-            if (_controlBuffer.Length == s_controlDataSize)
+            if (_controlBuffer.Length == sizeof(Interop.Winsock.ControlData))
             {
                 // IPv4
                 _ipPacketInformation = SocketPal.GetIPPacketInformation((Interop.Winsock.ControlData*)_message->controlBuffer.Pointer);
             }
-            else if (_controlBuffer.Length == s_controlDataIPv6Size)
+            else if (_controlBuffer.Length == sizeof(Interop.Winsock.ControlDataIPv6))
             {
                 // IPv6
                 _ipPacketInformation = SocketPal.GetIPPacketInformation((Interop.Winsock.ControlDataIPv6*)_message->controlBuffer.Pointer);
