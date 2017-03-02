@@ -20,8 +20,6 @@
 
 namespace BINDER_SPACE
 {
-    // Ripped from Fusion
-
     //
     // ListNode
     //
