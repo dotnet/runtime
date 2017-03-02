@@ -195,7 +195,7 @@
         {
           "Name": "DotNet-CoreFx-Trusted-OSX",
           "Parameters": {
-            "PB_TargetQueue": "OSX.1011.Amd64"
+            "PB_TargetQueue": "OSX.1012.Amd64"
           },
           "ReportingParameters": {
             "OperatingSystem": "OSX",
@@ -470,7 +470,7 @@
         {
           "Name": "DotNet-CoreFx-Trusted-OSX",
           "Parameters": {
-            "PB_TargetQueue": "OSX.1011.Amd64"
+            "PB_TargetQueue": "OSX.1012.Amd64"
           },
           "ReportingParameters": {
             "OperatingSystem": "OSX",
