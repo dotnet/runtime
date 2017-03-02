@@ -81,6 +81,8 @@
     <Compile Include="System\Security\Cryptography\Xml\XmlDsigXPathTransform.cs" />
     <Compile Include="System\Security\Cryptography\Xml\XmlDsigXsltTransform.cs" />
     <Compile Include="System\Security\Cryptography\Xml\XmlLicenseTransform.cs" />
+    <Compile Include="System\Security\Cryptography\Xml\CryptoHelpers.cs" />
+    <Compile Include="System\Security\Cryptography\Xml\RSAPKCS1SHA1SignatureDescription.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />
