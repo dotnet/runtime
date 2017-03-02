@@ -1122,19 +1122,13 @@ public:
     static void NotifyWorkItemCompleted()
     {
         WRAPPER_NO_CONTRACT;
-        if (!CLRThreadpoolHosted())
-        {
-            Thread::IncrementThreadPoolCompletionCount();
-            UpdateLastDequeueTime();
-        }
+        Thread::IncrementThreadPoolCompletionCount();
+        UpdateLastDequeueTime();
     }
 
     static bool ShouldAdjustMaxWorkersActive()
     {
         WRAPPER_NO_CONTRACT;
-
-        if (CLRThreadpoolHosted())
-            return false;
 
         DWORD priorTime = PriorCompletedWorkRequestsTime;
         MemoryBarrier(); // read fresh value for NextCompletedWorkRequestsTime below

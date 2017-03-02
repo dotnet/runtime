@@ -945,8 +945,6 @@ BOOL ThreadpoolMgr::QueueUserWorkItem(LPTHREAD_START_ROUTINE Function,
 bool ThreadpoolMgr::ShouldWorkerKeepRunning()
 {
     WRAPPER_NO_CONTRACT;
-    if (CLRThreadpoolHosted())
-        return true;
 
     //
     // Maybe this thread should retire now.  Let's see.
@@ -1001,7 +999,6 @@ void ThreadpoolMgr::AdjustMaxWorkersActive()
     }
     CONTRACTL_END;
 
-    _ASSERTE(!CLRThreadpoolHosted());
     _ASSERTE(ThreadAdjustmentLock.IsHeld());
 
     DWORD currentTicks = GetTickCount();
@@ -1086,8 +1083,6 @@ void ThreadpoolMgr::MaybeAddWorkingWorker()
         MODE_ANY;
     }
     CONTRACTL_END;
-
-    _ASSERTE(!CLRThreadpoolHosted());
 
     // counts volatile read paired with CompareExchangeCounts loop set
     ThreadCounter::Counts counts = WorkerCounter.DangerousGetDirtyCounts();
@@ -1503,7 +1498,7 @@ void ThreadpoolMgr::EnsureGateThreadRunning()
     LIMITED_METHOD_CONTRACT;
 
     // The gate thread is only needed if the CLR is providing part of the ThreadPool implementation.
-    _ASSERTE(!CLRThreadpoolHosted() || !CLRIoCompletionHosted());
+    _ASSERTE(!CLRIoCompletionHosted());
 
     while (true)
     {
@@ -1555,7 +1550,7 @@ bool ThreadpoolMgr::ShouldGateThreadKeepRunning()
     LIMITED_METHOD_CONTRACT;
 
     // The gate thread is only needed if the CLR is providing part of the ThreadPool implementation.
-    _ASSERTE(!CLRThreadpoolHosted() || !CLRIoCompletionHosted());
+    _ASSERTE(!CLRIoCompletionHosted());
 
     _ASSERTE(GateThreadStatus == GATE_THREAD_STATUS_WAITING_FOR_REQUEST ||
              GateThreadStatus == GATE_THREAD_STATUS_REQUESTED);
@@ -1584,8 +1579,7 @@ bool ThreadpoolMgr::ShouldGateThreadKeepRunning()
         // Are there any work requests in any worker queue?  If so, we need a gate thread.
         // This imples that whenever a work queue goes from empty to non-empty, we need to call EnsureGateThreadRunning().
         //
-        bool needGateThreadForWorkerThreads = 
-            !CLRThreadpoolHosted() &&
+        bool needGateThreadForWorkerThreads =
             PerAppDomainTPCountList::AreRequestsPendingInAnyAppDomains();
 
         //
@@ -2066,8 +2060,6 @@ DWORD __stdcall ThreadpoolMgr::WorkerThreadStart(LPVOID lpArgs)
         SO_INTOLERANT;
     }
     CONTRACTL_END;
-
-    _ASSERTE(!CLRThreadpoolHosted());
 
     Thread *pThread = NULL;
     DWORD dwSwitchCount = 0;
@@ -3334,7 +3326,7 @@ BOOL ThreadpoolMgr::CreateGateThread()
     LIMITED_METHOD_CONTRACT;
 
     // The gate thread is only needed if the CLR is providing part of the ThreadPool implementation.
-    _ASSERTE(!CLRThreadpoolHosted() || !CLRIoCompletionHosted());
+    _ASSERTE(!CLRIoCompletionHosted());
 
     HANDLE threadHandle = Thread::CreateUtilityThread(Thread::StackSize_Small, GateThreadStart, NULL);
 
@@ -4305,7 +4297,7 @@ DWORD __stdcall ThreadpoolMgr::GateThreadStart(LPVOID lpArgs)
     CONTRACTL_END;
 
     // The gate thread is only needed if the CLR is providing part of the ThreadPool implementation.
-    _ASSERTE(!CLRThreadpoolHosted() || !CLRIoCompletionHosted());
+    _ASSERTE(!CLRIoCompletionHosted());
 
     _ASSERTE(GateThreadStatus == GATE_THREAD_STATUS_REQUESTED);
 
@@ -4533,8 +4525,7 @@ DWORD __stdcall ThreadpoolMgr::GateThreadStart(LPVOID lpArgs)
         }
 #endif // !FEATURE_PAL
 
-        if (!CLRThreadpoolHosted() &&
-            (0 == CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ThreadPool_DisableStarvationDetection)))
+        if (0 == CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ThreadPool_DisableStarvationDetection))
         {
             if (PerAppDomainTPCountList::AreRequestsPendingInAnyAppDomains() && SufficientDelaySinceLastDequeue())
             {
