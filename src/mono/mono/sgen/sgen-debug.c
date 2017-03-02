@@ -958,12 +958,6 @@ is_xdomain_ref_allowed (GCObject **ptr, GCObject *obj, MonoDomain *domain)
 			offset == G_STRUCT_OFFSET (MonoRealProxy, unwrapped_server))
 		return TRUE;
 #endif
-	/* Thread.cached_culture_info */
-	if (!strcmp (ref->vtable->klass->name_space, "System.Globalization") &&
-			!strcmp (ref->vtable->klass->name, "CultureInfo") &&
-			!strcmp(o->vtable->klass->name_space, "System") &&
-			!strcmp(o->vtable->klass->name, "Object[]"))
-		return TRUE;
 	/*
 	 *  at System.IO.MemoryStream.InternalConstructor (byte[],int,int,bool,bool) [0x0004d] in /home/schani/Work/novell/trunk/mcs/class/corlib/System.IO/MemoryStream.cs:121
 	 * at System.IO.MemoryStream..ctor (byte[]) [0x00017] in /home/schani/Work/novell/trunk/mcs/class/corlib/System.IO/MemoryStream.cs:81

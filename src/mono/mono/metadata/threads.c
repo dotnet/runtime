@@ -114,14 +114,6 @@ typedef struct {
 	StaticDataFreeList *freelist;
 } StaticDataInfo;
 
-/* Number of cached culture objects in the MonoThread->cached_culture_info array
- * (per-type): we use the first NUM entries for CultureInfo and the last for
- * UICultureInfo. So the size of the array is really NUM_CACHED_CULTURES * 2.
- */
-#define NUM_CACHED_CULTURES 4
-#define CULTURES_START_IDX 0
-#define UICULTURES_START_IDX NUM_CACHED_CULTURES
-
 /* Controls access to the 'threads' hash table */
 static void mono_threads_lock (void);
 static void mono_threads_unlock (void);
@@ -1131,17 +1123,6 @@ mono_thread_detach_internal (MonoInternalThread *thread)
 	thread->current_appcontext = NULL;
 
 	/*
-	 * This is necessary because otherwise we might have
-	 * cross-domain references which will not get cleaned up when
-	 * the target domain is unloaded.
-	 */
-	if (thread->cached_culture_info) {
-		int i;
-		for (i = 0; i < NUM_CACHED_CULTURES * 2; ++i)
-			mono_array_set (thread->cached_culture_info, MonoObject*, i, NULL);
-	}
-
-	/*
 	 * thread->synch_cs can be NULL if this was called after
 	 * ves_icall_System_Threading_InternalThread_Thread_free_internal.
 	 * This can happen only during shutdown.
@@ -1230,8 +1211,6 @@ mono_thread_detach_internal (MonoInternalThread *thread)
 
 	if (thread == mono_thread_internal_current ())
 		mono_thread_pop_appdomain_ref ();
-
-	thread->cached_culture_info = NULL;
 
 	mono_free_static_data (thread->static_data);
 	thread->static_data = NULL;
@@ -3932,39 +3911,6 @@ mono_threads_abort_appdomain_threads (MonoDomain *domain, int timeout)
 	THREAD_DEBUG (g_message ("%s: abort done", __func__));
 
 	return TRUE;
-}
-
-static void
-clear_cached_culture (gpointer key, gpointer value, gpointer user_data)
-{
-	MonoInternalThread *thread = (MonoInternalThread*)value;
-	MonoDomain *domain = (MonoDomain*)user_data;
-	int i;
-
-	/* No locking needed here */
-	/* FIXME: why no locking? writes to the cache are protected with synch_cs above */
-
-	if (thread->cached_culture_info) {
-		for (i = 0; i < NUM_CACHED_CULTURES * 2; ++i) {
-			MonoObject *obj = mono_array_get (thread->cached_culture_info, MonoObject*, i);
-			if (obj && obj->vtable->domain == domain)
-				mono_array_set (thread->cached_culture_info, MonoObject*, i, NULL);
-		}
-	}
-}
-	
-/*
- * mono_threads_clear_cached_culture:
- *
- *   Clear the cached_current_culture from all threads if it is in the
- * given appdomain.
- */
-void
-mono_threads_clear_cached_culture (MonoDomain *domain)
-{
-	mono_threads_lock ();
-	mono_g_hash_table_foreach (threads, clear_cached_culture, domain);
-	mono_threads_unlock ();
 }
 
 /*

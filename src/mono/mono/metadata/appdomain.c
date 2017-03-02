@@ -2543,8 +2543,6 @@ unload_thread_main (void *arg)
 	mono_domain_unlock (domain);
 	mono_loader_unlock ();
 
-	mono_threads_clear_cached_culture (domain);
-
 	domain->state = MONO_APPDOMAIN_UNLOADED;
 
 	/* printf ("UNLOADED %s.\n", domain->friendly_name); */
