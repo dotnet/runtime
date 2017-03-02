@@ -103,12 +103,20 @@ LOCAL_LABEL(PostCall):
     mov     dword ptr [ebx + Thread_m_fPreemptiveGCDisabled], 0
 
     lea     esp, [ebp - UMThunkStub_SAVEDREG]  // deallocate arguments
+
+    mov     ecx, dword ptr [ebp - UMThunkStub_UMENTRYTHUNK_OFFSET]
+    mov     edx, dword ptr [ecx + UMEntryThunk__m_pUMThunkMarshInfo]
+    mov     edx, dword ptr [edx + UMThunkMarshInfo__m_cbRetPop]
+
     EPILOG_BEG
     EPILOG_POP edi
     EPILOG_POP esi
     EPILOG_POP ebx
     EPILOG_END
-    ret
+
+    pop     ecx  // pop return address
+    add     esp, edx // adjust ESP
+    jmp     ecx // return to caller
 
 LOCAL_LABEL(DoThreadSetup):
 
@@ -139,30 +147,50 @@ LOCAL_LABEL(UMThunkStub_CopyStackArgs):
     // esi = src
     // edi = dest
     // ebx = scratch
-    lea     esi, [ebp + 0x08]
-
-    // first [esi] goes to ecx, in LTR
-    add     eax, -4
-    mov     ecx, dword ptr [esi]
-    jz      LOCAL_LABEL(UMThunkStub_ArgumentsSetup)
-
-    // second [esi+04] goes to edx
-    add     eax, -4
-    mov     edx, dword ptr [esi + 0x04]
-    jz      LOCAL_LABEL(UMThunkStub_ArgumentsSetup)
+    lea     esi, [ebp + 0x8]
 
     sub     esp, eax
     and     esp, -16    // align with 16 byte
     lea     edi, [esp]
 
-LOCAL_LABEL(CopyLoop):
-
-    // copy rest of the arguments to [esp+08+n], in RTL
+    // First, we copy arguments to ecx and edx registers (if needed).
+    mov     edx, dword ptr [ebp - UMThunkStub_UMENTRYTHUNK_OFFSET]
+    mov     edx, dword ptr [edx + UMEntryThunk__m_pUMThunkMarshInfo]
+    mov     ebx, dword ptr [edx + UMThunkMarshInfo__m_ecxArgOffset]
+    cmp     ebx, -1
+    je      LOCAL_LABEL(InitCopyStack)
+    mov     ecx, dword ptr [esi + ebx]
     add     eax, -4
-    mov     ebx, dword ptr [esi + 0x08 + eax]
-    mov     dword ptr [edi + eax], ebx
-    jnz     LOCAL_LABEL(CopyLoop)
+    jz      LOCAL_LABEL(UMThunkStub_ArgumentsSetup)
 
+    mov     ebx, dword ptr [edx + UMThunkMarshInfo__m_edxArgOffset]
+    cmp     ebx, -1
+    je      LOCAL_LABEL(InitCopyStack)
+    mov     edx, dword ptr [esi + ebx]
+    add     eax, -4
+    jz      LOCAL_LABEL(UMThunkStub_ArgumentsSetup)
+
+LOCAL_LABEL(InitCopyStack):
+    push    ecx
+    push    edx
+    mov     edx, dword ptr [ebp - UMThunkStub_UMENTRYTHUNK_OFFSET]
+    mov     edx, dword ptr [edx + UMEntryThunk__m_pUMThunkMarshInfo]
+    mov     ebx, [edx + UMThunkMarshInfo__m_cbActualArgSize]
+    add     ebx, -4
+LOCAL_LABEL(CopyStack):
+    cmp     ebx, dword ptr [edx + UMThunkMarshInfo__m_ecxArgOffset]
+    je      LOCAL_LABEL(IncreaseOffset)
+    cmp     ebx, dword ptr [edx + UMThunkMarshInfo__m_edxArgOffset]
+    je      LOCAL_LABEL(IncreaseOffset)
+    add     eax, -4
+    mov     ecx, dword ptr [esi + ebx]
+    mov     dword ptr [edi + eax], ecx
+LOCAL_LABEL(IncreaseOffset):
+    add     ebx, -4
+    jc      LOCAL_LABEL(CopyStack)
+
+    pop     edx
+    pop     ecx
     jmp     LOCAL_LABEL(UMThunkStub_ArgumentsSetup)
 
 #if _DEBUG

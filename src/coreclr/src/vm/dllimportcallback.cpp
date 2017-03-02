@@ -1411,13 +1411,57 @@ VOID UMThunkMarshInfo::RunTimeInit()
 
             pStubMD = GetILStubMethodDesc(pMD, &sigInfo, dwStubFlags);
             pFinalILStub = JitILStub(pStubMD);
+
         }
     }
-
     //
     // m_cbActualArgSize gets the number of arg bytes for the NATIVE signature
     //
-    m_cbActualArgSize = (pStubMD != NULL) ? pStubMD->AsDynamicMethodDesc()->GetNativeStackArgSize() : pMD->SizeOfArgStack();
+    m_cbActualArgSize =
+        (pStubMD != NULL) ? pStubMD->AsDynamicMethodDesc()->GetNativeStackArgSize() : pMD->SizeOfArgStack();
+
+#if defined(_TARGET_X86_)
+    MetaSig sig(pMD);
+    ArgIterator argit(&sig);
+    int numRegistersUsed = 0;
+    m_ecxArgOffset = -1;
+    m_edxArgOffset = -1;
+
+    int offs = 0;
+    for (UINT i = 0 ; i < sig.NumFixedArgs(); i++)
+    {
+        TypeHandle thValueType;
+        CorElementType type = sig.NextArgNormalized(&thValueType);
+        int cbSize = sig.GetElemSize(type, thValueType);
+        if (ArgIterator::IsArgumentInRegister(&numRegistersUsed, type))
+        {
+            if (numRegistersUsed == 1)
+                m_ecxArgOffset = offs;
+            else if (numRegistersUsed == 2)
+                m_edxArgOffset = offs;
+            offs += STACK_ELEM_SIZE;
+        }
+        else
+        {
+            offs += StackElemSize(cbSize);
+        }
+    }
+    PInvokeStaticSigInfo sigInfo;
+    if (pMD != NULL)
+        new (&sigInfo) PInvokeStaticSigInfo(pMD);
+    else
+        new (&sigInfo) PInvokeStaticSigInfo(GetSignature(), GetModule());
+    if (sigInfo.GetCallConv() == pmCallConvCdecl)
+    {
+        // caller pop
+        m_cbRetPop = 0;
+    }
+    else
+    {
+        // callee pop
+        m_cbRetPop = static_cast<UINT16>(m_cbActualArgSize);
+    }
+#endif // _TARGET_X86_
 
 #endif // _TARGET_X86_ && !FEATURE_STUBS_AS_IL
 
