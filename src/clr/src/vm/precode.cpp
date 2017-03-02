@@ -300,18 +300,52 @@ Precode* Precode::GetPrecodeForTemporaryEntryPoint(TADDR temporaryEntryPoints, i
     return PTR_Precode(temporaryEntryPoints + index * oneSize);
 }
 
-SIZE_T Precode::SizeOfTemporaryEntryPoints(PrecodeType t, int count)
+SIZE_T Precode::SizeOfTemporaryEntryPoints(PrecodeType t, bool preallocateJumpStubs, int count)
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
+
 #ifdef HAS_FIXUP_PRECODE_CHUNKS
     if (t == PRECODE_FIXUP)
     {
-        return count * (sizeof(FixupPrecode) + sizeof(PCODE)) + sizeof(PTR_MethodDesc);
+        SIZE_T size = count * sizeof(FixupPrecode) + sizeof(PTR_MethodDesc);
+
+#ifdef FIXUP_PRECODE_PREALLOCATE_DYNAMIC_METHOD_JUMP_STUBS
+        if (preallocateJumpStubs)
+        {
+            // For dynamic methods, space for jump stubs is allocated along with the precodes as part of the temporary entry
+            // points block. The first jump stub begins immediately after the PTR_MethodDesc.
+            size += count * BACK_TO_BACK_JUMP_ALLOCATE_SIZE;
+        }
+#else // !FIXUP_PRECODE_PREALLOCATE_DYNAMIC_METHOD_JUMP_STUBS
+        _ASSERTE(!preallocateJumpStubs);
+#endif // FIXUP_PRECODE_PREALLOCATE_DYNAMIC_METHOD_JUMP_STUBS
+
+        return size;
+    }
+    else
+    {
+        _ASSERTE(!preallocateJumpStubs);
     }
 #endif
     SIZE_T oneSize = SizeOfTemporaryEntryPoint(t);
     return count * oneSize;
+}
+
+SIZE_T Precode::SizeOfTemporaryEntryPoints(TADDR temporaryEntryPoints, int count)
+{
+    WRAPPER_NO_CONTRACT;
+    SUPPORTS_DAC;
+
+    PrecodeType precodeType = PTR_Precode(temporaryEntryPoints)->GetType();
+#ifdef FIXUP_PRECODE_PREALLOCATE_DYNAMIC_METHOD_JUMP_STUBS
+    bool preallocateJumpStubs =
+        precodeType == PRECODE_FIXUP &&
+        ((PTR_MethodDesc)((PTR_FixupPrecode)temporaryEntryPoints)->GetMethodDesc())->IsLCGMethod();
+#else // !FIXUP_PRECODE_PREALLOCATE_DYNAMIC_METHOD_JUMP_STUBS
+    bool preallocateJumpStubs = false;
+#endif // FIXUP_PRECODE_PREALLOCATE_DYNAMIC_METHOD_JUMP_STUBS
+    return SizeOfTemporaryEntryPoints(precodeType, preallocateJumpStubs, count);
 }
 
 #ifndef DACCESS_COMPILE
@@ -464,16 +498,28 @@ TADDR Precode::AllocateTemporaryEntryPoints(MethodDescChunk *  pChunk,
     int count = pChunk->GetCount();
 
     PrecodeType t = PRECODE_STUB;
+    bool preallocateJumpStubs = false;
 
 #ifdef HAS_FIXUP_PRECODE
     // Default to faster fixup precode if possible
     if (!pFirstMD->RequiresMethodDescCallingConvention(count > 1))
     {
         t = PRECODE_FIXUP;
+
+#ifdef FIXUP_PRECODE_PREALLOCATE_DYNAMIC_METHOD_JUMP_STUBS
+        if (pFirstMD->IsLCGMethod())
+        {
+            preallocateJumpStubs = true;
+        }
+#endif // FIXUP_PRECODE_PREALLOCATE_DYNAMIC_METHOD_JUMP_STUBS
+    }
+    else
+    {
+        _ASSERTE(!pFirstMD->IsLCGMethod());
     }
 #endif // HAS_FIXUP_PRECODE
 
-    SIZE_T totalSize = SizeOfTemporaryEntryPoints(t, count);
+    SIZE_T totalSize = SizeOfTemporaryEntryPoints(t, preallocateJumpStubs, count);
 
 #ifdef HAS_COMPACT_ENTRYPOINTS
     // Note that these are just best guesses to save memory. If we guessed wrong,
