@@ -249,10 +249,16 @@ void Compiler::lvaInitTypeRef()
         CORINFO_CLASS_HANDLE typeHnd;
         CorInfoTypeWithMod   corInfoType =
             info.compCompHnd->getArgType(&info.compMethodInfo->locals, localsSig, &typeHnd);
+
         lvaInitVarDsc(varDsc, varNum, strip(corInfoType), typeHnd, localsSig, &info.compMethodInfo->locals);
 
         varDsc->lvPinned  = ((corInfoType & CORINFO_TYPE_MOD_PINNED) != 0);
         varDsc->lvOnFrame = true; // The final home for this local variable might be our local stack frame
+
+        if (strip(corInfoType) == CORINFO_TYPE_CLASS)
+        {
+            varDsc->lvClassHnd = info.compCompHnd->getArgClass(&info.compMethodInfo->locals, localsSig);
+        }
     }
 
     if ( // If there already exist unsafe buffers, don't mark more structs as unsafe
@@ -414,6 +420,8 @@ void Compiler::lvaInitThisPtr(InitVarDscInfo* varDscInfo)
             varDsc->lvVerTypeInfo = typeInfo();
         }
 
+        varDsc->lvClassHnd = info.compClassHnd;
+
         // Mark the 'this' pointer for the method
         varDsc->lvVerTypeInfo.SetIsThisPtr();
 
@@ -551,6 +559,11 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo)
 #endif
 
         lvaInitVarDsc(varDsc, varDscInfo->varNum, strip(corInfoType), typeHnd, argLst, &info.compMethodInfo->args);
+
+        if (strip(corInfoType) == CORINFO_TYPE_CLASS)
+        {
+            varDsc->lvClassHnd = info.compCompHnd->getArgClass(&info.compMethodInfo->args, argLst);
+        }
 
         // For ARM, ARM64, and AMD64 varargs, all arguments go in integer registers
         var_types argType     = mangleVarArgsType(varDsc->TypeGet());

@@ -322,6 +322,8 @@ public:
 #endif                                       // FEATURE_SIMD
     unsigned char lvRegStruct : 1;           // This is a reg-sized non-field-addressed struct.
 
+    unsigned char lvClassIsExact : 1; // lvClassHandle is the exact type
+
     union {
         unsigned lvFieldLclStart; // The index of the local var representing the first field in the promoted struct
                                   // local.
@@ -703,6 +705,8 @@ public:
     unsigned lvSlotNum; // original slot # (if remapped)
 
     typeInfo lvVerTypeInfo; // type info needed for verification
+
+    CORINFO_CLASS_HANDLE lvClassHnd; // class handle for the local, or null if not known
 
     BYTE* lvGcLayout; // GC layout info for structs
 
@@ -2874,6 +2878,11 @@ protected:
                             int                prefixFlags,
                             CORINFO_CALL_INFO* callInfo,
                             IL_OFFSET          rawILOffset);
+
+    void impDevirtualizeCall(GenTreeCall*            call,
+                             GenTreePtr              obj,
+                             CORINFO_CALL_INFO*      callInfo,
+                             CORINFO_CONTEXT_HANDLE* exactContextHnd);
 
     bool impMethodInfo_hasRetBuffArg(CORINFO_METHOD_INFO* methInfo);
 
