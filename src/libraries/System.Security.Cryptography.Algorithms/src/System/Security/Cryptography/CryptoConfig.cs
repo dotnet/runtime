@@ -256,7 +256,6 @@ namespace System.Security.Cryptography
                 ht.Add("1.3.6.1.4.1.311.88.2.2", "System.Security.Cryptography.Pkcs.Pkcs9DocumentDescription, " + AssemblyName_Pkcs);
 
                 s_defaultNameHT = ht;
-
                 return s_defaultNameHT;
 
                 // Types in Desktop but currently unsupported in CoreFx:
@@ -277,7 +276,6 @@ namespace System.Security.Cryptography
                 // string SHA256CryptoServiceProviderType = "System.Security.Cryptography.SHA256CryptoServiceProvider, " + AssemblyName_Csp;
                 // string SHA384CryptoSerivceProviderType = "System.Security.Cryptography.SHA384CryptoServiceProvider, " + AssemblyName_Csp;
                 // string SHA512CryptoServiceProviderType = "System.Security.Cryptography.SHA512CryptoServiceProvider, " + AssemblyName_Csp;
-
                 // string DpapiDataProtectorType = "System.Security.Cryptography.DpapiDataProtector, " + AssemblyRef.SystemSecurity;
             }
         }
