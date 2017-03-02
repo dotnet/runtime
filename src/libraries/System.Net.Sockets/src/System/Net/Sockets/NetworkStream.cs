@@ -696,7 +696,10 @@ namespace System.Net.Sockets
 
             try
             {
-                return _streamSocket.ReceiveAsync(new ArraySegment<byte>(buffer, offset, size), SocketFlags.None);
+                return _streamSocket.ReceiveAsync(
+                    new ArraySegment<byte>(buffer, offset, size),
+                    SocketFlags.None,
+                    wrapExceptionsInIOExceptions: true);
             }
             catch (Exception exception) when (!(exception is OutOfMemoryException))
             {
@@ -754,7 +757,10 @@ namespace System.Net.Sockets
 
             try
             {
-                return _streamSocket.SendAsync(new ArraySegment<byte>(buffer, offset, size), SocketFlags.None);
+                return _streamSocket.SendAsync(
+                    new ArraySegment<byte>(buffer, offset, size),
+                    SocketFlags.None,
+                    wrapExceptionsInIOExceptions: true);
             }
             catch (Exception exception) when (!(exception is OutOfMemoryException))
             {

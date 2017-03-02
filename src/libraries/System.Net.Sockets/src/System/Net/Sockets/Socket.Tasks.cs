@@ -4,9 +4,10 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Threading.Tasks;
-using System.Threading;
+using System.IO;
 using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Net.Sockets
 {
@@ -111,7 +112,7 @@ namespace System.Net.Sockets
             return tcs.Task;
         }
 
-        internal Task<int> ReceiveAsync(ArraySegment<byte> buffer, SocketFlags socketFlags)
+        internal Task<int> ReceiveAsync(ArraySegment<byte> buffer, SocketFlags socketFlags, bool wrapExceptionsInIOExceptions)
         {
             // Validate the arguments.
             ValidateBuffer(buffer);
@@ -139,6 +140,7 @@ namespace System.Net.Sockets
             if (saea.BufferList != null) saea.BufferList = null;
             saea.SetBuffer(buffer.Array, buffer.Offset, buffer.Count);
             saea.SocketFlags = socketFlags;
+            saea.WrapExceptionsInIOExceptions = wrapExceptionsInIOExceptions;
 
             // Initiate the receive
             Task<int> t;
@@ -147,7 +149,7 @@ namespace System.Net.Sockets
                 // The operation completed synchronously.  Get a task for it and return the SAEA for future use.
                 t = saea.SocketError == SocketError.Success ?
                     GetSuccessTask(saea) :
-                    Task.FromException<int>(new SocketException((int)saea.SocketError));
+                    Task.FromException<int>(GetException(saea.SocketError, wrapExceptionsInIOExceptions));
                 ReturnSocketAsyncEventArgs(saea, isReceive: true);
             }
             else
@@ -252,7 +254,7 @@ namespace System.Net.Sockets
             return tcs.Task;
         }
 
-        internal Task<int> SendAsync(ArraySegment<byte> buffer, SocketFlags socketFlags)
+        internal Task<int> SendAsync(ArraySegment<byte> buffer, SocketFlags socketFlags, bool wrapExceptionsInIOExceptions)
         {
             // Validate the arguments.
             ValidateBuffer(buffer);
@@ -280,6 +282,7 @@ namespace System.Net.Sockets
             if (saea.BufferList != null) saea.BufferList = null;
             saea.SetBuffer(buffer.Array, buffer.Offset, buffer.Count);
             saea.SocketFlags = socketFlags;
+            saea.WrapExceptionsInIOExceptions = wrapExceptionsInIOExceptions;
 
             // Initiate the send
             Task<int> t;
@@ -288,7 +291,7 @@ namespace System.Net.Sockets
                 // The operation completed synchronously.  Get a task for it and return the SAEA for future use.
                 t = saea.SocketError == SocketError.Success ?
                     GetSuccessTask(saea) :
-                    Task.FromException<int>(new SocketException((int)saea.SocketError));
+                    Task.FromException<int>(GetException(saea.SocketError, wrapExceptionsInIOExceptions));
                 ReturnSocketAsyncEventArgs(saea, isReceive: false);
             }
             else
@@ -403,6 +406,7 @@ namespace System.Net.Sockets
             AsyncTaskMethodBuilder<int> builder = saea.Builder;
             SocketError error = saea.SocketError;
             int bytesTransferred = saea.BytesTransferred;
+            bool wrapExceptionsInIOExceptions = saea.WrapExceptionsInIOExceptions;
 
             s.ReturnSocketAsyncEventArgs(saea, isReceive);
 
@@ -413,7 +417,7 @@ namespace System.Net.Sockets
             }
             else
             {
-                builder.SetException(new SocketException((int)error));
+                builder.SetException(GetException(error, wrapExceptionsInIOExceptions));
             }
         }
 
@@ -433,6 +437,15 @@ namespace System.Net.Sockets
             return lastTask != null && lastTask.Result == bytesTransferred ?
                 lastTask :
                 (saea.SuccessfullyCompletedTask = Task.FromResult(bytesTransferred));
+        }
+
+        /// <summary>Gets a SocketException or an IOException wrapping a SocketException for the specified error.</summary>
+        private static Exception GetException(SocketError error, bool wrapExceptionsInIOExceptions = false)
+        {
+            Exception e = new SocketException((int)error);
+            return wrapExceptionsInIOExceptions ?
+                new IOException(SR.Format(SR.net_io_readwritefailure, e.Message), e) :
+                e;
         }
 
         /// <summary>Rents a <see cref="Int32TaskSocketAsyncEventArgs"/> for immediate use.</summary>
@@ -480,6 +493,7 @@ namespace System.Net.Sockets
             // and the costs associated with changing them.
             saea.UserToken = null;
             saea.Builder = default(AsyncTaskMethodBuilder<int>);
+            saea.WrapExceptionsInIOExceptions = false;
 
             // Write this instance back as a cached instance.  It should only ever be overwriting the sentinel,
             // never null or another instance.
@@ -529,6 +543,8 @@ namespace System.Net.Sockets
             /// This is a mutable struct.
             /// </summary>
             internal AsyncTaskMethodBuilder<int> Builder;
+            /// <summary>Whether exceptions that emerge should be wrapped in IOExceptions.</summary>
+            internal bool WrapExceptionsInIOExceptions;
             /// <summary>
             /// The lock used to protect initialization fo the Builder's Task.  AsyncTaskMethodBuilder
             /// expects a particular access pattern as generated by the language compiler, such that
