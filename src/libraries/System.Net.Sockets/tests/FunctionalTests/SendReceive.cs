@@ -29,6 +29,7 @@ namespace System.Net.Sockets.Tests
         public abstract Task<int> SendAsync(Socket s, ArraySegment<byte> buffer);
         public abstract Task<int> SendAsync(Socket s, IList<ArraySegment<byte>> bufferList);
         public abstract Task<int> SendToAsync(Socket s, ArraySegment<byte> buffer, EndPoint endpoint);
+        public virtual bool GuaranteedSendOrdering => true;
 
         [OuterLoop] // TODO: Issue #11345
         [Theory]
@@ -214,12 +215,178 @@ namespace System.Net.Sockets.Tests
                     }
 
                     client.LingerState = new LingerOption(true, LingerTime);
-                    client.Shutdown(SocketShutdown.Both);
+                    client.Shutdown(SocketShutdown.Send);
                     await serverProcessingTask;
                 }
 
                 Assert.Equal(bytesSent, bytesReceived);
                 Assert.Equal(sentChecksum.Sum, receivedChecksum.Sum);
+            }
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Theory]
+        [MemberData(nameof(LoopbacksAndBuffers))]
+        public async Task SendRecv_Stream_TCP_MultipleConcurrentReceives(IPAddress listenAt, bool useMultipleBuffers)
+        {
+            using (var server = new Socket(listenAt.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
+            {
+                server.BindToAnonymousPort(listenAt);
+                server.Listen(1);
+
+                EndPoint clientEndpoint = server.LocalEndPoint;
+                using (var client = new Socket(clientEndpoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
+                {
+                    Task clientConnect = ConnectAsync(client, clientEndpoint);
+                    using (Socket remote = await AcceptAsync(server))
+                    {
+                        await clientConnect;
+
+                        if (useMultipleBuffers)
+                        {
+                            byte[] buffer1 = new byte[1], buffer2 = new byte[1], buffer3 = new byte[1], buffer4 = new byte[1], buffer5 = new byte[1];
+
+                            Task<int> receive1 = ReceiveAsync(client, new List<ArraySegment<byte>> { new ArraySegment<byte>(buffer1), new ArraySegment<byte>(buffer2) });
+                            Task<int> receive2 = ReceiveAsync(client, new List<ArraySegment<byte>> { new ArraySegment<byte>(buffer3), new ArraySegment<byte>(buffer4) });
+                            Task<int> receive3 = ReceiveAsync(client, new List<ArraySegment<byte>> { new ArraySegment<byte>(buffer5) });
+
+                            await Task.WhenAll(
+                                SendAsync(remote, new ArraySegment<byte>(new byte[] { 1, 2, 3, 4, 5 })),
+                                receive1, receive2, receive3);
+
+                            Assert.True(receive1.Result == 1 || receive1.Result == 2, $"Expected 1 or 2, got {receive1.Result}");
+                            Assert.True(receive2.Result == 1 || receive2.Result == 2, $"Expected 1 or 2, got {receive2.Result}");
+                            Assert.Equal(1, receive3.Result);
+
+                            if (GuaranteedSendOrdering)
+                            {
+                                if (receive1.Result == 1 && receive2.Result == 1)
+                                {
+                                    Assert.Equal(1, buffer1[0]);
+                                    Assert.Equal(0, buffer2[0]);
+                                    Assert.Equal(2, buffer3[0]);
+                                    Assert.Equal(0, buffer4[0]);
+                                    Assert.Equal(3, buffer5[0]);
+                                }
+                                else if (receive1.Result == 1 && receive2.Result == 2)
+                                {
+                                    Assert.Equal(1, buffer1[0]);
+                                    Assert.Equal(0, buffer2[0]);
+                                    Assert.Equal(2, buffer3[0]);
+                                    Assert.Equal(3, buffer4[0]);
+                                    Assert.Equal(4, buffer5[0]);
+                                }
+                                else if (receive1.Result == 2 && receive2.Result == 1)
+                                {
+                                    Assert.Equal(1, buffer1[0]);
+                                    Assert.Equal(2, buffer2[0]);
+                                    Assert.Equal(3, buffer3[0]);
+                                    Assert.Equal(0, buffer4[0]);
+                                    Assert.Equal(4, buffer5[0]);
+                                }
+                                else // receive1.Result == 2 && receive2.Result == 2
+                                {
+                                    Assert.Equal(1, buffer1[0]);
+                                    Assert.Equal(2, buffer2[0]);
+                                    Assert.Equal(3, buffer3[0]);
+                                    Assert.Equal(4, buffer4[0]);
+                                    Assert.Equal(5, buffer5[0]);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            var buffer1 = new ArraySegment<byte>(new byte[1]);
+                            var buffer2 = new ArraySegment<byte>(new byte[1]);
+                            var buffer3 = new ArraySegment<byte>(new byte[1]);
+
+                            Task<int> receive1 = ReceiveAsync(client, buffer1);
+                            Task<int> receive2 = ReceiveAsync(client, buffer2);
+                            Task<int> receive3 = ReceiveAsync(client, buffer3);
+
+                            await Task.WhenAll(
+                                SendAsync(remote, new ArraySegment<byte>(new byte[] { 1, 2, 3 })),
+                                receive1, receive2, receive3);
+
+                            Assert.Equal(3, receive1.Result + receive2.Result + receive3.Result);
+
+                            if (GuaranteedSendOrdering)
+                            {
+                                Assert.Equal(1, buffer1.Array[0]);
+                                Assert.Equal(2, buffer2.Array[0]);
+                                Assert.Equal(3, buffer3.Array[0]);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Theory]
+        [MemberData(nameof(LoopbacksAndBuffers))]
+        public async Task SendRecv_Stream_TCP_MultipleConcurrentSends(IPAddress listenAt, bool useMultipleBuffers)
+        {
+            using (var server = new Socket(listenAt.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
+            {
+                byte[] sendData = new byte[5000000];
+                new Random(42).NextBytes(sendData);
+
+                Func<byte[], int, int, byte[]> slice = (input, offset, count) =>
+                {
+                    var arr = new byte[count];
+                    Array.Copy(input, offset, arr, 0, count);
+                    return arr;
+                };
+
+                server.BindToAnonymousPort(listenAt);
+                server.Listen(1);
+
+                EndPoint clientEndpoint = server.LocalEndPoint;
+                using (var client = new Socket(clientEndpoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
+                {
+                    Task clientConnect = ConnectAsync(client, clientEndpoint);
+                    using (Socket remote = await AcceptAsync(server))
+                    {
+                        await clientConnect;
+
+                        Task<int> send1, send2, send3;
+                        if (useMultipleBuffers)
+                        {
+                            var bufferList1 = new List<ArraySegment<byte>> { new ArraySegment<byte>(slice(sendData, 0, 1000000)), new ArraySegment<byte>(slice(sendData, 1000000, 1000000)) };
+                            var bufferList2 = new List<ArraySegment<byte>> { new ArraySegment<byte>(slice(sendData, 2000000, 1000000)), new ArraySegment<byte>(slice(sendData, 3000000, 1000000)) };
+                            var bufferList3 = new List<ArraySegment<byte>> { new ArraySegment<byte>(slice(sendData, 4000000, 1000000)) };
+
+                            send1 = SendAsync(client, bufferList1);
+                            send2 = SendAsync(client, bufferList2);
+                            send3 = SendAsync(client, bufferList3);
+                        }
+                        else
+                        {
+                            var buffer1 = new ArraySegment<byte>(slice(sendData, 0, 2000000));
+                            var buffer2 = new ArraySegment<byte>(slice(sendData, 2000000, 2000000));
+                            var buffer3 = new ArraySegment<byte>(slice(sendData, 4000000, 1000000));
+
+                            send1 = SendAsync(client, buffer1);
+                            send2 = SendAsync(client, buffer2);
+                            send3 = SendAsync(client, buffer3);
+                        }
+
+                        int receivedTotal = 0;
+                        int received;
+                        var receiveBuffer = new byte[sendData.Length];
+                        while (receivedTotal < receiveBuffer.Length)
+                        {
+                            if ((received = await ReceiveAsync(remote, new ArraySegment<byte>(receiveBuffer, receivedTotal, receiveBuffer.Length - receivedTotal))) == 0) break;
+                            receivedTotal += received;
+                        }
+                        Assert.Equal(5000000, receivedTotal);
+                        if (GuaranteedSendOrdering)
+                        {
+                            Assert.Equal(sendData, receiveBuffer);
+                        }
+                    }
+                }
             }
         }
 
@@ -270,7 +437,7 @@ namespace System.Net.Sockets.Tests
 
                     using (var client = new Socket(clientEndpoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
                     {
-                        await client.ConnectAsync(clientEndpoint.Address, clientEndpoint.Port);
+                        await ConnectAsync(client, clientEndpoint);
 
                         if (pollBeforeOperation)
                         {
@@ -494,7 +661,8 @@ namespace System.Net.Sockets.Tests
                 }
             });
 
-            Assert.True(Task.WaitAll(new[] { serverTask, clientTask }, TestTimeout));
+            Assert.True(Task.WaitAll(new[] { serverTask, clientTask }, TestTimeout),
+                $"Time out waiting for serverTask ({serverTask.Status}) and clientTask ({clientTask.Status})");
 
             Assert.Equal(bytesSent, bytesReceived);
             Assert.Equal(sentChecksum.Sum, receivedChecksum.Sum);
@@ -528,6 +696,8 @@ namespace System.Net.Sockets.Tests
             Task.Run(() => s.Send(bufferList, SocketFlags.None));
         public override Task<int> SendToAsync(Socket s, ArraySegment<byte> buffer, EndPoint endPoint) =>
             Task.Run(() => s.SendTo(buffer.Array, buffer.Offset, buffer.Count, SocketFlags.None, endPoint));
+
+        public override bool GuaranteedSendOrdering => false;
     }
 
     public sealed class SendReceiveApm : SendReceive
