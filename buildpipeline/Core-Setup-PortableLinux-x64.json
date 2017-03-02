@@ -31,7 +31,7 @@
       },
       "inputs": {
         "scriptPath": "scripts/dockerrun-as-current-user.sh",
-        "args": "-t --rm --sig-proxy=true --name $(DockerContainerName) -v $(Build.SourcesDirectory):/opt/code -w /opt/code -e CONNECTION_STRING -e PUBLISH_TO_AZURE_BLOB chcosta/dotnetcore:rhel7_prereqs /bin/bash -c \"HOME=/opt/code; git clean -X -d -f; ./build.sh $(BuildArguments)\"",
+        "args": "-t --rm --sig-proxy=true --name $(DockerContainerName) -v $(Build.SourcesDirectory):/opt/code -w /opt/code -e CONNECTION_STRING -e PUBLISH_TO_AZURE_BLOB microsoft/dotnet-buildtools-prereqs:rhel7_prereqs /bin/bash -c \"HOME=/opt/code; git clean -X -d -f; ./build.sh $(BuildArguments)\"",
         "disableAutoCwd": "false",
         "cwd": "",
         "failOnStandardError": "false"
