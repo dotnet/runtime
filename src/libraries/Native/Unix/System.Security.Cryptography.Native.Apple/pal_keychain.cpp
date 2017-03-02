@@ -86,7 +86,7 @@ EnumerateKeychain(SecKeychainRef keychain, CFStringRef matchType, CFArrayRef* pC
     if (query == nullptr)
         return -2;
 
-    int ret = 0;
+    int32_t ret = 0;
     CFTypeRef result = nullptr;
     CFArrayRef searchList = CFArrayCreate(
         nullptr, const_cast<const void**>(reinterpret_cast<void**>(&keychain)), 1, &kCFTypeArrayCallBacks);
