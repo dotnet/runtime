@@ -27,7 +27,7 @@ struct MethodDebugInfo
     int localsSize;
 };
 
-typedef BOOL (*GetInfoForMethodDelegate)(const char*, unsigned int, MethodDebugInfo& methodDebugInfo);
+typedef BOOL (STDCALL *GetInfoForMethodDelegate)(const char*, unsigned int, MethodDebugInfo& methodDebugInfo);
 extern GetInfoForMethodDelegate getInfoForMethodDelegate;
 
 #endif // !__GDBJITHELPERS_H__
