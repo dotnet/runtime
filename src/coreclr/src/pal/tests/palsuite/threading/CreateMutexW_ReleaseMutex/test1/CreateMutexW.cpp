@@ -169,8 +169,7 @@ FillBuffer()
 /* 
  * Producer thread function.  
  */
-DWORD 
-Producer(LPVOID lpParam)
+DWORD PALAPI Producer(LPVOID lpParam)
 {
     int n = 0;
     int ret;
@@ -202,7 +201,7 @@ Producer(LPVOID lpParam)
 /* 
  * Consumer thread function. 
  */
-DWORD Consumer( LPVOID lpParam )
+DWORD PALAPI Consumer( LPVOID lpParam )
 {
     int n = 0;
     int ret;
