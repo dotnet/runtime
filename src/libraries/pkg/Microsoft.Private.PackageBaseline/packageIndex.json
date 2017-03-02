@@ -4655,8 +4655,7 @@
         "4.0.2.0": "4.3.0"
       }
     },
-    "System.Transactions.Local": {
-      "BaselineVersion": "4.4.0",
+    "System.Transactions": {
       "InboxOn": {
         "netcoreapp2.0": "4.0.0.0",
         "net45": "4.0.0.0",
@@ -4668,9 +4667,12 @@
         "xamarinmac20": "Any",
         "xamarintvos10": "Any",
         "xamarinwatchos10": "Any"
-      },
-      "AssemblyVersionInPackageVersion": {
-        "4.0.0.0": "4.4.0"
+      }
+    },
+    "System.Transactions.Local": {
+      "InboxOn": {
+        "netcoreapp2.0": "4.0.0.0",
+        "uap10.1": "4.0.0.0",
       }
     },
     "System.ValueTuple": {

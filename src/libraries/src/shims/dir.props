@@ -20,6 +20,7 @@
     <NetFxReference Include="System.IO.Compression.FileSystem" />
     <NetFxReference Include="System.Numerics" />
     <NetFxReference Include="System.Runtime.Serialization" />
+    <NetFxReference Include="System.Transactions" />
     <NetFxReference Include="System.Web" />
     <NetFxReference Include="System.Xml" />
     <NetFxReference Include="System.Xml.Linq" />
