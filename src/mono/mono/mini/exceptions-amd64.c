@@ -919,7 +919,7 @@ mono_arch_unwindinfo_add_push_nonvol (PUNWIND_INFO unwindinfo, MonoUnwindOp *unw
 		g_error ("Larger allocation needed for the unwind information.");
 
 	codeindex = MONO_MAX_UNWIND_CODES - (++unwindinfo->CountOfCodes);
-	unwindcode = &unwindinfo->UnwindCode[codeindex];
+	unwindcode = &unwindinfo->UnwindCode [codeindex];
 	unwindcode->UnwindOp = UWOP_PUSH_NONVOL;
 	unwindcode->CodeOffset = (guchar)unwind_op->when;
 	unwindcode->OpInfo = unwind_op->reg;
@@ -942,11 +942,11 @@ mono_arch_unwindinfo_add_set_fpreg (PUNWIND_INFO unwindinfo, MonoUnwindOp *unwin
 		g_error ("Larger allocation needed for the unwind information.");
 
 	codeindex = MONO_MAX_UNWIND_CODES - (++unwindinfo->CountOfCodes);
-	unwindcode = &unwindinfo->UnwindCode[codeindex];
+	unwindcode = &unwindinfo->UnwindCode [codeindex];
 	unwindcode->UnwindOp = UWOP_SET_FPREG;
 	unwindcode->CodeOffset = (guchar)unwind_op->when;
 
-	g_assert(unwind_op->val % 16 == 0);
+	g_assert (unwind_op->val % 16 == 0);
 	unwindinfo->FrameRegister = unwind_op->reg;
 	unwindinfo->FrameOffset = unwind_op->val / 16;
 
@@ -982,7 +982,7 @@ mono_arch_unwindinfo_add_alloc_stack (PUNWIND_INFO unwindinfo, MonoUnwindOp *unw
 		g_error ("Larger allocation needed for the unwind information.");
 
 	codeindex = MONO_MAX_UNWIND_CODES - (unwindinfo->CountOfCodes += codesneeded);
-	unwindcode = &unwindinfo->UnwindCode[codeindex];
+	unwindcode = &unwindinfo->UnwindCode [codeindex];
 
 	unwindcode->CodeOffset = (guchar)unwind_op->when;
 
@@ -1042,9 +1042,9 @@ static RtlDeleteGrowableFunctionTablePtr g_rtl_delete_growable_function_table;
 // When using function table callback solution an out of proc module is needed by
 // debuggers in order to read unwind info from debug target.
 #ifdef _MSC_VER
-#define MONO_DAC_MODULE L"mono-2.0-dac-sgen.dll"
+#define MONO_DAC_MODULE TEXT("mono-2.0-dac-sgen.dll")
 #else
-#define MONO_DAC_MODULE L"mono-2.0-sgen.dll"
+#define MONO_DAC_MODULE TEXT("mono-2.0-sgen.dll")
 #endif
 
 #define MONO_DAC_MODULE_MAX_PATH 1024
@@ -1344,14 +1344,14 @@ mono_arch_unwindinfo_insert_range_in_table (const gpointer code_block, gsize blo
 
 					// DAC module should be in the same directory as the
 					// main executable.
-					GetModuleFileNameW (NULL, buffer, G_N_ELEMENTS (buffer));
+					GetModuleFileNameW (NULL, buffer, G_N_ELEMENTS(buffer));
 					path = wcsrchr (buffer, TEXT('\\'));
 					if (path != NULL) {
 						path++;
 						*path = TEXT('\0');
 					}
 
-					wcscat_s (buffer, G_N_ELEMENTS (buffer), MONO_DAC_MODULE);
+					wcscat_s (buffer, G_N_ELEMENTS(buffer), MONO_DAC_MODULE);
 					path = buffer;
 
 					// Register function table callback + out of proc module.
@@ -1383,7 +1383,7 @@ mono_arch_unwindinfo_remove_range_in_table_no_lock (GList *entry)
 		if (entry == g_dynamic_function_table_end)
 			g_dynamic_function_table_end = entry->prev;
 
-		g_dynamic_function_table_begin = g_list_remove_link(g_dynamic_function_table_begin, entry);
+		g_dynamic_function_table_begin = g_list_remove_link (g_dynamic_function_table_begin, entry);
 		DynamicFunctionTableEntry *removed_entry = (DynamicFunctionTableEntry *)entry->data;
 
 		g_assert_checked (removed_entry != NULL);
@@ -1579,7 +1579,7 @@ mono_arch_unwindinfo_insert_rt_func_in_table (const gpointer code, gsize code_si
 					}
 
 					if (current_rt_funcs [from_index].UnwindData != 0)
-						new_rt_funcs[to_index++] = current_rt_funcs [from_index];
+						new_rt_funcs [to_index++] = current_rt_funcs [from_index];
 				}
 
 				// If we didn't insert by now, put it last in the list.

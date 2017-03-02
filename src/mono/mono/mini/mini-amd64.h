@@ -555,11 +555,6 @@ typedef struct _UNWIND_INFO {
  *	OPTIONAL ULONG ExceptionData[]; */
 } UNWIND_INFO, *PUNWIND_INFO;
 
-//typedef struct
-//{
-//	UNWIND_INFO unwindInfo;
-//} MonoUnwindInfo, *PMonoUnwindInfo;
-
 inline guint
 mono_arch_unwindinfo_get_size (guchar code_count)
 {
@@ -574,13 +569,23 @@ mono_arch_unwindinfo_get_size (guchar code_count)
 		(sizeof (UNWIND_CODE) * ((MONO_MAX_UNWIND_CODES - ((code_count + 1) & ~1))));
 }
 
-guchar mono_arch_unwindinfo_get_code_count (GSList *unwind_ops);
-guint mono_arch_unwindinfo_init_method_unwind_info (gpointer cfg);
-void mono_arch_unwindinfo_install_method_unwind_info (gpointer *monoui, gpointer code, guint code_size);
-void mono_arch_unwindinfo_install_tramp_unwind_info (GSList *unwind_ops, gpointer code, guint code_size);
+guchar
+mono_arch_unwindinfo_get_code_count (GSList *unwind_ops);
 
-void mono_arch_code_chunk_new (void *chunk, int size);
-void mono_arch_code_chunk_destroy (void *chunk);
+guint
+mono_arch_unwindinfo_init_method_unwind_info (gpointer cfg);
+
+void
+mono_arch_unwindinfo_install_method_unwind_info (gpointer *monoui, gpointer code, guint code_size);
+
+void
+mono_arch_unwindinfo_install_tramp_unwind_info (GSList *unwind_ops, gpointer code, guint code_size);
+
+void
+mono_arch_code_chunk_new (void *chunk, int size);
+
+void
+mono_arch_code_chunk_destroy (void *chunk);
 
 #endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
 #endif /* defined(TARGET_WIN32) && !defined(DISABLE_JIT) */

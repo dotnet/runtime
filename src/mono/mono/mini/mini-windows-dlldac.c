@@ -31,12 +31,15 @@ typedef struct _DYNAMIC_FUNCTION_TABLE {
 } DYNAMIC_FUNCTION_TABLE, *PDYNAMIC_FUNCTION_TABLE;
 
 typedef BOOL (ReadMemoryFunction)(PVOID user_context, LPCVOID base_address, PVOID buffer, SIZE_T size, SIZE_T *read);
-BOOL read_memory(PVOID user_context, LPCVOID base_address, PVOID buffer, SIZE_T size, SIZE_T* read)
+
+BOOL
+read_memory(PVOID user_context, LPCVOID base_address, PVOID buffer, SIZE_T size, SIZE_T* read)
 {
-    return ReadProcessMemory((HANDLE)user_context, base_address, buffer, size, read);
+    return ReadProcessMemory ((HANDLE)user_context, base_address, buffer, size, read);
 }
 
-MONO_API_EXPORT DWORD OutOfProcessFunctionTableCallbackEx (ReadMemoryFunction read_memory, PVOID user_context, PVOID table_address, PDWORD entries, PRUNTIME_FUNCTION *functions)
+MONO_API_EXPORT DWORD
+OutOfProcessFunctionTableCallbackEx (ReadMemoryFunction read_memory, PVOID user_context, PVOID table_address, PDWORD entries, PRUNTIME_FUNCTION *functions)
 {
 	DYNAMIC_FUNCTION_TABLE func_table = { 0 };
 	DynamicFunctionTableEntry func_table_entry = { 0 };
@@ -62,14 +65,16 @@ MONO_API_EXPORT DWORD OutOfProcessFunctionTableCallbackEx (ReadMemoryFunction re
 	return result;
 }
 
-MONO_API_EXPORT DWORD OutOfProcessFunctionTableCallback (HANDLE process, PVOID table_address, PDWORD entries, PRUNTIME_FUNCTION *functions)
+MONO_API_EXPORT DWORD
+OutOfProcessFunctionTableCallback (HANDLE process, PVOID table_address, PDWORD entries, PRUNTIME_FUNCTION *functions)
 {
 	return OutOfProcessFunctionTableCallbackEx (&read_memory, process, table_address, entries, functions);
 }
 #endif /* defined(TARGET_AMD64) && !defined(DISABLE_JIT) */
 
 #ifdef _MSC_VER
-BOOL APIENTRY DllMain (HMODULE module_handle, DWORD reason, LPVOID reserved)
+BOOL APIENTRY
+DllMain (HMODULE module_handle, DWORD reason, LPVOID reserved)
 {
 	return TRUE;
 }

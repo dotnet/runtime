@@ -6486,10 +6486,10 @@ mono_arch_register_lowlevel_calls (void)
 
 #if defined(TARGET_WIN32) || defined(HOST_WIN32)
 #if _MSC_VER
-	extern void __chkstk(void);
+	extern void __chkstk (void);
 	mono_register_jit_icall_full (__chkstk, "mono_chkstk_win64", NULL, TRUE, FALSE, "__chkstk");
 #else
-	extern void ___chkstk_ms(void);
+	extern void ___chkstk_ms (void);
 	mono_register_jit_icall_full (___chkstk_ms, "mono_chkstk_win64", NULL, TRUE, FALSE, "___chkstk_ms");
 #endif
 #endif
@@ -6562,7 +6562,7 @@ get_max_epilog_size (MonoCompile *cfg)
 
 #ifdef TARGET_WIN32
 guint8 *
-mono_arch_emit_prolog_setup_sp_win64(MonoCompile *cfg, guint8 *code, int alloc_size, int *cfa_offset_input)
+mono_arch_emit_prolog_setup_sp_win64 (MonoCompile *cfg, guint8 *code, int alloc_size, int *cfa_offset_input)
 {
 	int cfa_offset = *cfa_offset_input;
 
@@ -6696,7 +6696,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	/* Allocate stack frame */
 #ifdef TARGET_WIN32
-	code = mono_arch_emit_prolog_setup_sp_win64(cfg, code, alloc_size, &cfa_offset);
+	code = mono_arch_emit_prolog_setup_sp_win64 (cfg, code, alloc_size, &cfa_offset);
 #else
 	if (alloc_size) {
 		/* See mono_emit_stack_alloc */
