@@ -41,8 +41,6 @@ namespace BINDER_SPACE
 {
     namespace
     {
-        // Ripped from Fusion
-
         inline UINT GetPreBindStateName(AssemblyName *pAssemblyName)
         {
             if (pAssemblyName->HaveAssemblyVersion())
