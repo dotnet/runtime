@@ -28,7 +28,7 @@
           Condition="'$(IsTestProject)'!='true' AND '@(ReferenceFromRuntime)' != ''">
     <ItemGroup>
       <!-- transform to filename in order to intersect -->
-      <_referencePathFromRuntimeByFileName Include="@(_referencePathFromRuntime->'%(FileName)')" >
+      <_referencePathFromRuntimeByFileName Include="@(_referencePathFromRuntime->'%(FileName)')" Condition="'%(_referencePathFromRuntime.Extension)' == '.dll'" >
         <ReferencePath>%(Identity)</ReferencePath>
       </_referencePathFromRuntimeByFileName>
 
