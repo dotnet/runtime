@@ -95,12 +95,6 @@ mono_threads_suspend_abort_syscall (MonoThreadInfo *info)
 }
 
 gboolean
-mono_threads_suspend_needs_abort_syscall (void)
-{
-	return TRUE;
-}
-
-gboolean
 mono_threads_suspend_begin_async_resume (MonoThreadInfo *info)
 {
 	DWORD id = mono_thread_info_get_tid (info);

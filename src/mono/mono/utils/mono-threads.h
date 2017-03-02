@@ -476,7 +476,6 @@ gboolean mono_threads_suspend_begin_async_resume (THREAD_INFO_TYPE *info);
 void mono_threads_suspend_register (THREAD_INFO_TYPE *info); //ok
 void mono_threads_suspend_free (THREAD_INFO_TYPE *info);
 void mono_threads_suspend_abort_syscall (THREAD_INFO_TYPE *info);
-gboolean mono_threads_suspend_needs_abort_syscall (void);
 gint mono_threads_suspend_search_alternative_signal (void);
 gint mono_threads_suspend_get_suspend_signal (void);
 gint mono_threads_suspend_get_restart_signal (void);
