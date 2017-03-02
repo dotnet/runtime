@@ -108,7 +108,7 @@ thread_func (void *thread_data)
 		gboolean do_idle;
 		SgenThreadPoolJob *job;
 
-		if (!should_work (thread_data)) {
+		if (!should_work (thread_data) && !threadpool_shutdown) {
 			mono_os_cond_wait (&work_cond, &lock);
 			continue;
 		}
