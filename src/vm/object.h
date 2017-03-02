@@ -1606,43 +1606,6 @@ public:
 
 }; // class CultureInfoBaseObject
 
-#ifndef FEATURE_COREFX_GLOBALIZATION
-typedef DPTR(class CalendarDataBaseObject) PTR_CalendarDataBaseObject;
-class CalendarDataBaseObject : public Object
-{
-public:   
-    /* 0x000 */ STRINGREF   sNativeName                 ; // Calendar Name for the locale
-    
-    // Formats
-    
-    /* 0x008 */ PTRARRAYREF saShortDates                ; // Short Data format, default first
-    /* 0x010 */ PTRARRAYREF saYearMonths                ; // Year/Month Data format, default first
-    /* 0x018 */ PTRARRAYREF saLongDates                 ; // Long Data format, default first
-    /* 0x020 */ STRINGREF   sMonthDay                   ; // Month/Day format
-
-    // Calendar Parts Names
-    /* 0x028 */ PTRARRAYREF saEraNames                  ; // Names of Eras
-    /* 0x030 */ PTRARRAYREF saAbbrevEraNames            ; // Abbreviated Era Names
-    /* 0x038 */ PTRARRAYREF saAbbrevEnglishEraNames     ; // Abbreviated Era Names in English
-    /* 0x040 */ PTRARRAYREF saDayNames                  ; // Day Names, null to use locale data, starts on Sunday
-    /* 0x048 */ PTRARRAYREF saAbbrevDayNames            ; // Abbrev Day Names, null to use locale data, starts on Sunday
-    /* 0x050 */ PTRARRAYREF saSuperShortDayNames        ; // Super short Day of week names
-    /* 0x058 */ PTRARRAYREF saMonthNames                ; // Month Names (13)
-    /* 0x060 */ PTRARRAYREF saAbbrevMonthNames          ; // Abbrev Month Names (13)
-    /* 0x068 */ PTRARRAYREF saMonthGenitiveNames        ; // Genitive Month Names (13)
-    /* 0x070 */ PTRARRAYREF saAbbrevMonthGenitiveNames  ; // Genitive Abbrev Month Names (13)
-    /* 0x078 */ PTRARRAYREF saLeapYearMonthNames        ; // Multiple strings for the month names in a leap year.
-
-    // Integers at end to make marshaller happier
-    /* 0x080 */ INT32       iTwoDigitYearMax            ; // Max 2 digit year (for Y2K bug data entry)
-    /* 0x084 */ INT32       iCurrentEra                 ; // current era # (usually 1)
-
-    // Use overrides?
-    /* 0x088 */ CLR_BOOL    bUseUserOverrides           ; // True if we want user overrides.
-}; // class CalendarDataBaseObject
-#endif
-
-
 typedef DPTR(class ThreadBaseObject) PTR_ThreadBaseObject;
 class ThreadBaseObject : public Object
 {
