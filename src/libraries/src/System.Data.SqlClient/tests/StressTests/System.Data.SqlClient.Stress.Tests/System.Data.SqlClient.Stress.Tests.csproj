@@ -5,6 +5,8 @@
     <ProjectGuid>{B94B8E6D-3E41-4046-B758-4A2E281F74EE}</ProjectGuid>
     <RootNamespace>Stress.Data.SqlClient</RootNamespace>
     <AssemblyName>System.Data.SqlClient.Stress.Tests</AssemblyName>
+    <!-- These should not run in Helix: they produce no outputs and are only run manually -->
+    <ArchiveTests>false</ArchiveTests>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
