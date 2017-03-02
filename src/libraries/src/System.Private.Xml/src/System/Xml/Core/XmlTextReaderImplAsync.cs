@@ -1048,9 +1048,7 @@ namespace System.Xml
             if (_ps.chars == null)
             {
                 int bufferSize;
-#if !ASYNC
-                bufferSize = XmlReader.DefaultBufferSize;
-#else
+
                 if (_laterInitParam != null && _laterInitParam.useAsync)
                 {
                     bufferSize = XmlReader.AsyncBufferSize;
@@ -1059,7 +1057,7 @@ namespace System.Xml
                 {
                     bufferSize = XmlReader.DefaultBufferSize;
                 }
-#endif
+
                 _ps.chars = new char[bufferSize + 1];
             }
 
