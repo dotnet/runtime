@@ -22,9 +22,13 @@ namespace System.Security.Cryptography.Xml
         [SuppressMessage("Microsoft.Cryptography", "CA5350", Justification = "Explicitly requested by the message contents")]
         internal static byte[] TripleDESKeyWrapEncrypt(byte[] rgbKey, byte[] rgbWrappedKeyData)
         {
-            // checksum the key
-            SHA1CryptoServiceProvider sha = new SHA1CryptoServiceProvider();
-            byte[] rgbCKS = sha.ComputeHash(rgbWrappedKeyData);
+            byte[] rgbCKS;
+
+            using (var sha = SHA1.Create())
+            {
+                // checksum the key
+                rgbCKS = sha.ComputeHash(rgbWrappedKeyData);
+            }
 
             // generate a random IV
             RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider();
@@ -76,12 +80,14 @@ namespace System.Security.Cryptography.Xml
             // checksum the key
             byte[] rgbWrappedKeyData = new byte[rgbWKCKS.Length - 8];
             Buffer.BlockCopy(rgbWKCKS, 0, rgbWrappedKeyData, 0, rgbWrappedKeyData.Length);
-            SHA1CryptoServiceProvider sha = new SHA1CryptoServiceProvider();
-            byte[] rgbCKS = sha.ComputeHash(rgbWrappedKeyData);
-            for (int index = rgbWrappedKeyData.Length, index1 = 0; index < rgbWKCKS.Length; index++, index1++)
-                if (rgbWKCKS[index] != rgbCKS[index1])
-                    throw new CryptographicException(SR.Cryptography_Xml_BadWrappedKeySize);
-            return rgbWrappedKeyData;
+            using (var sha = SHA1.Create())
+            {
+                byte[] rgbCKS = sha.ComputeHash(rgbWrappedKeyData);
+                for (int index = rgbWrappedKeyData.Length, index1 = 0; index < rgbWKCKS.Length; index++, index1++)
+                    if (rgbWKCKS[index] != rgbCKS[index1])
+                        throw new CryptographicException(SR.Cryptography_Xml_BadWrappedKeySize);
+                return rgbWrappedKeyData;
+            }
         }
 
         // AES KeyWrap described in "http://www.w3.org/2001/04/xmlenc#kw-aes***", as suggested by NIST
