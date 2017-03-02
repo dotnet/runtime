@@ -135,3 +135,52 @@ extern "C" uint64_t AppleCryptoNative_SecKeyGetSimpleKeySizeInBytes(SecKeyRef pu
 
     return SecKeyGetBlockSize(publicKey);
 }
+
+OSStatus ExportImportKey(SecKeyRef* key, SecExternalItemType type)
+{
+    SecExternalFormat dataFormat = kSecFormatOpenSSL;
+    CFDataRef exportData = nullptr;
+
+    SecItemImportExportKeyParameters keyParams = {};
+    keyParams.version = SEC_KEY_IMPORT_EXPORT_PARAMS_VERSION;
+    keyParams.passphrase = CFSTR("ExportImportPassphrase");
+
+    OSStatus status = SecItemExport(*key, dataFormat, 0, &keyParams, &exportData);
+    CFRelease(*key);
+    *key = nullptr;
+
+    SecExternalFormat actualFormat = dataFormat;
+    SecExternalItemType actualType = type;
+    CFArrayRef outItems = nullptr;
+
+    if (status == noErr)
+    {
+        status = SecItemImport(exportData, nullptr, &actualFormat, &actualType, 0, nullptr, nullptr, &outItems);
+    }
+
+    CFRelease(exportData);
+    exportData = nullptr;
+
+    CFRelease(keyParams.passphrase);
+    keyParams.passphrase = nullptr;
+
+    if (status == noErr && outItems != nullptr)
+    {
+        CFIndex count = CFArrayGetCount(outItems);
+
+        if (count == 1)
+        {
+            CFTypeRef outItem = CFArrayGetValueAtIndex(outItems, 0);
+
+            if (CFGetTypeID(outItem) == SecKeyGetTypeID())
+            {
+                CFRetain(outItem);
+                *key = reinterpret_cast<SecKeyRef>(const_cast<void*>(outItem));
+
+                return noErr;
+            }
+        }
+    }
+
+    return errSecBadReq;
+}

@@ -9,7 +9,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
 {
     public class ECDsaImportExportTests : ECDsaTestsBase
     {
-        [ConditionalTheory(nameof(SupportsKeyGeneration))]
+        [Theory]
         [MemberData(nameof(TestCurvesFull))]
         public static void TestNamedCurves(CurveDef curveDef)
         {
@@ -115,7 +115,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
             Assert.Throws<ArgumentException>(() => ECCurve.CreateFromOid(new Oid("", "")));
         }
 
-        [ConditionalFact(nameof(SupportsKeyGeneration))]
+        [Fact]
         public static void TestKeySizeCreateKey()
         {
             using (ECDsa ec = ECDsaFactory.Create(ECCurve.NamedCurves.nistP256))

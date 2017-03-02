@@ -4,8 +4,8 @@
 
 #include "pal_ecc.h"
 
-extern "C" int
-AppleCryptoNative_EccGenerateKey(int32_t keySizeBits, SecKeyRef* pPublicKey, SecKeyRef* pPrivateKey, int32_t* pOSStatus)
+extern "C" int32_t AppleCryptoNative_EccGenerateKey(
+    int32_t keySizeBits, SecKeychainRef tempKeychain, SecKeyRef* pPublicKey, SecKeyRef* pPrivateKey, int32_t* pOSStatus)
 {
     if (pPublicKey != nullptr)
         *pPublicKey = nullptr;
@@ -18,14 +18,35 @@ AppleCryptoNative_EccGenerateKey(int32_t keySizeBits, SecKeyRef* pPublicKey, Sec
     CFMutableDictionaryRef attributes = CFDictionaryCreateMutable(nullptr, 2, &kCFTypeDictionaryKeyCallBacks, nullptr);
 
     CFNumberRef cfKeySizeValue = CFNumberCreate(nullptr, kCFNumberIntType, &keySizeBits);
+    OSStatus status;
 
-    CFDictionaryAddValue(attributes, kSecAttrKeyType, kSecAttrKeyTypeEC);
-    CFDictionaryAddValue(attributes, kSecAttrKeySizeInBits, cfKeySizeValue);
+    if (attributes != nullptr && cfKeySizeValue != nullptr)
+    {
+        CFDictionaryAddValue(attributes, kSecAttrKeyType, kSecAttrKeyTypeEC);
+        CFDictionaryAddValue(attributes, kSecAttrKeySizeInBits, cfKeySizeValue);
+        CFDictionaryAddValue(attributes, kSecUseKeychain, tempKeychain);
 
-    OSStatus status = SecKeyGeneratePair(attributes, pPublicKey, pPrivateKey);
+        status = SecKeyGeneratePair(attributes, pPublicKey, pPrivateKey);
 
-    CFRelease(attributes);
-    CFRelease(cfKeySizeValue);
+        if (status == noErr)
+        {
+            status = ExportImportKey(pPublicKey, kSecItemTypePublicKey);
+        }
+
+        if (status == noErr)
+        {
+            status = ExportImportKey(pPrivateKey, kSecItemTypePrivateKey);
+        }
+    }
+    else
+    {
+        status = errSecAllocate;
+    }
+
+    if (attributes != nullptr)
+        CFRelease(attributes);
+    if (cfKeySizeValue != nullptr)
+        CFRelease(cfKeySizeValue);
 
     *pOSStatus = status;
     return status == noErr;

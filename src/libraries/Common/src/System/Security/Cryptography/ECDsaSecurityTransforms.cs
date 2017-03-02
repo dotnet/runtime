@@ -305,24 +305,14 @@ namespace System.Security.Cryptography
                         return current;
                     }
 
-#if APPLE_ASYMMETRIC_GENERATION
                     SafeSecKeyRefHandle publicKey;
                     SafeSecKeyRefHandle privateKey;
-                    int osStatus;
 
-                    int gen = Interop.AppleCrypto.EccGenerateKey(KeySizeValue, out publicKey, out privateKey, out osStatus);
-
-                    if (gen != 1)
-                    {
-                        throw Interop.AppleCrypto.CreateExceptionForCCError(osStatus, Interop.AppleCrypto.OSStatus);
-                    }
+                    Interop.AppleCrypto.EccGenerateKey(KeySizeValue, out publicKey, out privateKey);
 
                     current = SecKeyPair.PublicPrivatePair(publicKey, privateKey);
                     _keys = current;
                     return current;
-#else
-                    throw new CryptographicException("ECDSA Key Generation is temporarily disabled");
-#endif
                 }
             }
         }

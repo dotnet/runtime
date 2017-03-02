@@ -10,7 +10,6 @@ namespace System.Security.Cryptography.Rsa.Tests
         RSA Create(int keySize);
         bool Supports384PrivateKey { get; }
         bool SupportsSha2Oaep { get; }
-        bool SupportsKeyGeneration { get; }
     }
 
     public static partial class RSAFactory
@@ -28,7 +27,5 @@ namespace System.Security.Cryptography.Rsa.Tests
         public static bool Supports384PrivateKey => s_provider.Supports384PrivateKey;
 
         public static bool SupportsSha2Oaep => s_provider.SupportsSha2Oaep;
-
-        public static bool SupportsKeyGeneration => s_provider.SupportsKeyGeneration;
     }
 }

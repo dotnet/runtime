@@ -260,25 +260,14 @@ namespace System.Security.Cryptography
                     return current;
                 }
 
-#if APPLE_ASYMMETRIC_GENERATION
                 SafeSecKeyRefHandle publicKey;
                 SafeSecKeyRefHandle privateKey;
-                int osStatus;
 
-                int gen = Interop.AppleCrypto.RsaGenerateKey(KeySizeValue, out publicKey, out privateKey, out osStatus);
-
-                if (gen != 1)
-                {
-                    Debug.Assert(gen == 0, $"Expected gen=0, got gen={gen}");
-                    throw Interop.AppleCrypto.CreateExceptionForCCError(osStatus, Interop.AppleCrypto.OSStatus);
-                }
+                Interop.AppleCrypto.RsaGenerateKey(KeySizeValue, out publicKey, out privateKey);
 
                 current = SecKeyPair.PublicPrivatePair(publicKey, privateKey);
                 _keys = current;
                 return current;
-#else
-                throw new CryptographicException("RSA Key Generation is temporarily disabled");
-#endif
             }
 
             private void SetKey(SecKeyPair newKeyPair)

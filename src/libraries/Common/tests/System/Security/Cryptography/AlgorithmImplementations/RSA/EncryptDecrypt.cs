@@ -8,8 +8,6 @@ namespace System.Security.Cryptography.Rsa.Tests
 {
     public class EncryptDecrypt
     {
-        public static bool SupportsKeyGeneration => RSAFactory.SupportsKeyGeneration;
-
         [Fact]
         public static void DecryptSavedAnswer()
         {
@@ -139,7 +137,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             Assert.Equal(TestData.HelloBytes, output);
         }
 
-        [ConditionalFact(nameof(SupportsKeyGeneration))]
+        [Fact]
         public static void RsaCryptRoundtrip()
         {
             byte[] crypt;
@@ -155,7 +153,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             Assert.Equal(TestData.HelloBytes, output);
         }
 
-        [ConditionalFact(nameof(SupportsKeyGeneration))]
+        [Fact]
         public static void RsaDecryptAfterExport()
         {
             byte[] output;

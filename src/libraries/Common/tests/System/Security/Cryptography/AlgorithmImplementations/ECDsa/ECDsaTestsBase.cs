@@ -247,8 +247,6 @@ namespace System.Security.Cryptography.EcDsa.Tests
                 return ECDsaFactory.ExplicitCurvesSupported;
             }
         }
-
-        internal static bool SupportsKeyGeneration => ECDsaFactory.SupportsKeyGeneration ;
     }
 
     internal static class EcDsaTestExtensions
