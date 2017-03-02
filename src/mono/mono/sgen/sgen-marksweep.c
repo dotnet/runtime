@@ -727,7 +727,6 @@ get_block:
 			 */
 			if (SGEN_CAS_PTR ((volatile gpointer *)&free_blocks [size_index], next_free, block) != block)
 				goto get_block;
-			g_assert (block->free_list);
 			block->next_free = free_blocks_local [size_index];
 			free_blocks_local [size_index] = block;
 
