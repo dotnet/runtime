@@ -2846,7 +2846,7 @@ protected:
 };
 #endif // _TARGET_X86_ && !FEATURE_PAL
 
-#if defined(_TARGET_X86_)
+#if defined(_TARGET_X86_) && defined(FEATURE_COMINTEROP)
 //-------------------------------------------------------------------------
 // Exception handler for COM to managed frame
 //  and the layout of the exception registration record structure in the stack
@@ -2866,7 +2866,7 @@ struct ComToManagedExRecord
         return &m_frame;
     }
 };
-#endif // _TARGET_X86_
+#endif // _TARGET_X86_ && FEATURE_COMINTEROP
 
 
 //------------------------------------------------------------------------
