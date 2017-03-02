@@ -12,7 +12,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Xml.Tests
 {
-    public class EndToEnd
+    public class Samples
     {
         const string ExampleXml = @"<?xml version=""1.0""?>
 <example>
