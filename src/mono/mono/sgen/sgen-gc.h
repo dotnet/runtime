@@ -717,7 +717,6 @@ typedef struct _SgenRememberedSet {
 
 	void (*clear_cards) (void);
 
-	void (*finish_minor_collection) (void);
 	gboolean (*find_address) (char *addr);
 	gboolean (*find_address_with_cards) (char *cards_start, guint8 *cards, char *addr);
 } SgenRememberedSet;

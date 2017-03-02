@@ -1709,8 +1709,6 @@ collect_nursery (const char *reason, gboolean is_overflow, SgenGrayQueue *unpin_
 
 	sgen_gray_object_queue_dispose (&gc_thread_gray_queue);
 
-	remset.finish_minor_collection ();
-
 	check_scan_starts ();
 
 	binary_protocol_flush_buffers (FALSE);
