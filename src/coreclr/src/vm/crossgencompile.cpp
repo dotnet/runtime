@@ -292,6 +292,12 @@ INT32 rel32UsingJumpStub(INT32 UNALIGNED * pRel32, PCODE target, MethodDesc *pMe
     // crossgen does not have jump stubs
     return 0;
 }
+
+INT32 rel32UsingPreallocatedJumpStub(INT32 UNALIGNED * pRel32, PCODE target, PCODE jumpStubAddr)
+{
+    // crossgen does not have jump stubs
+    return 0;
+}
 #endif
 
 
