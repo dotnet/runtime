@@ -256,22 +256,14 @@ def main(args):
 
     # Run the primary (non-test) corefx build
 
-    command = ' '.join(('build.cmd' if Is_windows else './build.sh', config_args))
+    command = ' '.join(('build.cmd' if Is_windows else './build.sh',
+                        config_args,
+                        '-- /p:CoreCLROverridePath=%s' % core_root))
+
     log(command)
     returncode = 0 if testing else os.system(command)
     if returncode != 0:
         sys.exit(returncode)
-
-    # Copy the coreclr runtime we wish to run tests against.  This is the recommended
-    # hack until a full-stack test solution is ready.  This assumes there is a single
-    # directory under <fx_root>/bin/runtime into which we copy coreclr binaries.  We
-    # assume the appropriate coreclr has already been built.
-
-    fx_runtime_dir = os.path.join(fx_root, 'bin', 'runtime')
-    overlay_dest = os.path.join(fx_runtime_dir, os.listdir(fx_runtime_dir)[0])
-    log('[overlay] %s -> %s' % (core_root, overlay_dest))
-    if not testing:
-        distutils.dir_util.copy_tree(core_root, overlay_dest)
 
     # Build the build-tests command line.
 
