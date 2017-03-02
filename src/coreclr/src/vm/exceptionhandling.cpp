@@ -17,6 +17,10 @@
 #include "eventtrace.h"
 #include "virtualcallstub.h"
 
+#if defined(_TARGET_X86_)
+#define USE_CURRENT_CONTEXT_IN_FILTER
+#endif // _TARGET_X86_
+
 #if defined(_TARGET_ARM_) || defined(_TARGET_ARM64_) || defined(_TARGET_X86_)
 #define ADJUST_PC_UNWOUND_TO_CALL
 #define STACK_RANGE_BOUNDS_ARE_CALLER_SP
@@ -29,6 +33,21 @@
 #define ESTABLISHER_FRAME_ADDRESS_IS_CALLER_SP
 #endif // _TARGET_ARM_ || _TARGET_ARM64_ || _TARGET_X86_
 
+#ifdef USE_CURRENT_CONTEXT_IN_FILTER
+inline void CaptureNonvolatileRegisters(PKNONVOLATILE_CONTEXT pNonvolatileContext, PCONTEXT pContext)
+{
+#define CALLEE_SAVED_REGISTER(reg) pNonvolatileContext->reg = pContext->reg;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+}
+
+inline void RestoreNonvolatileRegisters(PCONTEXT pContext, PKNONVOLATILE_CONTEXT pNonvolatileContext)
+{
+#define CALLEE_SAVED_REGISTER(reg) pContext->reg = pNonvolatileContext->reg;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+}
+#endif
 #ifndef DACCESS_COMPILE
 
 // o Functions and funclets are tightly associated.  In fact, they are laid out in contiguous memory.
@@ -1287,9 +1306,13 @@ void ExceptionTracker::InitializeCurrentContextForCrawlFrame(CrawlFrame* pcfThis
     {
         REGDISPLAY *pRD = pcfThisFrame->pRD;
         
+#ifndef USE_CURRENT_CONTEXT_IN_FILTER
         INDEBUG(memset(pRD->pCurrentContext, 0xCC, sizeof(*(pRD->pCurrentContext))));
         // Ensure that clients can tell the current context isn't valid.
         SetIP(pRD->pCurrentContext, 0);
+#else // !USE_CURRENT_CONTEXT_IN_FILTER
+        RestoreNonvolatileRegisters(pRD->pCurrentContext, pDispatcherContext->CurrentNonVolatileContextRecord);
+#endif // USE_CURRENT_CONTEXT_IN_FILTER
 
         *(pRD->pCallerContext)      = *(pDispatcherContext->ContextRecord);
         pRD->IsCallerContextValid   = TRUE;
@@ -2884,8 +2907,14 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
                                 // Assert our invariants (we had set them up in InitializeCrawlFrame):
                                 REGDISPLAY *pCurRegDisplay = pcfThisFrame->GetRegisterSet();
                                 
+                                CONTEXT *pContext = NULL;
+#ifndef USE_CURRENT_CONTEXT_IN_FILTER
                                 // 1) In first pass, we dont have a valid current context IP
-                                _ASSERTE(GetIP(pCurRegDisplay->pCurrentContext) == 0); 
+                                _ASSERTE(GetIP(pCurRegDisplay->pCurrentContext) == 0);
+                                pContext = pCurRegDisplay->pCallerContext;
+#else
+                                pContext = pCurRegDisplay->pCurrentContext;
+#endif // !USE_CURRENT_CONTEXT_IN_FILTER
 #ifdef USE_CALLER_SP_IN_FUNCLET
                                 // 2) Our caller context and caller SP are valid
                                 _ASSERTE(pCurRegDisplay->IsCallerContextValid && pCurRegDisplay->IsCallerSPValid);
@@ -2896,7 +2925,7 @@ CLRUnwindStatus ExceptionTracker::ProcessManagedCallFrame(
                                 {
                                     // CallHandler expects to be in COOP mode.
                                     GCX_COOP();
-                                    dwResult = CallHandler(dwFilterStartPC, sf, &EHClause, pMD, Filter X86_ARG(pCurRegDisplay->pCallerContext) ARM_ARG(pCurRegDisplay->pCallerContext) ARM64_ARG(pCurRegDisplay->pCallerContext));
+                                    dwResult = CallHandler(dwFilterStartPC, sf, &EHClause, pMD, Filter X86_ARG(pContext) ARM_ARG(pContext) ARM64_ARG(pContext));
                                 }
                             }
                             EX_CATCH
@@ -4508,6 +4537,11 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
         // and then check whether an exception handler exists for the frame.
         if (dispatcherContext.FunctionEntry != NULL)
         {
+#ifdef USE_CURRENT_CONTEXT_IN_FILTER
+            KNONVOLATILE_CONTEXT currentNonVolatileContext;
+            CaptureNonvolatileRegisters(&currentNonVolatileContext, frameContext);
+#endif // USE_CURRENT_CONTEXT_IN_FILTER
+
             RtlVirtualUnwind(UNW_FLAG_EHANDLER,
                 dispatcherContext.ImageBase,
                 dispatcherContext.ControlPc,
@@ -4526,6 +4560,9 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
             }
 
             dispatcherContext.EstablisherFrame = establisherFrame;
+#ifdef USE_CURRENT_CONTEXT_IN_FILTER
+            dispatcherContext.CurrentNonVolatileContextRecord = &currentNonVolatileContext;
+#endif // USE_CURRENT_CONTEXT_IN_FILTER
             dispatcherContext.ContextRecord = frameContext;
 
             // Find exception handler in the current frame
