@@ -131,19 +131,6 @@ MembersMustExist : Member 'System.Enum.ToString(System.String, System.IFormatPro
 MembersMustExist : Member 'System.Exception.add_SerializeObjectState(System.EventHandler<System.Runtime.Serialization.SafeSerializationEventArgs>)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Exception.remove_SerializeObjectState(System.EventHandler<System.Runtime.Serialization.SafeSerializationEventArgs>)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Exception.TargetSite.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.GC.CancelFullGCNotification()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.GC.EndNoGCRegion()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.GC.GetGeneration(System.WeakReference)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.GC.RegisterForFullGCNotification(System.Int32, System.Int32)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.GC.TryStartNoGCRegion(System.Int64)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.GC.TryStartNoGCRegion(System.Int64, System.Boolean)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.GC.TryStartNoGCRegion(System.Int64, System.Int64)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.GC.TryStartNoGCRegion(System.Int64, System.Int64, System.Boolean)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.GC.WaitForFullGCApproach()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.GC.WaitForFullGCApproach(System.Int32)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.GC.WaitForFullGCComplete()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.GC.WaitForFullGCComplete(System.Int32)' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.GCNotificationStatus' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Guid.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Guid.ToString(System.String, System.IFormatProvider)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Int16.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
@@ -301,7 +288,6 @@ TypesMustExist : Type 'System.Reflection.ObfuscateAssemblyAttribute' does not ex
 TypesMustExist : Type 'System.Reflection.ObfuscationAttribute' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.StrongNameKeyPair..ctor(System.IO.FileStream)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Reflection.TypeDelegator' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Runtime.GCLatencyMode System.Runtime.GCLatencyMode.NoGCRegion' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.MemoryFailPoint' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.CompilerServices.CompilationRelaxations' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.CompilerServices.CompilationRelaxationsAttribute..ctor(System.Runtime.CompilerServices.CompilationRelaxations)' does not exist in the implementation but it does exist in the contract.
@@ -562,19 +548,6 @@ MembersMustExist : Member 'System.Enum.ToString(System.String, System.IFormatPro
 MembersMustExist : Member 'System.Exception.add_SerializeObjectState(System.EventHandler<System.Runtime.Serialization.SafeSerializationEventArgs>)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Exception.remove_SerializeObjectState(System.EventHandler<System.Runtime.Serialization.SafeSerializationEventArgs>)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Exception.TargetSite.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.GC.CancelFullGCNotification()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.GC.EndNoGCRegion()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.GC.GetGeneration(System.WeakReference)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.GC.RegisterForFullGCNotification(System.Int32, System.Int32)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.GC.TryStartNoGCRegion(System.Int64)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.GC.TryStartNoGCRegion(System.Int64, System.Boolean)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.GC.TryStartNoGCRegion(System.Int64, System.Int64)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.GC.TryStartNoGCRegion(System.Int64, System.Int64, System.Boolean)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.GC.WaitForFullGCApproach()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.GC.WaitForFullGCApproach(System.Int32)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.GC.WaitForFullGCComplete()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.GC.WaitForFullGCComplete(System.Int32)' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.GCNotificationStatus' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Guid.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Guid.ToString(System.String, System.IFormatProvider)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Int16.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
@@ -794,7 +767,6 @@ TypesMustExist : Type 'System.Reflection.ObfuscateAssemblyAttribute' does not ex
 TypesMustExist : Type 'System.Reflection.ObfuscationAttribute' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.StrongNameKeyPair..ctor(System.IO.FileStream)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Reflection.TypeDelegator' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Runtime.GCLatencyMode System.Runtime.GCLatencyMode.NoGCRegion' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.MemoryFailPoint' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.CompilerServices.CompilationRelaxations' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.CompilerServices.CompilationRelaxationsAttribute..ctor(System.Runtime.CompilerServices.CompilationRelaxations)' does not exist in the implementation but it does exist in the contract.
@@ -1205,18 +1177,6 @@ MembersMustExist : Member 'System.Enum.ToString(System.String, System.IFormatPro
 MembersMustExist : Member 'System.Exception.add_SerializeObjectState(System.EventHandler<System.Runtime.Serialization.SafeSerializationEventArgs>)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Exception.remove_SerializeObjectState(System.EventHandler<System.Runtime.Serialization.SafeSerializationEventArgs>)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Exception.TargetSite.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.GC.CancelFullGCNotification()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.GC.EndNoGCRegion()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.GC.GetGeneration(System.WeakReference)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.GC.RegisterForFullGCNotification(System.Int32, System.Int32)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.GC.TryStartNoGCRegion(System.Int64)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.GC.TryStartNoGCRegion(System.Int64, System.Boolean)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.GC.TryStartNoGCRegion(System.Int64, System.Int64)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.GC.TryStartNoGCRegion(System.Int64, System.Int64, System.Boolean)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.GC.WaitForFullGCApproach()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.GC.WaitForFullGCApproach(System.Int32)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.GC.WaitForFullGCComplete()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.GC.WaitForFullGCComplete(System.Int32)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Guid.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Guid.ToString(System.String, System.IFormatProvider)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Int16.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
@@ -1282,7 +1242,6 @@ MembersMustExist : Member 'System.Diagnostics.DebuggableAttribute..ctor(System.B
 MembersMustExist : Member 'System.Diagnostics.DebuggableAttribute.DebuggingFlags.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Diagnostics.DebuggableAttribute.IsJITOptimizerDisabled.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Diagnostics.DebuggableAttribute.IsJITTrackingEnabled.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Runtime.GCLatencyMode System.Runtime.GCLatencyMode.NoGCRegion' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.CompilerServices.CompilationRelaxationsAttribute..ctor(System.Runtime.CompilerServices.CompilationRelaxations)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.CompilerServices.InternalsVisibleToAttribute.AllInternalsVisible.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.CompilerServices.InternalsVisibleToAttribute.AllInternalsVisible.set(System.Boolean)' does not exist in the implementation but it does exist in the contract.
@@ -1669,4 +1628,4 @@ MembersMustExist : Member 'System.Threading.Timer..ctor(System.Threading.TimerCa
 MembersMustExist : Member 'System.Threading.Timer.Change(System.Int64, System.Int64)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.Timer.Change(System.UInt32, System.UInt32)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.Timer.Dispose(System.Threading.WaitHandle)' does not exist in the implementation but it does exist in the contract.
-Total Issues: 1618
+Total Issues: 1577
