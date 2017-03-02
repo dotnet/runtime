@@ -21,7 +21,7 @@
 #endif
 
 #include <mono/metadata/mono-endian.h>
-#include <mono/metadata/mono-debug-debugger.h>
+#include <mono/metadata/debug-internals.h>
 
 #ifndef HOST_WIN32
 #include <mono/utils/freebsd-elf32.h>

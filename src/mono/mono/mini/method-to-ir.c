@@ -50,8 +50,7 @@
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/debug-helpers.h>
-#include <mono/metadata/mono-debug.h>
-#include <mono/metadata/mono-debug-debugger.h>
+#include <mono/metadata/debug-internals.h>
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/security-manager.h>
 #include <mono/metadata/threads-types.h>
@@ -59,7 +58,6 @@
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/profiler.h>
 #include <mono/metadata/monitor.h>
-#include <mono/metadata/debug-mono-symfile.h>
 #include <mono/utils/mono-memory-model.h>
 #include <mono/utils/mono-error-internals.h>
 #include <mono/metadata/mono-basic-block.h>

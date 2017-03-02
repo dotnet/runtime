@@ -49,7 +49,6 @@
 #include <mono/metadata/marshal-internals.h>
 #include <mono/metadata/monitor.h>
 #include <mono/metadata/mono-debug.h>
-#include <mono/metadata/mono-debug-debugger.h>
 #include <mono/metadata/attach.h>
 #include <mono/metadata/w32file.h>
 #include <mono/metadata/lock-tracer.h>

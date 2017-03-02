@@ -13,7 +13,6 @@
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/tabledefs.h>
-#include <mono/metadata/mono-debug-debugger.h>
 #include <mono/arch/ia64/ia64-codegen.h>
 
 #include "mini.h"

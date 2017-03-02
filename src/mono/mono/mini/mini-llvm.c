@@ -9,7 +9,7 @@
 #include "config.h"
 
 #include <mono/metadata/debug-helpers.h>
-#include <mono/metadata/debug-mono-symfile.h>
+#include <mono/metadata/debug-internals.h>
 #include <mono/metadata/mempool-internals.h>
 #include <mono/metadata/environment.h>
 #include <mono/metadata/object-internals.h>
@@ -9020,7 +9020,7 @@ emit_dbg_subprogram (EmitContext *ctx, MonoCompile *cfg, LLVMValueRef method, co
 	if (!minfo)
 		return NULL;
 
-	mono_debug_symfile_get_seq_points (minfo, &source_file, NULL, NULL, &sym_seq_points, &n_seq_points);
+	mono_debug_get_seq_points (minfo, &source_file, NULL, NULL, &sym_seq_points, &n_seq_points);
 	if (!source_file)
 		source_file = g_strdup ("<unknown>");
 	dir = g_path_get_dirname (source_file);

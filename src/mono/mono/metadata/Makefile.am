@@ -189,7 +189,7 @@ common_sources = \
 	mono-config.c		\
 	mono-debug.h		\
 	mono-debug.c		\
-	mono-debug-debugger.h	\
+	debug-internals.h	\
 	mono-endian.c		\
 	mono-endian.h		\
 	mono-hash.h		\

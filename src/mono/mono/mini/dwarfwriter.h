@@ -14,7 +14,7 @@
 #include "image-writer.h"
 #include "mini.h"
 
-#include <mono/metadata/debug-mono-symfile.h>
+#include <mono/metadata/debug-internals.h>
 
 #include <glib.h>
 
