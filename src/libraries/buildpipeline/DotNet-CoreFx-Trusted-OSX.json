@@ -291,7 +291,7 @@
     }
   },
   "demands": [
-    "Agent.OS -equals darwin"
+    "VSTS_OS -equals Mac_Sierra_10.12"
   ],
   "retentionRules": [
     {
@@ -331,11 +331,11 @@
   "quality": "definition",
   "queue": {
     "pool": {
-      "id": 39,
-      "name": "DotNet-Build"
+      "id": 83,
+      "name": "DotNetCore-Test"
     },
-    "id": 36,
-    "name": "DotNet-Build"
+    "id": 159,
+    "name": "DotNetCore-Test"
   },
   "path": "\\",
   "type": "build",
