@@ -42,8 +42,6 @@ namespace System.Security.Cryptography.Rsa.Tests
             // Currently only RSACng does, which is the default provider on Windows.
             get { return RuntimeInformation.IsOSPlatform(OSPlatform.Windows); }
         }
-
-        public bool SupportsKeyGeneration => !RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
     }
 
     public partial class RSAFactory

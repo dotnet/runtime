@@ -14,10 +14,11 @@ Generate a new RSA keypair with the specified key size, in bits.
 
 Returns 1 on success, 0 on failure.  On failure, *pOSStatus should contain the OS reported error.
 */
-extern "C" int AppleCryptoNative_RsaGenerateKey(int32_t keySizeBits,
-                                                SecKeyRef* pPublicKey,
-                                                SecKeyRef* pPrivateKey,
-                                                int32_t* pOSStatus);
+extern "C" int32_t AppleCryptoNative_RsaGenerateKey(int32_t keySizeBits,
+                                                    SecKeychainRef tempKeychain,
+                                                    SecKeyRef* pPublicKey,
+                                                    SecKeyRef* pPrivateKey,
+                                                    int32_t* pOSStatus);
 
 /*
 Decrypt the contents of pbData using the provided privateKey under OAEP padding.

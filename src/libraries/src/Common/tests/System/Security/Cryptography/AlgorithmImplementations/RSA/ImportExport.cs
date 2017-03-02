@@ -10,9 +10,7 @@ namespace System.Security.Cryptography.Rsa.Tests
 {
     public partial class ImportExport
     {
-        public static bool SupportsKeyGeneration => RSAFactory.SupportsKeyGeneration;
-
-        [ConditionalFact(nameof(SupportsKeyGeneration))]
+        [Fact]
         public static void ExportAutoKey()
         {
             RSAParameters privateParams;
@@ -122,7 +120,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             AssertKeyEquals(ref unusualExponentParameters, ref exported);
         }
 
-        [ConditionalFact(nameof(SupportsKeyGeneration))]
+        [Fact]
         public static void ImportReset()
         {
             using (RSA rsa = RSAFactory.Create())

@@ -8,15 +8,13 @@ namespace System.Security.Cryptography.Rsa.Tests
 {
     public class KeyGeneration
     {
-        public static bool SupportsKeyGeneration => RSAFactory.SupportsKeyGeneration;
-
-        [ConditionalFact(nameof(SupportsKeyGeneration))]
+        [Fact]
         public static void GenerateMinKey()
         {
             GenerateKey(rsa => GetMin(rsa.LegalKeySizes));
         }
 
-        [ConditionalFact(nameof(SupportsKeyGeneration))]
+        [Fact]
         public static void GenerateSecondMinKey()
         {
             GenerateKey(rsa => GetSecondMin(rsa.LegalKeySizes));
@@ -28,13 +26,13 @@ namespace System.Security.Cryptography.Rsa.Tests
             GenerateKey(rsa => GetMax(rsa.LegalKeySizes));
         }
 
-        [ConditionalFact(nameof(SupportsKeyGeneration))]
+        [Fact]
         public static void GenerateKey_2048()
         {
             GenerateKey(2048);
         }
 
-        [ConditionalFact(nameof(SupportsKeyGeneration))]
+        [Fact]
         public static void GenerateKey_4096()
         {
             GenerateKey(4096);

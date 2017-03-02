@@ -12,7 +12,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
 {
     public partial class ECDsaTests : ECDsaTestsBase
     {
-        [ConditionalFact(nameof(SupportsKeyGeneration))]
+        [Fact]
         public void KeySizeProp()
         {
             using (ECDsa e = ECDsaFactory.Create())
@@ -134,7 +134,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
             }
         }
 
-        [ConditionalTheory(nameof(SupportsKeyGeneration))]
+        [Theory]
         [MemberData(nameof(TestCurves))]
         public void TestRegenKeyNamed(CurveDef curveDef)
         {
@@ -179,7 +179,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
             }
         }
 
-        [ConditionalTheory(nameof(SupportsKeyGeneration))]
+        [Theory]
         [MemberData(nameof(TestCurves))]
         public void TestChangeFromNamedCurveToKeySize(CurveDef curveDef)
         {
@@ -213,7 +213,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsKeyGeneration))]
+        [Fact]
         public void TestNegative256WithRandomKey()
         {
             using (ECDsa ecdsa = ECDsaFactory.Create(ECCurve.NamedCurves.nistP256))
@@ -478,7 +478,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
         
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        [ConditionalTheory(nameof(SupportsKeyGeneration))]
+        [Theory]
         [MemberData(nameof(RealImplementations))]
         public void SignData_MaxOffset_ZeroLength_NoThrow(ECDsa ecdsa)
         {
@@ -489,7 +489,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
             Assert.True(ecdsa.VerifyData(Array.Empty<byte>(), signature, HashAlgorithmName.SHA256));
         }
 
-        [ConditionalTheory(nameof(SupportsKeyGeneration))]
+        [Theory]
         [MemberData(nameof(RealImplementations))]
         public void VerifyData_MaxOffset_ZeroLength_NoThrow(ECDsa ecdsa)
         {
@@ -500,7 +500,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
             Assert.True(ecdsa.VerifyData(data, data.Length, 0, signature, HashAlgorithmName.SHA256));
         }
 
-        [ConditionalTheory(nameof(SupportsKeyGeneration))]
+        [Theory]
         [MemberData(nameof(RealImplementations))]
         public void Roundtrip_WithOffset(ECDsa ecdsa)
         {
@@ -517,7 +517,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
 
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        [ConditionalTheory(nameof(SupportsKeyGeneration))]
+        [Theory]
         [InlineData(256)]
         [InlineData(384)]
         [InlineData(521)]
@@ -548,7 +548,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
             }
         }
 
-        [ConditionalTheory(nameof(SupportsKeyGeneration))]
+        [Theory]
         [MemberData(nameof(InteroperableSignatureConfigurations))]
         public void SignVerify_InteroperableSameKeys_RoundTripsUnlessTampered(ECDsa ecdsa, HashAlgorithmName hashAlgorithm)
         {
