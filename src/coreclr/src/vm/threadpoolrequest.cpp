@@ -368,11 +368,8 @@ void UnManagedPerAppDomainTPCount::SetAppDomainRequestsActive()
         LONG prevCount = FastInterlockCompareExchange(&m_outstandingThreadRequestCount, count+1, count);
         if (prevCount == count)
         {
-            if (!CLRThreadpoolHosted())
-            {
-                ThreadpoolMgr::MaybeAddWorkingWorker();
-                ThreadpoolMgr::EnsureGateThreadRunning();
-            }
+            ThreadpoolMgr::MaybeAddWorkingWorker();
+            ThreadpoolMgr::EnsureGateThreadRunning();
             break;
         }
         count = prevCount;
@@ -608,11 +605,8 @@ void ManagedPerAppDomainTPCount::SetAppDomainRequestsActive()
             LONG prev = FastInterlockCompareExchange(&m_numRequestsPending, count+1, count);
             if (prev == count)
             {
-                if (!CLRThreadpoolHosted())
-                {
-                    ThreadpoolMgr::MaybeAddWorkingWorker();
-                    ThreadpoolMgr::EnsureGateThreadRunning();
-                }
+                ThreadpoolMgr::MaybeAddWorkingWorker();
+                ThreadpoolMgr::EnsureGateThreadRunning();
                 break;
             }
             count = prev;
@@ -688,7 +682,7 @@ void ManagedPerAppDomainTPCount::ClearAppDomainUnloading()
     // AD.
     //
     VolatileStore(&m_numRequestsPending, (LONG)ThreadpoolMgr::NumberOfProcessors);
-    if (!CLRThreadpoolHosted() && ThreadpoolMgr::IsInitialized())
+    if (ThreadpoolMgr::IsInitialized())
     {
         ThreadpoolMgr::MaybeAddWorkingWorker();
         ThreadpoolMgr::EnsureGateThreadRunning();

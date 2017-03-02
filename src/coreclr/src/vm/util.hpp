@@ -708,12 +708,6 @@ inline BOOL CLRSyncHosted()
     return FALSE;
 }
 
-inline BOOL CLRThreadpoolHosted()
-{
-    LIMITED_METHOD_CONTRACT;
-    return FALSE;
-}
-
 inline BOOL CLRIoCompletionHosted()
 {
     LIMITED_METHOD_CONTRACT;
