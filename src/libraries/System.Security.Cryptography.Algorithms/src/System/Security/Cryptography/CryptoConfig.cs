@@ -15,7 +15,6 @@ namespace System.Security.Cryptography
         private const string AssemblyName_Csp = "System.Security.Cryptography.Csp";
         private const string AssemblyName_Pkcs = "System.Security.Cryptography.Pkcs";
         private const string AssemblyName_X509Certificates = "System.Security.Cryptography.X509Certificates";
-        private const string AssemblyName_Xml = "System.Security.Cryptography.Xml";
 
         private const BindingFlags ConstructorDefault = BindingFlags.Instance | BindingFlags.Public | BindingFlags.CreateInstance;
 
