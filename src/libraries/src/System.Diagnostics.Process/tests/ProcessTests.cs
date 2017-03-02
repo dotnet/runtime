@@ -163,7 +163,9 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestExitTime()
         {
-            DateTime timeBeforeProcessStart = DateTime.UtcNow;
+            // ExitTime resolution on some platforms is less accurate than our DateTime.UtcNow resolution, so
+            // we subtract ms from the begin time to account for it.
+            DateTime timeBeforeProcessStart = DateTime.UtcNow.AddMilliseconds(-25);
             Process p = CreateProcessLong();
             p.Start();
             Assert.Throws<InvalidOperationException>(() => p.ExitTime);
