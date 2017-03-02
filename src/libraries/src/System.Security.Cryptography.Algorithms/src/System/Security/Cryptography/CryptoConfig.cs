@@ -256,6 +256,10 @@ namespace System.Security.Cryptography
                 ht.Add("1.3.6.1.4.1.311.88.2.1", "System.Security.Cryptography.Pkcs.Pkcs9DocumentName, " + AssemblyName_Pkcs);
                 ht.Add("1.3.6.1.4.1.311.88.2.2", "System.Security.Cryptography.Pkcs.Pkcs9DocumentDescription, " + AssemblyName_Pkcs);
 
+                s_defaultNameHT = ht;
+
+                return s_defaultNameHT;
+
                 // Types in Desktop but currently unsupported in CoreFx:
                 // Type HMACRIPEMD160Type = typeof(System.Security.Cryptography.HMACRIPEMD160);
                 // Type MAC3DESType = typeof(System.Security.Cryptography.MACTripleDES);
