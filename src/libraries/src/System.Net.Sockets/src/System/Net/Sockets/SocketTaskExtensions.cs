@@ -24,7 +24,7 @@ namespace System.Net.Sockets
             socket.ConnectAsync(host, port);
 
         public static Task<int> ReceiveAsync(this Socket socket, ArraySegment<byte> buffer, SocketFlags socketFlags) =>
-            socket.ReceiveAsync(buffer, socketFlags);
+            socket.ReceiveAsync(buffer, socketFlags, wrapExceptionsInIOExceptions: false);
         public static Task<int> ReceiveAsync(this Socket socket, IList<ArraySegment<byte>> buffers, SocketFlags socketFlags) =>
             socket.ReceiveAsync(buffers, socketFlags);
         public static Task<SocketReceiveFromResult> ReceiveFromAsync(this Socket socket, ArraySegment<byte> buffer, SocketFlags socketFlags, EndPoint remoteEndPoint) =>
@@ -33,7 +33,7 @@ namespace System.Net.Sockets
             socket.ReceiveMessageFromAsync(buffer, socketFlags, remoteEndPoint);
 
         public static Task<int> SendAsync(this Socket socket, ArraySegment<byte> buffer, SocketFlags socketFlags) =>
-            socket.SendAsync(buffer, socketFlags);
+            socket.SendAsync(buffer, socketFlags, wrapExceptionsInIOExceptions: false);
         public static Task<int> SendAsync(this Socket socket, IList<ArraySegment<byte>> buffers, SocketFlags socketFlags) =>
             socket.SendAsync(buffers, socketFlags);
         public static Task<int> SendToAsync(this Socket socket, ArraySegment<byte> buffer, SocketFlags socketFlags, EndPoint remoteEP) =>
