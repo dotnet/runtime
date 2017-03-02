@@ -105,11 +105,21 @@ if (WIN32)
     endif()
 
     add_custom_command(
-        # The AsmConstants.inc will be built in the pre-build phase of the cee_wks build
-        TARGET cee_wks PRE_BUILD 
+        OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/AsmConstants.inc"
+        DEPENDS ${VM_DIR}/${ARCH_SOURCES_DIR}/asmconstants.h
         COMMAND ${POWERSHELL} -NoProfile -ExecutionPolicy Bypass -NonInteractive \"& \"\"${VM_DIR}/h2inc.ps1\"\"\" \"\"\"${VM_DIR}/${ARCH_SOURCES_DIR}/asmconstants.h\"\"\" >"${CMAKE_CURRENT_BINARY_DIR}/AsmConstants.tmp"
         COMMAND ${CMAKE_CXX_COMPILER} ${DEFINITIONS} /EP "${CMAKE_CURRENT_BINARY_DIR}/AsmConstants.tmp" >"${CMAKE_CURRENT_BINARY_DIR}/AsmConstants.inc"
     )
+
+    set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/AsmConstants.inc PROPERTIES GENERATED TRUE)
+
+    add_custom_target(
+        asmconstants_inc
+        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/AsmConstants.inc
+    )
+
+    add_dependencies(cee_wks asmconstants_inc)
+
   endif(NOT CLR_CMAKE_PLATFORM_ARCH_ARM)
 
 endif (WIN32)
