@@ -759,7 +759,7 @@ struct BackgroundThreadStubArgs
     bool hasStarted;
 };
 
-DWORD BackgroundThreadStub(void* arg)
+DWORD WINAPI BackgroundThreadStub(void* arg)
 {
     BackgroundThreadStubArgs* stubArgs = (BackgroundThreadStubArgs*)arg;
     assert (stubArgs->thread != NULL);
