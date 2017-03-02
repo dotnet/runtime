@@ -624,6 +624,7 @@ namespace System.Net.Sockets.Tests
             });
         }
 
+        [ActiveIssue(16611, TestPlatforms.AnyUnix)]
         [Fact]
         public async Task CopyToAsync_InvalidArguments_Throws()
         {
