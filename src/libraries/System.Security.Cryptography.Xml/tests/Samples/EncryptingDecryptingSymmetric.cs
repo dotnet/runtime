@@ -97,7 +97,7 @@ namespace System.Security.Cryptography.Xml.Tests
                 XmlDocument xmlDocToDecrypt = LoadXmlFromString(xmlDocToEncrypt.OuterXml);
                 Decrypt(xmlDocToDecrypt, key);
 
-                Assert.Equal(ExampleXml, xmlDocToDecrypt.OuterXml);
+                Assert.Equal(ExampleXml.Replace("\r\n", "\n"), xmlDocToDecrypt.OuterXml.Replace("\r\n", "\n"));
             }
         }
     }
