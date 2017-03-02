@@ -1,5 +1,4 @@
 set( COMMLS_WKS_SOURCES
-  calendardata.cpp
   encodingdata.cpp
   nlsinfo.cpp
 )

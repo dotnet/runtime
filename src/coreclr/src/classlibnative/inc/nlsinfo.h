@@ -18,10 +18,6 @@
 #ifndef _NLSINFO_H_
 #define _NLSINFO_H_
 
-#define DEFAULT_SORT_VERSION 0
-#define SORT_VERSION_WHIDBEY 0x00001000
-#define SORT_VERSION_V4      0x00060101
-
 //
 //This structure must map 1-for-1 with the InternalDataItem structure in
 //System.Globalization.EncodingTable.
@@ -53,55 +49,22 @@ typedef int (*PFN_NORMALIZATION_NORMALIZE_STRING)
 typedef BYTE* (*PFN_NORMALIZATION_INIT_NORMALIZATION)
     ( int NormForm, BYTE* pTableData);
 
-////////////////////////////////////////////////////////////////////////////
-//
-// Forward declarations
-//
-////////////////////////////////////////////////////////////////////////////
-
-class CharTypeTable;
-class CasingTable;
-class SortingTable;
-class NativeTextInfo;
-
-class COMNlsInfo {
-
+class COMNlsInfo
+{
 public:
 
-    static INT32 GetCHTLanguage();
-    static INT32 CallGetSystemDefaultUILanguage();
     static INT32 CallGetUserDefaultUILanguage();
-    static LANGID GetDownLevelSystemDefaultUILanguage();
-
-    //
-    //  Native helper functions for methods in CultureInfo.
-    //
-    static BOOL QCALLTYPE InternalGetDefaultLocaleName(INT32 langType, QCall::StringHandleOnStack defaultLocaleName);
-    static BOOL QCALLTYPE InternalGetUserDefaultUILanguage(QCall::StringHandleOnStack userDefaultUiLanguage);
-    static BOOL QCALLTYPE InternalGetSystemDefaultUILanguage(QCall::StringHandleOnStack systemDefaultUiLanguage);
 
     //
     // Native helper functions for methods in DateTimeFormatInfo
     //
     static FCDECL1(FC_BOOL_RET,  nativeSetThreadLocale, StringObject* localeNameUNSAFE);
-    static FCDECL2(Object*, nativeGetLocaleInfoEx, StringObject* localeNameUNSAFE, INT32 lcType);
-    static FCDECL2(INT32, nativeGetLocaleInfoExInt, StringObject* localeNameUNSAFE, INT32 lcType);
 
     //
     //  Native helper functions for CultureData
     //
-    static FCDECL3(FC_BOOL_RET, nativeGetNumberFormatInfoValues, StringObject* localeNameUNSAFE, NumberFormatInfo* nfi, CLR_BOOL useUserOverride);
-    static FCDECL1(Object*, LCIDToLocaleName, LCID lcid);
-    static FCDECL1(INT32, LocaleNameToLCID, StringObject* localeNameUNSAFE);
 
-    static INT32 QCALLTYPE InternalCompareString (INT_PTR handle, INT_PTR handleOrigin, LPCWSTR localeName, LPCWSTR string1, INT32 offset1, INT32 length1, LPCWSTR string2, INT32 offset2, INT32 length2, INT32 flags);
     static INT32 QCALLTYPE InternalGetGlobalizedHashCode(INT_PTR handle, LPCWSTR localeName, LPCWSTR pString, INT32 length, INT32 dwFlagsIn, INT64 additionalEntropy);
-
-    static BOOL QCALLTYPE InternalIsSortable(INT_PTR handle, INT_PTR handleOrigin, LPCWSTR localeName, LPCWSTR pString, INT32 length);
-    static INT_PTR QCALLTYPE InternalInitSortHandle(LPCWSTR localeName, INT_PTR* handleOrigin);
-    static INT_PTR InitSortHandleHelper(LPCWSTR localeName, INT_PTR* handleOrigin);
-    static INT_PTR InternalInitOsSortHandle(LPCWSTR localeName, INT_PTR* handleOrigin);
-    static BOOL QCALLTYPE InternalGetNlsVersionEx(INT_PTR handle, INT_PTR handleOrigin, LPCWSTR lpLocaleName, NLSVERSIONINFOEX * lpVersionInformation);
 
     //
     //  Native helper function for methods in EncodingTable
@@ -111,30 +74,12 @@ public:
     static FCDECL0(CodePageDataItem *, nativeGetCodePageTableDataPointer);
 
     //
-    //  Native helper function for methods in CharacterInfo
-    //
-    static FCDECL0(void, AllocateCharTypeTable);
-
-    //
-    //  Native helper function for methods in TextInfo
-    //
-    static FCDECL5(FC_CHAR_RET, InternalChangeCaseChar, INT_PTR handle, INT_PTR handleOrigin, StringObject* localeNameUNSAFE, CLR_CHAR wch, CLR_BOOL bIsToUpper);
-    static FCDECL5(Object*, InternalChangeCaseString, INT_PTR handle, INT_PTR handleOrigin, StringObject* localeNameUNSAFE, StringObject* pString, CLR_BOOL bIsToUpper);
-    static FCDECL6(INT32, InternalGetCaseInsHash, INT_PTR handle, INT_PTR handleOrigin, StringObject* localeNameUNSAFE, LPVOID strA, CLR_BOOL bForceRandomizedHashing, INT64 additionalEntropy);
-    static INT32 QCALLTYPE InternalCompareStringOrdinalIgnoreCase(LPCWSTR string1, INT32 index1, LPCWSTR string2, INT32 index2, INT32 length1, INT32 length2);
-
-    static BOOL QCALLTYPE InternalTryFindStringOrdinalIgnoreCase(
-        __in                   DWORD       dwFindNLSStringFlags, // mutually exclusive flags: FIND_FROMSTART, FIND_STARTSWITH, FIND_FROMEND, FIND_ENDSWITH
-        __in_ecount(cchSource) LPCWSTR     lpStringSource,       // the string we search in
-        __in                   int         cchSource,            // number of characters lpStringSource after sourceIndex
-        __in                   int         sourceIndex,          // index from where the search will start in lpStringSource
-        __in_ecount(cchValue)  LPCWSTR     lpStringValue,        // the string we search for
-        __in                   int         cchValue,
-        __out                  int*        foundIndex);          // the index in lpStringSource where we found lpStringValue
-
-    //
     // Native helper function for methods in Normalization
     //
+    // On Windows 7 we use the normalization data embedded inside the corelib to get better results.
+    // On Windows 8 and up we use the OS for normalization. 
+    // That is why we need to keep these fcalls and not doing it through pinvokes.
+
     static FCDECL6(int, nativeNormalizationNormalizeString,
         int NormForm, int& iError,
         StringObject* inString, int inLength,
@@ -145,53 +90,7 @@ public:
 
     static void QCALLTYPE nativeNormalizationInitNormalization(int NormForm, BYTE* pTableData);
 
-    //
-    // QCalls prototype
-    //
-
-    static int QCALLTYPE nativeEnumCultureNames(INT32 cultureTypes, QCall::ObjectHandleOnStack retStringArray);
-
-    static int QCALLTYPE InternalFindNLSStringEx(
-        __in_opt               INT_PTR     handle,               // optional sort handle
-        __in_opt               INT_PTR     handleOrigin,         // optional pointer to the native function that created the sort handle
-        __in_z                 LPCWSTR     lpLocaleName,         // locale name
-        __in                   int         dwFindNLSStringFlags, // search falg
-        __in_ecount(cchSource) LPCWSTR     lpStringSource,       // the string we search in
-        __in                   int         cchSource,            // number of characters lpStringSource after sourceIndex
-        __in                   int         sourceIndex,          // index from where the search will start in lpStringSource
-        __in_ecount(cchValue)  LPCWSTR     lpStringValue,        // the string we search for
-        __in                   int         cchValue,			 // length of the string we search for
-        __out_opt              LPINT       pcchFound);           // length of the string we found in source
-
-    static int QCALLTYPE InternalGetSortKey(
-        __in_opt               INT_PTR handle,        // PSORTHANDLE
-        __in_opt               INT_PTR handleOrigin,  // optional pointer to the native function that created the sort handle
-        __in_z                 LPCWSTR pLocaleName,   // locale name
-        __in                   int     flags,         // flags
-        __in_ecount(cchSource) LPCWSTR pStringSource, // Source string
-        __in                   int     cchSource,     // number of characters in lpStringSource
-        __in_ecount(cchTarget) PBYTE   pTarget,       // Target data buffer (may be null to count)
-        __in                   int     cchTarget);    // Character count for target buffer
-
-
 private:
-
-    //
-    //  Internal helper functions.
-    //
-    static LPVOID internalEnumSystemLocales(DWORD dwFlags);
-    static INT32  CompareOrdinal(__in_ecount(Length1) WCHAR* strAChars, int Length1, __in_ecount(Length2) WCHAR* strBChars, int Length2 );
-    static INT32  FastIndexOfString(__in WCHAR *sourceString, INT32 startIndex, INT32 endIndex, __in_ecount(patternLength) WCHAR *pattern, INT32 patternLength);
-    static INT32  FastIndexOfStringInsensitive(__in WCHAR *sourceString, INT32 startIndex, INT32 endIndex, __in_ecount(patternLength) WCHAR *pattern, INT32 patternLength);
-    static INT32  FastLastIndexOfString(__in WCHAR *sourceString, INT32 startIndex, INT32 endIndex, __in_ecount(patternLength) WCHAR *pattern, INT32 patternLength);
-    static INT32  FastLastIndexOfStringInsensitive(__in WCHAR *sourceString, INT32 startIndex, INT32 endIndex, __in_ecount(patternLength) WCHAR *pattern, INT32 patternLength);
-
-    static BOOL GetNativeDigitsFromWin32(LPCWSTR locale, PTRARRAYREF* pOutputStrAry, BOOL useUserOverride);
-    static BOOL CallGetLocaleInfoEx(LPCWSTR locale, int lcType, STRINGREF* pOutputStrRef, BOOL useUserOverride);
-    static BOOL CallGetLocaleInfoEx(LPCWSTR locale, int lcType, INT32* pOutputInt32, BOOL useUserOverride);
-
-    static BOOL IsWindows7();
-
     //
     //  Definitions.
     //
