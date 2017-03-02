@@ -29,42 +29,42 @@
     </BinPlaceConfiguration>
 
     <!-- binplace to directories for packages -->
-    <BinPlaceConfiguration Condition="'$(IsNETCoreApp)' == 'true' AND '$(BuildingNETCoreAppVertical)' == 'true'" Include="netcoreapp-$(OSGroup)">
+    <BinPlaceConfiguration Condition="'$(IsNETCoreApp)' == 'true' AND '$(BuildingNETCoreAppVertical)' == 'true'" Include="netcoreapp-$(_bc_OSGroup)">
       <PackageFileRefPath Condition="'$(IsNETCoreAppRef)' == 'true'">$(NETCoreAppPackageRefPath)</PackageFileRefPath>
       <PackageFileRuntimePath>$(NETCoreAppPackageRuntimePath)</PackageFileRuntimePath>
     </BinPlaceConfiguration>
-    <BinPlaceConfiguration Condition="'$(IsUAP)' == 'true' AND '$(BuildingUAPVertical)' == 'true'" Include="uap-$(OSGroup)">
+    <BinPlaceConfiguration Condition="'$(IsUAP)' == 'true' AND '$(BuildingUAPVertical)' == 'true'" Include="uap-$(_bc_OSGroup)">
       <PackageFileRefPath Condition="'$(IsUAPRef)'=='true'">$(UAPPackageRefPath)</PackageFileRefPath>
       <PackageFileRuntimePath>$(UAPPackageRuntimePath)</PackageFileRuntimePath>
     </BinPlaceConfiguration>
-    <BinPlaceConfiguration Condition="'$(IsUAP)' == 'true' AND '$(BuildingUAPAOTVertical)' == 'true'" Include="uapaot-$(OSGroup)">
+    <BinPlaceConfiguration Condition="'$(IsUAP)' == 'true' AND '$(BuildingUAPAOTVertical)' == 'true'" Include="uapaot-$(_bc_OSGroup)">
       <PackageFileRefPath Condition="'$(IsUAPRef)'=='true'">$(UAPPackageRefPath)</PackageFileRefPath>
       <PackageFileRuntimePath>$(UAPAOTPackageRuntimePath)</PackageFileRuntimePath>
     </BinPlaceConfiguration>
 
     <!-- Setup the shared framework directory for testing -->
-    <BinPlaceConfiguration Condition="'$(BinPlaceTestSharedFramework)' == 'true'" Include="netcoreapp-$(OSGroup)">
+    <BinPlaceConfiguration Condition="'$(BinPlaceTestSharedFramework)' == 'true'" Include="netcoreapp-$(_bc_OSGroup)">
       <RuntimePath>$(NETCoreAppTestSharedFrameworkPath)</RuntimePath>
     </BinPlaceConfiguration>
     <!-- Setup the ILCInputFolder directory for testing uapaot -->
-    <BinPlaceConfiguration Condition="'$(BinPlaceILCInputFolder)' == 'true'" Include="uapaot-$(OSGroup)">
+    <BinPlaceConfiguration Condition="'$(BinPlaceILCInputFolder)' == 'true'" Include="uapaot-$(_bc_OSGroup)">
       <RuntimePath>$(ILCFXInputFolder)</RuntimePath>
     </BinPlaceConfiguration>
 
     <!-- binplace targeting packs which may be different from BuildConfiguration -->
-    <BinPlaceConfiguration Include="netstandard-$(OSGroup)">
+    <BinPlaceConfiguration Include="netstandard">
       <RefPath>$(RefRootPath)netstandard/</RefPath>
     </BinPlaceConfiguration>
     <BinPlaceConfiguration Condition="'$(BuildAllConfigurations)' == 'true'"
-                           Include="netcoreapp-$(OSGroup)">
+                           Include="netcoreapp">
       <RefPath>$(RefRootPath)netcoreapp/</RefPath>
     </BinPlaceConfiguration>
     <BinPlaceConfiguration Condition="'$(BuildAllConfigurations)' == 'true'"
-                           Include="uap-$(OSGroup)">
+                           Include="uap">
       <RefPath>$(RefRootPath)uap/</RefPath>
     </BinPlaceConfiguration>
     <BinPlaceConfiguration Condition="'$(BuildAllConfigurations)' == 'true'"
-                           Include="netfx-$(OSGroup)">
+                           Include="netfx">
       <RefPath>$(RefRootPath)netfx/</RefPath>
     </BinPlaceConfiguration>
   </ItemGroup>
