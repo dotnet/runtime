@@ -33,6 +33,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [ActiveIssue(16534, TestPlatforms.Windows)]
         public async Task ServerAllowNoEncryption_ClientRequireEncryption_ConnectWithEncryption()
         {
             using (var serverAllowNoEncryption = new DummyTcpServer(
