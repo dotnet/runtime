@@ -140,6 +140,12 @@ if [[ -n $__LinuxCodeName ]]; then
     if [ $__SkipUnmount == 0 ]; then
         umount $__RootfsDir/*
     fi
+
+    if [[ "$__BuildArch" == "arm" && "$__LinuxCodeName" == "trusty" ]]; then
+        pushd $__RootfsDir
+        patch -p1 < $__CrossDir/$__BuildArch/trusty.patch
+        popd
+    fi
 elif [ "$__Tizen" == "tizen" ]; then
     ROOTFS_DIR=$__RootfsDir $__CrossDir/$__BuildArch/tizen-build-rootfs.sh
 else
