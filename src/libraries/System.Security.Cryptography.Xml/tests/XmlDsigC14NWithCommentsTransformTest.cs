@@ -98,7 +98,7 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Throws<ArgumentException>(() => transform.GetOutput(doc.GetType()));
         }
 
-        [Fact()]
+        [Fact]
         public void C14NSpecExample1()
         {
             string testName = GetType().Name + "." + nameof(C14NSpecExample1);
@@ -109,7 +109,7 @@ namespace System.Security.Cryptography.Xml.Tests
             }
         }
 
-        [Fact()]
+        [Fact]
         // [ExpectedException (typeof (SecurityException))]
         public void C14NSpecExample1_WithoutResolver()
         {
@@ -142,7 +142,7 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal(C14NSpecExample4Output, res);
         }
 
-        [Fact()]
+        [Fact]
         public void C14NSpecExample5()
         {
             string testName = GetType().Name + "." + nameof(C14NSpecExample5);
