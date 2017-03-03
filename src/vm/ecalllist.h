@@ -225,14 +225,6 @@ FCFuncStart(gSafeBufferFuncs)
     FCFuncElement("StructureToPtrNative", SafeBuffer::StructureToPtr)
 FCFuncEnd()
 
-#ifndef FEATURE_COREFX_GLOBALIZATION
-FCFuncStart(gNormalizationFuncs)
-    FCFuncElement("nativeNormalizationIsNormalizedString", COMNlsInfo::nativeNormalizationIsNormalizedString)
-    FCFuncElement("nativeNormalizationNormalizeString", COMNlsInfo::nativeNormalizationNormalizeString)
-    QCFuncElement("nativeNormalizationInitNormalization", COMNlsInfo::nativeNormalizationInitNormalization)
-FCFuncEnd()
-#endif // FEATURE_COREFX_GLOBALIZATION
-
 FCFuncStart(gTypedReferenceFuncs)
     FCFuncElement("InternalToObject", ReflectionInvocation::TypedReferenceToObject)
     FCFuncElement("InternalSetTypedReference", ReflectionInvocation::SetTypedReference)
@@ -1427,9 +1419,6 @@ FCClassElement("MngdSafeArrayMarshaler", "System.StubHelpers", gMngdSafeArrayMar
 FCClassElement("ModuleBuilder", "System.Reflection.Emit", gCOMModuleBuilderFuncs)
 FCClassElement("ModuleHandle", "System", gCOMModuleHandleFuncs)
 FCClassElement("Monitor", "System.Threading", gMonitorFuncs)
-#ifndef FEATURE_COREFX_GLOBALIZATION
-FCClassElement("Normalization", "System.Text", gNormalizationFuncs)
-#endif // FEATURE_COREFX_GLOBALIZATION
 FCClassElement("Number", "System", gNumberFuncs)
 #ifdef FEATURE_COMINTEROP
 FCClassElement("OAVariantLib", "Microsoft.Win32", gOAVariantFuncs)

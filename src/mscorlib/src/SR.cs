@@ -26,6 +26,11 @@ internal static class SR
         get { return Environment.GetResourceString("Arg_InvalidHexStyle"); }
     }
 
+    public static string Arg_OutOfMemoryException
+    {
+        get { return Environment.GetResourceString("Arg_OutOfMemoryException"); }
+    }
+
     public static string ArgumentNull_Array
     {
         get { return Environment.GetResourceString("ArgumentNull_Array"); }
@@ -838,4 +843,9 @@ internal static class SR
 
     internal static string PlatformNotSupported_OSXFileLocking =>
         Environment.GetResourceString("PlatformNotSupported_OSXFileLocking");
+
+    internal static string UnknownError_Num
+    {
+        get { return Environment.GetResourceString("UnknownError_Num"); }
+    }
 }
