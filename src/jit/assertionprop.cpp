@@ -4471,6 +4471,7 @@ ASSERT_TP* Compiler::optComputeAssertionGen()
             {
                 if (tree->gtOper == GT_JTRUE)
                 {
+                    // A GT_TRUE is always the last node in a tree, so we can break here
                     assert((tree->gtNext == nullptr) && (stmt->gtNext == nullptr));
                     jtrue = tree;
                     break;
@@ -4498,17 +4499,19 @@ ASSERT_TP* Compiler::optComputeAssertionGen()
                     index &= OAE_INDEX_MASK;
                     // Currently OAE_NEXT_EDGE is only used with OAK_NO_THROW assertions
                     assert(optGetAssertion(index)->assertionKind == OAK_NO_THROW);
-                    // Don't bother with implied/complementary assertions, there aren't any for OAK_NO_THROW
+                    // Don't bother with implied assertions, there aren't any for OAK_NO_THROW
                     BitVecOps::AddElemD(apTraits, valueGen, index - 1);
                 }
                 else
                 {
+                    // If GT_JTRUE, and true path, update jumpDestValueGen.
                     optImpliedAssertions(index, jumpDestValueGen);
                     BitVecOps::AddElemD(apTraits, jumpDestValueGen, index - 1);
 
                     index = optFindComplementary(index);
                     if (index != NO_ASSERTION_INDEX)
                     {
+                        // If GT_JTRUE, and false path and we have a complementary assertion available update valueGen
                         optImpliedAssertions(index, valueGen);
                         BitVecOps::AddElemD(apTraits, valueGen, index - 1);
                     }
@@ -5117,6 +5120,7 @@ void Compiler::optAssertionPropMain()
             {
                 if (tree->OperIs(GT_JTRUE))
                 {
+                    // A GT_TRUE is always the last node in a tree, so we can break here
                     assert((tree->gtNext == nullptr) && (stmt->gtNext == nullptr));
                     break;
                 }
