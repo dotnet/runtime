@@ -1152,7 +1152,7 @@ CorDebugInternalFrameType DacDbiInterfaceImpl::GetInternalFrameType(Frame * pFra
 void DacDbiInterfaceImpl::UpdateContextFromRegDisp(REGDISPLAY * pRegDisp,
                                                    T_CONTEXT *  pContext)
 {
-#if defined(_TARGET_X86_)
+#if defined(_TARGET_X86_) && !defined(WIN64EXCEPTIONS)
     // Do a partial copy first.
     pContext->ContextFlags = (CONTEXT_INTEGER | CONTEXT_CONTROL);
 
@@ -1174,9 +1174,9 @@ void DacDbiInterfaceImpl::UpdateContextFromRegDisp(REGDISPLAY * pRegDisp,
     {
         *pContext = *pRegDisp->pContext;
     }
-#else
+#else // _TARGET_X86_ && !WIN64EXCEPTIONS
     *pContext = *pRegDisp->pCurrentContext;
-#endif
+#endif // !_TARGET_X86_ || WIN64EXCEPTIONS
 }
 
 //---------------------------------------------------------------------------------------
