@@ -357,13 +357,13 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.True(vrfy.CheckSignature(hmac), "HMACSHA1-Compute/Verify");
         }
 
-        [Fact(Skip = "TODO: fix me")]
+        [Fact(Skip = "recheck this test with mono original code")]
         public void SymmetricMACTripleDESSignature()
         {
             SignedXml signedXml = MSDNSample();
             // Compute the signature.
             byte[] secretkey = Encoding.Default.GetBytes("password");
-            using (HMAC hmac = HMACSHA256.Create())
+            using (HMAC hmac = new HMACSHA256())
             {
                 hmac.Key = secretkey;
                 Assert.Throws<CryptographicException>(() => signedXml.ComputeSignature(hmac));
@@ -646,7 +646,7 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Null(sign.GetIdElement(new XmlDocument(), null));
         }
 
-        [Fact(Skip = "TODO: fix me")]
+        [Fact]
         public void DigestValue_CRLF()
         {
             XmlDocument doc = CreateSomeXml("\r\n");
@@ -658,7 +658,7 @@ namespace System.Security.Cryptography.Xml.Tests
 
             s.Position = 0;
 
-            HashAlgorithm hash = HashAlgorithm.Create("System.Security.Cryptography.SHA1CryptoServiceProvider");
+            HashAlgorithm hash = SHA1.Create();
             byte[] digest = hash.ComputeHash(s);
             Assert.Equal("IKbfdK2/DMfXyezCf5QggVCXfk8=", Convert.ToBase64String(digest));
 
@@ -699,7 +699,7 @@ namespace System.Security.Cryptography.Xml.Tests
                 + "</SignedInfo>", signedXml.SignedInfo.GetXml().OuterXml);
         }
 
-        [Fact(Skip = "TODO: fix me")]
+        [Fact]
         public void DigestValue_LF()
         {
             XmlDocument doc = CreateSomeXml("\n");
@@ -711,7 +711,7 @@ namespace System.Security.Cryptography.Xml.Tests
 
             s.Position = 0;
 
-            HashAlgorithm hash = HashAlgorithm.Create("System.Security.Cryptography.SHA1CryptoServiceProvider");
+            HashAlgorithm hash = SHA1.Create();
             byte[] digest = hash.ComputeHash(s);
             Assert.Equal("e3dsi1xK8FAx1vsug7J203JbEAU=", Convert.ToBase64String(digest));
 
