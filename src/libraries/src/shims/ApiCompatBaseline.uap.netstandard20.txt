@@ -1,8 +1,6 @@
 DEFAULT_APPNAME Error: 0 : Failed to find or load matching assembly 'System.IO.FileSystem.AccessControl'.
 DEFAULT_APPNAME Error: 0 : Failed to find or load matching assembly 'System.Security.AccessControl'.
-DEFAULT_APPNAME Error: 0 : Failed to find or load matching assembly 'System.Security.Cryptography.Xml'.
 DEFAULT_APPNAME Error: 0 : Failed to find or load matching assembly 'System.Security.Permissions'.
-DEFAULT_APPNAME Warning: 0 : Found 'System.Transactions' with PublicKeyToken 'b03f5f7f11d50a3a' instead of 'b77a5c561934e089'.
 DEFAULT_APPNAME Error: 0 : Unable to resolve assembly 'Assembly(Name=System.Security.AccessControl, Version=4.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)' referenced by the implementation assembly 'Assembly(Name=mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)'.
 DEFAULT_APPNAME Error: 0 : Unable to resolve assembly 'Assembly(Name=System.Security.Permissions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)' referenced by the implementation assembly 'Assembly(Name=mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)'.
 DEFAULT_APPNAME Error: 0 : Unable to resolve assembly 'Assembly(Name=System.IO.FileSystem.AccessControl, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)' referenced by the implementation assembly 'Assembly(Name=mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)'.
@@ -150,47 +148,6 @@ TypesMustExist : Type 'System.Security.AccessControl.RawSecurityDescriptor' does
 TypesMustExist : Type 'System.Security.AccessControl.ResourceType' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.AccessControl.SecurityInfos' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.AccessControl.SystemAcl' does not exist in the implementation but it does exist in the contract.
-Compat issues with assembly System.Security.Cryptography.Xml:
-TypesMustExist : Type 'System.Security.Cryptography.Xml.CipherData' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.Xml.CipherReference' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.Xml.DataObject' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.Xml.DataReference' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.Xml.DSAKeyValue' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.Xml.EncryptedData' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.Xml.EncryptedKey' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.Xml.EncryptedReference' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.Xml.EncryptedType' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.Xml.EncryptedXml' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.Xml.EncryptionMethod' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.Xml.EncryptionProperty' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.Xml.EncryptionPropertyCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.Xml.IRelDecryptor' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.Xml.KeyInfo' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.Xml.KeyInfoClause' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.Xml.KeyInfoEncryptedKey' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.Xml.KeyInfoName' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.Xml.KeyInfoNode' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.Xml.KeyInfoRetrievalMethod' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.Xml.KeyInfoX509Data' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.Xml.KeyReference' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.Xml.Reference' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.Xml.ReferenceList' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.Xml.RSAKeyValue' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.Xml.Signature' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.Xml.SignedInfo' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.Xml.SignedXml' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.Xml.Transform' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.Xml.TransformChain' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.Xml.XmlDecryptionTransform' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.Xml.XmlDsigBase64Transform' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.Xml.XmlDsigC14NTransform' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.Xml.XmlDsigC14NWithCommentsTransform' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.Xml.XmlDsigEnvelopedSignatureTransform' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.Xml.XmlDsigExcC14NTransform' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.Xml.XmlDsigExcC14NWithCommentsTransform' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.Xml.XmlDsigXPathTransform' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.Xml.XmlDsigXsltTransform' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Security.Cryptography.Xml.XmlLicenseTransform' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Security.Permissions:
 TypesMustExist : Type 'System.Net.NetworkInformation.NetworkInformationAccess' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Net.NetworkInformation.NetworkInformationPermission' does not exist in the implementation but it does exist in the contract.
@@ -308,4 +265,4 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Security.AccessControl.MutexSecur
 CannotRemoveBaseTypeOrInterface : Type 'System.Security.AccessControl.SemaphoreAccessRule' does not inherit from base type 'System.Security.AccessControl.AccessRule' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Security.AccessControl.SemaphoreAuditRule' does not inherit from base type 'System.Security.AccessControl.AuditRule' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Security.AccessControl.SemaphoreSecurity' does not inherit from base type 'System.Security.AccessControl.NativeObjectSecurity' in the implementation but it does in the contract.
-Total Issues: 288
+Total Issues: 248
