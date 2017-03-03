@@ -145,7 +145,7 @@ namespace System.Net.Sockets
                 }
 
                 // This may throw ObjectDisposedException.
-                SocketError errorCode = Interop.Winsock.WSASend_Blocking(
+                SocketError errorCode = Interop.Winsock.WSASend(
                     handle.DangerousGetHandle(),
                     WSABuffers,
                     count,
@@ -271,7 +271,7 @@ namespace System.Net.Sockets
                 }
 
                 // This can throw ObjectDisposedException.
-                SocketError errorCode = Interop.Winsock.WSARecv_Blocking(
+                SocketError errorCode = Interop.Winsock.WSARecv(
                     handle.DangerousGetHandle(),
                     WSABuffers,
                     count,
