@@ -17,6 +17,8 @@ namespace System.Security.Cryptography.Xml.Tests
                 Path.Combine(Directory.GetCurrentDirectory(), testName + ".dtd")
             );
 
+            File.WriteAllText(file.Path, "<!-- presence, not content, required -->");
+
             return file;
         }
 
