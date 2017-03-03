@@ -23,7 +23,6 @@ namespace System.Security.Cryptography.Xml.Tests
     // making it difficult to test properly. This class "open it up" :-)
     public class UnprotectedXmlDsigC14NWithCommentsTransform : XmlDsigC14NWithCommentsTransform
     {
-
         public XmlNodeList UnprotectedGetInnerXml()
         {
             return base.GetInnerXml();
@@ -32,70 +31,40 @@ namespace System.Security.Cryptography.Xml.Tests
 
     public class XmlDsigC14NWithCommentsTransformTest
     {
-
-        protected UnprotectedXmlDsigC14NWithCommentsTransform transform;
-
-        public XmlDsigC14NWithCommentsTransformTest()
-        {
-            transform = new UnprotectedXmlDsigC14NWithCommentsTransform();
-        }
-
         [Fact]
-        public void Properties()
+        public void Constructor()
         {
-            Assert.Equal("http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments", transform.Algorithm);
-
-            Type[] input = transform.InputTypes;
-            Assert.True((input.Length == 3), "Input #");
-            // check presence of every supported input types
-            bool istream = false;
-            bool ixmldoc = false;
-            bool ixmlnl = false;
-            foreach (Type t in input)
-            {
-                if (t.ToString() == "System.IO.Stream")
-                    istream = true;
-                if (t.ToString() == "System.Xml.XmlDocument")
-                    ixmldoc = true;
-                if (t.ToString() == "System.Xml.XmlNodeList")
-                    ixmlnl = true;
-            }
-            Assert.True(istream, "Input Stream");
-            Assert.True(ixmldoc, "Input XmlDocument");
-            Assert.True(ixmlnl, "Input XmlNodeList");
-
-            Type[] output = transform.OutputTypes;
-            Assert.True((output.Length == 1), "Output #");
-            // check presence of every supported output types
-            bool ostream = false;
-            foreach (Type t in output)
-            {
-                if (t.ToString() == "System.IO.Stream")
-                    ostream = true;
-            }
-            Assert.True(ostream, "Output Stream");
+            XmlDsigC14NWithCommentsTransform xmlDsigC14NWithCommentsTransform = new XmlDsigC14NWithCommentsTransform();
+            Assert.Null(xmlDsigC14NWithCommentsTransform.Context);
+            Assert.Equal("http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments", xmlDsigC14NWithCommentsTransform.Algorithm);
+            Assert.Equal(new[] { typeof(Stream), typeof(XmlDocument), typeof(XmlNodeList) }, xmlDsigC14NWithCommentsTransform.InputTypes);
+            Assert.Equal(new[] { typeof(Stream) }, xmlDsigC14NWithCommentsTransform.OutputTypes);
         }
 
         [Fact]
         public void GetInnerXml()
         {
+            UnprotectedXmlDsigC14NWithCommentsTransform transform = new UnprotectedXmlDsigC14NWithCommentsTransform();
             XmlNodeList xnl = transform.UnprotectedGetInnerXml();
-            Assert.Equal(null, xnl);
+            Assert.Null(xnl);
         }
 
-        [Fact]
-        public void LoadInputWithUnsupportedType()
+        [Theory]
+        [InlineData("")]
+        [InlineData(new byte[] { 0xBA, 0xD })]
+        public void LoadInput_UnsupportedType(object input)
         {
-            byte[] bad = { 0xBA, 0xD };
-            // LAMESPEC: input MUST be one of InputType - but no exception is thrown (not documented)
-            Assert.Throws<ArgumentException>(() => transform.LoadInput(bad));
+            XmlDsigC14NWithCommentsTransform xmlDsigC14NWithCommentsTransform = new XmlDsigC14NWithCommentsTransform();
+            Assert.Throws<ArgumentException>(() => xmlDsigC14NWithCommentsTransform.LoadInput(input));
         }
 
-        [Fact]
-        public void UnsupportedOutput()
+        [Theory]
+        [InlineData(typeof(XmlDocument))]
+        [InlineData(typeof(XmlNodeList))]
+        public void GetOutput_UnsupportedType(Type type)
         {
-            XmlDocument doc = new XmlDocument();
-            Assert.Throws<ArgumentException>(() => transform.GetOutput(doc.GetType()));
+            XmlDsigC14NWithCommentsTransform xmlDsigC14NWithCommentsTransform = new XmlDsigC14NWithCommentsTransform();
+            Assert.Throws<ArgumentException>(() => xmlDsigC14NWithCommentsTransform.GetOutput(type));
         }
 
         [Fact]
@@ -161,8 +130,9 @@ namespace System.Security.Cryptography.Xml.Tests
             using (XmlReader reader = XmlReader.Create(stream, new XmlReaderSettings { ValidationType = ValidationType.None, DtdProcessing = DtdProcessing.Parse, XmlResolver = resolver }))
             {
                 doc.Load(reader);
+                XmlDsigC14NWithCommentsTransform transform = new XmlDsigC14NWithCommentsTransform();
                 transform.LoadInput(doc);
-                return Stream2String((Stream)transform.GetOutput(), actualEncoding);
+                return Stream2String((Stream) transform.GetOutput(), actualEncoding);
             }
         }
 
