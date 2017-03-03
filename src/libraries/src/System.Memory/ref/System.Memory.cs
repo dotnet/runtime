@@ -47,8 +47,7 @@ namespace System
         public Span(T[] array, int start, int length) { throw null;}
         public unsafe Span(void* pointer, int length) { throw null;}
         public bool IsEmpty { get { throw null; } }
-        public T this[int index] { get { throw null; } set { throw null; }}
-        public ref T GetItem(int index) { throw null; }
+        public ref T this[int index] { get { throw null; } }
         public int Length { get { throw null; } }
         public void Clear() { }
         public void Fill(T value) { }
