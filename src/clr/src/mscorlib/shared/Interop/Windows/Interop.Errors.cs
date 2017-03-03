@@ -35,6 +35,7 @@ internal partial class Interop
         internal const int ERROR_MUTANT_LIMIT_EXCEEDED = 0x24B;
         internal const int ERROR_OPERATION_ABORTED = 0x3E3;
         internal const int ERROR_IO_PENDING = 0x3E5;
+        internal const int ERROR_NO_UNICODE_TRANSLATION = 0x459;
         internal const int ERROR_NOT_FOUND = 0x490;
         internal const int ERROR_BAD_IMPERSONATION_LEVEL = 0x542;
         internal const int E_FILENOTFOUND = unchecked((int)0x80070002);
