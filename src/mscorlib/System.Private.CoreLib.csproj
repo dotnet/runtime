@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <!-- Always use latest Roslyn compiler -->
   <Import Project="..\..\Tools\net45\roslyn\build\Microsoft.Net.Compilers.props" Condition="'$(OS)'=='Windows_NT'" />
@@ -82,6 +82,11 @@
     <DebugSymbols>false</DebugSymbols>
     <DebugType>none</DebugType>
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetsOSX)' == 'true'">
+    <DefineConstants>PLATFORM_OSX;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+
   <!-- Assembly attributes -->
   <PropertyGroup>
     <AssemblyName>System.Private.CoreLib</AssemblyName>
@@ -101,7 +106,6 @@
   <PropertyGroup>
     <CommonPath>$(MSBuildThisFileDirectory)Common</CommonPath>
     <BclSourcesRoot>$(MSBuildThisFileDirectory)src</BclSourcesRoot>
-    <CoreFxSourcesRoot>$(MSBuildThisFileDirectory)corefx</CoreFxSourcesRoot>
     <MscorlibDir>$(MSBuildThisFileDirectory)</MscorlibDir>
     <NlpObjDir>$(BclSourcesRoot)\System\Globalization\Tables</NlpObjDir>
   </PropertyGroup>
@@ -118,895 +122,888 @@
   <Import Project="$(MSBuildThisFileDirectory)..\..\clr.defines.targets" />
   <!-- Sources -->
   <ItemGroup>
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\AccessedThroughPropertyAttribute.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeHelpers.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CompilerGeneratedAttribute.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CustomConstantAttribute.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\DateTimeConstantAttribute.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\DiscardableAttribute.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\DecimalConstantAttribute.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\DisablePrivateReflectionAttribute.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CompilationRelaxations.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CompilerGlobalScopeAttribute.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\FixedBufferAttribute.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\IndexerNameAttribute.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\InternalsVisibleToAttribute.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\MethodImplAttribute.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\FixedAddressValueTypeAttribute.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\UnsafeValueTypeAttribute.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\AssemblySettingAttributes.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\TypeDependencyAttribute.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CompilerMarshalOverride.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\jithelpers.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\Unsafe.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\SpecialNameAttribute.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\SuppressMergeCheckAttribute.cs" />
-    <MscorlibSources Condition="'$(FeatureICastable)' == 'true'" Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\ICastable.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\SuppressIldasmAttribute.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\TypeForwardedToAttribute.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\TypeForwardedFromAttribute.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\ReferenceAssemblyAttribute.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeCompatibilityAttribute.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeWrappedException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\ConditionalWeakTable.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CallerFilePathAttribute.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CallerLineNumberAttribute.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CallerMemberNameAttribute.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\StateMachineAttribute.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\IteratorStateMachineAttribute.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\AsyncStateMachineAttribute.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\AsyncMethodBuilder.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\IAsyncStateMachine.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\INotifyCompletion.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\TaskAwaiter.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\YieldAwaitable.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\AccessedThroughPropertyAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeHelpers.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CompilerGeneratedAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CustomConstantAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\DateTimeConstantAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\DiscardableAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\DecimalConstantAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\DisablePrivateReflectionAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CompilationRelaxations.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CompilerGlobalScopeAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\FixedBufferAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\IndexerNameAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\InternalsVisibleToAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\MethodImplAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\FixedAddressValueTypeAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\UnsafeValueTypeAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\AssemblySettingAttributes.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\TypeDependencyAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CompilerMarshalOverride.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\jithelpers.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\Unsafe.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\SpecialNameAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\SuppressMergeCheckAttribute.cs" />
+    <Compile Condition="'$(FeatureICastable)' == 'true'" Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\ICastable.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\SuppressIldasmAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\TypeForwardedToAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\TypeForwardedFromAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\ReferenceAssemblyAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeCompatibilityAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\RuntimeWrappedException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\ConditionalWeakTable.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CallerFilePathAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CallerLineNumberAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CallerMemberNameAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\StateMachineAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\IteratorStateMachineAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\AsyncStateMachineAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\AsyncMethodBuilder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\IAsyncStateMachine.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\INotifyCompletion.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\TaskAwaiter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\YieldAwaitable.cs" />
   </ItemGroup>
   <ItemGroup>
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\Reliability\CriticalFinalizerObject.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\Reliability\ReliabilityContractAttribute.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\Reliability\PrePrepareMethodAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Reliability\CriticalFinalizerObject.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Reliability\ReliabilityContractAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Reliability\PrePrepareMethodAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\MemoryFailPoint.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\GcSettings.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\MemoryFailPoint.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\GcSettings.cs" />
   </ItemGroup>
   <ItemGroup>
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\CollectionBase.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\ArrayList.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\Comparer.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\CompatibleComparer.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\ListDictionaryInternal.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\EmptyReadOnlyDictionaryInternal.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\Hashtable.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\DictionaryEntry.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\ICollection.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\IComparer.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\IDictionary.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\IDictionaryEnumerator.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\IEnumerable.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\IEnumerator.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\IEqualityComparer.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\IHashCodeProvider.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\IList.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\StructuralComparisons.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\CollectionBase.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\ArrayList.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\Comparer.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\CompatibleComparer.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\ListDictionaryInternal.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\EmptyReadOnlyDictionaryInternal.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\Hashtable.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\DictionaryEntry.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\ICollection.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\IComparer.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\IDictionary.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\IDictionaryEnumerator.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\IEnumerable.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\IEnumerator.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\IEqualityComparer.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\IHashCodeProvider.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\IList.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\StructuralComparisons.cs" />
   </ItemGroup>
   <ItemGroup>
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ArrayWithOffset.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\Attributes.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CallingConvention.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CharSet.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\COMException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CriticalHandle.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ExternalException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\GcHandle.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\GCHandleCookieTable.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\HandleRef.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ICustomMarshaler.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\InvalidOleVariantTypeException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\LayoutKind.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\Marshal.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\MarshalDirectiveException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\PInvokeMap.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\RuntimeEnvironment.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\SEHException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\SafeBuffer.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\SafeHandle.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\BStrWrapper.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CurrencyWrapper.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ErrorWrapper.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\UnknownWrapper.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\VariantWrapper.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComMemberType.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ICustomAdapter.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ICustomQueryInterface.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\InvalidComObjectException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\SafeArrayRankMismatchException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\SafeArrayTypeMismatchException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\NativeCallableAttribute.cs" />
-    <MscorlibSources Condition="'$(FeatureCominterop)' != 'true'" Include="$(BclSourcesRoot)\System\Runtime\InteropServices\NonPortable.cs" />
-    <MscorlibSources Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\Runtime\InteropServices\DispatchWrapper.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ICustomFactory.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ArrayWithOffset.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\Attributes.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CallingConvention.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CharSet.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\COMException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CriticalHandle.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ExternalException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\GcHandle.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\GCHandleCookieTable.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\HandleRef.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ICustomMarshaler.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\InvalidOleVariantTypeException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\LayoutKind.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\Marshal.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\MarshalDirectiveException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\PInvokeMap.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\RuntimeEnvironment.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\SEHException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\SafeBuffer.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\SafeHandle.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\BStrWrapper.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\CurrencyWrapper.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ErrorWrapper.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\UnknownWrapper.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\VariantWrapper.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComMemberType.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ICustomAdapter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ICustomQueryInterface.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\InvalidComObjectException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\SafeArrayRankMismatchException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\SafeArrayTypeMismatchException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\NativeCallableAttribute.cs" />
+    <Compile Condition="'$(FeatureCominterop)' != 'true'" Include="$(BclSourcesRoot)\System\Runtime\InteropServices\NonPortable.cs" />
+    <Compile Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\Runtime\InteropServices\DispatchWrapper.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ICustomFactory.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureClassicCominterop)' == 'true'">
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ITypeLibConverter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ITypeLibConverter.cs" />
   </ItemGroup>
   <ItemGroup>
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\Expando\IExpando.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\Expando\IExpando.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureClassicCominterop)' == 'true'">
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComEventsHelper.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComEventsInfo.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComEventsMethod.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComEventsSink.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\NativeMethods.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComEventsHelper.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComEventsInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComEventsMethod.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComEventsSink.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\NativeMethods.cs" />
   </ItemGroup>
   <ItemGroup>
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IBindCtx.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IConnectionPointContainer.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IConnectionPoint.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IEnumMoniker.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IEnumConnections.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IEnumConnectionPoints.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IEnumString.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IEnumVARIANT.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IMoniker.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IPersistFile.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IRunningObjectTable.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IStream.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\ITypeComp.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\ITypeInfo.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\ITypeLib.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\ITypeLib2.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\ITypeInfo2.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IBindCtx.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IConnectionPointContainer.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IConnectionPoint.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IEnumMoniker.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IEnumConnections.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IEnumConnectionPoints.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IEnumString.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IEnumVARIANT.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IMoniker.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IPersistFile.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IRunningObjectTable.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\IStream.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\ITypeComp.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\ITypeInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\ITypeLib.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\ITypeLib2.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ComTypes\ITypeInfo2.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureCominterop)' == 'true'">
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\Attributes.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\ConstantSplittableMap.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\DictionaryKeyCollection.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\DictionaryValueCollection.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\EnumeratorToIteratorAdapter.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\VectorToListAdapter.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\VectorToCollectionAdapter.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\VectorViewToReadOnlyCollectionAdapter.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\MapToDictionaryAdapter.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\MapToCollectionAdapter.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\MapViewToReadOnlyCollectionAdapter.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\ListToVectorAdapter.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\DictionaryToMapAdapter.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\BindableVectorToListAdapter.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\BindableVectorToCollectionAdapter.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\ListToBindableVectorAdapter.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\ListToBindableVectorViewAdapter.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\EventRegistrationToken.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\EventRegistrationTokenTable.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IActivationFactory.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IRestrictedErrorInfo.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IMapViewToIReadOnlyDictionaryAdapter.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IVectorViewToIReadOnlyListAdapter.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IReadOnlyDictionaryToIMapViewAdapter.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IReadOnlyListToIVectorViewAdapter.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IteratorToEnumeratorAdapter.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\ManagedActivationFactory.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\NativeMethods.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\PropertyValue.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeMarshal.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeMetadata.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IClosable.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\RuntimeClass.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\Attributes.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\ConstantSplittableMap.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\DictionaryKeyCollection.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\DictionaryValueCollection.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\EnumeratorToIteratorAdapter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\VectorToListAdapter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\VectorToCollectionAdapter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\VectorViewToReadOnlyCollectionAdapter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\MapToDictionaryAdapter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\MapToCollectionAdapter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\MapViewToReadOnlyCollectionAdapter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\ListToVectorAdapter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\DictionaryToMapAdapter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\BindableVectorToListAdapter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\BindableVectorToCollectionAdapter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\ListToBindableVectorAdapter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\ListToBindableVectorViewAdapter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\EventRegistrationToken.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\EventRegistrationTokenTable.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IActivationFactory.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IRestrictedErrorInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IMapViewToIReadOnlyDictionaryAdapter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IVectorViewToIReadOnlyListAdapter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IReadOnlyDictionaryToIMapViewAdapter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IReadOnlyListToIVectorViewAdapter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IteratorToEnumeratorAdapter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\ManagedActivationFactory.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\NativeMethods.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\PropertyValue.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeMarshal.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeMetadata.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IClosable.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\RuntimeClass.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureCominterop)' == 'true'">
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\CLRIPropertyValueImpl.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\CLRIReferenceImpl.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IPropertyValue.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IReference.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\WindowsFoundationEventHandler.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\ICustomPropertyProvider.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\ICustomProperty.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\CustomPropertyImpl.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeBufferHelper.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\CLRIPropertyValueImpl.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\CLRIReferenceImpl.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IPropertyValue.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IReference.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\WindowsFoundationEventHandler.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\ICustomPropertyProvider.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\ICustomProperty.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\CustomPropertyImpl.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeBufferHelper.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureCominterop)' == 'true'">
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IIterable.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IIterator.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IVector.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IMap.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\CLRIKeyValuePairImpl.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IIterable.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IIterator.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IVector.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\IMap.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\CLRIKeyValuePairImpl.cs" />
   </ItemGroup>
   <ItemGroup>
-    <MscorlibSources Include="$(BclSourcesRoot)\System\AggregateException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\AppContext\AppContext.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\AppContext\AppContextSwitches.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\AppContext\AppContextDefaultValues.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\AppContext\AppContextDefaultValues.CoreClrOverrides.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\AppContext\AppContextDefaultValues.Defaults.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\AppContext\AppContextDefaultValues.Defaults.Central.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\CurrentTimeZone.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\TimeZone.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Object.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\ICloneable.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Array.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\ArraySegment.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\ThrowHelper.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Tuple.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\String.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\String.Comparison.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\String.Manipulation.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\String.Searching.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\StringComparer.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\StringComparison.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Text\StringBuilder.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Text\StringBuilderCache.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Exception.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\DateTime.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\DateTimeOffset.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\OutOfMemoryException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Delegate.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\MulticastDelegate.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\__Filters.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\__HResults.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\BCLDebug.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Activator.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\AccessViolationException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\AppDomain.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\AppDomainSetup.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\AppDomainManager.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\IAppDomainPauseManager.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\AppDomainAttributes.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\AppDomainUnloadedException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\ArgumentException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\ArgumentOutOfRangeException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\ArgIterator.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Attribute.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\BadImageFormatException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\BitConverter.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Boolean.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Buffer.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Byte.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Char.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\TypeUnloadedException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\CompatibilitySwitches.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\LowLevelConsole.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Convert.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\StringFreezingAttribute.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Currency.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\DBNull.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Decimal.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\DefaultBinder.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\DelegateSerializationHolder.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Double.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Empty.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Enum.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\DllNotFoundException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Environment.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\GC.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Guid.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\InsufficientMemoryException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Lazy.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Int16.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Int32.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Int64.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\IntPtr.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Internal.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\IServiceObjectProvider.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Math.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\MathF.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\mda.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\MissingFieldException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\MissingMemberException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\MissingMethodException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\NonSerializedAttribute.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Number.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\OperatingSystem.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\OperationCanceledException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\ParamsArray.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\ParseNumbers.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\PlatformID.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Progress.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Random.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\ResId.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\RtType.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\RuntimeArgumentHandle.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\RuntimeHandles.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\SByte.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\SerializableAttribute.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\SharedStatics.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Single.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\StubHelpers.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\TimeSpan.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\TimeZoneInfo.AdjustmentRule.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\TimeZoneInfo.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\TimeZoneInfo.StringSerializer.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\TimeZoneInfo.TransitionTime.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Type.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\TypeNameParser.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\TypedReference.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\TypeLoadException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\UInt16.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\UInt32.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\UInt64.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\UIntPtr.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\UnitySerializationHolder.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\ValueType.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Version.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\WeakReference.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\WeakReferenceOfT.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\XmlIgnoreMemberAttribute.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\CLRConfig.cs" />
-    <MscorlibSources Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\__ComObject.cs" />
-    <MscorlibSources Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\Variant.cs" />
-    <MscorlibSources Condition="'$(FeatureClassicCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\OleAutBinder.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\ByReference.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Span.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\ReadOnlySpan.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\AggregateException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\AppContext\AppContext.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\AppContext\AppContextSwitches.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\AppContext\AppContextDefaultValues.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\AppContext\AppContextDefaultValues.CoreClrOverrides.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\AppContext\AppContextDefaultValues.Defaults.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\AppContext\AppContextDefaultValues.Defaults.Central.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\CurrentTimeZone.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\TimeZone.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Object.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\ICloneable.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Array.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\ArraySegment.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\ThrowHelper.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Tuple.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\String.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\String.Comparison.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\String.Manipulation.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\String.Searching.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\StringComparer.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\StringComparison.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Text\StringBuilder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Text\StringBuilderCache.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Exception.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\DateTime.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\DateTimeOffset.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\OutOfMemoryException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Delegate.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\MulticastDelegate.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\__Filters.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\__HResults.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\BCLDebug.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Activator.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\AccessViolationException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\AppDomain.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\AppDomainSetup.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\AppDomainManager.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\IAppDomainPauseManager.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\AppDomainAttributes.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\AppDomainUnloadedException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\ArgumentException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\ArgumentOutOfRangeException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\ArgIterator.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Attribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\BadImageFormatException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\BitConverter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Boolean.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Buffer.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Byte.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Char.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\TypeUnloadedException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\CompatibilitySwitches.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\LowLevelConsole.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Convert.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\StringFreezingAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Currency.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\DBNull.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Decimal.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\DefaultBinder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\DelegateSerializationHolder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Double.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Empty.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Enum.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\DllNotFoundException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Environment.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\GC.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Guid.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\InsufficientMemoryException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Lazy.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Int16.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Int32.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Int64.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\IntPtr.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Internal.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\IServiceObjectProvider.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Math.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\MathF.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\mda.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\MissingFieldException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\MissingMemberException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\MissingMethodException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\NonSerializedAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Number.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\OperatingSystem.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\OperationCanceledException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\ParamsArray.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\ParseNumbers.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\PlatformID.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Progress.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Random.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\ResId.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\RtType.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\RuntimeArgumentHandle.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\RuntimeHandles.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\SByte.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\SerializableAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\SharedStatics.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Single.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\StubHelpers.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\TimeSpan.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\TimeZoneInfo.AdjustmentRule.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\TimeZoneInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\TimeZoneInfo.StringSerializer.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\TimeZoneInfo.TransitionTime.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Type.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\TypeNameParser.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\TypedReference.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\TypeLoadException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\UInt16.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\UInt32.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\UInt64.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\UIntPtr.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\UnitySerializationHolder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\ValueType.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Version.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\WeakReference.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\WeakReferenceOfT.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\XmlIgnoreMemberAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\CLRConfig.cs" />
+    <Compile Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\__ComObject.cs" />
+    <Compile Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\Variant.cs" />
+    <Compile Condition="'$(FeatureClassicCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\OleAutBinder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\ByReference.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Span.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\ReadOnlySpan.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
-    <MscorlibSources Include="$(BclSourcesRoot)\System\TimeZoneInfo.Unix.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\TimeZoneInfo.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' != 'true'">
-    <MscorlibSources Include="$(BclSourcesRoot)\System\TimeZoneInfo.Win32.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\TimeZoneInfo.Win32.cs" />
   </ItemGroup>
   <ItemGroup>
-    <MscorlibSources Include="$(BclSourcesRoot)\Internal\Runtime\Augments\EnvironmentAugments.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\Internal\Runtime\Augments\RuntimeThread.cs" />
+    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Augments\EnvironmentAugments.cs" />
+    <Compile Include="$(BclSourcesRoot)\Internal\Runtime\Augments\RuntimeThread.cs" />
   </ItemGroup>
   <ItemGroup>
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\__Filters.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\AmbiguousMatchException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Assembly.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\AssemblyAttributes.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\AssemblyName.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\AssemblyNameFlags.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Associates.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\CustomAttributeExtensions.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\CustomAttributeFormatException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Binder.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\BindingFlags.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\CallingConventions.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\ConstructorInfo.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\CustomAttribute.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\DefaultMemberAttribute.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\EventAttributes.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\EventInfo.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\FieldAttributes.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\FieldInfo.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\GenericParameterAttributes.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\ICustomAttributeProvider.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\IReflectableType.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\IntrospectionExtensions.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\RuntimeReflectionExtensions.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\InterfaceMapping.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\InvalidFilterCriteriaException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\IReflect.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\LoaderAllocator.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\ManifestResourceInfo.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\MdConstant.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\MdImport.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\MemberFilter.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\MemberInfo.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\MemberInfoSerializationHolder.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\MemberTypes.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\MethodAttributes.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\MethodBase.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\MethodImplAttributes.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\MethodInfo.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Missing.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Module.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\ObfuscateAssemblyAttribute.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\ObfuscationAttribute.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\MethodBody.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\ParameterAttributes.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\ParameterInfo.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\ParameterModifier.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Pointer.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\PropertyAttributes.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\PropertyInfo.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\ReflectionContext.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\ReflectionTypeLoadException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\ResourceAttributes.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\StrongNameKeyPair.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\TargetException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\TargetInvocationException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\TargetParameterCountException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\TypeAttributes.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\TypeDelegator.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\TypeFilter.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\TypeInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\__Filters.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\AmbiguousMatchException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Assembly.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\AssemblyAttributes.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\AssemblyName.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\AssemblyNameFlags.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Associates.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\CustomAttributeExtensions.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\CustomAttributeFormatException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Binder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\BindingFlags.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\CallingConventions.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\ConstructorInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\CustomAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\DefaultMemberAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\EventAttributes.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\EventInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\FieldAttributes.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\FieldInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\GenericParameterAttributes.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\ICustomAttributeProvider.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\IReflectableType.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\IntrospectionExtensions.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeReflectionExtensions.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\InterfaceMapping.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\InvalidFilterCriteriaException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\IReflect.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\LoaderAllocator.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\ManifestResourceInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\MdConstant.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\MdImport.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\MemberFilter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\MemberInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\MemberInfoSerializationHolder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\MemberTypes.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodAttributes.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodBase.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodImplAttributes.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Missing.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Module.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\ObfuscateAssemblyAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\ObfuscationAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodBody.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\ParameterAttributes.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\ParameterInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\ParameterModifier.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Pointer.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\PropertyAttributes.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\PropertyInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\ReflectionContext.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\ReflectionTypeLoadException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\ResourceAttributes.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\StrongNameKeyPair.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\TargetException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\TargetInvocationException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\TargetParameterCountException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\TypeAttributes.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\TypeDelegator.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\TypeFilter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\TypeInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Emit\AssemblyBuilder.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Emit\AssemblyBuilderData.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Emit\AssemblyBuilderAccess.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Emit\AQNBuilder.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Emit\ConstructorBuilder.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Emit\DynamicILGenerator.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Emit\DynamicMethod.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Emit\EventBuilder.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Emit\EventToken.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Emit\FieldBuilder.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Emit\FieldToken.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Emit\ILGenerator.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Emit\ISymWrapperCore.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Emit\Label.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Emit\LocalBuilder.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Emit\MethodBuilder.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Emit\MethodBuilderInstantiation.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Emit\SymbolType.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Emit\SymbolMethod.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Emit\CustomAttributeBuilder.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Emit\MethodToken.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Emit\ModuleBuilder.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Emit\ModuleBuilderData.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Emit\PEFileKinds.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Emit\OpCodes.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Emit\Opcode.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Emit\OpcodeType.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Emit\StackBehaviour.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Emit\OperandType.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Emit\FlowControl.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Emit\ParameterBuilder.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Emit\ParameterToken.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Emit\PropertyBuilder.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Emit\PropertyToken.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Emit\SignatureHelper.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Emit\SignatureToken.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Emit\StringToken.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Emit\TypeBuilder.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Emit\TypeBuilderInstantiation.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Emit\GenericTypeParameterBuilder.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Emit\EnumBuilder.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Emit\TypeToken.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Emit\XXXOnTypeBuilderInstantiation.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\AssemblyBuilder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\AssemblyBuilderData.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\AssemblyBuilderAccess.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\AQNBuilder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ConstructorBuilder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\DynamicILGenerator.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\DynamicMethod.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\EventBuilder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\EventToken.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\FieldBuilder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\FieldToken.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ILGenerator.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ISymWrapperCore.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\Label.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\LocalBuilder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\MethodBuilder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\MethodBuilderInstantiation.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\SymbolType.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\SymbolMethod.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\CustomAttributeBuilder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\MethodToken.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ModuleBuilder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ModuleBuilderData.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\PEFileKinds.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\OpCodes.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\Opcode.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\OpcodeType.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\StackBehaviour.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\OperandType.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\FlowControl.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ParameterBuilder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\ParameterToken.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\PropertyBuilder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\PropertyToken.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\SignatureHelper.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\SignatureToken.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\StringToken.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\TypeBuilder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\TypeBuilderInstantiation.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\GenericTypeParameterBuilder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\EnumBuilder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\TypeToken.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\XXXOnTypeBuilderInstantiation.cs" />
   </ItemGroup>
   <ItemGroup>
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Reflection\Metadata\AssemblyExtensions.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Metadata\AssemblyExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\BidiCategory.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\Calendar.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\CalendarAlgorithmType.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\CalendarData.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\CalendarWeekRule.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\CalendricalCalculationsHelper.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\CharUnicodeInfo.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\CharUnicodeInfoData.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\ChineseLunisolarCalendar.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\CompareInfo.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\CultureData.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\CultureInfo.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\CultureNotFoundException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\CultureTypes.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\DaylightTime.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\DateTimeFormat.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\DateTimeFormatInfo.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\DateTimeFormatInfoScanner.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\DateTimeParse.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\DateTimeStyles.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\DigitShapes.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\EastAsianLunisolarCalendar.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\GregorianCalendar.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\GregorianCalendarHelper.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\GregorianCalendarTypes.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\HebrewCalendar.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\HebrewNumber.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\HijriCalendar.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\IdnMapping.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\InternalGlobalizationHelper.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\JapaneseCalendar.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\JapaneseLunisolarCalendar.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\JulianCalendar.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\KoreanCalendar.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\KoreanLunisolarCalendar.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\NumberFormatInfo.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\NumberStyles.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\PersianCalendar.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\RegionInfo.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\SortKey.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\SortVersion.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\StringInfo.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\TaiwanCalendar.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\TaiwanLunisolarCalendar.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\TextElementEnumerator.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\TextInfo.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\ThaiBuddhistCalendar.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\TimeSpanFormat.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\TimeSpanParse.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\UmAlQuraCalendar.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\UnicodeCategory.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\TimeSpanStyles.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\BidiCategory.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\Calendar.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\CalendarAlgorithmType.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\CalendarData.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\CalendarWeekRule.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\CalendricalCalculationsHelper.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\CharUnicodeInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\CharUnicodeInfoData.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\ChineseLunisolarCalendar.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\CompareInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\CultureData.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\CultureInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\CultureNotFoundException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\CultureTypes.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\DaylightTime.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\DateTimeFormat.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\DateTimeFormatInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\DateTimeFormatInfoScanner.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\DateTimeParse.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\DateTimeStyles.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\DigitShapes.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\EastAsianLunisolarCalendar.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\GregorianCalendar.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\GregorianCalendarHelper.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\GregorianCalendarTypes.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\HebrewCalendar.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\HebrewNumber.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\HijriCalendar.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\IdnMapping.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\InternalGlobalizationHelper.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\JapaneseCalendar.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\JapaneseLunisolarCalendar.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\JulianCalendar.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\KoreanCalendar.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\KoreanLunisolarCalendar.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\NumberFormatInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\NumberStyles.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\PersianCalendar.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\RegionInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\SortKey.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\SortVersion.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\StringInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\TaiwanCalendar.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\TaiwanLunisolarCalendar.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\TextElementEnumerator.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\TextInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\ThaiBuddhistCalendar.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\TimeSpanFormat.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\TimeSpanParse.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\UmAlQuraCalendar.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\UnicodeCategory.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\TimeSpanStyles.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureCoreFxGlobalization)' != 'true'">
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\EncodingDataItem.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\EncodingTable.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\GlobalizationAssembly.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\EncodingDataItem.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\EncodingTable.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationAssembly.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\CalendarData.Unix.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\CompareInfo.Unix.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\CultureData.Unix.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\CultureInfo.Unix.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\TextInfo.Unix.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\CalendarData.Unix.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\CompareInfo.Unix.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\CultureData.Unix.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\CultureInfo.Unix.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\TextInfo.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' != 'true'">
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\CalendarData.Windows.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\CompareInfo.Windows.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\CultureData.Windows.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\CultureInfo.Windows.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\HijriCalendar.Win32.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\IdnMapping.Windows.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\JapaneseCalendar.Win32.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\TextInfo.Windows.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\CalendarData.Windows.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\CompareInfo.Windows.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\CultureData.Windows.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\CultureInfo.Windows.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\HijriCalendar.Win32.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\IdnMapping.Windows.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\JapaneseCalendar.Win32.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\TextInfo.Windows.cs" />
   </ItemGroup>
   <ItemGroup>
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\SR.cs" />
+    <Compile Include="$(BclSourcesRoot)\SR.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureCoreFxGlobalization)' == 'true' and '$(TargetsUnix)' == 'true'">
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\EncodingTable.Unix.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\EncodingDataItem.Unix.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Text\Normalization.Unix.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Calendar.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Casing.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Collation.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Idna.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Locale.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Normalization.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.ResultCode.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.TimeZoneInfo.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Utils.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\HijriCalendar.Unix.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\IdnMapping.Unix.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\JapaneseCalendar.Unix.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Globalization\LocaleData.Unix.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\EncodingTable.Unix.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\EncodingDataItem.Unix.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Text\Normalization.Unix.cs" />
+    <Compile Include="$(BclSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Calendar.cs" />
+    <Compile Include="$(BclSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Casing.cs" />
+    <Compile Include="$(BclSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Collation.cs" />
+    <Compile Include="$(BclSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Idna.cs" />
+    <Compile Include="$(BclSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Locale.cs" />
+    <Compile Include="$(BclSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Normalization.cs" />
+    <Compile Include="$(BclSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.ResultCode.cs" />
+    <Compile Include="$(BclSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.TimeZoneInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Utils.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\HijriCalendar.Unix.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\IdnMapping.Unix.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\JapaneseCalendar.Unix.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\LocaleData.Unix.cs" />
   </ItemGroup>
   <ItemGroup>
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\AbandonedMutexException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\AsyncLocal.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\AutoResetEvent.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\SendOrPostCallback.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\SynchronizationContext.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\EventResetMode.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\EventWaitHandle.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\ExecutionContext.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\Interlocked.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\LockRecursionException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\ManualResetEvent.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\Monitor.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\Mutex.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\Overlapped.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\ParameterizedThreadStart.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\Semaphore.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\SemaphoreFullException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\SynchronizationLockException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\Thread.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\ThreadAbortException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\ThreadInterruptedException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\ThreadPool.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\ThreadPriority.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\ThreadStart.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\ThreadState.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\ThreadStateException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\ThreadStartException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\Timer.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\Volatile.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\WaitHandle.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\WaitHandleCannotBeOpenedException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\ApartmentState.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\SpinLock.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\SpinWait.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\CountdownEvent.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\LazyInitializer.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\ThreadLocal.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\SemaphoreSlim.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\ManualResetEventSlim.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\CancellationTokenRegistration.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\CancellationTokenSource.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\CancellationToken.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\Tasks\future.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\Tasks\FutureFactory.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\Tasks\Task.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\Tasks\TaskContinuation.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\Tasks\TaskCanceledException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\Tasks\TaskSchedulerException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\Tasks\TaskExceptionHolder.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\Tasks\TaskFactory.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\Tasks\TaskScheduler.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\Tasks\ThreadPoolTaskScheduler.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\Tasks\TaskCompletionSource.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\Tasks\AsyncCausalityTracer.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\Tasks\ConcurrentExclusiveSchedulerPair.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\Tasks\ProducerConsumerQueues.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\Tasks\TPLETWProvider.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Threading\Tasks\TaskToApm.cs" />
-    <MscorlibSources Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\Threading\Tasks\IAsyncCausalityTracerStatics.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\AbandonedMutexException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\AsyncLocal.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\AutoResetEvent.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\SendOrPostCallback.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\SynchronizationContext.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\EventResetMode.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\EventWaitHandle.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\ExecutionContext.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\Interlocked.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\LockRecursionException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\ManualResetEvent.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\Monitor.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\Mutex.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\Overlapped.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\ParameterizedThreadStart.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\Semaphore.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\SemaphoreFullException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\SynchronizationLockException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadAbortException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadInterruptedException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPriority.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadStart.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadState.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadStateException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadStartException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\Timer.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\Volatile.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\WaitHandle.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\WaitHandleCannotBeOpenedException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\ApartmentState.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\SpinLock.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\SpinWait.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\CountdownEvent.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\LazyInitializer.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadLocal.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\SemaphoreSlim.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\ManualResetEventSlim.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\CancellationTokenRegistration.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\CancellationTokenSource.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\CancellationToken.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\future.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\FutureFactory.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\Task.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\TaskContinuation.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\TaskCanceledException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\TaskSchedulerException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\TaskExceptionHolder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\TaskFactory.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\TaskScheduler.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\ThreadPoolTaskScheduler.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\TaskCompletionSource.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\AsyncCausalityTracer.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\ConcurrentExclusiveSchedulerPair.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\ProducerConsumerQueues.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\TPLETWProvider.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\Tasks\TaskToApm.cs" />
+    <Compile Condition="'$(FeatureCominterop)' == 'true'" Include="$(BclSourcesRoot)\System\Threading\Tasks\IAsyncCausalityTracerStatics.cs" />
   </ItemGroup>
   <ItemGroup>
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Threading\ClrThreadPoolBoundHandle.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Threading\ClrThreadPoolBoundHandleOverlapped.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Threading\ClrThreadPoolPreAllocatedOverlapped.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Buffers\ArrayPoolEventSource.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolBoundHandle.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolBoundHandleOverlapped.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Threading\ClrThreadPoolPreAllocatedOverlapped.cs" />
   </ItemGroup>
   <ItemGroup>
-    <MscorlibSources Include="$(BclSourcesRoot)\System\IO\__Error.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\IO\__HResults.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\IO\BinaryReader.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\IO\BinaryWriter.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\IO\Directory.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\IO\SearchOption.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\IO\DirectoryNotFoundException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\IO\DriveNotFoundException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\IO\EncodingCache.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\IO\EndOfStreamException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\IO\File.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\IO\FileAccess.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\IO\FileLoadException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\IO\FileMode.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\IO\FileNotFoundException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\IO\FileOptions.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\IO\FileShare.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\IO\FileSystemEnumerable.cs" Condition="'$(TargetsUnix)' == 'true'" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\IO\IOException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\IO\MemoryStream.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\IO\PathTooLongException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\IO\PinnedBufferMemoryStream.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\IO\SeekOrigin.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\IO\Stream.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\IO\StreamHelpers.CopyValidation.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\IO\TextReader.cs" Condition="'$(TargetsUnix)' == 'true'" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\IO\StreamReader.cs" Condition="'$(TargetsUnix)' == 'true'" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\IO\UnmanagedMemoryAccessor.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\IO\UnmanagedMemoryStream.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\IO\UnmanagedMemoryStreamWrapper.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\IO\__Error.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\IO\__HResults.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\IO\BinaryReader.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\IO\BinaryWriter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\IO\Directory.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\IO\SearchOption.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\IO\DirectoryNotFoundException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\IO\DriveNotFoundException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\IO\EncodingCache.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\IO\EndOfStreamException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\IO\File.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\IO\FileAccess.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\IO\FileLoadException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\IO\FileMode.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\IO\FileNotFoundException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\IO\FileOptions.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\IO\FileShare.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\IO\FileSystemEnumerable.cs" Condition="'$(TargetsUnix)' == 'true'" />
+    <Compile Include="$(BclSourcesRoot)\System\IO\IOException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\IO\MemoryStream.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\IO\PathTooLongException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\IO\PinnedBufferMemoryStream.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\IO\SeekOrigin.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\IO\Stream.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\IO\StreamHelpers.CopyValidation.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\IO\TextReader.cs" Condition="'$(TargetsUnix)' == 'true'" />
+    <Compile Include="$(BclSourcesRoot)\System\IO\StreamReader.cs" Condition="'$(TargetsUnix)' == 'true'" />
+    <Compile Include="$(BclSourcesRoot)\System\IO\UnmanagedMemoryAccessor.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\IO\UnmanagedMemoryStream.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\IO\UnmanagedMemoryStreamWrapper.cs" />
   </ItemGroup>
   <ItemGroup>
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Security\Attributes.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Security\SecurityException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Security\SecurityState.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Security\VerificationException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Security\Attributes.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Security\SecurityException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Security\SecurityState.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Security\VerificationException.cs" />
   </ItemGroup>
   <ItemGroup>
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Security\Util\URLString.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Security\Util\URLString.cs" />
   </ItemGroup>
   <ItemGroup>
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\Assert.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\AssertFilter.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\AssertFilters.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\ConditionalAttribute.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\Debugger.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\DebuggerAttributes.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\ICustomDebuggerNotification.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\log.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\LoggingLevels.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\LogSwitch.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\Stacktrace.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\Stackframe.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\EditAndContinueHelper.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\ActivityTracker.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventActivityOptions.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventDescriptor.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventProvider.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventSource.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventSource_CoreCLR.cs" />
-    <MscorlibSources Condition="'$(FeatureXplatEventSource)' == 'true'" Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\XplatEventLogger.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventSourceException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\FrameworkEventSource.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\StubEnvironment.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\Winmeta.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\ArrayTypeInfo.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\ConcurrentSet.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\ConcurrentSetItem.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\DataCollector.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\EmptyStruct.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\EnumerableTypeInfo.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\EnumHelper.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\EventDataAttribute.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\EventFieldAttribute.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\EventFieldFormat.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\EventIgnoreAttribute.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\EventPayload.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\EventSourceOptions.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\FieldMetadata.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\InvokeTypeInfo.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\NameInfo.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\PropertyValue.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\PropertyAnalysis.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\SimpleEventTypes.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\SimpleTypeInfos.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\Statics.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\TraceLoggingDataCollector.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\TraceLoggingDataType.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\TraceLoggingEventSource.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\TraceLoggingEventTraits.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\TraceLoggingEventTypes.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\TraceLoggingMetadataCollector.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\TraceLoggingTypeInfo.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\TypeAnalysis.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Assert.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\AssertFilter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\AssertFilters.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\ConditionalAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Debugger.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\DebuggerAttributes.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\ICustomDebuggerNotification.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\log.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\LoggingLevels.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\LogSwitch.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Stacktrace.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Stackframe.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\EditAndContinueHelper.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\ActivityTracker.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventActivityOptions.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventDescriptor.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventProvider.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventSource.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventSource_CoreCLR.cs" />
+    <Compile Condition="'$(FeatureXplatEventSource)' == 'true'" Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\XplatEventLogger.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\EventSourceException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\FrameworkEventSource.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\StubEnvironment.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\Winmeta.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\ArrayTypeInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\ConcurrentSet.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\ConcurrentSetItem.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\DataCollector.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\EmptyStruct.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\EnumerableTypeInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\EnumHelper.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\EventDataAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\EventFieldAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\EventFieldFormat.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\EventIgnoreAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\EventPayload.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\EventSourceOptions.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\FieldMetadata.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\InvokeTypeInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\NameInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\PropertyValue.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\PropertyAnalysis.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\SimpleEventTypes.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\SimpleTypeInfos.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\Statics.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\TraceLoggingDataCollector.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\TraceLoggingDataType.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\TraceLoggingEventSource.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\TraceLoggingEventTraits.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\TraceLoggingEventTypes.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\TraceLoggingMetadataCollector.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\TraceLoggingTypeInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\TraceLogging\TypeAnalysis.cs" />
   </ItemGroup>
   <ItemGroup>
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\CodeAnalysis\SuppressMessageAttribute.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\Contracts\Contracts.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\Contracts\ContractsBCL.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\CodeAnalysis\SuppressMessageAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Contracts\Contracts.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Contracts\ContractsBCL.cs" />
   </ItemGroup>
   <ItemGroup>
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\SymbolStore\ISymDocumentWriter.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\SymbolStore\ISymWriter.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\SymbolStore\SymAddressKind.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Diagnostics\SymbolStore\Token.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\SymbolStore\ISymDocumentWriter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\SymbolStore\ISymWriter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\SymbolStore\SymAddressKind.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Diagnostics\SymbolStore\Token.cs" />
   </ItemGroup>
   <ItemGroup>
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\ExceptionServices\CorruptingExceptionCommon.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\ExceptionServices\ExceptionServicesCommon.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\ExceptionServices\ExceptionNotification.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\ExceptionServices\CorruptingExceptionCommon.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\ExceptionServices\ExceptionServicesCommon.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\ExceptionServices\ExceptionNotification.cs" />
   </ItemGroup>
   <ItemGroup>
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\Loader\AssemblyLoadContext.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Loader\AssemblyLoadContext.cs" />
   </ItemGroup>
   <ItemGroup>
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\Serialization\FormatterConverter.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\Serialization\FormatterServices.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\Serialization\IDeserializationCallback.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\Serialization\IFormatterConverter.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\Serialization\IObjectReference.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\Serialization\ISerializable.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\Serialization\SerializationAttributes.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\Serialization\SerializationException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\Serialization\SerializationInfo.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\Serialization\SerializationInfoEnumerator.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\Serialization\StreamingContext.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\Serialization\SafeSerializationManager.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Serialization\FormatterConverter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Serialization\FormatterServices.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Serialization\IDeserializationCallback.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Serialization\IFormatterConverter.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Serialization\IObjectReference.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Serialization\ISerializable.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Serialization\SerializationAttributes.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Serialization\SerializationException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Serialization\SerializationInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Serialization\SerializationInfoEnumerator.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Serialization\StreamingContext.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Serialization\SafeSerializationManager.cs" />
   </ItemGroup>
   <ItemGroup>
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\Versioning\TargetFrameworkAttribute.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\Versioning\CompatibilitySwitch.cs" Condition="'$(TargetsUnix)' == 'true'" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\Versioning\NonVersionableAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Versioning\TargetFrameworkAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Versioning\CompatibilitySwitch.cs" Condition="'$(TargetsUnix)' == 'true'" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Versioning\NonVersionableAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Configuration\Assemblies\AssemblyHashAlgorithm.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Configuration\Assemblies\AssemblyVersionCompatibility.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Configuration\Assemblies\AssemblyHashAlgorithm.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Configuration\Assemblies\AssemblyVersionCompatibility.cs" />
   </ItemGroup>
   <ItemGroup>
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Runtime\Remoting\ObjectHandle.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Remoting\ObjectHandle.cs" />
   </ItemGroup>
   <ItemGroup>
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Text\ASCIIEncoding.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Text\Decoder.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Text\DecoderNLS.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Text\DecoderBestFitFallback.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Text\DecoderExceptionFallback.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Text\DecoderFallback.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Text\DecoderReplacementFallback.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Text\Encoder.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Text\EncoderNLS.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Text\EncoderBestFitFallback.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Text\EncoderExceptionFallback.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Text\EncoderFallback.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Text\EncoderReplacementFallback.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Text\Encoding.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Text\EncodingForwarder.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Text\EncodingInfo.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Text\EncodingNLS.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Text\EncodingProvider.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Text\Latin1Encoding.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Text\Normalization.Windows.cs" Condition="'$(TargetsUnix)' != 'true'" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Text\UnicodeEncoding.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Text\UTF7Encoding.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Text\UTF8Encoding.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Text\UTF32Encoding.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Text\ASCIIEncoding.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Text\Decoder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Text\DecoderNLS.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Text\DecoderBestFitFallback.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Text\DecoderExceptionFallback.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Text\DecoderFallback.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Text\DecoderReplacementFallback.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Text\Encoder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Text\EncoderNLS.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Text\EncoderBestFitFallback.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Text\EncoderExceptionFallback.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Text\EncoderFallback.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Text\EncoderReplacementFallback.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Text\Encoding.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Text\EncodingForwarder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Text\EncodingInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Text\EncodingNLS.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Text\EncodingProvider.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Text\Latin1Encoding.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Text\Normalization.Windows.cs" Condition="'$(TargetsUnix)' != 'true'" />
+    <Compile Include="$(BclSourcesRoot)\System\Text\UnicodeEncoding.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Text\UTF7Encoding.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Text\UTF8Encoding.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Text\UTF32Encoding.cs" />
   </ItemGroup>
   <ItemGroup>
-    <MscorlibSources Include="$(BclSourcesRoot)\Microsoft\Win32\UnsafeNativeMethods.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\Microsoft\Win32\Win32Native.cs" />
-    <MscorlibSources Condition="'$(FeatureWin32Registry)' == 'true'" Include="$(BclSourcesRoot)\Microsoft\Win32\Registry.cs" />
-    <MscorlibSources Condition="'$(FeatureWin32Registry)' == 'true'" Include="$(BclSourcesRoot)\Microsoft\Win32\RegistryKey.cs" />
-    <MscorlibSources Condition="'$(FeatureWin32Registry)' == 'true'" Include="$(BclSourcesRoot)\Microsoft\Win32\RegistryValueKind.cs" />
-    <MscorlibSources Condition="'$(FeatureWin32Registry)' == 'true'" Include="$(BclSourcesRoot)\Microsoft\Win32\RegistryView.cs" />
-    <MscorlibSources Condition="'$(FeatureClassicCominterop)' == 'true'" Include="$(BclSourcesRoot)\Microsoft\Win32\OAVariantLib.cs" />
+    <Compile Include="$(BclSourcesRoot)\Microsoft\Win32\UnsafeNativeMethods.cs" />
+    <Compile Include="$(BclSourcesRoot)\Microsoft\Win32\Win32Native.cs" />
+    <Compile Condition="'$(FeatureWin32Registry)' == 'true'" Include="$(BclSourcesRoot)\Microsoft\Win32\Registry.cs" />
+    <Compile Condition="'$(FeatureWin32Registry)' == 'true'" Include="$(BclSourcesRoot)\Microsoft\Win32\RegistryKey.cs" />
+    <Compile Condition="'$(FeatureWin32Registry)' == 'true'" Include="$(BclSourcesRoot)\Microsoft\Win32\RegistryValueKind.cs" />
+    <Compile Condition="'$(FeatureWin32Registry)' == 'true'" Include="$(BclSourcesRoot)\Microsoft\Win32\RegistryView.cs" />
+    <Compile Condition="'$(FeatureClassicCominterop)' == 'true'" Include="$(BclSourcesRoot)\Microsoft\Win32\OAVariantLib.cs" />
   </ItemGroup>
   <ItemGroup>
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Resources\__FastResourceComparer.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Resources\__HResults.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Resources\FileBasedResourceGroveler.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Resources\IResourceGroveler.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Resources\IResourceReader.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Resources\LooselyLinkedResourceReference.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Resources\ManifestBasedResourceGroveler.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Resources\MissingManifestResourceException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Resources\MissingSatelliteAssemblyException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Resources\NeutralResourcesLanguageAttribute.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Resources\ResourceFallbackManager.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Resources\ResourceManager.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Resources\ResourceReader.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Resources\ResourceSet.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Resources\ResourceTypeCode.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Resources\RuntimeResourceSet.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Resources\SatelliteContractVersionAttribute.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Resources\UltimateResourceFallbackLocation.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Resources\__FastResourceComparer.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Resources\__HResults.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Resources\FileBasedResourceGroveler.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Resources\IResourceGroveler.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Resources\IResourceReader.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Resources\LooselyLinkedResourceReference.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Resources\ManifestBasedResourceGroveler.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Resources\MissingManifestResourceException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Resources\MissingSatelliteAssemblyException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Resources\NeutralResourcesLanguageAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Resources\ResourceFallbackManager.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Resources\ResourceManager.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Resources\ResourceReader.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Resources\ResourceSet.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Resources\ResourceTypeCode.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Resources\RuntimeResourceSet.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Resources\SatelliteContractVersionAttribute.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Resources\UltimateResourceFallbackLocation.cs" />
   </ItemGroup>
   <ItemGroup>
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Nullable.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\Generic\Comparer.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\Generic\ComparerHelpers.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\Generic\Dictionary.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\Generic\EqualityComparer.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\Generic\DebugView.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\Generic\ICollection.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\Generic\IComparer.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\Generic\IDictionary.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\Generic\IEnumerable.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\Generic\IEnumerator.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\Generic\IEqualityComparer.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\Generic\IList.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\Generic\IReadOnlyCollection.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\Generic\IReadOnlyList.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\Generic\IReadOnlyDictionary.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\Generic\KeyNotFoundException.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\Generic\KeyValuePair.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\Generic\List.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\Generic\ArraySortHelper.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\ObjectModel\Collection.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\ObjectModel\ReadOnlyCollection.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\ObjectModel\ReadOnlyDictionary.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\ObjectModel\KeyedCollection.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\Concurrent\ConcurrentStack.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\Concurrent\IProducerConsumerCollection.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\Concurrent\ConcurrentDictionary.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Collections\Concurrent\ConcurrentQueue.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Nullable.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\Comparer.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\ComparerHelpers.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\Dictionary.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\EqualityComparer.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\DebugView.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\ICollection.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\IComparer.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\IDictionary.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\IEnumerable.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\IEnumerator.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\IEqualityComparer.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\IList.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\IReadOnlyCollection.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\IReadOnlyList.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\IReadOnlyDictionary.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\KeyNotFoundException.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\KeyValuePair.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\List.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\ArraySortHelper.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\ObjectModel\Collection.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\ObjectModel\ReadOnlyCollection.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\ObjectModel\ReadOnlyDictionary.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\ObjectModel\KeyedCollection.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\Concurrent\ConcurrentStack.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\Concurrent\IProducerConsumerCollection.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\Concurrent\ConcurrentDictionary.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Collections\Concurrent\ConcurrentQueue.cs" />
   </ItemGroup>
   <ItemGroup>
-    <MscorlibSources Include="$(BclSourcesRoot)\Microsoft\Win32\SafeHandles\SafeFindHandle.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\Microsoft\Win32\SafeHandles\SafeWaitHandle.cs" />
-    <MscorlibSources Include="$(BclSourcesRoot)\Microsoft\Win32\SafeHandles\Win32SafeHandles.cs" />
-    <MscorlibSources Condition="'$(FeatureWin32Registry)' == 'true'" Include="$(BclSourcesRoot)\Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs" />
+    <Compile Include="$(BclSourcesRoot)\Microsoft\Win32\SafeHandles\SafeFindHandle.cs" />
+    <Compile Include="$(BclSourcesRoot)\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs" />
+    <Compile Include="$(BclSourcesRoot)\Microsoft\Win32\SafeHandles\SafeWaitHandle.cs" />
+    <Compile Include="$(BclSourcesRoot)\Microsoft\Win32\SafeHandles\Win32SafeHandles.cs" />
+    <Compile Condition="'$(FeatureWin32Registry)' == 'true'" Include="$(BclSourcesRoot)\Microsoft\Win32\SafeHandles\SafeRegistryHandle.cs" />
   </ItemGroup>
   <ItemGroup>
-    <MscorlibSources Include="$(BclSourcesRoot)\System\Numerics\Hashing\HashHelpers.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Numerics\Hashing\HashHelpers.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' != 'true'">
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\HResults.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.CreateFile.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.Globalization.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Windows\Normaliz\Interop.Idna.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.SetFileInformationByHandle.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\HResults.cs" />
+    <Compile Include="$(BclSourcesRoot)\Interop\Windows\kernel32\Interop.Globalization.cs" />
+    <Compile Include="$(BclSourcesRoot)\Interop\Windows\Normaliz\Interop.Idna.cs" />
   </ItemGroup>
   <ItemGroup>
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Security\SecureString.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Security\SecureString.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' != 'true'">
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Security\SafeBSTRHandle.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Security\SecureString.Windows.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Security\SafeBSTRHandle.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Security\SecureString.Windows.cs" />
     <!-- Interop sources -->
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Windows\Crypt32\Interop.CryptProtectMemory.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Windows\NtDll\Interop.ZeroMemory.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Windows\kernel32\Interop.WideCharToMultiByte.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Windows\oleaut32\Interop.SysAllocStringLen.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Windows\oleaut32\Interop.SysStringLen.cs" />
+    <Compile Include="$(BclSourcesRoot)\Interop\Windows\Crypt32\Interop.CryptProtectMemory.cs" />
+    <Compile Include="$(BclSourcesRoot)\Interop\Windows\NtDll\Interop.ZeroMemory.cs" />
+    <Compile Include="$(BclSourcesRoot)\Interop\Windows\kernel32\Interop.WideCharToMultiByte.cs" />
+    <Compile Include="$(BclSourcesRoot)\Interop\Windows\oleaut32\Interop.SysAllocStringLen.cs" />
+    <Compile Include="$(BclSourcesRoot)\Interop\Windows\oleaut32\Interop.SysStringLen.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\Security\SecureString.Unix.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Security\SecureString.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\System\HResults.cs" />
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Interop\Unix\System.Native\Interop.MksTemps.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\HResults.cs" />
+    <Compile Include="$(BclSourcesRoot)\Interop\Unix\System.Native\Interop.GetRandomBytes.cs" />
   </ItemGroup>
   <ItemGroup>
-    <MscorlibSources Include="$(CoreFxSourcesRoot)\Debug.cs" />
+    <Compile Include="$(BclSourcesRoot)\Debug.cs" />
   </ItemGroup>
   <!-- Include additional sources shared files in the compilation -->
   <ItemGroup>
     <!-- These are files are preprocessed  -->
-    <MscorlibSources Include="$(CommonPath)\Preprocessed\AssemblyRefs.g.cs" />
+    <Compile Include="$(CommonPath)\Preprocessed\AssemblyRefs.g.cs" />
     <!-- These files are shared with other framework components and don't live the same folder as the rest of them-->
-    <MscorlibSources Include="$(CommonPath)\PinnableBufferCache.cs" />
+    <Compile Include="$(CommonPath)\PinnableBufferCache.cs" />
     <!-- Include Internals visible to file in the compilation -->
-    <MscorlibSources Include="$(BclSourcesRoot)\mscorlib.Friends.cs" />
+    <Compile Include="$(BclSourcesRoot)\mscorlib.Friends.cs" />
     <!-- TODO list of types to be cleaned up from CoreLib -->
-    <MscorlibSources Include="$(BclSourcesRoot)\CleanupToDoList.cs" />
+    <Compile Include="$(BclSourcesRoot)\CleanupToDoList.cs" />
   </ItemGroup>
-
-  <Import Project="$(MSBuildThisFileDirectory)\shared\System.Private.CoreLib.Shared.sources"/>
-
   <ItemGroup>
-    <!-- We want the sources to show up nicely in VS-->
-    <Compile Include="@(MscorlibSources)">
-    </Compile>
     <Compile Include="src\System\Runtime\RuntimeImports.cs" />
     <Compile Include="src\System\ValueTuple.cs" />
   </ItemGroup>
@@ -1017,6 +1014,7 @@
       <ResGenDefines>$(DefineConstants)</ResGenDefines>
     </SplitTextStringResource>
   </ItemGroup>
+  <Import Project="shared\System.Private.CoreLib.Shared.projitems" Label="Shared" />
   <PropertyGroup>
     <CheckCDefines Condition="'$(CheckCDefines)'==''">true</CheckCDefines>
   </PropertyGroup>
