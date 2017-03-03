@@ -594,9 +594,6 @@ void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     }
     CONTRACT_END;
 
-    // reset pContext; it's only valid for active (top-most) frame
-    pRD->pContext = NULL;
-
     pRD->PCTAddr = GetReturnAddressPtr();
 
 #ifdef WIN64EXCEPTIONS
@@ -618,6 +615,9 @@ void FaultingExceptionFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     pRD->IsCallerSPValid = FALSE;        // Don't add usage of this field.  This is only temporary.
 
 #else // WIN64EXCEPTIONS
+
+    // reset pContext; it's only valid for active (top-most) frame
+    pRD->pContext = NULL;
 
     CalleeSavedRegisters* regs = GetCalleeSavedRegisters();
 
@@ -890,8 +890,6 @@ void TailCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     }
     CONTRACT_END;
 
-    // reset pContext; it's only valid for active (top-most) frame
-    pRD->pContext = NULL;
     pRD->PCTAddr = GetReturnAddressPtr();
 
 #ifdef WIN64EXCEPTIONS
@@ -908,6 +906,9 @@ void TailCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     SyncRegDisplayToCurrentContext(pRD);
 
 #else
+
+    // reset pContext; it's only valid for active (top-most) frame
+    pRD->pContext = NULL;
 
 #define CALLEE_SAVED_REGISTER(regname) pRD->p##regname = (DWORD*) &m_regs.regname;
     ENUM_CALLEE_SAVED_REGISTERS();
