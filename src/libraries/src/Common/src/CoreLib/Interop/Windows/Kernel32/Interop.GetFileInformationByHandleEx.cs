@@ -13,7 +13,7 @@ internal partial class Interop
         [DllImport(Libraries.Kernel32, SetLastError = true)]
         internal static extern bool GetFileInformationByHandleEx(SafeFileHandle hFile, FILE_INFO_BY_HANDLE_CLASS FileInformationClass, out FILE_STANDARD_INFO lpFileInformation, uint dwBufferSize);
 
-        internal partial struct FILE_STANDARD_INFO
+        internal struct FILE_STANDARD_INFO
         {
             internal long AllocationSize;
             internal long EndOfFile;

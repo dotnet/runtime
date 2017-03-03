@@ -10,5 +10,7 @@ internal partial class Interop
     {
         [DllImport(Libraries.Kernel32, SetLastError = false, EntryPoint = "SetErrorMode", ExactSpelling = true)]
         internal static extern uint SetErrorMode(uint newMode);
+
+        internal const uint SEM_FAILCRITICALERRORS = 1;
     }
 }
