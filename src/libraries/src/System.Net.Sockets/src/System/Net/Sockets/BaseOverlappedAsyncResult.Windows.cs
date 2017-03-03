@@ -145,7 +145,7 @@ namespace System.Net.Sockets
 
         // The following property returns the Win32 unsafe pointer to
         // whichever Overlapped structure we're using for IO.
-        internal SafeHandle OverlappedHandle
+        internal SafeNativeOverlapped OverlappedHandle
         {
             get
             {
