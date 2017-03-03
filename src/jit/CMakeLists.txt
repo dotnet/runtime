@@ -12,6 +12,8 @@ if (CLR_CMAKE_TARGET_ARCH_AMD64 OR (CLR_CMAKE_TARGET_ARCH_I386 AND NOT CLR_CMAKE
   add_definitions(-DFEATURE_AVX_SUPPORT)
 endif ()
 
+# JIT_BUILD disables certain PAL_TRY debugging features
+add_definitions(-DJIT_BUILD=1)
 
 if(WIN32)
   set(JIT_RESOURCES Native.rc)
@@ -76,86 +78,93 @@ set( JIT_SOURCES
   valuenum.cpp
 )
 
-if(CLR_CMAKE_TARGET_ARCH_AMD64)
-  set( ARCH_SOURCES
-    codegenxarch.cpp
-    emitxarch.cpp
-    lowerxarch.cpp
-    lsraxarch.cpp
-    simd.cpp
-    simdcodegenxarch.cpp
-    targetamd64.cpp
-    unwindamd64.cpp
-  )
-elseif(CLR_CMAKE_TARGET_ARCH_ARM)
-  set( ARCH_SOURCES
-    codegenarm.cpp
-    decomposelongs.cpp
-    emitarm.cpp
-    lowerarm.cpp
-    lsraarm.cpp
-    targetarm.cpp
-    unwindarm.cpp
-  )
-elseif(CLR_CMAKE_TARGET_ARCH_I386)
-  set( ARCH_SOURCES
-    codegenxarch.cpp
-    decomposelongs.cpp
-    emitxarch.cpp
-    lowerxarch.cpp
-    lsraxarch.cpp
-    simd.cpp
-    simdcodegenxarch.cpp
-    targetx86.cpp
-    unwindx86.cpp
-  )
-elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
-  set( ARCH_SOURCES
-    codegenarm64.cpp
-    emitarm64.cpp
-    lowerarm64.cpp
-    lsraarm64.cpp
-    targetarm64.cpp
-    unwindarm.cpp
-    unwindarm64.cpp
-  )
-else()
-  clr_unknown_arch()
-endif()
-
 # The following defines all the source files used by the "legacy" back-end (#ifdef LEGACY_BACKEND).
 # It is always safe to include both legacy and non-legacy files in the build, as everything is properly
 # #ifdef'ed, though it makes the build slightly slower to do so. Note there is only a legacy backend for
 # x86 and ARM.
 
-if(CLR_CMAKE_TARGET_ARCH_AMD64)
-  set( ARCH_LEGACY_SOURCES
-  )
-elseif(CLR_CMAKE_TARGET_ARCH_ARM)
-  set( ARCH_LEGACY_SOURCES
+set(JIT_ARM_LEGACY_SOURCES
     codegenlegacy.cpp
     registerfp.cpp
-  )
-elseif(CLR_CMAKE_TARGET_ARCH_I386)
-  set( ARCH_LEGACY_SOURCES
+)
+set(JIT_I386_LEGACY_SOURCES
     codegenlegacy.cpp
     stackfp.cpp
-  )
+)
+
+# Define all the architecture-specific source files
+
+set( JIT_AMD64_SOURCES
+  codegenxarch.cpp
+  emitxarch.cpp
+  lowerxarch.cpp
+  lsraxarch.cpp
+  simd.cpp
+  simdcodegenxarch.cpp
+  targetamd64.cpp
+  unwindamd64.cpp
+)
+
+set( JIT_ARM_SOURCES
+  ${JIT_ARM_LEGACY_SOURCES}
+  codegenarm.cpp
+  decomposelongs.cpp
+  emitarm.cpp
+  lowerarm.cpp
+  lsraarm.cpp
+  targetarm.cpp
+  unwindarm.cpp
+)
+
+set( JIT_I386_SOURCES
+  ${JIT_I386_LEGACY_SOURCES}
+  codegenxarch.cpp
+  decomposelongs.cpp
+  emitxarch.cpp
+  lowerxarch.cpp
+  lsraxarch.cpp
+  simd.cpp
+  simdcodegenxarch.cpp
+  targetx86.cpp
+  unwindx86.cpp
+)
+
+set( JIT_ARM64_SOURCES
+  codegenarm64.cpp
+  emitarm64.cpp
+  lowerarm64.cpp
+  lsraarm64.cpp
+  targetarm64.cpp
+  unwindarm.cpp
+  unwindarm64.cpp
+)
+
+if(CLR_CMAKE_TARGET_ARCH_AMD64)
+  set(JIT_ARCH_SOURCES ${JIT_AMD64_SOURCES})
+elseif(CLR_CMAKE_TARGET_ARCH_ARM)
+  set(JIT_ARCH_SOURCES ${JIT_ARM_SOURCES})
+elseif(CLR_CMAKE_TARGET_ARCH_I386)
+  set(JIT_ARCH_SOURCES ${JIT_I386_SOURCES})
 elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
-  set( ARCH_LEGACY_SOURCES
-  )
+  set(JIT_ARCH_SOURCES ${JIT_ARM64_SOURCES})
 else()
   clr_unknown_arch()
 endif()
 
 set( SOURCES
   ${JIT_SOURCES}
-  ${ARCH_SOURCES}
-  ${ARCH_LEGACY_SOURCES}
   ${JIT_RESOURCES}
 )
 
 convert_to_absolute_path(SOURCES ${SOURCES})
+convert_to_absolute_path(JIT_ARCH_SOURCES ${JIT_ARCH_SOURCES})
+
+# Also convert the per-architecture sources to absolute paths, if the subdirs want to use them.
+
+convert_to_absolute_path(JIT_AMD64_SOURCES ${JIT_AMD64_SOURCES})
+convert_to_absolute_path(JIT_ARM_SOURCES ${JIT_ARM_SOURCES})
+convert_to_absolute_path(JIT_I386_SOURCES ${JIT_I386_SOURCES})
+convert_to_absolute_path(JIT_ARM64_SOURCES ${JIT_ARM64_SOURCES})
 
 if(WIN32)
   add_precompiled_header(jitpch.h ../jitpch.cpp SOURCES)
@@ -211,6 +220,12 @@ add_subdirectory(standalone)
 if (CLR_CMAKE_PLATFORM_ARCH_ARM)
     add_subdirectory(protojit)
 endif (CLR_CMAKE_PLATFORM_ARCH_ARM)
+
+if ((CLR_CMAKE_PLATFORM_ARCH_I386 OR CLR_CMAKE_PLATFORM_ARCH_AMD64) AND WIN32)
+    # On x86, build RyuJIT/ARM32 cross-compiling altjit.
+    # On amd64, build RyuJIT/ARM64 cross-compiling altjit.
+    add_subdirectory(protononjit)
+endif ()
 
 if (CLR_CMAKE_PLATFORM_ARCH_I386 AND WIN32)
     add_subdirectory(legacyjit)
