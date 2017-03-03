@@ -76,6 +76,7 @@
     <Compile Include="BitArray\BitArray_GetSetTests.cs" />
     <Compile Include="BitArray\BitArray_OperatorsTests.cs" />
     <Compile Include="BitArray\BitArray_OperatorsTests.netcoreapp.cs" Condition="'$(TargetGroup)'=='netcoreapp'" />
+    <Compile Include="Generic\CollectionExtensionsTests.cs" Condition="'$(TargetGroup)'=='netcoreapp'" />
     <Compile Include="Generic\Comparers\Comparer.Generic.Tests.cs" />
     <Compile Include="Generic\Comparers\Comparer.Tests.cs" />
     <Compile Include="Generic\Comparers\Comparers.Generic.cs" />
