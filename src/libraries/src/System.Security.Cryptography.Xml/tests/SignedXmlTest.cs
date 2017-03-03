@@ -284,7 +284,7 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.True(v1.CheckSignature());
         }
 
-        [Fact]
+        [Fact(Skip = "https://github.com/dotnet/corefx/issues/16691")]
         public void AsymmetricDSASignature()
         {
             SignedXml signedXml = MSDNSample();
