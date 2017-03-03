@@ -6927,7 +6927,7 @@ GenTreeCall* Compiler::gtNewCallNode(
     // Initialize spill flags of gtOtherRegs
     node->ClearOtherRegFlags();
 
-#if defined(_TARGET_X86_) && !defined(LEGACY_BACKEND)
+#if (defined(_TARGET_X86_) || defined(_TARGET_ARM_)) && !defined(LEGACY_BACKEND)
     // Initialize the multi-reg long return info if necessary
     if (varTypeIsLong(node))
     {
@@ -6941,7 +6941,7 @@ GenTreeCall* Compiler::gtNewCallNode(
         // must be a long returned in two registers
         assert(retTypeDesc->GetReturnRegCount() == 2);
     }
-#endif // defined(_TARGET_X86_) && !defined(_LEGACY_BACKEND_)
+#endif // (defined(_TARGET_X86_) || defined(_TARGET_ARM_)) && !defined(_LEGACY_BACKEND_)
 
     return node;
 }
@@ -17023,7 +17023,7 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler* comp, CORINFO_CLASS_HA
 //
 void ReturnTypeDesc::InitializeLongReturnType(Compiler* comp)
 {
-#if defined(_TARGET_X86_)
+#if defined(_TARGET_X86_) || defined(_TARGET_ARM_)
 
     // Setups up a ReturnTypeDesc for returning a long using two registers
     //
@@ -17031,11 +17031,11 @@ void ReturnTypeDesc::InitializeLongReturnType(Compiler* comp)
     m_regType[0] = TYP_INT;
     m_regType[1] = TYP_INT;
 
-#else // not _TARGET_X86_
+#else // not (_TARGET_X86_ or _TARGET_ARM_)
 
     m_regType[0] = TYP_LONG;
 
-#endif // _TARGET_X86_
+#endif // _TARGET_X86_ or _TARGET_ARM_
 
 #ifdef DEBUG
     m_inited = true;
@@ -17111,7 +17111,7 @@ regNumber ReturnTypeDesc::GetABIReturnReg(unsigned idx)
         }
     }
 
-#elif defined(_TARGET_X86_)
+#elif defined(_TARGET_X86_) || defined(_TARGET_ARM_)
 
     if (idx == 0)
     {

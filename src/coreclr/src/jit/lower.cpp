@@ -1124,25 +1124,41 @@ void Lowering::LowerArg(GenTreeCall* call, GenTreePtr* ppArg)
     {
         if (isReg)
         {
-            NYI("Lowering of long register argument");
+            noway_assert(arg->OperGet() == GT_LONG);
+            assert(info->numRegs == 2);
+
+            GenTreePtr argLo = arg->gtGetOp1();
+            GenTreePtr argHi = arg->gtGetOp2();
+
+            GenTreeFieldList* fieldList = new (comp, GT_FIELD_LIST) GenTreeFieldList(argLo, 0, TYP_INT, nullptr);
+            (void)new (comp, GT_FIELD_LIST) GenTreeFieldList(argHi, 4, TYP_INT, fieldList);
+
+            putArg = NewPutArg(call, fieldList, info, TYP_VOID);
+
+            BlockRange().InsertBefore(arg, putArg);
+            BlockRange().Remove(arg);
+            *ppArg     = fieldList;
+            info->node = fieldList;
         }
+        else
+        {
+            // For longs, we will replace the GT_LONG with a GT_FIELD_LIST, and put that under a PUTARG_STK.
+            // Although the hi argument needs to be pushed first, that will be handled by the general case,
+            // in which the fields will be reversed.
+            noway_assert(arg->OperGet() == GT_LONG);
+            assert(info->numSlots == 2);
+            GenTreePtr        argLo     = arg->gtGetOp1();
+            GenTreePtr        argHi     = arg->gtGetOp2();
+            GenTreeFieldList* fieldList = new (comp, GT_FIELD_LIST) GenTreeFieldList(argLo, 0, TYP_INT, nullptr);
+            // Only the first fieldList node (GTF_FIELD_LIST_HEAD) is in the instruction sequence.
+            (void)new (comp, GT_FIELD_LIST) GenTreeFieldList(argHi, 4, TYP_INT, fieldList);
+            putArg = NewPutArg(call, fieldList, info, TYP_VOID);
 
-        // For longs, we will replace the GT_LONG with a GT_FIELD_LIST, and put that under a PUTARG_STK.
-        // Although the hi argument needs to be pushed first, that will be handled by the general case,
-        // in which the fields will be reversed.
-        noway_assert(arg->OperGet() == GT_LONG);
-        assert(info->numSlots == 2);
-        GenTreePtr        argLo     = arg->gtGetOp1();
-        GenTreePtr        argHi     = arg->gtGetOp2();
-        GenTreeFieldList* fieldList = new (comp, GT_FIELD_LIST) GenTreeFieldList(argLo, 0, TYP_INT, nullptr);
-        // Only the first fieldList node (GTF_FIELD_LIST_HEAD) is in the instruction sequence.
-        (void)new (comp, GT_FIELD_LIST) GenTreeFieldList(argHi, 4, TYP_INT, fieldList);
-        putArg = NewPutArg(call, fieldList, info, TYP_VOID);
-
-        // We can't call ReplaceArgWithPutArgOrCopy here because it presumes that we are keeping the original arg.
-        BlockRange().InsertBefore(arg, fieldList, putArg);
-        BlockRange().Remove(arg);
-        *ppArg = putArg;
+            // We can't call ReplaceArgWithPutArgOrCopy here because it presumes that we are keeping the original arg.
+            BlockRange().InsertBefore(arg, fieldList, putArg);
+            BlockRange().Remove(arg);
+            *ppArg = putArg;
+        }
     }
     else
 #endif // !defined(_TARGET_64BIT_)

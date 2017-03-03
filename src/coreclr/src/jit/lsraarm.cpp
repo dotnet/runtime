@@ -81,6 +81,24 @@ void Lowering::TreeNodeInfoInitCmp(GenTreePtr tree)
 
     info->srcCount = 2;
     info->dstCount = 1;
+
+    GenTreePtr op1     = tree->gtOp.gtOp1;
+    GenTreePtr op2     = tree->gtOp.gtOp2;
+    var_types  op1Type = op1->TypeGet();
+    var_types  op2Type = op2->TypeGet();
+
+    // Long compares will consume GT_LONG nodes, each of which produces two results.
+    // Thus for each long operand there will be an additional source.
+    // TODO-ARM-CQ: Mark hiOp2 and loOp2 as contained if it is a constant.
+    if (varTypeIsLong(op1Type))
+    {
+        info->srcCount++;
+    }
+    if (varTypeIsLong(op2Type))
+    {
+        info->srcCount++;
+    }
+
     CheckImmedAndMakeContained(tree, tree->gtOp.gtOp2);
 }
 
@@ -290,42 +308,76 @@ void Lowering::TreeNodeInfoInitReturn(GenTree* tree)
     LinearScan*   l        = m_lsra;
     Compiler*     compiler = comp;
 
-    GenTree*  op1           = tree->gtGetOp1();
-    regMaskTP useCandidates = RBM_NONE;
-
-    info->srcCount = (tree->TypeGet() == TYP_VOID) ? 0 : 1;
-    info->dstCount = 0;
-
-    if (varTypeIsStruct(tree))
+    if (tree->TypeGet() == TYP_LONG)
     {
-        NYI_ARM("struct return");
+        GenTree* op1 = tree->gtGetOp1();
+        noway_assert(op1->OperGet() == GT_LONG);
+        GenTree* loVal = op1->gtGetOp1();
+        GenTree* hiVal = op1->gtGetOp2();
+        info->srcCount = 2;
+        loVal->gtLsraInfo.setSrcCandidates(l, RBM_LNGRET_LO);
+        hiVal->gtLsraInfo.setSrcCandidates(l, RBM_LNGRET_HI);
+        info->dstCount = 0;
     }
     else
     {
-        // Non-struct type return - determine useCandidates
-        switch (tree->TypeGet())
-        {
-            case TYP_VOID:
-                useCandidates = RBM_NONE;
-                break;
-            case TYP_FLOAT:
-                useCandidates = RBM_FLOATRET;
-                break;
-            case TYP_DOUBLE:
-                useCandidates = RBM_DOUBLERET;
-                break;
-            case TYP_LONG:
-                useCandidates = RBM_LNGRET;
-                break;
-            default:
-                useCandidates = RBM_INTRET;
-                break;
-        }
-    }
+        GenTree*  op1           = tree->gtGetOp1();
+        regMaskTP useCandidates = RBM_NONE;
 
-    if (useCandidates != RBM_NONE)
-    {
-        tree->gtOp.gtOp1->gtLsraInfo.setSrcCandidates(l, useCandidates);
+        info->srcCount = (tree->TypeGet() == TYP_VOID) ? 0 : 1;
+        info->dstCount = 0;
+
+        if (varTypeIsStruct(tree))
+        {
+            // op1 has to be either an lclvar or a multi-reg returning call
+            if (op1->OperGet() == GT_LCL_VAR)
+            {
+                GenTreeLclVarCommon* lclVarCommon = op1->AsLclVarCommon();
+                LclVarDsc*           varDsc       = &(compiler->lvaTable[lclVarCommon->gtLclNum]);
+                assert(varDsc->lvIsMultiRegRet);
+
+                // Mark var as contained if not enregistrable.
+                if (!varTypeIsEnregisterableStruct(op1))
+                {
+                    MakeSrcContained(tree, op1);
+                }
+            }
+            else
+            {
+                noway_assert(op1->IsMultiRegCall());
+
+                ReturnTypeDesc* retTypeDesc = op1->AsCall()->GetReturnTypeDesc();
+                info->srcCount              = retTypeDesc->GetReturnRegCount();
+                useCandidates               = retTypeDesc->GetABIReturnRegs();
+            }
+        }
+        else
+        {
+            // Non-struct type return - determine useCandidates
+            switch (tree->TypeGet())
+            {
+                case TYP_VOID:
+                    useCandidates = RBM_NONE;
+                    break;
+                case TYP_FLOAT:
+                    useCandidates = RBM_FLOATRET;
+                    break;
+                case TYP_DOUBLE:
+                    useCandidates = RBM_DOUBLERET;
+                    break;
+                case TYP_LONG:
+                    useCandidates = RBM_LNGRET;
+                    break;
+                default:
+                    useCandidates = RBM_INTRET;
+                    break;
+            }
+        }
+
+        if (useCandidates != RBM_NONE)
+        {
+            tree->gtOp.gtOp1->gtLsraInfo.setSrcCandidates(l, useCandidates);
+        }
     }
 }
 
@@ -656,7 +708,6 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
     DISPNODE(tree);
 
     NYI_IF(tree->TypeGet() == TYP_STRUCT, "lowering struct");
-    NYI_IF(tree->TypeGet() == TYP_LONG, "lowering long");
     NYI_IF(tree->TypeGet() == TYP_DOUBLE, "lowering double");
 
     switch (tree->OperGet())
@@ -666,7 +717,14 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
 
         case GT_STORE_LCL_FLD:
         case GT_STORE_LCL_VAR:
-            info->srcCount = 1;
+            if (tree->gtGetOp1()->OperGet() == GT_LONG)
+            {
+                info->srcCount = 2;
+            }
+            else
+            {
+                info->srcCount = 1;
+            }
             info->dstCount = 0;
             LowerStoreLoc(tree->AsLclVarCommon());
             TreeNodeInfoInitStoreLoc(tree->AsLclVarCommon());
@@ -737,6 +795,12 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             }
 #endif // DEBUG
 
+            if (varTypeIsLong(castOpType))
+            {
+                noway_assert(castOp->OperGet() == GT_LONG);
+                info->srcCount = 2;
+            }
+
             if (tree->gtOverflow())
             {
                 NYI_ARM("overflow checks");
@@ -769,9 +833,8 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             break;
 
         case GT_SWITCH_TABLE:
-            info->srcCount         = 2;
-            info->internalIntCount = 1;
-            info->dstCount         = 0;
+            info->srcCount = 2;
+            info->dstCount = 0;
             break;
 
         case GT_ASG:
@@ -841,6 +904,21 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
         case GT_START_NONGC:
         case GT_PROF_HOOK:
             info->srcCount = 0;
+            info->dstCount = 0;
+            break;
+
+        case GT_LONG:
+            if ((tree->gtLIRFlags & LIR::Flags::IsUnusedValue) != 0)
+            {
+                // An unused GT_LONG node needs to consume its sources.
+                info->srcCount = 2;
+            }
+            else
+            {
+                // Passthrough
+                info->srcCount = 0;
+            }
+
             info->dstCount = 0;
             break;
 
@@ -1032,7 +1110,6 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             unsigned   varNum = tree->gtLclVarCommon.gtLclNum;
             LclVarDsc* varDsc = comp->lvaTable + varNum;
             NYI_IF(varTypeIsStruct(varDsc), "lowering struct var");
-            NYI_IF(varTypeIsLong(varDsc), "lowering long var");
         }
         case GT_PHYSREG:
         case GT_CLS_VAR_ADDR:
@@ -1042,6 +1119,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
         case GT_PUTARG_STK:
         case GT_LABEL:
         case GT_PINVOKE_PROLOG:
+        case GT_JCC:
             info->dstCount = tree->IsValue() ? 1 : 0;
             if (kind & (GTK_CONST | GTK_LEAF))
             {
