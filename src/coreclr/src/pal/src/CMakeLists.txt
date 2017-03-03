@@ -291,21 +291,26 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
   endif()
 
   if(CLR_CMAKE_PLATFORM_ANDROID)
+    find_library(LZMA NAMES lzma)
+
+    if(LZMA STREQUAL LZMA-NOTFOUND)
+      message(FATAL_ERROR "Cannot find liblzma.")
+    endif(LZMA STREQUAL LZMA-NOTFOUND)
+
     target_link_libraries(coreclrpal
       gnustl_shared
       android-support
-      android-glob)
+      android-glob
+      ${LZMA})
   endif()
 
-  if(NOT CLR_CMAKE_PLATFORM_ANDROID)
-    find_library(UNWIND NAMES unwind)
+  find_library(UNWIND NAMES unwind)
 
-    if(UNWIND STREQUAL UNWIND-NOTFOUND)
-      message(FATAL_ERROR "Cannot find libunwind. Try installing libunwind8-dev and libunwind8.")
-    endif(UNWIND STREQUAL UNWIND-NOTFOUND)
+  if(UNWIND STREQUAL UNWIND-NOTFOUND)
+    message(FATAL_ERROR "Cannot find libunwind. Try installing libunwind8-dev and libunwind8.")
+  endif(UNWIND STREQUAL UNWIND-NOTFOUND)
 
-    target_link_libraries(coreclrpal ${UNWIND})
-  endif()
+  target_link_libraries(coreclrpal ${UNWIND})
 
   if(CLR_MAKE_PLATFORM_ANDROID)
     find_library(ANDROID_SUPPORT NAMES android-support)
