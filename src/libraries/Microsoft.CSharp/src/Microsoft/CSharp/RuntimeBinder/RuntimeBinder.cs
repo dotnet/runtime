@@ -977,9 +977,9 @@ namespace Microsoft.CSharp.RuntimeBinder
             {
                 TypeArray collectioniFaces = callingType.GetWinRTCollectionIfacesAll(SymbolLoader);
 
-                for (int i = 0; i < collectioniFaces.size; i++)
+                for (int i = 0; i < collectioniFaces.Count; i++)
                 {
-                    CType t = collectioniFaces.Item(i);
+                    CType t = collectioniFaces[i];
                     // Collection interfaces will be aggregates.
                     Debug.Assert(t.IsAggregateType());
 
@@ -1250,8 +1250,8 @@ namespace Microsoft.CSharp.RuntimeBinder
 
             // Check if we have a potential call to an indexed property accessor.
             // If so, we'll flag overload resolution to let us call non-callables.
-            if ((payload.Name.StartsWith("set_", StringComparison.Ordinal) && swt.Sym.AsMethodSymbol().Params.Size > 1) ||
-                (payload.Name.StartsWith("get_", StringComparison.Ordinal) && swt.Sym.AsMethodSymbol().Params.Size > 0))
+            if ((payload.Name.StartsWith("set_", StringComparison.Ordinal) && swt.Sym.AsMethodSymbol().Params.Count > 1) ||
+                (payload.Name.StartsWith("get_", StringComparison.Ordinal) && swt.Sym.AsMethodSymbol().Params.Count > 0))
             {
                 memGroup.flags &= ~EXPRFLAG.EXF_USERCALLABLE;
             }

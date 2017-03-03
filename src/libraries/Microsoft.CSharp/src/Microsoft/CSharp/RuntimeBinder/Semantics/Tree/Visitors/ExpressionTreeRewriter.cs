@@ -1221,8 +1221,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(orig1 != null && orig2 != null);
             EXPR new1 = pp1;
             EXPR new2 = pp2;
-            CType fptype1 = method.Params.Item(0);
-            CType fptype2 = method.Params.Item(1);
+            CType fptype1 = method.Params[0];
+            CType fptype2 = method.Params[1];
             CType aatype1 = orig1.type;
             CType aatype2 = orig2.type;
             // Is the operator even a candidate for lifting?

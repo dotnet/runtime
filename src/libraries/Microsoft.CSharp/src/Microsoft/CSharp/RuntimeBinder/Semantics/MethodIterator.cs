@@ -98,7 +98,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 if (_pCurrentType == null) // First guy.
                 {
-                    if (_pContainingTypes.size == 0)
+                    if (_pContainingTypes.Count == 0)
                     {
                         // No instance methods, only extensions.
                         _bIsCheckingInstanceMethods = false;
@@ -154,7 +154,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // If our arity is non-0, we must match arity with this symbol.
                 if (_nArity > 0)
                 {
-                    if (_mask == symbmask_t.MASK_MethodSymbol && _pCurrentSym.AsMethodSymbol().typeVars.size != _nArity)
+                    if (_mask == symbmask_t.MASK_MethodSymbol && _pCurrentSym.AsMethodSymbol().typeVars.Count != _nArity)
                     {
                         return false;
                     }
@@ -260,16 +260,16 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             private bool FindNextTypeForInstanceMethods()
             {
                 // Otherwise, search through other types listed as well as our base class.
-                if (_pContainingTypes.size > 0)
+                if (_pContainingTypes.Count > 0)
                 {
-                    if (_nCurrentTypeCount >= _pContainingTypes.size)
+                    if (_nCurrentTypeCount >= _pContainingTypes.Count)
                     {
                         // No more types to check.
                         _pCurrentType = null;
                     }
                     else
                     {
-                        _pCurrentType = _pContainingTypes.Item(_nCurrentTypeCount++).AsAggregateType();
+                        _pCurrentType = _pContainingTypes[_nCurrentTypeCount++].AsAggregateType();
                     }
                 }
                 else

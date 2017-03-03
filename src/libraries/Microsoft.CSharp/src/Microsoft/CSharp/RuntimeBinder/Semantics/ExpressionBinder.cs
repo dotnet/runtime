@@ -925,7 +925,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     pwt.Sym.IsPropertySymbol() &&
                     pwt.GetType() != null &&
                     pwt.Prop().getClass() == pwt.GetType().getAggregate());
-            Debug.Assert(pwt.Prop().Params.size == 0 || pwt.Prop().isIndexer());
+            Debug.Assert(pwt.Prop().Params.Count == 0 || pwt.Prop().isIndexer());
             Debug.Assert(pOtherType == null ||
                     !pwt.Prop().isIndexer() &&
                     pOtherType.getAggregate() == pwt.Prop().RetType.getAggregate());
@@ -1119,12 +1119,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
 
                 // Only look at operators with 1 args.
-                if (!methCur.isOperator || methCur.Params.size != 1)
+                if (!methCur.isOperator || methCur.Params.Count != 1)
                     continue;
-                Debug.Assert(methCur.typeVars.size == 0);
+                Debug.Assert(methCur.typeVars.Count == 0);
 
                 TypeArray paramsCur = GetTypes().SubstTypeArray(methCur.Params, atsCur);
-                CType typeParam = paramsCur.Item(0);
+                CType typeParam = paramsCur[0];
                 NullableType nubParam;
 
                 if (canConvert(arg, typeParam))
@@ -1179,11 +1179,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             if (pmethBest.ctypeLift != 0)
             {
-                call = BindLiftedUDUnop(arg, pmethBest.@params.Item(0), pmethBest.mpwi);
+                call = BindLiftedUDUnop(arg, pmethBest.@params[0], pmethBest.mpwi);
             }
             else
             {
-                call = BindUDUnopCall(arg, pmethBest.@params.Item(0), pmethBest.mpwi);
+                call = BindUDUnopCall(arg, pmethBest.@params[0], pmethBest.mpwi);
             }
 
             return GetExprFactory().CreateUserDefinedUnaryOperator(ek, call.type, arg, call, pmethBest.mpwi);
@@ -1600,10 +1600,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // We need to check unsafe on the parameters as well, since we cannot check in conversion.
                 TypeArray pParams = pMWI.Meth().Params;
 
-                for (int i = 0; i < pParams.size; i++)
+                for (int i = 0; i < pParams.Count; i++)
                 {
                     // This is an optimization: don't call this in the vast majority of cases
-                    CType type = pParams.Item(i);
+                    CType type = pParams[i];
 
                     if (type.isUnsafe())
                     {
@@ -1930,7 +1930,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             MethodOrPropertySymbol mostDerivedMethod = GroupToArgsBinder.FindMostDerivedMethod(GetSymbolLoader(), mp, callingObjectType);
 
-            int paramCount = mp.Params.size;
+            int paramCount = mp.Params.Count;
             TypeArray @params = mp.Params;
             int iDst = 0;
             bool markTypeFromExternCall = mp.IsFMETHSYM() && mp.AsFMETHSYM().isExternal;
@@ -1966,7 +1966,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
                 else if (paramCount != 0)
                 {
-                    if (paramCount == 1 && mp.isParamArray && argCount > mp.Params.size)
+                    if (paramCount == 1 && mp.isParamArray && argCount > mp.Params.Count)
                     {
                         // we arrived at the last formal, and we have more than one actual, so
                         // we need to put the rest in an array...
@@ -1987,12 +1987,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             }
                             index++;
                         }
-                        Debug.Assert(index != mp.Params.size);
-                        CType substDestType = GetTypes().SubstType(@params.Item(index), type, pTypeArgs);
+                        Debug.Assert(index != mp.Params.Count);
+                        CType substDestType = GetTypes().SubstType(@params[index], type, pTypeArgs);
 
                         // If we cant convert the argument and we're the param array argument, then deal with it.
                         if (!canConvert(argument.asNamedArgumentSpecification().Value, substDestType) &&
-                            mp.isParamArray && index == mp.Params.size - 1)
+                            mp.isParamArray && index == mp.Params.Count - 1)
                         {
                             // We have a param array, but we're not at the end yet. This will happen
                             // with named arguments when the user specifies a name for the param array,
@@ -2002,7 +2002,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             // void Foo(int y, params int[] x);
                             // ...
                             // Foo(x:1, y:1);
-                            CType arrayType = GetTypes().SubstType(mp.Params.Item(mp.Params.size - 1), type, pTypeArgs);
+                            CType arrayType = GetTypes().SubstType(mp.Params[mp.Params.Count - 1], type, pTypeArgs);
                             CType elemType = arrayType.AsArrayType().GetElementType();
 
                             // Use an EK_ARRINIT even in the empty case so empty param arrays in attributes work.
@@ -2026,7 +2026,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     }
                     else
                     {
-                        CType substDestType = GetTypes().SubstType(@params.Item(iDst), type, pTypeArgs);
+                        CType substDestType = GetTypes().SubstType(@params[iDst], type, pTypeArgs);
                         rval = tryConvert(indir, substDestType);
                     }
 
@@ -2034,7 +2034,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     {
                         // the last arg failed to fix up, so it must fixup into the array element
                         // if we have a param array (we will be passing a 1 element array...)
-                        if (mp.isParamArray && paramCount == 1 && argCount >= mp.Params.size)
+                        if (mp.isParamArray && paramCount == 1 && argCount >= mp.Params.Count)
                         {
                             goto FIXUPPARAMLIST;
                         }
@@ -2074,7 +2074,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             // we need to create an array and put it as the last arg...
-            CType substitutedArrayType = GetTypes().SubstType(mp.Params.Item(mp.Params.size - 1), type, pTypeArgs);
+            CType substitutedArrayType = GetTypes().SubstType(mp.Params[mp.Params.Count - 1], type, pTypeArgs);
             if (!substitutedArrayType.IsArrayType() || substitutedArrayType.AsArrayType().rank != 1)
             {
                 // Invalid type for params array parameter. Happens in LAF scenarios, e.g.
@@ -2242,21 +2242,21 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private bool TryGetExpandedParams(TypeArray @params, int count, out TypeArray ppExpandedParams)
         {
             CType[] prgtype;
-            if (count < @params.size - 1)
+            if (count < @params.Count - 1)
             {
                 // The user has specified less arguments than our parameters, but we still
                 // need to return our set of types without the param array. This is in the 
                 // case that all the parameters are optional.
-                prgtype = new CType[@params.size - 1];
-                @params.CopyItems(0, @params.size - 1, prgtype);
-                ppExpandedParams = GetGlobalSymbols().AllocParams(@params.size - 1, prgtype);
+                prgtype = new CType[@params.Count - 1];
+                @params.CopyItems(0, @params.Count - 1, prgtype);
+                ppExpandedParams = GetGlobalSymbols().AllocParams(@params.Count - 1, prgtype);
                 return true;
             }
 
             prgtype = new CType[count];
-            @params.CopyItems(0, @params.size - 1, prgtype);
+            @params.CopyItems(0, @params.Count - 1, prgtype);
 
-            CType type = @params.Item(@params.size - 1);
+            CType type = @params[@params.Count - 1];
             CType elementType = null;
 
             if (!type.IsArrayType())
@@ -2269,7 +2269,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // At this point, we have an array sym.
             elementType = type.AsArrayType().GetElementType();
 
-            for (int itype = @params.size - 1; itype < count; itype++)
+            for (int itype = @params.Count - 1; itype < count; itype++)
             {
                 prgtype[itype] = elementType;
             }
