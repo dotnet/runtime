@@ -232,4 +232,7 @@
   <data name="ArgumentOutOfRange_NeedPosNum" xml:space="preserve">
     <value>Positive number required.</value>
   </data>
+  <data name="net_io_readwritefailure" xml:space="preserve">
+    <value>Unable to transfer data on the transport connection: {0}.</value>
+  </data>
 </root>

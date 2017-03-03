@@ -224,6 +224,9 @@ namespace System.Net.Sockets.Tests
                             Assert.Equal(1, await clientStream.ReadAsync(buffer, 0, 1));
                             Assert.Equal('a', (char)buffer[0]);
 
+                            Assert.Throws<InvalidOperationException>(() => { serverStream.BeginRead(buffer, 0, 1, null, null); });
+                            Assert.Throws<InvalidOperationException>(() => { clientStream.BeginWrite(buffer, 0, 1, null, null); });
+
                             Assert.Throws<InvalidOperationException>(() => { serverStream.ReadAsync(buffer, 0, 1); });
                             Assert.Throws<InvalidOperationException>(() => { clientStream.WriteAsync(buffer, 0, 1); });
                         }
@@ -363,6 +366,12 @@ namespace System.Net.Sockets.Tests
                 Assert.Throws<ArgumentOutOfRangeException>(() => server.BeginRead(new byte[1], 0, -1, null, null));
                 Assert.Throws<ArgumentOutOfRangeException>(() => server.BeginRead(new byte[1], 0, 2, null, null));
 
+                Assert.Throws<ArgumentNullException>(() => { server.ReadAsync(null, 0, 0); });
+                Assert.Throws<ArgumentOutOfRangeException>(() => { server.ReadAsync(new byte[1], -1, 0); });
+                Assert.Throws<ArgumentOutOfRangeException>(() => { server.ReadAsync(new byte[1], 2, 0); });
+                Assert.Throws<ArgumentOutOfRangeException>(() => { server.ReadAsync(new byte[1], 0, -1); });
+                Assert.Throws<ArgumentOutOfRangeException>(() => { server.ReadAsync(new byte[1], 0, 2); });
+
                 Assert.Throws<ArgumentNullException>(() => server.Write(null, 0, 0));
                 Assert.Throws<ArgumentOutOfRangeException>(() => server.Write(new byte[1], -1, 0));
                 Assert.Throws<ArgumentOutOfRangeException>(() => server.Write(new byte[1], 2, 0));
@@ -374,6 +383,12 @@ namespace System.Net.Sockets.Tests
                 Assert.Throws<ArgumentOutOfRangeException>(() => server.BeginWrite(new byte[1], 2, 0, null, null));
                 Assert.Throws<ArgumentOutOfRangeException>(() => server.BeginWrite(new byte[1], 0, -1, null, null));
                 Assert.Throws<ArgumentOutOfRangeException>(() => server.BeginWrite(new byte[1], 0, 2, null, null));
+
+                Assert.Throws<ArgumentNullException>(() => { server.WriteAsync(null, 0, 0); });
+                Assert.Throws<ArgumentOutOfRangeException>(() => { server.WriteAsync(new byte[1], -1, 0); });
+                Assert.Throws<ArgumentOutOfRangeException>(() => { server.WriteAsync(new byte[1], 2, 0); });
+                Assert.Throws<ArgumentOutOfRangeException>(() => { server.WriteAsync(new byte[1], 0, -1); });
+                Assert.Throws<ArgumentOutOfRangeException>(() => { server.WriteAsync(new byte[1], 0, 2); });
 
                 Assert.Throws<ArgumentNullException>(() => server.EndRead(null));
                 Assert.Throws<ArgumentNullException>(() => server.EndWrite(null));
