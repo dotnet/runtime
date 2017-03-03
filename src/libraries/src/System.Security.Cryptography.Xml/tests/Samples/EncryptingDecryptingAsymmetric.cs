@@ -34,7 +34,7 @@ namespace System.Security.Cryptography.Xml.Tests
         {
             var elementToEncrypt = (XmlElement)doc.GetElementsByTagName(elementName)[0];
 
-            using (var sessionKey = new RijndaelManaged())
+            using (var sessionKey = Aes.Create())
             {
                 sessionKey.KeySize = 256;
 

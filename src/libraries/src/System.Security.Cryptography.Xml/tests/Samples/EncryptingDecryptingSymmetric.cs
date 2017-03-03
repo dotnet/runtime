@@ -56,7 +56,7 @@ namespace System.Security.Cryptography.Xml.Tests
             {
                 return EncryptedXml.XmlEncDESUrl;
             }
-            else if (key is Rijndael)
+            else if (key is Rijndael || key is Aes)
             {
                 switch (key.KeySize)
                 {
@@ -89,7 +89,7 @@ namespace System.Security.Cryptography.Xml.Tests
         [Fact]
         public void SymmetricEncryptionRoundtrip()
         {
-            using (var key = new RijndaelManaged())
+            using (var key = Aes.Create())
             {
                 XmlDocument xmlDocToEncrypt = LoadXmlFromString(ExampleXml);
                 EncryptElement(xmlDocToEncrypt, ExampleXmlRootElement, key);
