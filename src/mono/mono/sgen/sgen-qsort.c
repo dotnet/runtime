@@ -15,7 +15,7 @@
 #define ELEM(i) \
 	(((unsigned char*)array) + ((i) * element_size))
 #define SET(i,j) \
-	do memcpy ((i), (j), element_size); while (0)
+	do memmove ((i), (j), element_size); while (0)
 #define SWAP(i,j) \
 	do { \
 		size_t __i = (i), __j = (j); \
