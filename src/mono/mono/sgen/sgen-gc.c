@@ -1335,25 +1335,6 @@ scan_copy_context_for_scan_job (void *worker_data_untyped, ScanJob *job)
 	return CONTEXT_FROM_OBJECT_OPERATIONS (job->ops, sgen_workers_get_job_gray_queue (worker_data, job->gc_thread_gray_queue));
 }
 
-static void
-job_remembered_set_scan (void *worker_data_untyped, SgenThreadPoolJob *job)
-{
-	SGEN_TV_DECLARE (atv);
-	SGEN_TV_DECLARE (btv);
-	ScanCopyContext ctx = scan_copy_context_for_scan_job (worker_data_untyped, (ScanJob*)job);
-
-	SGEN_TV_GETTIME (atv);
-	sgen_get_major_collector ()->scan_card_table (CARDTABLE_SCAN_GLOBAL, ctx, 0, 1);
-	SGEN_TV_GETTIME (btv);
-	time_minor_scan_major_blocks += SGEN_TV_ELAPSED (atv, btv);
-
-	sgen_los_scan_card_table (CARDTABLE_SCAN_GLOBAL, ctx, 0, 1);
-	SGEN_TV_GETTIME (atv);
-	time_minor_scan_los += SGEN_TV_ELAPSED (btv, atv);
-
-	sgen_wbroots_scan_card_table (ctx);
-}
-
 typedef struct {
 	ScanJob scan_job;
 	char *heap_start;
@@ -1397,6 +1378,43 @@ job_scan_finalizer_entries (void *worker_data_untyped, SgenThreadPoolJob *job)
 	ScanCopyContext ctx = scan_copy_context_for_scan_job (worker_data_untyped, &job_data->scan_job);
 
 	scan_finalizer_entries (job_data->queue, ctx);
+}
+
+static void
+job_scan_wbroots (void *worker_data_untyped, SgenThreadPoolJob *job)
+{
+	ScanJob *job_data = (ScanJob*)job;
+	ScanCopyContext ctx = scan_copy_context_for_scan_job (worker_data_untyped, job_data);
+
+	sgen_wbroots_scan_card_table (ctx);
+}
+
+static void
+job_scan_major_card_table (void *worker_data_untyped, SgenThreadPoolJob *job)
+{
+	SGEN_TV_DECLARE (atv);
+	SGEN_TV_DECLARE (btv);
+	ParallelScanJob *job_data = (ParallelScanJob*)job;
+	ScanCopyContext ctx = scan_copy_context_for_scan_job (worker_data_untyped, (ScanJob*)job_data);
+
+	SGEN_TV_GETTIME (atv);
+	major_collector.scan_card_table (CARDTABLE_SCAN_GLOBAL, ctx, job_data->job_index, sgen_workers_get_job_split_count ());
+	SGEN_TV_GETTIME (btv);
+	time_minor_scan_major_blocks += SGEN_TV_ELAPSED (atv, btv);
+}
+
+static void
+job_scan_los_card_table (void *worker_data_untyped, SgenThreadPoolJob *job)
+{
+	SGEN_TV_DECLARE (atv);
+	SGEN_TV_DECLARE (btv);
+	ParallelScanJob *job_data = (ParallelScanJob*)job;
+	ScanCopyContext ctx = scan_copy_context_for_scan_job (worker_data_untyped, (ScanJob*)job_data);
+
+	SGEN_TV_GETTIME (atv);
+	sgen_los_scan_card_table (CARDTABLE_SCAN_GLOBAL, ctx, job_data->job_index, sgen_workers_get_job_split_count ());
+	SGEN_TV_GETTIME (btv);
+	time_minor_scan_los += SGEN_TV_ELAPSED (atv, btv);
 }
 
 static void
@@ -1491,6 +1509,34 @@ init_gray_queue (SgenGrayQueue *gc_thread_gray_queue, gboolean use_workers)
 }
 
 static void
+enqueue_scan_remembered_set_jobs (SgenGrayQueue *gc_thread_gray_queue, SgenObjectOperations *ops, gboolean enqueue)
+{
+	int i, split_count = sgen_workers_get_job_split_count ();
+	ScanJob *sj;
+
+	sj = (ScanJob*)sgen_thread_pool_job_alloc ("scan wbroots", job_scan_wbroots, sizeof (ScanJob));
+	sj->ops = ops;
+	sj->gc_thread_gray_queue = gc_thread_gray_queue;
+	sgen_workers_enqueue_job (&sj->job, enqueue);
+
+	for (i = 0; i < split_count; i++) {
+		ParallelScanJob *psj;
+
+		psj = (ParallelScanJob*)sgen_thread_pool_job_alloc ("scan major remsets", job_scan_major_card_table, sizeof (ParallelScanJob));
+		psj->scan_job.ops = ops;
+		psj->scan_job.gc_thread_gray_queue = gc_thread_gray_queue;
+		psj->job_index = i;
+		sgen_workers_enqueue_job (&psj->scan_job.job, enqueue);
+
+		psj = (ParallelScanJob*)sgen_thread_pool_job_alloc ("scan LOS remsets", job_scan_los_card_table, sizeof (ParallelScanJob));
+		psj->scan_job.ops = ops;
+		psj->scan_job.gc_thread_gray_queue = gc_thread_gray_queue;
+		psj->job_index = i;
+		sgen_workers_enqueue_job (&psj->scan_job.job, enqueue);
+	}
+}
+
+static void
 enqueue_scan_from_roots_jobs (SgenGrayQueue *gc_thread_gray_queue, char *heap_start, char *heap_end, SgenObjectOperations *ops, gboolean enqueue)
 {
 	ScanFromRegisteredRootsJob *scrrj;
@@ -1554,7 +1600,6 @@ collect_nursery (const char *reason, gboolean is_overflow, SgenGrayQueue *unpin_
 	size_t max_garbage_amount;
 	char *nursery_next;
 	mword fragment_total;
-	ScanJob *sj;
 	SgenGrayQueue gc_thread_gray_queue;
 	SgenObjectOperations *object_ops_nopar, *object_ops_par = NULL;
 	ScanCopyContext ctx;
@@ -1652,10 +1697,7 @@ collect_nursery (const char *reason, gboolean is_overflow, SgenGrayQueue *unpin_
 
 	remset.start_scan_remsets ();
 
-	sj = (ScanJob*)sgen_thread_pool_job_alloc ("scan remset", job_remembered_set_scan, sizeof (ScanJob));
-	sj->ops = is_parallel ? object_ops_par : object_ops_nopar;
-	sj->gc_thread_gray_queue = &gc_thread_gray_queue;
-	sgen_workers_enqueue_job (&sj->job, is_parallel);
+	enqueue_scan_remembered_set_jobs (&gc_thread_gray_queue, is_parallel ? object_ops_par : object_ops_nopar, is_parallel);
 
 	/* we don't have complete write barrier yet, so we scan all the old generation sections */
 	TV_GETTIME (btv);
