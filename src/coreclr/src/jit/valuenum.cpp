@@ -3164,15 +3164,17 @@ void ValueNumStore::GetConstantBoundInfo(ValueNum vn, ConstantBoundInfo* info)
 }
 
 //------------------------------------------------------------------------
-// IsVNArrLenUnsignedBound: Checks if the specified vn represents an
-//    expression such as "(uint)i < (uint)a.len" that imply that the
-//    array index is valid (0 <= i && i < a.len).
+// IsVNArrLenUnsignedBound: Checks if the specified vn represents an expression
+//    such as "(uint)i < (uint)a.len" that implies that the array index is valid
+//    (0 <= i && i < a.len).
 //
 // Arguments:
 //    vn - Value number to query
-//    info - Pointer to a ArrLenUnsignedBoundInfo object to return
-//           information about the expression. Not populated if the
-//           vn expression isn't suitable (e.g. i <= a.len)
+//    info - Pointer to an ArrLenUnsignedBoundInfo object to return information about
+//           the expression. Not populated if the vn expression isn't suitable (e.g. i <= a.len).
+//           This enables optCreateJTrueBoundAssertion to immediatly create an OAK_NO_THROW
+//           assertion instead of the OAK_EQUAL/NOT_EQUAL assertions created by signed compares
+//           (IsVNArrLenBound, IsVNArrLenArithBound) that require further processing.
 
 bool ValueNumStore::IsVNArrLenUnsignedBound(ValueNum vn, ArrLenUnsignedBoundInfo* info)
 {
