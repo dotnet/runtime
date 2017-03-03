@@ -30,7 +30,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
     }
 
-    public class XmlDsigC14NWithCommentsTransformTest : IDisposable
+    public class XmlDsigC14NWithCommentsTransformTest
     {
 
         protected UnprotectedXmlDsigC14NWithCommentsTransform transform;
@@ -38,22 +38,6 @@ namespace System.Security.Cryptography.Xml.Tests
         public XmlDsigC14NWithCommentsTransformTest()
         {
             transform = new UnprotectedXmlDsigC14NWithCommentsTransform();
-        }
-
-        public void Dispose()
-        {
-            try
-            {
-                if (File.Exists("doc.dtd"))
-                    File.Delete("doc.dtd");
-                if (File.Exists("world.txt"))
-                    File.Delete("world.txt");
-            }
-            catch { }
-            if (File.Exists("doc.dtd"))
-                throw new Exception("File.Delete() is not working.");
-            if (File.Exists("world.txt"))
-                throw new Exception("File.Delete() is not working.");
         }
 
         [Fact]
@@ -114,29 +98,27 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Throws<ArgumentException>(() => transform.GetOutput(doc.GetType()));
         }
 
-        [Fact]
+        [Fact()]
         public void C14NSpecExample1()
         {
-            using (StreamWriter sw = new StreamWriter("doc.dtd", false, Encoding.ASCII))
+            string testName = GetType().Name + "." + nameof(C14NSpecExample1);
+            using (TestHelpers.CreateTestDtdFile(testName))
             {
-                sw.Write("<!-- presence, not content, required -->");
-                sw.Close();
+                string res = ExecuteXmlDSigC14NTransform(C14NSpecExample1Input, true);
+                Assert.Equal(C14NSpecExample1Output, res);
             }
-            string res = ExecuteXmlDSigC14NTransform(C14NSpecExample1Input, true);
-            Assert.Equal(C14NSpecExample1Output, res);
         }
 
-        [Fact]
+        [Fact()]
         // [ExpectedException (typeof (SecurityException))]
         public void C14NSpecExample1_WithoutResolver()
         {
-            using (StreamWriter sw = new StreamWriter("doc.dtd", false, Encoding.ASCII))
+            string testName = GetType().Name + "." + nameof(C14NSpecExample1_WithoutResolver);
+            using (TestHelpers.CreateTestDtdFile(testName))
             {
-                sw.Write("<!-- presence, not content, required -->");
-                sw.Close();
+                string res = ExecuteXmlDSigC14NTransform(C14NSpecExample1Input, false);
+                Assert.Equal(C14NSpecExample1Output, res);
             }
-            string res = ExecuteXmlDSigC14NTransform(C14NSpecExample1Input, false);
-            Assert.Equal(C14NSpecExample1Output, res);
         }
 
         [Fact]
@@ -160,19 +142,15 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal(C14NSpecExample4Output, res);
         }
 
-        [Fact(Skip = "TODO: fix me")]
+        [Fact()]
         public void C14NSpecExample5()
         {
-            if (!File.Exists("world.txt"))
+            string testName = GetType().Name + "." + nameof(C14NSpecExample5);
+            using (TestHelpers.CreateTestTextFile(testName, "world"))
             {
-                using (StreamWriter sw = new StreamWriter("world.txt", false, Encoding.ASCII))
-                {
-                    sw.Write("world");
-                    sw.Close();
-                }
+                string res = ExecuteXmlDSigC14NTransform(C14NSpecExample5Input(testName), false);
+                Assert.Equal(C14NSpecExample5Output, res);
             }
-            string res = ExecuteXmlDSigC14NTransform(C14NSpecExample5Input, false);
-            Assert.Equal(C14NSpecExample5Output, res);
         }
 
         [Fact]
@@ -345,11 +323,11 @@ namespace System.Security.Cryptography.Xml.Tests
         // Example 5 from C14N spec - Entity References: 
         // http://www.w3.org/TR/xml-c14n#Example-Entities
         //
-        static string C14NSpecExample5Input =
+        static string C14NSpecExample5Input(string worldName) =>
                 "<!DOCTYPE doc [\n" +
                 "<!ATTLIST doc attrExtEnt ENTITY #IMPLIED>\n" +
                 "<!ENTITY ent1 \"Hello\">\n" +
-                "<!ENTITY ent2 SYSTEM \"world.txt\">\n" +
+                $"<!ENTITY ent2 SYSTEM \"{worldName}.txt\">\n" +
                 "<!ENTITY entExt SYSTEM \"earth.gif\" NDATA gif>\n" +
                 "<!NOTATION gif SYSTEM \"viewgif.exe\">\n" +
                 "]>\n" +
@@ -357,7 +335,7 @@ namespace System.Security.Cryptography.Xml.Tests
                 "   &ent1;, &ent2;!\n" +
                 "</doc>\n" +
                 "\n" +
-                "<!-- Let world.txt contain \"world\" (excluding the quotes) -->\n";
+                $"<!-- Let {worldName}.txt contain \"world\" (excluding the quotes) -->\n";
         static string C14NSpecExample5Output =
                 "<doc attrExtEnt=\"entExt\">\n" +
                 "   Hello, world!\n" +

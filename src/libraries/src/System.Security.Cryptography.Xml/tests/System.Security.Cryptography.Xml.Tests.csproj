@@ -29,6 +29,7 @@
     <Compile Include="SignedInfoTest.cs" />
     <Compile Include="SignedXmlTest.cs" />
     <Compile Include="SignedXmlTests.cs" />
+    <Compile Include="TestHelpers.cs" />
     <Compile Include="TransformChainTest.cs" />
     <Compile Include="TransformTest.cs" />
     <Compile Include="XmlDecryptionTransformTest.cs" />
@@ -41,6 +42,9 @@
     <Compile Include="XmlDsigXPathTransformTest.cs" />
     <Compile Include="XmlDsigXsltTransformTest.cs" />
     <Compile Include="XmlLicenseTransformTest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\..\Common\tests\System\IO\TempFile.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="EncryptedXmlSample3.xml" />
