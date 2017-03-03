@@ -25,4 +25,5 @@ MembersMustExist : Member 'System.Threading.SynchronizationContext.Wait(System.I
 MembersMustExist : Member 'System.Threading.SynchronizationContext.WaitHelper(System.IntPtr[], System.Boolean, System.Int32)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.SynchronizationLockException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.WaitHandleCannotBeOpenedException' does not inherit from base type 'System.ApplicationException' in the implementation but it does in the contract.
-Total Issues: 26
+MembersMustExist : Member 'System.Threading.LazyInitializer.EnsureInitialized<T>(T, System.Object, System.Func<T>)' does not exist in the implementation but it does exist in the contract.
+Total Issues: 27

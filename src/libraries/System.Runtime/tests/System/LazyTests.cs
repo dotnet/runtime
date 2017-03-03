@@ -3,11 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Threading;
-using System.Reflection;
 using System.IO;
+using System.Reflection;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Runtime.Serialization.Formatters.Tests;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Tests
@@ -463,6 +464,8 @@ namespace System.Tests
             object aLock = null;
             Assert.NotNull(LazyInitializer.EnsureInitialized(ref a, ref aInit, ref aLock));
             Assert.NotNull(a);
+            Assert.True(aInit);
+            Assert.NotNull(aLock);
 
             // Activator.CreateInstance (already initialized).
             HasDefaultCtor b = hdcTemplate;
@@ -470,6 +473,8 @@ namespace System.Tests
             object bLock = null;
             Assert.Equal(hdcTemplate, LazyInitializer.EnsureInitialized(ref b, ref bInit, ref bLock));
             Assert.Equal(hdcTemplate, b);
+            Assert.True(bInit);
+            Assert.Null(bLock);
 
             // Func based initialization (uninitialized).
             string c = null;
@@ -477,6 +482,8 @@ namespace System.Tests
             object cLock = null;
             Assert.Equal(strTemplate, LazyInitializer.EnsureInitialized(ref c, ref cInit, ref cLock, () => strTemplate));
             Assert.Equal(strTemplate, c);
+            Assert.True(cInit);
+            Assert.NotNull(cLock);
 
             // Func based initialization (already initialized).
             string d = strTemplate;
@@ -484,6 +491,8 @@ namespace System.Tests
             object dLock = null;
             Assert.Equal(strTemplate, LazyInitializer.EnsureInitialized(ref d, ref dInit, ref dLock, () => strTemplate + "bar"));
             Assert.Equal(strTemplate, d);
+            Assert.True(dInit);
+            Assert.Null(dLock);
 
             // Func based initialization (nulls *ARE* permitted).
             string e = null;
@@ -494,7 +503,28 @@ namespace System.Tests
             Assert.Null(LazyInitializer.EnsureInitialized(ref e, ref einit, ref elock, () => { initCount++; return null; }));
             Assert.Null(e);
             Assert.Equal(1, initCount);
+            Assert.True(einit);
+            Assert.NotNull(elock);
             Assert.Null(LazyInitializer.EnsureInitialized(ref e, ref einit, ref elock, () => { initCount++; return null; }));
+
+            // Func based initialization without tracking boolean (uninitialized).
+            string f = null;
+            object fLock = null;
+            Assert.Equal(strTemplate, LazyInitializer.EnsureInitialized(ref f, ref fLock, () => strTemplate));
+            Assert.Equal(strTemplate, f);
+            Assert.NotNull(fLock);
+
+            // Func based initialization without tracking boolean (already initialized).
+            string g = strTemplate;
+            object gLock = null;
+            Assert.Equal(strTemplate, LazyInitializer.EnsureInitialized(ref g, ref gLock, () => strTemplate + "bar"));
+            Assert.Equal(strTemplate, g);
+            Assert.Null(gLock);
+
+            // Func based initialization without tracking boolean (nulls not permitted).
+            string h = null;
+            object hLock = null;
+            Assert.Throws<InvalidOperationException>(() => LazyInitializer.EnsureInitialized(ref h, ref hLock, () => null));
         }
 
         [Fact]
