@@ -15,7 +15,6 @@ using System.Text;
 namespace System.Diagnostics.Tests
 {
     //Complex types are not supported on EventSource for .NET 4.5
-    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework45)]
     public class DiagnosticSourceEventSourceBridgeTests
     {
         /// <summary>

@@ -31,7 +31,7 @@ public class WindowAndCursorProps : RemoteExecutorTestBase
     }
 
     [Fact]
-    [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp | TargetFrameworkMonikers.NetcoreUwp)]
+    [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp | TargetFrameworkMonikers.Uap)]
     public static void WindowWidth_WindowHeight_InvalidSize_net46()
     {
         Assert.Throws<IOException>(() => Console.WindowWidth = 0);

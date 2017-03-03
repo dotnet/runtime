@@ -130,6 +130,8 @@
     <Compile Include="System\IntPtrTests.netcoreapp.cs" />
     <Compile Include="System\Collections\Generic\KeyValuePairTests.netcoreapp.cs" />
     <Compile Include="System\LazyTests.netcoreapp.cs" />
+    <Compile Include="System\StringTests.netcoreapp.cs" />
+    <Compile Include="System\TimeSpanTests.netcoreapp.cs" />
     <Compile Include="System\Runtime\CompilerServices\RuntimeHelpersTests.netcoreapp.cs" />
     <Compile Include="System\Runtime\CompilerServices\ConditionalWeakTableTests.netcoreapp.cs" />
     <Compile Include="System\UIntPtrTests.netcoreapp.cs" />
