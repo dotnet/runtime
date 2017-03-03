@@ -39,16 +39,6 @@ struct CodePageDataItem {
     const char     * names;
 };
 
-// Normalization
-typedef BOOL (*PFN_NORMALIZATION_IS_NORMALIZED_STRING)
-    ( int NormForm, LPCWSTR lpInString, int cchInString);
-
-typedef int (*PFN_NORMALIZATION_NORMALIZE_STRING)
-    ( int NormForm, LPCWSTR lpInString, int cchInString, LPWSTR lpOutString, int cchOutString);
-
-typedef BYTE* (*PFN_NORMALIZATION_INIT_NORMALIZATION)
-    ( int NormForm, BYTE* pTableData);
-
 class COMNlsInfo
 {
 public:
@@ -72,36 +62,6 @@ public:
     static FCDECL0(INT32, nativeGetNumEncodingItems);
     static FCDECL0(EncodingDataItem *, nativeGetEncodingTableDataPointer);
     static FCDECL0(CodePageDataItem *, nativeGetCodePageTableDataPointer);
-
-    //
-    // Native helper function for methods in Normalization
-    //
-    // On Windows 7 we use the normalization data embedded inside the corelib to get better results.
-    // On Windows 8 and up we use the OS for normalization. 
-    // That is why we need to keep these fcalls and not doing it through pinvokes.
-
-    static FCDECL6(int, nativeNormalizationNormalizeString,
-        int NormForm, int& iError,
-        StringObject* inString, int inLength,
-        CHARArray* outChars, int outLength);
-    static FCDECL4(FC_BOOL_RET, nativeNormalizationIsNormalizedString,
-        int NormForm, int& iError,
-        StringObject* inString, int cwLength);
-
-    static void QCALLTYPE nativeNormalizationInitNormalization(int NormForm, BYTE* pTableData);
-
-private:
-    //
-    //  Definitions.
-    //
-
-#ifndef FEATURE_COREFX_GLOBALIZATION
-    // Normalization
-    static HMODULE m_hNormalization;
-    static PFN_NORMALIZATION_IS_NORMALIZED_STRING m_pfnNormalizationIsNormalizedStringFunc;
-    static PFN_NORMALIZATION_NORMALIZE_STRING m_pfnNormalizationNormalizeStringFunc;
-    static PFN_NORMALIZATION_INIT_NORMALIZATION m_pfnNormalizationInitNormalizationFunc;
-#endif
 
 private:
     //
