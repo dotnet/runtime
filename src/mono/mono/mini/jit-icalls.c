@@ -1909,14 +1909,14 @@ mono_interruption_checkpoint_from_trampoline (void)
 }
 
 void
-mono_throw_method_access (MonoMethod *callee, MonoMethod *caller)
+mono_throw_method_access (MonoMethod *caller, MonoMethod *callee)
 {
-	char *callee_name = mono_method_full_name (callee, 1);
 	char *caller_name = mono_method_full_name (caller, 1);
+	char *callee_name = mono_method_full_name (callee, 1);
 	MonoError error;
 
 	error_init (&error);
-	mono_error_set_generic_error (&error, "System", "MethodAccessException", "Method `%s' is inaccessible from method `%s'\n", callee_name, caller_name);
+	mono_error_set_generic_error (&error, "System", "MethodAccessException", "Method `%s' is inaccessible from method `%s'", callee_name, caller_name);
 	mono_error_set_pending_exception (&error);
 	g_free (callee_name);
 	g_free (caller_name);

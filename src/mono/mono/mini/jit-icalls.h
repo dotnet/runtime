@@ -224,7 +224,7 @@ MonoObject* mono_get_method_object (MonoMethod *method);
 
 double mono_ckfinite (double d);
 
-void mono_throw_method_access (MonoMethod *callee, MonoMethod *caller);
+void mono_throw_method_access (MonoMethod *caller, MonoMethod *callee);
 
 void mono_dummy_jit_icall (void);
 
