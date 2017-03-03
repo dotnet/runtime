@@ -225,7 +225,7 @@ inline void FuncEvalFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
         return;
     }
 
-#if !defined(_WIN64)
+#ifndef WIN64EXCEPTIONS
     // Reset pContext; it's only valid for active (top-most) frame.
     pRD->pContext = NULL;
 #endif // !_WIN64
