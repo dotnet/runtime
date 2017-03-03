@@ -92,7 +92,7 @@ GenTreePtr Compiler::fgMorphIntoHelperCall(GenTreePtr tree, int helper, GenTreeA
     tree->gtCall.gtEntryPoint.addr = nullptr;
 #endif
 
-#if defined(_TARGET_X86_) && !defined(LEGACY_BACKEND)
+#if (defined(_TARGET_X86_) || defined(_TARGET_ARM_)) && !defined(LEGACY_BACKEND)
     if (varTypeIsLong(tree))
     {
         GenTreeCall*    callNode    = tree->AsCall();
@@ -101,7 +101,7 @@ GenTreePtr Compiler::fgMorphIntoHelperCall(GenTreePtr tree, int helper, GenTreeA
         retTypeDesc->InitializeLongReturnType(this);
         callNode->ClearOtherRegs();
     }
-#endif
+#endif // _TARGET_XXX_
 
     /* Perform the morphing */
 
