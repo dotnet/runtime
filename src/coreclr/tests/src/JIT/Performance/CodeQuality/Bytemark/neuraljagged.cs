@@ -2,10 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 /*
-** Copyright (c) Microsoft. All rights reserved.
-** Licensed under the MIT license. 
-** See LICENSE file in the project root for full license information.
-** 
 ** This program was translated to C# and adapted for xunit-performance.
 ** New variants of several tests were added to compare class versus 
 ** struct and to compare jagged arrays vs multi-dimensional arrays.
