@@ -154,7 +154,7 @@ namespace System.IO
         public static unsafe string GetRandomFileName()
         {
             byte* pKey = stackalloc byte[KeyLength];
-            GetCryptoRandomBytes(pKey, KeyLength);
+            Interop.GetRandomBytes(pKey, KeyLength);
 
             const int RandomFileNameLength = 12;
             char* pRandomFileName = stackalloc char[RandomFileNameLength];

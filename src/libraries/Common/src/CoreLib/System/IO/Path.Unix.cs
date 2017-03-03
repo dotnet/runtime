@@ -16,8 +16,6 @@ namespace System.IO
 
         internal static int MaxPath => Interop.Sys.MaxPath;
 
-        private static readonly bool s_isMac = Interop.Sys.GetUnixName() == "OSX";
-
         // Expands the given path to a fully qualified path. 
         public static string GetFullPath(string path)
         {
@@ -201,16 +199,17 @@ namespace System.IO
             return IsPathRooted(path) ? PathInternal.DirectorySeparatorCharAsString : String.Empty;
         }
 
-        private static unsafe void GetCryptoRandomBytes(byte* bytes, int byteCount)
-        {
-            // We want to avoid dependencies on the Crypto library when compiling in CoreCLR. This
-            // will use the existing PAL implementation.
-            byte[] buffer = new byte[KeyLength];
-            Microsoft.Win32.Win32Native.Random(bStrong: true, buffer: buffer, length: KeyLength);
-            Runtime.InteropServices.Marshal.Copy(buffer, 0, (IntPtr)bytes, KeyLength);
-        }
-
         /// <summary>Gets whether the system is case-sensitive.</summary>
-        internal static bool IsCaseSensitive { get { return !s_isMac; } }
+        internal static bool IsCaseSensitive
+        {
+            get
+            {
+                #if PLATFORM_OSX
+                    return false;
+                #else
+                    return true;
+                #endif
+            }
+        }
     }
 }
