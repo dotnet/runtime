@@ -1270,7 +1270,7 @@ ves_icall_System_Net_Sockets_Socket_Poll_internal (gsize sock, gint mode,
 		}
 
 		if (ret == -1 && errno == EINTR) {
-			if (mono_thread_test_state (thread, (MonoThreadState)(ThreadState_AbortRequested | ThreadState_StopRequested))) {
+			if (mono_thread_test_state (thread, ThreadState_AbortRequested)) {
 				g_free (pfds);
 				return FALSE;
 			}
@@ -1777,7 +1777,7 @@ ves_icall_System_Net_Sockets_Socket_Select_internal (MonoArray **sockets, gint32
 		}
 
 		if (ret == -1 && errno == EINTR) {
-			if (mono_thread_test_state (thread, (MonoThreadState)(ThreadState_AbortRequested | ThreadState_StopRequested))) {
+			if (mono_thread_test_state (thread, ThreadState_AbortRequested)) {
 				g_free (pfds);
 				*sockets = NULL;
 				return;

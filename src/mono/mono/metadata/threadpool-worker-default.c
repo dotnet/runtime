@@ -743,7 +743,6 @@ monitor_thread (gpointer unused)
 				break;
 			interval_left -= mono_msec_ticks () - ts;
 
-			g_assert (!(internal->state & ThreadState_StopRequested));
 			mono_thread_interruption_checkpoint ();
 		} while (interval_left > 0 && ++awake < 10);
 

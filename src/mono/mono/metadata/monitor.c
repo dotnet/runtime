@@ -891,7 +891,7 @@ retry_contended:
 	 *
 	 */
 	if (allow_interruption) {
-		if (!mono_thread_test_and_set_state (thread, (MonoThreadState)(ThreadState_StopRequested | ThreadState_AbortRequested), ThreadState_WaitSleepJoin)) {
+		if (!mono_thread_test_and_set_state (thread, ThreadState_AbortRequested, ThreadState_WaitSleepJoin)) {
 			wait_ret = MONO_SEM_TIMEDWAIT_RET_ALERTED;
 			goto done_waiting;
 		}
@@ -918,7 +918,7 @@ done_waiting:
 		 * We have to obey a stop/suspend request even if 
 		 * allow_interruption is FALSE to avoid hangs at shutdown.
 		 */
-		if (!mono_thread_test_state (mono_thread_internal_current (), (MonoThreadState)(ThreadState_StopRequested | ThreadState_SuspendRequested | ThreadState_AbortRequested))) {
+		if (!mono_thread_test_state (mono_thread_internal_current (), ThreadState_SuspendRequested | ThreadState_AbortRequested)) {
 			if (ms != MONO_INFINITE_WAIT) {
 				now = mono_msec_ticks ();
 

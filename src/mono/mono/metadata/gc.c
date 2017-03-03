@@ -478,7 +478,7 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 		if (res == MONO_SEM_TIMEDWAIT_RET_SUCCESS) {
 			break;
 		} else if (res == MONO_SEM_TIMEDWAIT_RET_ALERTED) {
-			if ((thread->state & (ThreadState_StopRequested | ThreadState_SuspendRequested)) != 0) {
+			if ((thread->state & (ThreadState_AbortRequested | ThreadState_SuspendRequested)) != 0) {
 				ret = FALSE;
 				break;
 			}

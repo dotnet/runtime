@@ -23,7 +23,6 @@
 /* This is a copy of System.Threading.ThreadState */
 typedef enum {
 	ThreadState_Running = 0x00000000,
-	ThreadState_StopRequested = 0x00000001,
 	ThreadState_SuspendRequested = 0x00000002,
 	ThreadState_Background = 0x00000004,
 	ThreadState_Unstarted = 0x00000008,
@@ -182,8 +181,6 @@ void ves_icall_System_Runtime_Remoting_Contexts_Context_RegisterContext (MonoApp
 void ves_icall_System_Runtime_Remoting_Contexts_Context_ReleaseContext (MonoAppContext *ctx);
 
 MonoInternalThread *mono_thread_internal_current (void);
-
-void mono_thread_internal_check_for_interruption_critical (MonoInternalThread *thread);
 
 void mono_thread_internal_abort (MonoInternalThread *thread);
 void mono_thread_internal_suspend_for_shutdown (MonoInternalThread *thread);

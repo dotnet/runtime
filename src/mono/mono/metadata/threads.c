@@ -2352,9 +2352,7 @@ request_thread_abort (MonoInternalThread *thread, MonoObject *state)
 {
 	LOCK_THREAD (thread);
 	
-	if ((thread->state & ThreadState_AbortRequested) != 0 || 
-		(thread->state & ThreadState_StopRequested) != 0 ||
-		(thread->state & ThreadState_Stopped) != 0)
+	if (thread->state & (ThreadState_AbortRequested | ThreadState_Stopped))
 	{
 		UNLOCK_THREAD (thread);
 		return FALSE;
@@ -2506,17 +2504,13 @@ mono_thread_suspend (MonoInternalThread *thread)
 {
 	LOCK_THREAD (thread);
 
-	if ((thread->state & ThreadState_Unstarted) != 0 || 
-		(thread->state & ThreadState_Aborted) != 0 || 
-		(thread->state & ThreadState_Stopped) != 0)
+	if (thread->state & (ThreadState_Unstarted | ThreadState_Aborted | ThreadState_Stopped))
 	{
 		UNLOCK_THREAD (thread);
 		return FALSE;
 	}
 
-	if ((thread->state & ThreadState_Suspended) != 0 || 
-		(thread->state & ThreadState_SuspendRequested) != 0 ||
-		(thread->state & ThreadState_StopRequested) != 0) 
+	if (thread->state & (ThreadState_Suspended | ThreadState_SuspendRequested | ThreadState_AbortRequested))
 	{
 		UNLOCK_THREAD (thread);
 		return TRUE;
@@ -2635,21 +2629,8 @@ mono_thread_stop (MonoThread *thread)
 {
 	MonoInternalThread *internal = thread->internal_thread;
 
-	LOCK_THREAD (internal);
-
-	if (internal->state & (ThreadState_StopRequested | ThreadState_Stopped))
-	{
-		UNLOCK_THREAD (internal);
+	if (!request_thread_abort (internal, NULL))
 		return;
-	}
-
-	/* Make sure the internal is awake */
-	mono_thread_resume (internal);
-
-	internal->state |= ThreadState_StopRequested;
-	internal->state &= ~ThreadState_AbortRequested;
-
-	UNLOCK_THREAD (internal);
 
 	if (internal == mono_thread_internal_current ()) {
 		MonoError error;
@@ -3221,13 +3202,10 @@ mono_threads_set_shutting_down (void)
 
 		LOCK_THREAD (current_thread);
 
-		if ((current_thread->state & ThreadState_SuspendRequested) ||
-		    (current_thread->state & ThreadState_AbortRequested) ||
-		    (current_thread->state & ThreadState_StopRequested)) {
+		if (current_thread->state & (ThreadState_SuspendRequested | ThreadState_AbortRequested)) {
 			UNLOCK_THREAD (current_thread);
 			mono_thread_execute_interruption ();
 		} else {
-			current_thread->state |= ThreadState_Stopped;
 			UNLOCK_THREAD (current_thread);
 		}
 
@@ -3410,9 +3388,7 @@ void mono_thread_suspend_all_other_threads (void)
 
 			LOCK_THREAD (thread);
 
-			if ((thread->state & ThreadState_Suspended) != 0 || 
-				(thread->state & ThreadState_StopRequested) != 0 ||
-				(thread->state & ThreadState_Stopped) != 0) {
+			if (thread->state & (ThreadState_Suspended | ThreadState_Stopped)) {
 				UNLOCK_THREAD (thread);
 				mono_threads_close_thread_handle (wait->handles [i]);
 				wait->threads [i] = NULL;
@@ -4426,7 +4402,7 @@ mono_thread_execute_interruption (void)
 
 		UNLOCK_THREAD (thread);
 		return exc;
-	} else if ((thread->state & ThreadState_AbortRequested) != 0) {
+	} else if (thread->state & (ThreadState_AbortRequested)) {
 		UNLOCK_THREAD (thread);
 		g_assert (sys_thread->pending_exception == NULL);
 		if (thread->abort_exc == NULL) {
@@ -4437,18 +4413,9 @@ mono_thread_execute_interruption (void)
 			MONO_OBJECT_SETREF (thread, abort_exc, mono_get_exception_thread_abort ());
 		}
 		return thread->abort_exc;
-	}
-	else if ((thread->state & ThreadState_SuspendRequested) != 0) {
+	} else if (thread->state & (ThreadState_SuspendRequested)) {
 		/* calls UNLOCK_THREAD (thread) */
 		self_suspend_internal ();
-		return NULL;
-	}
-	else if ((thread->state & ThreadState_StopRequested) != 0) {
-		/* FIXME: do this through the JIT? */
-
-		UNLOCK_THREAD (thread);
-		
-		mono_thread_exit ();
 		return NULL;
 	} else if (thread->thread_interrupt_requested) {
 
@@ -4480,12 +4447,6 @@ mono_thread_request_interruption (gboolean running_managed)
 	if (thread == NULL) 
 		return NULL;
 
-#ifdef HOST_WIN32
-	if (thread->interrupt_on_stop && 
-		thread->state & ThreadState_StopRequested && 
-		thread->state & ThreadState_Background)
-		ExitThread (1);
-#endif
 	if (!mono_thread_set_interruption_requested (thread))
 		return NULL;
 	InterlockedIncrement (&thread_interruption_requested);
@@ -4523,7 +4484,7 @@ mono_thread_resume_interruption (void)
 		return NULL;
 
 	LOCK_THREAD (thread);
-	still_aborting = (thread->state & (ThreadState_AbortRequested|ThreadState_StopRequested)) != 0;
+	still_aborting = (thread->state & (ThreadState_AbortRequested)) != 0;
 	UNLOCK_THREAD (thread);
 
 	/*This can happen if the protected block called Thread::ResetAbort*/
@@ -5084,13 +5045,6 @@ mono_thread_join (gpointer tid)
 }
 
 void
-mono_thread_internal_check_for_interruption_critical (MonoInternalThread *thread)
-{
-	if ((thread->state & (ThreadState_StopRequested | ThreadState_SuspendRequested)) != 0)
-		mono_thread_interruption_checkpoint ();
-}
-
-void
 mono_thread_internal_unhandled_exception (MonoObject* exc)
 {
 	MonoClass *klass = exc->vtable->klass;
@@ -5236,7 +5190,7 @@ mono_threads_is_ready_to_be_interrupted (void)
 
 	thread = mono_thread_internal_current ();
 	LOCK_THREAD (thread);
-	if (thread->state & (MonoThreadState)(ThreadState_StopRequested | ThreadState_SuspendRequested | ThreadState_AbortRequested)) {
+	if (thread->state & (ThreadState_SuspendRequested | ThreadState_AbortRequested)) {
 		UNLOCK_THREAD (thread);
 		return FALSE;
 	}
