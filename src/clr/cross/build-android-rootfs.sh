@@ -122,18 +122,23 @@ cp -R $__Android_Cross_Dir/tmp/$__AndroidArch/data/data/com.termux/files/usr/* $
 
 # Prepare libunwind
 if [ ! -d $__libunwind_Dir ]; then
-    git clone https://android.googlesource.com/platform/external/libunwind/ $__libunwind_Dir
+# Currently, we clone a fork of libunwind which adds support for Android; once this fork has been
+# merged back in, this script can be updated to use the official libunwind repository.
+# There's also an Android fork of libunwind which is currently not used.
+#   git clone https://android.googlesource.com/platform/external/libunwind/ $__libunwind_Dir
+#   git clone https://github.com/libunwind/libunwind/ $__libunwind_Dir
+   git clone https://github.com/qmfrederik/libunwind/ $__libunwind_Dir
 fi
 
 cd $__libunwind_Dir
-git checkout android-6.0.0_r26
+git checkout features/android
 git checkout -- .
 git clean -xfd
 
 # libunwind is available on Android, but not included in the NDK.
 echo Building libunwind
 autoreconf --force -v --install 2> /dev/null
-./configure CC=$__ToolchainDir/bin/$__AndroidArch-linux-android-clang --with-sysroot=$__ToolchainDir/sysroot --host=x86_64 --target=$__AndroidArch-eabi --disable-coredump --prefix=$__ToolchainDir/sysroot/usr 2> /dev/null
+./configure CC=$__ToolchainDir/bin/$__AndroidArch-linux-android-clang --with-sysroot=$__ToolchainDir/sysroot --host=$__AndroidArch-eabi --target=$__AndroidArch-eabi --disable-tests --disable-coredump --prefix=$__ToolchainDir/sysroot/usr 2> /dev/null
 make > /dev/null
 make install > /dev/null
 
@@ -141,5 +146,5 @@ make install > /dev/null
 cp include/libunwind.h $__ToolchainDir/sysroot/usr/include/
 
 echo Now run:
-echo CONFIG_DIR=\`realpath cross/android/arm64\` ROOTFS_DIR=\`realpath $__ToolchainDir/sysroot\` ./build.sh cross arm64 skipgenerateversion skipmscorlib cmakeargs -DENABLE_LLDBPLUGIN=0
+echo CONFIG_DIR=\`realpath cross/android/arm64\` ROOTFS_DIR=\`realpath $__ToolchainDir/sysroot\` ./build.sh cross arm64 skipgenerateversion skipnuget cmakeargs -DENABLE_LLDBPLUGIN=0
 
