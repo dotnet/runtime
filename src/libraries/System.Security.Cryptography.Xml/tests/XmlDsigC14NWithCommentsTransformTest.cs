@@ -104,113 +104,94 @@ namespace System.Security.Cryptography.Xml.Tests
             string testName = GetType().Name + "." + nameof(C14NSpecExample1);
             using (TestHelpers.CreateTestDtdFile(testName))
             {
-                string res = ExecuteXmlDSigC14NTransform(C14NSpecExample1Input, true);
+                string res = ExecuteXmlDSigC14NTransform(C14NSpecExample1Input(testName), Encoding.UTF8, new XmlUrlResolver());
                 Assert.Equal(C14NSpecExample1Output, res);
             }
         }
 
         [Fact]
-        // [ExpectedException (typeof (SecurityException))]
         public void C14NSpecExample1_WithoutResolver()
         {
             string testName = GetType().Name + "." + nameof(C14NSpecExample1_WithoutResolver);
             using (TestHelpers.CreateTestDtdFile(testName))
             {
-                string res = ExecuteXmlDSigC14NTransform(C14NSpecExample1Input, false);
+                string res = ExecuteXmlDSigC14NTransform(C14NSpecExample1Input(testName));
                 Assert.Equal(C14NSpecExample1Output, res);
             }
         }
 
-        [Fact]
-        public void C14NSpecExample2()
+        [Theory]
+        [InlineData(C14NSpecExample2Input, C14NSpecExample2Output)]
+        [InlineData(C14NSpecExample3Input, C14NSpecExample3Output)]
+        [InlineData(C14NSpecExample4Input, C14NSpecExample4Output)]
+        public void C14NSpecExample(string input, string expectedOutput)
         {
-            string res = ExecuteXmlDSigC14NTransform(C14NSpecExample2Input, false);
-            Assert.Equal(C14NSpecExample2Output, res);
+            Assert.Equal(expectedOutput, ExecuteXmlDSigC14NTransform(input));
         }
 
         [Fact]
-        public void C14NSpecExample3()
-        {
-            string res = ExecuteXmlDSigC14NTransform(C14NSpecExample3Input, false);
-            Assert.Equal(C14NSpecExample3Output, res);
-        }
-
-        [Fact]
-        public void C14NSpecExample4()
-        {
-            string res = ExecuteXmlDSigC14NTransform(C14NSpecExample4Input, false);
-            Assert.Equal(C14NSpecExample4Output, res);
-        }
-
-        [Fact(Skip = "TODO: Broken because entity is not resolved from text file content - fixme")]
         public void C14NSpecExample5()
         {
             string testName = GetType().Name + "." + nameof(C14NSpecExample5);
             using (TestHelpers.CreateTestTextFile(testName, "world"))
             {
-                string res = ExecuteXmlDSigC14NTransform(C14NSpecExample5Input(testName), false);
-                Assert.Equal(C14NSpecExample5Output(testName), res);
+                string result = ExecuteXmlDSigC14NTransform(C14NSpecExample5Input(testName), Encoding.UTF8, new XmlUrlResolver());
+                string expectedResult = C14NSpecExample5Output(testName);
+                Assert.Equal(expectedResult, result);
             }
         }
 
         [Fact]
         public void C14NSpecExample6()
         {
-            string res = ExecuteXmlDSigC14NTransform(C14NSpecExample6Input, false);
+            string res = ExecuteXmlDSigC14NTransform(C14NSpecExample6Input, Encoding.GetEncoding("ISO-8859-1"));
             Assert.Equal(C14NSpecExample6Output, res);
         }
 
-        private string ExecuteXmlDSigC14NTransform(string InputXml, bool resolver)
+        private string ExecuteXmlDSigC14NTransform(string inputXml, Encoding encoding = null, XmlResolver resolver = null)
         {
             XmlDocument doc = new XmlDocument();
+            doc.XmlResolver = resolver;
             doc.PreserveWhitespace = true;
-            doc.LoadXml(InputXml);
+            doc.LoadXml(inputXml);
 
-            // Testing default attribute support with
-            // vreader.ValidationType = ValidationType.None.
-            UTF8Encoding utf8 = new UTF8Encoding();
-            byte[] data = utf8.GetBytes(InputXml.ToString());
-            Stream stream = new MemoryStream(data);
-            using (XmlReader reader = XmlReader.Create(stream, new XmlReaderSettings {ValidationType = ValidationType.None, DtdProcessing = DtdProcessing.Parse}))
+            Encoding actualEncoding = encoding ?? Encoding.UTF8;
+            byte[] data = actualEncoding.GetBytes(inputXml);
+            using (Stream stream = new MemoryStream(data))
+            using (XmlReader reader = XmlReader.Create(stream, new XmlReaderSettings { ValidationType = ValidationType.None, DtdProcessing = DtdProcessing.Parse, XmlResolver = resolver }))
             {
                 doc.Load(reader);
-                if (resolver)
-                    transform.Resolver = new XmlUrlResolver();
                 transform.LoadInput(doc);
-                return Stream2String((Stream) transform.GetOutput());
+                return Stream2String((Stream)transform.GetOutput(), actualEncoding);
             }
         }
 
-        private string Stream2String(Stream s)
+        private string Stream2String(Stream stream, Encoding encoding)
         {
-            StringBuilder sb = new StringBuilder();
-            int b = s.ReadByte();
-            while (b != -1)
+            using (StreamReader streamReader = new StreamReader(stream, encoding))
             {
-                sb.Append(Convert.ToChar(b));
-                b = s.ReadByte();
+                return streamReader.ReadToEnd();
             }
-            return sb.ToString();
         }
 
         //
         // Example 1 from C14N spec - PIs, Comments, and Outside of Document Element: 
         // http://www.w3.org/TR/xml-c14n#Example-OutsideDoc
         //
-        static string C14NSpecExample1Input =
+        static string C14NSpecExample1Input(string testName) =>
             "<?xml version=\"1.0\"?>\n" +
                 "\n" +
                 "<?xml-stylesheet   href=\"doc.xsl\"\n" +
                 "   type=\"text/xsl\"   ?>\n" +
                 "\n" +
-                "<!DOCTYPE doc SYSTEM \"doc.dtd\">\n" +
+                $"<!DOCTYPE doc SYSTEM \"{Path.GetFullPath(testName + ".dtd")}\">\n" +
                 "\n" +
                 "<doc>Hello, world!<!-- Comment 1 --></doc>\n" +
                 "\n" +
                 "<?pi-without-data     ?>\n\n" +
                 "<!-- Comment 2 -->\n\n" +
                 "<!-- Comment 3 -->\n";
-        static string C14NSpecExample1Output =
+        static string C14NSpecExample1Output =>
                 "<?xml-stylesheet href=\"doc.xsl\"\n" +
                 "   type=\"text/xsl\"   ?>\n" +
                 "<doc>Hello, world!<!-- Comment 1 --></doc>\n" +
@@ -222,7 +203,7 @@ namespace System.Security.Cryptography.Xml.Tests
         // Example 2 from C14N spec - Whitespace in Document Content: 
         // http://www.w3.org/TR/xml-c14n#Example-WhitespaceInContent
         // 
-        static string C14NSpecExample2Input =
+        const string C14NSpecExample2Input =
                 "<doc>\n" +
                 "  <clean>   </clean>\n" +
                 "   <dirty>   A   B   </dirty>\n" +
@@ -234,7 +215,7 @@ namespace System.Security.Cryptography.Xml.Tests
                 "      C\n" +
                 "   </mixed>\n" +
                 "</doc>\n";
-        static string C14NSpecExample2Output =
+        const string C14NSpecExample2Output =
                 "<doc>\n" +
                 "  <clean>   </clean>\n" +
                 "   <dirty>   A   B   </dirty>\n" +
@@ -251,7 +232,7 @@ namespace System.Security.Cryptography.Xml.Tests
         // Example 3 from C14N spec - Start and End Tags: 
         // http://www.w3.org/TR/xml-c14n#Example-SETags
         //
-        static string C14NSpecExample3Input =
+        const string C14NSpecExample3Input =
                 "<!DOCTYPE doc [<!ATTLIST e9 attr CDATA \"default\">]>\n" +
                 "<doc>\n" +
                 "   <e1   />\n" +
@@ -270,7 +251,7 @@ namespace System.Security.Cryptography.Xml.Tests
                 "       </e7>\n" +
                 "   </e6>\n" +
                 "</doc>\n";
-        static string C14NSpecExample3Output =
+        const string C14NSpecExample3Output =
                 "<doc>\n" +
                 "   <e1></e1>\n" +
                 "   <e2></e2>\n" +
@@ -298,7 +279,7 @@ namespace System.Security.Cryptography.Xml.Tests
         // should be normalized by XML parser. Currently Mono
         // does not support this (see comment after this example
         // in the spec).
-        static string C14NSpecExample4Input =
+        const string C14NSpecExample4Input =
                 "<!DOCTYPE doc [<!ATTLIST normId id ID #IMPLIED>]>\n" +
                 "<doc>\n" +
                 "   <text>First line&#x0d;&#10;Second line</text>\n" +
@@ -308,7 +289,7 @@ namespace System.Security.Cryptography.Xml.Tests
                 "   <norm attr=\' &apos;   &#x20;&#13;&#xa;&#9;   &apos; \'/>\n" +
                 // "   <normId id=\' &apos;   &#x20;&#13;&#xa;&#9;   &apos; \'/>\n" +
                 "</doc>\n";
-        static string C14NSpecExample4Output =
+        const string C14NSpecExample4Output =
                 "<doc>\n" +
                 "   <text>First line&#xD;\n" +
                 "Second line</text>\n" +
