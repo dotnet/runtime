@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -28,7 +30,7 @@ namespace System.Net.Http
             return s_diagnosticListener.IsEnabled();
         }
 
-        protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+        protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
             //HttpClientHandler is responsible to call DiagnosticsHandler.IsEnabled() before forwarding request here.
@@ -36,28 +38,29 @@ namespace System.Net.Http
             //from DiagnosticListener right after the check. So some requests happening right after subscription starts
             //might not be instrumented. Similarly, when consumer unsubscribes, extra requests might be instumented
 
-            Guid loggingRequestId = Guid.NewGuid();
-            LogHttpRequest(request,  loggingRequestId);
+            Activity activity = null;
+            Guid loggingRequestId = Guid.Empty;
 
-            Task<HttpResponseMessage> responseTask = base.SendAsync(request, cancellationToken);
-
-            LogHttpResponse(responseTask, loggingRequestId);
-            return responseTask;
-        }
-
-        #region private
-
-        private static readonly DiagnosticListener s_diagnosticListener =
-            new DiagnosticListener(DiagnosticsHandlerLoggingStrings.DiagnosticListenerName);
-
-        private static void LogHttpRequest(HttpRequestMessage request, Guid loggingRequestId)
-        {
-            if (s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.RequestWriteName))
+            // If System.Net.Http.Activity is on see if we should log the start (or just log the activity)
+            if (s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityName, request))
+            {
+                activity = new Activity(DiagnosticsHandlerLoggingStrings.ActivityName);
+                //Only send start event to users who subscribed for it, but start activity anyway
+                if (s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityStartName))
+                {
+                    s_diagnosticListener.StartActivity(activity, new { Request = request });
+                }
+                else
+                {
+                    activity.Start();
+                }
+            }
+            //if Activity events are disabled, try to write System.Net.Http.Request event (deprecated)
+            else if (s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.RequestWriteNameDeprecated))
             {
                 long timestamp = Stopwatch.GetTimestamp();
-
-                s_diagnosticListener.Write(
-                    DiagnosticsHandlerLoggingStrings.RequestWriteName,
+                loggingRequestId = Guid.NewGuid();
+                s_diagnosticListener.Write(DiagnosticsHandlerLoggingStrings.RequestWriteNameDeprecated,
                     new
                     {
                         Request = request,
@@ -66,43 +69,84 @@ namespace System.Net.Http
                     }
                 );
             }
-        }
 
-        private static void LogHttpResponse(Task<HttpResponseMessage> responseTask, Guid loggingRequestId)
-        {
-            responseTask.ContinueWith(
-                (t, s) =>
+            // If we are on at all, we propagate any activity information.  
+            Activity currentActivity = Activity.Current;
+            if (currentActivity != null)
+            {
+                request.Headers.Add(DiagnosticsHandlerLoggingStrings.RequestIdHeaderName, currentActivity.Id);
+                //we expect baggage to be empty or contain a few items
+                using (IEnumerator<KeyValuePair<string, string>> e = currentActivity.Baggage.GetEnumerator())
+                {
+                    if (e.MoveNext())
+                    {
+                        var baggage = new List<string>();
+                        do
+                        {
+                            KeyValuePair<string, string> item = e.Current;
+                            baggage.Add(new NameValueHeaderValue(item.Key, item.Value).ToString());
+                        }
+                        while (e.MoveNext());
+                        request.Headers.Add(DiagnosticsHandlerLoggingStrings.CorrelationContextHeaderName, baggage);
+                    }
+                }
+            }
+
+            Task<HttpResponseMessage> responseTask = base.SendAsync(request, cancellationToken);
+            try
+            {
+                await responseTask.ConfigureAwait(false);
+            }
+            catch (TaskCanceledException)
+            {
+                //we'll report task status in Activity.Stop
+                throw;
+            }
+            catch (Exception ex)
+            {
+                if (s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ExceptionEventName))
+                {
+                    //If request was initialy instrumented, Activity.Current has all necessary context for logging
+                    //Request is passed to provide some context if instrumentation was disabled and to avoid
+                    //extensive Activity.Tags usage to tunnel request properties
+                    s_diagnosticListener.Write(DiagnosticsHandlerLoggingStrings.ExceptionEventName, new { Exception = ex, Request = request });
+                }
+                throw;
+            }
+            finally
+            {
+                //always stop activity if it was started
+                if (activity != null)
+                {
+                    activity.SetEndTime(DateTime.UtcNow);
+                    s_diagnosticListener.StopActivity(activity, new
+                    {
+                        Response = responseTask.Status == TaskStatus.RanToCompletion ? responseTask.Result : null,
+                        RequestTaskStatus = responseTask.Status
+                    });
+                }
+                //if Activity events are disabled, try to write System.Net.Http.Response event (deprecated)
+                else if (s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ResponseWriteNameDeprecated))
                 {
                     long timestamp = Stopwatch.GetTimestamp();
-
-                    if (t.IsFaulted && s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ExceptionWriteName))
-                    {
-                        s_diagnosticListener.Write(
-                            DiagnosticsHandlerLoggingStrings.ExceptionWriteName,
-                            new
-                            {
-                                LoggingRequestId = (Guid) s,
-                                Timestamp = timestamp,
-                                Exception = t.Exception,
-                            }
-                        );
-                    }
-
-                    if (s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ResponseWriteName))
-                    {
-                        s_diagnosticListener.Write(
-                            DiagnosticsHandlerLoggingStrings.ResponseWriteName,
-                            new
-                            {
-                                Response = t.Status == TaskStatus.RanToCompletion ? t.Result : null,
-                                LoggingRequestId = (Guid) s,
-                                TimeStamp = timestamp,
-                                RequestTaskStatus = t.Status
-                            }
-                        );
-                    }
-                }, loggingRequestId, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
+                    s_diagnosticListener.Write(DiagnosticsHandlerLoggingStrings.ResponseWriteNameDeprecated,
+                        new
+                        {
+                            Response = responseTask.Status == TaskStatus.RanToCompletion ? responseTask.Result : null,
+                            LoggingRequestId = loggingRequestId,
+                            TimeStamp = timestamp,
+                            RequestTaskStatus = responseTask.Status
+                        }
+                    );
+                }
+            }
+            return responseTask.Result;
         }
+
+        #region private
+
+        private static readonly DiagnosticListener s_diagnosticListener =
+            new DiagnosticListener(DiagnosticsHandlerLoggingStrings.DiagnosticListenerName);
 
         #endregion
     }
