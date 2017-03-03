@@ -4005,8 +4005,6 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
 #if defined(_TARGET_AMD64_)
     // Multi-reg call node is the only node that could produce multi-reg value
     assert(produce <= 1 || (tree->IsMultiRegCall() && produce == MAX_RET_REG_COUNT));
-#elif defined(_TARGET_ARM_)
-    assert(!varTypeIsMultiReg(tree->TypeGet()));
 #endif // _TARGET_xxx_
 
     // Add kill positions before adding def positions
