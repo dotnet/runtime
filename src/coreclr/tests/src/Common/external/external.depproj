@@ -27,6 +27,11 @@
     <PackageToInclude Include="Microsoft.DotNet.xunit.performance"/>
     <PackageToInclude Include="Microsoft.DotNet.xunit.performance.analysis"/>
     <PackageToInclude Include="Microsoft.DotNet.xunit.performance.runner.Windows"/>
+    <PackageToInclude Include="xunit.performance.api"/>
+    <PackageToInclude Include="xunit.performance.core"/>
+    <PackageToInclude Include="xunit.performance.execution"/>
+    <PackageToInclude Include="xunit.performance.metrics"/>
+    <PackageToInclude Include="Microsoft.Diagnostics.Tracing.TraceEvent"/>
     <PackageToInclude Include="Newtonsoft.Json"/>
     <PackageToInclude Include="Microsoft.CodeAnalysis.Analyzers"/>
     <PackageToInclude Include="Microsoft.CodeAnalysis.Common"/>
