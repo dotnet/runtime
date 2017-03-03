@@ -910,7 +910,9 @@ namespace System.Text.RegularExpressions
                         MoveLeft();
 
                         NodeType = RegexNode.Group;
-                        ScanOptions();
+                        // Disallow options in the children of a testgroup node
+                        if (_group._type != RegexNode.Testgroup)
+                            ScanOptions();
                         if (CharsRight() == 0)
                             goto BreakRecognize;
 
