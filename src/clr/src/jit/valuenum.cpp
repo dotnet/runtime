@@ -3163,6 +3163,53 @@ void ValueNumStore::GetConstantBoundInfo(ValueNum vn, ConstantBoundInfo* info)
     }
 }
 
+//------------------------------------------------------------------------
+// IsVNArrLenUnsignedBound: Checks if the specified vn represents an expression
+//    such as "(uint)i < (uint)a.len" that implies that the array index is valid
+//    (0 <= i && i < a.len).
+//
+// Arguments:
+//    vn - Value number to query
+//    info - Pointer to an ArrLenUnsignedBoundInfo object to return information about
+//           the expression. Not populated if the vn expression isn't suitable (e.g. i <= a.len).
+//           This enables optCreateJTrueBoundAssertion to immediatly create an OAK_NO_THROW
+//           assertion instead of the OAK_EQUAL/NOT_EQUAL assertions created by signed compares
+//           (IsVNArrLenBound, IsVNArrLenArithBound) that require further processing.
+
+bool ValueNumStore::IsVNArrLenUnsignedBound(ValueNum vn, ArrLenUnsignedBoundInfo* info)
+{
+    VNFuncApp funcApp;
+
+    if (GetVNFunc(vn, &funcApp))
+    {
+        if (IsVNArrLen(funcApp.m_args[1]))
+        {
+            // We only care about "(uint)i < (uint)a.len" and its negation "(uint)i >= (uint)a.len"
+            if ((funcApp.m_func == VNF_LT_UN) || (funcApp.m_func == VNF_GE_UN))
+            {
+                info->vnIdx   = funcApp.m_args[0];
+                info->cmpOper = funcApp.m_func;
+                info->vnLen   = funcApp.m_args[1];
+                return true;
+            }
+        }
+        else if (IsVNArrLen(funcApp.m_args[0]))
+        {
+            // We only care about "(uint)a.len > (uint)i" and its negation "(uint)a.len <= (uint)i"
+            if ((funcApp.m_func == VNF_GT_UN) || (funcApp.m_func == VNF_LE_UN))
+            {
+                info->vnIdx = funcApp.m_args[1];
+                // Let's keep a consistent operand order - it's always i < a.len, never a.len > i
+                info->cmpOper = (funcApp.m_func == VNF_GT_UN) ? VNF_LT_UN : VNF_GE_UN;
+                info->vnLen   = funcApp.m_args[0];
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 bool ValueNumStore::IsVNArrLenBound(ValueNum vn)
 {
     // Do we have "var < a.len"?
