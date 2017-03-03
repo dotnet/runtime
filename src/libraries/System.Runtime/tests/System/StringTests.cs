@@ -14,7 +14,7 @@ using Xunit;
 
 namespace System.Tests
 {
-    public static class StringTests
+    public static partial class StringTests
     {
         private static readonly bool s_isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
         private const string c_SoftHyphen = "\u00AD";
@@ -813,22 +813,6 @@ namespace System.Tests
                 Assert.Equal(expected, s.EndsWith(value));
             }
             Assert.Equal(expected, s.EndsWith(value, comparisonType));
-        }
-
-        [Theory]
-        [InlineData("Hello", 'o', true)]
-        [InlineData("Hello", 'O', false)]
-        [InlineData("o", 'o', true)]
-        [InlineData("o", 'O', false)]
-        [InlineData("Hello", 'e', false)]
-        [InlineData("Hello", '\0', false)]
-        [InlineData("", '\0', false)]
-        [InlineData("\0", '\0', true)]
-        [InlineData("", 'a', false)]
-        [InlineData("abcdefghijklmnopqrstuvwxyz", 'z', true)]
-        public static void EndsWith(string s, char value, bool expected)
-        {
-            Assert.Equal(expected, s.EndsWith(value));
         }
 
         [Theory]
@@ -1657,7 +1641,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Join_ObjectArray_TestData))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework | TargetFrameworkMonikers.NetcoreUwp)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework | TargetFrameworkMonikers.Uap)]
         public static void Join_ObjectArray(string separator, object[] values, string expected)
         {
             Assert.Equal(expected, string.Join(separator, values));
@@ -2110,22 +2094,6 @@ namespace System.Tests
                 Assert.Equal(expected, s.StartsWith(value));
             }
             Assert.Equal(expected, s.StartsWith(value, comparisonType));
-        }
-
-        [Theory]
-        [InlineData("Hello", 'H', true)]
-        [InlineData("Hello", 'h', false)]
-        [InlineData("H", 'H', true)]
-        [InlineData("H", 'h', false)]
-        [InlineData("Hello", 'e', false)]
-        [InlineData("Hello", '\0', false)]
-        [InlineData("", '\0', false)]
-        [InlineData("\0", '\0', true)]
-        [InlineData("", 'a', false)]
-        [InlineData("abcdefghijklmnopqrstuvwxyz", 'a', true)]
-        public static void StartsWith(string s, char value, bool expected)
-        {
-            Assert.Equal(expected, s.StartsWith(value));
         }
 
         [Theory]
