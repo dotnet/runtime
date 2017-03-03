@@ -2769,6 +2769,12 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	for (i = 0; i < MS_NUM_FAST_BLOCK_OBJ_SIZE_INDEXES * 8; ++i)
 		g_assert (MS_BLOCK_OBJ_SIZE_INDEX (i) == ms_find_block_obj_size_index (i));
 
+	/* We can do this because we always init the minor before the major */
+	if (is_parallel || sgen_get_minor_collector ()->is_parallel) {
+		mono_native_tls_alloc (&worker_block_free_list_key, NULL);
+		collector->worker_init_cb = sgen_worker_init_callback;
+	}
+
 	mono_counters_register ("# major blocks allocated", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_major_blocks_alloced);
 	mono_counters_register ("# major blocks freed", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_major_blocks_freed);
 	mono_counters_register ("# major blocks lazy swept", MONO_COUNTER_GC | MONO_COUNTER_ULONG, &stat_major_blocks_lazy_swept);
@@ -2858,10 +2864,6 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 			collector->major_ops_conc_par_finish.scan_vtype = major_scan_vtype_par_with_evacuation;
 			collector->major_ops_conc_par_finish.scan_ptr_field = major_scan_ptr_field_par_with_evacuation;
 			collector->major_ops_conc_par_finish.drain_gray_stack = drain_gray_stack_par;
-
-			collector->worker_init_cb = sgen_worker_init_callback;
-
-			mono_native_tls_alloc (&worker_block_free_list_key, NULL);
 		}
 	}
 

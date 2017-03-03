@@ -124,6 +124,12 @@ copy_object_no_checks_par (GCObject *obj, SgenGrayQueue *queue)
 				GRAY_OBJECT_ENQUEUE_PARALLEL (queue, (GCObject *)destination, sgen_vtable_get_descriptor (vt));
 			}
 		} else {
+			/*
+			 * Unlikely case. Clear the allocated object so it doesn't confuse nursery
+			 * card table scanning, since it can contain old invalid refs.
+			 * FIXME make sure it is not a problem if another threads scans it while we clear
+			 */
+			mono_gc_bzero_aligned (destination, objsize);
 			destination = final_destination;
 		}
 	}

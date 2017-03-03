@@ -204,18 +204,17 @@ sgen_workers_enqueue_job (SgenThreadPoolJob *job, gboolean enqueue)
 static gboolean
 workers_get_work (WorkerData *data)
 {
-	SgenMajorCollector *major;
+	SgenMajorCollector *major = sgen_get_major_collector ();
+	SgenMinorCollector *minor = sgen_get_minor_collector ();
+	GrayQueueSection *section;
 
 	g_assert (sgen_gray_object_queue_is_empty (&data->private_gray_queue));
+	g_assert (major->is_concurrent || minor->is_parallel);
 
-	/* If we're concurrent, steal from the workers distribute gray queue. */
-	major = sgen_get_major_collector ();
-	if (major->is_concurrent) {
-		GrayQueueSection *section = sgen_section_gray_queue_dequeue (&workers_distribute_gray_queue);
-		if (section) {
-			sgen_gray_object_enqueue_section (&data->private_gray_queue, section, major->is_parallel);
-			return TRUE;
-		}
+	section = sgen_section_gray_queue_dequeue (&workers_distribute_gray_queue);
+	if (section) {
+		sgen_gray_object_enqueue_section (&data->private_gray_queue, section, major->is_parallel);
+		return TRUE;
 	}
 
 	/* Nobody to steal from */
@@ -227,10 +226,13 @@ static gboolean
 workers_steal_work (WorkerData *data)
 {
 	SgenMajorCollector *major = sgen_get_major_collector ();
+	SgenMinorCollector *minor = sgen_get_minor_collector ();
+	int generation = sgen_get_current_collection_generation ();
 	GrayQueueSection *section = NULL;
 	int i, current_worker;
 
-	if (!major->is_parallel)
+	if ((generation == GENERATION_OLD && !major->is_parallel) ||
+			(generation == GENERATION_NURSERY && !minor->is_parallel))
 		return FALSE;
 
 	/* If we're parallel, steal from other workers' private gray queues  */
@@ -275,10 +277,11 @@ thread_pool_init_func (void *data_untyped)
 {
 	WorkerData *data = (WorkerData *)data_untyped;
 	SgenMajorCollector *major = sgen_get_major_collector ();
+	SgenMinorCollector *minor = sgen_get_minor_collector ();
 
 	sgen_client_thread_register_worker ();
 
-	if (!major->is_concurrent)
+	if (!major->is_concurrent && !minor->is_parallel)
 		return;
 
 	init_private_gray_queue (data);
@@ -314,7 +317,6 @@ marker_idle_func (void *data_untyped)
 	WorkerData *data = (WorkerData *)data_untyped;
 
 	SGEN_ASSERT (0, continue_idle_func (data_untyped), "Why are we called when we're not supposed to work?");
-	SGEN_ASSERT (0, sgen_concurrent_collection_in_progress (), "The worker should only mark in concurrent collections.");
 
 	if (data->state == STATE_WORK_ENQUEUED) {
 		set_state (data, STATE_WORK_ENQUEUED, STATE_WORKING);
@@ -357,7 +359,7 @@ init_distribute_gray_queue (void)
 void
 sgen_workers_init_distribute_gray_queue (void)
 {
-	SGEN_ASSERT (0, sgen_get_major_collector ()->is_concurrent,
+	SGEN_ASSERT (0, sgen_get_major_collector ()->is_concurrent || sgen_get_minor_collector ()->is_parallel,
 			"Why should we init the distribute gray queue if we don't need it?");
 	init_distribute_gray_queue ();
 }
@@ -368,7 +370,7 @@ sgen_workers_init (int num_workers, SgenWorkerCallback callback)
 	int i;
 	void **workers_data_ptrs = (void **)alloca(num_workers * sizeof(void *));
 
-	if (!sgen_get_major_collector ()->is_concurrent) {
+	if (!sgen_get_major_collector ()->is_concurrent && !sgen_get_minor_collector ()->is_parallel) {
 		sgen_thread_pool_init (num_workers, thread_pool_init_func, NULL, NULL, NULL, NULL);
 		return;
 	}

@@ -703,6 +703,7 @@ void sgen_marksweep_init (SgenMajorCollector *collector);
 void sgen_marksweep_conc_init (SgenMajorCollector *collector);
 void sgen_marksweep_conc_par_init (SgenMajorCollector *collector);
 SgenMajorCollector* sgen_get_major_collector (void);
+SgenMinorCollector* sgen_get_minor_collector (void);
 
 
 typedef struct _SgenRememberedSet {
@@ -713,7 +714,7 @@ typedef struct _SgenRememberedSet {
 	void (*wbarrier_generic_nostore) (gpointer ptr);
 	void (*record_pointer) (gpointer ptr);
 
-	void (*scan_remsets) (ScanCopyContext ctx);
+	void (*start_scan_remsets) (void);
 
 	void (*clear_cards) (void);
 
