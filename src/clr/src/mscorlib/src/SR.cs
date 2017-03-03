@@ -835,4 +835,7 @@ internal static class SR
     {
         get { return Environment.GetResourceString("Arg_ArrayPlusOffTooSmall"); }
     }
+
+    internal static string PlatformNotSupported_OSXFileLocking =>
+        Environment.GetResourceString("PlatformNotSupported_OSXFileLocking");
 }
