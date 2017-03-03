@@ -1,10 +1,17 @@
-﻿Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.26208.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Private.CoreLib", "System.Private.CoreLib.csproj", "{3DA06C3A-2E7B-4CB7-80ED-9B12916013F9}"
 EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "System.Private.CoreLib.Shared", "shared\System.Private.CoreLib.Shared.shproj", "{C5ED3C1D-B572-46F1-8F96-522A85CE1179}"
+EndProject
 Global
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		shared\System.Private.CoreLib.Shared.projitems*{3da06c3a-2e7b-4cb7-80ed-9b12916013f9}*SharedItemsImports = 4
+		shared\System.Private.CoreLib.Shared.projitems*{c5ed3c1d-b572-46f1-8f96-522a85ce1179}*SharedItemsImports = 13
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Checked|amd64 = Checked|amd64
 		Checked|arm = Checked|arm
@@ -20,14 +27,14 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{3DA06C3A-2E7B-4CB7-80ED-9B12916013F9}.Checked|amd64.ActiveCfg = Checked|amd64
-		{3DA06C3A-2E7B-4CB7-80ED-9B12916013F9}.Checked|amd64.Build.0 = Checked|amd64
-		{3DA06C3A-2E7B-4CB7-80ED-9B12916013F9}.Checked|arm.ActiveCfg = Checked|arm
-		{3DA06C3A-2E7B-4CB7-80ED-9B12916013F9}.Checked|arm.Build.0 = Checked|arm
-		{3DA06C3A-2E7B-4CB7-80ED-9B12916013F9}.Checked|arm64.ActiveCfg = Checked|arm64
-		{3DA06C3A-2E7B-4CB7-80ED-9B12916013F9}.Checked|arm64.Build.0 = Checked|arm64
-		{3DA06C3A-2E7B-4CB7-80ED-9B12916013F9}.Checked|x86.ActiveCfg = Checked|x86
-		{3DA06C3A-2E7B-4CB7-80ED-9B12916013F9}.Checked|x86.Build.0 = Checked|x86
+		{3DA06C3A-2E7B-4CB7-80ED-9B12916013F9}.Checked|amd64.ActiveCfg = Release|amd64
+		{3DA06C3A-2E7B-4CB7-80ED-9B12916013F9}.Checked|amd64.Build.0 = Release|amd64
+		{3DA06C3A-2E7B-4CB7-80ED-9B12916013F9}.Checked|arm.ActiveCfg = Release|arm
+		{3DA06C3A-2E7B-4CB7-80ED-9B12916013F9}.Checked|arm.Build.0 = Release|arm
+		{3DA06C3A-2E7B-4CB7-80ED-9B12916013F9}.Checked|arm64.ActiveCfg = Release|arm64
+		{3DA06C3A-2E7B-4CB7-80ED-9B12916013F9}.Checked|arm64.Build.0 = Release|arm64
+		{3DA06C3A-2E7B-4CB7-80ED-9B12916013F9}.Checked|x86.ActiveCfg = Release|x86
+		{3DA06C3A-2E7B-4CB7-80ED-9B12916013F9}.Checked|x86.Build.0 = Release|x86
 		{3DA06C3A-2E7B-4CB7-80ED-9B12916013F9}.Debug|amd64.ActiveCfg = Debug|amd64
 		{3DA06C3A-2E7B-4CB7-80ED-9B12916013F9}.Debug|amd64.Build.0 = Debug|amd64
 		{3DA06C3A-2E7B-4CB7-80ED-9B12916013F9}.Debug|arm.ActiveCfg = Debug|arm

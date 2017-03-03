@@ -4,9 +4,9 @@
 
 internal static partial class Interop
 {
-    private static partial class Libraries
+    internal static partial class Libraries
     {
-        internal const string GlobalizationInterop = "System.Globalization.Native"; // CoreFX wrappers for ICU
+        internal const string GlobalizationInterop = "System.Globalization.Native";
         internal const string SystemNative = "System.Native";
     }
 }
