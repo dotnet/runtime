@@ -397,6 +397,7 @@ struct GenTree
 
 #if ASSERTION_PROP
     unsigned short gtAssertionNum; // 0 or Assertion table index
+                                   // possibly ORed with optAssertionEdge::OAE_NEXT_EDGE
                                    // valid only for non-GT_STMT nodes
 
     bool HasAssertion() const
