@@ -47,10 +47,6 @@
     <Compile Include="HttpWebRequestHeaderTest.cs" />
     <Compile Include="HttpWebRequestTest.netstandard.cs" />
     <Compile Include="HttpWebResponseHeaderTest.cs" />
-    <Compile Include="HttpRequestResponseSerializationTest.cs" />
-    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
-      <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
-    </Compile>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
