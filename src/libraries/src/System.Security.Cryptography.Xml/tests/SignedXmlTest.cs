@@ -164,7 +164,7 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Throws<CryptographicException>(() => signedXml.ComputeSignature());
         }
 
-        [Fact(Skip = "TODO: fix me")]
+        [Fact]
         public void AsymmetricRSASignature()
         {
             SignedXml signedXml = MSDNSample();
@@ -188,7 +188,7 @@ namespace System.Security.Cryptography.Xml.Tests
 
             Assert.Null(signedXml.SigningKeyName);
             Assert.Equal(SignedXml.XmlDsigRSASHA1Url, signedXml.SignatureMethod);
-            Assert.Equal(128, signedXml.SignatureValue.Length);
+            Assert.Equal(key.KeySize / 8, signedXml.SignatureValue.Length);
             Assert.Null(signedXml.SigningKeyName);
 
             // Get the XML representation of the signature.
@@ -284,7 +284,7 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.True(v1.CheckSignature());
         }
 
-        [Fact(Skip = "TODO: fix me")]
+        [Fact]
         public void AsymmetricDSASignature()
         {
             SignedXml signedXml = MSDNSample();
@@ -552,7 +552,7 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Throws<CryptographicException>(() => signedXml.ComputeSignature());
         }
 
-        [Fact(Skip = "TODO: fix me")]
+        [Fact(Skip = "https://github.com/dotnet/corefx/issues/16685")]
         public void DataReferenceToNonDataObject()
         {
             XmlDocument doc = new XmlDocument();
@@ -625,7 +625,7 @@ namespace System.Security.Cryptography.Xml.Tests
             return sw.ToString();
         }
 
-        [Fact(Skip = "TODO: fix me")]
+        [Fact(Skip = "https://github.com/dotnet/corefx/issues/16685")]
         public void GetIdElement_Null()
         {
             SignedXml sign = new SignedXml();
@@ -1347,7 +1347,7 @@ namespace System.Security.Cryptography.Xml.Tests
             sign.CheckSignature(new HMACSHA1(Encoding.ASCII.GetBytes("secret")));
         }
 
-        [Fact(Skip = "TODO: fix me")]
+        [Fact(Skip = "https://github.com/dotnet/corefx/issues/16685")]
         public void HmacMustBeMultipleOfEightBits()
         {
             for (int i = 1; i < 160; i++)
@@ -1360,7 +1360,7 @@ namespace System.Security.Cryptography.Xml.Tests
             }
         }
 
-        [Fact(Skip = "TODO: fix me")]
+        [Fact(Skip = "https://github.com/dotnet/corefx/issues/16685")]
         public void VerifyHMAC_ZeroLength()
         {
             string xml = @"<?xml version=""1.0"" encoding=""UTF-8""?>
@@ -1388,7 +1388,7 @@ namespace System.Security.Cryptography.Xml.Tests
             CheckErratum(sign, new HMACSHA1(Encoding.ASCII.GetBytes("secret")), "4");
         }
 
-        [Fact(Skip = "TODO: fix me")]
+        [Fact(Skip = "https://github.com/dotnet/corefx/issues/16685")]
         public void VerifyHMAC_SmallerThanMinimumLength()
         {
             // 72 is a multiple of 8 but smaller than the minimum of 80 bits
@@ -1397,7 +1397,7 @@ namespace System.Security.Cryptography.Xml.Tests
             CheckErratum(sign, new HMACSHA1(Encoding.ASCII.GetBytes("secret")), "72");
         }
 
-        [Fact(Skip = "TODO: fix me")]
+        [Fact(Skip = "https://github.com/dotnet/corefx/issues/16685")]
         public void VerifyHMAC_MinimumLength()
         {
             // 80 bits is the minimum (and the half-size of HMACSHA1)
@@ -1406,7 +1406,7 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.True(sign.CheckSignature(new HMACSHA1(Encoding.ASCII.GetBytes("secret"))));
         }
 
-        [Fact(Skip = "TODO: fix me")]
+        [Fact(Skip = "https://github.com/dotnet/corefx/issues/16685")]
         public void VerifyHMAC_SmallerHalfLength()
         {
             // 80bits is smaller than the half-size of HMACSHA256
@@ -1415,7 +1415,7 @@ namespace System.Security.Cryptography.Xml.Tests
             CheckErratum(sign, new HMACSHA256(Encoding.ASCII.GetBytes("secret")), "80");
         }
 
-        [Fact(Skip = "TODO: fix me")]
+        [Fact(Skip = "https://github.com/dotnet/corefx/issues/16685")]
         public void VerifyHMAC_HalfLength()
         {
             // 128 is the half-size of HMACSHA256
@@ -1432,7 +1432,7 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.True(sign.CheckSignature(new HMACSHA1(Encoding.ASCII.GetBytes("secret"))));
         }
 
-        [Fact(Skip = "TODO: fix me")]
+        [Fact(Skip = "https://github.com/dotnet/corefx/issues/16685")]
         public void VerifyHMAC_HMACOutputLength_Signature_Mismatch()
         {
             string xml = @"<?xml version=""1.0"" encoding=""UTF-8""?>
@@ -1456,7 +1456,7 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Throws<CryptographicException>(() => sign.CheckSignature(new HMACSHA1(Encoding.ASCII.GetBytes("no clue"))));
         }
 
-        [Fact(Skip = "TODO: fix me")]
+        [Fact(Skip = "https://github.com/dotnet/corefx/issues/16685")]
         public void VerifyHMAC_HMACOutputLength_Invalid()
         {
             string xml = @"<?xml version=""1.0"" encoding=""UTF-8""?>
