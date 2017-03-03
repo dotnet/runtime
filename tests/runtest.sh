@@ -118,14 +118,6 @@ case $OSName in
         ;;
 esac
 
-# clean up any existing dumpling remnants from previous runs.
-dumplingsListPath="$PWD/dumplings.txt"
-if [ -f "$dumplingsListPath" ]; then
-    rm "$dumplingsListPath"
-fi
-
-find . -type f -name "local_dumplings.txt" -exec rm {} \;
-
 function xunit_output_begin {
     xunitOutputPath=$testRootDir/coreclrtests.xml
     xunitTestOutputPath=${xunitOutputPath}.test
@@ -1198,6 +1190,13 @@ fi
 export __TestEnv=$testEnv
 
 cd "$testRootDir"
+
+dumplingsListPath="$testRootDir/dumplings.txt"
+
+# clean up any existing dumpling remnants from previous runs.
+rm -f "$dumplingsListPath"
+find $testRootDir -type f -name "local_dumplings.txt" -exec rm {} \;
+
 time_start=$(date +"%s")
 if [ -z "$testDirectories" ]
 then
@@ -1219,7 +1218,7 @@ finish_remaining_tests
 
 print_results
 
-find . -type f -name "local_dumplings.txt" -exec cat {} \; > $dumplingsListPath
+find $testRootDir -type f -name "local_dumplings.txt" -exec cat {} \; > $dumplingsListPath
 
 if [ -s $dumplingsListPath ]; then
     cat $dumplingsListPath
