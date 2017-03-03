@@ -3398,7 +3398,7 @@ struct GenTreeCall final : public GenTree
     //
     bool HasMultiRegRetVal() const
     {
-#if defined(_TARGET_X86_) && !defined(LEGACY_BACKEND)
+#if (defined(_TARGET_X86_) || defined(_TARGET_ARM_)) && !defined(LEGACY_BACKEND)
         // LEGACY_BACKEND does not use multi reg returns for calls with long return types
         return varTypeIsLong(gtType);
 #elif FEATURE_MULTIREG_RET
