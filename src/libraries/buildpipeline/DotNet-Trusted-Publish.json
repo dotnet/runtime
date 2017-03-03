@@ -193,7 +193,7 @@
       "inputs": {
         "scriptType": "inlineScript",
         "scriptName": "",
-        "arguments": "-ghAuthToken $(PB_DotNetBuildBotAccessToken) -root $(Pipeline.SourcesDirectory) -cg $(PB_ConfigurationGroup) -fullPkgGlob $root\\packages\\AzureTransfer\\$cg\\$env:PB_AzureContainerPackageGlob",
+        "arguments": "-ghAuthToken $(PB_DotNetBuildBotAccessToken) -root $(Pipeline.SourcesDirectory) -cg $(PB_ConfigurationGroup) -fullPkgGlob $(Pipeline.SourcesDirectory)\\packages\\AzureTransfer\\$(PB_ConfigurationGroup)\\$(PB_AzureContainerPackageGlob)",
         "inlineScript": "param($ghAuthToken, $root, $cg, $fullPkgGlob)\nif ($cg -ne \"Release\") { exit }\ncd $root\n. $root\\build-managed.cmd -- /t:UpdatePublishedVersions `\n/p:GitHubUser=dotnet-helix-bot `\n/p:GitHubEmail=dotnet-helix-bot@microsoft.com `\n/p:GitHubAuthToken=$ghAuthToken `\n/p:VersionsRepoOwner=$env:PB_VersionsRepoOwner `\n/p:VersionsRepo=versions `\n/p:VersionsRepoPath=build-info/dotnet/$env:PB_GitHubRepositoryName/$env:SourceBranch `\n/p:ShippedNuGetPackageGlobPath=$fullPkgGlob",
         "workingFolder": "",
         "failOnStandardError": "true"
