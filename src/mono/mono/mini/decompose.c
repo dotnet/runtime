@@ -19,9 +19,6 @@
 
 #ifndef DISABLE_JIT
 
-void mini_emit_stobj (MonoCompile *cfg, MonoInst *dest, MonoInst *src, MonoClass *klass, gboolean native);
-void mini_emit_initobj (MonoCompile *cfg, MonoInst *dest, const guchar *ip, MonoClass *klass);
-
 /*
  * Decompose complex long opcodes on 64 bit machines.
  * This is also used on 32 bit machines when using LLVM, so it needs to handle I/U correctly.
