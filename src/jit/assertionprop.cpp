@@ -1771,6 +1771,8 @@ Compiler::AssertionIndex Compiler::optCreateJTrueBoundsAssertion(GenTreePtr tree
     GenTreePtr op2 = relop->gtGetOp2();
 
     ValueNum vn = op1->gtVNPair.GetConservative();
+
+    ValueNumStore::ArrLenUnsignedBoundInfo arrLenUnsignedBnd;
     // Cases where op1 holds the condition with array arithmetic and op2 is 0.
     // Loop condition like: "i < a.len +/-k == 0"
     // Assertion: "i < a.len +/- k == 0"
@@ -1824,6 +1826,32 @@ Compiler::AssertionIndex Compiler::optCreateJTrueBoundsAssertion(GenTreePtr tree
         dsc.op2.u1.iconFlags = 0;
         AssertionIndex index = optAddAssertion(&dsc);
         optCreateComplementaryAssertion(index, nullptr, nullptr);
+        return index;
+    }
+    // Loop condition like "(uint)i < (uint)a.len" or equivalent
+    // Assertion: "no throw" since this condition guarantees that i is both >= 0 and < a.len (on the appropiate edge)
+    else if (vnStore->IsVNArrLenUnsignedBound(relop->gtVNPair.GetConservative(), &arrLenUnsignedBnd))
+    {
+        assert(arrLenUnsignedBnd.vnIdx != ValueNumStore::NoVN);
+        assert((arrLenUnsignedBnd.cmpOper == VNF_LT_UN) || (arrLenUnsignedBnd.cmpOper == VNF_GE_UN));
+        assert(vnStore->IsVNArrLen(arrLenUnsignedBnd.vnLen));
+
+        AssertionDsc dsc;
+        dsc.assertionKind = OAK_NO_THROW;
+        dsc.op1.kind      = O1K_ARR_BND;
+        dsc.op1.vn        = relop->gtVNPair.GetConservative();
+        dsc.op1.bnd.vnIdx = arrLenUnsignedBnd.vnIdx;
+        dsc.op1.bnd.vnLen = arrLenUnsignedBnd.vnLen;
+        dsc.op2.kind      = O2K_INVALID;
+        dsc.op2.vn        = ValueNumStore::NoVN;
+
+        AssertionIndex index = optAddAssertion(&dsc);
+        if ((arrLenUnsignedBnd.cmpOper == VNF_GE_UN) && (index != NO_ASSERTION_INDEX))
+        {
+            // By default JTRUE generated assertions hold on the "jump" edge. We have i >= a.len but we're really
+            // after i < a.len so we need to change the assertion edge to "next".
+            index |= OAE_NEXT_EDGE;
+        }
         return index;
     }
     // Cases where op1 holds the condition bound check and op2 is 0.
@@ -4429,15 +4457,10 @@ ASSERT_TP* Compiler::optComputeAssertionGen()
 {
     ASSERT_TP* jumpDestGen = fgAllocateTypeForEachBlk<ASSERT_TP>();
 
-    ASSERT_TP valueGen         = BitVecOps::MakeEmpty(apTraits);
-    ASSERT_TP jumpDestValueGen = BitVecOps::MakeEmpty(apTraits);
-
     for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
     {
-        jumpDestGen[block->bbNum] = BitVecOps::MakeEmpty(apTraits);
-
-        BitVecOps::ClearD(apTraits, valueGen);
-        BitVecOps::ClearD(apTraits, jumpDestValueGen);
+        ASSERT_TP valueGen = BitVecOps::MakeEmpty(apTraits);
+        GenTree*  jtrue    = nullptr;
 
         // Walk the statement trees in this basic block.
         for (GenTreePtr stmt = block->bbTreeList; stmt; stmt = stmt->gtNext)
@@ -4446,47 +4469,72 @@ ASSERT_TP* Compiler::optComputeAssertionGen()
 
             for (GenTreePtr tree = stmt->gtStmt.gtStmtList; tree; tree = tree->gtNext)
             {
-                // Store whatever we have accumulated into jumpDest edge's valueGen.
                 if (tree->gtOper == GT_JTRUE)
                 {
-                    BitVecOps::Assign(apTraits, jumpDestValueGen, valueGen);
-                }
-                if (!tree->HasAssertion())
-                {
-                    continue;
+                    // A GT_TRUE is always the last node in a tree, so we can break here
+                    assert((tree->gtNext == nullptr) && (stmt->gtNext == nullptr));
+                    jtrue = tree;
+                    break;
                 }
 
-                // For regular trees, just update valueGen. For GT_JTRUE, for false part,
-                // update valueGen and true part update jumpDestValueGen.
-                AssertionIndex assertionIndex[2] = {(AssertionIndex)tree->GetAssertion(),
-                                                    (tree->OperGet() == GT_JTRUE)
-                                                        ? optFindComplementary((AssertionIndex)tree->GetAssertion())
-                                                        : 0};
-
-                for (unsigned i = 0; i < 2; ++i)
+                AssertionIndex index = tree->GetAssertion();
+                if (index != NO_ASSERTION_INDEX)
                 {
-                    if (assertionIndex[i] > 0)
-                    {
-                        // If GT_JTRUE, and true part use jumpDestValueGen.
-                        ASSERT_TP& gen = (i == 0 && tree->OperGet() == GT_JTRUE) ? jumpDestValueGen : valueGen;
-                        optImpliedAssertions(assertionIndex[i], gen);
-                        BitVecOps::AddElemD(apTraits, gen, assertionIndex[i] - 1);
-                    }
+                    optImpliedAssertions(index, valueGen);
+                    BitVecOps::AddElemD(apTraits, valueGen, index - 1);
                 }
             }
         }
 
-        BitVecOps::Assign(apTraits, block->bbAssertionGen, valueGen);
-        BitVecOps::Assign(apTraits, jumpDestGen[block->bbNum], jumpDestValueGen);
+        if (jtrue != nullptr)
+        {
+            // Copy whatever we have accumulated into jumpDest edge's valueGen.
+            ASSERT_TP jumpDestValueGen = BitVecOps::MakeCopy(apTraits, valueGen);
+
+            AssertionIndex index = jtrue->GetAssertion();
+            if ((index & OAE_INDEX_MASK) != NO_ASSERTION_INDEX)
+            {
+                if ((index & OAE_NEXT_EDGE) != 0)
+                {
+                    index &= OAE_INDEX_MASK;
+                    // Currently OAE_NEXT_EDGE is only used with OAK_NO_THROW assertions
+                    assert(optGetAssertion(index)->assertionKind == OAK_NO_THROW);
+                    // Don't bother with implied assertions, there aren't any for OAK_NO_THROW
+                    BitVecOps::AddElemD(apTraits, valueGen, index - 1);
+                }
+                else
+                {
+                    // If GT_JTRUE, and true path, update jumpDestValueGen.
+                    optImpliedAssertions(index, jumpDestValueGen);
+                    BitVecOps::AddElemD(apTraits, jumpDestValueGen, index - 1);
+
+                    index = optFindComplementary(index);
+                    if (index != NO_ASSERTION_INDEX)
+                    {
+                        // If GT_JTRUE, and false path and we have a complementary assertion available update valueGen
+                        optImpliedAssertions(index, valueGen);
+                        BitVecOps::AddElemD(apTraits, valueGen, index - 1);
+                    }
+                }
+            }
+
+            jumpDestGen[block->bbNum] = jumpDestValueGen;
+        }
+        else
+        {
+            jumpDestGen[block->bbNum] = BitVecOps::MakeEmpty(apTraits);
+        }
+
+        block->bbAssertionGen = valueGen;
 
 #ifdef DEBUG
         if (verbose)
         {
-            printf("\nBB%02u valueGen = %s", block->bbNum, BitVecOps::ToString(apTraits, valueGen));
+            printf("\nBB%02u valueGen = %s", block->bbNum, BitVecOps::ToString(apTraits, block->bbAssertionGen));
             if (block->bbJumpKind == BBJ_COND)
             {
                 printf(" => BB%02u valueGen = %s,", block->bbJumpDest->bbNum,
-                       BitVecOps::ToString(apTraits, jumpDestValueGen));
+                       BitVecOps::ToString(apTraits, jumpDestGen[block->bbNum]));
             }
         }
 #endif
@@ -5070,6 +5118,13 @@ void Compiler::optAssertionPropMain()
                                                        // and thus we must morph, set order, re-link
             for (GenTreePtr tree = stmt->gtStmt.gtStmtList; tree; tree = tree->gtNext)
             {
+                if (tree->OperIs(GT_JTRUE))
+                {
+                    // A GT_TRUE is always the last node in a tree, so we can break here
+                    assert((tree->gtNext == nullptr) && (stmt->gtNext == nullptr));
+                    break;
+                }
+
                 JITDUMP("Propagating %s assertions for BB%02d, stmt [%06d], tree [%06d], tree -> %d\n",
                         BitVecOps::ToString(apTraits, assertions), block->bbNum, dspTreeID(stmt), dspTreeID(tree),
                         tree->GetAssertion());
@@ -5081,16 +5136,12 @@ void Compiler::optAssertionPropMain()
                     tree = newTree;
                 }
 
-                // Is this an assignment to a local variable
-                GenTreeLclVarCommon* lclVarTree = nullptr;
-
                 // If this tree makes an assertion - make it available.
-                if (tree->HasAssertion())
+                AssertionIndex index = tree->GetAssertion();
+                if (index != NO_ASSERTION_INDEX)
                 {
-                    BitVecOps::AddElemD(apTraits, assertions, tree->GetAssertion() - 1);
-
-                    // Also include any implied assertions for the tree node.
-                    optImpliedAssertions((AssertionIndex)tree->GetAssertion(), assertions);
+                    optImpliedAssertions(index, assertions);
+                    BitVecOps::AddElemD(apTraits, assertions, index - 1);
                 }
             }
 
