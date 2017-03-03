@@ -56,7 +56,7 @@ namespace System.Security.Cryptography.Xml.Tests
         [Fact]
         public void SignedXmlHasVerifiableSignature()
         {
-            using (var key = RSA.Create())
+            using (RSA key = RSA.Create())
             {
                 var xmlDoc = new XmlDocument();
                 xmlDoc.PreserveWhitespace = true;

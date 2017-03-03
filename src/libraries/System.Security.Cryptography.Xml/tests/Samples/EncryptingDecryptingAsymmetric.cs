@@ -87,7 +87,7 @@ namespace System.Security.Cryptography.Xml.Tests
         [Fact]
         public void AsymmetricEncryptionRoundtrip()
         {
-            using (var key = RSA.Create())
+            using (RSA key = RSA.Create())
             {
                 XmlDocument xmlDocToEncrypt = LoadXmlFromString(ExampleXml);
                 Encrypt(xmlDocToEncrypt, ExampleXmlRootElement, "EncryptedElement1", key, "rsaKey");
