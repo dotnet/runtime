@@ -2,6 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#if AMD64 || (BIT32 && !ARM)
+#define HAS_CUSTOM_BLOCKS
+#endif
+
 namespace System
 {
     //Only contains static methods.  Does not require serialization
@@ -256,326 +260,175 @@ namespace System
         // This method has different signature for x64 and other platforms and is done for performance reasons.
         internal unsafe static void Memmove(byte* dest, byte* src, nuint len)
         {
-            // P/Invoke into the native version when the buffers are overlapping and the copy needs to be performed backwards
-            // This check can produce false positives for lengths greater than Int32.MaxInt. It is fine because we want to use PInvoke path for the large lengths anyway.
-
-            if ((nuint)dest - (nuint)src < len) goto PInvoke;
-
-            // This is portable version of memcpy. It mirrors what the hand optimized assembly versions of memcpy typically do.
-            //
-            // Ideally, we would just use the cpblk IL instruction here. Unfortunately, cpblk IL instruction is not as efficient as
-            // possible yet and so we have this implementation here for now.
-
-            // Note: It's important that this switch handles lengths at least up to 22.
-            // See notes below near the main loop for why.
-
-            // The switch will be very fast since it can be implemented using a jump
-            // table in assembly. See http://stackoverflow.com/a/449297/4077294 for more info.
-
-            switch (len)
-            {
-                case 0:
-                    return;
-                case 1:
-                    *dest = *src;
-                    return;
-                case 2:
-                    *(short*)dest = *(short*)src;
-                    return;
-                case 3:
-                    *(short*)dest = *(short*)src;
-                    *(dest + 2) = *(src + 2);
-                    return;
-                case 4:
-                    *(int*)dest = *(int*)src;
-                    return;
-                case 5:
-                    *(int*)dest = *(int*)src;
-                    *(dest + 4) = *(src + 4);
-                    return;
-                case 6:
-                    *(int*)dest = *(int*)src;
-                    *(short*)(dest + 4) = *(short*)(src + 4);
-                    return;
-                case 7:
-                    *(int*)dest = *(int*)src;
-                    *(short*)(dest + 4) = *(short*)(src + 4);
-                    *(dest + 6) = *(src + 6);
-                    return;
-                case 8:
-#if BIT64
-                    *(long*)dest = *(long*)src;
+#if AMD64 || (BIT32 && !ARM)
+            const nuint CopyThreshold = 2048;
 #else
-                *(int*)dest = *(int*)src;
-                *(int*)(dest + 4) = *(int*)(src + 4);
+            const nuint CopyThreshold = 512;
+#endif // AMD64 || (BIT32 && !ARM)
+
+            // P/Invoke into the native version when the buffers are overlapping.
+
+            if (((nuint)dest - (nuint)src < len) || ((nuint)src - (nuint)dest < len)) goto PInvoke;
+
+            byte* srcEnd = src + len;
+            byte* destEnd = dest + len;
+
+            if (len <= 16) goto MCPY02;
+            if (len > 64) goto MCPY05;
+
+            MCPY00:
+            // Copy bytes which are multiples of 16 and leave the remainder for MCPY01 to handle.
+            Debug.Assert(len > 16 && len <= 64);
+#if HAS_CUSTOM_BLOCKS
+            *(Block16*)dest = *(Block16*)src;                   // [0,16]
+#elif BIT64
+            *(long*)dest = *(long*)src;
+            *(long*)(dest + 8) = *(long*)(src + 8);             // [0,16]
+#else
+            *(int*)dest = *(int*)src;
+            *(int*)(dest + 4) = *(int*)(src + 4);
+            *(int*)(dest + 8) = *(int*)(src + 8);
+            *(int*)(dest + 12) = *(int*)(src + 12);             // [0,16]
 #endif
-                    return;
-                case 9:
-#if BIT64
-                    *(long*)dest = *(long*)src;
+            if (len <= 32) goto MCPY01;
+#if HAS_CUSTOM_BLOCKS
+            *(Block16*)(dest + 16) = *(Block16*)(src + 16);     // [0,32]
+#elif BIT64
+            *(long*)(dest + 16) = *(long*)(src + 16);
+            *(long*)(dest + 24) = *(long*)(src + 24);           // [0,32]
 #else
-                *(int*)dest = *(int*)src;
-                *(int*)(dest + 4) = *(int*)(src + 4);
+            *(int*)(dest + 16) = *(int*)(src + 16);
+            *(int*)(dest + 20) = *(int*)(src + 20);
+            *(int*)(dest + 24) = *(int*)(src + 24);
+            *(int*)(dest + 28) = *(int*)(src + 28);             // [0,32]
 #endif
-                    *(dest + 8) = *(src + 8);
-                    return;
-                case 10:
-#if BIT64
-                    *(long*)dest = *(long*)src;
+            if (len <= 48) goto MCPY01;
+#if HAS_CUSTOM_BLOCKS
+            *(Block16*)(dest + 32) = *(Block16*)(src + 32);     // [0,48]
+#elif BIT64
+            *(long*)(dest + 32) = *(long*)(src + 32);
+            *(long*)(dest + 40) = *(long*)(src + 40);           // [0,48]
 #else
-                *(int*)dest = *(int*)src;
-                *(int*)(dest + 4) = *(int*)(src + 4);
-#endif
-                    *(short*)(dest + 8) = *(short*)(src + 8);
-                    return;
-                case 11:
-#if BIT64
-                    *(long*)dest = *(long*)src;
-#else
-                *(int*)dest = *(int*)src;
-                *(int*)(dest + 4) = *(int*)(src + 4);
-#endif
-                    *(short*)(dest + 8) = *(short*)(src + 8);
-                    *(dest + 10) = *(src + 10);
-                    return;
-                case 12:
-#if BIT64
-                    *(long*)dest = *(long*)src;
-#else
-                *(int*)dest = *(int*)src;
-                *(int*)(dest + 4) = *(int*)(src + 4);
-#endif
-                    *(int*)(dest + 8) = *(int*)(src + 8);
-                    return;
-                case 13:
-#if BIT64
-                    *(long*)dest = *(long*)src;
-#else
-                *(int*)dest = *(int*)src;
-                *(int*)(dest + 4) = *(int*)(src + 4);
-#endif
-                    *(int*)(dest + 8) = *(int*)(src + 8);
-                    *(dest + 12) = *(src + 12);
-                    return;
-                case 14:
-#if BIT64
-                    *(long*)dest = *(long*)src;
-#else
-                *(int*)dest = *(int*)src;
-                *(int*)(dest + 4) = *(int*)(src + 4);
-#endif
-                    *(int*)(dest + 8) = *(int*)(src + 8);
-                    *(short*)(dest + 12) = *(short*)(src + 12);
-                    return;
-                case 15:
-#if BIT64
-                    *(long*)dest = *(long*)src;
-#else
-                *(int*)dest = *(int*)src;
-                *(int*)(dest + 4) = *(int*)(src + 4);
-#endif
-                    *(int*)(dest + 8) = *(int*)(src + 8);
-                    *(short*)(dest + 12) = *(short*)(src + 12);
-                    *(dest + 14) = *(src + 14);
-                    return;
-                case 16:
-#if BIT64
-                    *(long*)dest = *(long*)src;
-                    *(long*)(dest + 8) = *(long*)(src + 8);
-#else
-                *(int*)dest = *(int*)src;
-                *(int*)(dest + 4) = *(int*)(src + 4);
-                *(int*)(dest + 8) = *(int*)(src + 8);
-                *(int*)(dest + 12) = *(int*)(src + 12);
-#endif
-                    return;
-                case 17:
-#if BIT64
-                    *(long*)dest = *(long*)src;
-                    *(long*)(dest + 8) = *(long*)(src + 8);
-#else
-                *(int*)dest = *(int*)src;
-                *(int*)(dest + 4) = *(int*)(src + 4);
-                *(int*)(dest + 8) = *(int*)(src + 8);
-                *(int*)(dest + 12) = *(int*)(src + 12);
-#endif
-                    *(dest + 16) = *(src + 16);
-                    return;
-                case 18:
-#if BIT64
-                    *(long*)dest = *(long*)src;
-                    *(long*)(dest + 8) = *(long*)(src + 8);
-#else
-                *(int*)dest = *(int*)src;
-                *(int*)(dest + 4) = *(int*)(src + 4);
-                *(int*)(dest + 8) = *(int*)(src + 8);
-                *(int*)(dest + 12) = *(int*)(src + 12);
-#endif
-                    *(short*)(dest + 16) = *(short*)(src + 16);
-                    return;
-                case 19:
-#if BIT64
-                    *(long*)dest = *(long*)src;
-                    *(long*)(dest + 8) = *(long*)(src + 8);
-#else
-                *(int*)dest = *(int*)src;
-                *(int*)(dest + 4) = *(int*)(src + 4);
-                *(int*)(dest + 8) = *(int*)(src + 8);
-                *(int*)(dest + 12) = *(int*)(src + 12);
-#endif
-                    *(short*)(dest + 16) = *(short*)(src + 16);
-                    *(dest + 18) = *(src + 18);
-                    return;
-                case 20:
-#if BIT64
-                    *(long*)dest = *(long*)src;
-                    *(long*)(dest + 8) = *(long*)(src + 8);
-#else
-                *(int*)dest = *(int*)src;
-                *(int*)(dest + 4) = *(int*)(src + 4);
-                *(int*)(dest + 8) = *(int*)(src + 8);
-                *(int*)(dest + 12) = *(int*)(src + 12);
-#endif
-                    *(int*)(dest + 16) = *(int*)(src + 16);
-                    return;
-                case 21:
-#if BIT64
-                    *(long*)dest = *(long*)src;
-                    *(long*)(dest + 8) = *(long*)(src + 8);
-#else
-                *(int*)dest = *(int*)src;
-                *(int*)(dest + 4) = *(int*)(src + 4);
-                *(int*)(dest + 8) = *(int*)(src + 8);
-                *(int*)(dest + 12) = *(int*)(src + 12);
-#endif
-                    *(int*)(dest + 16) = *(int*)(src + 16);
-                    *(dest + 20) = *(src + 20);
-                    return;
-                case 22:
-#if BIT64
-                    *(long*)dest = *(long*)src;
-                    *(long*)(dest + 8) = *(long*)(src + 8);
-#else
-                *(int*)dest = *(int*)src;
-                *(int*)(dest + 4) = *(int*)(src + 4);
-                *(int*)(dest + 8) = *(int*)(src + 8);
-                *(int*)(dest + 12) = *(int*)(src + 12);
-#endif
-                    *(int*)(dest + 16) = *(int*)(src + 16);
-                    *(short*)(dest + 20) = *(short*)(src + 20);
-                    return;
-            }
-
-            // P/Invoke into the native version for large lengths
-            if (len >= 512) goto PInvoke;
-
-            nuint i = 0; // byte offset at which we're copying
-
-            if (((int)dest & 3) != 0)
-            {
-                if (((int)dest & 1) != 0)
-                {
-                    *(dest + i) = *(src + i);
-                    i += 1;
-                    if (((int)dest & 2) != 0)
-                        goto IntAligned;
-                }
-                *(short*)(dest + i) = *(short*)(src + i);
-                i += 2;
-            }
-
-        IntAligned:
-
-#if BIT64
-            // On 64-bit IntPtr.Size == 8, so we want to advance to the next 8-aligned address. If
-            // (int)dest % 8 is 0, 5, 6, or 7, we will already have advanced by 0, 3, 2, or 1
-            // bytes to the next aligned address (respectively), so do nothing. On the other hand,
-            // if it is 1, 2, 3, or 4 we will want to copy-and-advance another 4 bytes until
-            // we're aligned.
-            // The thing 1, 2, 3, and 4 have in common that the others don't is that if you
-            // subtract one from them, their 3rd lsb will not be set. Hence, the below check.
-
-            if ((((int)dest - 1) & 4) == 0)
-            {
-                *(int*)(dest + i) = *(int*)(src + i);
-                i += 4;
-            }
-#endif // BIT64
-
-            nuint end = len - 16;
-            len -= i; // lower 4 bits of len represent how many bytes are left *after* the unrolled loop
-
-            // We know due to the above switch-case that this loop will always run 1 iteration; max
-            // bytes we copy before checking is 23 (7 to align the pointers, 16 for 1 iteration) so
-            // the switch handles lengths 0-22.
-            Debug.Assert(end >= 7 && i <= end);
-
-            // This is separated out into a different variable, so the i + 16 addition can be
-            // performed at the start of the pipeline and the loop condition does not have
-            // a dependency on the writes.
-            nuint counter;
-
-            do
-            {
-                counter = i + 16;
-
-                // This loop looks very costly since there appear to be a bunch of temporary values
-                // being created with the adds, but the jit (for x86 anyways) will convert each of
-                // these to use memory addressing operands.
-
-                // So the only cost is a bit of code size, which is made up for by the fact that
-                // we save on writes to dest/src.
-
-#if BIT64
-                *(long*)(dest + i) = *(long*)(src + i);
-                *(long*)(dest + i + 8) = *(long*)(src + i + 8);
-#else
-                *(int*)(dest + i) = *(int*)(src + i);
-                *(int*)(dest + i + 4) = *(int*)(src + i + 4);
-                *(int*)(dest + i + 8) = *(int*)(src + i + 8);
-                *(int*)(dest + i + 12) = *(int*)(src + i + 12);
+            *(int*)(dest + 32) = *(int*)(src + 32);
+            *(int*)(dest + 36) = *(int*)(src + 36);
+            *(int*)(dest + 40) = *(int*)(src + 40);
+            *(int*)(dest + 44) = *(int*)(src + 44);             // [0,48]
 #endif
 
-                i = counter;
-
-                // See notes above for why this wasn't used instead
-                // i += 16;
-            }
-            while (counter <= end);
-
-            if ((len & 8) != 0)
-            {
-#if BIT64
-                *(long*)(dest + i) = *(long*)(src + i);
+            MCPY01:
+            // Unconditionally copy the last 16 bytes using destEnd and srcEnd and return.
+            Debug.Assert(len > 16 && len <= 64);
+#if HAS_CUSTOM_BLOCKS
+            *(Block16*)(destEnd - 16) = *(Block16*)(srcEnd - 16);
+#elif BIT64
+            *(long*)(destEnd - 16) = *(long*)(srcEnd - 16);
+            *(long*)(destEnd - 8) = *(long*)(srcEnd - 8);
 #else
-                *(int*)(dest + i) = *(int*)(src + i);
-                *(int*)(dest + i + 4) = *(int*)(src + i + 4);
+            *(int*)(destEnd - 16) = *(int*)(srcEnd - 16);
+            *(int*)(destEnd - 12) = *(int*)(srcEnd - 12);
+            *(int*)(destEnd - 8) = *(int*)(srcEnd - 8);
+            *(int*)(destEnd - 4) = *(int*)(srcEnd - 4);
 #endif
-                i += 8;
-            }
-            if ((len & 4) != 0)
-            {
-                *(int*)(dest + i) = *(int*)(src + i);
-                i += 4;
-            }
-            if ((len & 2) != 0)
-            {
-                *(short*)(dest + i) = *(short*)(src + i);
-                i += 2;
-            }
-            if ((len & 1) != 0)
-            {
-                *(dest + i) = *(src + i);
-                // We're not using i after this, so not needed
-                // i += 1;
-            }
-
             return;
 
-        PInvoke:
+            MCPY02:
+            // Copy the first 8 bytes and then unconditionally copy the last 8 bytes and return.
+            if ((len & 24) == 0) goto MCPY03;
+            Debug.Assert(len >= 8 && len <= 16);
+#if BIT64
+            *(long*)dest = *(long*)src;
+            *(long*)(destEnd - 8) = *(long*)(srcEnd - 8);
+#else
+            *(int*)dest = *(int*)src;
+            *(int*)(dest + 4) = *(int*)(src + 4);
+            *(int*)(destEnd - 8) = *(int*)(srcEnd - 8);
+            *(int*)(destEnd - 4) = *(int*)(srcEnd - 4);
+#endif
+            return;
+
+            MCPY03:
+            // Copy the first 4 bytes and then unconditionally copy the last 4 bytes and return.
+            if ((len & 4) == 0) goto MCPY04;
+            Debug.Assert(len >= 4 && len < 8);
+            *(int*)dest = *(int*)src;
+            *(int*)(destEnd - 4) = *(int*)(srcEnd - 4);
+            return;
+
+            MCPY04:
+            // Copy the first byte. For pending bytes, do an unconditionally copy of the last 2 bytes and return.
+            Debug.Assert(len < 4);
+            if (len == 0) return;
+            *dest = *src;
+            if ((len & 2) == 0) return;
+            *(short*)(destEnd - 2) = *(short*)(srcEnd - 2);
+            return;
+
+            MCPY05:
+            // PInvoke to the native version when the copy length exceeds the threshold.
+            if (len > CopyThreshold)
+            {
+                goto PInvoke;
+            }
+
+            // Copy 64-bytes at a time until the remainder is less than 64.
+            // If remainder is greater than 16 bytes, then jump to MCPY00. Otherwise, unconditionally copy the last 16 bytes and return.
+            Debug.Assert(len > 64 && len <= CopyThreshold);
+            nuint n = len >> 6;
+
+            MCPY06:
+#if HAS_CUSTOM_BLOCKS
+            *(Block64*)dest = *(Block64*)src;
+#elif BIT64
+            *(long*)dest = *(long*)src;
+            *(long*)(dest + 8) = *(long*)(src + 8);
+            *(long*)(dest + 16) = *(long*)(src + 16);
+            *(long*)(dest + 24) = *(long*)(src + 24);
+            *(long*)(dest + 32) = *(long*)(src + 32);
+            *(long*)(dest + 40) = *(long*)(src + 40);
+            *(long*)(dest + 48) = *(long*)(src + 48);
+            *(long*)(dest + 56) = *(long*)(src + 56);
+#else
+            *(int*)dest = *(int*)src;
+            *(int*)(dest + 4) = *(int*)(src + 4);
+            *(int*)(dest + 8) = *(int*)(src + 8);
+            *(int*)(dest + 12) = *(int*)(src + 12);
+            *(int*)(dest + 16) = *(int*)(src + 16);
+            *(int*)(dest + 20) = *(int*)(src + 20);
+            *(int*)(dest + 24) = *(int*)(src + 24);
+            *(int*)(dest + 28) = *(int*)(src + 28);
+            *(int*)(dest + 32) = *(int*)(src + 32);
+            *(int*)(dest + 36) = *(int*)(src + 36);
+            *(int*)(dest + 40) = *(int*)(src + 40);
+            *(int*)(dest + 44) = *(int*)(src + 44);
+            *(int*)(dest + 48) = *(int*)(src + 48);
+            *(int*)(dest + 52) = *(int*)(src + 52);
+            *(int*)(dest + 56) = *(int*)(src + 56);
+            *(int*)(dest + 60) = *(int*)(src + 60);
+#endif
+            dest += 64;
+            src += 64;
+            n--;
+            if (n != 0) goto MCPY06;
+
+            len %= 64;
+            if (len > 16) goto MCPY00;
+#if HAS_CUSTOM_BLOCKS
+            *(Block16*)(destEnd - 16) = *(Block16*)(srcEnd - 16);
+#elif BIT64
+            *(long*)(destEnd - 16) = *(long*)(srcEnd - 16);
+            *(long*)(destEnd - 8) = *(long*)(srcEnd - 8);
+#else
+            *(int*)(destEnd - 16) = *(int*)(srcEnd - 16);
+            *(int*)(destEnd - 12) = *(int*)(srcEnd - 12);
+            *(int*)(destEnd - 8) = *(int*)(srcEnd - 8);
+            *(int*)(destEnd - 4) = *(int*)(srcEnd - 4);
+#endif
+            return;
+
+            PInvoke:
             _Memmove(dest, src, len);
         }
-
+        
         // Non-inlinable wrapper around the QCall that avoids poluting the fast path
         // with P/Invoke prolog/epilog.
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
@@ -618,5 +471,13 @@ namespace System
             Memmove((byte*)destination, (byte*)source, checked((uint)sourceBytesToCopy));
 #endif // BIT64
         }
+        
+#if HAS_CUSTOM_BLOCKS        
+        [StructLayout(LayoutKind.Sequential, Size = 16)]
+        private struct Block16 { }
+
+        [StructLayout(LayoutKind.Sequential, Size = 64)]
+        private struct Block64 { } 
+#endif // HAS_CUSTOM_BLOCKS         
     }
 }
