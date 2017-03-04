@@ -9508,7 +9508,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
     int  prefixFlags = 0;
     bool explicitTailCall, constraintCall, readonlyCall;
 
-    bool     insertLdloc = false; // set by CEE_DUP and cleared by following store
     typeInfo tiRetVal;
 
     unsigned numArgs = info.compArgsCount;
@@ -10077,27 +10076,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (op1->gtOper == GT_LCL_VAR && lclNum == op1->gtLclVarCommon.gtLclNum)
                 {
-                    if (insertLdloc)
-                    {
-                        // This is a sequence of (ldloc, dup, stloc).  Can simplify
-                        // to (ldloc, stloc).  Goto LDVAR to reconstruct the ldloc node.
-                        CLANG_FORMAT_COMMENT_ANCHOR;
-
-#ifdef DEBUG
-                        if (tiVerificationNeeded)
-                        {
-                            assert(
-                                typeInfo::AreEquivalent(tiRetVal, NormaliseForStack(lvaTable[lclNum].lvVerTypeInfo)));
-                        }
-#endif
-
-                        op1         = nullptr;
-                        insertLdloc = false;
-
-                        impLoadVar(lclNum, opcodeOffs + sz + 1);
-                        break;
-                    }
-                    else if (opts.compDbgCode)
+                    if (opts.compDbgCode)
                     {
                         op1 = gtNewNothingNode();
                         goto SPILL_APPEND;
@@ -10152,26 +10131,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         op1->gtType = TYP_BYREF;
                     }
                     op1 = gtNewAssignNode(op2, op1);
-                }
-
-                /* If insertLdloc is true, then we need to insert a ldloc following the
-                   stloc.  This is done when converting a (dup, stloc) sequence into
-                   a (stloc, ldloc) sequence. */
-
-                if (insertLdloc)
-                {
-                    // From SPILL_APPEND
-                    impAppendTree(op1, (unsigned)CHECK_SPILL_ALL, impCurStmtOffs);
-
-#ifdef DEBUG
-                    // From DONE_APPEND
-                    impNoteLastILoffs();
-#endif
-                    op1         = nullptr;
-                    insertLdloc = false;
-
-                    impLoadVar(lclNum, opcodeOffs + sz + 1, tiRetVal);
-                    break;
                 }
 
                 goto SPILL_APPEND;
@@ -11991,48 +11950,24 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     impStackTop(0);
                 }
 
-                // Convert a (dup, stloc) sequence into a (stloc, ldloc) sequence in the following cases:
-                // - If this is non-debug code - so that CSE will recognize the two as equal.
-                //   This helps eliminate a redundant bounds check in cases such as:
-                //       ariba[i+3] += some_value;
-                // - If the top of the stack is a non-leaf that may be expensive to clone.
-
-                if (codeAddr < codeEndp)
-                {
-                    OPCODE nextOpcode = (OPCODE)getU1LittleEndian(codeAddr);
-                    if (impIsAnySTLOC(nextOpcode))
-                    {
-                        if (!opts.compDbgCode)
-                        {
-                            insertLdloc = true;
-                            break;
-                        }
-                        GenTree* stackTop = impStackTop().val;
-                        if (!stackTop->IsIntegralConst(0) && !stackTop->IsFPZero() && !stackTop->IsLocal())
-                        {
-                            insertLdloc = true;
-                            break;
-                        }
-                    }
-                }
-
-                /* Pull the top value from the stack */
+                // If the expression to dup is simple, just clone it.
+                // Otherwise spill it to a temp, and reload the temp
+                // twice.
                 op1 = impPopStack(tiRetVal);
 
-                /* Clone the value */
+                if (!opts.compDbgCode && !op1->IsIntegralConst(0) && !op1->IsFPZero() && !op1->IsLocal())
+                {
+                    const unsigned tmpNum = lvaGrabTemp(true DEBUGARG("dup spill"));
+                    impAssignTempGen(tmpNum, op1, tiRetVal.GetClassHandle(), (unsigned)CHECK_SPILL_ALL);
+                    var_types type = genActualType(lvaTable[tmpNum].TypeGet());
+                    op1            = gtNewLclvNode(tmpNum, type);
+                }
+
                 op1 = impCloneExpr(op1, &op2, tiRetVal.GetClassHandle(), (unsigned)CHECK_SPILL_ALL,
                                    nullptr DEBUGARG("DUP instruction"));
 
-                /* Either the tree started with no global effects, or impCloneExpr
-                   evaluated the tree to a temp and returned two copies of that
-                   temp. Either way, neither op1 nor op2 should have side effects.
-                */
                 assert(!(op1->gtFlags & GTF_GLOB_EFFECT) && !(op2->gtFlags & GTF_GLOB_EFFECT));
-
-                /* Push the tree/temp back on the stack */
                 impPushOnStack(op1, tiRetVal);
-
-                /* Push the copy on the stack */
                 impPushOnStack(op2, tiRetVal);
 
                 break;
@@ -14870,10 +14805,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
         prevOpcode = opcode;
 
         prefixFlags = 0;
-        assert(!insertLdloc || opcode == CEE_DUP);
     }
-
-    assert(!insertLdloc);
 
     return;
 #undef _impResolveToken
