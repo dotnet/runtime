@@ -326,10 +326,9 @@ namespace System.Security.Cryptography.Xml.Tests
         [Fact]
         public void ExcC14NSpecExample5()
         {
-            string entityPath = "file://doc.txt";
             XmlPreloadedResolver resolver = new XmlPreloadedResolver();
-            resolver.Add(new Uri(entityPath), "world");
-            string input = ExcC14NSpecExample5Input(entityPath);
+            resolver.Add(TestHelpers.ToUri("doc.txt"), "world");
+            string input = ExcC14NSpecExample5Input;
             string res = ExecuteXmlDSigExcC14NTransform(input, resolver);
             Assert.Equal(ExcC14NSpecExample5Output, res);
         }
@@ -499,11 +498,11 @@ namespace System.Security.Cryptography.Xml.Tests
         // Example 5 from ExcC14N spec - Entity References: 
         // http://www.w3.org/TR/xml-c14n#Example-Entities
         //
-        static string ExcC14NSpecExample5Input(string path) =>
+        static string ExcC14NSpecExample5Input =>
                 "<!DOCTYPE doc [\n" +
                 "<!ATTLIST doc attrExtEnt ENTITY #IMPLIED>\n" +
                 "<!ENTITY ent1 \"Hello\">\n" +
-                $"<!ENTITY ent2 SYSTEM \"{TestHelpers.EscapePath(path)}\">\n" +
+                $"<!ENTITY ent2 SYSTEM \"doc.txt\">\n" +
                 "<!ENTITY entExt SYSTEM \"earth.gif\" NDATA gif>\n" +
                 "<!NOTATION gif SYSTEM \"viewgif.exe\">\n" +
                 "]>\n" +
@@ -511,7 +510,7 @@ namespace System.Security.Cryptography.Xml.Tests
                 "   &ent1;, &ent2;!\n" +
                 "</doc>\n" +
                 "\n" +
-                $"<!-- Let {TestHelpers.EscapePath(path)} contain \"world\" (excluding the quotes) -->\n";
+                $"<!-- Let doc.txt contain \"world\" (excluding the quotes) -->\n";
         static string ExcC14NSpecExample5Output =
                 "<doc attrExtEnt=\"entExt\">\n" +
                 "   Hello, world!\n" +

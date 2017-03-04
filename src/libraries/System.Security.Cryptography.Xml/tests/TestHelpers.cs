@@ -6,6 +6,7 @@ using System;
 using System.IO;
 using System.Text;
 using System.Xml;
+using System.Xml.Resolvers;
 
 namespace System.Security.Cryptography.Xml.Tests
 {
@@ -151,6 +152,21 @@ namespace System.Security.Cryptography.Xml.Tests
                 transform.LoadInput(doc);
                 return StreamToString((Stream)transform.GetOutput(), actualEncoding);
             }
+        }
+
+        /// <summary>
+        /// Convert <paramref name="fileName"/> to a full URI for referencing 
+        /// in an <see cref="XmlPreloadedResolver"/>.
+        /// </summary>
+        /// <param name="fileName">
+        /// The file name.
+        /// </param>
+        /// <returns>
+        /// The created <see cref="Uri"/>.
+        /// </returns>
+        public static Uri ToUri(string fileName)
+        {
+            return new Uri("file:///" + Path.Combine(Directory.GetCurrentDirectory(), fileName));
         }
     }
 }
