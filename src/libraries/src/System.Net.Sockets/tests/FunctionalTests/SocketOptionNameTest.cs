@@ -14,63 +14,42 @@ namespace System.Net.Sockets.Tests
 {
     public class SocketOptionNameTest
     {
-        private static bool SocketsReuseUnicastPortSupport
-        {
-            get
-            {
-                return Capability.SocketsReuseUnicastPortSupport().HasValue &&
-                    Capability.SocketsReuseUnicastPortSupport().Value;
-            }
-        }
-
-        private static bool NoSocketsReuseUnicastPortSupport
-        {
-            get
-            {
-                return Capability.SocketsReuseUnicastPortSupport().HasValue &&
-                    !Capability.SocketsReuseUnicastPortSupport().Value;
-            }
-        }
+        private static bool SocketsReuseUnicastPortSupport => Capability.SocketsReuseUnicastPortSupport().HasValue;
 
         [OuterLoop] // TODO: Issue #11345
-        [ConditionalFact(nameof(NoSocketsReuseUnicastPortSupport))]
-        public void ReuseUnicastPort_CreateSocketGetOption_NoSocketsReuseUnicastPortSupport_Throws()
+        [ConditionalFact(nameof(SocketsReuseUnicastPortSupport))]
+        public void ReuseUnicastPort_CreateSocketGetOption()
         {
-            var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-
-            Assert.Throws<SocketException>(() =>
-                socket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseUnicastPort));
+            using (var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                if (Capability.SocketsReuseUnicastPortSupport().Value)
+                {
+                    Assert.Equal(0, (int)socket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseUnicastPort));
+                }
+                else
+                {
+                    Assert.Throws<SocketException>(() => socket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseUnicastPort));
+                }
+            }
         }
 
         [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(nameof(SocketsReuseUnicastPortSupport))]
-        public void ReuseUnicastPort_CreateSocketGetOption_SocketsReuseUnicastPortSupport_OptionIsZero()
+        public void ReuseUnicastPort_CreateSocketSetOption()
         {
-            var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-
-            var optionValue = (int)socket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseUnicastPort);
-            Assert.Equal(0, optionValue);
-        }
-
-        [OuterLoop] // TODO: Issue #11345
-        [ConditionalFact(nameof(NoSocketsReuseUnicastPortSupport))]
-        public void ReuseUnicastPort_CreateSocketSetOption_NoSocketsReuseUnicastPortSupport_Throws()
-        {
-            var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-
-            Assert.Throws<SocketException>(() =>
-                socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseUnicastPort, 1));
-        }
-
-        [OuterLoop] // TODO: Issue #11345
-        [ConditionalFact(nameof(SocketsReuseUnicastPortSupport))]
-        public void ReuseUnicastPort_CreateSocketSetOptionToZeroAndGetOption_SocketsReuseUnicastPortSupport_OptionIsZero()
-        {
-            var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-
-            socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseUnicastPort, 0);
-            int optionValue = (int)socket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseUnicastPort);
-            Assert.Equal(0, optionValue);
+            using (var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                if (Capability.SocketsReuseUnicastPortSupport().Value)
+                {
+                    socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseUnicastPort, 0);
+                    int optionValue = (int)socket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseUnicastPort);
+                    Assert.Equal(0, optionValue);
+                }
+                else
+                {
+                    Assert.Throws<SocketException>(() => socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseUnicastPort, 1));
+                }
+            }
         }
 
         // TODO: Issue #4887

@@ -4,7 +4,7 @@
 
 using System.Net.Test.Common;
 using System.Threading;
-
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -79,6 +79,37 @@ namespace System.Net.Sockets.Tests
                     Assert.True(completed.WaitOne(TestSettings.PassingTestTimeout), "IPv6: Timed out while waiting for connection");
                     Assert.Equal<SocketError>(SocketError.Success, args.SocketError);
                 }
+            }
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Theory]
+        [InlineData(AddressFamily.InterNetwork)]
+        [InlineData(AddressFamily.InterNetworkV6)]
+        public async Task ConnectTaskAsync_IPAddresss_Success(AddressFamily family)
+        {
+            int port;
+            using (SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, family == AddressFamily.InterNetwork ? IPAddress.Loopback : IPAddress.IPv6Loopback, out port))
+            using (Socket client = new Socket(family, SocketType.Stream, ProtocolType.Tcp))
+            {
+                await client.ConnectAsync(new IPAddress[] { IPAddress.Loopback, IPAddress.IPv6Loopback }, port);
+                Assert.True(client.Connected);
+            }
+        }
+
+        [PlatformSpecific(TestPlatforms.Windows)] // Unix currently does not support Disconnect
+        [OuterLoop] // TODO: Issue #11345
+        [Fact]
+        public async Task Connect_AfterDisconnect_Fails()
+        {
+            int port;
+            using (SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, IPAddress.Loopback, out port))
+            using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                await client.ConnectAsync(IPAddress.Loopback, port);
+                client.Disconnect(reuseSocket: false);
+                Assert.Throws<InvalidOperationException>(() => client.Connect(IPAddress.Loopback, port));
+                Assert.Throws<InvalidOperationException>(() => client.Connect(new IPEndPoint(IPAddress.Loopback, port)));
             }
         }
     }
