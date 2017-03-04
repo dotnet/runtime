@@ -279,7 +279,7 @@ namespace System.Security.Cryptography.Xml.Tests
                 "<!DOCTYPE doc [\n" +
                 "<!ATTLIST doc attrExtEnt ENTITY #IMPLIED>\n" +
                 "<!ENTITY ent1 \"Hello\">\n" +
-                $"<!ENTITY ent2 SYSTEM \"{path}\">\n" +
+                $"<!ENTITY ent2 SYSTEM \"{TestHelpers.EscapePath(path)}\">\n" +
                 "<!ENTITY entExt SYSTEM \"earth.gif\" NDATA gif>\n" +
                 "<!NOTATION gif SYSTEM \"viewgif.exe\">\n" +
                 "]>\n" +
@@ -287,12 +287,12 @@ namespace System.Security.Cryptography.Xml.Tests
                 "   &ent1;, &ent2;!\n" +
                 "</doc>\n" +
                 "\n" +
-                $"<!-- Let {path}.txt contain \"world\" (excluding the quotes) -->\n";
-        static string C14NSpecExample5Output(string worldName) =>
+                $"<!-- Let {TestHelpers.EscapePath(path)} contain \"world\" (excluding the quotes) -->\n";
+        static string C14NSpecExample5Output(string path) =>
                 "<doc attrExtEnt=\"entExt\">\n" +
                 "   Hello, world!\n" +
                 "</doc>\n" +
-                $"<!-- Let {worldName}.txt contain \"world\" (excluding the quotes) -->";
+                $"<!-- Let {TestHelpers.EscapePath(path)} contain \"world\" (excluding the quotes) -->";
 
         //
         // Example 6 from C14N spec - UTF-8 Encoding: 
