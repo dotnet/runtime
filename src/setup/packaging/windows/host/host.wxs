@@ -9,8 +9,7 @@
         <MediaTemplate CompressionLevel="high" EmbedCab="yes" />
 
         <Feature Id="MainFeature" Title="Main Feature" Level="1">
-            <ComponentGroupRef Id="InstallFiles" />
-            <ComponentGroupRef Id="AuthoredRegistryKeys"/>
+            <ComponentGroupRef Id="InstallSharedHostandDetectionKeys" />
         </Feature>
         <Feature Id="Provider" Absent="disallow" AllowAdvertise="no" Description="Used for Ref Counting" Display="hidden" Level="1" InstallDefault="local" Title="RefCounting" TypicalDefault="install">
             <ComponentRef Id="$(var.DependencyKeyId)" />
@@ -35,9 +34,13 @@
         </Directory>
     </Fragment>
     <Fragment>
-        <ComponentGroup Id="InstallFiles">
-            <Component Id="cmpCoreHost" Directory="DOTNETHOME" Guid="{45399BBB-DDA5-4386-A2E9-618FB3C54A18}">
+        <ComponentGroup Id="InstallSharedHostandDetectionKeys">
+            <Component Id="cmpCoreHost" Directory="DOTNETHOME" Guid="{45399BBB-DDA5-4386-A2E9-618FB3C54A18}" >
                 <File Id="fileCoreHostExe" KeyPath="yes" Source="$(var.HostSrc)\dotnet.exe" />
+                <RegistryKey Root="HKLM" Key="SOFTWARE\dotnet\Setup\InstalledVersions\$(var.Platform)\sharedhost">
+                  <RegistryValue Action="write" Name="Version" Type="string" Value="$(var.NugetVersion)"/>
+                </RegistryKey>
+                <Environment Id="E_PATH" Name="PATH" Value="[DOTNETHOME]" Part="last" Action="set" System="yes" />
             </Component>
             <Component Id="cmpLicenseFiles" Directory="DOTNETHOME" Guid="{A61CBE5B-1282-4F29-90AD-63597AA2372E}">
                 <File Id="fileLicenseTxt" KeyPath="yes" Source="$(var.HostSrc)\LICENSE.txt" />

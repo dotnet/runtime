@@ -17,15 +17,13 @@
   <?if $(var.Platform)=x86?>
   <?define Program_Files="ProgramFilesFolder"?>
   <?define Win64AttributeValue=no?>
-  <?define UpgradeCode="66EBF603-F032-4595-B914-10CC99BBED86"?>
   <?elseif $(var.Platform)=x64?>
   <?define Program_Files="ProgramFiles64Folder"?>
   <?define Win64AttributeValue=yes?>
-  <?define UpgradeCode="4553594B-D821-40E0-9A54-9697B13E344C"?>
   <?else?>
   <?error Invalid Platform ($(var.Platform))?>
   <?endif?>
 
-  <?define DependencyKey   = "Dotnet_CLI_SharedHost_$(var.Platform)"?>
+  <?define DependencyKey   = "Dotnet_CLI_SharedHost_$(var.BuildVersion)_$(var.Platform)"?>
   <?define DependencyKeyId = "$(var.DependencyKey)" ?>
 </Include>
