@@ -1,12 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-#pragma warning disable 0420
 
-// =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
-//
-//
-//
 // --------------------------------------------------------------------------------------
 //
 // A class that provides a simple, lightweight implementation of lazy initialization, 
@@ -15,14 +10,13 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-using System.Runtime;
-using System.Runtime.InteropServices;
-using System.Security;
+#pragma warning disable 0420
+
 using System.Diagnostics;
+using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Threading;
-using System.Diagnostics.Contracts;
-using System.Runtime.ExceptionServices;
 
 namespace System
 {
@@ -155,7 +149,7 @@ namespace System
                     return new LazyHelper(state);
 
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(mode), Environment.GetResourceString("Lazy_ctor_ModeInvalid"));
+                    throw new ArgumentOutOfRangeException(nameof(mode), SR.Lazy_ctor_ModeInvalid);
             }
         }
 
@@ -167,7 +161,7 @@ namespace System
             }
             catch (MissingMethodException)
             {
-                throw new MissingMemberException(Environment.GetResourceString("Lazy_CreateValue_NoParameterlessCtorForT"));
+                throw new MissingMemberException(SR.Lazy_CreateValue_NoParameterlessCtorForT);
             }
         }
 
@@ -329,7 +323,7 @@ namespace System
             {
                 Func<T> factory = _factory;
                 if (factory == null)
-                    throw new InvalidOperationException(Environment.GetResourceString("Lazy_Value_RecursiveCallsToValue"));
+                    throw new InvalidOperationException(SR.Lazy_Value_RecursiveCallsToValue);
                 _factory = null;
 
                 _value = factory();
@@ -464,7 +458,7 @@ namespace System
         /// </exception>
         public override string ToString()
         {
-            return IsValueCreated ? Value.ToString() : Environment.GetResourceString("Lazy_ToString_ValueNotCreated");
+            return IsValueCreated ? Value.ToString() : SR.Lazy_ToString_ValueNotCreated;
         }
 
         /// <summary>Gets the value of the Lazy&lt;T&gt; for debugging display purposes.</summary>
@@ -531,38 +525,38 @@ namespace System
     internal sealed class System_LazyDebugView<T>
     {
         //The Lazy object being viewed.
-        private readonly Lazy<T> m_lazy;
+        private readonly Lazy<T> _lazy;
 
         /// <summary>Constructs a new debugger view object for the provided Lazy object.</summary>
         /// <param name="lazy">A Lazy object to browse in the debugger.</param>
         public System_LazyDebugView(Lazy<T> lazy)
         {
-            m_lazy = lazy;
+            _lazy = lazy;
         }
 
         /// <summary>Returns whether the Lazy object is initialized or not.</summary>
         public bool IsValueCreated
         {
-            get { return m_lazy.IsValueCreated; }
+            get { return _lazy.IsValueCreated; }
         }
 
         /// <summary>Returns the value of the Lazy object.</summary>
         public T Value
         {
             get
-            { return m_lazy.ValueForDebugDisplay; }
+            { return _lazy.ValueForDebugDisplay; }
         }
 
         /// <summary>Returns the execution mode of the Lazy object</summary>
         public LazyThreadSafetyMode? Mode
         {
-            get { return m_lazy.Mode; }
+            get { return _lazy.Mode; }
         }
 
         /// <summary>Returns the execution mode of the Lazy object</summary>
         public bool IsValueFaulted
         {
-            get { return m_lazy.IsValueFaulted; }
+            get { return _lazy.IsValueFaulted; }
         }
     }
 }
