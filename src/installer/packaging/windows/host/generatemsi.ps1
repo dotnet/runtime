@@ -10,7 +10,8 @@ param(
     [Parameter(Mandatory=$true)][string]$SharedHostNugetVersion,
     [Parameter(Mandatory=$true)][string]$Architecture,
     [Parameter(Mandatory=$true)][string]$TargetArchitecture,
-    [Parameter(Mandatory=$true)][string]$WixObjRoot
+    [Parameter(Mandatory=$true)][string]$WixObjRoot,
+    [Parameter(Mandatory=$true)][string]$SharedHostUpgradeCode
 )
 
 . "$PSScriptRoot\..\..\..\scripts\common\_common.ps1"
@@ -33,10 +34,10 @@ function RunCandle
         -dBuildVersion="$SharedHostMSIVersion" `
         -dNugetVersion="$SharedHostNugetVersion" `
         -dTargetArchitecture="$TargetArchitecture" `
+        -dUpgradeCode="$SharedHostUpgradeCode" `
         -arch $Architecture `
         "$AuthWsxRoot\host.wxs" `
-        "$AuthWsxRoot\provider.wxs" `
-        "$AuthWsxRoot\registrykeys.wxs" | Out-Host        
+        "$AuthWsxRoot\provider.wxs" | Out-Host
 
     if($LastExitCode -ne 0)
     {
@@ -62,7 +63,6 @@ function RunLight
         -cultures:en-us `
         "$WixObjRoot\host.wixobj" `
         "$WixObjRoot\provider.wixobj" `
-        "$WixObjRoot\registrykeys.wixobj" `
         -out $DotnetHostMSIOutput | Out-Host
 
     if($LastExitCode -ne 0)
