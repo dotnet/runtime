@@ -156,8 +156,8 @@ namespace System.Security.Cryptography.Xml.Tests
         {
             XmlPreloadedResolver resolver = new XmlPreloadedResolver();
             resolver.Add(new Uri("doc.xsl", UriKind.Relative), "");
-            string res = ExecuteXmlDSigC14NTransform(C14NSpecExample1Input, resolver);
-            Assert.Equal(C14NSpecExample1Output, res);
+            string result = TestHelpers.ExecuteTransform(C14NSpecExample1Input, new XmlDsigC14NTransform());
+            Assert.Equal(C14NSpecExample1Output, result);
         }
 
         [Theory]
@@ -166,7 +166,7 @@ namespace System.Security.Cryptography.Xml.Tests
         [InlineData(C14NSpecExample4Input, C14NSpecExample4Output)]
         public void C14NSpecExample(string input, string expectedOutput)
         {
-            string result = ExecuteXmlDSigC14NTransform(input);
+            string result = TestHelpers.ExecuteTransform(input, new XmlDsigC14NTransform());
             Assert.Equal(expectedOutput, result);
         }
 
@@ -175,38 +175,15 @@ namespace System.Security.Cryptography.Xml.Tests
         {
             XmlPreloadedResolver resolver = new XmlPreloadedResolver();
             resolver.Add(new Uri("file://doc.txt"), "world");
-            string res = ExecuteXmlDSigC14NTransform(C14NSpecExample5Input, resolver);
-            Assert.Equal(C14NSpecExample5Output, res);
+            string result = TestHelpers.ExecuteTransform(C14NSpecExample5Input, new XmlDsigC14NTransform(), Encoding.UTF8, resolver);
+            Assert.Equal(C14NSpecExample5Output, result);
         }
 
         [Fact]
         public void C14NSpecExample6()
         {
-            string res = TestHelpers.ExecuteTransform(C14NSpecExample6Input, new XmlDsigC14NTransform(), Encoding.GetEncoding("ISO-8859-1"));
-            Assert.Equal(C14NSpecExample6Output, res);
-        }
-
-        private string ExecuteXmlDSigC14NTransform(string InputXml, XmlResolver resolver = null)
-        {
-            XmlDsigC14NTransform transform = new XmlDsigC14NTransform();
-            XmlDocument doc = new XmlDocument();
-            doc.PreserveWhitespace = true;
-            doc.XmlResolver = resolver;
-            doc.LoadXml(InputXml);
-
-            // Testing default attribute support with
-            // vreader.ValidationType = ValidationType.None.
-            //
-            UTF8Encoding utf8 = new UTF8Encoding();
-            byte[] data = utf8.GetBytes(InputXml.ToString());
-            Stream stream = new MemoryStream(data);
-            using (XmlReader reader = XmlReader.Create(stream, new XmlReaderSettings { ValidationType = ValidationType.None, DtdProcessing = DtdProcessing.Parse, XmlResolver = resolver}))
-            {
-                doc.Load(reader);
-
-                transform.LoadInput(doc);
-                return TestHelpers.StreamToString((Stream)transform.GetOutput(), utf8);
-            }
+            string result = TestHelpers.ExecuteTransform(C14NSpecExample6Input, new XmlDsigC14NTransform(), Encoding.GetEncoding("ISO-8859-1"));
+            Assert.Equal(C14NSpecExample6Output, result);
         }
 
         //
