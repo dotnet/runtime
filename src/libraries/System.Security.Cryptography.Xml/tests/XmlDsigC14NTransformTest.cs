@@ -15,6 +15,7 @@
 using System.IO;
 using System.Text;
 using System.Xml;
+using System.Xml.Resolvers;
 using Xunit;
 
 namespace System.Security.Cryptography.Xml.Tests
@@ -108,18 +109,6 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Null(xnl);
         }
 
-        private string Stream2String(Stream s)
-        {
-            StringBuilder sb = new StringBuilder();
-            int b = s.ReadByte();
-            while (b != -1)
-            {
-                sb.Append(Convert.ToChar(b));
-                b = s.ReadByte();
-            }
-            return sb.ToString();
-        }
-
         static string xml = "<Test  attrib='at ' xmlns=\"http://www.go-mono.com/\" > \r\n &#xD; <Toto/> text &amp; </Test   >";
         // GOOD for Stream input
         static string c14xml2 = "<Test xmlns=\"http://www.go-mono.com/\" attrib=\"at \"> \n &#xD; <Toto></Toto> text &amp; </Test>";
@@ -142,7 +131,7 @@ namespace System.Security.Cryptography.Xml.Tests
             XmlDocument doc = GetDoc();
             transform.LoadInput(doc);
             Stream s = (Stream)transform.GetOutput();
-            string output = Stream2String(s);
+            string output = TestHelpers.StreamToString(s, Encoding.UTF8);
             Assert.Equal(c14xml3, output);
         }
 
@@ -154,7 +143,7 @@ namespace System.Security.Cryptography.Xml.Tests
             // Argument list just contains element Test.
             transform.LoadInput(doc.ChildNodes);
             Stream s = (Stream)transform.GetOutput();
-            string output = Stream2String(s);
+            string output = TestHelpers.StreamToString(s, Encoding.UTF8);
             Assert.Equal("<Test></Test>", output);
         }
 
@@ -167,7 +156,7 @@ namespace System.Security.Cryptography.Xml.Tests
             XmlDocument doc = GetDoc();
             transform.LoadInput(doc.SelectNodes("//*"));
             Stream s = (Stream)transform.GetOutput();
-            string output = Stream2String(s);
+            string output = TestHelpers.StreamToString(s, Encoding.UTF8);
             string expected = @"<Test><Toto></Toto></Test>";
             Assert.Equal(expected, output);
         }
@@ -181,7 +170,7 @@ namespace System.Security.Cryptography.Xml.Tests
             ms.Position = 0;
             transform.LoadInput(ms);
             Stream s = (Stream)transform.GetOutput();
-            string output = Stream2String(s);
+            string output = TestHelpers.StreamToString(s, Encoding.UTF8);
             Assert.Equal(c14xml2, output);
         }
 
@@ -202,11 +191,10 @@ namespace System.Security.Cryptography.Xml.Tests
         [Fact]
         public void C14NSpecExample1()
         {
-            using (TestHelpers.CreateTestDtdFile(GetType().Name + "." + nameof(C14NSpecExample1)))
-            {
-                string res = ExecuteXmlDSigC14NTransform(C14NSpecExample1Input);
-                Assert.Equal(C14NSpecExample1Output, res);
-            }
+            XmlPreloadedResolver resolver = new XmlPreloadedResolver();
+            resolver.Add(new Uri("doc.xsl", UriKind.Relative), "");
+            string res = ExecuteXmlDSigC14NTransform(C14NSpecExample1Input, resolver);
+            Assert.Equal(C14NSpecExample1Output, res);
         }
 
         [Fact]
@@ -224,22 +212,22 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
-        //		[Ignore ("This test should be fine, but it does not pass under MS.NET")]
         public void C14NSpecExample4()
         {
             string res = ExecuteXmlDSigC14NTransform(C14NSpecExample4Input);
             Assert.Equal(C14NSpecExample4Output, res);
         }
 
-        [Fact(Skip = "TODO: fix me")]
+        [Fact]
         public void C14NSpecExample5()
         {
-            string testName = GetType().Name + "." + nameof(C14NSpecExample5);
-            using (TestHelpers.CreateTestTextFile(testName, "world"))
-            {
-                string res = ExecuteXmlDSigC14NTransform(C14NSpecExample5Input(testName));
-                Assert.Equal(C14NSpecExample5Output, res);
-            }
+            //string testName = GetType().Name + "." + nameof(C14NSpecExample5);
+            //using (TestHelpers.CreateTestTextFile(testName, "world"))
+            //{
+            XmlPreloadedResolver resolver = new XmlPreloadedResolver();
+            resolver.Add(new Uri("file://doc.txt"), "world");
+            string res = ExecuteXmlDSigC14NTransform(C14NSpecExample5Input, resolver);
+            Assert.Equal(C14NSpecExample5Output, res);
         }
 
         [Fact]
@@ -249,10 +237,11 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal(C14NSpecExample6Output, res);
         }
 
-        private string ExecuteXmlDSigC14NTransform(string InputXml)
+        private string ExecuteXmlDSigC14NTransform(string InputXml, XmlResolver resolver = null)
         {
             XmlDocument doc = new XmlDocument();
             doc.PreserveWhitespace = true;
+            doc.XmlResolver = resolver;
             doc.LoadXml(InputXml);
 
             // Testing default attribute support with
@@ -261,12 +250,12 @@ namespace System.Security.Cryptography.Xml.Tests
             UTF8Encoding utf8 = new UTF8Encoding();
             byte[] data = utf8.GetBytes(InputXml.ToString());
             Stream stream = new MemoryStream(data);
-            using (XmlReader reader = XmlReader.Create(stream, new XmlReaderSettings { ValidationType = ValidationType.None, DtdProcessing = DtdProcessing.Parse }))
+            using (XmlReader reader = XmlReader.Create(stream, new XmlReaderSettings { ValidationType = ValidationType.None, DtdProcessing = DtdProcessing.Parse, XmlResolver = resolver}))
             {
                 doc.Load(reader);
 
                 transform.LoadInput(doc);
-                return Stream2String((Stream)transform.GetOutput());
+                return TestHelpers.StreamToString((Stream)transform.GetOutput(), utf8);
             }
         }
 
@@ -283,7 +272,6 @@ namespace System.Security.Cryptography.Xml.Tests
                 "<?xml-stylesheet   href=\"doc.xsl\"\n" +
                 "   type=\"text/xsl\"   ?>\n" +
                 "\n" +
-                // "<!DOCTYPE doc SYSTEM \"doc.dtd\">\n" +
                 "\n" +
                 "<doc>Hello, world!<!-- Comment 1 --></doc>\n" +
                 "\n" +
@@ -401,11 +389,11 @@ namespace System.Security.Cryptography.Xml.Tests
         // Example 5 from C14N spec - Entity References: 
         // http://www.w3.org/TR/xml-c14n#Example-Entities
         //
-        static string C14NSpecExample5Input(string worldName) =>
+        static string C14NSpecExample5Input =>
                 "<!DOCTYPE doc [\n" +
                 "<!ATTLIST doc attrExtEnt ENTITY #IMPLIED>\n" +
                 "<!ENTITY ent1 \"Hello\">\n" +
-                $"<!ENTITY ent2 SYSTEM \"{worldName}.txt\">\n" +
+                $"<!ENTITY ent2 SYSTEM \"file://doc.txt\">\n" +
                 "<!ENTITY entExt SYSTEM \"earth.gif\" NDATA gif>\n" +
                 "<!NOTATION gif SYSTEM \"viewgif.exe\">\n" +
                 "]>\n" +
@@ -453,7 +441,7 @@ namespace System.Security.Cryptography.Xml.Tests
 
             transform.LoadInput(doc);
             Stream s = (Stream)transform.GetOutput();
-            string output = Stream2String(s);
+            string output = TestHelpers.StreamToString(s, Encoding.UTF8);
             Assert.Equal(xml, output);
         }
 
