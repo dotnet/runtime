@@ -174,7 +174,7 @@ namespace System.Security.Cryptography.Xml.Tests
         public void C14NSpecExample5()
         {
             XmlPreloadedResolver resolver = new XmlPreloadedResolver();
-            resolver.Add(new Uri("file://doc.txt"), "world");
+            resolver.Add(TestHelpers.ToUri("doc.txt"), "world");
             string result = TestHelpers.ExecuteTransform(C14NSpecExample5Input, new XmlDsigC14NTransform(), Encoding.UTF8, resolver);
             Assert.Equal(C14NSpecExample5Output, result);
         }
@@ -320,7 +320,7 @@ namespace System.Security.Cryptography.Xml.Tests
                 "<!DOCTYPE doc [\n" +
                 "<!ATTLIST doc attrExtEnt ENTITY #IMPLIED>\n" +
                 "<!ENTITY ent1 \"Hello\">\n" +
-                $"<!ENTITY ent2 SYSTEM \"file://doc.txt\">\n" +
+                $"<!ENTITY ent2 SYSTEM \"doc.txt\">\n" +
                 "<!ENTITY entExt SYSTEM \"earth.gif\" NDATA gif>\n" +
                 "<!NOTATION gif SYSTEM \"viewgif.exe\">\n" +
                 "]>\n" +

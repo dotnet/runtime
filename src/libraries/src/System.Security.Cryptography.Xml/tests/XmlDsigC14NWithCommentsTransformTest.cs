@@ -71,23 +71,10 @@ namespace System.Security.Cryptography.Xml.Tests
         [Fact]
         public void C14NSpecExample1()
         {
-            string testName = GetType().Name + "." + nameof(C14NSpecExample1);
-            using (TestHelpers.CreateTestDtdFile(testName))
-            {
-                string res = ExecuteXmlDSigC14NTransform(C14NSpecExample1Input(testName), Encoding.UTF8, new XmlUrlResolver());
-                Assert.Equal(C14NSpecExample1Output, res);
-            }
-        }
-
-        [Fact]
-        public void C14NSpecExample1_WithoutResolver()
-        {
-            string testName = GetType().Name + "." + nameof(C14NSpecExample1_WithoutResolver);
-            using (TestHelpers.CreateTestDtdFile(testName))
-            {
-                string res = ExecuteXmlDSigC14NTransform(C14NSpecExample1Input(testName));
-                Assert.Equal(C14NSpecExample1Output, res);
-            }
+            XmlPreloadedResolver resolver = new XmlPreloadedResolver();
+            resolver.Add(TestHelpers.ToUri("world.dtd"), "");
+            string res = TestHelpers.ExecuteTransform(C14NSpecExample1Input, new XmlDsigC14NWithCommentsTransform(), Encoding.UTF8, resolver);
+            Assert.Equal(C14NSpecExample1Output, res);
         }
 
         [Theory]
@@ -102,12 +89,11 @@ namespace System.Security.Cryptography.Xml.Tests
         [Fact]
         public void C14NSpecExample5()
         {
-            string entityPath = "file://doc.txt";
             XmlPreloadedResolver resolver = new XmlPreloadedResolver();
-            resolver.Add(new Uri(entityPath), "world");
-            string input = C14NSpecExample5Input(entityPath);
+            resolver.Add(TestHelpers.ToUri("doc.txt"), "world");
+            string input = C14NSpecExample5Input;
             string result = ExecuteXmlDSigC14NTransform(input, Encoding.UTF8, resolver);
-            string expectedResult = C14NSpecExample5Output(entityPath);
+            string expectedResult = C14NSpecExample5Output;
             Assert.Equal(expectedResult, result);
         }
 
@@ -141,13 +127,13 @@ namespace System.Security.Cryptography.Xml.Tests
         // Example 1 from C14N spec - PIs, Comments, and Outside of Document Element: 
         // http://www.w3.org/TR/xml-c14n#Example-OutsideDoc
         //
-        static string C14NSpecExample1Input(string testName) =>
+        static string C14NSpecExample1Input =>
             "<?xml version=\"1.0\"?>\n" +
                 "\n" +
                 "<?xml-stylesheet   href=\"doc.xsl\"\n" +
                 "   type=\"text/xsl\"   ?>\n" +
                 "\n" +
-                $"<!DOCTYPE doc SYSTEM \"{Path.GetFullPath(testName + ".dtd")}\">\n" +
+                "<!DOCTYPE doc SYSTEM \"world.dtd\">\n" +
                 "\n" +
                 "<doc>Hello, world!<!-- Comment 1 --></doc>\n" +
                 "\n" +
@@ -267,11 +253,11 @@ namespace System.Security.Cryptography.Xml.Tests
         // Example 5 from C14N spec - Entity References: 
         // http://www.w3.org/TR/xml-c14n#Example-Entities
         //
-        static string C14NSpecExample5Input(string path) =>
+        static string C14NSpecExample5Input =>
                 "<!DOCTYPE doc [\n" +
                 "<!ATTLIST doc attrExtEnt ENTITY #IMPLIED>\n" +
                 "<!ENTITY ent1 \"Hello\">\n" +
-                $"<!ENTITY ent2 SYSTEM \"{TestHelpers.EscapePath(path)}\">\n" +
+                $"<!ENTITY ent2 SYSTEM \"doc.txt\">\n" +
                 "<!ENTITY entExt SYSTEM \"earth.gif\" NDATA gif>\n" +
                 "<!NOTATION gif SYSTEM \"viewgif.exe\">\n" +
                 "]>\n" +
@@ -279,12 +265,12 @@ namespace System.Security.Cryptography.Xml.Tests
                 "   &ent1;, &ent2;!\n" +
                 "</doc>\n" +
                 "\n" +
-                $"<!-- Let {TestHelpers.EscapePath(path)} contain \"world\" (excluding the quotes) -->\n";
-        static string C14NSpecExample5Output(string path) =>
+                $"<!-- Let doc.txt contain \"world\" (excluding the quotes) -->\n";
+        static string C14NSpecExample5Output =>
                 "<doc attrExtEnt=\"entExt\">\n" +
                 "   Hello, world!\n" +
                 "</doc>\n" +
-                $"<!-- Let {TestHelpers.EscapePath(path)} contain \"world\" (excluding the quotes) -->";
+                $"<!-- Let doc.txt contain \"world\" (excluding the quotes) -->";
 
         //
         // Example 6 from C14N spec - UTF-8 Encoding: 
