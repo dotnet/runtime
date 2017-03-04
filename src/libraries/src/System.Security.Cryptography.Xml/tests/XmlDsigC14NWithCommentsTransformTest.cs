@@ -133,15 +133,7 @@ namespace System.Security.Cryptography.Xml.Tests
                 doc.Load(reader);
                 XmlDsigC14NWithCommentsTransform transform = new XmlDsigC14NWithCommentsTransform();
                 transform.LoadInput(doc);
-                return Stream2String((Stream) transform.GetOutput(), actualEncoding);
-            }
-        }
-
-        private string Stream2String(Stream stream, Encoding encoding)
-        {
-            using (StreamReader streamReader = new StreamReader(stream, encoding))
-            {
-                return streamReader.ReadToEnd();
+                return TestHelpers.StreamToString((Stream) transform.GetOutput(), actualEncoding);
             }
         }
 
