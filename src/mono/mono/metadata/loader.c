@@ -1166,6 +1166,7 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 	int i,j;
 	MonoDl *module = NULL;
 	gboolean cached = FALSE;
+	gpointer addr = NULL;
 
 	g_assert (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL);
 
@@ -1474,7 +1475,7 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 				"Searching for '%s'.", import);
 
 	if (piinfo->piflags & PINVOKE_ATTRIBUTE_NO_MANGLE) {
-		error_msg = mono_dl_symbol (module, import, &piinfo->addr); 
+		error_msg = mono_dl_symbol (module, import, &addr); 
 	} else {
 		char *mangled_name = NULL, *mangled_name2 = NULL;
 		int mangle_charset;
@@ -1496,7 +1497,7 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 #endif
 				for (mangle_param_count = 0; mangle_param_count <= (need_param_count ? 256 : 0); mangle_param_count += 4) {
 
-					if (piinfo->addr)
+					if (addr)
 						continue;
 
 					mangled_name = (char*)import;
@@ -1547,9 +1548,9 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 					mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
 								"Probing '%s'.", mangled_name2);
 
-					error_msg = mono_dl_symbol (module, mangled_name2, &piinfo->addr);
+					error_msg = mono_dl_symbol (module, mangled_name2, &addr);
 
-					if (piinfo->addr)
+					if (addr)
 						mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
 									"Found as '%s'.", mangled_name2);
 					else
@@ -1568,7 +1569,7 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 		}
 	}
 
-	if (!piinfo->addr) {
+	if (!addr) {
 		g_free (error_msg);
 		if (exc_class) {
 			*exc_class = "EntryPointNotFoundException";
@@ -1576,7 +1577,8 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 		}
 		return NULL;
 	}
-	return piinfo->addr;
+	piinfo->addr = addr;
+	return addr;
 }
 
 /*
