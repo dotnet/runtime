@@ -19,6 +19,7 @@
 using System.IO;
 using System.Text;
 using System.Xml;
+using System.Xml.Resolvers;
 using Xunit;
 
 namespace System.Security.Cryptography.Xml.Tests
@@ -325,13 +326,12 @@ namespace System.Security.Cryptography.Xml.Tests
         [Fact]
         public void ExcC14NSpecExample5()
         {
-            string testName = GetType().Name + "." + nameof(ExcC14NSpecExample5);
-            using (TempFile tempFile = TestHelpers.CreateTestTextFile(testName, "world"))
-            {
-                string input = ExcC14NSpecExample5Input(tempFile.Path);
-                string res = ExecuteXmlDSigExcC14NTransform(input, new XmlUrlResolver());
-                Assert.Equal(ExcC14NSpecExample5Output, res);
-            }
+            string entityPath = "file://doc.txt";
+            XmlPreloadedResolver resolver = new XmlPreloadedResolver();
+            resolver.Add(new Uri(entityPath), "world");
+            string input = ExcC14NSpecExample5Input(entityPath);
+            string res = ExecuteXmlDSigExcC14NTransform(input, resolver);
+            Assert.Equal(ExcC14NSpecExample5Output, res);
         }
 
         [Fact]
