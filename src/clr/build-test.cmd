@@ -6,8 +6,17 @@ set __BuildArch=x64
 set __VCBuildArch=x86_amd64
 set __BuildType=Debug
 set __BuildOS=Windows_NT
-set __VSVersion=vs2015
-set __VSToolsRoot=%VS140COMNTOOLS%
+
+:: Default to highest Visual Studio version available
+if defined VS150COMNTOOLS (
+  set "__VSToolsRoot=%VS150COMNTOOLS%"
+  set "__VCToolsRoot=%VS150COMNTOOLS%\..\..\VC\Auxiliary\Build"
+  set __VSVersion=vs2017
+) else (
+  set "__VSToolsRoot=%VS140COMNTOOLS%"
+  set "__VCToolsRoot=%VS140COMNTOOLS%\..\..\VC"
+  set __VSVersion=vs2015
+)
 
 :: Define a prefix for most output progress messages that come from this script. That makes
 :: it easier to see where these are coming from. Note that there is a trailing space here.
@@ -137,8 +146,8 @@ if defined __ToolsetDir (
 )
 
 :: Set the environment for the native build
-echo %__MsgPrefix%Using environment: "%__VSToolsRoot%\..\..\VC\vcvarsall.bat" %__VCBuildArch%
-call                                 "%__VSToolsRoot%\..\..\VC\vcvarsall.bat" %__VCBuildArch%
+echo %__MsgPrefix%Using environment: "%__VCToolsRoot%\vcvarsall.bat" %__VCBuildArch%
+call                                 "%__VCToolsRoot%\vcvarsall.bat" %__VCBuildArch%
 @if defined _echo @echo on
 
 if not defined VSINSTALLDIR (
@@ -397,8 +406,8 @@ This is due to a bug in the Visual Studio installer. It does not install DIA SDK
 at the install location of previous Visual Studio version. The workaround is to copy the DIA SDK folder from the Visual Studio install location ^
 of the previous version to "%VSINSTALLDIR%" and then build.
 :: DIA SDK not included in Express editions
-echo Visual Studio 2013 Express does not include the DIA SDK. ^
-You need Visual Studio 2013+ (Community is free).
+echo Visual Studio Express does not include the DIA SDK. ^
+You need Visual Studio 2015 or 2017 (Community is free).
 echo See: https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md#prerequisites
 exit /b 1
 

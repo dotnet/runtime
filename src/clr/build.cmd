@@ -3,7 +3,18 @@ setlocal EnableDelayedExpansion EnableExtensions
 
 echo Starting Build at %TIME%
 set __ThisScriptFull="%~f0"
-set __VSToolsRoot=%VS140COMNTOOLS%
+
+:: Default to highest Visual Studio version available
+if defined VS150COMNTOOLS (
+  set "__VSToolsRoot=%VS150COMNTOOLS%"
+  set "__VCToolsRoot=%VS150COMNTOOLS%\..\..\VC\Auxiliary\Build"
+  set __VSVersion=vs2017
+) else (
+  set "__VSToolsRoot=%VS140COMNTOOLS%"
+  set "__VCToolsRoot=%VS140COMNTOOLS%\..\..\VC"
+  set __VSVersion=vs2015
+)
+
 :: Note that the msbuild project files (specifically, dir.proj) will use the following variables, if set:
 ::      __BuildArch         -- default: x64
 ::      __BuildType         -- default: Debug
@@ -23,9 +34,6 @@ set __VSToolsRoot=%VS140COMNTOOLS%
 set __BuildArch=x64
 set __BuildType=Debug
 set __BuildOS=Windows_NT
-
-:: Default to highest Visual Studio version available
-set __VSVersion=vs2015
 
 :: Define a prefix for most output progress messages that come from this script. That makes
 :: it easier to see where these are coming from. Note that there is a trailing space here.
@@ -235,8 +243,8 @@ if %__BuildNative% EQU 1 (
         set ___SDKVersion="-DCMAKE_SYSTEM_VERSION=10.0"
     )
 
-    echo %__MsgPrefix%Using environment: "%__VSToolsRoot%\..\..\VC\vcvarsall.bat" !__VCBuildArch!
-    call                                 "%__VSToolsRoot%\..\..\VC\vcvarsall.bat" !__VCBuildArch!
+    echo %__MsgPrefix%Using environment: "%__VCToolsRoot%\vcvarsall.bat" !__VCBuildArch!
+    call                                 "%__VCToolsRoot%\vcvarsall.bat" !__VCBuildArch!
 	@if defined _echo @echo on
 
     if not defined VSINSTALLDIR (
@@ -296,7 +304,7 @@ if /i "%__DoCrossArchBuild%"=="1" (
     :: Set the environment for the native build
     set __VCBuildArch=x86_amd64
     if /i "%__CrossArch%" == "x86" ( set __VCBuildArch=x86 )
-    @call "%__VSToolsRoot%\..\..\VC\vcvarsall.bat" !__VCBuildArch!
+    @call "%__VCToolsRoot%\vcvarsall.bat" !__VCBuildArch!
     @if defined _echo @echo on
 
     if not exist "%__CrossCompIntermediatesDir%" md "%__CrossCompIntermediatesDir%"
@@ -622,7 +630,7 @@ at the install location of previous Visual Studio version. The workaround is to 
 of the previous version to "%VSINSTALLDIR%" and then build.
 :: DIA SDK not included in Express editions
 echo Visual Studio Express does not include the DIA SDK. ^
-You need Visual Studio 2015+ (Community is free).
+You need Visual Studio 2015 or 2017 (Community is free).
 echo See: https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md#prerequisites
 exit /b 1
 

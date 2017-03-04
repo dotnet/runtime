@@ -2,7 +2,13 @@
 setlocal
 
 if not defined VisualStudioVersion (
-  if defined VS140COMNTOOLS (
+  if defined VS150COMNTOOLS (
+	 if not exist "%VS150COMNTOOLS%\..\IDE\devenv.exe"      goto NoVS
+	 if not exist "%VS150COMNTOOLS%\..\..\VC\Auxiliary\Build\vcvarsall.bat" goto NoVS
+	 if not exist "%VS150COMNTOOLS%\VsDevCmd.bat" 			  goto NoVS
+    call "%VS150COMNTOOLS%\VsDevCmd.bat"
+    goto :Run
+  ) else if defined VS140COMNTOOLS (
 	 if not exist "%VS140COMNTOOLS%\..\IDE\devenv.exe"      goto NoVS
 	 if not exist "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" goto NoVS
 	 if not exist "%VS140COMNTOOLS%\VsDevCmd.bat" 			  goto NoVS
@@ -11,7 +17,7 @@ if not defined VisualStudioVersion (
   )
 
   :NoVS
-  echo Error: Visual Studio 2015 required.
+  echo Error: Visual Studio 2015 or 2017 required.
   echo        https://github.com/dotnet/coreclr/blob/master/Documentation/building/windows-instructions.md for build instructions.
   exit /b 1
 )
