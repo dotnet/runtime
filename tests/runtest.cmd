@@ -8,10 +8,10 @@ set __BuildOS=Windows_NT
 set __MSBuildBuildArch=x64
 
 :: Default to highest Visual Studio version available
-set __VSVersion=vs2015
+set __VSVersion=vs2017
 
-if defined VS120COMNTOOLS set __VSVersion=vs2013
 if defined VS140COMNTOOLS set __VSVersion=vs2015
+if defined VS150COMNTOOLS set __VSVersion=vs2017
 
 :: Define a prefix for most output progress messages that come from this script. That makes
 :: it easier to see where these are coming from. Note that there is a trailing space here.
@@ -49,8 +49,8 @@ if /i "%1" == "debug"                 (set __BuildType=Debug&shift&goto Arg_Loop
 if /i "%1" == "release"               (set __BuildType=Release&shift&goto Arg_Loop)
 if /i "%1" == "checked"               (set __BuildType=Checked&shift&goto Arg_Loop)
 
-if /i "%1" == "vs2013"                (set __VSVersion=%1&shift&goto Arg_Loop)
 if /i "%1" == "vs2015"                (set __VSVersion=%1&shift&goto Arg_Loop)
+if /i "%1" == "vs2017"                (set __VSVersion=%1&shift&goto Arg_Loop)
 
 if /i "%1" == "TestEnv"               (set __TestEnv=%2&shift&shift&goto Arg_Loop)
 if /i "%1" == "AgainstPackages"       (set __AgainstPackages=1&shift&goto Arg_Loop)
@@ -95,30 +95,26 @@ if not defined XunitTestReportDirBase set  XunitTestReportDirBase=%XunitTestBinB
 
 if not exist %__LogsDir% md %__LogsDir%
 
-set __VSProductVersion=
-if /i "%__VSVersion%" == "vs2013" set __VSProductVersion=120
-if /i "%__VSVersion%" == "vs2015" set __VSProductVersion=140
+set _msbuildexe=
+if /i "%__VSVersion%" == "vs2017" (
+  set "__VSToolsRoot=%VS150COMNTOOLS%"
+  set "__VCToolsRoot=%VS150COMNTOOLS%\..\..\VC\Auxiliary\Build"
 
-:: Check presence of VS
-if not defined VS%__VSProductVersion%COMNTOOLS goto NoVS
+  set _msbuildexe="%VS150COMNTOOLS%\..\..\MSBuild\15.0\Bin\MSBuild.exe"
+) else if /i "%__VSVersion%" == "vs2015" (
+  set "__VSToolsRoot=%VS140COMNTOOLS%"
+  set "__VCToolsRoot=%VS140COMNTOOLS%\..\..\VC"
 
-set __VSToolsRoot=!VS%__VSProductVersion%COMNTOOLS!
-if %__VSToolsRoot:~-1%==\ set "__VSToolsRoot=%__VSToolsRoot:~0,-1%"
+  set _msbuildexe="%ProgramFiles(x86)%\MSBuild\14.0\Bin\MSBuild.exe"
+  if not exist %_msbuildexe% set _msbuildexe="%ProgramFiles%\MSBuild\14.0\Bin\MSBuild.exe"
+)
 
 :: Does VS really exist?
 if not exist "%__VSToolsRoot%\..\IDE\devenv.exe"      goto NoVS
-if not exist "%__VSToolsRoot%\..\..\VC\vcvarsall.bat" goto NoVS
+if not exist "%__VCToolsRoot%\vcvarsall.bat"          goto NoVS
 if not exist "%__VSToolsRoot%\VsDevCmd.bat"           goto NoVS
 
-if /i "%__VSVersion%" =="vs2015" goto MSBuild14
-set _msbuildexe="%ProgramFiles(x86)%\MSBuild\12.0\Bin\MSBuild.exe"
-if not exist %_msbuildexe% set _msbuildexe="%ProgramFiles%\MSBuild\12.0\Bin\MSBuild.exe"
-if not exist %_msbuildexe% set _msbuildexe="%ProgramFiles(x86)%\MSBuild\14.0\Bin\MSBuild.exe"
-goto :CheckMSBuild14
-:MSBuild14
-set _msbuildexe="%ProgramFiles(x86)%\MSBuild\14.0\Bin\MSBuild.exe"
-:CheckMSBuild14
-if not exist %_msbuildexe% set _msbuildexe="%ProgramFiles%\MSBuild\14.0\Bin\MSBuild.exe"
+:: Does MSBuild really exist?
 if not exist %_msbuildexe% echo Error: Could not find MSBuild.exe.  Please see https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md for build instructions. && exit /b 1
 
 :: Set the environment for the  build- VS cmd prompt
@@ -386,7 +382,7 @@ echo./? -? /h -h /help -help: view this message.
 echo BuildArch- Optional parameter - x64 or x86 ^(default: x64^).
 echo BuildType- Optional parameter - Debug, Release, or Checked ^(default: Debug^).
 echo TestEnv- Optional parameter - this will run a custom script to set custom test environment settings.
-echo VSVersion- Optional parameter - VS2013 or VS2015 ^(default: VS2015^)
+echo VSVersion- Optional parameter - VS2015 or VS2017 ^(default: VS2017^)
 echo AgainstPackages - Optional parameter - this indicates that we are running tests that were built against packages
 echo GenerateLayoutOnly - If specified will not run the tests and will only create the Runtime Dependency Layout
 echo RunCrossgenTests   - Runs ReadytoRun tests
@@ -403,6 +399,6 @@ echo CORE_ROOT The path to the runtime
 exit /b 1
 
 :NoVS
-echo Visual Studio 2013+ ^(Community is free^) is a prerequisite to build this repository.
+echo Visual Studio 2015 or 2017 (Community is free) is a prerequisite to build this repository.
 echo See: https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md#prerequisites
 exit /b 1
