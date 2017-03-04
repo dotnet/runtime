@@ -90,11 +90,6 @@ namespace System.Net.Sockets
             }
         }
 
-        internal static unsafe SafeCloseSocket CreateWSASocket(byte* pinnedBuffer)
-        {
-            return CreateSocket(InnerSafeCloseSocket.CreateWSASocket(pinnedBuffer));
-        }
-
         internal static SafeCloseSocket CreateWSASocket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
         {
             return CreateSocket(InnerSafeCloseSocket.CreateWSASocket(addressFamily, socketType, protocolType));
@@ -208,17 +203,6 @@ namespace System.Net.Sockets
                 if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{handle}, closesocket#3():{(errorCode == SocketError.SocketError ? (SocketError)Marshal.GetLastWin32Error() : errorCode)}");
 
                 return errorCode;
-            }
-
-            internal static unsafe InnerSafeCloseSocket CreateWSASocket(byte* pinnedBuffer)
-            {
-                // NOTE: -1 is the value for FROM_PROTOCOL_INFO.
-                InnerSafeCloseSocket result = Interop.Winsock.WSASocketW((AddressFamily)(-1), (SocketType)(-1), (ProtocolType)(-1), pinnedBuffer, 0, Interop.Winsock.SocketConstructorFlags.WSA_FLAG_OVERLAPPED);
-                if (result.IsInvalid)
-                {
-                    result.SetHandleAsInvalid();
-                }
-                return result;
             }
 
             internal static InnerSafeCloseSocket CreateWSASocket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)

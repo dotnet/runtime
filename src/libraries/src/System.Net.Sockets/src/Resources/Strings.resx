@@ -88,9 +88,6 @@
   <data name="net_writeonlystream" xml:space="preserve">
     <value>The stream does not support reading.</value>
   </data>
-  <data name="net_InvalidSocketHandle" xml:space="preserve">
-    <value>The socket handle is not valid.</value>
-  </data>
   <data name="net_InvalidAddressFamily" xml:space="preserve">
     <value>The AddressFamily {0} is not valid for the {1} end point, use {2} instead.</value>
   </data>
@@ -184,9 +181,6 @@
   <data name="net_io_readfailure" xml:space="preserve">
     <value>Unable to read data from the transport connection: {0}.</value>
   </data>
-  <data name="net_io_connectionclosed" xml:space="preserve">
-    <value>The connection was closed</value>
-  </data>
   <data name="net_io_invalidasyncresult" xml:space="preserve">
     <value>The IAsyncResult object was not returned from the corresponding asynchronous method on this class.</value>
   </data>
@@ -198,9 +192,6 @@
   </data>
   <data name="ArgumentOutOfRange_Bounds_Lower_Upper" xml:space="preserve">
     <value>Argument must be between {0} and {1}.</value>
-  </data>
-  <data name="net_sockets_connect_multiaddress_notsupported" xml:space="preserve">
-    <value>This platform does not support connecting sockets to DNS endpoints via the instance Connect and ConnectAsync methods, due to the potential for a host name to map to multiple IP addresses and sockets becoming invalid for use after a failed connect attempt. Use the static ConnectAsync method, or provide to the instance methods the specific IPAddress desired.</value>
   </data>
   <data name="net_sockets_connect_multiconnect_notsupported" xml:space="preserve">
     <value>Sockets on this platform are invalid for use after a failed connection attempt.</value>

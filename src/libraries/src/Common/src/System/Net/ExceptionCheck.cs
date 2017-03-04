@@ -6,9 +6,6 @@ namespace System.Net
 {
     internal static class ExceptionCheck
     {
-        internal static bool IsFatal(Exception exception)
-        {
-            return exception != null && (exception is OutOfMemoryException);
-        }
+        internal static bool IsFatal(Exception exception) => exception is OutOfMemoryException;
     }
 }

@@ -330,5 +330,46 @@ namespace System.Net
                 result = cert.ToString(fVerbose: true);
             }
         }
+
+        [NonEvent]
+        private unsafe void WriteEvent(int eventId, string arg1, int arg2, int arg3, int arg4, int arg5, int arg6, int arg7, int arg8)
+        {
+            if (IsEnabled())
+            {
+                if (arg1 == null) arg1 = "";
+
+                fixed (char* arg1Ptr = arg1)
+                {
+                    const int NumEventDatas = 8;
+                    var descrs = stackalloc EventData[NumEventDatas];
+
+                    descrs[0].DataPointer = (IntPtr)(arg1Ptr);
+                    descrs[0].Size = (arg1.Length + 1) * sizeof(char);
+
+                    descrs[1].DataPointer = (IntPtr)(&arg2);
+                    descrs[1].Size = sizeof(int);
+
+                    descrs[2].DataPointer = (IntPtr)(&arg3);
+                    descrs[2].Size = sizeof(int);
+
+                    descrs[3].DataPointer = (IntPtr)(&arg4);
+                    descrs[3].Size = sizeof(int);
+
+                    descrs[4].DataPointer = (IntPtr)(&arg5);
+                    descrs[4].Size = sizeof(int);
+
+                    descrs[5].DataPointer = (IntPtr)(&arg6);
+                    descrs[5].Size = sizeof(int);
+
+                    descrs[6].DataPointer = (IntPtr)(&arg7);
+                    descrs[6].Size = sizeof(int);
+
+                    descrs[7].DataPointer = (IntPtr)(&arg8);
+                    descrs[7].Size = sizeof(int);
+
+                    WriteEventCore(eventId, NumEventDatas, descrs);
+                }
+            }
+        }
     }
 }

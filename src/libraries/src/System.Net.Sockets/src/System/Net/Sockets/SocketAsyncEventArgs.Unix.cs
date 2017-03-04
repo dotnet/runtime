@@ -45,6 +45,20 @@ namespace System.Net.Sockets
             // No-op for *nix.
         }
 
+        private void FinishOperationSync(SocketError socketError, int bytesTransferred, SocketFlags flags)
+        {
+            Debug.Assert(socketError != SocketError.IOPending);
+
+            if (socketError == SocketError.Success)
+            {
+                FinishOperationSyncSuccess(bytesTransferred, flags);
+            }
+            else
+            {
+                FinishOperationSyncFailure(socketError, bytesTransferred, flags);
+            }
+        }
+
         private void InnerStartOperationAccept(bool userSuppliedBuffer)
         {
             _acceptedFileDescriptor = (IntPtr)(-1);
