@@ -138,10 +138,13 @@
 //    FCThrow(). This is because FCThrow() has to generate an unexecuted
 //    "return" statement for the code parser.
 //
-//  - If first and/or second argument of your FCall is 64-bit value on x86
-//    (ie INT64, UINT64 or DOUBLE), you must use "V" versions of FCDECL and 
-//    FCIMPL macros to enregister arguments correctly. For example, FCDECL3_IVI 
-//    must be used for FCalls that take 3 arguments and 2nd argument is INT64.
+//  - On x86, if first and/or second argument of your FCall cannot be passed
+//    in either of the __fastcall registers (ECX/EDX), you must use "V" versions
+//    of FCDECL and  FCIMPL macros to enregister arguments correctly. Some of the
+//    most common types that fit this requirement are 64-bit values (i.e. INT64 or
+//    UINT64) and floating-point values (i.e. FLOAT or DOUBLE). For example, FCDECL3_IVI 
+//    must be used for FCalls that take 3 arguments and 2nd argument is INT64 and
+//    FDECL2_VV must be used for FCalls that take 2 arguments where both are FLOAT.
 //
 //  - You may use structs for protecting multiple OBJECTREF's simultaneously.
 //    In these cases, you must use a variant of a helper method frame with PROTECT
