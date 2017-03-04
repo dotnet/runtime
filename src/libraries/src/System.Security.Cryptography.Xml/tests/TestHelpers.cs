@@ -41,7 +41,7 @@ namespace System.Security.Cryptography.Xml.Tests
 
         public static string EscapePath(string path)
         {
-            return path.Replace("-", "&#169;");
+            return path.Replace("-", "&#2D;");
         }
     }
 }
