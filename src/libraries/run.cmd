@@ -2,11 +2,14 @@
 setlocal
 
 if not defined VisualStudioVersion (
-  if defined VS140COMNTOOLS (
+  if defined VS150COMNTOOLS (
+    call "%VS150COMNTOOLS%\VsDevCmd.bat"
+    goto :Run
+  ) else if defined VS140COMNTOOLS (
     call "%VS140COMNTOOLS%\VsDevCmd.bat"
     goto :Run
   )
-  echo Error: Visual Studio 2015 required.
+  echo Error: Visual Studio 2015 or 2017 required.
   echo        Please see https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/developer-guide.md for build instructions.
   exit /b 1
 )

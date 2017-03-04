@@ -40,20 +40,37 @@ goto :Arg_Loop
 :ToolsVersion
 :: Determine the tools version to pass to cmake/msbuild
 if not defined VisualStudioVersion (
-    if defined VS140COMNTOOLS (
+    if defined VS150COMNTOOLS (
+        call "%VS150COMNTOOLS%\VsDevCmd.bat"
+        goto :VS2017
+    ) else if defined VS140COMNTOOLS (
+        call "%VS140COMNTOOLS%\VsDevCmd.bat"
         goto :VS2015
     )
     goto :MissingVersion
 )
-if "%VisualStudioVersion%"=="14.0" (
+
+if "%VisualStudioVersion%"=="15.0" (
+    goto :VS2017
+) else if "%VisualStudioVersion%"=="14.0" (
     goto :VS2015
 )
 
 :MissingVersion
-:: Can't find VS 2015
-echo Error: Visual Studio 2015 required  
+:: Can't find VS 2015 or 2017
+echo Error: Visual Studio 2015 or 2017 required  
 echo        Please see https://github.com/dotnet/corefx/tree/master/Documentation for build instructions.
 exit /b 1
+
+:VS2017
+:: Setup vars for VS2017
+set __VSVersion=vs2017
+set __PlatformToolset=v141
+if NOT "%__BuildArch%" == "arm64" (
+    :: Set the environment for the native build
+    call "%VS150COMNTOOLS%\..\..\VC\Auxiliary\Build\vcvarsall.bat" %__VCBuildArch%
+)
+goto :SetupDirs
 
 :VS2015
 :: Setup vars for VS2015
@@ -91,8 +108,8 @@ This is due to a bug in the Visual Studio installer. It does not install DIA SDK
 at VS install location of previous version. Workaround is to copy DIA SDK folder from VS install location ^
 of previous version to "%VSINSTALLDIR%" and then resume build.
 :: DIA SDK not included in Express editions
-echo Visual Studio 2013 Express does not include the DIA SDK. ^
-You need Visual Studio 2013+ (Community is free).
+echo Visual Studio Express does not include the DIA SDK. ^
+You need Visual Studio 2015 or 2017 (Community is free).
 echo See: https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md#prerequisites
 exit /b 1
 
