@@ -49,7 +49,7 @@
 /*=====================================Abs=====================================
 **
 ==============================================================================*/
-FCIMPL1(float, COMSingle::Abs, float x)
+FCIMPL1_V(float, COMSingle::Abs, float x)
     FCALL_CONTRACT;
 
     return (float)fabsf(x);
@@ -58,7 +58,7 @@ FCIMPLEND
 /*=====================================Acos=====================================
 **
 ==============================================================================*/
-FCIMPL1(float, COMSingle::Acos, float x)
+FCIMPL1_V(float, COMSingle::Acos, float x)
     FCALL_CONTRACT;
 
     return (float)acosf(x);
@@ -67,7 +67,7 @@ FCIMPLEND
 /*=====================================Asin=====================================
 **
 ==============================================================================*/
-FCIMPL1(float, COMSingle::Asin, float x)
+FCIMPL1_V(float, COMSingle::Asin, float x)
     FCALL_CONTRACT;
 
     return (float)asinf(x);
@@ -76,7 +76,7 @@ FCIMPLEND
 /*=====================================Atan=====================================
 **
 ==============================================================================*/
-FCIMPL1(float, COMSingle::Atan, float x)
+FCIMPL1_V(float, COMSingle::Atan, float x)
     FCALL_CONTRACT;
 
     return (float)atanf(x);
@@ -85,7 +85,7 @@ FCIMPLEND
 /*=====================================Atan2====================================
 **
 ==============================================================================*/
-FCIMPL2(float, COMSingle::Atan2, float y, float x)
+FCIMPL2_VV(float, COMSingle::Atan2, float y, float x)
     FCALL_CONTRACT;
 
     // atan2f(+/-INFINITY, +/-INFINITY) produces +/-0.785398163f (x is +INFINITY) and
@@ -101,7 +101,7 @@ FCIMPLEND
 /*====================================Ceil======================================
 **
 ==============================================================================*/
-FCIMPL1(float, COMSingle::Ceil, float x)
+FCIMPL1_V(float, COMSingle::Ceil, float x)
     FCALL_CONTRACT;
 
     return (float)ceilf(x);
@@ -110,7 +110,7 @@ FCIMPLEND
 /*=====================================Cos======================================
 **
 ==============================================================================*/
-FCIMPL1(float, COMSingle::Cos, float x)
+FCIMPL1_V(float, COMSingle::Cos, float x)
     FCALL_CONTRACT;
 
     return (float)cosf(x);
@@ -119,7 +119,7 @@ FCIMPLEND
 /*=====================================Cosh=====================================
 **
 ==============================================================================*/
-FCIMPL1(float, COMSingle::Cosh, float x)
+FCIMPL1_V(float, COMSingle::Cosh, float x)
     FCALL_CONTRACT;
 
     return (float)coshf(x);
@@ -128,7 +128,7 @@ FCIMPLEND
 /*=====================================Exp======================================
 **
 ==============================================================================*/
-FCIMPL1(float, COMSingle::Exp, float x)
+FCIMPL1_V(float, COMSingle::Exp, float x)
     FCALL_CONTRACT;
 
     return (float)expf(x);
@@ -137,7 +137,7 @@ FCIMPLEND
 /*====================================Floor=====================================
 **
 ==============================================================================*/
-FCIMPL1(float, COMSingle::Floor, float x)
+FCIMPL1_V(float, COMSingle::Floor, float x)
     FCALL_CONTRACT;
 
     return (float)floorf(x);
@@ -146,7 +146,7 @@ FCIMPLEND
 /*=====================================Log======================================
 **
 ==============================================================================*/
-FCIMPL1(float, COMSingle::Log, float x)
+FCIMPL1_V(float, COMSingle::Log, float x)
     FCALL_CONTRACT;
 
     return (float)logf(x);
@@ -155,7 +155,7 @@ FCIMPLEND
 /*====================================Log10=====================================
 **
 ==============================================================================*/
-FCIMPL1(float, COMSingle::Log10, float x)
+FCIMPL1_V(float, COMSingle::Log10, float x)
     FCALL_CONTRACT;
 
     return (float)log10f(x);
@@ -173,7 +173,7 @@ FCIMPLEND
 /*=====================================Pow======================================
 **
 ==============================================================================*/
-FCIMPL2(float, COMSingle::Pow, float x, float y)
+FCIMPL2_VV(float, COMSingle::Pow, float x, float y)
     FCALL_CONTRACT;
 
     // The CRT version of pow preserves the NaN payload of x over the NaN payload of y.
@@ -200,7 +200,7 @@ FCIMPLEND
 /*====================================Round=====================================
 **
 ==============================================================================*/
-FCIMPL1(float, COMSingle::Round, float x)
+FCIMPL1_V(float, COMSingle::Round, float x)
     FCALL_CONTRACT;
 
     // If the number has no fractional part do nothing
@@ -225,7 +225,7 @@ FCIMPLEND
 /*=====================================Sin======================================
 **
 ==============================================================================*/
-FCIMPL1(float, COMSingle::Sin, float x)
+FCIMPL1_V(float, COMSingle::Sin, float x)
     FCALL_CONTRACT;
 
     return (float)sinf(x);
@@ -234,7 +234,7 @@ FCIMPLEND
 /*=====================================Sinh=====================================
 **
 ==============================================================================*/
-FCIMPL1(float, COMSingle::Sinh, float x)
+FCIMPL1_V(float, COMSingle::Sinh, float x)
     FCALL_CONTRACT;
 
     return (float)sinhf(x);
@@ -243,7 +243,7 @@ FCIMPLEND
 /*=====================================Sqrt=====================================
 **
 ==============================================================================*/
-FCIMPL1(float, COMSingle::Sqrt, float x)
+FCIMPL1_V(float, COMSingle::Sqrt, float x)
     FCALL_CONTRACT;
 
     return (float)sqrtf(x);
@@ -252,7 +252,7 @@ FCIMPLEND
 /*=====================================Tan======================================
 **
 ==============================================================================*/
-FCIMPL1(float, COMSingle::Tan, float x)
+FCIMPL1_V(float, COMSingle::Tan, float x)
     FCALL_CONTRACT;
 
     return (float)tanf(x);
@@ -261,7 +261,7 @@ FCIMPLEND
 /*=====================================Tanh=====================================
 **
 ==============================================================================*/
-FCIMPL1(float, COMSingle::Tanh, float x)
+FCIMPL1_V(float, COMSingle::Tanh, float x)
     FCALL_CONTRACT;
 
     return (float)tanhf(x);
