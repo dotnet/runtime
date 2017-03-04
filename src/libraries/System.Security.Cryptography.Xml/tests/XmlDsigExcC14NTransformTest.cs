@@ -322,13 +322,14 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal(ExcC14NSpecExample4Output, res);
         }
 
-        [Fact(Skip = "TODO: fix me")]
+        [Fact]
         public void ExcC14NSpecExample5()
         {
             string testName = GetType().Name + "." + nameof(ExcC14NSpecExample5);
-            using (TestHelpers.CreateTestTextFile(testName, "world"))
+            using (TempFile tempFile = TestHelpers.CreateTestTextFile(testName, "world"))
             {
-                string res = ExecuteXmlDSigExcC14NTransform(ExcC14NSpecExample5Input(testName));
+                string input = ExcC14NSpecExample5Input(tempFile.Path);
+                string res = ExecuteXmlDSigExcC14NTransform(input, new XmlUrlResolver());
                 Assert.Equal(ExcC14NSpecExample5Output, res);
             }
         }
@@ -340,9 +341,10 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal(ExcC14NSpecExample6Output, res);
         }
 
-        private string ExecuteXmlDSigExcC14NTransform(string InputXml)
+        private string ExecuteXmlDSigExcC14NTransform(string InputXml, XmlResolver resolver = null)
         {
             XmlDocument doc = new XmlDocument();
+            doc.XmlResolver = resolver;
             doc.PreserveWhitespace = true;
             doc.LoadXml(InputXml);
 
@@ -352,7 +354,13 @@ namespace System.Security.Cryptography.Xml.Tests
             UTF8Encoding utf8 = new UTF8Encoding();
             byte[] data = utf8.GetBytes(InputXml.ToString());
             Stream stream = new MemoryStream(data);
-            using (XmlReader reader = XmlReader.Create(stream, new XmlReaderSettings {ValidationType = ValidationType.None, DtdProcessing = DtdProcessing.Parse }))
+            var settings = new XmlReaderSettings
+            {
+                ValidationType = ValidationType.None,
+                DtdProcessing = DtdProcessing.Parse,
+                XmlResolver = resolver
+            };
+            using (XmlReader reader = XmlReader.Create(stream, settings))
             {
                 doc.Load(reader);
                 transform.LoadInput(doc);
@@ -491,11 +499,11 @@ namespace System.Security.Cryptography.Xml.Tests
         // Example 5 from ExcC14N spec - Entity References: 
         // http://www.w3.org/TR/xml-c14n#Example-Entities
         //
-        static string ExcC14NSpecExample5Input(string worldName) =>
+        static string ExcC14NSpecExample5Input(string path) =>
                 "<!DOCTYPE doc [\n" +
                 "<!ATTLIST doc attrExtEnt ENTITY #IMPLIED>\n" +
                 "<!ENTITY ent1 \"Hello\">\n" +
-                $"<!ENTITY ent2 SYSTEM \"{worldName}.txt\">\n" +
+                $"<!ENTITY ent2 SYSTEM \"{path}\">\n" +
                 "<!ENTITY entExt SYSTEM \"earth.gif\" NDATA gif>\n" +
                 "<!NOTATION gif SYSTEM \"viewgif.exe\">\n" +
                 "]>\n" +
@@ -503,7 +511,7 @@ namespace System.Security.Cryptography.Xml.Tests
                 "   &ent1;, &ent2;!\n" +
                 "</doc>\n" +
                 "\n" +
-                $"<!-- Let {worldName}.txt contain \"world\" (excluding the quotes) -->\n";
+                $"<!-- Let {path} contain \"world\" (excluding the quotes) -->\n";
         static string ExcC14NSpecExample5Output =
                 "<doc attrExtEnt=\"entExt\">\n" +
                 "   Hello, world!\n" +

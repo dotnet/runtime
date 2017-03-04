@@ -102,10 +102,11 @@ namespace System.Security.Cryptography.Xml.Tests
         public void C14NSpecExample5()
         {
             string testName = GetType().Name + "." + nameof(C14NSpecExample5);
-            using (TestHelpers.CreateTestTextFile(testName, "world"))
+            using (TempFile tempFile = TestHelpers.CreateTestTextFile(testName, "world"))
             {
-                string result = ExecuteXmlDSigC14NTransform(C14NSpecExample5Input(testName), Encoding.UTF8, new XmlUrlResolver());
-                string expectedResult = C14NSpecExample5Output(testName);
+                string input = C14NSpecExample5Input(tempFile.Path);
+                string result = ExecuteXmlDSigC14NTransform(input, Encoding.UTF8, new XmlUrlResolver());
+                string expectedResult = C14NSpecExample5Output(tempFile.Path);
                 Assert.Equal(expectedResult, result);
             }
         }
@@ -274,11 +275,11 @@ namespace System.Security.Cryptography.Xml.Tests
         // Example 5 from C14N spec - Entity References: 
         // http://www.w3.org/TR/xml-c14n#Example-Entities
         //
-        static string C14NSpecExample5Input(string worldName) =>
+        static string C14NSpecExample5Input(string path) =>
                 "<!DOCTYPE doc [\n" +
                 "<!ATTLIST doc attrExtEnt ENTITY #IMPLIED>\n" +
                 "<!ENTITY ent1 \"Hello\">\n" +
-                $"<!ENTITY ent2 SYSTEM \"{Path.GetFullPath(worldName + ".txt")}\">\n" +
+                $"<!ENTITY ent2 SYSTEM \"{path}\">\n" +
                 "<!ENTITY entExt SYSTEM \"earth.gif\" NDATA gif>\n" +
                 "<!NOTATION gif SYSTEM \"viewgif.exe\">\n" +
                 "]>\n" +
@@ -286,7 +287,7 @@ namespace System.Security.Cryptography.Xml.Tests
                 "   &ent1;, &ent2;!\n" +
                 "</doc>\n" +
                 "\n" +
-                $"<!-- Let {worldName}.txt contain \"world\" (excluding the quotes) -->\n";
+                $"<!-- Let {path}.txt contain \"world\" (excluding the quotes) -->\n";
         static string C14NSpecExample5Output(string worldName) =>
                 "<doc attrExtEnt=\"entExt\">\n" +
                 "   Hello, world!\n" +
