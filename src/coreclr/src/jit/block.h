@@ -945,12 +945,6 @@ struct BasicBlock : private LIR::Range
     };
 
     union {
-#if ASSERTION_PROP
-        ASSERT_TP bbAssertionKill; // value assignments killed   by block
-#endif
-    };
-
-    union {
         EXPSET_TP bbCseIn; // CSEs available on entry
 #if ASSERTION_PROP
         ASSERT_TP bbAssertionIn; // value assignments available on entry
