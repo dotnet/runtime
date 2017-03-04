@@ -137,6 +137,7 @@ namespace Microsoft.DotNet.Host.Build
             var inputDir = c.BuildContext.Get<string>("SharedHostPublishRoot");
             var wixObjRoot = Path.Combine(Dirs.Output, "obj", "wix", "sharedhost");
             var sharedHostBrandName = $"'{Monikers.GetSharedHostBrandName(c)}'";
+            var upgradeCode = Utils.GenerateGuidFromName(SharedHostMsi).ToString().ToUpper();
 
             if (Directory.Exists(wixObjRoot))
             {
@@ -146,7 +147,7 @@ namespace Microsoft.DotNet.Host.Build
 
             Cmd("powershell", "-NoProfile", "-NoLogo",
                 Path.Combine(Dirs.RepoRoot, "packaging", "windows", "host", "generatemsi.ps1"),
-                inputDir, SharedHostMsi, WixRoot, sharedHostBrandName, hostMsiVersion, hostNugetVersion, MSIBuildArch, TargetArch, wixObjRoot)
+                inputDir, SharedHostMsi, WixRoot, sharedHostBrandName, hostMsiVersion, hostNugetVersion, MSIBuildArch, TargetArch, wixObjRoot, upgradeCode)
                     .Execute()
                     .EnsureSuccessful();
             return c.Success();
