@@ -275,11 +275,11 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal(c14xml2, output);
         }
 
-        [Fact(Skip = "TODO: fix me")]
+        [Fact]
         public void LoadInputWithUnsupportedType()
         {
             byte[] bad = { 0xBA, 0xD };
-            transform.LoadInput(bad);
+            Assert.Throws<ArgumentException>(() => transform.LoadInput(bad));
         }
 
         [Fact]
