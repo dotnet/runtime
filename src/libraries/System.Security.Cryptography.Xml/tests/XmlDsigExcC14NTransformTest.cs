@@ -293,12 +293,10 @@ namespace System.Security.Cryptography.Xml.Tests
         [Fact]
         public void ExcC14NSpecExample1()
         {
-            string testName = GetType().Name + "." + nameof(ExcC14NSpecExample1);
-            using (TestHelpers.CreateTestDtdFile(testName))
-            {
-                string res = ExecuteXmlDSigExcC14NTransform(ExcC14NSpecExample1Input);
-                Assert.Equal(ExcC14NSpecExample1Output, res);
-            }
+            XmlPreloadedResolver resolver = new XmlPreloadedResolver();
+            resolver.Add(TestHelpers.ToUri("doc.dtd"), "");
+            string res = ExecuteXmlDSigExcC14NTransform(ExcC14NSpecExample1Input);
+            Assert.Equal(ExcC14NSpecExample1Output, res);
         }
 
         [Fact]
@@ -380,7 +378,7 @@ namespace System.Security.Cryptography.Xml.Tests
                 "<?xml-stylesheet   href=\"doc.xsl\"\n" +
                 "   type=\"text/xsl\"   ?>\n" +
                 "\n" +
-                // "<!DOCTYPE doc SYSTEM \"doc.dtd\">\n" +
+                "<!DOCTYPE doc SYSTEM \"doc.dtd\">\n" +
                 "\n" +
                 "<doc>Hello, world!<!-- Comment 1 --></doc>\n" +
                 "\n" +
