@@ -2,12 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Diagnostics;
-using System.Net;
 using System.Runtime.InteropServices;
-using System.Threading;
-using Microsoft.Win32;
 
 namespace System.Net.Sockets
 {
@@ -101,8 +96,6 @@ namespace System.Net.Sockets
 
         private void LogBuffer(long size)
         {
-            if (!NetEventSource.IsEnabled) return;
-
             if (size > -1)
             {
                 NetEventSource.DumpBuffer(this, _buffer, 0, Math.Min((int)size, _buffer.Length));

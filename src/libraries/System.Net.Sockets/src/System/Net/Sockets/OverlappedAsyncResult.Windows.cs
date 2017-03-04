@@ -2,12 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Diagnostics;
-using System.Net;
 using System.Runtime.InteropServices;
-using System.Threading;
-using Microsoft.Win32;
 using System.Collections.Generic;
 
 namespace System.Net.Sockets
@@ -114,18 +109,13 @@ namespace System.Net.Sockets
 
         private void LogBuffer(int size)
         {
-            if (!NetEventSource.IsEnabled)
-            {
-                return;
-            }
-
             if (size > -1)
             {
                 if (_wsaBuffers != null)
                 {
                     foreach (WSABuffer wsaBuffer in _wsaBuffers)
                     {
-                        if (NetEventSource.IsEnabled) NetEventSource.DumpBuffer(this, wsaBuffer.Pointer, Math.Min(wsaBuffer.Length, size));
+                        NetEventSource.DumpBuffer(this, wsaBuffer.Pointer, Math.Min(wsaBuffer.Length, size));
                         if ((size -= wsaBuffer.Length) <= 0)
                         {
                             break;
@@ -134,7 +124,7 @@ namespace System.Net.Sockets
                 }
                 else
                 {
-                    if (NetEventSource.IsEnabled) NetEventSource.DumpBuffer(this, _singleBuffer.Pointer, Math.Min(_singleBuffer.Length, size));
+                    NetEventSource.DumpBuffer(this, _singleBuffer.Pointer, Math.Min(_singleBuffer.Length, size));
                 }
             }
         }
