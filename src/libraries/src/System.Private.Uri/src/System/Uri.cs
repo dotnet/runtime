@@ -111,6 +111,7 @@ namespace System
             QueryIriCanonical = 0x20000000000,
             FragmentIriCanonical = 0x40000000000,
             IriCanonical = 0x78000000000,
+            UnixPath = 0x100000000000,
         }
 
         private Flags _flags;
@@ -168,6 +169,11 @@ namespace System
         private bool IsUncPath
         {
             get { return (_flags & Flags.UncPath) != 0; }
+        }
+
+        private bool IsUnixPath
+        {
+            get { return (_flags & Flags.UnixPath) != 0; }
         }
 
         private Flags HostType
@@ -2028,6 +2034,14 @@ namespace System
                     ++length;
                 }
 
+                // Unix Path
+                if (!IsWindowsSystem && InFact(Flags.UnixPath))
+                {
+                    _flags |= Flags.BasicHostType;
+                    _flags |= (Flags)idx;
+                    return ParsingError.None;
+                }
+
                 // Old Uri parser tries to figure out on a DosPath in all cases.
                 // Hence http://c:/ is treated as DosPath without the host while it should be a host "c", port 80
                 //
@@ -2086,6 +2100,7 @@ namespace System
                                 }
                             }
                         }
+                        // UNC share?
                         else if (_syntax.InFact(UriSyntaxFlags.FileLikeUri) && (i - idx >= 2 && i - idx != 3 &&
                             i < length && pUriString[i] != '?' && pUriString[i] != '#'))
                         {
@@ -3618,6 +3633,14 @@ namespace System
                 ++idx;
             }
 
+            // Unix: Unix path?
+            if (!IsWindowsSystem && idx < length && uriString[idx] == '/')
+            {
+                flags |= (Flags.UnixPath | Flags.ImplicitFile | Flags.AuthorityFound);
+                syntax = UriParser.UnixFileUri;
+                return idx;
+            }
+
             // sets the recognizer for well known registered schemes
             // file, ftp, http, https, uuid, etc
             // Note that we don't support one-letter schemes that will be put into a DOS path bucket
@@ -3673,7 +3696,7 @@ namespace System
                 }
                 else if ((c = uriString[idx]) == '/' || c == '\\')
                 {
-                    //UNC share ?
+                    //UNC share?
                     if ((c = uriString[idx + 1]) == '\\' || c == '/')
                     {
                         flags |= (Flags.UncPath | Flags.ImplicitFile | Flags.AuthorityFound);
@@ -4000,12 +4023,6 @@ namespace System
             bool hostNotUnicodeNormalized = ((flags & Flags.HostUnicodeNormalized) == 0); // perf
             UriSyntaxFlags syntaxFlags = syntax.Flags;
 
-            // need to build new Iri'zed string
-            if (hasUnicode && iriParsing && hostNotUnicodeNormalized)
-            {
-                newHost = _originalUnicodeString.Substring(0, startInput);
-            }
-
             //Special case is an empty authority
             if (idx == length || ((ch = pString[idx]) == '/' || (ch == '\\' && StaticIsFile(syntax)) || ch == '#' || ch == '?'))
             {
@@ -4026,6 +4043,12 @@ namespace System
                 }
 
                 return idx;
+            }
+
+            // need to build new Iri'zed string
+            if (hasUnicode && iriParsing && hostNotUnicodeNormalized)
+            {
+                newHost = _originalUnicodeString.Substring(0, startInput);
             }
 
             string userInfoString = null;
@@ -5241,6 +5264,10 @@ namespace System
                         // The FILE DOS path comes as /c:/path, we have to exclude first 3 chars from compression
                         path = Compress(path, 3, ref length, basePart.Syntax);
                         return new string(path, 1, length - 1) + extra;
+                    }
+                    else if (!IsWindowsSystem && basePart.IsUnixPath)
+                    {
+                        left = basePart.GetParts(UriComponents.Host, UriFormat.Unescaped);
                     }
                     else
                     {

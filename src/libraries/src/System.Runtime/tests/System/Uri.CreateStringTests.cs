@@ -11,6 +11,7 @@ namespace System.Tests
 {
     public class UriCreateStringTests
     {
+        private static readonly bool s_isWindowsSystem = PlatformDetection.IsWindows;
         public static readonly string s_longString = new string('a', 65520 + 1);
 
         public static IEnumerable<object[]> OriginalString_AbsoluteUri_ToString_TestData()
@@ -39,8 +40,11 @@ namespace System.Tests
             // Implicit UNC
             yield return new object[] { @"\\unchost", "file://unchost/", "file://unchost/" };
             yield return new object[] { @"\/unchost", "file://unchost/", "file://unchost/" };
-            yield return new object[] { @"/\unchost", "file://unchost/", "file://unchost/" };
-            yield return new object[] { "//unchost", "file://unchost/", "file://unchost/" };
+            if (s_isWindowsSystem) // Unc can only start with '/' on Windows
+            {
+                yield return new object[] { @"/\unchost", "file://unchost/", "file://unchost/" };
+                yield return new object[] { "//unchost", "file://unchost/", "file://unchost/" };
+            }
             yield return new object[] { @"\\\/\/servername\sharename\path\filename", "file://servername/sharename/path/filename", "file://servername/sharename/path/filename" };
 
             // Explicit UNC
@@ -64,6 +68,14 @@ namespace System.Tests
             yield return new object[] { "file://C|/", "file:///C:/", "file:///C:/" };
             yield return new object[] { @"file:///C|\", "file:///C:/", "file:///C:/" };
             yield return new object[] { @"file://C|\", "file:///C:/", "file:///C:/" };
+
+            // Unix path
+            if (!s_isWindowsSystem)
+            {
+                // Implicit File
+                yield return new object[] { "/", "file:///", "file:///" };
+                yield return new object[] { "/path/filename", "file:///path/filename", "file:///path/filename" };
+            }
 
             // Compressed
             yield return new object[] { "http://host/path1/../path2", "http://host/path2", "http://host/path2" };
@@ -156,15 +168,21 @@ namespace System.Tests
             yield return new object[] { "http://192.0123.0.10", "http", "", "192.83.0.10", UriHostNameType.IPv4, 80, true, false };
 
             // IPv4 host - implicit UNC
+            if (s_isWindowsSystem) // Unc can only start with '/' on Windows
+            {
+                yield return new object[] { "//192.168.0.1", "file", "", "192.168.0.1", UriHostNameType.IPv4, -1, true, false };
+                yield return new object[] { @"/\192.168.0.1", "file", "", "192.168.0.1", UriHostNameType.IPv4, -1, true, false };
+            }
             yield return new object[] { @"\\192.168.0.1", "file", "", "192.168.0.1", UriHostNameType.IPv4, -1, true, false };
-            yield return new object[] { "//192.168.0.1", "file", "", "192.168.0.1", UriHostNameType.IPv4, -1, true, false };
-            yield return new object[] { @"/\192.168.0.1", "file", "", "192.168.0.1", UriHostNameType.IPv4, -1, true, false };
             yield return new object[] { @"\/192.168.0.1", "file", "", "192.168.0.1", UriHostNameType.IPv4, -1, true, false };
 
             // IPv4 host - explicit UNC
             yield return new object[] { @"file://\\192.168.0.1", "file", "", "192.168.0.1", UriHostNameType.IPv4, -1, true, false };
-            yield return new object[] { "file:////192.168.0.1", "file", "", "192.168.0.1", UriHostNameType.IPv4, -1, true, false };
-            yield return new object[] { @"file:///\192.168.0.1", "file", "", "192.168.0.1", UriHostNameType.IPv4, -1, true, false };
+            if (s_isWindowsSystem) // Unc can only start with '/' on Windows
+            {
+                yield return new object[] { "file:////192.168.0.1", "file", "", "192.168.0.1", UriHostNameType.IPv4, -1, true, false };
+                yield return new object[] { @"file:///\192.168.0.1", "file", "", "192.168.0.1", UriHostNameType.IPv4, -1, true, false };
+            }
             yield return new object[] { @"file://\/192.168.0.1", "file", "", "192.168.0.1", UriHostNameType.IPv4, -1, true, false };
 
             // IPv4 host - other
@@ -186,9 +204,12 @@ namespace System.Tests
             yield return new object[] { "http://[1111:2222:3333::431/20]", "http", "", "[1111:2222:3333::431]", UriHostNameType.IPv6, 80, true, false }; // Prefix
 
             // IPv6 Host - implicit UNC
-            yield return new object[] { "//[2001:0db8:0000:0000:0000:ff00:0042:8329]", "file", "", "[2001:db8::ff00:42:8329]", UriHostNameType.IPv6, -1, true, false };
+            if (s_isWindowsSystem) // Unc can only start with '/' on Windows
+            {
+                yield return new object[] { "//[2001:0db8:0000:0000:0000:ff00:0042:8329]", "file", "", "[2001:db8::ff00:42:8329]", UriHostNameType.IPv6, -1, true, false };
+                yield return new object[] { @"/\[2001:0db8:0000:0000:0000:ff00:0042:8329]", "file", "", "[2001:db8::ff00:42:8329]", UriHostNameType.IPv6, -1, true, false };
+            }
             yield return new object[] { @"\\[2001:0db8:0000:0000:0000:ff00:0042:8329]", "file", "", "[2001:db8::ff00:42:8329]", UriHostNameType.IPv6, -1, true, false };
-            yield return new object[] { @"/\[2001:0db8:0000:0000:0000:ff00:0042:8329]", "file", "", "[2001:db8::ff00:42:8329]", UriHostNameType.IPv6, -1, true, false };
             yield return new object[] { @"\/[2001:0db8:0000:0000:0000:ff00:0042:8329]", "file", "", "[2001:db8::ff00:42:8329]", UriHostNameType.IPv6, -1, true, false };
             yield return new object[] { @"file://\\[2001:0db8:0000:0000:0000:ff00:0042:8329]", "file", "", "[2001:db8::ff00:42:8329]", UriHostNameType.IPv6, -1, true, false };
 
@@ -248,15 +269,21 @@ namespace System.Tests
             yield return new object[] { @"C|\path1/path2", "file", "", "", UriHostNameType.Basic, -1, true, true };
 
             // UNC - implicit with empty path
+            if (s_isWindowsSystem) // Unc can only start with '/' on Windows
+            {
+                yield return new object[] { "//unchost", "file", "", "unchost", UriHostNameType.Dns, -1, true, false };
+                yield return new object[] { @"/\unchost", "file", "", "unchost", UriHostNameType.Dns, -1, true, false };
+            }
             yield return new object[] { @"\\unchost", "file", "", "unchost", UriHostNameType.Dns, -1, true, false };
-            yield return new object[] { "//unchost", "file", "", "unchost", UriHostNameType.Dns, -1, true, false };
-            yield return new object[] { @"/\unchost", "file", "", "unchost", UriHostNameType.Dns, -1, true, false };
             yield return new object[] { @"\/unchost", "file", "", "unchost", UriHostNameType.Dns, -1, true, false };
 
             // UNC - implicit with path
+            if (s_isWindowsSystem) // Unc can only start with '/' on Windows
+            {
+                yield return new object[] { "//unchost/path1/path2", "file", "", "unchost", UriHostNameType.Dns, -1, true, false };
+                yield return new object[] { @"/\unchost/path1/path2", "file", "", "unchost", UriHostNameType.Dns, -1, true, false };
+            }
             yield return new object[] { @"\\unchost/path1/path2", "file", "", "unchost", UriHostNameType.Dns, -1, true, false };
-            yield return new object[] { "//unchost/path1/path2", "file", "", "unchost", UriHostNameType.Dns, -1, true, false };
-            yield return new object[] { @"/\unchost/path1/path2", "file", "", "unchost", UriHostNameType.Dns, -1, true, false };
             yield return new object[] { @"\/unchost/path1/path2", "file", "", "unchost", UriHostNameType.Dns, -1, true, false };
             yield return new object[] { @"\\\/\/servername\sharename\path\filename", "file", "", "servername", UriHostNameType.Dns, -1, true, false };
 
@@ -304,6 +331,14 @@ namespace System.Tests
             yield return new object[] { @"file:///\C:/path1/path2", "file", "", "", UriHostNameType.Basic, -1, true, true };
             yield return new object[] { @"file://\/C:/path1/path2", "file", "", "", UriHostNameType.Basic, -1, true, true };
 
+            // Unix path
+            if (!s_isWindowsSystem)
+            {
+                // Implicit with path
+                yield return new object[] { "/path1/path2", "file", "", "", UriHostNameType.Basic, -1, true, true };
+                yield return new object[] { "/", "file", "", "", UriHostNameType.Basic, -1, true, true };
+            }
+
             // File - with host
             yield return new object[] { @"file://host/", "file", "", "host", UriHostNameType.Dns, -1, true, false };
             
@@ -349,10 +384,14 @@ namespace System.Tests
             // Loopback - HTTP
             yield return new object[] { "http://localhost/", "http", "", "localhost", UriHostNameType.Dns, 80, true, true };
             yield return new object[] { "http://loopback/", "http", "", "localhost", UriHostNameType.Dns, 80, true, true };
+
             // Loopback - implicit UNC with localhost
+            if (s_isWindowsSystem) // Unc can only start with '/' on Windows
+            {
+                yield return new object[] { "//localhost", "file", "", "localhost", UriHostNameType.Dns, -1, true, true };
+                yield return new object[] { @"/\localhost", "file", "", "localhost", UriHostNameType.Dns, -1, true, true };
+            }
             yield return new object[] { @"\\localhost", "file", "", "localhost", UriHostNameType.Dns, -1, true, true };
-            yield return new object[] { "//localhost", "file", "", "localhost", UriHostNameType.Dns, -1, true, true };
-            yield return new object[] { @"/\localhost", "file", "", "localhost", UriHostNameType.Dns, -1, true, true };
             yield return new object[] { @"\/localhost", "file", "", "localhost", UriHostNameType.Dns, -1, true, true };
             // Loopback - explicit UNC with localhost
             yield return new object[] { @"file://\\localhost", "file", "", "localhost", UriHostNameType.Dns, -1, true, true };
@@ -360,9 +399,12 @@ namespace System.Tests
             yield return new object[] { @"file://\/localhost", "file", "", "localhost", UriHostNameType.Dns, -1, true, true };
             yield return new object[] { "file:////localhost", "file", "", "localhost", UriHostNameType.Dns, -1, true, true };
             // Loopback - implicit UNC with loopback
+            if (s_isWindowsSystem) // Unc can only start with '/' on Windows
+            {
+                yield return new object[] { "//loopback", "file", "", "localhost", UriHostNameType.Dns, -1, true, true };
+                yield return new object[] { @"/\loopback", "file", "", "localhost", UriHostNameType.Dns, -1, true, true };
+            }
             yield return new object[] { @"\\loopback", "file", "", "localhost", UriHostNameType.Dns, -1, true, true };
-            yield return new object[] { "//loopback", "file", "", "localhost", UriHostNameType.Dns, -1, true, true };
-            yield return new object[] { @"/\loopback", "file", "", "localhost", UriHostNameType.Dns, -1, true, true };
             yield return new object[] { @"\/loopback", "file", "", "localhost", UriHostNameType.Dns, -1, true, true };
             // Loopback - explicit UNC with loopback
             yield return new object[] { @"file://\\loopback", "file", "", "localhost", UriHostNameType.Dns, -1, true, true };
@@ -531,25 +573,38 @@ namespace System.Tests
             yield return new object[] { @"C|\path1\path2/path3\path4\", "C:/path1/path2/path3/path4/", "", "" };
 
             // Implicit UNC with empty path
+            if (s_isWindowsSystem) // Unix UNC paths must start with '\'
+            {
+                yield return new object[] { "//unchost", "/", "", "" };
+                yield return new object[] { @"/\unchost", "/", "", "" };
+            }
             yield return new object[] { @"\\unchost", "/", "", "" };
-            yield return new object[] { "//unchost", "/", "", "" };
-            yield return new object[] { @"/\unchost", "/", "", "" };
             yield return new object[] { @"\/unchost", "/", "", "" };
             // Implicit UNC with path
+            if (s_isWindowsSystem) // Unix UNC paths must start with '\'
+            {
+                yield return new object[] { "//unchost/path1/path2", "/path1/path2", "", "" };
+                yield return new object[] { @"/\unchost/path1/path2", "/path1/path2", "", "" };
+            }
             yield return new object[] { @"\\unchost/path1/path2", "/path1/path2", "", "" };
-            yield return new object[] { "//unchost/path1/path2", "/path1/path2", "", "" };
-            yield return new object[] { @"/\unchost/path1/path2", "/path1/path2", "", "" };
             yield return new object[] { @"\/unchost/path1/path2", "/path1/path2", "", "" };
-            // Implicit UNC with backslash in path
-            yield return new object[] { @"//unchost/path1\path2/path3\path4", "/path1/path2/path3/path4", "", "" };
+
+            // Implict UNC with backslash in path
+            if (s_isWindowsSystem) // Unix UNC paths must start with '\'
+            {
+                yield return new object[] { @"//unchost/path1\path2/path3\path4", "/path1/path2/path3/path4", "", "" };
+                yield return new object[] { @"/\unchost/path1\path2/path3\path4", "/path1/path2/path3/path4", "", "" };
+            }
             yield return new object[] { @"\\unchost/path1\path2/path3\path4", "/path1/path2/path3/path4", "", "" };
-            yield return new object[] { @"/\unchost/path1\path2/path3\path4", "/path1/path2/path3/path4", "", "" };
             yield return new object[] { @"\/unchost/path1\path2/path3\path4", "/path1/path2/path3/path4", "", "" };
             yield return new object[] { @"\\\/\/servername\sharename\path\filename", "/sharename/path/filename", "", "" };
             // Implicit UNC ending with backslash
+            if (s_isWindowsSystem) // Unix UNC paths must start with '\'
+            {
+                yield return new object[] { @"//unchost/path1\path2/path3\path4\", "/path1/path2/path3/path4/", "", "" };
+                yield return new object[] { @"/\unchost/path1\path2/path3\path4\", "/path1/path2/path3/path4/", "", "" };
+            }
             yield return new object[] { @"\\unchost/path1\path2/path3\path4\", "/path1/path2/path3/path4/", "", "" };
-            yield return new object[] { @"//unchost/path1\path2/path3\path4\", "/path1/path2/path3/path4/", "", "" };
-            yield return new object[] { @"/\unchost/path1\path2/path3\path4\", "/path1/path2/path3/path4/", "", "" };
             yield return new object[] { @"\/unchost/path1\path2/path3\path4\", "/path1/path2/path3/path4/", "", "" };
             // Explicit UNC with empty path
             yield return new object[] { @"file://\\unchost", "/", "", "" };
@@ -606,6 +661,18 @@ namespace System.Tests
             // Other
             yield return new object[] { "C|/path|path/path2", "C:/path%7Cpath/path2", "", "" };
             yield return new object[] { "file://host/path?query#fragment", "/path", "?query", "#fragment" };
+
+            // Unix path
+            if (!s_isWindowsSystem)
+            {
+                // Implicit file with path
+                yield return new object[] { "/", "/", "", "" };
+                yield return new object[] { "/path1/path2", "/path1/path2", "", "" };
+                // Implicit file with backslash in path
+                yield return new object[] { @"/path1\path2/path3\path4", "/path1%5Cpath2/path3%5Cpath4", "", "" };
+                // Implicit file ending with backlash
+                yield return new object[] { @"/path1\path2/path3\path4\", "/path1%5Cpath2/path3%5Cpath4%5C", "", "" };
+            }
 
             // Mailto
             yield return new object[] { "mailto:someone@example.com", "", "", "" };
@@ -785,15 +852,21 @@ namespace System.Tests
             yield return new object[] { @"\\unchost", true, true };
 
             // Implicit UNC with empty path
-            yield return new object[] { "//unchost", true, true };
+            if (s_isWindowsSystem) // Unc can only start with '/' on Windows
+            {
+                yield return new object[] { "//unchost", true, true };
+                yield return new object[] { @"/\unchost", true, true };
+            }
             yield return new object[] { @"\\unchost", true, true };
-            yield return new object[] { @"/\unchost", true, true };
             yield return new object[] { @"\/unchost", true, true };
 
             // Implicit UNC with path
+            if (s_isWindowsSystem) // Unc can only start with '/' on Windows
+            {
+                yield return new object[] { "//unchost/path1/path2", true, true };
+                yield return new object[] { @"/\unchost/path1/path2", true, true };
+            }
             yield return new object[] { @"\\unchost/path1/path2", true, true };
-            yield return new object[] { "//unchost/path1/path2", true, true };
-            yield return new object[] { @"/\unchost/path1/path2", true, true };
             yield return new object[] { @"\/unchost/path1/path2", true, true };
 
             // Explicit UNC with empty path
@@ -1061,12 +1134,18 @@ namespace System.Tests
             // Implicit UNC with windows drive
             yield return new object[] { @"\\C:/", UriKind.Absolute };
             yield return new object[] { @"\\C|/", UriKind.Absolute };
-            yield return new object[] { "//C:/", UriKind.Absolute };
-            yield return new object[] { "//C|/", UriKind.Absolute };
+            if (s_isWindowsSystem) // Valid Unix path
+            {
+                yield return new object[] { "//C:/", UriKind.Absolute };
+                yield return new object[] { "//C|/", UriKind.Absolute };
+            }
             yield return new object[] { @"\/C:/", UriKind.Absolute };
             yield return new object[] { @"\/C|/", UriKind.Absolute };
-            yield return new object[] { @"/\C:/", UriKind.Absolute };
-            yield return new object[] { @"/\C|/", UriKind.Absolute };
+            if (s_isWindowsSystem) // Valid Unix path
+            {
+                yield return new object[] { @"/\C:/", UriKind.Absolute };
+                yield return new object[] { @"/\C|/", UriKind.Absolute };
+            }
 
             // Explicit UNC with invalid windows drive
             yield return new object[] { @"file://\\1:/", UriKind.Absolute };

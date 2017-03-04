@@ -10,6 +10,8 @@ namespace System.Tests
 {
     public class UriMethodTests
     {
+        private static readonly bool s_isWindowsSystem = PlatformDetection.IsWindows;
+
         public static IEnumerable<object[]> MakeRelative_TestData()
         {
             // Path (forward x3)
@@ -67,6 +69,12 @@ namespace System.Tests
             yield return new object[] { new Uri("http://domain.com/PATH1/path2/PATH3"), new Uri("http://domain.com/path1/path2/path3"), new Uri("../../path1/path2/path3", UriKind.Relative) };
             yield return new object[] { new Uri(@"\\servername\PATH1\path2\PATH3"), new Uri(@"\\servername\path1\path2\path3"), new Uri("", UriKind.Relative) };
             yield return new object[] { new Uri("file://C:/PATH1/path2/PATH3"), new Uri("file://C:/path1/path2/path3"), new Uri("", UriKind.Relative) };
+            // Unix paths are case sensitive
+            yield return new object[] { new Uri("file:///PATH1/path2/PATH3"), new Uri("file:///path1/path2/path3"), new Uri("../../path1/path2/path3", UriKind.Relative) };
+            if (!s_isWindowsSystem) // Unix path
+            {
+                yield return new object[] { new Uri("/PATH1/path2/PATH3"), new Uri("/path1/path2/path3"), new Uri("../../path1/path2/path3", UriKind.Relative) };
+            }
 
             // Same path, but uri1 ended with a filename, but uri2 didn't
             yield return new object[] { new Uri("http://domain.com/path1/file"), new Uri("http://domain.com/path1/"), new Uri("./", UriKind.Relative) };
@@ -202,22 +210,32 @@ namespace System.Tests
             Assert.Throws<ArgumentNullException>("uri", () => new Uri("http://domain.com").IsBaseOf(null)); // Uri is null
         }
 
+        public static IEnumerable<object[]> IsWellFormedOriginalString_TestData()
+        {
+            yield return new object[] { "http://www.domain.com/path?name", true  };
+            yield return new object[] { "http://192.168.0.1:50/path1/page?query#fragment", true  };
+            yield return new object[] { "http://[::1]:50/path1/page?query#fragment", true  };
+            yield return new object[] { "http://[::1]/path1/page?query#fragment", true  };
+            yield return new object[] { "unknownscheme:", true  };
+            yield return new object[] { "http://www.domain.com/path???/file name", false  };
+            yield return new object[] { @"http:\\host/path/file", false  };
+            yield return new object[] { "file:////", true  };
+            yield return new object[] { @"http:\\host/path/file", false  };
+            yield return new object[] { "http://host/path\file", false  };
+            yield return new object[] { @"c:\directory\filename", false  };
+            yield return new object[] { @"\\unchost", false  };
+            yield return new object[] { "file://C:/directory/filename", false  };
+            yield return new object[] { "file:///c|/dir", false  };
+            yield return new object[] { @"file:\\\c:\path", false  };
+             // Unix path
+            if (!s_isWindowsSystem)
+            {
+                yield return new object[] { "/directory/filename", false  };
+            }
+        }
+
         [Theory]
-        [InlineData("http://www.domain.com/path?name", true)]
-        [InlineData("http://192.168.0.1:50/path1/page?query#fragment", true)]
-        [InlineData("http://[::1]:50/path1/page?query#fragment", true)]
-        [InlineData("http://[::1]/path1/page?query#fragment", true)]
-        [InlineData("unknownscheme:", true)]
-        [InlineData("http://www.domain.com/path???/file name", false)]
-        [InlineData(@"c:\directory\filename", false)]
-        [InlineData(@"\\unchost", false)]
-        [InlineData("file://C:/directory/filename", false)]
-        [InlineData(@"http:\\host/path/file", false)]
-        [InlineData("file:////", true)]
-        [InlineData("file:///c|/dir", false)]
-        [InlineData(@"file:\\\c:\path", false)]
-        [InlineData(@"http:\\host/path/file", false)]
-        [InlineData("http://host/path\file", false)]
+        [MemberData(nameof(IsWellFormedOriginalString_TestData))]
         public void IsWellFormedOriginalString(string uriString, bool expected)
         {
             Uri uri = new Uri(uriString);
@@ -330,6 +348,18 @@ namespace System.Tests
             yield return new object[] { new Uri(@"\\server\sharepath\path\file"), new Uri(@"\\server\sharepath\pata\file"), false };
             yield return new object[] { new Uri(@"\\server\sharepath\path\file"), new Uri(@"\\server\sharepath\path\file!"), false };
 
+            // Unix path
+            if (!s_isWindowsSystem)
+            {
+                // Implicit file
+                yield return new object[] { new Uri("/sharepath/path/file"), new Uri("/sharepath/path/file"), true };
+                yield return new object[] { new Uri("/sharepath/path/file"), new Uri("/sharepath/path/File"), false };
+                yield return new object[] { new Uri("/sharepath/path/file"), new Uri("/sharepata/path/file"), false };
+                yield return new object[] { new Uri("/sharepath/path/file"), new Uri("/sharepath/pata/file"), false };
+                yield return new object[] { new Uri("/sharepath/path/file"), new Uri("/sharepath/path/file!"), false };
+                yield return new object[] { new Uri(@"/shar\path/path/file"), new Uri("/shar/path/path/file"), false };
+            }
+
             // Relative paths
             yield return new object[] { new Uri("/path1/path2/", UriKind.Relative), new Uri("/path1/path2/", UriKind.Relative), true };
             yield return new object[] { new Uri("/path1/path2/", UriKind.Relative), new Uri("/path1/path2", UriKind.Relative), false };
@@ -363,7 +393,8 @@ namespace System.Tests
                 Assert.Equal(expected, uri1.Equals(obj));
                 if (uri2 != null)
                 {
-                    Assert.Equal(expected, uri1.GetHashCode().Equals(uri2.GetHashCode()));
+                    bool onlyCaseDifference = string.Equals(uri1.OriginalString, uri2.OriginalString, StringComparison.OrdinalIgnoreCase);
+                    Assert.Equal(expected || onlyCaseDifference, uri1.GetHashCode().Equals(uri2.GetHashCode()));
                 }
             }
             if (!(obj is string))
