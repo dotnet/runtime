@@ -848,4 +848,24 @@ internal static class SR
     {
         get { return Environment.GetResourceString("UnknownError_Num"); }
     }
+
+    internal static string Lazy_ctor_ModeInvalid
+    {
+        get { return Environment.GetResourceString("Lazy_ctor_ModeInvalid"); }
+    }
+
+    internal static string Lazy_Value_RecursiveCallsToValue
+    {
+        get { return Environment.GetResourceString("Lazy_Value_RecursiveCallsToValue"); }
+    }
+
+    internal static string Lazy_CreateValue_NoParameterlessCtorForT
+    {
+        get { return Environment.GetResourceString("Lazy_CreateValue_NoParameterlessCtorForT"); }
+    }
+
+    internal static string Lazy_ToString_ValueNotCreated
+    {
+        get { return Environment.GetResourceString("Lazy_ToString_ValueNotCreated"); }
+    }
 }

@@ -385,7 +385,6 @@
     <Compile Include="$(BclSourcesRoot)\System\GC.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Guid.cs" />
     <Compile Include="$(BclSourcesRoot)\System\InsufficientMemoryException.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Lazy.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Int16.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Int32.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Int64.cs" />
