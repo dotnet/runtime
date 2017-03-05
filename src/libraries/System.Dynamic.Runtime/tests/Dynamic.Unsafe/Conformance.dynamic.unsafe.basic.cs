@@ -6,8 +6,6 @@ using Xunit;
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.anonytype01.anonytype01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.anonytype01.anonytype01;
-
     unsafe // <Area> dynamic in unsafe code </Area>
            // <Title> unsafe type </Title>
            // <Description>
@@ -47,8 +45,6 @@ public class UC
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.array01.array01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.array01.array01;
-
     unsafe // <Area> dynamic in unsafe code </Area>
            // <Title> unsafe type </Title>
            // <Description>
@@ -89,8 +85,6 @@ public class US
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.array02.array02
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.array02.array02;
-
     unsafe // <Area> dynamic in unsafe code </Area>
            // <Title> unsafe type </Title>
            // <Description>
@@ -129,7 +123,6 @@ public class US
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.attribute01.attribute01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.attribute01.attribute01;
     // <Area> dynamic in unsafe code </Area>
     // <Title> unsafe type </Title>
     // <Description>
@@ -173,7 +166,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.attribute01
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.collection01.collection01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.collection01.collection01;
     // <Area> dynamic in unsafe code </Area>
     // <Title> unsafe type </Title>
     // <Description>
@@ -214,7 +206,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.collection0
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.collection02.collection02
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.collection02.collection02;
     // <Area> dynamic in unsafe code </Area>
     // <Title> unsafe type </Title>
     // <Description>
@@ -257,7 +248,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.collection0
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.collection03.collection03
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.collection03.collection03;
     // <Area> dynamic in unsafe code </Area>
     // <Title> unsafe type </Title>
     // <Description>
@@ -267,7 +257,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.collection0
     //<Expects Status=success></Expects>
     // <Code>
     //<Expects Status=warning>\(17,17\).*CS0649</Expects>
-    using System;
     using System.Collections.Generic;
     using Microsoft.CSharp.RuntimeBinder;
 
@@ -314,8 +303,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.collection0
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.ctor01.ctor01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.ctor01.ctor01;
-
     // <Area> dynamic in unsafe code </Area>
     // <Title> unsafe type </Title>
     // <Description>
@@ -354,8 +341,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.ctor01.ctor
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.ctor02.ctor02
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.ctor02.ctor02;
-
     // <Area> dynamic in unsafe code </Area>
     // <Title> unsafe type </Title>
     // <Description>
@@ -393,8 +378,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.ctor02.ctor
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.ctor03.ctor03
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.ctor03.ctor03;
-
     // <Area> dynamic in unsafe code </Area>
     // <Title> unsafe type </Title>
     // <Description>
@@ -435,8 +418,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.ctor03.ctor
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.dlgate01.dlgate01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.dlgate01.dlgate01;
-
     // <Area> dynamic in unsafe code </Area>
     // <Title> unsafe type</Title>
     // <Description>
@@ -470,8 +451,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.dlgate01.dl
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.dtor01.dtor01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.dtor01.dtor01;
-
     // <Area> dynamic in unsafe code </Area>
     // <Title> unsafe type </Title>
     // <Description>
@@ -508,8 +487,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.dtor01.dtor
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.evnt01.evnt01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.evnt01.evnt01;
-
     // <Area> dynamic in unsafe code </Area>
     // <Title> unsafe type</Title>
     // <Description>
@@ -543,8 +520,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.evnt01.evnt
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.explicit01.explicit01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.explicit01.explicit01;
-
     unsafe // <Area> dynamic in unsafe code </Area>
            // <Title> unsafe type </Title>
            // <Description>
@@ -593,7 +568,6 @@ public class US
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.expressiontree01.expressiontree01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.expressiontree01.expressiontree01;
     // <Area> dynamic in unsafe code </Area>
     // <Title> unsafe type </Title>
     // <Description>
@@ -633,8 +607,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.expressiont
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.field01.field01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.field01.field01;
-
     // <Area> dynamic in unsafe code </Area>
     // <Title> unsafe type </Title>
     // <Description>
@@ -668,8 +640,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.field01.fie
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.fieldinit01.fieldinit01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.fieldinit01.fieldinit01;
-
     unsafe // <Area> dynamic in unsafe code </Area>
            // <Title>unsafe context</Title>
            // <Description>
@@ -704,8 +674,6 @@ public class C
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.implicit01.implicit01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.implicit01.implicit01;
-
     unsafe // <Area> dynamic in unsafe code </Area>
            // <Title> unsafe type </Title>
            // <Description>
@@ -753,8 +721,6 @@ public class US
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.indexer02.indexer02
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.indexer02.indexer02;
-
     // <Area> dynamic in unsafe code </Area>
     // <Title> unsafe type </Title>
     // <Description>
@@ -810,8 +776,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.indexer02.i
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.indexer04.indexer04
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.indexer04.indexer04;
-
     // <Area> dynamic in unsafe code </Area>
     // <Title> unsafe type </Title>
     // <Description>
@@ -868,8 +832,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.indexer04.i
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.integeregererface02.integeregererface02
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.integeregererface02.integeregererface02;
-
     // <Area> dynamic in unsafe code </Area>
     // <Title> unsafe type</Title>
     // <Description>
@@ -912,7 +874,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.integereger
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.lambda01.lambda01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.lambda01.lambda01;
     // <Area> dynamic in unsafe code </Area>
     // <Title> unsafe type </Title>
     // <Description>
@@ -952,7 +913,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.lambda01.la
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.lambda02.lambda02
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.lambda02.lambda02;
     // <Area> dynamic in unsafe code </Area>
     // <Title> unsafe type </Title>
     // <Description>
@@ -999,8 +959,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.lambda02.la
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.method02.method02
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.method02.method02;
-
     // <Area> dynamic in unsafe code </Area>
     // <Title> unsafe type </Title>
     // <Description>
@@ -1045,8 +1003,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.method02.me
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.method05.method05
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.method05.method05;
-
     // <Area> dynamic in unsafe code </Area>
     // <Title> unsafe type </Title>
     // <Description>
@@ -1090,8 +1046,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.method05.me
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.method07.method07
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.method07.method07;
-
     unsafe // <Area> dynamic in unsafe code </Area>
            // <Title> unsafe type </Title>
            // <Description>
@@ -1134,7 +1088,6 @@ public class US
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.method08.method08
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.method08.method08;
     // <Area> dynamic in unsafe code </Area>
     // <Title> unsafe type </Title>
     // <Description>
@@ -1143,7 +1096,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.method08.me
     // <RelatedBug></RelatedBug>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
     using Microsoft.CSharp.RuntimeBinder;
 
     public unsafe class Test
@@ -1183,7 +1135,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.method08.me
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.objinit01.objinit01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.objinit01.objinit01;
     // <Area> dynamic in unsafe code </Area>
     // <Title> unsafe type </Title>
     // <Description>
@@ -1191,7 +1142,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.unsfe.basic.objinit01.o
     // </Description>
     //<Expects Status=success></Expects>
     // <Code>
-    using System.Collections.Generic;
 
     public unsafe class US
     {
