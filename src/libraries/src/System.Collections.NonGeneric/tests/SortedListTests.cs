@@ -582,6 +582,67 @@ namespace System.Collections.Tests
         }
 
         [Fact]
+        public static void GetEnumerator_StartOfEnumeration_Clone()
+        {
+            SortedList sortedList = Helpers.CreateIntSortedList(10);
+
+            IDictionaryEnumerator enumerator = sortedList.GetEnumerator();
+            ICloneable cloneableEnumerator = (ICloneable)enumerator;
+
+            IDictionaryEnumerator clonedEnumerator = (IDictionaryEnumerator)cloneableEnumerator.Clone();
+            Assert.NotSame(enumerator, clonedEnumerator);
+
+            // Cloned and original enumerators should enumerate separately.
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(sortedList[0], enumerator.Value);
+            Assert.Throws<InvalidOperationException>(() => clonedEnumerator.Value);
+
+            Assert.True(clonedEnumerator.MoveNext());
+            Assert.Equal(sortedList[0], enumerator.Value);
+            Assert.Equal(sortedList[0], clonedEnumerator.Value);
+
+            // Cloned and original enumerators should enumerate in the same sequence.
+            for (int i = 1; i < sortedList.Count; i++)
+            {
+                Assert.True(enumerator.MoveNext());
+                Assert.NotEqual(enumerator.Current, clonedEnumerator.Current);
+
+                Assert.True(clonedEnumerator.MoveNext());
+                Assert.Equal(enumerator.Current, clonedEnumerator.Current);
+            }
+
+            Assert.False(enumerator.MoveNext());
+            Assert.Throws<InvalidOperationException>(() => enumerator.Value);
+            Assert.Equal(sortedList[sortedList.Count - 1], clonedEnumerator.Value);
+
+            Assert.False(clonedEnumerator.MoveNext());
+            Assert.Throws<InvalidOperationException>(() => enumerator.Value);
+            Assert.Throws<InvalidOperationException>(() => clonedEnumerator.Value);
+        }
+
+        [Fact]
+        public static void GetEnumerator_InMiddleOfEnumeration_Clone()
+        {
+            SortedList sortedList = Helpers.CreateIntSortedList(10);
+
+            IEnumerator enumerator = sortedList.GetEnumerator();
+            enumerator.MoveNext();
+            ICloneable cloneableEnumerator = (ICloneable)enumerator;
+
+            // Cloned and original enumerators should start at the same spot, even
+            // if the original is in the middle of enumeration.
+            IEnumerator clonedEnumerator = (IEnumerator)cloneableEnumerator.Clone();
+            Assert.Equal(enumerator.Current, clonedEnumerator.Current);
+
+            for (int i = 0; i < sortedList.Count - 1; i++)
+            {
+                Assert.True(clonedEnumerator.MoveNext());
+            }
+
+            Assert.False(clonedEnumerator.MoveNext());
+        }
+
+        [Fact]
         public static void GetEnumerator_IEnumerator_Invalid()
         {
             SortedList sortList = Helpers.CreateIntSortedList(100);
