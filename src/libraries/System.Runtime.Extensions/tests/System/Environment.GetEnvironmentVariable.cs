@@ -133,6 +133,7 @@ namespace System.Tests
             }
         }
 
+        [Fact]
         public void EnumerateYieldsDictionaryEntryFromIEnumerable()
         {
             // GetEnvironmentVariables has always yielded DictionaryEntry from IEnumerable
