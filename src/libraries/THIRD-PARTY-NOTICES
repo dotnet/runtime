@@ -60,6 +60,7 @@ written authorization of the copyright holder.
 License notice for Zlib 
 -----------------------
 
+https://github.com/madler/zlib
 http://zlib.net/zlib_license.html
 
 /* zlib.h -- interface of the 'zlib' general purpose compression library
