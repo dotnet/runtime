@@ -479,6 +479,67 @@ namespace System.Collections.Tests
         }
 
         [Fact]
+        public static void GetEnumerator_StartOfEnumeration_Clone()
+        {
+            Queue queue = Helpers.CreateIntQueue(10);
+
+            IEnumerator enumerator = queue.GetEnumerator();
+            ICloneable cloneableEnumerator = (ICloneable)enumerator;
+
+            IEnumerator clonedEnumerator = (IEnumerator)cloneableEnumerator.Clone();
+            Assert.NotSame(enumerator, clonedEnumerator);
+
+            // Cloned and original enumerators should enumerate separately.
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(0, enumerator.Current);
+            Assert.Throws<InvalidOperationException>(() => clonedEnumerator.Current);
+
+            Assert.True(clonedEnumerator.MoveNext());
+            Assert.Equal(0, enumerator.Current);
+            Assert.Equal(0, clonedEnumerator.Current);
+
+            // Cloned and original enumerators should enumerate in the same sequence.
+            for (int i = 1; i < queue.Count; i++)
+            {
+                Assert.True(enumerator.MoveNext());
+                Assert.NotEqual(enumerator.Current, clonedEnumerator.Current);
+
+                Assert.True(clonedEnumerator.MoveNext());
+                Assert.Equal(enumerator.Current, clonedEnumerator.Current);
+            }
+
+            Assert.False(enumerator.MoveNext());
+            Assert.Throws<InvalidOperationException>(() => enumerator.Current);
+            Assert.Equal(queue.Count - 1, clonedEnumerator.Current);
+
+            Assert.False(clonedEnumerator.MoveNext());
+            Assert.Throws<InvalidOperationException>(() => enumerator.Current);
+            Assert.Throws<InvalidOperationException>(() => clonedEnumerator.Current);
+        }
+
+        [Fact]
+        public static void GetEnumerator_InMiddleOfEnumeration_Clone()
+        {
+            Queue queue = Helpers.CreateIntQueue(10);
+
+            IEnumerator enumerator = queue.GetEnumerator();
+            enumerator.MoveNext();
+            ICloneable cloneableEnumerator = (ICloneable)enumerator;
+
+            // Cloned and original enumerators should start at the same spot, even
+            // if the original is in the middle of enumeration.
+            IEnumerator clonedEnumerator = (IEnumerator)cloneableEnumerator.Clone();
+            Assert.Equal(enumerator.Current, clonedEnumerator.Current);
+
+            for (int i = 0; i < queue.Count - 1; i++)
+            {
+                Assert.True(clonedEnumerator.MoveNext());
+            }
+
+            Assert.False(clonedEnumerator.MoveNext());
+        }
+
+        [Fact]
         public static void GetEnumerator_Invalid()
         {
             var queue1 = Helpers.CreateIntQueue(100);
