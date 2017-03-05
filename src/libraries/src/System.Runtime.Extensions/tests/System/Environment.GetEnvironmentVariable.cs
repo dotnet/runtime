@@ -133,11 +133,28 @@ namespace System.Tests
             }
         }
 
+        [Fact]
         public void EnumerateYieldsDictionaryEntryFromIEnumerable()
         {
             // GetEnvironmentVariables has always yielded DictionaryEntry from IEnumerable
             IDictionary vars = Environment.GetEnvironmentVariables();
             IEnumerator enumerator = ((IEnumerable)vars).GetEnumerator();
+            if (enumerator.MoveNext())
+            {
+                Assert.IsType<DictionaryEntry>(enumerator.Current);
+            }
+            else
+            {
+                Assert.Throws<InvalidOperationException>(() => enumerator.Current);
+            }
+        }
+
+        [Fact]
+        public void GetEnumerator_IDictionaryEnumerator_YieldsDictionaryEntries()
+        {
+            // GetEnvironmentVariables has always yielded DictionaryEntry from IDictionaryEnumerator
+            IDictionary vars = Environment.GetEnvironmentVariables();
+            IDictionaryEnumerator enumerator = vars.GetEnumerator();
             if (enumerator.MoveNext())
             {
                 Assert.IsType<DictionaryEntry>(enumerator.Current);
