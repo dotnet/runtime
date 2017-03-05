@@ -10,7 +10,7 @@
         "android": {
             "#import": [ "any" ]
         },
-        "android-x64": {
+        "android-arm64": {
 	           "#import": [ "any" ]
         },
         "android-mips": {
@@ -20,8 +20,8 @@
         "android.21": {
 	           "#import": [ "android" ]
 	       },
-        "android.21-x64": {
-	           "#import": [ "android.21", "android-x64" ]
+        "android.21-arm64": {
+	           "#import": [ "android.21", "android-arm64" ]
         },
         "android.21-mips": {
 	           "#import": [ "android.21", "android-mips" ]
@@ -30,8 +30,8 @@
         "android.22": {
 	           "#import": [ "android" ]
 	       },
-        "android.22-x64": {
-	           "#import": [ "android.22", "android-x64" ]
+        "android.22-arm64": {
+	           "#import": [ "android.22", "android-arm64" ]
         },
         "android.22-mips": {
 	           "#import": [ "android.22", "android-mips" ]
@@ -40,13 +40,13 @@
         "android.23": {
 	           "#import": [ "android" ]
 	       },
-        "android.23-x64": {
-	           "#import": [ "android.23", "android-x64" ]
+        "android.23-arm64": {
+	           "#import": [ "android.23", "android-arm64" ]
         },
         "android.23-mips": {
 	           "#import": [ "android.23", "android-mips" ]
         },
-        
+
         "win": {
             "#import": [ "any" ]
         },
