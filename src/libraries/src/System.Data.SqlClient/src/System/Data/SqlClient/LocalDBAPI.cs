@@ -138,7 +138,7 @@ namespace System.Data
 
 
                 // First try for current culture                
-                int hResult = LocalDBFormatMessage(hrLocalDB: hrCode, dwFlags: const_LOCALDB_TRUNCATE_ERR_MESSAGE, dwLanguageId: (uint)Locale.GetCurrentCultureLcid(),
+                int hResult = LocalDBFormatMessage(hrLocalDB: hrCode, dwFlags: const_LOCALDB_TRUNCATE_ERR_MESSAGE, dwLanguageId: (uint)CultureInfo.CurrentCulture.LCID,
                                                  buffer: buffer, buflen: ref len);
                 if (hResult >= 0)
                     return buffer.ToString();
