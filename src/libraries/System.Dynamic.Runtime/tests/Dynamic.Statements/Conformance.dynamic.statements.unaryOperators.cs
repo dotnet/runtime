@@ -6,8 +6,6 @@ using Xunit;
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.unaryOperators.as001.as001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.unaryOperators.as001.as001;
-
     public class Test
     {
         [Fact]
@@ -30,8 +28,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.unaryOperato
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.unaryOperators.as002.as002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.unaryOperators.as002.as002;
-
     // <Title> Simple dynamic declarations </Title>
     // <Description>(By Design) Spec 4.2.7: When dynamic appears in the right operand of the as operator,
     //                          the result of the expression still contains dynamic, not object
@@ -65,16 +61,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.unaryOperato
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.unaryOperators.errorverifier.errorverifier
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.unaryOperators.errorverifier.errorverifier;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.unaryOperators.as003.as003;
-    using System;
-    using System.Collections;
-    using System.IO;
-    using System.Globalization;
-    using System.Reflection;
-    using System.Resources;
-    using Microsoft.CSharp.RuntimeBinder;
-
     public enum ErrorElementId
     {
         None,
@@ -259,15 +245,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.unaryOperato
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.unaryOperators.as003.as003
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.unaryOperators.errorverifier.errorverifier;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.unaryOperators.as003.as003;
     // <Title>Unary operators</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class temp
     {
@@ -304,14 +287,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.unaryOperato
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.unaryOperators.default001.default001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.unaryOperators.default001.default001;
     // <Title>Default(dynamic)</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -336,8 +317,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.unaryOperato
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.unaryOperators.is001.is001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.unaryOperators.is001.is001;
-
     public class Test
     {
         [Fact]
@@ -359,8 +338,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.unaryOperato
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.unaryOperators.is002.is002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.unaryOperators.is002.is002;
-
     public class Test
     {
         [Fact]
@@ -382,7 +359,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.unaryOperato
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.unaryOperators.is003.is003
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.unaryOperators.is003.is003;
     // <Title>Unary operators</Title>
     // <Description>
     // </Description>
@@ -390,7 +366,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.unaryOperato
     //<Expects Status=success></Expects>
     // <Code>
     //<Expects Status=warning>\(17,18\).*CS1981</Expects>
-    using System;
 
     public class Test
     {
@@ -417,7 +392,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.unaryOperato
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.unaryOperators.is005.is005
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.unaryOperators.is005.is005;
     // <Title>Unary operators</Title>
     // <Description>
     // </Description>
@@ -425,7 +399,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.unaryOperato
     //<Expects Status=success></Expects>
     // <Code>
     //<Expects Status=warning>\(26,18\).*CS1981</Expects>
-    using System;
 
     public class temp
     {
@@ -461,7 +434,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.unaryOperato
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.unaryOperators.typeof003.typeof003
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.unaryOperators.typeof003.typeof003;
     // <Title>Unary operators</Title>
     // <Description>
     // </Description>

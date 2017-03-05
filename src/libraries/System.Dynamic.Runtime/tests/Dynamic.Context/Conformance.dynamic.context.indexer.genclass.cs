@@ -2,14 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclassregindexer.genclassregindexer;
 using Xunit;
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclassregindexer.genclassregindexer
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclassregindexer.genclassregindexer;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclass001.genclass001;
     using System;
-    using System.Reflection;
 
     public class MyClass
     {
@@ -396,15 +394,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclass001.genclass001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclassregindexer.genclassregindexer;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclass001.genclass001;
     // <Title> Tests generic class indexer used in + operator.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -432,8 +427,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclass002.genclass002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclassregindexer.genclassregindexer;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclass002.genclass002;
     // <Title> Tests generic class indexer used in implicit operator.</Title>
     // <Description>
     // </Description>
@@ -442,7 +435,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
     // <Code>
     //<Expects Status=warning>\(15,20\).*CS0649</Expects>
     //<Expects Status=warning>\(29,20\).*CS0649</Expects>
-    using System;
 
     public class Test
     {
@@ -483,15 +475,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclass003.genclass003
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclassregindexer.genclassregindexer;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclass003.genclass003;
     // <Title> Tests generic class indexer used in implicit operator.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -537,15 +526,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclass005.genclass005
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclassregindexer.genclassregindexer;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclass005.genclass005;
     // <Title> Tests generic class indexer used in using block and using expression.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
     using System.IO;
 
     public class Test
@@ -589,15 +575,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclass006.genclass006
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclassregindexer.genclassregindexer;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclass006.genclass006;
     // <Title> Tests generic class indexer used in the for-condition.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -649,15 +632,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclass008.genclass008
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclassregindexer.genclassregindexer;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclass008.genclass008;
     // <Title> Tests generic class indexer used in the while/do expression.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -694,14 +674,11 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclass009.genclass009
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclassregindexer.genclassregindexer;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclass009.genclass009;
     // <Title> Tests generic class indexer used in switch expression.</Title>
     // <Description> Won't fix: no dynamic in switch expression </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -737,15 +714,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclass010.genclass010
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclassregindexer.genclassregindexer;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclass010.genclass010;
     // <Title> Tests generic class indexer used in switch section statement list.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -796,15 +770,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclass011.genclass011
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclassregindexer.genclassregindexer;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclass011.genclass011;
     // <Title> Tests generic class indexer used in switch default section statement list.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -857,8 +828,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclass014.genclass014
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclassregindexer.genclassregindexer;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclass014.genclass014;
     // <Title> Tests generic class indexer used in try/catch/finally.</Title>
     // <Description>
     // try/catch/finally that uses an anonymous method and refer two dynamic parameters.
@@ -913,8 +882,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclass015.genclass015
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclassregindexer.genclassregindexer;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclass015.genclass015;
     // <Title> Tests generic class indexer used in iterator that calls to a lambda expression.</Title>
     // <Description>
     // </Description>
@@ -963,16 +930,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclass016.genclass016
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclassregindexer.genclassregindexer;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclass016.genclass016;
     // <Title> Tests generic class indexer used in object initializer inside a collection initializer.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
-    using System.Collections;
     using System.Collections.Generic;
 
     public class Test
@@ -1010,8 +973,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclass017.genclass017
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclassregindexer.genclassregindexer;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclass017.genclass017;
     // <Title> Tests generic class indexer used in anonymous type.</Title>
     // <Description>
     // anonymous type inside a query expression that introduces dynamic variables.
@@ -1019,9 +980,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
     using System.Linq;
-    using System.Collections;
     using System.Collections.Generic;
 
     public class Test
@@ -1085,15 +1044,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclass018.genclass018
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclassregindexer.genclassregindexer;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclass018.genclass018;
     // <Title> Tests generic class indexer used in static generic method body.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -1129,8 +1085,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclass020.genclass020
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclassregindexer.genclassregindexer;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclass020.genclass020;
     // <Title> Tests generic class indexer used in static method body.</Title>
     // <Description>
     // Negative
@@ -1138,7 +1092,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test : C
     {
@@ -1181,8 +1134,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclass021.genclass021
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclassregindexer.genclassregindexer;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclass021.genclass021;
     // <Title> Tests generic class indexer used in static method body.</Title>
     // <Description>
     // Negative
@@ -1190,7 +1141,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -1220,8 +1170,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclass022.genclass022
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclassregindexer.genclassregindexer;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclass.genclass022.genclass022;
     // <Title> Tests generic class indexer used in static method body.</Title>
     // <Description>
     // Negative
@@ -1229,7 +1177,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.genclas
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test : I
     {
