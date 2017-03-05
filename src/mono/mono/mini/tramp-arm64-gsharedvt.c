@@ -93,7 +93,7 @@ mono_arm_start_gsharedvt_call (GSharedVtCallInfo *info, gpointer *caller, gpoint
 				break;
 			case GSHAREDVT_ARG_BYVAL_TO_BYREF:
 				src_slot = src & 0x3f;
-				src_ptr = (guint8*)(caller + src_slot + src_offset);
+				src_ptr = (guint8*)(caller + src_slot) + src_offset;
 				callee [dst] = src_ptr;
 				break;
 			default:

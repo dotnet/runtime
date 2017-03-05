@@ -1348,6 +1348,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 			/* Pass the argument address in the next register */
 			if (cinfo->gr >= PARAM_REGS) {
 				ainfo->storage = ArgVtypeByRefOnStack;
+				cinfo->stack_usage = ALIGN_TO (cinfo->stack_usage, 8);
 				ainfo->offset = cinfo->stack_usage;
 				cinfo->stack_usage += 8;
 			} else {

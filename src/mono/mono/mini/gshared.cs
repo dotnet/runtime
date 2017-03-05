@@ -1677,6 +1677,8 @@ public class Tests
 				   uint i1, uint i2, uint i3, uint i4);
 		int Structs (T t, int dummy1, int a2, int a3, int a4, int a5, int a6, int a7, int dummy8,
 					 BStruct s);
+		void Generic<T2> (T t, T2[] arr, int dummy1, int a2, int a3, int a4, int a5, int a6, int a7, int dummy8,
+						  T2 i1, T2 i2, T2 i3, T2 i4);
 	}
 
 	class Foo3<T> : IFoo3<T> {
@@ -1708,6 +1710,13 @@ public class Tests
 							BStruct s) {
 			return s.a + s.b + s.c + s.d;
 		}
+
+		public void Generic<T2> (T t, T2[] arr, int a1, int a2, int a3, int a4, int a5, int a6, int a7, int a8, T2 i1, T2 i2, T2 i3, T2 i4) {
+			arr [0] = i1;
+			arr [1] = i2;
+			arr [2] = i3;
+			arr [3] = i4;
+		}
 	}
 
 	// Passing small normal arguments on the stack
@@ -1731,6 +1740,10 @@ public class Tests
 		int res6 = o.UInts (new EmptyStruct (), 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4);
 		if (res6 != 10)
 			return 6;
+		int[] arr = new int [4];
+		o.Generic<int> (new EmptyStruct (), arr, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4);
+		if (arr [0] != 1 || arr [1] != 2 || arr [2] != 3 || arr [3] != 4)
+			return 7;
 		return 0;
 	}
 
