@@ -5,7 +5,8 @@
 // .NET SIMD to solve Burgers' equation
 //
 // Benchmark based on 
-// http://taumuon-jabuka.blogspot.co.uk/2014/10/net-simd-to-solve-burgers-equation.html
+// https://github.com/taumuon/SIMD-Vectorisation-Burgers-Equation-CSharp
+// http://www.taumuon.co.uk/2014/10/net-simd-to-solve-burgers-equation.html
 
 using Microsoft.Xunit.Performance;
 using System;
