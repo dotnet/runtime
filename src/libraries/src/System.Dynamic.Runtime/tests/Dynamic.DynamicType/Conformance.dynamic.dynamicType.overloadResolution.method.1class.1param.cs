@@ -6,8 +6,6 @@ using Xunit;
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadResolution.method.Oneclass.Oneparam.param012.param012
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadResolution.method.Oneclass.Oneparam.param012.param012;
-
     // <Title>Call methods that have different parameter modifiers with dynamic</Title>
     // <Description>
     // </Description>
@@ -60,8 +58,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadRes
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadResolution.method.Oneclass.Oneparam.param014.param014
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadResolution.method.Oneclass.Oneparam.param014.param014;
-
     // <Title>Call methods that have different parameter modifiers with dynamic</Title>
     // <Description>
     // </Description>
@@ -113,7 +109,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadRes
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadResolution.method.Oneclass.Oneparam.param022.param022
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadResolution.method.Oneclass.Oneparam.param022.param022;
     // <Title>Make sure that the cache is not blown away by the rules the binder generates</Title>
     // <Description>
     // </Description>
@@ -336,8 +331,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadRes
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadResolution.method.Oneclass.Oneparam.nullable001.nullable001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadResolution.method.Oneclass.Oneparam.nullable001.nullable001;
-
     public class Test
     {
         [Fact]
@@ -379,7 +372,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadRes
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadResolution.method.Oneclass.Oneparam.regr001.regr001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadResolution.method.Oneclass.Oneparam.regr001.regr001;
     // <Title>Overload resolution of methods involving pointer types</Title>
     // <Description>
     // Method overload resolution with dynamic argument resolving to array parameter with the corresponding pointer type as the parameter for the other method

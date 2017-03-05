@@ -6,8 +6,6 @@ using Xunit;
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate01.dlgate01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate01.dlgate01;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -40,8 +38,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate01a.dlgate01a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate01a.dlgate01a;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -85,8 +81,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate01b.dlgate01b
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate01b.dlgate01b;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -119,8 +113,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate01c.dlgate01c
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate01c.dlgate01c;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -164,8 +156,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate02.dlgate02
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate02.dlgate02;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -198,8 +188,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate02a.dlgate02a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate02a.dlgate02a;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -243,8 +231,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate02b.dlgate02b
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate02b.dlgate02b;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -277,8 +263,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate02c.dlgate02c
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate02c.dlgate02c;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -322,8 +306,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate03a.dlgate03a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate03a.dlgate03a;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -367,8 +349,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate04.dlgate04
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate04.dlgate04;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -401,8 +381,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate04a.dlgate04a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate04a.dlgate04a;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -446,8 +424,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate04b.dlgate04b
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate04b.dlgate04b;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -480,8 +456,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate04c.dlgate04c
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate04c.dlgate04c;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -525,8 +499,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate13.dlgate13
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate13.dlgate13;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -570,8 +542,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate14.dlgate14
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate14.dlgate14;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -604,8 +574,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate14a.dlgate14a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate14a.dlgate14a;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -649,8 +617,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate14b.dlgate14b
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate14b.dlgate14b;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -683,8 +649,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate15.dlgate15
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate15.dlgate15;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -722,8 +686,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate15a.dlgate15a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate15a.dlgate15a;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -767,8 +729,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate15b.dlgate15b
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate15b.dlgate15b;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -806,8 +766,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate15c.dlgate15c
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate15c.dlgate15c;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -851,8 +809,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate16.dlgate16
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate16.dlgate16;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -890,8 +846,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate16a.dlgate16a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate16a.dlgate16a;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -935,8 +889,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate16b.dlgate16b
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate16b.dlgate16b;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -974,8 +926,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate17.dlgate17
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate17.dlgate17;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -1024,8 +974,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate18.dlgate18
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate18.dlgate18;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -1069,8 +1017,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate19.dlgate19
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate19.dlgate19;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -1114,8 +1060,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate20.dlgate20
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.dlgate20.dlgate20;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -1162,8 +1106,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt01.evnt01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt01.evnt01;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -1209,8 +1151,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt01a.evnt01a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt01a.evnt01a;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -1244,8 +1184,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt01b.evnt01b
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt01b.evnt01b;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -1291,8 +1229,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt01c.evnt01c
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt01c.evnt01c;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -1327,8 +1263,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt03.evnt03
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt03.evnt03;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -1374,8 +1308,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt03a.evnt03a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt03a.evnt03a;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -1409,8 +1341,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt03b.evnt03b
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt03b.evnt03b;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -1456,8 +1386,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt04.evnt04
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt04.evnt04;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -1503,8 +1431,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt04a.evnt04a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt04a.evnt04a;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -1539,8 +1465,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt04b.evnt04b
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt04b.evnt04b;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -1586,8 +1510,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt04c.evnt04c
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt04c.evnt04c;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -1623,8 +1545,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt06.evnt06
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt06.evnt06;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -1670,8 +1590,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt06a.evnt06a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt06a.evnt06a;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -1706,8 +1624,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt06c.evnt06c
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt06c.evnt06c;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -1744,8 +1660,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt07.evnt07
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt07.evnt07;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -1791,8 +1705,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt07a.evnt07a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt07a.evnt07a;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -1827,8 +1739,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt19.evnt19
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt19.evnt19;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates (making sure we didn't break params behaviour due to private bug)</Description>
@@ -1874,8 +1784,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt19a.evnt19a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt19a.evnt19a;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates (making sure we didn't break params behaviour due to private bug)</Description>
@@ -1914,8 +1822,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt19b.evnt19b
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt19b.evnt19b;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates (making sure we didn't break params behaviour due to private bug)</Description>
@@ -1961,8 +1867,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt19c.evnt19c
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt19c.evnt19c;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates (making sure we didn't break params behaviour due to private bug)</Description>
@@ -2004,8 +1908,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt20.evnt20
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt20.evnt20;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -2051,8 +1953,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt20a.evnt20a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt20a.evnt20a;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -2087,8 +1987,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt20b.evnt20b
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt20b.evnt20b;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -2134,8 +2032,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt21.evnt21
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt21.evnt21;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -2181,8 +2077,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt21a.evnt21a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt21a.evnt21a;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -2217,8 +2111,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt21b.evnt21b
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt21b.evnt21b;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -2264,8 +2156,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt21c.evnt21c
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt21c.evnt21c;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -2301,8 +2191,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt22.evnt22
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt22.evnt22;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates (making sure we didn't break params behaviour due to private bug)</Description>
@@ -2348,8 +2236,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt22a.evnt22a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt22a.evnt22a;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates (making sure we didn't break params behaviour due to private bug)</Description>
@@ -2384,8 +2270,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt22c.evnt22c
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt22c.evnt22c;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates (making sure we didn't break params behaviour due to private bug)</Description>
@@ -2421,8 +2305,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt23.evnt23
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt23.evnt23;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates (making sure we didn't break params behaviour due to private bug)</Description>
@@ -2468,8 +2350,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt23a.evnt23a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt23a.evnt23a;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates (making sure we didn't break params behaviour due to private bug)</Description>
@@ -2503,8 +2383,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt23c.evnt23c
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt23c.evnt23c;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates (making sure we didn't break params behaviour due to private bug)</Description>
@@ -2540,8 +2418,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt24.evnt24
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt24.evnt24;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates (making sure we didn't break params behaviour due to private bug)</Description>
@@ -2587,8 +2463,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt24a.evnt24a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt24a.evnt24a;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates (making sure we didn't break params behaviour due to private bug)</Description>
@@ -2622,8 +2496,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt24c.evnt24c
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt24c.evnt24c;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates (making sure we didn't break params behaviour due to private bug)</Description>
@@ -2660,8 +2532,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt25.evnt25
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt25.evnt25;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates (making sure we didn't break params behaviour due to private bug)</Description>
@@ -2707,8 +2577,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt25a.evnt25a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt25a.evnt25a;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates (making sure we didn't break params behaviour due to private bug)</Description>
@@ -2742,8 +2610,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt25c.evnt25c
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.evnt25c.evnt25c;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates (making sure we didn't break params behaviour due to private bug)</Description>
@@ -2779,8 +2645,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda01.lambda01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda01.lambda01;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple lambdas </Description>
@@ -2808,8 +2672,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda02.lambda02
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda02.lambda02;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -2837,8 +2699,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda02a.lambda02a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda02a.lambda02a;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -2867,8 +2727,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda02b.lambda02b
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda02b.lambda02b;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -2897,8 +2755,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda03.lambda03
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda03.lambda03;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -2926,8 +2782,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda03a.lambda03a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda03a.lambda03a;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -2956,8 +2810,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda03b.lambda03b
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda03b.lambda03b;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -2986,8 +2838,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda04.lambda04
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda04.lambda04;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -3015,8 +2865,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda04a.lambda04a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda04a.lambda04a;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -3045,8 +2893,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda04b.lambda04b
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda04b.lambda04b;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -3075,8 +2921,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda07.lambda07
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda07.lambda07;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -3109,8 +2953,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda07a.lambda07a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda07a.lambda07a;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -3146,8 +2988,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda07b.lambda07b
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda07b.lambda07b;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -3183,8 +3023,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda11.lambda11
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda11.lambda11;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -3212,8 +3050,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda11a.lambda11a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda11a.lambda11a;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -3244,8 +3080,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda11b.lambda11b
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda11b.lambda11b;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -3276,8 +3110,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda12.lambda12
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda12.lambda12;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -3316,8 +3148,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda12b.lambda12b
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda12b.lambda12b;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -3359,8 +3189,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda13.lambda13
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda13.lambda13;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -3388,8 +3216,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda13a.lambda13a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda13a.lambda13a;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -3418,8 +3244,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda13b.lambda13b
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda13b.lambda13b;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -3448,8 +3272,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda14.lambda14
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda14.lambda14;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -3487,8 +3309,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda14a.lambda14a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda14a.lambda14a;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -3528,8 +3348,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda14b.lambda14b
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda14b.lambda14b;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -3569,8 +3387,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda15.lambda15
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda15.lambda15;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -3614,8 +3430,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda15b.lambda15b
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda15b.lambda15b;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -3660,8 +3474,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda16.lambda16
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda16.lambda16;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -3700,8 +3512,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda16b.lambda16b
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.lambda16b.lambda16b;
-
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -3741,7 +3551,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.optattr01.optattr01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.optattr01.optattr01;
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -3778,7 +3587,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.optattr01a.optattr01a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.optattr01a.optattr01a;
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -3826,7 +3634,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.optattr01b.optattr01b
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.optattr01b.optattr01b;
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -3863,7 +3670,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.optattr01c.optattr01c
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.optattr01c.optattr01c;
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -3900,7 +3706,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.optattr02.optattr02
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.optattr02.optattr02;
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -3938,7 +3743,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.optattr02a.optattr02a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.optattr02a.optattr02a;
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -3987,7 +3791,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.optattr02b.optattr02b
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.optattr02b.optattr02b;
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -4025,7 +3828,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.optattr02c.optattr02c
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.optattr02c.optattr02c;
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -4063,7 +3865,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.optattr03.optattr03
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.optattr03.optattr03;
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -4103,7 +3904,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.optattr03a.optattr03a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.optattr03a.optattr03a;
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -4154,7 +3954,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.optattr03b.optattr03b
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.optattr03b.optattr03b;
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -4194,7 +3993,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.optattr03c.optattr03c
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.optattr03c.optattr03c;
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -4234,7 +4032,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.optattr04.optattr04
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.optattr04.optattr04;
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -4274,7 +4071,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.optattr04a.optattr04a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.optattr04a.optattr04a;
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -4325,7 +4121,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.optattr04b.optattr04b
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.optattr04b.optattr04b;
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -4365,7 +4160,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.optattr04c.optattr04c
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.optattr04c.optattr04c;
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -4405,7 +4199,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.optattr05.optattr05
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.optattr05.optattr05;
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -4445,7 +4238,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.optattr05a.optattr05a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.optattr05a.optattr05a;
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -4496,7 +4288,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.optattr05b.optattr05b
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.optattr05b.optattr05b;
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
@@ -4536,7 +4327,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.optattr05c.optattr05c
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.dlgate.optattr05c.optattr05c;
     // <Area> Delegates with Optional Parameters and named arguments</Area>
     // <Title>basic delegates with named params and optionals</Title>
     // <Description>Simple delegates </Description>
