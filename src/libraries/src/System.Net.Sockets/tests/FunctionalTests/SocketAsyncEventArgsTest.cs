@@ -299,6 +299,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [ActiveIssue(16765)]
         [Fact]
         public void CancelConnectAsync_StaticConnect_CancelsInProgressConnect()
         {
