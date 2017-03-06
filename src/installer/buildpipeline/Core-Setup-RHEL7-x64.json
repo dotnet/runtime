@@ -19,7 +19,6 @@
         "failOnStandardError": "false"
       }
     },
-    //TODO: Is the below cleanup required?
     {
       "enabled": true,
       "continueOnError": false,
