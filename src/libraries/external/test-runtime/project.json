@@ -1,7 +1,7 @@
 {
   "dependencies": {
     "xunit.console.netcore": "1.0.3-prerelease-00921-01",
-    "Microsoft.DotNet.BuildTools.TestSuite": "1.0.1-prerelease-01001-04",
+    "Microsoft.DotNet.BuildTools.TestSuite": "1.0.1-prerelease-01401-04",
     "Microsoft.xunit.netcore.extensions": "1.0.1-prerelease-01401-04",
     "xunit.performance.api": "1.0.0-alpha-build0047",
     "xunit.performance.core": "1.0.0-alpha-build0047",
