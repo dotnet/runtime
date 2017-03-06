@@ -32,6 +32,7 @@
     <PackageToInclude Include="xunit.performance.metrics"/>
     <PackageToInclude Include="Microsoft.Diagnostics.Tracing.TraceEvent"/>
     <PackageToInclude Include="Microsoft.3rdpartytools.MarkdownLog"/>
+    <PackageToInclude Include="CommandLineParser" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
