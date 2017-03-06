@@ -93,7 +93,7 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal(c14xml3, output);
         }
 
-        [Fact()]
+        [Fact]
         // see LoadInputAsXmlNodeList2 description
         public void LoadInputAsXmlNodeList()
         {
@@ -106,7 +106,7 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal(@"<Test xmlns=""http://www.go-mono.com/""></Test>", output);
         }
 
-        [Fact()]
+        [Fact]
         // MS has a bug that those namespace declaration nodes in
         // the node-set are written to output. Related spec section is:
         // http://www.w3.org/TR/2001/REC-xml-c14n-20010315#ProcessingModel
