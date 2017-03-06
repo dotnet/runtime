@@ -188,3 +188,31 @@ extern "C" int32_t AppleCryptoNative_StoreEnumerateMachineRoot(CFArrayRef* pCert
 
     return ret;
 }
+
+extern "C" int32_t AppleCryptoNative_StoreEnumerateUserDisallowed(CFArrayRef* pCertsOut, int32_t* pOSStatusOut)
+{
+    if (pCertsOut != nullptr)
+        *pCertsOut = nullptr;
+
+    return EnumerateTrust(kSecTrustSettingsDomainUser,
+                          kSecTrustSettingsResultDeny,
+                          const_cast<CFMutableArrayRef*>(pCertsOut),
+                          pOSStatusOut);
+}
+
+extern "C" int32_t AppleCryptoNative_StoreEnumerateMachineDisallowed(CFArrayRef* pCertsOut, int32_t* pOSStatusOut)
+{
+    if (pCertsOut != nullptr)
+        *pCertsOut = nullptr;
+
+    CFMutableArrayRef* pCertsRef = const_cast<CFMutableArrayRef*>(pCertsOut);
+
+    int32_t ret = EnumerateTrust(kSecTrustSettingsDomainAdmin, kSecTrustSettingsResultDeny, pCertsRef, pOSStatusOut);
+
+    if (ret == 1)
+    {
+        ret = EnumerateTrust(kSecTrustSettingsDomainSystem, kSecTrustSettingsResultDeny, pCertsRef, pOSStatusOut);
+    }
+
+    return ret;
+}

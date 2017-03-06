@@ -227,7 +227,8 @@ static int32_t ReadX509(uint8_t* pbData,
                         int32_t cbData,
                         PAL_X509ContentType contentType,
                         CFStringRef cfPfxPassphrase,
-                        SecKeychainRef tmpKeychain,
+                        SecKeychainRef keychain,
+                        bool exportable,
                         SecCertificateRef* pCertOut,
                         SecIdentityRef* pIdentityOut,
                         CFArrayRef* pCollectionOut,
@@ -242,6 +243,7 @@ static int32_t ReadX509(uint8_t* pbData,
     SecExternalItemType itemType;
     int32_t ret = 0;
     CFArrayRef outItems = nullptr;
+    CFMutableArrayRef keyAttributes = nullptr;
     SecKeychainRef importKeychain = nullptr;
 
     SecItemImportExportKeyParameters importParams = {};
@@ -263,11 +265,39 @@ static int32_t ReadX509(uint8_t* pbData,
         itemType = kSecItemTypeAggregate;
 
         importParams.passphrase = cfPfxPassphrase;
-        importKeychain = tmpKeychain;
+        importKeychain = keychain;
 
-        if (tmpKeychain == nullptr)
+        if (keychain == nullptr)
         {
             return kErrorBadInput;
+        }
+
+        // if keyAttributes is nullptr then it uses SENSITIVE | EXTRACTABLE
+        // so if !exportable was requested, assert SENSITIVE.
+        if (!exportable)
+        {
+            keyAttributes = CFArrayCreateMutable(nullptr, 9, &kCFTypeArrayCallBacks);
+
+            if (keyAttributes == nullptr)
+            {
+                *pOSStatus = errSecAllocate;
+                return 0;
+            }
+
+            int32_t sensitiveValue = CSSM_KEYATTR_SENSITIVE;
+            CFNumberRef sensitive = CFNumberCreate(nullptr, kCFNumberSInt32Type, &sensitiveValue);
+
+            if (sensitive == nullptr)
+            {
+                CFRelease(keyAttributes);
+                *pOSStatus = errSecAllocate;
+                return 0;
+            }
+
+            CFArrayAppendValue(keyAttributes, sensitive);
+            CFRelease(sensitive);
+
+            importParams.keyAttributes = keyAttributes;
         }
     }
     else
@@ -280,10 +310,13 @@ static int32_t ReadX509(uint8_t* pbData,
 
     if (cfData == nullptr)
     {
-        return kErrorUnknownState;
+        *pOSStatus = errSecAllocate;
     }
 
-    *pOSStatus = SecItemImport(cfData, nullptr, &dataFormat, &itemType, 0, &importParams, tmpKeychain, &outItems);
+    if (*pOSStatus == noErr)
+    {
+        *pOSStatus = SecItemImport(cfData, nullptr, &dataFormat, &itemType, 0, &importParams, keychain, &outItems);
+    }
 
     if (contentType == PAL_Pkcs12 && *pOSStatus == errSecPassphraseRequired && cfPfxPassphrase == nullptr)
     {
@@ -296,7 +329,7 @@ static int32_t ReadX509(uint8_t* pbData,
         // Try again with the empty string passphrase.
         importParams.passphrase = CFSTR("");
 
-        *pOSStatus = SecItemImport(cfData, nullptr, &dataFormat, &itemType, 0, &importParams, tmpKeychain, &outItems);
+        *pOSStatus = SecItemImport(cfData, nullptr, &dataFormat, &itemType, 0, &importParams, keychain, &outItems);
 
         CFRelease(importParams.passphrase);
         importParams.passphrase = nullptr;
@@ -315,13 +348,10 @@ static int32_t ReadX509(uint8_t* pbData,
             ret = ProcessCertificateTypeReturn(outItems, pCertOut, pIdentityOut);
         }
     }
-    else
+
+    if (keyAttributes != nullptr)
     {
-        if (outItems != nullptr)
-        {
-            CFRelease(outItems);
-            outItems = nullptr;
-        }
+        CFRelease(keyAttributes);
     }
 
     if (outItems != nullptr)
@@ -339,7 +369,8 @@ extern "C" int32_t AppleCryptoNative_X509ImportCollection(uint8_t* pbData,
                                                           int32_t cbData,
                                                           PAL_X509ContentType contentType,
                                                           CFStringRef cfPfxPassphrase,
-                                                          SecKeychainRef tmpKeychain,
+                                                          SecKeychainRef keychain,
+                                                          int32_t exportable,
                                                           CFArrayRef* pCollectionOut,
                                                           int32_t* pOSStatus)
 {
@@ -348,20 +379,30 @@ extern "C" int32_t AppleCryptoNative_X509ImportCollection(uint8_t* pbData,
     if (pOSStatus != nullptr)
         *pOSStatus = noErr;
 
-    if (pbData == nullptr || cbData < 0 || pCollectionOut == nullptr || pOSStatus == nullptr)
+    if (pbData == nullptr || cbData < 0 || pCollectionOut == nullptr || pOSStatus == nullptr ||
+        exportable != !!exportable)
     {
         return kErrorBadInput;
     }
 
-    return ReadX509(
-        pbData, cbData, contentType, cfPfxPassphrase, tmpKeychain, nullptr, nullptr, pCollectionOut, pOSStatus);
+    return ReadX509(pbData,
+                    cbData,
+                    contentType,
+                    cfPfxPassphrase,
+                    keychain,
+                    static_cast<bool>(exportable),
+                    nullptr,
+                    nullptr,
+                    pCollectionOut,
+                    pOSStatus);
 }
 
 extern "C" int32_t AppleCryptoNative_X509ImportCertificate(uint8_t* pbData,
                                                            int32_t cbData,
                                                            PAL_X509ContentType contentType,
                                                            CFStringRef cfPfxPassphrase,
-                                                           SecKeychainRef tmpKeychain,
+                                                           SecKeychainRef keychain,
+                                                           int32_t exportable,
                                                            SecCertificateRef* pCertOut,
                                                            SecIdentityRef* pIdentityOut,
                                                            int32_t* pOSStatus)
@@ -373,13 +414,22 @@ extern "C" int32_t AppleCryptoNative_X509ImportCertificate(uint8_t* pbData,
     if (pOSStatus != nullptr)
         *pOSStatus = noErr;
 
-    if (pbData == nullptr || cbData < 0 || pCertOut == nullptr || pIdentityOut == nullptr || pOSStatus == nullptr)
+    if (pbData == nullptr || cbData < 0 || pCertOut == nullptr || pIdentityOut == nullptr || pOSStatus == nullptr ||
+        exportable != !!exportable)
     {
         return kErrorBadInput;
     }
 
-    return ReadX509(
-        pbData, cbData, contentType, cfPfxPassphrase, tmpKeychain, pCertOut, pIdentityOut, nullptr, pOSStatus);
+    return ReadX509(pbData,
+                    cbData,
+                    contentType,
+                    cfPfxPassphrase,
+                    keychain,
+                    static_cast<bool>(exportable),
+                    pCertOut,
+                    pIdentityOut,
+                    nullptr,
+                    pOSStatus);
 }
 
 extern "C" int32_t AppleCryptoNative_X509ExportData(CFArrayRef data,

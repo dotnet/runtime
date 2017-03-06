@@ -60,7 +60,10 @@ namespace Internal.Cryptography.Pal
                 if (_readonly)
                     throw new CryptographicException(SR.Cryptography_X509_StoreReadOnly);
 
-                throw new NotImplementedException();
+                AppleCertificatePal applePal = (AppleCertificatePal)cert;
+
+                var handle = (SafeKeychainItemHandle)applePal.IdentityHandle ?? applePal.CertificateHandle;
+                Interop.AppleCrypto.X509StoreAddCertificate(handle, _keychainHandle);
             }
 
             public void Remove(ICertificatePal cert)
@@ -68,7 +71,9 @@ namespace Internal.Cryptography.Pal
                 if (_readonly)
                     throw new CryptographicException(SR.Cryptography_X509_StoreReadOnly);
 
-                throw new NotImplementedException();
+                AppleCertificatePal applePal = (AppleCertificatePal)cert;
+
+                Interop.AppleCrypto.X509StoreRemoveCertificate(applePal.CertificateHandle, _keychainHandle);
             }
 
             public SafeHandle SafeHandle => _keychainHandle;

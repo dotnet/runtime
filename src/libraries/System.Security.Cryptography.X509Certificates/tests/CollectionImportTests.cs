@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
@@ -309,6 +310,21 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+#if netcoreapp11
+        [Fact]
+        [PlatformSpecific(TestPlatforms.OSX)]
+        public static void EphemeralKeySet_OSX()
+        {
+            // EphemeralKeySet fails when loading a PFX, and is ignored otherwise.
+            using (ImportedCollection coll = Cert.Import(TestData.Pkcs7ChainDerBytes, null, X509KeyStorageFlags.EphemeralKeySet))
+            {
+                Assert.Equal(3, coll.Collection.Count);
+            }
+
+            Assert.Throws<PlatformNotSupportedException>(
+                () => new X509Certificate2(TestData.EmptyPfx, string.Empty, X509KeyStorageFlags.EphemeralKeySet));
+        }
+#endif
 
         [Fact]
         public static void InvalidStorageFlags()
@@ -355,7 +371,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 yield return new object[] { X509KeyStorageFlags.DefaultKeySet };
 
 #if netcoreapp11
-                yield return new object[] { X509KeyStorageFlags.EphemeralKeySet };
+                if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                    yield return new object[] { X509KeyStorageFlags.EphemeralKeySet };
 #endif
             }
         }

@@ -22,7 +22,38 @@ internal static partial class Interop
             out SafeCFArrayHandle pCertsOut,
             out int pOSStatusOut);
 
+        [DllImport(Libraries.AppleCryptoNative)]
+        private static extern int AppleCryptoNative_StoreEnumerateUserDisallowed(
+            out SafeCFArrayHandle pCertsOut,
+            out int pOSStatusOut);
+
+        [DllImport(Libraries.AppleCryptoNative)]
+        private static extern int AppleCryptoNative_StoreEnumerateMachineDisallowed(
+            out SafeCFArrayHandle pCertsOut,
+            out int pOSStatusOut);
+
+        private delegate int StoreEnumerator(out SafeCFArrayHandle pCertsOut, out int pOSStatusOut);
+
+        internal static SafeCFArrayHandle StoreEnumerateDisallowed(StoreLocation location)
+        {
+            return EnumerateStore(
+                location,
+                AppleCryptoNative_StoreEnumerateUserDisallowed,
+                AppleCryptoNative_StoreEnumerateMachineDisallowed);
+        }
+
         internal static SafeCFArrayHandle StoreEnumerateRoot(StoreLocation location)
+        {
+            return EnumerateStore(
+                location,
+                AppleCryptoNative_StoreEnumerateUserRoot,
+                AppleCryptoNative_StoreEnumerateMachineRoot);
+        }
+
+        private static SafeCFArrayHandle EnumerateStore(
+            StoreLocation location,
+            StoreEnumerator userEnumerator,
+            StoreEnumerator machineEnumerator)
         {
             int result;
             SafeCFArrayHandle matches;
@@ -30,11 +61,11 @@ internal static partial class Interop
 
             if (location == StoreLocation.CurrentUser)
             {
-                result = AppleCryptoNative_StoreEnumerateUserRoot(out matches, out osStatus);
+                result = userEnumerator(out matches, out osStatus);
             }
             else if (location == StoreLocation.LocalMachine)
             {
-                result = AppleCryptoNative_StoreEnumerateMachineRoot(out matches, out osStatus);
+                result = machineEnumerator(out matches, out osStatus);
             }
             else
             {
@@ -52,7 +83,7 @@ internal static partial class Interop
             if (result == 0)
                 throw CreateExceptionForOSStatus(osStatus);
 
-            Debug.Fail($"Unexpected result from AppleCryptoNative_StoreEnumerateRoot ({location}): {result}");
+            Debug.Fail($"Unexpected result from {location} trust store enumeration: {result}");
             throw new CryptographicException();
         }
     }

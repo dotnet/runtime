@@ -89,3 +89,19 @@ pOSStatus: Receives the last OSStatus value.
 extern "C" int32_t AppleCryptoNative_SecKeychainEnumerateIdentities(SecKeychainRef keychain,
                                                                     CFArrayRef* pIdentitiesOut,
                                                                     int32_t* pOSStatus);
+
+/*
+Remove a certificate from the specified keychain.
+
+Returns
+0 on failure -> see OSStatus
+1 on success (including no item to delete),
+2 on blocking user trust modification,
+3 on blocking system trust modification,
+any other value is invalid
+
+Output:
+pOSStatus: Receives the last OSStatus value..
+*/
+extern "C" int32_t
+AppleCryptoNative_X509StoreRemoveCertificate(CFTypeRef certOrIdentity, SecKeychainRef keychain, int32_t* pOSStatus);
