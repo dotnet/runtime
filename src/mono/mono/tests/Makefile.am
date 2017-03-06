@@ -1731,9 +1731,15 @@ EXTRA_DIST += bug-17537-helper.cs
 bug-17537-helper.exe: bug-17537-helper.cs
 	$(MCS) -out:$@ $(srcdir)/bug-17537-helper.cs
 	chmod -x $@
+if FULL_AOT_TESTS
+	$(RUNTIME) $(AOT_BUILD_FLAGS) $@
+endif
+if HYBRID_AOT_TESTS
+	$(RUNTIME) $(AOT_BUILD_FLAGS) $@
+endif
 
 bug-17537.exe: bug-17537.cs bug-17537-helper.exe
-	$(MCS) -r:System.dll -out:$@ $(srcdir)/bug-17537.cs
+	$(MCS) -r:$(CLASS)/System.dll -out:$@ $(srcdir)/bug-17537.cs
 
 EXTRA_DIST += coreclr-security.cs
 
@@ -1785,7 +1791,7 @@ generic-delegate2.2.exe : generic-delegate2.2.cs generic-delegate2-lib.2.dll
 	$(MCS) -r:generic-delegate2-lib.2.dll -out:$@ $(srcdir)/generic-delegate2.2.cs
 
 bug-3903.exe: bug-3903.cs
-	$(MCS_NO_LIB)  $(srcdir)/bug-3903.cs -r:$(srcdir)/../../external/binary-reference-assemblies/v2.0/System.Core.dll -out:$@
+	$(MCS_NO_LIB)  $(srcdir)/bug-3903.cs -nostdlib -r:$(srcdir)/../../external/binary-reference-assemblies/v2.0/mscorlib.dll -r:$(srcdir)/../../external/binary-reference-assemblies/v2.0/System.Core.dll -out:$@
 
 gshared: test-generic-sharing
 
