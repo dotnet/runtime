@@ -3,14 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Collections;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Globalization;
-using System.IO;
-using System.Net;
-using System.Runtime.InteropServices;
-using System.Threading.Tasks;
 using System.Threading;
 
 namespace System.Net.Sockets
@@ -618,30 +610,13 @@ namespace System.Net.Sockets
             }
         }
 
-        internal void FinishOperationSync(SocketError socketError, int bytesTransferred, SocketFlags flags)
-        {
-            Debug.Assert(socketError != SocketError.IOPending);
-
-            if (socketError == SocketError.Success)
-            {
-                FinishOperationSyncSuccess(bytesTransferred, flags);
-            }
-            else
-            {
-                FinishOperationSyncFailure(socketError, bytesTransferred, flags);
-            }
-        }
-
         internal void FinishOperationSyncFailure(SocketError socketError, int bytesTransferred, SocketFlags flags)
         {
             SetResults(socketError, bytesTransferred, flags);
 
             // This will be null if we're doing a static ConnectAsync to a DnsEndPoint with AddressFamily.Unspecified;
             // the attempt socket will be closed anyways, so not updating the state is OK.
-            if (_currentSocket != null)
-            {
-                _currentSocket.UpdateStatusAfterSocketError(socketError);
-            }
+            _currentSocket?.UpdateStatusAfterSocketError(socketError);
 
             Complete();
         }
@@ -650,10 +625,7 @@ namespace System.Net.Sockets
         {
             SetResults(exception, bytesTransferred, flags);
 
-            if (_currentSocket != null)
-            {
-                _currentSocket.UpdateStatusAfterSocketError(_socketError);
-            }
+            _currentSocket?.UpdateStatusAfterSocketError(_socketError);
 
             Complete();
         }
@@ -664,10 +636,7 @@ namespace System.Net.Sockets
 
             // This will be null if we're doing a static ConnectAsync to a DnsEndPoint with AddressFamily.Unspecified;
             // the attempt socket will be closed anyways, so not updating the state is OK.
-            if (_currentSocket != null)
-            {
-                _currentSocket.UpdateStatusAfterSocketError(socketError);
-            }
+            _currentSocket?.UpdateStatusAfterSocketError(socketError);
 
             Complete();
             if (_context == null)
@@ -684,10 +653,7 @@ namespace System.Net.Sockets
         {
             SetResults(exception, bytesTransferred, flags);
 
-            if (_currentSocket != null)
-            {
-                _currentSocket.UpdateStatusAfterSocketError(_socketError);
-            }
+            _currentSocket?.UpdateStatusAfterSocketError(_socketError);
 
             Complete();
             if (_context == null)

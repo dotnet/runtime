@@ -6,7 +6,6 @@ using System.Buffers;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -835,7 +834,6 @@ namespace System.Net.Sockets
         internal void SetSocketTimeoutOption(SocketShutdown mode, int timeout, bool silent)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, mode, timeout, silent);
-            DebugThreadTracking.ThreadContract(ThreadKinds.Unknown, $"NetworkStream#{NetEventSource.IdOf(this)}");
 
             if (timeout < 0)
             {
