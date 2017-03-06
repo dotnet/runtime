@@ -42,16 +42,6 @@ namespace System.Reflection.Emit
                                           new DynamicResolver(this));
         }
 
-#if FEATURE_APPX
-        private bool ProfileAPICheck
-        {
-            get
-            {
-                return ((DynamicMethod)m_methodBuilder).ProfileAPICheck;
-            }
-        }
-#endif // FEATURE_APPX
-
         // *** ILGenerator api ***
 
         public override LocalBuilder DeclareLocal(Type localType, bool pinned)
@@ -65,11 +55,6 @@ namespace System.Reflection.Emit
 
             if (rtType == null)
                 throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeType"));
-
-#if FEATURE_APPX
-            if (ProfileAPICheck && (rtType.InvocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NON_W8P_FX_API) != 0)
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_APIInvalidForCurrentContext", rtType.FullName));
-#endif
 
             localBuilder = new LocalBuilder(m_localCount, localType, m_methodBuilder);
             // add the localType to local signature
@@ -496,94 +481,36 @@ namespace System.Reflection.Emit
         #region GetTokenFor helpers
         private int GetTokenFor(RuntimeType rtType)
         {
-#if FEATURE_APPX
-            if (ProfileAPICheck && (rtType.InvocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NON_W8P_FX_API) != 0)
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_APIInvalidForCurrentContext", rtType.FullName));
-#endif
-
             return m_scope.GetTokenFor(rtType.TypeHandle);
         }
 
         private int GetTokenFor(RuntimeFieldInfo runtimeField)
         {
-#if FEATURE_APPX
-            if (ProfileAPICheck)
-            {
-                RtFieldInfo rtField = runtimeField as RtFieldInfo;
-                if (rtField != null && (rtField.InvocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NON_W8P_FX_API) != 0)
-                    throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_APIInvalidForCurrentContext", rtField.FullName));
-            }
-#endif
-
             return m_scope.GetTokenFor(runtimeField.FieldHandle);
         }
 
         private int GetTokenFor(RuntimeFieldInfo runtimeField, RuntimeType rtType)
         {
-#if FEATURE_APPX
-            if (ProfileAPICheck)
-            {
-                RtFieldInfo rtField = runtimeField as RtFieldInfo;
-                if (rtField != null && (rtField.InvocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NON_W8P_FX_API) != 0)
-                    throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_APIInvalidForCurrentContext", rtField.FullName));
-
-                if ((rtType.InvocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NON_W8P_FX_API) != 0)
-                    throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_APIInvalidForCurrentContext", rtType.FullName));
-            }
-#endif
-
             return m_scope.GetTokenFor(runtimeField.FieldHandle, rtType.TypeHandle);
         }
 
         private int GetTokenFor(RuntimeConstructorInfo rtMeth)
         {
-#if FEATURE_APPX
-            if (ProfileAPICheck && (rtMeth.InvocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NON_W8P_FX_API) != 0)
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_APIInvalidForCurrentContext", rtMeth.FullName));
-#endif
-
             return m_scope.GetTokenFor(rtMeth.MethodHandle);
         }
 
         private int GetTokenFor(RuntimeConstructorInfo rtMeth, RuntimeType rtType)
         {
-#if FEATURE_APPX
-            if (ProfileAPICheck)
-            {
-                if ((rtMeth.InvocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NON_W8P_FX_API) != 0)
-                    throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_APIInvalidForCurrentContext", rtMeth.FullName));
-
-                if ((rtType.InvocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NON_W8P_FX_API) != 0)
-                    throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_APIInvalidForCurrentContext", rtType.FullName));
-            }
-#endif
-
             return m_scope.GetTokenFor(rtMeth.MethodHandle, rtType.TypeHandle);
         }
 
         private int GetTokenFor(RuntimeMethodInfo rtMeth)
         {
-#if FEATURE_APPX
-            if (ProfileAPICheck && (rtMeth.InvocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NON_W8P_FX_API) != 0)
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_APIInvalidForCurrentContext", rtMeth.FullName));
-#endif
-
             return m_scope.GetTokenFor(rtMeth.MethodHandle);
         }
 
         private int GetTokenFor(RuntimeMethodInfo rtMeth, RuntimeType rtType)
         {
-#if FEATURE_APPX
-            if (ProfileAPICheck)
-            {
-                if ((rtMeth.InvocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NON_W8P_FX_API) != 0)
-                    throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_APIInvalidForCurrentContext", rtMeth.FullName));
-
-                if ((rtType.InvocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NON_W8P_FX_API) != 0)
-                    throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_APIInvalidForCurrentContext", rtType.FullName));
-            }
-#endif
-
             return m_scope.GetTokenFor(rtMeth.MethodHandle, rtType.TypeHandle);
         }
 
@@ -594,10 +521,6 @@ namespace System.Reflection.Emit
 
         private int GetTokenForVarArgMethod(RuntimeMethodInfo rtMeth, SignatureHelper sig)
         {
-#if FEATURE_APPX
-            if (ProfileAPICheck && (rtMeth.InvocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NON_W8P_FX_API) != 0)
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_APIInvalidForCurrentContext", rtMeth.FullName));
-#endif
             VarArgMethod varArgMeth = new VarArgMethod(rtMeth, sig);
             return m_scope.GetTokenFor(varArgMeth);
         }

@@ -387,12 +387,8 @@ enum
 
     APPX_FLAGS_APPX_MODEL =         0x02,
     APPX_FLAGS_APPX_DESIGN_MODE =   0x04,
-    APPX_FLAGS_APPX_NGEN =          0x08,
     APPX_FLAGS_APPX_MASK =          APPX_FLAGS_APPX_MODEL |
-                                    APPX_FLAGS_APPX_DESIGN_MODE |
-                                    APPX_FLAGS_APPX_NGEN,
-
-    APPX_FLAGS_API_CHECK =          0x10,
+                                    APPX_FLAGS_APPX_DESIGN_MODE,
 };
 
 // static
@@ -410,28 +406,6 @@ INT32 QCALLTYPE AppDomainNative::GetAppXFlags()
 
         if (AppX::IsAppXDesignMode())
             flags |= APPX_FLAGS_APPX_DESIGN_MODE;
-        else
-            flags |= APPX_FLAGS_API_CHECK;
-
-        if (AppX::IsAppXNGen())
-            flags |= APPX_FLAGS_APPX_NGEN;
-    }
-
-    //
-    // 0: normal (only check in non-dev-mode APPX)
-    // 1: always check
-    // 2: never check
-    //
-    switch (g_pConfig->GetWindows8ProfileAPICheckFlag())
-    {
-        case 1:
-            flags |= APPX_FLAGS_API_CHECK;
-            break;
-        case 2:
-            flags &= ~APPX_FLAGS_API_CHECK;
-            break;
-        default:
-            break;
     }
 
     END_QCALL;

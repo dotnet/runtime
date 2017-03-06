@@ -98,37 +98,6 @@ namespace System.Reflection
         private object m_keepalive;
         private INVOCATION_FLAGS m_invocationFlags;
 
-#if FEATURE_APPX
-        private bool IsNonW8PFrameworkAPI()
-        {
-            if (m_declaringType.IsArray && IsPublic && !IsStatic)
-                return false;
-
-            RuntimeAssembly rtAssembly = GetRuntimeAssembly();
-            if (rtAssembly.IsFrameworkAssembly())
-            {
-                int ctorToken = rtAssembly.InvocableAttributeCtorToken;
-                if (System.Reflection.MetadataToken.IsNullToken(ctorToken) ||
-                    !CustomAttribute.IsAttributeDefined(GetRuntimeModule(), MetadataToken, ctorToken))
-                    return true;
-            }
-
-            if (GetRuntimeType().IsNonW8PFrameworkAPI())
-                return true;
-
-            if (IsGenericMethod && !IsGenericMethodDefinition)
-            {
-                foreach (Type t in GetGenericArguments())
-                {
-                    if (((RuntimeType)t).IsNonW8PFrameworkAPI())
-                        return true;
-                }
-            }
-
-            return false;
-        }
-#endif
-
         internal INVOCATION_FLAGS InvocationFlags
         {
             get
@@ -178,11 +147,6 @@ namespace System.Reflection
                             }
                         }
                     }
-
-#if FEATURE_APPX
-                    if (AppDomain.ProfileAPICheck && IsNonW8PFrameworkAPI())
-                        invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_NON_W8P_FX_API;
-#endif // FEATURE_APPX
 
                     m_invocationFlags = invocationFlags | INVOCATION_FLAGS.INVOCATION_FLAGS_INITIALIZED;
                 }
@@ -590,20 +554,6 @@ namespace System.Reflection
         public override Object Invoke(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
         {
             object[] arguments = InvokeArgumentsCheck(obj, invokeAttr, binder, parameters, culture);
-
-            #region Security Check
-            INVOCATION_FLAGS invocationFlags = InvocationFlags;
-
-#if FEATURE_APPX
-            if ((invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NON_W8P_FX_API) != 0)
-            {
-                StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-                RuntimeAssembly caller = RuntimeAssembly.GetExecutingAssembly(ref stackMark);
-                if (caller != null && !caller.IsSafeForReflection())
-                    throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_APIInvalidForCurrentContext", FullName));
-            }
-#endif
-            #endregion
 
             return UnsafeInvokeInternal(obj, parameters, arguments);
         }

@@ -1262,14 +1262,6 @@ private:
 public:
     DWORD GetSleepOnExit()
     { return dwSleepOnExit; }
-
-#if FEATURE_APPX
-private:
-    DWORD dwWindows8ProfileAPICheckFlag;
-
-public:
-    DWORD GetWindows8ProfileAPICheckFlag() { return dwWindows8ProfileAPICheckFlag; }
-#endif
 };
 
 

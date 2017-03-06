@@ -772,7 +772,6 @@ namespace System.Reflection
             ASSEMBLY_FLAGS_UNKNOWN = 0x00000000,
             ASSEMBLY_FLAGS_INITIALIZED = 0x01000000,
             ASSEMBLY_FLAGS_FRAMEWORK = 0x02000000,
-            ASSEMBLY_FLAGS_SAFE_REFLECTION = 0x04000000,
             ASSEMBLY_FLAGS_TOKEN_MASK = 0x00FFFFFF,
         }
 #endif // FEATURE_APPX
@@ -793,16 +792,6 @@ namespace System.Reflection
         #endregion
 
 #if FEATURE_APPX
-        internal int InvocableAttributeCtorToken
-        {
-            get
-            {
-                int token = (int)(Flags & ASSEMBLY_FLAGS.ASSEMBLY_FLAGS_TOKEN_MASK);
-
-                return token | (int)MetadataTokenType.MethodDef;
-            }
-        }
-
         private ASSEMBLY_FLAGS Flags
         {
             get
@@ -810,7 +799,7 @@ namespace System.Reflection
                 if ((m_flags & ASSEMBLY_FLAGS.ASSEMBLY_FLAGS_INITIALIZED) == 0)
                 {
                     ASSEMBLY_FLAGS flags = ASSEMBLY_FLAGS.ASSEMBLY_FLAGS_UNKNOWN
-                        | ASSEMBLY_FLAGS.ASSEMBLY_FLAGS_FRAMEWORK | ASSEMBLY_FLAGS.ASSEMBLY_FLAGS_SAFE_REFLECTION;
+                        | ASSEMBLY_FLAGS.ASSEMBLY_FLAGS_FRAMEWORK;
 
                     m_flags = flags | ASSEMBLY_FLAGS.ASSEMBLY_FLAGS_INITIALIZED;
                 }
@@ -1210,14 +1199,6 @@ namespace System.Reflection
         {
             ASSEMBLY_FLAGS flags = Flags;
             return (flags & ASSEMBLY_FLAGS.ASSEMBLY_FLAGS_FRAMEWORK) != 0;
-        }
-
-        // Returns true if we want to allow this assembly to invoke non-W8P
-        // framework APIs through reflection.
-        internal bool IsSafeForReflection()
-        {
-            ASSEMBLY_FLAGS flags = Flags;
-            return (flags & ASSEMBLY_FLAGS.ASSEMBLY_FLAGS_SAFE_REFLECTION) != 0;
         }
 #endif
 
