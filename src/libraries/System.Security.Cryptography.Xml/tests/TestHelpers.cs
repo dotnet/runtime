@@ -78,7 +78,7 @@ namespace System.Security.Cryptography.Xml.Tests
         /// </exception>
         public static string ExecuteTransform(string inputXml, Transform transform, Encoding encoding = null, XmlResolver resolver = null)
         {
-            if (string.IsNullOrEmpty(inputXml))
+            if (string.IsNullOrWhiteSpace(inputXml))
             {
                 throw new ArgumentException("Cannot be null, empty or whitespace", nameof(inputXml));
             }
@@ -108,14 +108,23 @@ namespace System.Security.Cryptography.Xml.Tests
         /// in an <see cref="XmlPreloadedResolver"/>.
         /// </summary>
         /// <param name="fileName">
-        /// The file name.
+        /// The file name. This cannot be null, empty or whitespace.
         /// </param>
         /// <returns>
         /// The created <see cref="Uri"/>.
         /// </returns>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="fileName"/> cannot be null, empty or whitespace.
+        /// </exception>
         public static Uri ToUri(string fileName)
         {
-            return new Uri("file:///" + Path.Combine(Directory.GetCurrentDirectory(), fileName));
+            if (string.IsNullOrWhiteSpace(fileName))
+            {
+                throw new ArgumentException("Cannot be null, empty or whitespace", nameof(fileName));
+            }
+
+            string path = Path.Combine(Directory.GetCurrentDirectory(), fileName);
+            return new Uri("file://" + (path[0] == '/' ? path : '/' + path));
         }
     }
 }
