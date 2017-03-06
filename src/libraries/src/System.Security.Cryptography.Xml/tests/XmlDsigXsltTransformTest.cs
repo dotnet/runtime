@@ -182,11 +182,7 @@ namespace System.Security.Cryptography.Xml.Tests
             doc.LoadXml(test);
 
             transform.LoadInnerXml(doc.ChildNodes);
-            Assert.Throws<ArgumentNullException>(() =>
-            {
-                Stream s = (Stream)transform.GetOutput();
-                Stream2Array(s);
-            });
+            Assert.Throws<ArgumentNullException>(() => transform.GetOutput());
         }
 
         private XmlDocument GetXslDoc()
