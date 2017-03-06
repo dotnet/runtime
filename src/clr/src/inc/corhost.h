@@ -386,27 +386,7 @@ public:
         LPCWSTR* argv,
         DWORD* pReturnValue);
 
-
-
-    static IHostControl *GetHostControl ()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return NULL;
-    }
-
-
-    static int GetHostOverlappedExtensionSize()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return 0;
-    }
-
-
-
     static STARTUP_FLAGS GetStartupFlags();
-
 
     static LPCWSTR GetAppDomainManagerAsm();
 

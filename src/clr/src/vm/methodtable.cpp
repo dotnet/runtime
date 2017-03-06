@@ -4615,11 +4615,6 @@ BOOL MethodTable::IsWriteable()
 {
     STANDARD_VM_CONTRACT;
 
-    // Overlapped method table is written into in hosted scenarios
-    // (see code:CorHost2::GetHostOverlappedExtensionSize)
-    if (MscorlibBinder::IsClass(this, CLASS__OVERLAPPEDDATA))
-        return TRUE;
-
 #ifdef FEATURE_COMINTEROP
     // Dynamic expansion of interface map writes into method table
     // (see code:MethodTable::AddDynamicInterface)
