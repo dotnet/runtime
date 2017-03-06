@@ -15,7 +15,6 @@ __InitialDir=$PWD
 __BuildArch=arm
 __UbuntuArch=armhf
 __UbuntuRepo="http://ports.ubuntu.com/"
-__LLDB_Package="lldb-3.6-dev"
 __SkipUnmount=0
 
 # base development support
@@ -100,11 +99,6 @@ for i in "$@" ; do
             ;;
     esac
 done
-
-if [ "$__BuildArch" == "armel" ]; then
-    __LLDB_Package="lldb-3.5-dev"
-fi
-__UbuntuPackages+=" ${__LLDB_Package:-}"
 
 __RootfsDir="$__CrossDir/rootfs/$__BuildArch"
 
