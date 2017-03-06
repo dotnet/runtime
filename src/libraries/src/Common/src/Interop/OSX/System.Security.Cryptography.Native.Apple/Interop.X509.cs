@@ -21,7 +21,8 @@ internal static partial class Interop
             int cbKeyBlob,
             X509ContentType contentType,
             SafeCreateHandle cfPfxPassphrase,
-            SafeTemporaryKeychainHandle tmpKeychain,
+            SafeKeychainHandle tmpKeychain,
+            int exportable,
             out SafeSecCertificateHandle pCertOut,
             out SafeSecIdentityHandle pPrivateKeyOut,
             out int pOSStatus);
@@ -32,7 +33,8 @@ internal static partial class Interop
             int cbKeyBlob,
             X509ContentType contentType,
             SafeCreateHandle cfPfxPassphrase,
-            SafeTemporaryKeychainHandle tmpKeychain,
+            SafeKeychainHandle tmpKeychain,
+            int exportable,
             out SafeCFArrayHandle pCollectionOut,
             out int pOSStatus);
 
@@ -100,7 +102,8 @@ internal static partial class Interop
             byte[] bytes,
             X509ContentType contentType,
             SafePasswordHandle importPassword,
-            SafeTemporaryKeychainHandle tmpKeychain,
+            SafeKeychainHandle keychain,
+            bool exportable,
             out SafeSecIdentityHandle identityHandle)
         {
             SafeSecCertificateHandle certHandle;
@@ -128,7 +131,8 @@ internal static partial class Interop
                     bytes.Length,
                     contentType,
                     cfPassphrase,
-                    tmpKeychain,
+                    keychain,
+                    exportable ? 1 : 0,
                     out certHandle,
                     out identityHandle,
                     out osStatus);
@@ -178,7 +182,8 @@ internal static partial class Interop
             byte[] bytes,
             X509ContentType contentType,
             SafePasswordHandle importPassword,
-            SafeTemporaryKeychainHandle tmpKeychain)
+            SafeKeychainHandle keychain,
+            bool exportable)
         {
             SafeCreateHandle cfPassphrase = s_nullExportString;
             bool releasePassword = false;
@@ -205,7 +210,8 @@ internal static partial class Interop
                     bytes.Length,
                     contentType,
                     cfPassphrase,
-                    tmpKeychain,
+                    keychain,
+                    exportable ? 1 : 0,
                     out collectionHandle,
                     out osStatus);
 

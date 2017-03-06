@@ -26,7 +26,7 @@ namespace Internal.Cryptography.Pal
             public void Dispose()
             {
                 _collectionHandle.Dispose();
-                _tmpKeychain.Dispose();
+                _tmpKeychain?.Dispose();
             }
 
             public void MoveTo(X509Certificate2Collection collection)

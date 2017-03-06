@@ -80,7 +80,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.Throws<PlatformNotSupportedException>(() => new X509Chain(IntPtr.Zero));
         }
 
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
         [Fact]
         public static void TestDispose()
         {
@@ -114,7 +114,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(-1, TestPlatforms.OSX)]
         public static void OpenNotExistant()
         {
             using (X509Store store = new X509Store(Guid.NewGuid().ToString("N"), StoreLocation.CurrentUser))
@@ -124,7 +123,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(-1, TestPlatforms.OSX)]
         public static void AddReadOnlyThrows()
         {
             using (X509Store store = new X509Store(StoreName.My, StoreLocation.CurrentUser))
@@ -146,7 +144,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(-1, TestPlatforms.OSX)]
         public static void AddReadOnlyThrowsWhenCertificateExists()
         {
             using (X509Store store = new X509Store(StoreName.My, StoreLocation.CurrentUser))
@@ -178,7 +175,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(-1, TestPlatforms.OSX)]
         public static void RemoveReadOnlyThrowsWhenFound()
         {
             // This test is unfortunate, in that it will mostly never test.
@@ -276,11 +272,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Theory]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.OSX)]
         [InlineData(OpenFlags.ReadOnly, false)]
         [InlineData(OpenFlags.MaxAllowed, false)]
         [InlineData(OpenFlags.ReadWrite, true)]
-        [ActiveIssue(-1, TestPlatforms.OSX)]
         public static void OpenMachineRootStore_Permissions(OpenFlags permissions, bool shouldThrow)
         {
             using (X509Store store = new X509Store(StoreName.Root, StoreLocation.LocalMachine))
@@ -317,6 +312,24 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 {
                     int certCount = storeCerts.Collection.Count;
                     Assert.InRange(certCount, MinimumThreshold, int.MaxValue);
+                }
+            }
+        }
+
+        [Theory]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
+        [InlineData(StoreLocation.CurrentUser)]
+        [InlineData(StoreLocation.LocalMachine)]
+        public static void EnumerateDisallowedStore(StoreLocation location)
+        {
+            using (X509Store store = new X509Store(StoreName.Disallowed, location))
+            {
+                store.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly);
+
+                using (var storeCerts = new ImportedCollection(store.Certificates))
+                {
+                    // That's all.  We enumerated it.
+                    // There might not even be data in it.
                 }
             }
         }

@@ -83,26 +83,41 @@ namespace Internal.Cryptography.Pal
                 throw new CryptographicException(SR.Cryptography_X509_PKCS7_NoSigner);
             }
 
-            SafeTemporaryKeychainHandle tmpKeychain;
+            bool exportable = true;
+
+            SafeKeychainHandle keychain;
 
             if (contentType == X509ContentType.Pkcs12)
             {
-                tmpKeychain = Interop.AppleCrypto.CreateTemporaryKeychain();
+                if ((keyStorageFlags & X509KeyStorageFlags.EphemeralKeySet) == X509KeyStorageFlags.EphemeralKeySet)
+                {
+                    throw new PlatformNotSupportedException(SR.Cryptography_X509_NoEphemeralPfx);
+                }
+
+                exportable = (keyStorageFlags & X509KeyStorageFlags.Exportable) == X509KeyStorageFlags.Exportable;
+
+                bool persist =
+                    (keyStorageFlags & X509KeyStorageFlags.PersistKeySet) == X509KeyStorageFlags.PersistKeySet;
+
+                keychain = persist
+                    ? Interop.AppleCrypto.SecKeychainCopyDefault()
+                    : Interop.AppleCrypto.CreateTemporaryKeychain();
             }
             else
             {
-                tmpKeychain = SafeTemporaryKeychainHandle.InvalidHandle;
+                keychain = SafeTemporaryKeychainHandle.InvalidHandle;
                 password = SafePasswordHandle.InvalidHandle;
             }
 
-            using (tmpKeychain)
+            using (keychain)
             {
                 SafeSecIdentityHandle identityHandle;
                 SafeSecCertificateHandle certHandle = Interop.AppleCrypto.X509ImportCertificate(
                     rawData,
                     contentType,
                     password,
-                    tmpKeychain,
+                    keychain,
+                    exportable,
                     out identityHandle);
 
                 if (identityHandle.IsInvalid)
@@ -167,6 +182,7 @@ namespace Internal.Cryptography.Pal
         }
 
         internal SafeSecCertificateHandle CertificateHandle => _certHandle;
+        internal SafeSecIdentityHandle IdentityHandle => _identityHandle;
 
         public bool HasPrivateKey => !(_identityHandle?.IsInvalid ?? true);
 
@@ -375,7 +391,10 @@ namespace Internal.Cryptography.Pal
                 return null;
 
             Debug.Assert(!_identityHandle.IsInvalid);
-            throw new NotImplementedException();
+            SafeSecKeyRefHandle publicKey = Interop.AppleCrypto.X509GetPublicKey(_certHandle);
+            SafeSecKeyRefHandle privateKey = Interop.AppleCrypto.X509GetPrivateKeyFromIdentity(_identityHandle);
+
+            return new DSAImplementation.DSASecurityTransforms(publicKey, privateKey);
         }
 
         public ECDsa GetECDsaPrivateKey()

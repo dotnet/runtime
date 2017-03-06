@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -15,10 +16,14 @@ namespace Internal.Cryptography.Pal
     {
         private sealed class AppleTrustStore : IStorePal
         {
+            private readonly StoreName _storeName;
             private readonly StoreLocation _location;
 
-            private AppleTrustStore(StoreLocation location)
+            private AppleTrustStore(StoreName storeName, StoreLocation location)
             {
+                Debug.Assert(storeName == StoreName.Root || storeName == StoreName.Disallowed);
+
+                _storeName = storeName;
                 _location = location;
             }
 
@@ -31,9 +36,23 @@ namespace Internal.Cryptography.Pal
             {
                 HashSet<X509Certificate2> dedupedCerts = new HashSet<X509Certificate2>();
 
-                using (SafeCFArrayHandle certs = Interop.AppleCrypto.StoreEnumerateRoot(_location))
+                if (_storeName == StoreName.Root)
                 {
-                    ReadCollection(certs, dedupedCerts);
+                    using (SafeCFArrayHandle certs = Interop.AppleCrypto.StoreEnumerateRoot(_location))
+                    {
+                        ReadCollection(certs, dedupedCerts);
+                    }
+                }
+                else if (_storeName == StoreName.Disallowed)
+                {
+                    using (SafeCFArrayHandle certs = Interop.AppleCrypto.StoreEnumerateDisallowed(_location))
+                    {
+                        ReadCollection(certs, dedupedCerts);
+                    }
+                }
+                else
+                {
+                    Debug.Fail($"No handler for trust store {_storeName}");
                 }
 
                 foreach (X509Certificate2 cert in dedupedCerts)
@@ -54,12 +73,12 @@ namespace Internal.Cryptography.Pal
 
             public SafeHandle SafeHandle => null;
 
-            internal static AppleTrustStore OpenStore(StoreLocation location, OpenFlags openFlags)
+            internal static AppleTrustStore OpenStore(StoreName storeName, StoreLocation location, OpenFlags openFlags)
             {
                 if ((openFlags & OpenFlags.ReadWrite) == OpenFlags.ReadWrite)
                     throw new CryptographicException(SR.Security_AccessDenied);
 
-                return new AppleTrustStore(location);
+                return new AppleTrustStore(storeName, location);
             }
         }
     }

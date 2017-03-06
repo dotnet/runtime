@@ -150,3 +150,132 @@ extern "C" int32_t AppleCryptoNative_SecKeychainEnumerateIdentities(SecKeychainR
 {
     return EnumerateKeychain(keychain, kSecClassIdentity, pIdentitiesOut, pOSStatus);
 }
+
+static OSStatus DeleteInKeychain(CFTypeRef needle, SecKeychainRef haystack)
+{
+    CFMutableDictionaryRef query = CFDictionaryCreateMutable(
+        kCFAllocatorDefault, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
+
+    if (query == nullptr)
+        return errSecAllocate;
+
+    CFArrayRef searchList = CFArrayCreate(
+        nullptr, const_cast<const void**>(reinterpret_cast<void**>(&haystack)), 1, &kCFTypeArrayCallBacks);
+
+    if (searchList == nullptr)
+    {
+        CFRelease(query);
+        return errSecAllocate;
+    }
+
+    CFArrayRef itemMatch = CFArrayCreate(nullptr, reinterpret_cast<const void**>(&needle), 1, &kCFTypeArrayCallBacks);
+
+    if (itemMatch == nullptr)
+    {
+        CFRelease(searchList);
+        CFRelease(query);
+        return errSecAllocate;
+    }
+
+    CFDictionarySetValue(query, kSecReturnRef, kCFBooleanTrue);
+    CFDictionarySetValue(query, kSecMatchSearchList, searchList);
+    CFDictionarySetValue(query, kSecMatchItemList, itemMatch);
+    CFDictionarySetValue(query, kSecClass, kSecClassIdentity);
+
+    OSStatus status = SecItemDelete(query);
+
+    if (status == errSecItemNotFound)
+    {
+        status = noErr;
+    }
+
+    if (status == noErr)
+    {
+        CFDictionarySetValue(query, kSecClass, kSecClassCertificate);
+        status = SecItemDelete(query);
+    }
+
+    if (status == errSecItemNotFound)
+    {
+        status = noErr;
+    }
+
+    CFRelease(itemMatch);
+    CFRelease(searchList);
+    CFRelease(query);
+
+    return status;
+}
+
+extern "C" int32_t
+AppleCryptoNative_X509StoreRemoveCertificate(CFTypeRef certOrIdentity, SecKeychainRef keychain, int32_t* pOSStatus)
+{
+    if (certOrIdentity == nullptr || keychain == nullptr)
+        return -1;
+
+    SecCertificateRef cert = nullptr;
+    SecIdentityRef identity = nullptr;
+
+    auto inputType = CFGetTypeID(certOrIdentity);
+    OSStatus status = noErr;
+
+    if (inputType == SecCertificateGetTypeID())
+    {
+        cert = reinterpret_cast<SecCertificateRef>(const_cast<void*>(certOrIdentity));
+        CFRetain(cert);
+    }
+    else if (inputType == SecIdentityGetTypeID())
+    {
+        identity = reinterpret_cast<SecIdentityRef>(const_cast<void*>(certOrIdentity));
+        status = SecIdentityCopyCertificate(identity, &cert);
+
+        if (status != noErr)
+        {
+            *pOSStatus = status;
+            return 0;
+        }
+    }
+    else
+    {
+        return -1;
+    }
+
+    const int32_t kErrorUserTrust = 2;
+    const int32_t kErrorAdminTrust = 3;
+
+    CFArrayRef settings = nullptr;
+
+    if (status == noErr)
+    {
+        status = SecTrustSettingsCopyTrustSettings(cert, kSecTrustSettingsDomainUser, &settings);
+    }
+
+    if (settings != nullptr)
+    {
+        CFRelease(settings);
+        settings = nullptr;
+    }
+
+    if (status == noErr)
+    {
+        CFRelease(cert);
+        return kErrorUserTrust;
+    }
+
+    status = SecTrustSettingsCopyTrustSettings(cert, kSecTrustSettingsDomainAdmin, &settings);
+
+    if (settings != nullptr)
+    {
+        CFRelease(settings);
+        settings = nullptr;
+    }
+
+    if (status == noErr)
+    {
+        CFRelease(cert);
+        return kErrorAdminTrust;
+    }
+
+    *pOSStatus = DeleteInKeychain(cert, keychain);
+    return *pOSStatus == noErr;
+}

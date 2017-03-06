@@ -124,7 +124,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void TestPrivateKeyProperty()
         {
-            using (var c = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, X509KeyStorageFlags.EphemeralKeySet))
+            using (var c = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, Cert.EphemeralIfPossible))
             {
                 bool hasPrivateKey = c.HasPrivateKey;
                 Assert.True(hasPrivateKey);
@@ -184,7 +184,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [Fact]
         public static void ECDsaPrivateKeyProperty_WindowsPfx()
         {
-            using (var cert = new X509Certificate2(TestData.ECDsaP256_DigitalSignature_Pfx_Windows, "Test", X509KeyStorageFlags.EphemeralKeySet))
+            using (var cert = new X509Certificate2(TestData.ECDsaP256_DigitalSignature_Pfx_Windows, "Test", Cert.EphemeralIfPossible))
             {
                 AsymmetricAlgorithm alg = cert.PrivateKey;
                 Assert.NotNull(alg);
@@ -195,6 +195,28 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 // Currently unable to set PrivateKey
                 Assert.Throws<PlatformNotSupportedException>(() => cert.PrivateKey = null);
                 Assert.Throws<PlatformNotSupportedException>(() => cert.PrivateKey = alg);
+            }
+        }
+
+        [Fact]
+        public static void DsaPrivateKeyProperty()
+        {
+            using (var cert = new X509Certificate2(TestData.Dsa1024Pfx, TestData.Dsa1024PfxPassword, Cert.EphemeralIfPossible))
+            {
+                AsymmetricAlgorithm alg = cert.PrivateKey;
+                Assert.NotNull(alg);
+                Assert.Same(alg, cert.PrivateKey);
+                Assert.IsAssignableFrom<DSA>(alg);
+
+                DSA dsa = (DSA)alg;
+                byte[] data = { 1, 2, 3, 4, 5 };
+                byte[] sig = dsa.SignData(data, HashAlgorithmName.SHA1);
+
+                Assert.True(dsa.VerifyData(data, sig, HashAlgorithmName.SHA1), "Key verifies signature");
+
+                data[0] ^= 0xFF;
+
+                Assert.False(dsa.VerifyData(data, sig, HashAlgorithmName.SHA1), "Key verifies tampered data signature");
             }
         }
 #endif
@@ -373,17 +395,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        public static IEnumerable<object[]> StorageFlags
-        {
-            get
-            {
-                yield return new object[] { X509KeyStorageFlags.DefaultKeySet };
-
-#if netcoreapp11
-                yield return new object[] { X509KeyStorageFlags.EphemeralKeySet };
-#endif
-            }
-        }
+        public static IEnumerable<object[]> StorageFlags => CollectionImportTests.StorageFlags;
 
         private static X509Certificate2 Rewrap(this X509Certificate2 c)
         {

@@ -32,27 +32,47 @@ namespace Internal.Cryptography.Pal
 
             X509ContentType contentType = X509Certificate2.GetCertContentType(rawData);
 
-            SafeTemporaryKeychainHandle tmpKeychain;
+            SafeKeychainHandle keychain;
+            bool exportable = true;
 
             if (contentType == X509ContentType.Pkcs12)
             {
-                tmpKeychain = Interop.AppleCrypto.CreateTemporaryKeychain();
+                if ((keyStorageFlags & X509KeyStorageFlags.EphemeralKeySet) == X509KeyStorageFlags.EphemeralKeySet)
+                {
+                    throw new PlatformNotSupportedException(SR.Cryptography_X509_NoEphemeralPfx);
+                }
+
+                exportable = (keyStorageFlags & X509KeyStorageFlags.Exportable) == X509KeyStorageFlags.Exportable;
+
+                bool persist =
+                    (keyStorageFlags & X509KeyStorageFlags.PersistKeySet) == X509KeyStorageFlags.PersistKeySet;
+
+                keychain = persist
+                    ? Interop.AppleCrypto.SecKeychainCopyDefault()
+                    : Interop.AppleCrypto.CreateTemporaryKeychain();
             }
             else
             {
-                tmpKeychain = SafeTemporaryKeychainHandle.InvalidHandle;
+                keychain = SafeTemporaryKeychainHandle.InvalidHandle;
                 password = SafePasswordHandle.InvalidHandle;
             }
 
             // Only dispose tmpKeychain on the exception path, otherwise it's managed by AppleCertLoader.
             try
             {
-                SafeCFArrayHandle certs = Interop.AppleCrypto.X509ImportCollection(rawData, contentType, password, tmpKeychain);
-                return new AppleCertLoader(certs, tmpKeychain);
+                SafeCFArrayHandle certs = Interop.AppleCrypto.X509ImportCollection(
+                    rawData,
+                    contentType,
+                    password,
+                    keychain,
+                    exportable);
+
+                // If the default keychain was used, null will be passed to the loader.
+                return new AppleCertLoader(certs, keychain as SafeTemporaryKeychainHandle);
             }
             catch
             {
-                tmpKeychain.Dispose();
+                keychain.Dispose();
                 throw;
             }
         }
@@ -85,15 +105,18 @@ namespace Internal.Cryptography.Pal
                     if (ordinalIgnoreCase.Equals("My", storeName))
                         return AppleKeychainStore.OpenDefaultKeychain(openFlags);
                     if (ordinalIgnoreCase.Equals("Root", storeName))
-                        return AppleTrustStore.OpenStore(storeLocation, openFlags);
+                        return AppleTrustStore.OpenStore(StoreName.Root, storeLocation, openFlags);
+                    if (ordinalIgnoreCase.Equals("Disallowed", storeName))
+                        return AppleTrustStore.OpenStore(StoreName.Disallowed, storeLocation, openFlags);
 
                     break;
                 case StoreLocation.LocalMachine:
                     if (ordinalIgnoreCase.Equals("My", storeName))
                         return AppleKeychainStore.OpenSystemSharedKeychain(openFlags);
                     if (ordinalIgnoreCase.Equals("Root", storeName))
-                        return AppleTrustStore.OpenStore(storeLocation, openFlags);
-
+                        return AppleTrustStore.OpenStore(StoreName.Root, storeLocation, openFlags);
+                    if (ordinalIgnoreCase.Equals("Disallowed", storeName))
+                        return AppleTrustStore.OpenStore(StoreName.Disallowed, storeLocation, openFlags);
                     break;
             }
 
