@@ -23,12 +23,10 @@ http://www.opensource.org/licenses/bsd-license.html.
 License notice for Unicode data
 -------------------------------
 
-http://www.unicode.org/Public/idna/6.3.0/
-http://www.unicode.org/Public/UCD/latest/ucd/NormalizationTest.txt 
+http://www.unicode.org/copyright.html#License
 
-Copyright © 1991-2015 Unicode, Inc. All rights reserved.
-Distributed under the Terms of Use in 
-http://www.unicode.org/copyright.html.
+Copyright © 1991-2017 Unicode, Inc. All rights reserved.
+Distributed under the Terms of Use in http://www.unicode.org/copyright.html.
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of the Unicode data files and any associated documentation
@@ -37,14 +35,11 @@ a copy of the Unicode data files and any associated documentation
 without restriction, including without limitation the rights to use,
 copy, modify, merge, publish, distribute, and/or sell copies of
 the Data Files or Software, and to permit persons to whom the Data Files
-or Software are furnished to do so, provided that
-(a) this copyright and permission notice appear with all copies 
-of the Data Files or Software,
-(b) this copyright and permission notice appear in associated 
-documentation, and
-(c) there is clear notice in each modified Data File or in the Software
-as well as in the documentation associated with the Data File(s) or
-Software that the data or software has been modified.
+or Software are furnished to do so, provided that either
+(a) this copyright and permission notice appear with all copies
+of the Data Files or Software, or
+(b) this copyright and permission notice appear in associated
+Documentation.
 
 THE DATA FILES AND SOFTWARE ARE PROVIDED "AS IS", WITHOUT WARRANTY OF
 ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
@@ -65,6 +60,7 @@ written authorization of the copyright holder.
 License notice for Zlib 
 -----------------------
 
+https://github.com/madler/zlib
 http://zlib.net/zlib_license.html
 
 /* zlib.h -- interface of the 'zlib' general purpose compression library
