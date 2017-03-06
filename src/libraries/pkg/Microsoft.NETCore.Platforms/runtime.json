@@ -587,7 +587,7 @@
             "#import": [ "win7-corert", "win8" ]
         },
         "win8-x86-corert": {
-            "#import": [ "win8-corert", "win7-x86-corert", "win8-x86"]
+            "#import": [ "win8-corert", "win7-x86-corert", "win8-x86" ]
         },
         "win8-x64-corert": {
             "#import": [ "win8-corert", "win7-x64-corert", "win8-x64" ]
@@ -899,7 +899,7 @@
             "#import": [ "opensuse-corert", "opensuse.13.2" ]
         },
         "opensuse.13.2-x64-corert": {
-            "#import": [ "opensuse.13.2-corert", "opensuse-x64-corert",  "opensuse.13.2-x64" ]
+            "#import": [ "opensuse.13.2-corert", "opensuse-x64-corert", "opensuse.13.2-x64" ]
         },
 
         "opensuse.42.1-corert": {
@@ -932,4 +932,3 @@
 
     }
 }
-
