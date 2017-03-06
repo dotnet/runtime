@@ -4,18 +4,6 @@
     <PackageTargetRuntime>$(MinOSForArch)-$(PackagePlatform)</PackageTargetRuntime>
   </PropertyGroup>
   <ItemGroup>
-    <ArchitectureSpecificNativeFile Include="$(BinDir)CoreRun.exe" />
-    <File Include="@(ArchitectureSpecificNativeFile)">
-      <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
-    </File>
-  </ItemGroup>
-  <ItemGroup>
-    <ArchitectureSpecificNativeSymbol Include="@(ArchitectureSpecificNativeFile -> '%(RelativeDir)PDB\%(FileName).pdb')" />
-    <AdditionalSymbolPackageExcludes Include="%2A%2A\%2A.dll" />
-    <ArchitectureSpecificNativeSymbol Include="..\_.pdb" />
-    <File Include="@(ArchitectureSpecificNativeSymbol)">
-      <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
-      <IsSymbolFile>true</IsSymbolFile>
-    </File>
+    <NativeBinary Include="$(BinDir)CoreRun.exe" />
   </ItemGroup>
 </Project>

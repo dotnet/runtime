@@ -19,7 +19,7 @@ fi
 
 usage()
 {
-    echo "Usage: $0 [BuildArch] [BuildType] [verbose] [coverage] [cross] [clangx.y] [ninja] [configureonly] [skipconfigure] [skipnative] [skipmscorlib] [skiptests] [cmakeargs] [bindir]"
+    echo "Usage: $0 [BuildArch] [BuildType] [verbose] [coverage] [cross] [clangx.y] [ninja] [configureonly] [skipconfigure] [skipnative] [skipmscorlib] [skiptests] [stripsymbols] [cmakeargs] [bindir]"
     echo "BuildArch can be: x64, x86, arm, armel, arm64"
     echo "BuildType can be: debug, checked, release"
     echo "coverage - optional argument to enable code coverage build (currently supported only for Linux and OSX)."
@@ -44,6 +44,7 @@ usage()
 	echo "   using all processors^)."
 	echo "-officialbuildid=^<ID^>: specify the official build ID to be used by this build."
 	echo "-Rebuild: passes /t:rebuild to the build projects."
+    echo "stripSymbols - Optional argument to strip native symbols during the build."
     echo "skipgenerateversion - disable version generation even if MSBuild is supported."
     echo "cmakeargs - user-settable additional arguments passed to CMake."
     echo "bindir - output directory (defaults to $__ProjectRoot/bin)"
@@ -611,7 +612,7 @@ while :; do
             __CrossBuild=1
             ;;
             
-		portablelinux)
+        portablelinux)
             if [ "$__BuildOS" == "Linux" ]; then
                 __PortableLinux=1
             else
@@ -621,8 +622,12 @@ while :; do
             ;;
             
         verbose)
-        __VerboseBuild=1
-        ;;
+            __VerboseBuild=1
+            ;;
+
+        stripsymbols)
+            __cmakeargs="$__cmakeargs -DSTRIP_SYMBOLS=true"
+            ;;
 
         clang3.5)
             __ClangMajorVersion=3
