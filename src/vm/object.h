@@ -1284,9 +1284,6 @@ protected:
     OBJECTREF           m_keepalive;
     OBJECTREF           m_cache;
     TypeHandle          m_typeHandle;
-#ifdef FEATURE_APPX
-    UINT32              m_invocationFlags;
-#endif
 
 #ifdef _DEBUG
     void TypeCheck()

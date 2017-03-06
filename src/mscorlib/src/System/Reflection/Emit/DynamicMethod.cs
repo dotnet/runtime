@@ -42,13 +42,6 @@ namespace System.Reflection.Emit
         // assigned by the DynamicResolver ctor
         internal DynamicResolver m_resolver;
 
-        // Always false unless we are in an immersive (non dev mode) process.
-#if FEATURE_APPX
-        private bool m_profileAPICheck;
-
-        private RuntimeAssembly m_creatorAssembly;
-#endif
-
         internal bool m_restrictedSkipVisibility;
         // The context when the method was created. We use this to do the RestrictedMemberAccess checks.
         // These checks are done when the method is compiled. This can happen at an arbitrary time,
@@ -65,13 +58,10 @@ namespace System.Reflection.Emit
 
         private DynamicMethod() { }
 
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public DynamicMethod(string name,
                              Type returnType,
                              Type[] parameterTypes)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-
             Init(name,
                 MethodAttributes.Public | MethodAttributes.Static,
                 CallingConventions.Standard,
@@ -80,18 +70,14 @@ namespace System.Reflection.Emit
                 null,   // owner
                 null,   // m
                 false,  // skipVisibility
-                true,
-                ref stackMark);  // transparentMethod
+                true);
         }
 
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public DynamicMethod(string name,
                              Type returnType,
                              Type[] parameterTypes,
                              bool restrictedSkipVisibility)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-
             Init(name,
                 MethodAttributes.Public | MethodAttributes.Static,
                 CallingConventions.Standard,
@@ -100,18 +86,17 @@ namespace System.Reflection.Emit
                 null,   // owner
                 null,   // m
                 restrictedSkipVisibility,
-                true,
-                ref stackMark);  // transparentMethod
+                true);
         }
 
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public DynamicMethod(string name,
                              Type returnType,
                              Type[] parameterTypes,
                              Module m)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            PerformSecurityCheck(m, ref stackMark, false);
+            if (m == null)
+                throw new ArgumentNullException(nameof(m));
+
             Init(name,
                 MethodAttributes.Public | MethodAttributes.Static,
                 CallingConventions.Standard,
@@ -120,19 +105,18 @@ namespace System.Reflection.Emit
                 null,   // owner
                 m,      // m
                 false,  // skipVisibility
-                false,
-                ref stackMark);  // transparentMethod
+                false);
         }
 
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public DynamicMethod(string name,
                              Type returnType,
                              Type[] parameterTypes,
                              Module m,
                              bool skipVisibility)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            PerformSecurityCheck(m, ref stackMark, skipVisibility);
+            if (m == null)
+                throw new ArgumentNullException(nameof(m));
+
             Init(name,
                 MethodAttributes.Public | MethodAttributes.Static,
                 CallingConventions.Standard,
@@ -141,11 +125,9 @@ namespace System.Reflection.Emit
                 null,   // owner
                 m,      // m
                 skipVisibility,
-                false,
-                ref stackMark); // transparentMethod
+                false);
         }
 
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public DynamicMethod(string name,
                              MethodAttributes attributes,
                              CallingConventions callingConvention,
@@ -154,8 +136,9 @@ namespace System.Reflection.Emit
                              Module m,
                              bool skipVisibility)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            PerformSecurityCheck(m, ref stackMark, skipVisibility);
+            if (m == null)
+                throw new ArgumentNullException(nameof(m));
+
             Init(name,
                 attributes,
                 callingConvention,
@@ -164,18 +147,17 @@ namespace System.Reflection.Emit
                 null,   // owner
                 m,      // m
                 skipVisibility,
-                false,
-                ref stackMark); // transparentMethod
+                false);
         }
 
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public DynamicMethod(string name,
                              Type returnType,
                              Type[] parameterTypes,
                              Type owner)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            PerformSecurityCheck(owner, ref stackMark, false);
+            if (owner == null)
+                throw new ArgumentNullException(nameof(owner));
+
             Init(name,
                 MethodAttributes.Public | MethodAttributes.Static,
                 CallingConventions.Standard,
@@ -184,19 +166,18 @@ namespace System.Reflection.Emit
                 owner,  // owner
                 null,   // m
                 false,  // skipVisibility
-                false,
-                ref stackMark); // transparentMethod
+                false);
         }
 
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public DynamicMethod(string name,
                              Type returnType,
                              Type[] parameterTypes,
                              Type owner,
                              bool skipVisibility)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            PerformSecurityCheck(owner, ref stackMark, skipVisibility);
+            if (owner == null)
+                throw new ArgumentNullException(nameof(owner));
+
             Init(name,
                 MethodAttributes.Public | MethodAttributes.Static,
                 CallingConventions.Standard,
@@ -205,11 +186,9 @@ namespace System.Reflection.Emit
                 owner,  // owner
                 null,   // m
                 skipVisibility,
-                false,
-                ref stackMark); // transparentMethod
+                false);
         }
 
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public DynamicMethod(string name,
                              MethodAttributes attributes,
                              CallingConventions callingConvention,
@@ -218,8 +197,9 @@ namespace System.Reflection.Emit
                              Type owner,
                              bool skipVisibility)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            PerformSecurityCheck(owner, ref stackMark, skipVisibility);
+            if (owner == null)
+                throw new ArgumentNullException(nameof(owner));
+
             Init(name,
                 attributes,
                 callingConvention,
@@ -228,8 +208,7 @@ namespace System.Reflection.Emit
                 owner,  // owner
                 null,   // m
                 skipVisibility,
-                false,
-                ref stackMark); // transparentMethod
+                false);
         }
 
         // helpers for intialization
@@ -298,8 +277,7 @@ namespace System.Reflection.Emit
                                  Type owner,
                                  Module m,
                                  bool skipVisibility,
-                                 bool transparentMethod,
-                                 ref StackCrawlMark stackMark)
+                                 bool transparentMethod)
         {
             DynamicMethod.CheckConsistency(attributes, callingConvention);
 
@@ -337,7 +315,7 @@ namespace System.Reflection.Emit
             }
             else
             {
-                Debug.Assert(m != null || owner != null, "PerformSecurityCheck should ensure that either m or owner is set");
+                Debug.Assert(m != null || owner != null, "Constructor should ensure that either m or owner is set");
                 Debug.Assert(m == null || !m.Equals(s_anonymouslyHostedDynamicMethodsModule), "The user cannot explicitly use this assembly");
                 Debug.Assert(m == null || owner == null, "m and owner cannot both be set");
 
@@ -371,31 +349,7 @@ namespace System.Reflection.Emit
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
 
-#if FEATURE_APPX
-            if (AppDomain.ProfileAPICheck)
-            {
-                if (m_creatorAssembly == null)
-                    m_creatorAssembly = RuntimeAssembly.GetExecutingAssembly(ref stackMark);
-
-                if (m_creatorAssembly != null && !m_creatorAssembly.IsFrameworkAssembly())
-                    m_profileAPICheck = true;
-            }
-#endif // FEATURE_APPX
-
             m_dynMethod = new RTDynamicMethod(this, name, attributes, callingConvention);
-        }
-
-        private void PerformSecurityCheck(Module m, ref StackCrawlMark stackMark, bool skipVisibility)
-        {
-            if (m == null)
-                throw new ArgumentNullException(nameof(m));
-            Contract.EndContractBlock();
-        }
-
-        private void PerformSecurityCheck(Type owner, ref StackCrawlMark stackMark, bool skipVisibility)
-        {
-            if (owner == null)
-                throw new ArgumentNullException(nameof(owner));
         }
 
         //
@@ -431,22 +385,6 @@ namespace System.Reflection.Emit
             d.StoreDynamicMethod(GetMethodInfo());
             return d;
         }
-
-#if FEATURE_APPX
-        internal bool ProfileAPICheck
-        {
-            get
-            {
-                return m_profileAPICheck;
-            }
-
-            [FriendAccessAllowed]
-            set
-            {
-                m_profileAPICheck = value;
-            }
-        }
-#endif
 
         // This is guaranteed to return a valid handle
         internal unsafe RuntimeMethodHandle GetMethodDescriptor()

@@ -2747,10 +2747,6 @@ void SystemDomain::LoadBaseSystemClasses()
     _ASSERTE(!g_pEnumClass->IsValueType());
 
     // Load System.RuntimeType
-    // We need to load this after ValueType and Enum because RuntimeType now
-    // contains an enum field (m_invocationFlags). Otherwise INVOCATION_FLAGS
-    // would be treated as a reference type and clr!SigPointer::GetTypeHandleThrowing
-    // throws an exception.
     g_pRuntimeTypeClass = MscorlibBinder::GetClass(CLASS__CLASS);
     _ASSERTE(g_pRuntimeTypeClass->IsFullyLoaded());
 

@@ -33,12 +33,6 @@ namespace AppX
     // On CoreCLR, the host is in charge of determining whether the process is AppX or not.
     void SetIsAppXProcess(bool);
 
-    inline bool IsAppXNGen()
-    {
-        WRAPPER_NO_CONTRACT;
-        return false;
-    }
-
 #ifdef DACCESS_COMPILE
         bool DacIsAppXProcess();
 #endif // DACCESS_COMPILE

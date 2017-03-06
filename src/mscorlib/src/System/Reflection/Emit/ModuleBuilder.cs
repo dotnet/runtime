@@ -178,28 +178,12 @@ namespace System.Reflection.Emit
         {
             Debug.Assert(method != null);
 
-#if FEATURE_APPX
-            if (ContainingAssemblyBuilder.ProfileAPICheck)
-            {
-                if ((method.InvocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NON_W8P_FX_API) != 0)
-                    throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_APIInvalidForCurrentContext", method.FullName));
-            }
-#endif
-
             return GetMemberRefOfMethodInfo(GetNativeHandle(), tr, method);
         }
 
         private int GetMemberRefOfMethodInfo(int tr, RuntimeConstructorInfo method)
         {
             Debug.Assert(method != null);
-
-#if FEATURE_APPX
-            if (ContainingAssemblyBuilder.ProfileAPICheck)
-            {
-                if ((method.InvocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NON_W8P_FX_API) != 0)
-                    throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_APIInvalidForCurrentContext", method.FullName));
-            }
-#endif
 
             return GetMemberRefOfMethodInfo(GetNativeHandle(), tr, method);
         }
@@ -211,15 +195,6 @@ namespace System.Reflection.Emit
         private int GetMemberRefOfFieldInfo(int tkType, RuntimeTypeHandle declaringType, RuntimeFieldInfo runtimeField)
         {
             Debug.Assert(runtimeField != null);
-
-#if FEATURE_APPX
-            if (ContainingAssemblyBuilder.ProfileAPICheck)
-            {
-                RtFieldInfo rtField = runtimeField as RtFieldInfo;
-                if (rtField != null && (rtField.InvocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NON_W8P_FX_API) != 0)
-                    throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_APIInvalidForCurrentContext", rtField.FullName));
-            }
-#endif
 
             return GetMemberRefOfFieldInfo(GetNativeHandle(), tkType, declaringType, runtimeField.MetadataToken);
         }
@@ -284,17 +259,6 @@ namespace System.Reflection.Emit
 
             Debug.Assert(!type.IsByRef, "Must not be ByRef.");
             Debug.Assert(!type.IsGenericType || type.IsGenericTypeDefinition, "Must not have generic arguments.");
-
-#if FEATURE_APPX
-            if (ContainingAssemblyBuilder.ProfileAPICheck)
-            {
-                RuntimeType rtType = type as RuntimeType;
-                if (rtType != null && (rtType.InvocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NON_W8P_FX_API) != 0)
-                {
-                    throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_APIInvalidForCurrentContext", rtType.FullName));
-                }
-            }
-#endif
 
             return GetTypeRef(GetNativeHandle(), typeName, GetRuntimeModuleFromModule(refedModule).GetNativeHandle(), strRefedModuleFileName, tkResolution);
         }
