@@ -7,8 +7,6 @@ include_directories(${CLR_DIR}/src/gc)
 
 include_directories(${ARCH_SOURCES_DIR})
 
-add_definitions(-DFEATURE_LEAVE_RUNTIME_HOLDER=1)
-
 add_definitions(-DUNICODE)
 add_definitions(-D_UNICODE)
 

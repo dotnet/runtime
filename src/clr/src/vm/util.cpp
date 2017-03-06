@@ -2505,8 +2505,6 @@ HMODULE CLRGetModuleHandle(LPCWSTR lpModuleFileName)
     STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_SO_TOLERANT;
 
-    ThreadAffinityHolder affinity;
-
     HMODULE hMod = WszGetModuleHandle(lpModuleFileName);
     return hMod;
 }
@@ -2519,8 +2517,6 @@ HMODULE CLRGetCurrentModuleHandle()
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_SO_TOLERANT;
-
-    ThreadAffinityHolder affinity;
 
     HMODULE hMod = WszGetModuleHandle(NULL);
     return hMod;
@@ -2680,7 +2676,6 @@ static HMODULE CLRLoadLibraryWorker(LPCWSTR lpLibFileName, DWORD *pLastError)
     STATIC_CONTRACT_FAULT;
     STATIC_CONTRACT_SO_TOLERANT;
 
-    ThreadAffinityHolder affinity;
     HMODULE hMod;
     UINT last = SetErrorMode(SEM_NOOPENFILEERRORBOX|SEM_FAILCRITICALERRORS);
     {
@@ -2724,7 +2719,6 @@ static HMODULE CLRLoadLibraryExWorker(LPCWSTR lpLibFileName, HANDLE hFile, DWORD
     STATIC_CONTRACT_FAULT;
     STATIC_CONTRACT_SO_TOLERANT;
 
-    ThreadAffinityHolder affinity;
     HMODULE hMod;
     UINT last = SetErrorMode(SEM_NOOPENFILEERRORBOX|SEM_FAILCRITICALERRORS);
     {
@@ -2766,7 +2760,6 @@ BOOL CLRFreeLibrary(HMODULE hModule)
     STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_SO_TOLERANT;
 
-    ThreadAffinityHolder affinity;
     return FreeLibrary(hModule);
 }
 
@@ -2777,8 +2770,6 @@ VOID CLRFreeLibraryAndExitThread(HMODULE hModule,DWORD dwExitCode)
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_FORBID_FAULT;
     STATIC_CONTRACT_SO_TOLERANT;
-
-    ThreadAffinityHolder affinity;
 
     // This is no-return
     FreeLibraryAndExitThread(hModule,dwExitCode);

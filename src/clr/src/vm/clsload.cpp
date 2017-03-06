@@ -1361,20 +1361,7 @@ TypeHandle ClassLoader::LookupTypeKey(TypeKey *pKey,
 
     TypeHandle th;
 
-    // If this is the GC thread, and we're hosted, we're in a sticky situation with
-    // SQL where we may have suspended another thread while doing Thread::SuspendRuntime.
-    // In this case, we have the issue that a thread holding this lock could be
-    // suspended, perhaps implicitly because the active thread on the SQL scheduler
-    // has been suspended by the GC thread. In such a case, we need to skip taking
-    // the lock. We can be sure that there will be no races in such a condition because
-    // we will only be looking for types that are already loaded, or for a type that
-    // is not loaded, but we will never cause the type to get loaded, and so the result
-    // of the lookup will not change.
-#ifndef DACCESS_COMPILE
-    if (fCheckUnderLock && !(IsGCThread() && CLRTaskHosted()))
-#else
     if (fCheckUnderLock)
-#endif // DACCESS_COMPILE
     {
         th = LookupTypeKeyUnderLock(pKey, pTable, pLock);
     }

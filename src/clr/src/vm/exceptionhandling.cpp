@@ -5863,30 +5863,6 @@ NOT_WIN64_ARG(IN     ULONG               MemoryStackFp),
     }
 #endif // _DEBUG
 
-    // We need to ReverseLeaveRuntime if we are unwinding (since there is no
-    // frame to do this for us...
-    if (IS_UNWINDING(pExceptionRecord->ExceptionFlags))
-    {
-        BYTE bFlag;
-
-#ifdef _TARGET_AMD64_
-        bFlag = *(BYTE*)(pDispatcherContext->ContextRecord->Rbp + UMTHUNKSTUB_HOST_NOTIFY_FLAG_RBPOFFSET);
-#elif defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
-        // On ARM, we do not need to do anything here. If required, ReverseEnterRuntime should happen
-        // in the VM in UMThunkStubWorker via a holder so that during an exceptional case, we will
-        // automatically perform the ReverseLeaveRuntime.
-        bFlag = 0;
-#else
-        bFlag = 0;
-        PORTABILITY_ASSERT("NYI -- UMThunkStubUnwindFrameChainHandler notify host of ReverseLeaveRuntime");
-#endif // _TARGET_AMD64_
-
-        if (0 != bFlag)
-        {
-            GetThread()->ReverseLeaveRuntime();
-        }
-    }
-
     EXCEPTION_DISPOSITION disposition = UMThunkUnwindFrameChainHandler(
                 pExceptionRecord,
                 MemoryStackFp,

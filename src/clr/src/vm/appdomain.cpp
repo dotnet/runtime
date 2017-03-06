@@ -2812,26 +2812,6 @@ void SystemDomain::LoadBaseSystemClasses()
 
 #ifndef CROSSGEN_COMPILE
     ECall::PopulateManagedStringConstructors();
-
-    if (CLRIoCompletionHosted())
-    {
-        g_pOverlappedDataClass = MscorlibBinder::GetClass(CLASS__OVERLAPPEDDATA);
-        _ASSERTE (g_pOverlappedDataClass);
-        if (CorHost2::GetHostOverlappedExtensionSize() != 0)
-        {
-            // Overlapped may have an extension if a host hosts IO completion subsystem
-            DWORD instanceFieldBytes = g_pOverlappedDataClass->GetNumInstanceFieldBytes() + CorHost2::GetHostOverlappedExtensionSize();
-            _ASSERTE (instanceFieldBytes + ObjSizeOf(Object) >= MIN_OBJECT_SIZE);
-            DWORD baseSize = (DWORD) (instanceFieldBytes + ObjSizeOf(Object));
-            baseSize = (baseSize + ALLOC_ALIGN_CONSTANT) & ~ALLOC_ALIGN_CONSTANT;  // m_BaseSize must be aligned
-            DWORD adjustSize = baseSize - g_pOverlappedDataClass->GetBaseSize();
-            CGCDesc* map = CGCDesc::GetCGCDescFromMT(g_pOverlappedDataClass);
-            CGCDescSeries * cur = map->GetHighestSeries();
-            _ASSERTE ((SSIZE_T)map->GetNumSeries() == 1);
-            cur->SetSeriesSize(cur->GetSeriesSize() - adjustSize);
-            g_pOverlappedDataClass->SetBaseSize(baseSize);
-        }
-    }
 #endif // CROSSGEN_COMPILE
 
     g_pExceptionClass = MscorlibBinder::GetClass(CLASS__EXCEPTION);
@@ -8986,12 +8966,6 @@ BOOL AppDomain::StopEEAndUnwindThreads(unsigned int retryCount, BOOL *pFMarkUnlo
             }
         } // ThreadStoreLockHolder
 
-        if (nThreadsNeedMoreWork && CLRTaskHosted())
-        {
-            // In case a thread is the domain is blocked due to its scheduler being
-            // occupied by another thread.
-            Thread::ThreadAbortWatchDog();
-        }
         m_dwThreadsStillInAppDomain=nThreadsNeedMoreWork;
         return !nThreadsNeedMoreWork;
     }
@@ -10657,24 +10631,6 @@ DWORD WINAPI AppDomain::ADUnloadThreadStart(void *args)
 
     {
         GCX_MAYBE_PREEMP(fOK);
-
-        if (fOK)
-        {
-            EX_TRY
-            {
-                if (CLRTaskHosted())
-                {
-                    // ADUnload helper thread is critical.  We do not want it to share scheduler
-                    // with other tasks.
-                    pThread->LeaveRuntime(0);
-                }
-            }
-            EX_CATCH
-            {
-                fOK = false;
-            }
-            EX_END_CATCH(SwallowAllExceptions);
-        }
 
         _ASSERTE (g_fADUnloadWorkerOK == -2);
 

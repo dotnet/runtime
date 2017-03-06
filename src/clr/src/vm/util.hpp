@@ -690,48 +690,6 @@ inline BOOL CLRHosted()
     return g_fHostConfig;
 }
 
-inline BOOL CLRMemoryHosted()
-{
-    LIMITED_METHOD_CONTRACT;
-    return FALSE;
-}
-
-inline BOOL CLRTaskHosted()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-    return FALSE;
-}
-
-inline BOOL CLRSyncHosted()
-{
-    LIMITED_METHOD_CONTRACT;
-    return FALSE;
-}
-
-inline BOOL CLRIoCompletionHosted()
-{
-    LIMITED_METHOD_CONTRACT;
-    return FALSE;
-}
-
-inline BOOL CLRAssemblyHosted()
-{
-    LIMITED_METHOD_CONTRACT;
-    return FALSE;
-}
-
-inline BOOL CLRGCHosted()
-{
-    LIMITED_METHOD_CONTRACT;
-    return FALSE;
-}
-
-inline BOOL CLRSecurityHosted()
-{
-    LIMITED_METHOD_CONTRACT;
-    return FALSE;
-}
-
 #ifndef FEATURE_PAL
 HMODULE CLRGetModuleHandle(LPCWSTR lpModuleFileName);
 
@@ -802,30 +760,17 @@ BOOL IsHostRegisteredForEvent(EClrEvent event);
 SetupThreadForComCall(OOMRetVal);                       \
 if (CheckCanRunManagedCode && !CanRunManagedCode())     \
     return CannotEnterRetVal;                           \
-SO_INTOLERANT_CODE_NOTHROW(CURRENT_THREAD, return SORetVal)  \
-
-#define ComCallHostNotificationHR()                                         \
-ReverseEnterRuntimeHolderNoThrow REHolder;                                  \
-if (CLRTaskHosted())                                                        \
-{                                                                           \
-    HRESULT hr = REHolder.AcquireNoThrow();                                 \
-    if (FAILED(hr))                                                         \
-    {                                                                       \
-        return hr;                                                          \
-    }                                                                       \
-}
+SO_INTOLERANT_CODE_NOTHROW(CURRENT_THREAD, return SORetVal)
 
 #define SetupForComCallHRNoHostNotif() InternalSetupForComCall(HOST_E_CLRNOTAVAILABLE, E_OUTOFMEMORY, COR_E_STACKOVERFLOW, true)
 #define SetupForComCallHRNoHostNotifNoCheckCanRunManagedCode() InternalSetupForComCall(HOST_E_CLRNOTAVAILABLE, E_OUTOFMEMORY, COR_E_STACKOVERFLOW, false)
 #define SetupForComCallDWORDNoHostNotif() InternalSetupForComCall(-1, -1, -1, true)
 
 #define SetupForComCallHR()                                                                \
-InternalSetupForComCall(HOST_E_CLRNOTAVAILABLE, E_OUTOFMEMORY, COR_E_STACKOVERFLOW, true)  \
-ComCallHostNotificationHR()
+InternalSetupForComCall(HOST_E_CLRNOTAVAILABLE, E_OUTOFMEMORY, COR_E_STACKOVERFLOW, true)
 
 #define SetupForComCallHRNoCheckCanRunManagedCode()                                        \
-InternalSetupForComCall(HOST_E_CLRNOTAVAILABLE, E_OUTOFMEMORY, COR_E_STACKOVERFLOW, false) \
-ComCallHostNotificationHR()
+InternalSetupForComCall(HOST_E_CLRNOTAVAILABLE, E_OUTOFMEMORY, COR_E_STACKOVERFLOW, false)
 
 #ifdef FEATURE_CORRUPTING_EXCEPTIONS
 
@@ -840,11 +785,6 @@ BEGIN_SO_INTOLERANT_CODE_NOTHROW(CURRENT_THREAD, SORetVal)                  \
 #define BeginSetupForComCallHRWithEscapingCorruptingExceptions()            \
 HRESULT __hr = S_OK;                                                        \
 InternalSetupForComCallWithEscapingCorruptingExceptions(HOST_E_CLRNOTAVAILABLE, E_OUTOFMEMORY, COR_E_STACKOVERFLOW, true)              \
-ReverseEnterRuntimeHolderNoThrow REHolder;                                  \
-if (CLRTaskHosted())                                                        \
-{                                                                           \
-    __hr = REHolder.AcquireNoThrow();                                       \
-}                                                                           \
                                                                             \
 if (SUCCEEDED(__hr))                                                        \
 {                                                                           \
@@ -861,28 +801,12 @@ if (FAILED(__hr))                                                           \
 #endif // FEATURE_CORRUPTING_EXCEPTIONS
 
 #define SetupForComCallDWORD()                                              \
-InternalSetupForComCall(-1, -1, -1, true)                                   \
-ReverseEnterRuntimeHolderNoThrow REHolder;                                  \
-if (CLRTaskHosted())                                                        \
-{                                                                           \
-    if (FAILED(REHolder.AcquireNoThrow()))                                  \
-    {                                                                       \
-        return -1;                                                          \
-    }                                                                       \
-}
+InternalSetupForComCall(-1, -1, -1, true)
 
 // Special version of SetupForComCallDWORD that doesn't call
 // CanRunManagedCode() to avoid firing LoaderLock MDA
 #define SetupForComCallDWORDNoCheckCanRunManagedCode()                      \
-InternalSetupForComCall(-1, -1, -1, false)                                  \
-ReverseEnterRuntimeHolderNoThrow REHolder;                                  \
-if (CLRTaskHosted())                                                        \
-{                                                                           \
-    if (FAILED(REHolder.AcquireNoThrow()))                                  \
-    {                                                                       \
-        return -1;                                                          \
-    }                                                                       \
-}
+InternalSetupForComCall(-1, -1, -1, false)
 
 #include "unsafe.h"
 
@@ -912,8 +836,6 @@ typedef Wrapper<HMODULE, DoNothing<HMODULE>, VoidFreeLibrary, NULL> ModuleHandle
 FORCEINLINE void VoidFreeWinAllocatedBlock(LPVOID pv)
 {
     LIMITED_METHOD_CONTRACT;
-
-    _ASSERTE(!CLRMemoryHosted());
 
 #pragma push_macro("GetProcessHeap")
 #pragma push_macro("HeapFree")

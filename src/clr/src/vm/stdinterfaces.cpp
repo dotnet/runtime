@@ -1416,8 +1416,6 @@ OleAutDispatchImpl_Invoke
             pDisp = (IDispatch*)pCCW->GetIClassXIP();
         }
 
-        LeaveRuntimeHolder holder(**(size_t**)pTI);
-
         hr = pTI->Invoke(pDisp, dispidMember, wFlags, pdispparams, pvarResult, pexcepinfo, puArgErr);
     }
     EX_CATCH

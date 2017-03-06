@@ -392,23 +392,6 @@ BOOL Thread::Alert ()
     return fRetVal;
 }
 
-struct HostJoinOnThreadArgs
-{
-    WaitMode mode;
-};
-
-DWORD HostJoinOnThread (void *args, DWORD timeout, DWORD option)
-{
-    CONTRACTL {
-        THROWS;
-        if (GetThread()) {GC_TRIGGERS;} else {DISABLED(GC_NOTRIGGER);}
-    }
-    CONTRACTL_END;
-
-    _ASSERTE (!"Unknown host join status\n");
-    return E_FAIL;
-}
-
 
 DWORD Thread::Join(DWORD timeout, BOOL alertable)
 {
@@ -577,11 +560,11 @@ DWORD Thread::StartThread()
     _ASSERTE (m_Creater.IsCurrentThread());
     m_Creater.Clear();
 #endif
-    {
-        _ASSERTE (GetThreadHandle() != INVALID_HANDLE_VALUE &&
-                  GetThreadHandle() != SWITCHOUT_HANDLE_VALUE);
-        dwRetVal = ::ResumeThread(GetThreadHandle());
-    }
+
+    _ASSERTE (GetThreadHandle() != INVALID_HANDLE_VALUE &&
+                GetThreadHandle() != SWITCHOUT_HANDLE_VALUE);
+    dwRetVal = ::ResumeThread(GetThreadHandle());
+
 
     return dwRetVal;
 }
@@ -714,13 +697,6 @@ Thread* SetupThread(BOOL fInternal)
     CantStopHolder hCantStop;
 
     EnsurePreemptiveModeIfException ensurePreemptive;
-
-#ifdef _DEBUG
-    // Verify that for fiber mode, we do not have a thread that matches the current StackBase.
-    if (CLRTaskHosted()) {
-
-        }
-#endif
 
 #ifdef _DEBUG
     CHECK chk;
@@ -1910,7 +1886,7 @@ Thread::Thread()
     DWORD_PTR *ttInfo = NULL;
     size_t nBytes = MaxThreadRecord *
                   (sizeof(FiberSwitchInfo)-sizeof(size_t)+MaxStackDepth*sizeof(size_t));
-    if (CLRTaskHosted() || g_pConfig->SaveThreadInfo()) {
+    if (g_pConfig->SaveThreadInfo()) {
         ttInfo = new DWORD_PTR[(nBytes/sizeof(DWORD_PTR))*ThreadTrackInfo_Max];
         memset(ttInfo,0,nBytes*ThreadTrackInfo_Max);
     }
@@ -1925,14 +1901,7 @@ Thread::Thread()
     m_OSContext = new CONTEXT();
     NewHolder<CONTEXT> contextHolder(m_OSContext);
 
-    if (CLRTaskHosted())
-    {
-        m_pSavedRedirectContext = new CONTEXT();
-    }
-    else
-    {
-        m_pSavedRedirectContext = NULL;
-    }
+    m_pSavedRedirectContext = NULL;
     NewHolder<CONTEXT> savedRedirectContextHolder(m_pSavedRedirectContext);
 
 #ifdef FEATURE_COMINTEROP
@@ -1975,7 +1944,6 @@ Thread::Thread()
 
     m_fCompletionPortDrained = FALSE;
 
-    m_WorkingOnThreadContext = NULL;
     m_debuggerActivePatchSkipper = NULL;
     m_dwThreadHandleBeingUsed = 0;
     SetProfilerCallbacksAllowed(TRUE);
@@ -2083,7 +2051,6 @@ BOOL Thread::InitThread(BOOL fInternal)
 
 #ifndef FEATURE_PAL
     // workaround: Remove this when we flow impersonation token to host.
-    ThreadAffinityHolder affinityHolder(FALSE);
     BOOL    reverted = FALSE;
     HANDLE  threadToken = INVALID_HANDLE_VALUE;
 #endif // !FEATURE_PAL
@@ -2111,7 +2078,7 @@ BOOL Thread::InitThread(BOOL fInternal)
         // THREAD_SUSPEND_RESUME nor THREAD_GET_CONTEXT. We need to be able to suspend the thread, and we need to be
         // able to get its context. Therefore, if we're impersonating, we revert to self, dup the handle, then
         // re-impersonate before we leave this routine.
-        if (!RevertIfImpersonated(&reverted, &threadToken, &affinityHolder))
+        if (!RevertIfImpersonated(&reverted, &threadToken))
         {
             COMPlusThrowWin32();
         }
@@ -2547,17 +2514,16 @@ void Thread::HandleThreadStartupFailure()
 }
 
 #ifndef FEATURE_PAL
-BOOL RevertIfImpersonated(BOOL *bReverted, HANDLE *phToken, ThreadAffinityHolder *pTAHolder)
+BOOL RevertIfImpersonated(BOOL *bReverted, HANDLE *phToken)
 {
     WRAPPER_NO_CONTRACT;
 
     BOOL bImpersonated = OpenThreadToken(GetCurrentThread(),    // we are assuming that if this call fails,
-                                                                        TOKEN_IMPERSONATE,     // we are not impersonating. There is no win32
-                                                                        TRUE,                  // api to figure this out. The only alternative
+                                         TOKEN_IMPERSONATE,     // we are not impersonating. There is no win32
+                                         TRUE,                  // api to figure this out. The only alternative
                                          phToken);              // is to use NtCurrentTeb->IsImpersonating().
     if (bImpersonated)
     {
-        pTAHolder->Acquire();
         *bReverted = RevertToSelf();
         return *bReverted;
 
@@ -2600,21 +2566,15 @@ BOOL Thread::CreateNewThread(SIZE_T stackSize, LPTHREAD_START_ROUTINE start, voi
     _ASSERTE(stackSize <= 0xFFFFFFFF);
 
 #ifndef FEATURE_PAL
-    ThreadAffinityHolder affinityHolder(FALSE);
     HandleHolder token;
     BOOL bReverted = FALSE;
-    bRet = RevertIfImpersonated(&bReverted, &token, &affinityHolder);
+    bRet = RevertIfImpersonated(&bReverted, &token);
     if (bRet != TRUE)
         return bRet;
 #endif // !FEATURE_PAL
 
     m_StateNC = (ThreadStateNoConcurrency)((ULONG)m_StateNC | TSNC_CLRCreatedThread);
-    if (!CLRTaskHosted()) {
-        bRet = CreateNewOSThread(stackSize, start, args);
-    }
-    else {
-        bRet = CreateNewHostTask(stackSize, start, args);
-    }
+    bRet = CreateNewOSThread(stackSize, start, args);
 #ifndef FEATURE_PAL
     UndoRevert(bReverted, token);
 #endif // !FEATURE_PAL
@@ -2806,27 +2766,6 @@ BOOL Thread::CreateNewOSThread(SIZE_T sizeToCommitOrReserve, LPTHREAD_START_ROUT
 #endif
 
     return TRUE;
-}
-
-
-
-BOOL Thread::CreateNewHostTask(SIZE_T stackSize, LPTHREAD_START_ROUTINE start, void *args)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    // Make sure we have all our handles, in case someone tries to suspend us
-    // as we are starting up.
-
-    if (!AllocHandles())
-    {
-        return FALSE;
-    }
-
-    return FALSE;
 }
 
 // 
@@ -4037,7 +3976,6 @@ DWORD Thread::DoAppropriateWaitWorker(int countHandles, HANDLE *handles, BOOL wa
         DoAppropriateWaitWorkerAlertableHelper(mode);
     }
 
-    LeaveRuntimeHolder holder((size_t)WaitForMultipleObjectsEx);
     StateHolder<MarkOSAlertableWait,UnMarkOSAlertableWait> OSAlertableWait(alertable);
 
     ThreadStateHolder tsh(alertable, TS_Interruptible | TS_Interrupted);
@@ -4358,7 +4296,6 @@ DWORD Thread::DoSignalAndWaitWorker(HANDLE* pHandles, DWORD millis,BOOL alertabl
         DoAppropriateWaitWorkerAlertableHelper(WaitMode_None);
     }
 
-    LeaveRuntimeHolder holder((size_t)WaitForMultipleObjectsEx);
     StateHolder<MarkOSAlertableWait,UnMarkOSAlertableWait> OSAlertableWait(alertable);
 
     ThreadStateHolder tsh(alertable, TS_Interruptible | TS_Interrupted);
@@ -8767,7 +8704,6 @@ BOOL Thread::HaveExtraWorkForFinalizer()
         || ExecutionManager::IsCacheCleanupRequired()
         || Thread::CleanupNeededForFinalizedThread()
         || (m_DetachCount > 0)
-        || CExecutionEngine::HasDetachedTlsInfo()
         || AppDomain::HasWorkForFinalizerThread()
         || SystemDomain::System()->RequireAppDomainCleanup();
 }
@@ -8811,8 +8747,6 @@ void Thread::DoExtraWorkForFinalizer()
     {
         SystemDomain::System()->ProcessDelayedUnloadDomains();
     }
-
-    CExecutionEngine::CleanupDetachedTlsInfo();
 
     if(m_DetachCount > 0 || Thread::CleanupNeededForFinalizedThread())
     {
@@ -10263,11 +10197,6 @@ HRESULT Thread::SwitchIn(HANDLE threadHandle)
 
     EnsureTlsData ensure(this);
 
-#ifdef _DEBUG
-    if (CLRTaskHosted()) {
-    }
-#endif
-
     if (SetThread(this))
     {
         Thread *pThread = GetThread();
@@ -10657,9 +10586,6 @@ HRESULT Thread::Reset(BOOL fFull)
     BEGIN_SO_INTOLERANT_CODE_NOPROBE;
 
 #ifdef _DEBUG
-    if (CLRTaskHosted()) {
-    }
-
     _ASSERTE (GetThread() == this);
 #ifdef _TARGET_X86_
     _ASSERTE (GetExceptionState()->GetContextRecord() == NULL);
@@ -10950,307 +10876,6 @@ HRESULT Thread::QueryInterface(REFIID riid, void **ppUnk)
     LIMITED_METHOD_CONTRACT;
 
         return E_NOINTERFACE;
-
-}
-
-BOOL IsHostedThread()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SO_TOLERANT;
-    }
-    CONTRACTL_END;
-
-    if (!CLRTaskHosted())
-    {
-        return FALSE;
-    }
-    return FALSE;
-}
-
-
-void __stdcall Thread::LeaveRuntime(size_t target)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        SO_TOLERANT;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = LeaveRuntimeNoThrow(target);
-    if (FAILED(hr))
-        ThrowHR(hr);
-}
-
-HRESULT Thread::LeaveRuntimeNoThrow(size_t target)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SO_TOLERANT;
-    }
-    CONTRACTL_END;
-
-    if (!CLRTaskHosted())
-    {
-        return S_OK;
-    }
-
-    if (!IsHostedThread())
-    {
-        return S_OK;
-    }
-
-    HRESULT hr = S_OK;
- 
-
-    return hr;
-}
-
-void __stdcall Thread::LeaveRuntimeThrowComplus(size_t target)
-{
-
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        ENTRY_POINT;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-
-    if (!CLRTaskHosted())
-    {
-        goto Exit;
-    }
-
-    if (!IsHostedThread())
-    {
-        goto Exit;
-    }
-
-
-    if (FAILED(hr))
-    {
-        INSTALL_UNWIND_AND_CONTINUE_HANDLER;
-        ThrowHR(hr);
-        UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
-    }
-
-
-Exit:
-;
-
-}
-
-void __stdcall Thread::EnterRuntime()
-{
-    if (!CLRTaskHosted())
-    {
-        // optimize for the most common case
-        return;
-    }
-
-    DWORD dwLastError = GetLastError();
-
-    CONTRACTL {
-        THROWS;
-        ENTRY_POINT;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    //BEGIN_ENTRYPOINT_THROWS;
-
-    HRESULT hr = EnterRuntimeNoThrowWorker();
-    if (FAILED(hr))
-        ThrowHR(hr);
-
-    SetLastError(dwLastError);
-    //END_ENTRYPOINT_THROWS;
-
-}
-
-HRESULT Thread::EnterRuntimeNoThrow()
-{
-    if (!CLRTaskHosted())
-    {
-        // optimize for the most common case
-        return S_OK;
-    }
-
-    DWORD dwLastError = GetLastError();
-
-    // This function can be called during a hard SO when managed code has called out to native
-    // which has SOd, so we can't probe here.  We already probe in LeaveRuntime, which will be
-    // called at roughly the same stack level as LeaveRuntime, so we assume that the probe for
-    // LeaveRuntime will cover us here.
-
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SO_TOLERANT;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = EnterRuntimeNoThrowWorker();
-
-    SetLastError(dwLastError);
-
-    return hr;
-}
-
-HRESULT Thread::EnterRuntimeNoThrowWorker()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SO_TOLERANT;
-    }
-    CONTRACTL_END;
-    
-    if (!IsHostedThread())
-    {
-        return S_OK;
-    }
-
-    HRESULT hr = S_OK;
-
-
-    return hr;
-}
-
-void Thread::ReverseEnterRuntime()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        SO_TOLERANT;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = ReverseEnterRuntimeNoThrow();
-
-    if (hr != S_OK)
-        ThrowHR(hr);
-}
-
-__declspec(noinline) void Thread::ReverseEnterRuntimeThrowComplusHelper(HRESULT hr)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        SO_TOLERANT;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    INSTALL_UNWIND_AND_CONTINUE_HANDLER;
-    ThrowHR(hr);
-    UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
-}
-
-void Thread::ReverseEnterRuntimeThrowComplus()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        SO_TOLERANT;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = ReverseEnterRuntimeNoThrow();
-
-    if (hr != S_OK)
-    {
-        ReverseEnterRuntimeThrowComplusHelper(hr);
-    }
-}
-
-
-HRESULT Thread::ReverseEnterRuntimeNoThrow()
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SO_TOLERANT;
-    }
-    CONTRACTL_END;
-
-    if (!CLRTaskHosted())
-    {
-        return S_OK;
-    }
-
-    if (!IsHostedThread())
-    {
-        return S_OK;
-    }
-
-    HRESULT hr = S_OK;
-
-
-    return hr;
-}
-
-void Thread::ReverseLeaveRuntime()
-{
-    // This function can be called during a hard SO so we can't probe here.  We already probe in
-    // ReverseEnterRuntime, which will be called at roughly the same stack level as ReverseLeaveRuntime,
-    // so we assume that the probe for ReverseEnterRuntime will cover us here.
-
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        SO_TOLERANT;
-    }
-    CONTRACTL_END;
-
-    // SetupForComCallHR calls this inside a CATCH, but it triggers a THROWs violation
-    CONTRACT_VIOLATION(ThrowsViolation);
-
-    if (!CLRTaskHosted())
-    {
-        return;
-    }
-
-    if (!IsHostedThread())
-    {
-        return;
-    }
-
-    HRESULT hr = S_OK;
-
-
-    if (hr != S_OK)
-        ThrowHR(hr);
-
-}
-
-// For OS EnterCriticalSection, call host to enable ThreadAffinity
-void Thread::BeginThreadAffinity()
-{
-    LIMITED_METHOD_CONTRACT;
-
-}
-
-
-// For OS EnterCriticalSection, call host to enable ThreadAffinity
-void Thread::EndThreadAffinity()
-{
-    LIMITED_METHOD_CONTRACT;
 
 }
 

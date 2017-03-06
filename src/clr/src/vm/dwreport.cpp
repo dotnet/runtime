@@ -327,7 +327,6 @@ DWORD ClrWaitForSingleObject(HANDLE handle, DWORD timeout)
 
     CONTRACT_VIOLATION(ThrowsViolation);
 
-    LeaveRuntimeHolder holder(reinterpret_cast< size_t >(WaitForSingleObject));
     return WaitForSingleObject(handle, timeout);
 } // DWORD ClrWaitForSingleObject()
 
@@ -1588,7 +1587,6 @@ BOOL RunWatson(
             continue;
         }
 
-        Thread::BeginThreadAffinity();
         // we timed-out waiting for DW to respond.
         DWORD dw = WaitForSingleObject(hMutex, DW_TIMEOUT_VALUE);
 
@@ -1629,7 +1627,6 @@ BOOL RunWatson(
 
             ReleaseMutex(hMutex);
         }
-        Thread::EndThreadAffinity();
     }
 
     // Go ahead and bail if Watson didn't exit for some reason.

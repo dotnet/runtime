@@ -954,8 +954,6 @@ class DebuggerController
     //
 
   public:
-    // Once we support debugging + fibermode (which was cut in V2.0), we may need some Thread::BeginThreadAffinity() calls
-    // associated with the controller lock because this lock wraps context operations.
     class ControllerLockHolder : public CrstHolder
     {
     public:
