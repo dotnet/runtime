@@ -123,17 +123,11 @@
     <Compile Include="System\Data\SqlTypes\SqlTypeWorkarounds.cs" />
     <Compile Include="System\Data\SqlTypes\SQLResource.cs" />
     <Compile Include="$(CommonPath)\System\NotImplemented.cs" />
-    <Compile Include="$(CommonPath)\System\Data\Locale\Locale.cs">
-      <Link>System\Data\Locale\Locale.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
       <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(IsPartialFacadeAssembly)' != 'true' ">
-    <Compile Include="$(CommonPath)\System\Data\Locale\LocaleMapper.Windows.cs">
-      <Link>System\Data\Locale\LocaleMapper.Windows.cs</Link>
-    </Compile>
     <Compile Include="System\Data\ProviderBase\DbConnectionPoolIdentity.Windows.cs" />
     <Compile Include="Interop\SNINativeMethodWrapper.Windows.cs" />
     <Compile Include="System\Data\SqlClient\TdsParserSafeHandles.cs" />
@@ -268,9 +262,6 @@
   </ItemGroup>
   
   <ItemGroup Condition=" '$(TargetsWindows)' != 'true' And '$(IsPartialFacadeAssembly)' != 'true' ">
-    <Compile Include="$(CommonPath)\System\Data\Locale\LocaleMapper.Unix.cs">
-      <Link>System\Data\Locale\LocaleMapper.Unix.cs</Link>
-    </Compile>
     <Compile Include="System\Data\ProviderBase\DbConnectionPoolIdentity.Unix.cs" />
     <Compile Include="Interop\SNINativeMethodWrapper.Unix.cs" />
     <Compile Include="System\Data\SqlClient\SNI\SNIError.cs" />
