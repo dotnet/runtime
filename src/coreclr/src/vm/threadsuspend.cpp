@@ -1666,7 +1666,6 @@ Thread::UserAbort(ThreadAbortRequester requester,
     DWORD elapsed_time = 0;
 #endif
 
-    ThreadAffinityHolder affinity;
     // We do not want this thread to be alerted.
     ThreadPreventAsyncHolder preventAsync(pCurThread != NULL);
 
@@ -2905,11 +2904,6 @@ void ThreadSuspend::LockThreadStore(ThreadSuspend::SUSPEND_REASON reason)
             }
         }
 
-        // ThreadStoreLock is a critical lock used by GC, ThreadAbort, AD unload, Yield.
-        // If a task is switched out while it owns ThreadStoreLock, it may not be able to
-        // release it because the scheduler may be running managed code without yielding.
-        Thread::BeginThreadAffinity();
-
         // This is shutdown aware. If we're in shutdown, and not helper/finalizer/shutdown
         // then this will not take the lock and just block forever.
         ThreadStore::s_pThreadStore->Enter();
@@ -2968,8 +2962,6 @@ void ThreadSuspend::UnlockThreadStore(BOOL bThreadDestroyed, ThreadSuspend::SUSP
         ThreadStore::s_pThreadStore->m_HoldingThread = NULL;
         ThreadStore::s_pThreadStore->m_holderthreadid.Clear();
         ThreadStore::s_pThreadStore->Leave();
-
-        Thread::EndThreadAffinity();
 
         // We're out of the critical area for managed/unmanaged debugging.
         if (!bThreadDestroyed && pCurThread)
@@ -4199,13 +4191,6 @@ BOOL Thread::RedirectThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt)
     if (!IsContextSafeToRedirect(pCtx))
         return (FALSE);
 
-    if (CLRTaskHosted())
-    {
-        PCODE dwOrigEip = GetIP(pCtx);
-        if (!ExecutionManager::IsManagedCode(dwOrigEip))
-            return FALSE;
-    }
-
     ////////////////////////////////////////////////////
     // Now redirect the thread to the helper function
 
@@ -4615,19 +4600,6 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
         }
     }
 
-#ifdef FEATURE_STACK_PROBE
-    // If CLR is hosted with IHostTaskManager and escalation policy for StackOverflow,
-    // we need to make sure a thread is never blocked with a small stack, because the thread can 
-    // not be moved from scheduler in the host, and the scheduler may hold some resource needed by
-    // suspension thread.
-
-    // If we need to handle SO, GC will wait until a target thread has finished LeaveRuntime call.  At
-    // this point, the thread is off scheduler.  If it hits SO, we will kill the process.  If the thread hits
-    // SO while calling LeaveRuntime, we treat this as SO in managed code, and unload the domain instead.
-    BOOL fConsiderSO = (CLRTaskHosted() && 
-                        GetEEPolicy()->GetActionOnFailure(FAIL_StackOverflow) == eRudeUnloadAppDomain);
-#endif
-
     // From this point until the end of the function, consider all active thread
     // suspension to be in progress.  This is mainly to give the profiler API a hint
     // that trying to suspend a thread (in order to walk its stack) could delay the
@@ -4828,23 +4800,6 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
                 QueueUserAPC((PAPCFUNC)PauseAPC, handle, APC_Code);
             }
         }
-
-#ifdef FEATURE_STACK_PROBE
-        if (thread->m_fPreemptiveGCDisabled.Load() == 0 && fConsiderSO)
-        {
-            if ((UINT_PTR)thread->m_pFrame - thread->GetLastAllowableStackAddress() < 
-                ADJUST_PROBE(BACKOUT_CODE_STACK_LIMIT) * OS_PAGE_SIZE)
-            {
-                if (!thread->HasThreadState(Thread::TS_GCSuspendPending))
-                {
-                    thread->SetThreadState(Thread::TS_GCSuspendPending);
-                    countThreads++;
-                    STRESS_LOG2(LF_SYNC, LL_INFO1000, "    Setting thread 0x%x ID 0x%x for GC (SO)\n",
-                        thread, thread->GetThreadId());
-                }
-            }
-        }
-#endif
     }
 
 #ifdef _DEBUG
@@ -4901,28 +4856,18 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
 
             if (!thread->m_fPreemptiveGCDisabled)
             {
-#ifdef FEATURE_STACK_PROBE
-                if (fConsiderSO && (UINT_PTR)thread->m_pFrame - thread->GetLastAllowableStackAddress() < 
-                    ADJUST_PROBE(BACKOUT_CODE_STACK_LIMIT) * OS_PAGE_SIZE)
-                {
-                    // The thread is not ready for GC.
-                }
-                else
-#endif
-                {
-                    // Inlined N/Direct can sneak out to preemptive without actually checking.
-                    // If we find one, we can consider it suspended (since it can't get back in).
-                    STRESS_LOG1(LF_SYNC, LL_INFO1000, "    Thread %x went preemptive it is at a GC safe point\n", thread);
-                    countThreads--;
-                    thread->ResetThreadState(Thread::TS_GCSuspendPending);
+                // Inlined N/Direct can sneak out to preemptive without actually checking.
+                // If we find one, we can consider it suspended (since it can't get back in).
+                STRESS_LOG1(LF_SYNC, LL_INFO1000, "    Thread %x went preemptive it is at a GC safe point\n", thread);
+                countThreads--;
+                thread->ResetThreadState(Thread::TS_GCSuspendPending);
 
-                    // To ensure 0 CPU utilization for FAS (see implementation of PauseAPC)
-                    // we queue the APC to all interruptable threads. 
-                    if(g_IsPaused && (thread->m_State & Thread::TS_Interruptible))
-                    {
-                        HANDLE handle = thread->GetThreadHandle();
-                        QueueUserAPC((PAPCFUNC)PauseAPC, handle, APC_Code);
-                    }
+                // To ensure 0 CPU utilization for FAS (see implementation of PauseAPC)
+                // we queue the APC to all interruptable threads.
+                if(g_IsPaused && (thread->m_State & Thread::TS_Interruptible))
+                {
+                    HANDLE handle = thread->GetThreadHandle();
+                    QueueUserAPC((PAPCFUNC)PauseAPC, handle, APC_Code);
                 }
             }
         }
@@ -7037,8 +6982,6 @@ BOOL Thread::HandledJITCase(BOOL ForTaskSwitchIn)
     BOOL            ret = FALSE;
     ExecutionState  esb;
     StackWalkAction action;
-
-    _ASSERTE(WorkingOnThreadContext());
 
     CONTEXT ctx;
     REGDISPLAY rd;

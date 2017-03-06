@@ -9,18 +9,6 @@
 #include <windowsstring.h>
 #include "holder.h"
 
-#ifdef FEATURE_LEAVE_RUNTIME_HOLDER
-    #define HR_LEAVE_RUNTIME_HOLDER(X)      \
-        GCX_PREEMP();                       \
-        LeaveRuntimeHolderNoThrow lrh(X);   \
-        if (FAILED(lrh.GetHR()))            \
-        {                                   \
-            return lrh.GetHR();             \
-        }
-#else
-    #define HR_LEAVE_RUNTIME_HOLDER(X) (void *)0;
-#endif
-
 #ifndef IID_INS_ARGS
     #define IID_INS_ARGS(ppType) __uuidof(**(ppType)), IID_INS_ARGS_Helper(ppType)
 #endif
@@ -42,7 +30,7 @@ namespace clr
             __deref_out ItfT** ppItf)
         {
             LIMITED_METHOD_CONTRACT;
-            HR_LEAVE_RUNTIME_HOLDER(::RoGetActivationFactory);
+            GCX_PREEMP();
             return GetActivationFactory(wzActivatableClassId.Get(), ppItf);
         }
 
@@ -52,13 +40,12 @@ namespace clr
             __in typename ReleaseHolder<ItfT>& hItf)
         {
             LIMITED_METHOD_CONTRACT;
-            HR_LEAVE_RUNTIME_HOLDER(::RoGetActivationFactory);
+            GCX_PREEMP();
             return GetActivationFactory(wzActivatableClassId.Get(), (ItfT**)&hItf);
         }
     } // namespace winrt
 } // namespace clr
 #endif //CROSSGEN_COMPILE
-#undef HR_LEAVE_RUNTIME_HOLDER
 
 #endif // WindowsRuntime_h
 

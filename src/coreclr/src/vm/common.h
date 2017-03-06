@@ -363,7 +363,6 @@ namespace Loader
 #include "threads.h"
 #include "clrex.inl"
 #ifdef FEATURE_COMINTEROP
-    // These need to be included *after* threads.h so that they can properly use LeaveRuntimeHolder
     #include "windowsruntime.h"
     #include "windowsstring.h"
 #endif

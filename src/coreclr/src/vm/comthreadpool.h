@@ -39,8 +39,6 @@ public:
 
     static FCDECL1(void, ReportThreadStatus, CLR_BOOL isWorking);
 
-    static FCDECL0(FC_BOOL_RET, IsThreadPoolHosted);
-
 
     static FCDECL7(LPVOID, CorRegisterWaitForSingleObject,
                                 Object* waitObjectUNSAFE,

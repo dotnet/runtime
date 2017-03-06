@@ -61,24 +61,6 @@ void SpinLock::Init(LOCK_TYPE type, bool RequireCoopGC)
     }
     CONTRACTL_END;
 
-    // Disallow creation of locks before EE starts.  But only complain if we end up
-    // being hosted, since such locks have escaped the hosting net and will cause
-    // AVs on next use.
-#ifdef _DEBUG
-    static bool fEarlyInit; // = false
-
-    if (!(g_fEEStarted || g_fEEInit))
-    {
-        if (!CLRSyncHosted())
-            fEarlyInit = true;
-    }
-
-    // If we are now hosted, we better not have *ever* created some locks that are
-    // not known to our host.
-    _ASSERTE(!fEarlyInit || !CLRSyncHosted());
-
-#endif
-
     if (m_Initialized == Initialized)
     {
         _ASSERTE (type == m_LockType);
@@ -258,8 +240,6 @@ SpinLock::SpinToAcquire()
         SO_TOLERANT;
     }
     CONTRACTL_END;
-
-    _ASSERTE (!CLRSyncHosted());
 
     DWORD backoffs = 0;
     ULONG ulSpins = 0;

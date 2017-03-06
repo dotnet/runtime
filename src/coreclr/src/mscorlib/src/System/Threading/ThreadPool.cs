@@ -33,8 +33,6 @@ namespace System.Threading
 
         public static readonly int processorCount = Environment.ProcessorCount;
 
-        public static readonly bool tpHosted = ThreadPool.IsThreadPoolHosted();
-
         public static volatile bool vmTpInitialized;
         public static bool enableWorkerTracking;
 
@@ -1467,9 +1465,6 @@ namespace System.Threading
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void NotifyWorkItemProgressNative();
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern bool IsThreadPoolHosted();
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]

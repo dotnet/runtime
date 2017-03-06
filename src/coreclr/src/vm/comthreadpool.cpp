@@ -296,17 +296,6 @@ void QCALLTYPE ThreadPoolNative::InitializeVMTp(CLR_BOOL* pEnableWorkerTracking)
     END_QCALL;
 }
 
-
-FCIMPL0(FC_BOOL_RET, ThreadPoolNative::IsThreadPoolHosted)
-{
-    FCALL_CONTRACT;
-
-    FCUnique(0x22);
-
-    FC_RETURN_BOOL(ThreadpoolMgr::IsThreadPoolHosted());
-}
-FCIMPLEND
-
 /*****************************************************************************************************/
 
 struct RegisterWaitForSingleObjectCallback_Args

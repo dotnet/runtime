@@ -68,7 +68,6 @@ public:
 #ifndef DACCESS_COMPILE
     HANDLE GetHandleUNHOSTED() {
         LIMITED_METHOD_CONTRACT;
-        _ASSERTE (IsOSEvent() || !CLRSyncHosted());
         return m_handle;
     }
 #endif // DACCESS_COMPILE

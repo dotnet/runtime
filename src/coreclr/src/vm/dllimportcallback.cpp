@@ -39,45 +39,6 @@ EXTERN_C void STDCALL UM2MThunk_WrapperHelper(void *pThunkArgs,
                                               UMEntryThunk *pEntryThunk,
                                               Thread *pThread);
 
-EXTERN_C void __fastcall ReverseEnterRuntimeHelper(Thread *pThread)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        SO_TOLERANT;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    // ReverseEnterRuntimeThrowComplus probes.
-    //BEGIN_ENTRYPOINT_THROWS;
-
-    _ASSERTE (pThread == GetThread());
-
-#ifdef FEATURE_STACK_PROBE
-    // The thread is calling into managed code.  If we have the following sequence on stack
-    // Managed code 1 -> Unmanaged code -> Managed code 2,
-    // and we hit SO in managed code 2, in order to unwind stack for managed code 1, we need
-    // to make sure the thread is in cooperative gc mode.  Due to unmanaged code in between,
-    // when we reach managed code 1, the thread is in preemptive GC mode.  In order to switch
-    // to cooperative, we need to have enough stack.  This means that we need to reclaim stack
-    // for managed code 2.  Therefore we require that we have some amount of stack before entering
-    // managed code 2.
-    RetailStackProbe(static_cast<UINT>(ADJUST_PROBE(BACKOUT_CODE_STACK_LIMIT)),pThread);
-#endif
-    pThread->ReverseEnterRuntimeThrowComplus();
-    //END_ENTRYPOINT_THROWS
-}
-
-EXTERN_C void __fastcall ReverseLeaveRuntimeHelper(Thread *pThread)
-{
-    WRAPPER_NO_CONTRACT;
-
-    _ASSERTE (pThread == GetThread());
-    pThread->ReverseLeaveRuntime();
-}
-
 #ifdef MDA_SUPPORTED
 EXTERN_C void __fastcall CallbackOnCollectedDelegateHelper(UMEntryThunk *pEntryThunk)
 {

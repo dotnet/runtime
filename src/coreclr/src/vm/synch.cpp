@@ -382,7 +382,6 @@ static DWORD CLREventWaitHelper2(HANDLE handle, DWORD dwMilliseconds, BOOL alert
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_SO_TOLERANT;
     
-    LeaveRuntimeHolder holder((size_t)WaitForSingleObjectEx);
     return WaitForSingleObjectEx(handle,dwMilliseconds,alertable);
 }
 
@@ -512,9 +511,7 @@ void CLRSemaphore::Close()
     LIMITED_METHOD_CONTRACT;
 
     if (m_handle != INVALID_HANDLE_VALUE) {
-        if (!CLRSyncHosted()) {
-            CloseHandle(m_handle);
-        }
+        CloseHandle(m_handle);
         m_handle = INVALID_HANDLE_VALUE;
     }
 }
@@ -581,7 +578,6 @@ DWORD CLRSemaphore::Wait(DWORD dwMilliseconds, BOOL alertable)
             DWORD result = WAIT_FAILED;
             EX_TRY
             {
-                LeaveRuntimeHolder holder((size_t)WaitForSingleObjectEx);
                 result = WaitForSingleObjectEx(m_handle,dwMilliseconds,alertable);
             }
             EX_CATCH
@@ -605,17 +601,9 @@ void CLRMutex::Create(LPSECURITY_ATTRIBUTES lpMutexAttributes, BOOL bInitialOwne
     }
     CONTRACTL_END;
 
-    if (bInitialOwner)
-    {
-        Thread::BeginThreadAffinity();
-    }
     m_handle = WszCreateMutex(lpMutexAttributes,bInitialOwner,lpName);
     if (m_handle == NULL)
     {
-        if (bInitialOwner)
-        {
-            Thread::EndThreadAffinity();
-        }
         ThrowOutOfMemory();
     }
 }
@@ -645,7 +633,6 @@ BOOL CLRMutex::Release()
     BOOL fRet = ReleaseMutex(m_handle);
     if (fRet)
     {
-        Thread::EndThreadAffinity();
         EE_LOCK_RELEASED(this);
     }
     return fRet;
@@ -661,12 +648,7 @@ DWORD CLRMutex::Wait(DWORD dwMilliseconds, BOOL bAlertable)
     }
     CONTRACTL_END;
 
-    Thread::BeginThreadAffinity();
     DWORD fRet = WaitForSingleObjectEx(m_handle, dwMilliseconds, bAlertable);
-    if ((fRet != WAIT_OBJECT_0) && (fRet != WAIT_ABANDONED))
-    {
-        Thread::EndThreadAffinity();
-    }
 
     if (fRet == WAIT_OBJECT_0)
     {

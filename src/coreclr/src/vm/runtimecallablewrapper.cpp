@@ -119,13 +119,9 @@ IUnknown *ComClassFactory::CreateInstanceFromClassFactory(IClassFactory *pClassF
         FrameWithCookie<DebuggerExitFrame> __def;
         {
             GCX_PREEMP();
-            {
-                LeaveRuntimeHolder lrh(**(size_t**)(IUnknown*)pClassFact);
-                hr = pClassFact->CreateInstance(punkOuter, IID_IUnknown, (void **)&pUnk);
-            }
+            hr = pClassFact->CreateInstance(punkOuter, IID_IUnknown, (void **)&pUnk);
             if (FAILED(hr) && punkOuter)
             {
-                LeaveRuntimeHolder lrh(**(size_t**)(IUnknown*)pClassFact);
                 hr = pClassFact->CreateInstance(NULL, IID_IUnknown, (void**)&pUnk);
                 if (pfDidContainment)
                     *pfDidContainment = TRUE;
@@ -141,7 +137,6 @@ IUnknown *ComClassFactory::CreateInstanceFromClassFactory(IClassFactory *pClassF
             FrameWithCookie<DebuggerExitFrame> __def;
             {
                 GCX_PREEMP();
-                LeaveRuntimeHolder lrh(**(size_t**)(IUnknown*)pClassFact);
                 hr = pClassFact->CreateInstance(punkOuter, IID_IUnknown, (void **)&pUnk);
                 if (FAILED(hr) && punkOuter)
                 {
@@ -230,7 +225,6 @@ IUnknown *ComClassFactory::CreateInstanceFromClassFactory(IClassFactory *pClassF
                     {
                         // Either it's design time, or the current context doesn't
                         // supply a runtime license key.
-                        LeaveRuntimeHolder lrh(**(size_t**)(IUnknown*)pClassFact);
                         hr = pClassFact->CreateInstance(punkOuter, IID_IUnknown, (void **)&pUnk);
                         if (FAILED(hr) && punkOuter)
                         {
@@ -243,7 +237,6 @@ IUnknown *ComClassFactory::CreateInstanceFromClassFactory(IClassFactory *pClassF
                     {
                         // It's runtime, and we do have a non-null license key.
                         _ASSERTE(bstrKey != NULL);
-                        LeaveRuntimeHolder lrh(**(size_t**)(IUnknown*)pClassFact);
                         hr = pClassFact2->CreateInstanceLic(punkOuter, NULL, IID_IUnknown, bstrKey, (void**)&pUnk);
                         if (FAILED(hr) && punkOuter)
                         {
@@ -513,13 +506,11 @@ IClassFactory *ComClassFactory::GetIClassFactory()
         ServerInfo.pwszName = m_pwszServer;
                 
         // Try to retrieve the IClassFactory passing in CLSCTX_REMOTE_SERVER.
-        LeaveRuntimeHolder lrh((size_t)CoGetClassObject);
         hr = CoGetClassObject(m_rclsid, CLSCTX_REMOTE_SERVER, &ServerInfo, IID_IClassFactory, (void**)&pClassFactory);
     }
     else
     {
         // No server name is specified so we use CLSCTX_SERVER.
-        LeaveRuntimeHolder lrh((size_t)CoGetClassObject);
 
 #ifdef FEATURE_CLASSIC_COMINTEROP
         // If the CLSID is hosted by the CLR itself, then we do not want to go through the COM registration
@@ -717,8 +708,6 @@ IUnknown *AppXComClassFactory::CreateInstanceInternal(IUnknown *pOuter, BOOL *pf
         IfFailThrow(E_FAIL);
     }
 #endif
-
-    LeaveRuntimeHolder lrh((size_t)CoCreateInstanceFromApp);
     
     if (m_pwszServer)
     {
@@ -4535,9 +4524,6 @@ bool RCW::SupportsMngStdInterface(MethodTable *pItfMT)
                     // We are about to make a call to COM so switch to preemptive GC.
                     GCX_PREEMP();
 
-                    // Can not get the IP for pDisp->Invoke, instead using the first IP in vtable.
-                    LeaveRuntimeHolder holder (**(size_t**)((IDispatch*)pDisp));
-                    
                     // Call invoke with DISPID_NEWENUM to see if such a member exists.
                     hr = pDisp->Invoke( 
                                         DISPID_NEWENUM, 
@@ -4841,7 +4827,6 @@ BOOL ComObject::SupportsInterface(OBJECTREF oref, MethodTable* pIntfTable)
             if (SUCCEEDED(hr))
             {
                 GCX_PREEMP();   // make sure we switch to preemptive mode before calling the external COM object
-                LeaveRuntimeHolder lrh(*((*(size_t**)(IConnectionPointContainer*)pCPC)+4));
                 hr = pCPC->FindConnectionPoint(SrcItfIID, &pCP);
                 if (SUCCEEDED(hr))
                 {
