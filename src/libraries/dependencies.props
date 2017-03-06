@@ -40,7 +40,7 @@
   <!-- Full package version strings that are used in other parts of the build. -->
   <PropertyGroup>
     <AppXRunnerVersion>1.0.3-prerelease-00921-01</AppXRunnerVersion>
-    <XunitPerfAnalysisPackageVersion>1.0.0-alpha-build0047</XunitPerfAnalysisPackageVersion>
+    <XunitPerfAnalysisPackageVersion>1.0.0-alpha-build0049</XunitPerfAnalysisPackageVersion>
     <TraceEventPackageVersion>1.0.0-alpha-experimental</TraceEventPackageVersion>
   </PropertyGroup>
 
