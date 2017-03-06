@@ -94,6 +94,7 @@ namespace System.Security.Cryptography.Xml.Tests
                 XmlDocument xmlDocToEncrypt = LoadXmlFromString(ExampleXml);
                 EncryptElement(xmlDocToEncrypt, ExampleXmlRootElement, key);
 
+                Assert.DoesNotContain("some text node", xmlDocToEncrypt.OuterXml);
                 XmlDocument xmlDocToDecrypt = LoadXmlFromString(xmlDocToEncrypt.OuterXml);
                 Decrypt(xmlDocToDecrypt, key);
 
