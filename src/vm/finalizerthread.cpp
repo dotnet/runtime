@@ -342,9 +342,7 @@ void FinalizerThread::ProcessProfilerAttachIfNecessary(ULONGLONG * pui64Timestam
     STATIC_CONTRACT_GC_NOTRIGGER;
     STATIC_CONTRACT_MODE_ANY;
 
-    if (CLRMemoryHosted() ||
-        CLRSyncHosted() ||
-        (MHandles[kProfilingAPIAttach] == NULL))
+    if (MHandles[kProfilingAPIAttach] == NULL)
     {
         return;
     }
@@ -397,185 +395,130 @@ void FinalizerThread::ProcessProfilerAttachIfNecessary(ULONGLONG * pui64Timestam
 
 void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
 {
-    // TODO wwl: merge the following two blocks
-    if (!CLRMemoryHosted() && !CLRSyncHosted()) {
-        // Non-host environment
+    // Non-host environment
 
-        // We don't want kLowMemoryNotification to starve out kFinalizer
-        // (as the latter may help correct the former), and we don't want either
-        // to starve out kProfilingAPIAttach, as we want decent responsiveness
-        // to a user trying to attach a profiler.  So check in this order:
-        //     kProfilingAPIAttach alone (0 wait)
-        //     kFinalizer alone (2s wait)
-        //     all events together (infinite wait)
+    // We don't want kLowMemoryNotification to starve out kFinalizer
+    // (as the latter may help correct the former), and we don't want either
+    // to starve out kProfilingAPIAttach, as we want decent responsiveness
+    // to a user trying to attach a profiler.  So check in this order:
+    //     kProfilingAPIAttach alone (0 wait)
+    //     kFinalizer alone (2s wait)
+    //     all events together (infinite wait)
 
 #ifdef FEATURE_PROFAPI_ATTACH_DETACH
-        // NULL means check attach event now, and don't worry about how long it was since
-        // the last time the event was checked.
-        ProcessProfilerAttachIfNecessary(NULL);
+    // NULL means check attach event now, and don't worry about how long it was since
+    // the last time the event was checked.
+    ProcessProfilerAttachIfNecessary(NULL);
 #endif // FEATURE_PROFAPI_ATTACH_DETACH
 
-        //give a chance to the finalizer event (2s)
-        switch (event->Wait(2000, FALSE))
-        {
-        case (WAIT_OBJECT_0):
-            return;
-        case (WAIT_ABANDONED):
-            return;
-        case (WAIT_TIMEOUT):
-            break;
-        }
-        MHandles[kFinalizer] = event->GetHandleUNHOSTED();
-        while (1)
-        {
-            // WaitForMultipleObjects will wait on the event handles in MHandles
-            // starting at this offset
-            UINT uiEventIndexOffsetForWait = 0;
-            
-            // WaitForMultipleObjects will wait on this number of event handles
-            DWORD cEventsForWait = kHandleCount;
-
-            // #MHandleTypeValues:
-            // WaitForMultipleObjects will now wait on a subset of the events in the
-            // MHandles array. At this point kFinalizer should have a non-NULL entry
-            // in the array. Wait on the following events:
-            // 
-            //     * kLowMemoryNotification (if it's non-NULL && g_fEEStarted)
-            //     * kFinalizer (always)
-            //     * kProfilingAPIAttach (if it's non-NULL)
-            //         
-            // The enum code:MHandleType values become important here, as
-            // WaitForMultipleObjects needs to wait on a contiguous set of non-NULL
-            // entries in MHandles, so we'll assert the values are contiguous as we
-            // expect.
-            _ASSERTE(kLowMemoryNotification == 0);
-            _ASSERTE((kFinalizer == 1) && (MHandles[1] != NULL));
-#ifdef FEATURE_PROFAPI_ATTACH_DETACH 
-            _ASSERTE(kProfilingAPIAttach == 2);
-#endif //FEATURE_PROFAPI_ATTACH_DETACH 
-            
-            // Exclude the low-memory notification event from the wait if the event
-            // handle is NULL or the EE isn't fully started up yet.
-            if ((MHandles[kLowMemoryNotification] == NULL) || !g_fEEStarted)
-            {
-                uiEventIndexOffsetForWait = kLowMemoryNotification + 1;
-                cEventsForWait--;
-            }
-
-#ifdef FEATURE_PROFAPI_ATTACH_DETACH 
-            // Exclude kProfilingAPIAttach if it's NULL
-            if (MHandles[kProfilingAPIAttach] == NULL)
-            {
-                cEventsForWait--;
-            }
-#endif //FEATURE_PROFAPI_ATTACH_DETACH 
-
-            switch (WaitForMultipleObjectsEx(
-                cEventsForWait,                           // # objects to wait on
-                &(MHandles[uiEventIndexOffsetForWait]),   // array of objects to wait on
-                FALSE,          // bWaitAll == FALSE, so wait for first signal
-#if defined(__linux__) && defined(FEATURE_EVENT_TRACE)
-                LINUX_HEAP_DUMP_TIME_OUT,
-#else
-                INFINITE,       // timeout
-#endif
-                FALSE)          // alertable
-                
-                // Adjust the returned array index for the offset we used, so the return
-                // value is relative to entire MHandles array
-                + uiEventIndexOffsetForWait)
-            {
-            case (WAIT_OBJECT_0 + kLowMemoryNotification):
-                //short on memory GC immediately
-                GetFinalizerThread()->DisablePreemptiveGC();
-                GCHeapUtilities::GetGCHeap()->GarbageCollect(0, TRUE);
-                GetFinalizerThread()->EnablePreemptiveGC();
-                //wait only on the event for 2s 
-                switch (event->Wait(2000, FALSE))
-                {
-                case (WAIT_OBJECT_0):
-                    return;
-                case (WAIT_ABANDONED):
-                    return;
-                case (WAIT_TIMEOUT):
-                    break;
-                }
-                break;
-            case (WAIT_OBJECT_0 + kFinalizer):
-                return;
-#ifdef FEATURE_PROFAPI_ATTACH_DETACH 
-            case (WAIT_OBJECT_0 + kProfilingAPIAttach):
-                // Spawn thread to perform the profiler attach, then resume our wait
-                ProfilingAPIAttachDetach::ProcessSignaledAttachEvent();
-                break;
-#endif // FEATURE_PROFAPI_ATTACH_DETACH
-#if defined(__linux__) && defined(FEATURE_EVENT_TRACE)
-            case (WAIT_TIMEOUT + kLowMemoryNotification):
-            case (WAIT_TIMEOUT + kFinalizer):
-                if (g_TriggerHeapDump)
-                {
-                    return;
-                }
-                
-                break;
-#endif
-            default:
-                //what's wrong?
-                _ASSERTE (!"Bad return code from WaitForMultipleObjects");
-                return;
-            }
-        }
+    //give a chance to the finalizer event (2s)
+    switch (event->Wait(2000, FALSE))
+    {
+    case (WAIT_OBJECT_0):
+        return;
+    case (WAIT_ABANDONED):
+        return;
+    case (WAIT_TIMEOUT):
+        break;
     }
-    else {
-        static LONG sLastLowMemoryFromHost = 0;
-        while (1) {
-#if defined(__linux__) && defined(FEATURE_EVENT_TRACE)
-            DWORD timeout = LINUX_HEAP_DUMP_TIME_OUT;
-#else
-            DWORD timeout = INFINITE;
-#endif
-            if (!CLRMemoryHosted())
-            {
-                if (WaitForSingleObject(MHandles[kLowMemoryNotification], 0) == WAIT_OBJECT_0) {
-                    //short on memory GC immediately
-                    GetFinalizerThread()->DisablePreemptiveGC();
-                    GCHeapUtilities::GetGCHeap()->GarbageCollect(0, TRUE);
-                    GetFinalizerThread()->EnablePreemptiveGC();
-                }
-                //wait only on the event for 2s
-                // The previous GC might not wake up finalizer thread if there is
-                // no objects to be finalized.
-                timeout = 2000;
+    MHandles[kFinalizer] = event->GetHandleUNHOSTED();
+    while (1)
+    {
+        // WaitForMultipleObjects will wait on the event handles in MHandles
+        // starting at this offset
+        UINT uiEventIndexOffsetForWait = 0;
+            
+        // WaitForMultipleObjects will wait on this number of event handles
+        DWORD cEventsForWait = kHandleCount;
 
-            }
-            switch (event->Wait(timeout, FALSE))
+        // #MHandleTypeValues:
+        // WaitForMultipleObjects will now wait on a subset of the events in the
+        // MHandles array. At this point kFinalizer should have a non-NULL entry
+        // in the array. Wait on the following events:
+        //
+        //     * kLowMemoryNotification (if it's non-NULL && g_fEEStarted)
+        //     * kFinalizer (always)
+        //     * kProfilingAPIAttach (if it's non-NULL)
+        //
+        // The enum code:MHandleType values become important here, as
+        // WaitForMultipleObjects needs to wait on a contiguous set of non-NULL
+        // entries in MHandles, so we'll assert the values are contiguous as we
+        // expect.
+        _ASSERTE(kLowMemoryNotification == 0);
+        _ASSERTE((kFinalizer == 1) && (MHandles[1] != NULL));
+#ifdef FEATURE_PROFAPI_ATTACH_DETACH 
+        _ASSERTE(kProfilingAPIAttach == 2);
+#endif //FEATURE_PROFAPI_ATTACH_DETACH 
+            
+        // Exclude the low-memory notification event from the wait if the event
+        // handle is NULL or the EE isn't fully started up yet.
+        if ((MHandles[kLowMemoryNotification] == NULL) || !g_fEEStarted)
+        {
+            uiEventIndexOffsetForWait = kLowMemoryNotification + 1;
+            cEventsForWait--;
+        }
+
+#ifdef FEATURE_PROFAPI_ATTACH_DETACH 
+        // Exclude kProfilingAPIAttach if it's NULL
+        if (MHandles[kProfilingAPIAttach] == NULL)
+        {
+            cEventsForWait--;
+        }
+#endif //FEATURE_PROFAPI_ATTACH_DETACH 
+
+        switch (WaitForMultipleObjectsEx(
+            cEventsForWait,                           // # objects to wait on
+            &(MHandles[uiEventIndexOffsetForWait]),   // array of objects to wait on
+            FALSE,          // bWaitAll == FALSE, so wait for first signal
+#if defined(__linux__) && defined(FEATURE_EVENT_TRACE)
+            LINUX_HEAP_DUMP_TIME_OUT,
+#else
+            INFINITE,       // timeout
+#endif
+            FALSE)          // alertable
+                
+            // Adjust the returned array index for the offset we used, so the return
+            // value is relative to entire MHandles array
+            + uiEventIndexOffsetForWait)
+        {
+        case (WAIT_OBJECT_0 + kLowMemoryNotification):
+            //short on memory GC immediately
+            GetFinalizerThread()->DisablePreemptiveGC();
+            GCHeapUtilities::GetGCHeap()->GarbageCollect(0, TRUE);
+            GetFinalizerThread()->EnablePreemptiveGC();
+            //wait only on the event for 2s
+            switch (event->Wait(2000, FALSE))
             {
             case (WAIT_OBJECT_0):
-                if (CLRMemoryHosted())
-                {
-                    if (sLastLowMemoryFromHost != g_bLowMemoryFromHost)
-                    {
-                        sLastLowMemoryFromHost = g_bLowMemoryFromHost;
-                        if (sLastLowMemoryFromHost != 0)
-                        {
-                            GetFinalizerThread()->DisablePreemptiveGC();
-                            GCHeapUtilities::GetGCHeap()->GarbageCollect(0, TRUE);
-                            GetFinalizerThread()->EnablePreemptiveGC();
-                        }
-                    }
-                }
                 return;
             case (WAIT_ABANDONED):
                 return;
             case (WAIT_TIMEOUT):
-#if defined(__linux__) && defined(FEATURE_EVENT_TRACE)
-                if (g_TriggerHeapDump)
-                {
-                    return;
-                }
-#endif
                 break;
             }
+            break;
+        case (WAIT_OBJECT_0 + kFinalizer):
+            return;
+#ifdef FEATURE_PROFAPI_ATTACH_DETACH
+        case (WAIT_OBJECT_0 + kProfilingAPIAttach):
+            // Spawn thread to perform the profiler attach, then resume our wait
+            ProfilingAPIAttachDetach::ProcessSignaledAttachEvent();
+            break;
+#endif // FEATURE_PROFAPI_ATTACH_DETACH
+#if defined(__linux__) && defined(FEATURE_EVENT_TRACE)
+        case (WAIT_TIMEOUT + kLowMemoryNotification):
+        case (WAIT_TIMEOUT + kFinalizer):
+            if (g_TriggerHeapDump)
+            {
+                return;
+            }
+
+            break;
+#endif
+        default:
+            //what's wrong?
+            _ASSERTE (!"Bad return code from WaitForMultipleObjects");
+            return;
         }
     }
 }
@@ -789,18 +732,6 @@ DWORD __stdcall FinalizerThread::FinalizerThreadStart(void *args)
     _ASSERTE(s_FinalizerThreadOK);
     _ASSERTE(GetThread() == GetFinalizerThread());
 
-    // workaround wwl: avoid oom problem for finalizer thread startup.
-    if (CLRTaskHosted())
-    {
-        SignalFinalizationDone(TRUE);
-        // SQL's scheduler may give finalizer thread a very small slice of CPU if finalizer thread
-        // shares a scheduler with other tasks.  This can cause severe problem for finalizer thread.
-        // To reduce pain here, we move finalizer thread off SQL's scheduler.
-        // But SQL's scheduler does not support IHostTask::Alert on a task off scheduler, so we need
-        // to return finalizer thread back to scheduler when we wait alertably.
-        // GetFinalizerThread()->LeaveRuntime((size_t)SetupThreadNoThrow);
-    }
-
     // finalizer should always park in default domain
 
     if (s_FinalizerThreadOK)
@@ -958,11 +889,8 @@ void FinalizerThread::FinalizerThreadCreate()
     } CONTRACTL_END;
 
 #ifndef FEATURE_PAL
-    if (!CLRMemoryHosted())
-    {
-        MHandles[kLowMemoryNotification] = 
-            CreateMemoryResourceNotification(LowMemoryResourceNotification);
-    }
+    MHandles[kLowMemoryNotification] =
+        CreateMemoryResourceNotification(LowMemoryResourceNotification);
 #endif // FEATURE_PAL
 
     hEventFinalizerDone = new CLREvent();
@@ -998,16 +926,6 @@ void FinalizerThread::FinalizerThreadCreate()
         // debugger may have been detached between the time it got the notification
         // and the moment we execute the test below.
         _ASSERTE(dwRet == 1 || dwRet == 2);
-        
-        // workaround wwl: make sure finalizer is ready.  This avoids OOM problem on finalizer
-        // thread startup.
-        if (CLRTaskHosted()) {
-            FinalizerThreadWait(INFINITE);
-            if (!s_FinalizerThreadOK)
-            {
-                ThrowOutOfMemory();
-            }
-        }
     }
 }
 

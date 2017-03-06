@@ -92,8 +92,7 @@ struct SuspendStatistics
     // a Suspend to the end of a Restart.  We can compute 'avg' using 'cnt' and 'tot' values.
     MinMaxTot suspend, restart, paused;
 
-    // We know there can be contention on acquiring the ThreadStoreLock, or yield points when hosted (like
-    // BeginThreadAffinity on the leading edge and EndThreadAffinity on the trailing edge).
+    // We know there can be contention on acquiring the ThreadStoreLock.
     MinMaxTot acquireTSL, releaseTSL;
 
     // And if we OS suspend a thread that is blocking or perhaps throwing an exception and is therefore

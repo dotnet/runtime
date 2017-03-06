@@ -635,15 +635,6 @@ BOOL __DangerousSwitchToThread (DWORD dwSleepMSec, DWORD dwSwitchCount, BOOL goT
     }
     CONTRACTL_END;
 
-    if (CLRTaskHosted())
-    {
-        Thread *pThread = GetThread();
-        if (pThread && pThread->HasThreadState(Thread::TS_YieldRequested))
-        {
-            pThread->ResetThreadState(Thread::TS_YieldRequested);
-        }
-    }
-
     if (dwSleepMSec > 0)
     {
         // when called with goThroughOS make sure to not call into the host. This function

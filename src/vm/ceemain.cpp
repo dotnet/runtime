@@ -781,9 +781,8 @@ void EEStartupHelper(COINITIEE fFlags)
 
 
 #ifdef FEATURE_PREJIT
-        // Initialize the sweeper thread.  THis is violating our rules with hosting
-        // so we only do it in the non-hosted case
-        if (g_pConfig->GetZapBBInstr() != NULL && !CLRTaskHosted())
+        // Initialize the sweeper thread.
+        if (g_pConfig->GetZapBBInstr() != NULL)
         {
             DWORD threadID;
             HANDLE hBBSweepThread = ::CreateThread(NULL,
@@ -2653,16 +2652,7 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
 
     if (dwReason == DLL_THREAD_DETACH || dwReason == DLL_PROCESS_DETACH)
     {
-        if (CLRMemoryHosted())
-        {
-            // A host may not support memory operation inside OS loader lock.
-            // We will free these memory on finalizer thread.
-            CExecutionEngine::DetachTlsInfo(param.pTlsData);
-        }
-        else
-        {
-            CExecutionEngine::ThreadDetaching(param.pTlsData);
-        }
+        CExecutionEngine::ThreadDetaching(param.pTlsData);
     }
     return TRUE;
 }

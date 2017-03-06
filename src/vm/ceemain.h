@@ -88,12 +88,6 @@ public:
     static LPVOID* GetTlsData();
     static BOOL SetTlsData (void** ppTlsInfo);
 
-    static BOOL HasDetachedTlsInfo();
-
-    static void CleanupDetachedTlsInfo();
-
-    static void DetachTlsInfo(void **pTlsData);
-
     //***************************************************************************
     // private implementation:
     //***************************************************************************

@@ -2896,7 +2896,6 @@ HRESULT CCLRSecurityAttributeManager::GetDACL(PACL *ppacl)
             BOOL bDaclPresent;
             BOOL bDaclDefault;
 
-            LeaveRuntimeHolder holder((size_t)(::GetSecurityDescriptorDacl));
             ::GetSecurityDescriptorDacl(pSA->lpSecurityDescriptor, &bDaclPresent, &pDefaultACL, &bDaclDefault);
         }
         EX_CATCH
@@ -3233,84 +3232,6 @@ BOOL CExecutionEngine::SetTlsData (void** ppTlsInfo)
 
 #endif // FEATURE_IMPLICIT_TLS
 
-static VolatilePtr<ClrTlsInfo> g_pDetachedTlsInfo;
-
-BOOL CExecutionEngine::HasDetachedTlsInfo()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return g_pDetachedTlsInfo.Load() != NULL;
-}
-
-void CExecutionEngine::CleanupDetachedTlsInfo()
-{
-    WRAPPER_NO_CONTRACT;
-
-    if (g_pDetachedTlsInfo.Load() == NULL)
-    {
-        return;
-    }
-    ClrTlsInfo *head = FastInterlockExchangePointer(g_pDetachedTlsInfo.GetPointer(), NULL);
-
-    while (head)
-    {
-        ClrTlsInfo *node = head;
-        head = head->next;
-        DeleteTLS(node->data);
-    }
-}
-
-void CExecutionEngine::DetachTlsInfo(void **pTlsData)
-{
-    LIMITED_METHOD_CONTRACT;
-   
-    if (pTlsData == NULL)
-    {
-        return;
-    }    
-
-    if (CExecutionEngine::GetTlsData() == pTlsData)
-    {
-        CExecutionEngine::SetTlsData(0);
-    }
-
-#ifdef HAS_FLS_SUPPORT
-    if (fHasFlsSupport && pFlsGetValue(FlsIndex) == pTlsData)
-    {
-        pFlsSetValue(FlsIndex, NULL);
-    }
-#endif
-
-    ClrTlsInfo *pTlsInfo = DataToClrTlsInfo(pTlsData);
-    // PREFIX_ASSUME needs TLS.  If we use it here, we may do memory allocation.
-#if defined(_PREFAST_) || defined(_PREFIX_) 
-    if (pTlsInfo == NULL) __UNREACHABLE();
-#else
-    _ASSERTE(pTlsInfo != NULL);
-#endif // _PREFAST_ || _PREFIX_
-
-    if (pTlsInfo->data[TlsIdx_StressLog])
-    {
-#ifdef STRESS_LOG
-      CantAllocHolder caHolder; 
-      StressLog::ThreadDetach ((ThreadStressLog *)pTlsInfo->data[TlsIdx_StressLog]);
-      pTlsInfo->data[TlsIdx_StressLog] = NULL;
-#else
-        _ASSERTE (!"Shouldn't have stress log!");
-#endif
-    }
-
-    while (TRUE)
-    {
-        ClrTlsInfo *head = g_pDetachedTlsInfo.Load();
-        pTlsInfo->next =  head;
-        if (FastInterlockCompareExchangePointer(g_pDetachedTlsInfo.GetPointer(), pTlsInfo, head) == head)
-        {
-            return;
-        }
-    }
-}
-
 //---------------------------------------------------------------------------------------
 //
 // Returns the current logical thread's data block (ClrTlsInfo::data).
@@ -3464,7 +3385,7 @@ void **CExecutionEngine::CheckThreadState(DWORD slot, BOOL force)
         // If we have a thread object or are on a non-fiber thread, we are safe for fiber switching.
         if (!fHasFlsSupport ||
             GetThread() ||
-            ((g_fEEStarted || g_fEEInit) && !CLRTaskHosted()) ||
+            (g_fEEStarted || g_fEEInit) ||
             (((size_t)pTlsInfo->data[TlsIdx_ThreadType]) & (ThreadType_GC | ThreadType_Gate | ThreadType_Timer | ThreadType_DbgHelper)))
         {
 #ifdef _DEBUG
@@ -4005,7 +3926,6 @@ DWORD STDMETHODCALLTYPE CExecutionEngine::WaitForSingleObject(HANDLE handle,
 {
     STATIC_CONTRACT_WRAPPER;
     STATIC_CONTRACT_SO_TOLERANT;
-    LeaveRuntimeHolder holder((size_t)(::WaitForSingleObject));
     return ::WaitForSingleObject(handle,dwMilliseconds);
 }
 

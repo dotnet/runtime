@@ -54,7 +54,6 @@ FCIMPL3(void, CheckVMForIOPacket, LPOVERLAPPED* lpOverlapped, DWORD* errorCode, 
     OVERLAPPEDDATAREF overlapped = ObjectToOVERLAPPEDDATAREF(OverlappedDataObject::GetOverlapped(*lpOverlapped));
 
     _ASSERTE(overlapped->GetAppDomainId() == adid);
-    _ASSERTE(CLRIoCompletionHosted() == FALSE);
 
     if(overlapped->m_iocb == NULL)
     {

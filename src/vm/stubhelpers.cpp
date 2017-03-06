@@ -775,10 +775,7 @@ FCIMPL1(StringObject*, StubHelpers::UriMarshaler__GetRawUriFromNative, ABI::Wind
         GCX_PREEMP();
 
         // Get the RawUri string from the WinRT URI object
-        {
-            LeaveRuntimeHolder lrh(**(size_t**)(IUnknown*)pIUriRC);
-            IfFailThrow(pIUriRC->get_RawUri(hsRawUriName.Address()));
-        }
+        IfFailThrow(pIUriRC->get_RawUri(hsRawUriName.Address()));
 
         pwszRawUri = hsRawUriName.GetRawBuffer(&cchRawUri);
     }
@@ -827,18 +824,15 @@ StubHelpers::EventArgsMarshaler__CreateNativeNCCEventArgsInstance
 
     SafeComHolderPreemp<IInspectable> pInner;
     HRESULT hr;
-    {
-        LeaveRuntimeHolder lrh(**(size_t **)(IUnknown *)pFactory);
-        hr = pFactory->CreateInstanceWithAllParameters(
-            (ABI::Windows::UI::Xaml::Interop::NotifyCollectionChangedAction)action,
-            (ABI::Windows::UI::Xaml::Interop::IBindableVector *)newItem,
-            (ABI::Windows::UI::Xaml::Interop::IBindableVector *)oldItem,
-            newIndex,
-            oldIndex,
-            NULL,
-            &pInner,
-            &pArgsRC);
-    }
+    hr = pFactory->CreateInstanceWithAllParameters(
+        (ABI::Windows::UI::Xaml::Interop::NotifyCollectionChangedAction)action,
+        (ABI::Windows::UI::Xaml::Interop::IBindableVector *)newItem,
+        (ABI::Windows::UI::Xaml::Interop::IBindableVector *)oldItem,
+        newIndex,
+        oldIndex,
+        NULL,
+        &pInner,
+        &pArgsRC);
     IfFailThrow(hr);
 
     END_QCALL;
@@ -860,14 +854,11 @@ ABI::Windows::UI::Xaml::Data::IPropertyChangedEventArgs* QCALLTYPE
 
     SafeComHolderPreemp<IInspectable> pInner;
     HRESULT hr;
-    {
-        LeaveRuntimeHolder lrh(**(size_t **)(IUnknown *)pFactory);
-        hr = pFactory->CreateInstance(
-            name,
-            NULL,
-            &pInner,
-            &pArgsRC);
-    }
+    hr = pFactory->CreateInstance(
+        name,
+        NULL,
+        &pInner,
+        &pArgsRC);
     IfFailThrow(hr);
 
     END_QCALL;

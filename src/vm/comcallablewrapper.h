@@ -1993,13 +1993,6 @@ private:
         if (!CanRunManagedCode())
             return;
         SO_INTOLERANT_CODE_NOTHROW(GetThread(), return; );
-        ReverseEnterRuntimeHolderNoThrow REHolder;
-        if (CLRTaskHosted())                      
-        {                                         
-            HRESULT hr = REHolder.AcquireNoThrow();
-            if (FAILED(hr))
-                return;
-        }
 
         m_pWrap->Cleanup();
     }

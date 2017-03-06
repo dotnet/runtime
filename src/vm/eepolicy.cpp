@@ -924,13 +924,7 @@ void EEPolicy::HandleStackOverflow(StackOverflowDetector detector, void * pLimit
     switch (detector)
     {
     case SOD_ManagedFrameHandler:
-            if (!pThread->PreemptiveGCDisabled() && !fInCLR && fInSoTolerant
-            &&
-            // Before we call managed code, we probe inside ReverseEnterRuntime for BACKOUT_CODE_STACK_LIMIT pages
-            // If we hit hard so here, we are still in our stub
-            (!CLRTaskHosted() || (UINT_PTR)pThread->m_pFrame - pThread->GetLastAllowableStackAddress() >= 
-             ADJUST_PROBE(BACKOUT_CODE_STACK_LIMIT) * OS_PAGE_SIZE)
-            )
+            if (!pThread->PreemptiveGCDisabled() && !fInCLR && fInSoTolerant)
         {
             // Managed exception handler detects SO, but the thread is in preemptive GC mode,
             // and the IP is outside CLR.  This means we are inside a PINVOKE call.

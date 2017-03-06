@@ -455,8 +455,7 @@ public:
         MEMTYPE_AsyncCallback   = 0,
         MEMTYPE_DelegateInfo    = 1,
         MEMTYPE_WorkRequest     = 2,
-        MEMTYPE_PostRequest     = 3,        
-        MEMTYPE_COUNT           = 4,
+        MEMTYPE_COUNT           = 3,
     };
 
     static BOOL Initialize();
@@ -554,11 +553,6 @@ public:
 
     static BOOL HaveTimerInfosToFlush() { return TimerInfosToBeRecycled != NULL; }
 
-    inline static BOOL IsThreadPoolHosted()
-    {
-            return FALSE;
-    }
-
 #ifndef FEATURE_PAL    
     static LPOVERLAPPED CompletionPortDispatchWorkWithinAppDomain(Thread* pThread, DWORD* pErrorCode, DWORD* pNumBytes, size_t* pKey, DWORD adid);
     static void StoreOverlappedInfoInThread(Thread* pThread, DWORD dwErrorCode, DWORD dwNumBytes, size_t key, LPOVERLAPPED lpOverlapped);
@@ -611,44 +605,6 @@ private:
         wr->next = NULL;
         return wr;
     }
-
-    struct PostRequest {
-        LPOVERLAPPED_COMPLETION_ROUTINE Function;
-        DWORD                           errorCode;
-        DWORD                           numBytesTransferred;
-        LPOVERLAPPED                    lpOverlapped;
-    };
-
-
-    inline static PostRequest* MakePostRequest(LPOVERLAPPED_COMPLETION_ROUTINE function, LPOVERLAPPED overlapped)
-    {
-        CONTRACTL
-        {
-            THROWS;     
-            GC_NOTRIGGER;
-            MODE_ANY;
-        }
-        CONTRACTL_END;;
-        
-        PostRequest* pr = (PostRequest*) GetRecycledMemory(MEMTYPE_PostRequest);
-        _ASSERTE(pr);
-		if (NULL == pr)
-			return NULL;
-        pr->Function = function;
-        pr->errorCode = 0;
-        pr->numBytesTransferred = 0;
-        pr->lpOverlapped = overlapped;
-        
-        return pr;
-    }
-    
-    inline static void ReleasePostRequest(PostRequest *postRequest) 
-    {
-        WRAPPER_NO_CONTRACT;
-        ThreadpoolMgr::RecycleMemory(postRequest, MEMTYPE_PostRequest);
-    }
-
-    typedef Wrapper< PostRequest *, DoNothing<PostRequest *>, ThreadpoolMgr::ReleasePostRequest > PostRequestHolder;
     
 #endif // #ifndef DACCESS_COMPILE
 
@@ -1175,8 +1131,6 @@ public:
     static DWORD __stdcall AsyncCallbackCompletion(PVOID pArgs);
 
     static void QueueTimerInfoForRelease(TimerInfo *pTimerInfo);
-
-    static DWORD __stdcall QUWIPostCompletion(PVOID pArgs);
 
     static void DeactivateWait(WaitInfo* waitInfo);
     static void DeactivateNthWait(WaitInfo* waitInfo, DWORD index);

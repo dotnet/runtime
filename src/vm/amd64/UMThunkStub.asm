@@ -20,8 +20,6 @@ extern UMEntryPrestubUnwindFrameChainHandler:proc
 extern UMThunkStubUnwindFrameChainHandler:proc
 extern g_TrapReturningThreads:dword
 extern UM2MDoADCallBack:proc
-extern ReverseEnterRuntimeHelper:proc
-extern ReverseLeaveRuntimeHelper:proc
 extern UMThunkStubRareDisableWorker:proc
 extern ReversePInvokeBadTransition:proc
 

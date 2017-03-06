@@ -50,7 +50,6 @@ namespace AppX
 
             {
                 GCX_PREEMP();
-                LeaveRuntimeHolder lrh(::RoInitialize);
 
                 // Prefer MultiThreaded when AnyThreadedMultiPreferred is specified.
                 hr = ::RoInitialize((threadingModel == SingleThreaded) ? RO_INIT_SINGLETHREADED

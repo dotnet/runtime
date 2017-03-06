@@ -638,7 +638,6 @@ VOID CLRTestHookManager::DoApproriateWait( int cObjs, HANDLE *pObjs, INT32 iTime
         result=thread->DoAppropriateWait(cObjs,pObjs,bWaitAll,iTimeout,WaitMode_Alertable,NULL);
     else
     {
-        LeaveRuntimeHolder holder((size_t)WaitForSingleObjectEx);
         result = WaitForMultipleObjectsEx(cObjs,pObjs,bWaitAll,iTimeout,TRUE);
     }
 }
