@@ -1,5 +1,8 @@
 ### Repo-specific things ###
 
+# RootFS used for cross-compilation
+cross/rootfs
+
 # Test results
 *-testResults.xml
 
