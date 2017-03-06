@@ -254,6 +254,24 @@ namespace System.Collections.Tests
         }
 
         [Fact]
+        public static void EnsureCapacity_NewCapacityLessThanMin_CapsToMaxArrayLength()
+        {
+            // A situation like this occurs for very large lengths of SortedList.
+            // To avoid allocating several GBs of memory and making this test run for a very
+            // long time, we can use reflection to invoke SortedList's growth method manually.
+            // This is relatively brittle, as it relies on accessing a private method via reflection
+            // that isn't guaranteed to be stable.
+            const int InitialCapacity = 10;
+            const int MinCapacity = InitialCapacity * 2 + 1;
+            var sortedList = new SortedList(InitialCapacity);
+
+            MethodInfo ensureCapacity = sortedList.GetType().GetMethod("EnsureCapacity", BindingFlags.NonPublic | BindingFlags.Instance);
+            ensureCapacity.Invoke(sortedList, new object[] { MinCapacity });
+
+            Assert.Equal(MinCapacity, sortedList.Capacity);
+        }
+
+        [Fact]
         public static void Add()
         {
             var sortList1 = new SortedList();
