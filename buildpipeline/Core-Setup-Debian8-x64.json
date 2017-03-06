@@ -4,7 +4,7 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Clean up Docker.",
+      "displayName": "Clean up for build.",
       "timeoutInMinutes": 0,
       "task": {
         "id": "6c731c3c-3c68-459a-a5c9-bde6e6595b5b",
@@ -12,7 +12,7 @@
         "definitionType": "task"
       },
       "inputs": {
-        "scriptPath": "scripts/cleanup-docker.sh",
+        "scriptPath": "scripts/cleanup-build.sh",
         "args": "",
         "disableAutoCwd": "false",
         "cwd": "",
