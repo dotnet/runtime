@@ -645,8 +645,12 @@ namespace System.Security.Cryptography.Xml.Tests
 
             s.Position = 0;
 
-            HashAlgorithm hash = SHA1.Create();
-            byte[] digest = hash.ComputeHash(s);
+            byte[] digest;
+            using (HashAlgorithm hash = SHA1.Create())
+            {
+                digest = hash.ComputeHash(s);
+            }
+            
             Assert.Equal("IKbfdK2/DMfXyezCf5QggVCXfk8=", Convert.ToBase64String(digest));
 
             X509Certificate2 cert = new X509Certificate2(_pkcs12, "mono");
@@ -698,8 +702,12 @@ namespace System.Security.Cryptography.Xml.Tests
 
             s.Position = 0;
 
-            HashAlgorithm hash = SHA1.Create();
-            byte[] digest = hash.ComputeHash(s);
+            byte[] digest;
+            using (HashAlgorithm hash = SHA1.Create())
+            {
+                digest = hash.ComputeHash(s);
+            }
+
             Assert.Equal("e3dsi1xK8FAx1vsug7J203JbEAU=", Convert.ToBase64String(digest));
 
             X509Certificate2 cert = new X509Certificate2(_pkcs12, "mono");
