@@ -1885,12 +1885,14 @@ namespace SerializationTypes
         public ICollection<int> Member1;
     }
 
+#if NET_NATIVE
     public class TypeWithTypeProperty
     {
         public int Id { get; set; }
         public Type Type { get; set; }
         public string Name { get; set; }
     }
+#endif
 
     [DataContract(Namespace = "SerializationTypes.GenericTypeWithPrivateSetter")]
     public class GenericTypeWithPrivateSetter<T>
