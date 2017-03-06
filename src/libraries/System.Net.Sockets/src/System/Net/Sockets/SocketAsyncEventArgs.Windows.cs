@@ -124,7 +124,7 @@ namespace System.Net.Sockets
             }
             else
             {
-                overlapped = boundHandle.AllocateNativeOverlapped(CompletionPortCallback, this, null);
+                overlapped = boundHandle.AllocateNativeOverlapped(s_completionPortCallback, this, null);
                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"boundHandle:{boundHandle}, AllocateNativeOverlapped(pinData=null), Returned:{(IntPtr)overlapped}");
             }
             Debug.Assert(overlapped != null, "NativeOverlapped is null.");
@@ -864,7 +864,7 @@ namespace System.Net.Sockets
             {
                 if (_buffer != null)
                 {
-                    _preAllocatedOverlapped = new PreAllocatedOverlapped(CompletionPortCallback, this, _buffer);
+                    _preAllocatedOverlapped = new PreAllocatedOverlapped(s_completionPortCallback, this, _buffer);
                     if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"new PreAllocatedOverlapped pinSingleBuffer=true, non-null buffer:{_preAllocatedOverlapped}");
 
                     _pinnedSingleBuffer = _buffer;
@@ -878,7 +878,7 @@ namespace System.Net.Sockets
                 }
                 else
                 {
-                    _preAllocatedOverlapped = new PreAllocatedOverlapped(CompletionPortCallback, this, null);
+                    _preAllocatedOverlapped = new PreAllocatedOverlapped(s_completionPortCallback, this, null);
                     if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"new PreAllocatedOverlapped pinSingleBuffer=true, null buffer: {_preAllocatedOverlapped}");
 
                     _pinnedSingleBuffer = null;
@@ -893,7 +893,7 @@ namespace System.Net.Sockets
             }
             else
             {
-                _preAllocatedOverlapped = new PreAllocatedOverlapped(CompletionPortCallback, this, _acceptBuffer);
+                _preAllocatedOverlapped = new PreAllocatedOverlapped(s_completionPortCallback, this, _acceptBuffer);
                 if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"new PreAllocatedOverlapped pinSingleBuffer=false:{_preAllocatedOverlapped}");
 
                 _pinnedAcceptBuffer = _acceptBuffer;
@@ -927,7 +927,7 @@ namespace System.Net.Sockets
             }
 
             // Pin buffers and fill in WSABuffer descriptor pointers and lengths.
-            _preAllocatedOverlapped = new PreAllocatedOverlapped(CompletionPortCallback, this, _objectsToPin);
+            _preAllocatedOverlapped = new PreAllocatedOverlapped(s_completionPortCallback, this, _objectsToPin);
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"new PreAllocatedOverlapped.{_preAllocatedOverlapped}");
 
             for (int i = 0; i < bufferCount; i++)
@@ -969,7 +969,7 @@ namespace System.Net.Sockets
             }
 
             // Pin buffers.
-            _preAllocatedOverlapped = new PreAllocatedOverlapped(CompletionPortCallback, this, _objectsToPin);
+            _preAllocatedOverlapped = new PreAllocatedOverlapped(s_completionPortCallback, this, _objectsToPin);
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"new PreAllocatedOverlapped:{_preAllocatedOverlapped}");
 
             // Get pointer to native descriptor.
@@ -1178,6 +1178,14 @@ namespace System.Net.Sockets
             _sendPacketsFileStreams = null;
             _sendPacketsFileHandles = null;
         }
+
+        private static readonly unsafe IOCompletionCallback s_completionPortCallback = delegate (uint errorCode, uint numBytes, NativeOverlapped* nativeOverlapped)
+        {
+            object state = ThreadPoolBoundHandle.GetNativeOverlappedState(nativeOverlapped);
+            var saea = (SocketAsyncEventArgs)state;
+            Debug.Assert(saea != null, $"Expected native overlapped state to contain SAEA, got {state?.GetType().ToString() ?? "(null)"}");
+            saea.CompletionPortCallback(errorCode, numBytes, nativeOverlapped);
+        };
 
         private unsafe void CompletionPortCallback(uint errorCode, uint numBytes, NativeOverlapped* nativeOverlapped)
         {
