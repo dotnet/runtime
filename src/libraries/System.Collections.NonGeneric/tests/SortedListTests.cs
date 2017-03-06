@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Globalization;
+using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using Xunit;
@@ -211,15 +212,34 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public static void DebuggerAttribute()
+        public static void DebuggerAttribute_Empty()
+        {
+            Assert.Equal("Count = 0", DebuggerAttributes.ValidateDebuggerDisplayReferences(new SortedList()));
+        }
+
+        [Fact]
+        public static void DebuggerAttribute_NormalList()
         {
             var list = new SortedList() { { "a", 1 }, { "b", 2 } };
+            DebuggerAttributeInfo debuggerAttribute = DebuggerAttributes.ValidateDebuggerTypeProxyProperties(list);
+            PropertyInfo infoProperty = debuggerAttribute.Properties.Single(property => property.Name == "Items");
+            object[] items = (object[])infoProperty.GetValue(debuggerAttribute.Instance);
+            Assert.Equal(list.Count, items.Length);
+        }
 
-            DebuggerAttributes.ValidateDebuggerDisplayReferences(new SortedList());
+        [Fact]
+        public static void DebuggerAttribute_SynchronizedList()
+        {
+            var list = SortedList.Synchronized(new SortedList() { { "a", 1 }, { "b", 2 } });
+            DebuggerAttributeInfo debuggerAttribute = DebuggerAttributes.ValidateDebuggerTypeProxyProperties(typeof(SortedList), list);
+            PropertyInfo infoProperty = debuggerAttribute.Properties.Single(property => property.Name == "Items");
+            object[] items = (object[])infoProperty.GetValue(debuggerAttribute.Instance);
+            Assert.Equal(list.Count, items.Length);
+        }
 
-            DebuggerAttributes.ValidateDebuggerTypeProxyProperties(list);
-            DebuggerAttributes.ValidateDebuggerTypeProxyProperties(typeof(SortedList), SortedList.Synchronized(list));
-
+        [Fact]
+        public static void DebuggerAttribute_NullSortedList_ThrowsArgumentNullException()
+        {
             bool threwNull = false;
             try
             {

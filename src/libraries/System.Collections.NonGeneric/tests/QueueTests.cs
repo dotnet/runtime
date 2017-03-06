@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -101,8 +102,17 @@ namespace System.Collections.Tests
             testQueue.Enqueue(1);
             testQueue.Enqueue("b");
             testQueue.Enqueue(2);
-            DebuggerAttributes.ValidateDebuggerTypeProxyProperties(testQueue);
 
+            DebuggerAttributeInfo debuggerAttribute = DebuggerAttributes.ValidateDebuggerTypeProxyProperties(testQueue);
+            PropertyInfo infoProperty = debuggerAttribute.Properties.Single(property => property.Name == "Items");
+            object[] items = (object[])infoProperty.GetValue(debuggerAttribute.Instance);
+
+            Assert.Equal(testQueue.ToArray(), items);
+        }
+
+        [Fact]
+        public static void DebuggerAttribute_NullQueue_ThrowsArgumentNullException()
+        {
             bool threwNull = false;
             try
             {

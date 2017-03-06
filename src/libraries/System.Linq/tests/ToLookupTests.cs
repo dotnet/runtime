@@ -300,14 +300,14 @@ namespace System.Linq.Tests
             object proxyObject = DebuggerAttributes.GetProxyObject(lookup);
 
             // Validate proxy fields
-            Assert.Empty(DebuggerAttributes.GetDebuggerVisibleFields(proxyObject));
+            Assert.Empty(DebuggerAttributes.GetDebuggerVisibleFields(proxyObject.GetType()));
 
             // Validate proxy properties
-            IDictionary<string, PropertyInfo> properties = DebuggerAttributes.GetDebuggerVisibleProperties(proxyObject);
-            Assert.Equal(1, properties.Count);
+            IEnumerable<PropertyInfo> properties = DebuggerAttributes.GetDebuggerVisibleProperties(proxyObject.GetType());
+            Assert.Equal(1, properties.Count());
 
             // Groupings
-            PropertyInfo groupingsProperty = properties["Groupings"];
+            PropertyInfo groupingsProperty = properties.Single(property => property.Name == "Groupings");
             Assert.Equal(DebuggerBrowsableState.RootHidden, DebuggerAttributes.GetDebuggerBrowsableState(groupingsProperty));
             var groupings = (IGrouping<TKey, TElement>[])groupingsProperty.GetValue(proxyObject);
             Assert.IsType<IGrouping<TKey, TElement>[]>(groupings); // Arrays can be covariant / of assignment-compatible types
