@@ -29,10 +29,13 @@
       <AllTestDirsPaths Include="@(AllTestDirsNonCanonicalPaths)" >
         <Path>$([System.IO.Path]::GetFullPath(%(Identity)))</Path>
       </AllTestDirsPaths>
-      <NonExcludedTestDirectories Include="@(AllTestDirsPaths -> '%(Path)')" Exclude="@(_SkipTestDir -> '$(XunitTestBinBase)%(Identity)')">
+      <NonExcludedTestDirectories Include="@(AllTestDirsPaths -> '%(Path)')" Exclude="@(_SkipTestDir -> '$(XunitTestBinBase)%(Identity)')" />
+      <TopLevelDirectories Include="@(NonExcludedTestDirectories)" />
+      <SecondLevel Include="$([System.IO.Directory]::GetDirectories(%(TopLevelDirectories.Identity)))" />
+      <SecondLevelDirectories Include="@(SecondLevel)">
         <Path>$([System.IO.Path]::GetFullPath(%(AllRunnableTestPaths.Identity)))</Path>
-      </NonExcludedTestDirectories>
-      <TestDirectoriesWithDup Include="@(NonExcludedTestDirectories -> '%(Identity)')" Condition="$([System.String]::new('%(Path)').StartsWith('%(Identity)'))" />
+      </SecondLevelDirectories>
+      <TestDirectoriesWithDup Include="@(SecondLevelDirectories -> '%(Identity)')" Condition="$([System.String]::new('%(Path)').StartsWith('%(Identity)'))" />
 
     </ItemGroup>
 
@@ -118,7 +121,7 @@ $(_XunitEpilog)
   </ItemGroup>
   <Import Project="$(SourceDir)dir.targets" />
   <PropertyGroup>
-     <OutDir>$(XunitTestBinBase)\$(Category)\</OutDir>
+     <OutDir>$(XunitTestBinBase)\$(CategoryWithSlash)\</OutDir>
   </PropertyGroup>
 </Project>
         ]]>
@@ -151,7 +154,9 @@ $(_XunitEpilog)
 
     <PropertyGroup>
       <_CMDDIR_Parent>$([System.IO.Path]::GetDirectoryName($(_CMDDIR)))</_CMDDIR_Parent>
-      <Category>$([System.String]::Copy('$(_CMDDIR)').Replace($(_CMDDIR_Parent)\,''))</Category>
+      <_CMDDIR_Grandparent>$([System.IO.Path]::GetDirectoryName($(_CMDDIR_Parent)))</_CMDDIR_Grandparent>
+      <CategoryWithSlash>$([System.String]::Copy('$(_CMDDIR)').Replace($(_CMDDIR_Grandparent)\,''))</CategoryWithSlash>
+      <Category>$([System.String]::Copy('$(CategoryWithSlash)').Replace('\','.'))</Category>
       <XunitWrapper>$(Category).XUnitWrapper</XunitWrapper>
       <XunitWrapperSrcDir>$(XunitWrapperGeneratedCSDirBase)$(Category)</XunitWrapperSrcDir>
       <XunitWrapperOutputDir>$(XunitWrapperOutputIntermediatedDirBase)$(Category)</XunitWrapperOutputDir>
