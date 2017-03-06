@@ -14,7 +14,7 @@
   </PropertyGroup>
   <Target Name="FindTestDirectories">
     <ItemGroup>
-      <AllTestAssemblies Include="$(BaseOutputPathWithConfig)\*\*.XUnitWrapper.dll" />
+      <AllTestAssemblies Include="$(BaseOutputPathWithConfig)\**\*.XUnitWrapper.dll" />
       <TestAssemblies Include="@(AllTestAssemblies)" Exclude="@(_SkipTestAssemblies -> '$(TestAssemblyDir)%(Identity)\%(Identity).XUnitWrapper.dll')" />
     </ItemGroup>
     
