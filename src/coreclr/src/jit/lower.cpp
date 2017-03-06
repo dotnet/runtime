@@ -468,7 +468,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     // both GT_SWITCH lowering code paths.
     // This condition is of the form: if (temp > jumpTableLength - 2){ goto jumpTable[jumpTableLength - 1]; }
     GenTreePtr gtDefaultCaseCond = comp->gtNewOperNode(GT_GT, TYP_INT, comp->gtNewLclvNode(tempLclNum, tempLclType),
-                                                       comp->gtNewIconNode(jumpCnt - 2, TYP_INT));
+                                                       comp->gtNewIconNode(jumpCnt - 2, tempLclType));
 
     // Make sure we perform an unsigned comparison, just in case the switch index in 'temp'
     // is now less than zero 0 (that would also hit the default case).
@@ -681,9 +681,16 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
 
         JITDUMP("Lowering switch BB%02u: using jump table expansion\n", originalSwitchBB->bbNum);
 
+        GenTree* switchValue = comp->gtNewLclvNode(tempLclNum, tempLclType);
+#ifdef _TARGET_64BIT_
+        if (tempLclType != TYP_I_IMPL)
+        {
+            // Note that the switch value is unsigned so the cast should be unsigned as well.
+            switchValue = comp->gtNewCastNode(TYP_I_IMPL, switchValue, TYP_U_IMPL);
+        }
+#endif
         GenTreePtr gtTableSwitch =
-            comp->gtNewOperNode(GT_SWITCH_TABLE, TYP_VOID, comp->gtNewLclvNode(tempLclNum, tempLclType),
-                                comp->gtNewJmpTableNode());
+            comp->gtNewOperNode(GT_SWITCH_TABLE, TYP_VOID, switchValue, comp->gtNewJmpTableNode());
         /* Increment the lvRefCnt and lvRefCntWtd for temp */
         tempVarDsc->incRefCnts(blockWeight, comp);
 
@@ -2257,7 +2264,6 @@ void Lowering::LowerCompare(GenTree* cmp)
             // automatically inserts a cast from int32 to long on 64 bit architectures. However, the JIT
             // accidentally generates int/long comparisons internally:
             //   - loop cloning compares int (and even small int) index limits against long constants
-            //   - switch lowering compares a 64 bit switch value against a int32 constant
             //
             // TODO-Cleanup: The above mentioned issues should be fixed and then the code below may be
             // replaced with an assert or at least simplified. The special casing of constants in code

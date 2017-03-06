@@ -11575,22 +11575,6 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op1 = impPopStack().val;
                 assertImp(genActualTypeIsIntOrI(op1->TypeGet()));
 
-#ifdef _TARGET_64BIT_
-                // Widen 'op1' on 64-bit targets
-                if (op1->TypeGet() != TYP_I_IMPL)
-                {
-                    if (op1->OperGet() == GT_CNS_INT)
-                    {
-                        op1->gtType = TYP_I_IMPL;
-                    }
-                    else
-                    {
-                        op1 = gtNewCastNode(TYP_I_IMPL, op1, TYP_I_IMPL);
-                    }
-                }
-#endif // _TARGET_64BIT_
-                assert(genActualType(op1->TypeGet()) == TYP_I_IMPL);
-
                 /* We can create a switch node */
 
                 op1 = gtNewOperNode(GT_SWITCH, TYP_VOID, op1);
@@ -15976,11 +15960,11 @@ SPILLSTACK:
                 }
                 else
                 {
-                    assert(addTree->gtOper == GT_SWITCH && genActualType(addTree->gtOp.gtOp1->gtType) == TYP_I_IMPL);
+                    assert(addTree->gtOper == GT_SWITCH && genActualTypeIsIntOrI(addTree->gtOp.gtOp1->TypeGet()));
 
                     unsigned temp = lvaGrabTemp(true DEBUGARG("spill addStmt SWITCH"));
                     impAssignTempGen(temp, addTree->gtOp.gtOp1, level);
-                    addTree->gtOp.gtOp1 = gtNewLclvNode(temp, TYP_I_IMPL);
+                    addTree->gtOp.gtOp1 = gtNewLclvNode(temp, genActualType(addTree->gtOp.gtOp1->TypeGet()));
                 }
             }
 
