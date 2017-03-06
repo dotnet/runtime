@@ -363,6 +363,10 @@
             "#import": [ "ubuntu", "debian-arm" ]
         },
 
+        "ubuntu-arm64": {
+            "#import": [ "ubuntu", "debian-arm64" ]
+        },
+
         "ubuntu.14.04": {
             "#import": [ "ubuntu" ]
         },
@@ -427,6 +431,9 @@
         "ubuntu.16.04-arm": {
             "#import": [ "ubuntu.16.04", "ubuntu-arm" ]
         },
+        "ubuntu.16.04-arm64": {
+            "#import": [ "ubuntu.16.04", "ubuntu-arm64" ]
+        },
 
         "ubuntu.16.10": {
             "#import": [ "ubuntu" ]
@@ -439,6 +446,9 @@
         },
         "ubuntu.16.10-arm": {
             "#import": [ "ubuntu.16.10", "ubuntu-arm" ]
+        },
+        "ubuntu.16.10-arm64": {
+            "#import": [ "ubuntu.16.10", "ubuntu-arm64" ]
         },
 
         "linuxmint.17": {
@@ -544,6 +554,12 @@
         "alpine-x64": {
             "#import": [ "alpine", "linux-x64" ]
         },
+        "alpine-arm": {
+            "#import": [ "alpine", "linux-arm" ]
+        },
+        "alpine-arm64": {
+            "#import": [ "alpine", "linux-arm64" ]
+        },
 
         "alpine.3": {
             "#import": [ "alpine" ]
@@ -551,12 +567,24 @@
         "alpine.3-x64": {
             "#import": [ "alpine.3", "alpine-x64" ]
         },
+        "alpine.3-arm": {
+            "#import": [ "alpine.3", "alpine-arm" ]
+        },
+        "alpine.3-arm64": {
+            "#import": [ "alpine.3", "alpine-arm64" ]
+        },
 
         "alpine.3.4.3": {
             "#import": [ "alpine.3" ]
         },
         "alpine.3.4.3-x64": {
             "#import": [ "alpine.3.4.3", "alpine.3-x64" ]
+        },
+        "alpine.3.4.3-arm": {
+            "#import": [ "alpine.3.4.3", "alpine.3-arm" ]
+        },
+        "alpine.3.4.3-arm64": {
+            "#import": [ "alpine.3.4.3", "alpine.3-arm64" ]
         },
 
         "corert": {
