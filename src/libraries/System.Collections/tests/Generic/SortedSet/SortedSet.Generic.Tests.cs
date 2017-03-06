@@ -171,6 +171,34 @@ namespace System.Collections.Tests
             }
         }
 
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void SortedSet_Generic_GetViewBetween_Empty_MinMax(int setLength)
+        {
+            if (setLength < 4) return;
+
+            SortedSet<T> set = (SortedSet<T>)GenericISetFactory(setLength);
+            Assert.Equal(setLength, set.Count);
+
+            T firstElement = set.ElementAt(0);
+            T secondElement = set.ElementAt(1);
+            T nextToLastElement = set.ElementAt(setLength - 2);
+            T lastElement = set.ElementAt(setLength - 1);
+
+            T[] items = set.ToArray();
+            for (int i = 1; i < setLength - 1; i++)
+            {
+                set.Remove(items[i]);
+            }
+            Assert.Equal(2, set.Count);
+
+            SortedSet<T> view = set.GetViewBetween(secondElement, nextToLastElement);
+            Assert.Equal(0, view.Count);
+
+            Assert.Equal(default(T), view.Min);
+            Assert.Equal(default(T), view.Max);
+        }
+
         #endregion
 
         #region RemoveWhere

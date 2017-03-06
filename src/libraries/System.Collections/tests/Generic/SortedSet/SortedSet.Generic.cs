@@ -28,6 +28,32 @@ namespace System.Collections.Tests
         }
 
         protected override bool DefaultValueAllowed => true;
+
+        [ActiveIssue(16760)]
+        [Fact]
+        public void SortedSet_Generic_GetViewBetween_MinMax()
+        {
+            var set = (SortedSet<int>)CreateSortedSet(new[] { 1, 3, 5, 7, 9 }, 5, 5);
+            SortedSet<int> view = set.GetViewBetween(4, 8);
+
+            Assert.True(set.Contains(1));
+            Assert.True(set.Contains(3));
+            Assert.True(set.Contains(5));
+            Assert.True(set.Contains(7));
+            Assert.True(set.Contains(9));
+
+            Assert.False(view.Contains(1));
+            Assert.False(view.Contains(3));
+            Assert.True(view.Contains(5));
+            Assert.True(view.Contains(7));
+            Assert.False(view.Contains(9));
+
+            Assert.Equal(1, set.Min);
+            Assert.Equal(9, set.Max);
+
+            Assert.Equal(5, view.Min);
+            Assert.Equal(7, view.Max);
+        }
     }
 
     public class SortedSet_Generic_Tests_int_With_NullComparer : SortedSet_Generic_Tests_int
