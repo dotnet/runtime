@@ -2772,8 +2772,6 @@ public:
 
     bool ResumeThreads(AppDomain* pAppDomain);
 
-    static DWORD WaitForSingleObjectHelper(HANDLE handle, DWORD dwMilliseconds);
-
     void ProcessAnyPendingEvals(Thread *pThread);
 
     bool HasLazyData();

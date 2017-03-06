@@ -276,20 +276,6 @@ bool IsGuardPageGone()
     return fGuardPageGone;
 }
 
-
-// This is called from AppDomainEnumerationIPCBlock::Lock and Unlock
-void BeginThreadAffinityHelper()
-{
-    WRAPPER_NO_CONTRACT;
-
-    Thread::BeginThreadAffinity();
-}
-void EndThreadAffinityHelper()
-{
-    WRAPPER_NO_CONTRACT;
-    Thread::EndThreadAffinity();
-}
-
 //-----------------------------------------------------------------------------
 // LSPTR_XYZ is a type-safe wrapper around an opaque reference type XYZ in the left-side.
 // But TypeHandles are value-types that can't be directly converted into a pointer.
@@ -5193,39 +5179,6 @@ HRESULT Debugger::MapPatchToDJI( DebuggerControllerPatch *dcp,DebuggerJitInfo *d
     _ASSERTE(!dcp->IsBreakpointPatch());
 
     return S_OK;
-}
-
-//
-// Wrapper function for debugger to WaitForSingleObject. If CLR is hosted,
-// notify host before we leave runtime.
-//
-DWORD  Debugger::WaitForSingleObjectHelper(HANDLE handle, DWORD dwMilliseconds)
-{
-    CONTRACTL
-    {
-        SO_NOT_MAINLINE;
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    DWORD   dw = 0;
-    EX_TRY
-    {
-
-        // make sure that we let host know that we are leaving runtime.
-        LeaveRuntimeHolder holder((size_t)(::WaitForSingleObject));
-        dw = ::WaitForSingleObject(handle,dwMilliseconds);
-    }
-    EX_CATCH
-    {
-        // Only possibility to enter here is when Thread::LeaveRuntime
-        // throws exception.
-        dw = WAIT_ABANDONED;
-    }
-    EX_END_CATCH(SwallowAllExceptions);
-    return dw;
-
 }
 
 
@@ -12717,27 +12670,13 @@ CorDebugUserState Debugger::GetFullUserState(Thread *pThread)
 /******************************************************************************
  *
  * Helper for debugger to get an unique thread id
- * If we are not in Fiber mode, we can safely use OSThreadId
- * Otherwise, we will use our own unique ID.
- *
- * We will return our unique ID when our host is hosting Thread.
- *
  *
  ******************************************************************************/
 DWORD Debugger::GetThreadIdHelper(Thread *pThread)
 {
     WRAPPER_NO_CONTRACT;
 
-    if (!CLRTaskHosted())
-    {
-        // use the plain old OS Thread ID
-        return pThread->GetOSThreadId();
-    }
-    else
-    {
-        // use our unique thread ID
-        return pThread->GetThreadId();
-    }
+    return pThread->GetOSThreadId();
 }
 
 //-----------------------------------------------------------------------------
@@ -15063,15 +15002,6 @@ HRESULT Debugger::InitAppDomainIPC(void)
     // uninited values.
     ZeroMemory(m_pAppDomainCB, sizeof(*m_pAppDomainCB));
 
-    // Fix for issue: whidbey 143061
-    // We are creating the mutex as hold, when we unlock, the EndThreadAffinity in
-    // hosting case will be unbalanced.
-    // Ideally, I would like to fix this by creating mutex not-held and call Lock method.
-    // This way, when we clean up the OOM, (as you can tell, we never release the mutex in
-    // some error cases), we can change it to holder class.
-    //
-    Thread::BeginThreadAffinity();
-
     // Create a mutex to allow the Left and Right Sides to properly
     // synchronize. The Right Side will spin until m_hMutex is valid,
     // then it will acquire it before accessing the data.
@@ -16057,7 +15987,7 @@ BOOL Debugger::SendCtrlCToDebugger(DWORD dwCtrlType)
 
     // now wait for notification from the right side about whether or not
     // the out-of-proc debugger is handling ControlC events.
-    WaitForSingleObjectHelper(GetCtrlCMutex(), INFINITE);
+    ::WaitForSingleObject(GetCtrlCMutex(), INFINITE);
 
     return GetDebuggerHandlingCtrlC();
 }

@@ -343,9 +343,8 @@ HRESULT CLRException::SetErrorInfo()
 
         EX_TRY
         {
-            LeaveRuntimeHolderNoThrow lrh((size_t)::SetErrorInfo);                
-            ::SetErrorInfo(0, pErrorInfo);                                              
-            pErrorInfo->Release(); 
+            ::SetErrorInfo(0, pErrorInfo);
+            pErrorInfo->Release();
 
             // Success in setting the ErrorInfo on the thread
             hr = S_OK;

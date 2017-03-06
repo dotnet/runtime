@@ -270,24 +270,6 @@ inline static void InvokeStub(ComCallMethodDesc *pCMD, PCODE pManagedTarget, OBJ
 
 #endif // _TARGET_X86_
 
-NOINLINE
-void InvokeStub_Hosted(ComCallMethodDesc *pCMD, PCODE pManagedTarget, OBJECTREF orThis, ComMethodFrame *pFrame, Thread *pThread,
-                       UINT64* pRetValOut)
-{
-    LIMITED_METHOD_CONTRACT;
-    _ASSERTE(CLRTaskHosted());
-
-    ReverseEnterRuntimeHolderNoThrow REHolder;
-    HRESULT hr = REHolder.AcquireNoThrow(); 
-    if (FAILED(hr))
-    {
-        *pRetValOut = hr;
-        return;
-    }
-
-    InvokeStub(pCMD, pManagedTarget, orThis, pFrame, pThread, pRetValOut);
-}
-
 #if defined(_MSC_VER) && !defined(_DEBUG)
 #pragma optimize("t", on)   // optimize for speed
 #endif 
@@ -440,15 +422,7 @@ void COMToCLRInvokeTarget(PCODE pManagedTarget, OBJECTREF pObject, ComCallMethod
     }
 #endif // DEBUGGING_SUPPORTED
 
-
-    if (CLRTaskHosted())
-    {
-        InvokeStub_Hosted(pCMD, pManagedTarget, pObject, pFrame, pThread, pRetValOut);
-    }
-    else
-    {
-        InvokeStub(pCMD, pManagedTarget, pObject, pFrame, pThread, pRetValOut);
-    }
+    InvokeStub(pCMD, pManagedTarget, pObject, pFrame, pThread, pRetValOut);
 }
 
 bool COMToCLRWorkerBody_SecurityCheck(ComCallMethodDesc * pCMD, MethodDesc * pMD, Thread * pThread, UINT64 * pRetValOut)
@@ -1108,8 +1082,6 @@ static void FieldCallWorkerBody(Thread *pThread, ComMethodFrame* pFrame)
         PRECONDITION(CheckPointer(pFrame));
     }
     CONTRACTL_END;
-    
-    ReverseEnterRuntimeHolder REHolder(TRUE);
     
     IUnknown** pip = (IUnknown **)pFrame->GetPointerToArguments();
     IUnknown* pUnk = (IUnknown *)*pip; 
