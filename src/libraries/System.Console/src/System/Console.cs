@@ -14,7 +14,7 @@ namespace System
     public static class Console
     {
         private const int DefaultConsoleBufferSize = 256; // default size of buffer used in stream readers/writers
-        private static readonly object InternalSyncObject = new object(); // for synchronizing changing of Console's static fields
+        private static object InternalSyncObject = new object(); // for synchronizing changing of Console's static fields
         private static TextReader s_in;
         private static TextWriter s_out, s_error;
         private static Encoding s_inputEncoding;
@@ -25,33 +25,16 @@ namespace System
         private static ConsoleCancelEventHandler _cancelCallbacks;
         private static ConsolePal.ControlCHandlerRegistrar _registrar;
 
-        internal static T EnsureInitialized<T>(ref T field, Func<T> initializer) where T : class
-        {
-            lock (InternalSyncObject)
-            {
-                T result = Volatile.Read(ref field);
-                if (result == null)
-                {
-                    result = initializer();
-                    Volatile.Write(ref field, result);
-                }
-                return result;
-            }
-        }
+        internal static T EnsureInitialized<T>(ref T field, Func<T> initializer) where T : class =>
+            LazyInitializer.EnsureInitialized(ref field, ref InternalSyncObject, initializer);
 
-        public static TextReader In
-        {
-            get
-            {
-                return Volatile.Read(ref s_in) ?? EnsureInitialized(ref s_in, () => ConsolePal.GetOrCreateReader());
-            }
-        }
+        public static TextReader In => EnsureInitialized(ref s_in, () => ConsolePal.GetOrCreateReader());
 
         public static Encoding InputEncoding
         {
             get
             {
-                return Volatile.Read(ref s_inputEncoding) ?? EnsureInitialized(ref s_inputEncoding, () => ConsolePal.InputEncoding);
+                return EnsureInitialized(ref s_inputEncoding, () => ConsolePal.InputEncoding);
             }
             set
             {
@@ -75,7 +58,7 @@ namespace System
         {
             get
             {
-                return Volatile.Read(ref s_outputEncoding) ?? EnsureInitialized(ref s_outputEncoding, () => ConsolePal.OutputEncoding);
+                return EnsureInitialized(ref s_outputEncoding, () => ConsolePal.OutputEncoding);
             }
             set
             {
@@ -128,15 +111,9 @@ namespace System
             return ConsolePal.ReadKey(intercept);
         }
 
-        public static TextWriter Out
-        {
-            get { return Volatile.Read(ref s_out) ?? EnsureInitialized(ref s_out, () => CreateOutputWriter(OpenStandardOutput())); }
-        }
+        public static TextWriter Out => EnsureInitialized(ref s_out, () => CreateOutputWriter(OpenStandardOutput()));
 
-        public static TextWriter Error
-        {
-            get { return Volatile.Read(ref s_error) ?? EnsureInitialized(ref s_error, () => CreateOutputWriter(OpenStandardError())); }
-        }
+        public static TextWriter Error => EnsureInitialized(ref s_error, () => CreateOutputWriter(OpenStandardError()));
 
         private static TextWriter CreateOutputWriter(Stream outputStream)
         {
@@ -157,8 +134,7 @@ namespace System
         {
             get
             {
-                StrongBox<bool> redirected = Volatile.Read(ref _isStdInRedirected) ??
-                    EnsureInitialized(ref _isStdInRedirected, () => new StrongBox<bool>(ConsolePal.IsInputRedirectedCore()));
+                StrongBox<bool> redirected = EnsureInitialized(ref _isStdInRedirected, () => new StrongBox<bool>(ConsolePal.IsInputRedirectedCore()));
                 return redirected.Value;
             }
         }
@@ -167,8 +143,7 @@ namespace System
         {
             get
             {
-                StrongBox<bool> redirected = Volatile.Read(ref _isStdOutRedirected) ??
-                    EnsureInitialized(ref _isStdOutRedirected, () => new StrongBox<bool>(ConsolePal.IsOutputRedirectedCore()));
+                StrongBox<bool> redirected = EnsureInitialized(ref _isStdOutRedirected, () => new StrongBox<bool>(ConsolePal.IsOutputRedirectedCore()));
                 return redirected.Value;
             }
         }
@@ -177,8 +152,7 @@ namespace System
         {
             get
             {
-                StrongBox<bool> redirected = Volatile.Read(ref _isStdErrRedirected) ??
-                    EnsureInitialized(ref _isStdErrRedirected, () => new StrongBox<bool>(ConsolePal.IsErrorRedirectedCore()));
+                StrongBox<bool> redirected = EnsureInitialized(ref _isStdErrRedirected, () => new StrongBox<bool>(ConsolePal.IsErrorRedirectedCore()));
                 return redirected.Value;
             }
         }
