@@ -92,6 +92,7 @@ namespace System.Security.Cryptography.Xml.Tests
                 XmlDocument xmlDocToEncrypt = LoadXmlFromString(ExampleXml);
                 Encrypt(xmlDocToEncrypt, ExampleXmlRootElement, "EncryptedElement1", key, "rsaKey");
 
+                Assert.DoesNotContain("some text node", xmlDocToEncrypt.OuterXml);
                 XmlDocument xmlDocToDecrypt = LoadXmlFromString(xmlDocToEncrypt.OuterXml);
                 Decrypt(xmlDocToDecrypt, key, "rsaKey");
 
