@@ -286,12 +286,8 @@ namespace System
 
             APPX_FLAGS_APPX_MODEL = 0x02,
             APPX_FLAGS_APPX_DESIGN_MODE = 0x04,
-            APPX_FLAGS_APPX_NGEN = 0x08,
             APPX_FLAGS_APPX_MASK = APPX_FLAGS_APPX_MODEL |
-                                            APPX_FLAGS_APPX_DESIGN_MODE |
-                                            APPX_FLAGS_APPX_NGEN,
-
-            APPX_FLAGS_API_CHECK = 0x10,
+                                            APPX_FLAGS_APPX_DESIGN_MODE,
         }
 
         private static APPX_FLAGS Flags
@@ -303,22 +299,6 @@ namespace System
 
                 Debug.Assert(s_flags != 0);
                 return s_flags;
-            }
-        }
-
-        internal static bool ProfileAPICheck
-        {
-            get
-            {
-                return (Flags & APPX_FLAGS.APPX_FLAGS_API_CHECK) != 0;
-            }
-        }
-
-        internal static bool IsAppXNGen
-        {
-            get
-            {
-                return (Flags & APPX_FLAGS.APPX_FLAGS_APPX_NGEN) != 0;
             }
         }
 #endif // FEATURE_APPX

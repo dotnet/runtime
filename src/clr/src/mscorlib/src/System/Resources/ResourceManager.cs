@@ -953,7 +953,7 @@ namespace System.Resources
                 {
                     // Cannot load the WindowsRuntimeResourceManager when in a compilation process, since it
                     // lives in System.Runtime.WindowsRuntime and only mscorlib may be loaded for execution.
-                    if (AppDomain.IsAppXModel() && !AppDomain.IsAppXNGen)
+                    if (AppDomain.IsAppXModel())
                     {
                         s_IsAppXModel = true;
 

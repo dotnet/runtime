@@ -628,19 +628,6 @@ namespace System
         {
             Debug.Assert((flags & DelegateBindingFlags.SkipSecurityChecks) == 0);
 
-#if FEATURE_APPX
-            bool nonW8PMethod = (rtMethod.InvocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NON_W8P_FX_API) != 0;
-            bool nonW8PType = (rtType.InvocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NON_W8P_FX_API) != 0;
-            if (nonW8PMethod || nonW8PType)
-            {
-                RuntimeAssembly caller = RuntimeAssembly.GetExecutingAssembly(ref stackMark);
-                if (caller != null && !caller.IsSafeForReflection())
-                    throw new InvalidOperationException(
-                        Environment.GetResourceString("InvalidOperation_APIInvalidForCurrentContext",
-                                                      nonW8PMethod ? rtMethod.FullName : rtType.FullName));
-            }
-#endif
-
             return UnsafeCreateDelegate(rtType, rtMethod, firstArgument, flags);
         }
 

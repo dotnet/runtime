@@ -226,9 +226,6 @@ DEFINE_CLASS_U(System,                 RuntimeType,            ReflectClassBaseO
 DEFINE_FIELD_U(m_cache,                ReflectClassBaseObject,        m_cache)
 DEFINE_FIELD_U(m_handle,               ReflectClassBaseObject,        m_typeHandle)
 DEFINE_FIELD_U(m_keepalive,            ReflectClassBaseObject,        m_keepalive)
-#ifdef FEATURE_APPX
-DEFINE_FIELD_U(m_invocationFlags,      ReflectClassBaseObject,        m_invocationFlags)
-#endif
 DEFINE_CLASS(CLASS,                 System,                 RuntimeType)
 DEFINE_FIELD(CLASS,                 TYPEHANDLE,             m_handle)
 DEFINE_METHOD(CLASS,                GET_PROPERTIES,         GetProperties,              IM_BindingFlags_RetArrPropertyInfo)

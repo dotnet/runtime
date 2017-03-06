@@ -1281,10 +1281,6 @@ HRESULT EEConfig::sync()
 
     dwSleepOnExit = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_SleepOnExit);
 
-#ifdef FEATURE_APPX
-    dwWindows8ProfileAPICheckFlag = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_Windows8ProfileAPICheckFlag);
-#endif
-
     return hr;
 }
 

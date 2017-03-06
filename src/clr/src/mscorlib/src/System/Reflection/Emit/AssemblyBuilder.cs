@@ -177,10 +177,6 @@ namespace System.Reflection.Emit
         private bool m_fManifestModuleUsedAsDefinedModule;
         internal const string MANIFEST_MODULE_NAME = "RefEmit_InMemoryManifestModule";
 
-#if FEATURE_APPX
-        private bool m_profileAPICheck;
-#endif
-
         internal ModuleBuilder GetModuleBuilder(InternalModuleBuilder module)
         {
             Contract.Requires(module != null);
@@ -216,16 +212,6 @@ namespace System.Reflection.Emit
         {
             return InternalAssembly.GetNativeHandle();
         }
-
-#if FEATURE_APPX
-        internal bool ProfileAPICheck
-        {
-            get
-            {
-                return m_profileAPICheck;
-            }
-        }
-#endif
         #endregion
 
         #region Constructor
@@ -301,14 +287,7 @@ namespace System.Reflection.Emit
                                                      name.Name,
                                                      access,
                                                      dir);
-#if FEATURE_APPX
-            if (AppDomain.ProfileAPICheck)
-            {
-                RuntimeAssembly creator = RuntimeAssembly.GetExecutingAssembly(ref stackMark);
-                if (creator != null && !creator.IsFrameworkAssembly())
-                    m_profileAPICheck = true;
-            }
-#endif
+
             // Make sure that ManifestModule is properly initialized
             // We need to do this before setting any CustomAttribute
             InitManifestModule();
