@@ -156,9 +156,6 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_DateTime_NetFX40AmPmParseAdjustment, W("Enable
 #ifdef FEATURE_RANDOMIZED_STRING_HASHING
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_UseRandomizedStringHashAlgorithm, W("UseRandomizedStringHashAlgorithm"), 0, "Flag to use a string hashing algorithm who's behavior differs between AppDomains")
 #endif // FEATURE_RANDOMIZED_STRING_HASHING
-#ifdef FEATURE_APPX
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_Windows8ProfileAPICheckFlag, W("Windows8ProfileAPICheckFlag"), 0, "Windows 8 Profile API check behavior (non-W8P framework APIs cannot be accessed through Reflection and RefEmit). 0: normal (only check in non-dev-mode APPX). 1: always check. 2: never check.");
-#endif
 
 // 
 // Conditional breakpoints

@@ -323,29 +323,6 @@ namespace System.Reflection
         private RuntimeType m_fieldType;
         private INVOCATION_FLAGS m_invocationFlags;
 
-#if FEATURE_APPX
-        private bool IsNonW8PFrameworkAPI()
-        {
-            if (GetRuntimeType().IsNonW8PFrameworkAPI())
-                return true;
-
-            // Allow "value__"
-            if (m_declaringType.IsEnum)
-                return false;
-
-            RuntimeAssembly rtAssembly = GetRuntimeAssembly();
-            if (rtAssembly.IsFrameworkAssembly())
-            {
-                int ctorToken = rtAssembly.InvocableAttributeCtorToken;
-                if (System.Reflection.MetadataToken.IsNullToken(ctorToken) ||
-                    !CustomAttribute.IsAttributeDefined(GetRuntimeModule(), MetadataToken, ctorToken))
-                    return true;
-            }
-
-            return false;
-        }
-#endif
-
         internal INVOCATION_FLAGS InvocationFlags
         {
             get
@@ -389,11 +366,6 @@ namespace System.Reflection
                         if (fieldType.IsPointer || fieldType.IsEnum || fieldType.IsPrimitive)
                             invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_FIELD_SPECIAL_CAST;
                     }
-
-#if FEATURE_APPX
-                    if (AppDomain.ProfileAPICheck && IsNonW8PFrameworkAPI())
-                        invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_NON_W8P_FX_API;
-#endif // FEATURE_APPX
 
                     // must be last to avoid threading problems
                     m_invocationFlags = invocationFlags | INVOCATION_FLAGS.INVOCATION_FLAGS_INITIALIZED;
@@ -483,15 +455,6 @@ namespace System.Reflection
             value = fieldType.CheckValue(value, binder, culture, invokeAttr);
 
             #region Security Check
-#if FEATURE_APPX
-            if ((invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NON_W8P_FX_API) != 0)
-            {
-                RuntimeAssembly caller = RuntimeAssembly.GetExecutingAssembly(ref stackMark);
-                if (caller != null && !caller.IsSafeForReflection())
-                    throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_APIInvalidForCurrentContext", FullName));
-            }
-#endif
-
             if ((invocationFlags & (INVOCATION_FLAGS.INVOCATION_FLAGS_SPECIAL_FIELD | INVOCATION_FLAGS.INVOCATION_FLAGS_NEED_SECURITY)) != 0)
                 PerformVisibilityCheckOnField(m_fieldHandle, obj, m_declaringType, m_fieldAttributes, (uint)m_invocationFlags);
             #endregion
@@ -555,15 +518,6 @@ namespace System.Reflection
             }
 
             CheckConsistency(obj);
-
-#if FEATURE_APPX
-            if ((invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NON_W8P_FX_API) != 0)
-            {
-                RuntimeAssembly caller = RuntimeAssembly.GetExecutingAssembly(ref stackMark);
-                if (caller != null && !caller.IsSafeForReflection())
-                    throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_APIInvalidForCurrentContext", FullName));
-            }
-#endif
 
             RuntimeType fieldType = (RuntimeType)FieldType;
             if ((invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NEED_SECURITY) != 0)

@@ -235,17 +235,6 @@ namespace System.Globalization
                 return null;
             }
 
-            // If running within a compilation process (mscorsvw.exe, for example), it is illegal to
-            // load any non-mscorlib assembly for execution. Since WindowsRuntimeResourceManager lives
-            // in System.Runtime.WindowsRuntime, caller will need to fall back to default Win32 value,
-            // which should be fine because we should only ever need to access FX resources during NGEN.
-            // FX resources are always loaded from satellite assemblies - even in AppX processes (see the
-            // comments in code:System.Resources.ResourceManager.SetAppXConfiguration for more details).
-            if (AppDomain.IsAppXNGen)
-            {
-                return null;
-            }
-
             CultureInfo toReturn = null;
 
             try 
@@ -269,17 +258,6 @@ namespace System.Globalization
 
         internal static bool SetCultureInfoForUserPreferredLanguageInAppX(CultureInfo ci)
         {
-            // If running within a compilation process (mscorsvw.exe, for example), it is illegal to
-            // load any non-mscorlib assembly for execution. Since WindowsRuntimeResourceManager lives
-            // in System.Runtime.WindowsRuntime, caller will need to fall back to default Win32 value,
-            // which should be fine because we should only ever need to access FX resources during NGEN.
-            // FX resources are always loaded from satellite assemblies - even in AppX processes (see the
-            // comments in code:System.Resources.ResourceManager.SetAppXConfiguration for more details).
-            if (AppDomain.IsAppXNGen)
-            {
-                return false;
-            }
-
             if (s_WindowsRuntimeResourceManager == null)
             {
                 s_WindowsRuntimeResourceManager = ResourceManager.GetWinRTResourceManager();

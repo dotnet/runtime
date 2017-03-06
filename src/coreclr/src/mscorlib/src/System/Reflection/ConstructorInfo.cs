@@ -109,28 +109,6 @@ namespace System.Reflection
         private volatile Signature m_signature;
         private INVOCATION_FLAGS m_invocationFlags;
 
-#if FEATURE_APPX
-        private bool IsNonW8PFrameworkAPI()
-        {
-            if (DeclaringType.IsArray && IsPublic && !IsStatic)
-                return false;
-
-            RuntimeAssembly rtAssembly = GetRuntimeAssembly();
-            if (rtAssembly.IsFrameworkAssembly())
-            {
-                int ctorToken = rtAssembly.InvocableAttributeCtorToken;
-                if (System.Reflection.MetadataToken.IsNullToken(ctorToken) ||
-                    !CustomAttribute.IsAttributeDefined(GetRuntimeModule(), MetadataToken, ctorToken))
-                    return true;
-            }
-
-            if (GetRuntimeType().IsNonW8PFrameworkAPI())
-                return true;
-
-            return false;
-        }
-#endif // FEATURE_APPX
-
         internal INVOCATION_FLAGS InvocationFlags
         {
             get
@@ -173,11 +151,6 @@ namespace System.Reflection
                         if (typeof(Delegate).IsAssignableFrom(DeclaringType))
                             invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_IS_DELEGATE_CTOR;
                     }
-
-#if FEATURE_APPX
-                    if (AppDomain.ProfileAPICheck && IsNonW8PFrameworkAPI())
-                        invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_NON_W8P_FX_API;
-#endif // FEATURE_APPX
 
                     m_invocationFlags = invocationFlags | INVOCATION_FLAGS.INVOCATION_FLAGS_INITIALIZED;
                 }
@@ -469,16 +442,6 @@ namespace System.Reflection
             // check basic method consistency. This call will throw if there are problems in the target/method relationship
             CheckConsistency(obj);
 
-#if FEATURE_APPX
-            if ((invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NON_W8P_FX_API) != 0)
-            {
-                StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-                RuntimeAssembly caller = RuntimeAssembly.GetExecutingAssembly(ref stackMark);
-                if (caller != null && !caller.IsSafeForReflection())
-                    throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_APIInvalidForCurrentContext", FullName));
-            }
-#endif
-
             if (obj != null)
             {
                 // For unverifiable code, we require the caller to be critical.
@@ -552,16 +515,6 @@ namespace System.Reflection
 
             if ((invocationFlags & (INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE | INVOCATION_FLAGS.INVOCATION_FLAGS_CONTAINS_STACK_POINTERS | INVOCATION_FLAGS.INVOCATION_FLAGS_NO_CTOR_INVOKE)) != 0)
                 ThrowNoInvokeException();
-
-#if FEATURE_APPX
-            if ((invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NON_W8P_FX_API) != 0)
-            {
-                StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-                RuntimeAssembly caller = RuntimeAssembly.GetExecutingAssembly(ref stackMark);
-                if (caller != null && !caller.IsSafeForReflection())
-                    throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_APIInvalidForCurrentContext", FullName));
-            }
-#endif
 
             // get the signature
             Signature sig = Signature;
