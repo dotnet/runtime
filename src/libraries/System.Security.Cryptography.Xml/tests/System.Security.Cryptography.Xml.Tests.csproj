@@ -25,6 +25,9 @@
     <Compile Include="KeyInfoX509DataTest.cs" />
     <Compile Include="ReferenceTest.cs" />
     <Compile Include="RSAKeyValueTest.cs" />
+    <Compile Include="Samples\EncryptingDecryptingAsymmetric.cs" />
+    <Compile Include="Samples\SigningVerifying.cs" />
+    <Compile Include="Samples\EncryptingDecryptingSymmetric.cs" />
     <Compile Include="SignatureTest.cs" />
     <Compile Include="SignedInfoTest.cs" />
     <Compile Include="SignedXmlTest.cs" />
@@ -53,8 +56,5 @@
   </ItemGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
-  <ItemGroup>
-    <Compile Include="Samples\Samples.cs" />
-  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
