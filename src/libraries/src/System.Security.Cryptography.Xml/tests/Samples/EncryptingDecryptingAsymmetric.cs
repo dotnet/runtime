@@ -16,12 +16,6 @@ namespace System.Security.Cryptography.Xml.Tests
     // https://msdn.microsoft.com/en-us/library/ms229746(v=vs.110).aspx
     public class EncryptingAndDecryptingAsymmetric
     {
-        const string ExampleXmlRootElement = "example";
-        const string ExampleXml = @"<?xml version=""1.0""?>
-<example>
-<test>some text node</test>
-</example>";
-
         private static XmlDocument LoadXmlFromString(string xml)
         {
             var doc = new XmlDocument();
@@ -87,16 +81,24 @@ namespace System.Security.Cryptography.Xml.Tests
         [Fact]
         public void AsymmetricEncryptionRoundtrip()
         {
+            const string testString = "some text node";
+            const string exampleXmlRootElement = "example";
+            const string exampleXml = @"<?xml version=""1.0""?>
+<example>
+<test>some text node</test>
+</example>";
+
             using (RSA key = RSA.Create())
             {
-                XmlDocument xmlDocToEncrypt = LoadXmlFromString(ExampleXml);
-                Encrypt(xmlDocToEncrypt, ExampleXmlRootElement, "EncryptedElement1", key, "rsaKey");
+                XmlDocument xmlDocToEncrypt = LoadXmlFromString(exampleXml);
+                Assert.Contains(testString, xmlDocToEncrypt.OuterXml);
+                Encrypt(xmlDocToEncrypt, exampleXmlRootElement, "EncryptedElement1", key, "rsaKey");
 
-                Assert.DoesNotContain("some text node", xmlDocToEncrypt.OuterXml);
+                Assert.DoesNotContain(testString, xmlDocToEncrypt.OuterXml);
                 XmlDocument xmlDocToDecrypt = LoadXmlFromString(xmlDocToEncrypt.OuterXml);
                 Decrypt(xmlDocToDecrypt, key, "rsaKey");
 
-                Assert.Equal(ExampleXml.Replace("\r\n", "\n"), xmlDocToDecrypt.OuterXml.Replace("\r\n", "\n"));
+                Assert.Equal(exampleXml.Replace("\r\n", "\n"), xmlDocToDecrypt.OuterXml.Replace("\r\n", "\n"));
             }
         }
     }

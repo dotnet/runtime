@@ -16,12 +16,6 @@ namespace System.Security.Cryptography.Xml.Tests
     // https://msdn.microsoft.com/en-us/library/sb7w85t6(v=vs.110).aspx
     public class EncryptingAndDecryptingSymmetric
     {
-        const string ExampleXmlRootElement = "example";
-        const string ExampleXml = @"<?xml version=""1.0""?>
-<example>
-<test>some text node</test>
-</example>";
-
         private static XmlDocument LoadXmlFromString(string xml)
         {
             var doc = new XmlDocument();
@@ -89,12 +83,20 @@ namespace System.Security.Cryptography.Xml.Tests
         [Fact]
         public void SymmetricEncryptionRoundtrip()
         {
+            const string testString = "some text node";
+            const string ExampleXmlRootElement = "example";
+            const string ExampleXml = @"<?xml version=""1.0""?>
+<example>
+<test>some text node</test>
+</example>";
+
             using (var key = Aes.Create())
             {
                 XmlDocument xmlDocToEncrypt = LoadXmlFromString(ExampleXml);
+                Assert.Contains(testString, xmlDocToEncrypt.OuterXml);
                 EncryptElement(xmlDocToEncrypt, ExampleXmlRootElement, key);
 
-                Assert.DoesNotContain("some text node", xmlDocToEncrypt.OuterXml);
+                Assert.DoesNotContain(testString, xmlDocToEncrypt.OuterXml);
                 XmlDocument xmlDocToDecrypt = LoadXmlFromString(xmlDocToEncrypt.OuterXml);
                 Decrypt(xmlDocToDecrypt, key);
 
