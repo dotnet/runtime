@@ -63,7 +63,8 @@
   <!-- Default properties for CI builds -->
   <PropertyGroup Condition="'$(IsCIBuild)' == 'true'">
     <WithoutCategories>IgnoreForCI</WithoutCategories>
-    <EnableDumpling Condition="'$(RunningOnUnix)' == 'true'">true</EnableDumpling>
+    <EnableDumpling>true</EnableDumpling>
+    <CrashDumpFolder Condition="'$(RunningOnUnix)' != 'true'">%TMP%\CoreRunCrashDumps</CrashDumpFolder>
   </PropertyGroup>
 
   <!-- Provides package dependency version properties and verification/auto-upgrade configuration -->
