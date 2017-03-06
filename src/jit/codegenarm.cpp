@@ -1150,6 +1150,11 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             genProduceReg(treeNode);
             break;
 
+        case GT_STORE_DYN_BLK:
+        case GT_STORE_BLK:
+            genCodeForStoreBlk(treeNode->AsBlk());
+            break;
+
         case GT_JMPTABLE:
             genJumpTable(treeNode);
             break;
@@ -1457,6 +1462,108 @@ void CodeGen::genCodeForShift(GenTreePtr tree)
     }
 
     genProduceReg(tree);
+}
+
+// Generate code for a CpBlk node by the means of the VM memcpy helper call
+// Preconditions:
+// a) The size argument of the CpBlk is not an integer constant
+// b) The size argument is a constant but is larger than CPBLK_MOVS_LIMIT bytes.
+void CodeGen::genCodeForCpBlk(GenTreeBlk* cpBlkNode)
+{
+    // Make sure we got the arguments of the cpblk operation in the right registers
+    unsigned   blockSize = cpBlkNode->Size();
+    GenTreePtr dstAddr   = cpBlkNode->Addr();
+    assert(!dstAddr->isContained());
+
+    genConsumeBlockOp(cpBlkNode, REG_ARG_0, REG_ARG_1, REG_ARG_2);
+    genEmitHelperCall(CORINFO_HELP_MEMCPY, 0, EA_UNKNOWN);
+}
+
+// Generates CpBlk code by performing a loop unroll
+// Preconditions:
+//  The size argument of the CpBlk node is a constant and <= 64 bytes.
+//  This may seem small but covers >95% of the cases in several framework assemblies.
+void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
+{
+    NYI_ARM("genCodeForCpBlkUnroll");
+}
+
+// Generate code for InitBlk by performing a loop unroll
+// Preconditions:
+//   a) Both the size and fill byte value are integer constants.
+//   b) The size of the struct to initialize is smaller than INITBLK_UNROLL_LIMIT bytes.
+void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* initBlkNode)
+{
+    NYI_ARM("genCodeForInitBlkUnroll");
+}
+
+void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
+{
+    if (blkOp->gtBlkOpGcUnsafe)
+    {
+        getEmitter()->emitDisableGC();
+    }
+    bool isCopyBlk = blkOp->OperIsCopyBlkOp();
+
+    switch (blkOp->gtBlkOpKind)
+    {
+        case GenTreeBlk::BlkOpKindHelper:
+            if (isCopyBlk)
+            {
+                genCodeForCpBlk(blkOp);
+            }
+            else
+            {
+                genCodeForInitBlk(blkOp);
+            }
+            break;
+        case GenTreeBlk::BlkOpKindUnroll:
+            if (isCopyBlk)
+            {
+                genCodeForCpBlkUnroll(blkOp);
+            }
+            else
+            {
+                genCodeForInitBlkUnroll(blkOp);
+            }
+            break;
+        default:
+            unreached();
+    }
+    if (blkOp->gtBlkOpGcUnsafe)
+    {
+        getEmitter()->emitEnableGC();
+    }
+}
+
+// Generates code for InitBlk by calling the VM memset helper function.
+// Preconditions:
+// a) The size argument of the InitBlk is not an integer constant.
+// b) The size argument of the InitBlk is >= INITBLK_STOS_LIMIT bytes.
+void CodeGen::genCodeForInitBlk(GenTreeBlk* initBlkNode)
+{
+    // Make sure we got the arguments of the initblk operation in the right registers
+    unsigned   size    = initBlkNode->Size();
+    GenTreePtr dstAddr = initBlkNode->Addr();
+    GenTreePtr initVal = initBlkNode->Data();
+    if (initVal->OperIsInitVal())
+    {
+        initVal = initVal->gtGetOp1();
+    }
+
+    assert(!dstAddr->isContained());
+    assert(!initVal->isContained());
+    if (initBlkNode->gtOper == GT_STORE_DYN_BLK)
+    {
+        assert(initBlkNode->AsDynBlk()->gtDynamicSize->gtRegNum == REG_ARG_2);
+    }
+    else
+    {
+        assert(initBlkNode->gtRsvdRegs == RBM_ARG_2);
+    }
+
+    genConsumeBlockOp(initBlkNode, REG_ARG_0, REG_ARG_1, REG_ARG_2);
+    genEmitHelperCall(CORINFO_HELP_MEMSET, 0, EA_UNKNOWN);
 }
 
 //------------------------------------------------------------------------
