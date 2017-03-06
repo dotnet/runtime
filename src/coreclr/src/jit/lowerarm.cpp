@@ -92,6 +92,90 @@ void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
     }
 }
 
+void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
+{
+    GenTree*  dstAddr  = blkNode->Addr();
+    unsigned  size     = blkNode->gtBlkSize;
+    GenTree*  source   = blkNode->Data();
+    Compiler* compiler = comp;
+
+    // Sources are dest address and initVal or source.
+    GenTreePtr srcAddrOrFill = nullptr;
+    bool       isInitBlk     = blkNode->OperIsInitBlkOp();
+
+    if (!isInitBlk)
+    {
+        // CopyObj or CopyBlk
+        if ((blkNode->OperGet() == GT_STORE_OBJ) && ((blkNode->AsObj()->gtGcPtrCount == 0) || blkNode->gtBlkOpGcUnsafe))
+        {
+            blkNode->SetOper(GT_STORE_BLK);
+        }
+        if (source->gtOper == GT_IND)
+        {
+            srcAddrOrFill = blkNode->Data()->gtGetOp1();
+        }
+    }
+
+    if (isInitBlk)
+    {
+        GenTreePtr initVal = source;
+        if (initVal->OperIsInitVal())
+        {
+            initVal = initVal->gtGetOp1();
+        }
+        srcAddrOrFill = initVal;
+
+#if 0
+        if ((size != 0) && (size <= INITBLK_UNROLL_LIMIT) && initVal->IsCnsIntOrI())
+        {
+            // TODO-ARM-CQ: Currently we generate a helper call for every
+            // initblk we encounter.  Later on we should implement loop unrolling
+            // code sequences to improve CQ.
+            // For reference see the code in LowerXArch.cpp.
+            NYI_ARM("initblk loop unrolling is currently not implemented.");
+        }
+        else
+#endif // 0
+        {
+            blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindHelper;
+        }
+    }
+    else
+    {
+        if (blkNode->OperGet() == GT_STORE_OBJ)
+        {
+            // CopyObj
+
+            NYI_ARM("Lowering for GT_STORE_OBJ isn't implemented");
+        }
+        else
+        {
+            // CopyBlk
+            short     internalIntCount      = 0;
+            regMaskTP internalIntCandidates = RBM_NONE;
+
+#if 0
+            // In case of a CpBlk with a constant size and less than CPBLK_UNROLL_LIMIT size
+            // we should unroll the loop to improve CQ.
+            // For reference see the code in lowerxarch.cpp.
+
+            // TODO-ARM-CQ: cpblk loop unrolling is currently not implemented.
+            if ((size != 0) && (size <= INITBLK_UNROLL_LIMIT))
+            {
+                blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
+            }
+            else
+#endif // 0
+            {
+                // In case we have a constant integer this means we went beyond
+                // CPBLK_UNROLL_LIMIT bytes of size, still we should never have the case of
+                // any GC-Pointers in the src struct.
+                blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindHelper;
+            }
+        }
+    }
+}
+
 //------------------------------------------------------------------------
 // LowerCast: Lower GT_CAST(srcType, DstType) nodes.
 //
