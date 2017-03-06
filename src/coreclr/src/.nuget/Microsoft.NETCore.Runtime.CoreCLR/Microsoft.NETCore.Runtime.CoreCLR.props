@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <NativeBinary Include="$(BinDir)libSystem.Globalization.Native.a" />
-    <NativeBinary Include="$(BinDir)System.Globalization.Native.so" />
+    <!-- No reference: don't permit reference to the implementation from lib -->
+    <File Include="$(PlaceholderFile)">
+      <TargetPath>ref/netstandard1.0</TargetPath>
+    </File>
   </ItemGroup>
 </Project>
