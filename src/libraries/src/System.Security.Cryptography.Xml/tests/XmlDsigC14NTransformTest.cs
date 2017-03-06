@@ -93,7 +93,7 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal(c14xml3, output);
         }
 
-        [Fact()]
+        [Fact]
         // see LoadInputAsXmlNodeList2 description
         public void LoadInputAsXmlNodeList()
         {
@@ -106,7 +106,7 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal(@"<Test xmlns=""http://www.go-mono.com/""></Test>", output);
         }
 
-        [Fact()]
+        [Fact]
         // MS has a bug that those namespace declaration nodes in
         // the node-set are written to output. Related spec section is:
         // http://www.w3.org/TR/2001/REC-xml-c14n-20010315#ProcessingModel
@@ -387,7 +387,7 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal("urn:foo", doc.DocumentElement.GetAttribute("xmlns"));
         }
 
-        [Fact(Skip = "TODO: fix me")]
+        [Fact]
         public void PropagatedNamespaces()
         {
             XmlDocument doc = new XmlDocument();
@@ -397,12 +397,15 @@ namespace System.Security.Cryptography.Xml.Tests
             XmlDsigExcC14NTransform t = new XmlDsigExcC14NTransform();
             t.LoadInput(doc);
             t.PropagatedNamespaces.Add("f", "urn:foo");
-            t.PropagatedNamespaces.Add("f", "urn:foo");
-            t.PropagatedNamespaces.Add("f", "urn:foo");
             t.PropagatedNamespaces.Add("b", "urn:bar");
-            Stream s = t.GetOutput() as Stream;
-            Assert.Equal(new StreamReader(s, Encoding.UTF8).ReadToEnd(), "<f:foo xmlns:f=\"urn:foo\"><b:bar xmlns:b=\"urn:bar\"></b:bar></f:foo>");
-            Assert.Equal("urn:foo", doc.DocumentElement.GetAttribute("xmlns:f"));
+            using (Stream s = t.GetOutput() as Stream)
+            using (StreamReader streamReader = new StreamReader(s, Encoding.UTF8))
+            {
+                string result = streamReader.ReadToEnd();
+                Assert.Equal(result,
+                    "<foo xmlns=\"urn:foo\"><bar xmlns=\"urn:bar\"></bar></foo>");
+                Assert.Equal("urn:foo", doc.DocumentElement.NamespaceURI);
+            }
         }
 
         [Fact]
