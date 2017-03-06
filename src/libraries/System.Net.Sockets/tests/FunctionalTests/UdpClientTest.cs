@@ -221,7 +221,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [PlatformSpecific(TestPlatforms.Windows)] // DontFragment not supported on Unix
+        [ActiveIssue(16739, TestPlatforms.AnyUnix)] // DontFragment currently isn't supported on Unix
         [Fact]
         public void DontFragment_Roundtrips()
         {

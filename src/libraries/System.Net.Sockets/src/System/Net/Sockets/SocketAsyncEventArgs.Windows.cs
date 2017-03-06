@@ -1008,6 +1008,11 @@ namespace System.Net.Sockets
 
         internal void LogBuffer(int size)
         {
+            // This should only be called if tracing is enabled. However, there is the potential for a race
+            // condition where tracing is disabled between a calling check and here, in which case the assert
+            // may fire erroneously.
+            Debug.Assert(NetEventSource.IsEnabled);
+
             switch (_pinState)
             {
                 case PinState.SingleAcceptBuffer:

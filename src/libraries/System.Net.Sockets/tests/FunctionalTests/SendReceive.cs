@@ -295,21 +295,35 @@ namespace System.Net.Sockets.Tests
                 {
                     using (Socket remote = await AcceptAsync(server))
                     {
-                        var recvBuffer = new byte[256];
+                        byte[] recvBuffer1 = new byte[256], recvBuffer2 = new byte[256];
                         long iter = 0;
                         while (true)
                         {
-                            var seg = new ArraySegment<byte>(recvBuffer);
-                            int received = await (iter++ % 2 == 0 ?
-                                ReceiveAsync(remote, seg) :
-                                ReceiveAsync(remote, new List<ArraySegment<byte>> { seg }));
+                            ArraySegment<byte> seg1 = new ArraySegment<byte>(recvBuffer1), seg2 = new ArraySegment<byte>(recvBuffer2);
+                            int received;
+                            switch (iter++ % 3)
+                            {
+                                case 0: // single buffer
+                                    received = await ReceiveAsync(remote, seg1);
+                                    break;
+                                case 1: // buffer list with a single buffer
+                                    received = await ReceiveAsync(remote, new List<ArraySegment<byte>> { seg1 });
+                                    break;
+                                default: // buffer list with multiple buffers
+                                    received = await ReceiveAsync(remote, new List<ArraySegment<byte>> { seg1, seg2 });
+                                    break;
+                            }
                             if (received == 0)
                             {
                                 break;
                             }
 
                             bytesReceived += received;
-                            receivedChecksum.Add(recvBuffer, 0, received);
+                            receivedChecksum.Add(recvBuffer1, 0, Math.Min(received, recvBuffer1.Length));
+                            if (received > recvBuffer1.Length)
+                            {
+                                receivedChecksum.Add(recvBuffer2, 0, received - recvBuffer1.Length);
+                            }
                         }
                     }
                 });
@@ -320,17 +334,39 @@ namespace System.Net.Sockets.Tests
                     await ConnectAsync(client, clientEndpoint);
 
                     var random = new Random();
-                    var sendBuffer = new byte[512];
+                    byte[] sendBuffer1 = new byte[512], sendBuffer2 = new byte[512];
                     long iter = 0;
                     for (int sent = 0, remaining = BytesToSend; remaining > 0; remaining -= sent)
                     {
-                        random.NextBytes(sendBuffer);
-                        var seg = new ArraySegment<byte>(sendBuffer, 0, Math.Min(sendBuffer.Length, remaining));
-                        sent = await (iter++ % 2 == 0 ?
-                            SendAsync(client, seg) :
-                            SendAsync(client, new List<ArraySegment<byte>> { seg }));
+                        random.NextBytes(sendBuffer1);
+                        random.NextBytes(sendBuffer2);
+                        int amountFromSendBuffer1 = Math.Min(sendBuffer1.Length, remaining);
+                        switch (iter++ % 3)
+                        {
+                            case 0: // single buffer
+                                sent = await SendAsync(client, new ArraySegment<byte>(sendBuffer1, 0, amountFromSendBuffer1));
+                                break;
+                            case 1: // buffer list with a single buffer
+                                sent = await SendAsync(client, new List<ArraySegment<byte>>
+                                {
+                                    new ArraySegment<byte>(sendBuffer1, 0, amountFromSendBuffer1)
+                                });
+                                break;
+                            default: // buffer list with multiple buffers
+                                sent = await SendAsync(client, new List<ArraySegment<byte>>
+                                {
+                                    new ArraySegment<byte>(sendBuffer1, 0, amountFromSendBuffer1),
+                                    new ArraySegment<byte>(sendBuffer2, 0, Math.Min(sendBuffer2.Length, remaining - amountFromSendBuffer1)),
+                                });
+                                break;
+                        }
+
                         bytesSent += sent;
-                        sentChecksum.Add(sendBuffer, 0, sent);
+                        sentChecksum.Add(sendBuffer1, 0, Math.Min(sent, sendBuffer1.Length));
+                        if (sent > sendBuffer1.Length)
+                        {
+                            sentChecksum.Add(sendBuffer2, 0, sent - sendBuffer1.Length);
+                        }
                     }
 
                     client.Shutdown(SocketShutdown.Send);
@@ -684,10 +720,11 @@ namespace System.Net.Sockets.Tests
                     acceptTask,
                     ConnectAsync(client, new IPEndPoint(IPAddress.Loopback, ((IPEndPoint)listener.LocalEndPoint).Port)));
 
-                client.SendBufferSize = 0;
-
                 using (Socket server = await acceptTask)
                 {
+                    client.SendBufferSize = 0;
+                    server.ReceiveBufferSize = 0;
+
                     var sendBuffer = new byte[5000000];
                     Task sendTask = SendAsync(client, new ArraySegment<byte>(sendBuffer));
                     Assert.False(sendTask.IsCompleted);
