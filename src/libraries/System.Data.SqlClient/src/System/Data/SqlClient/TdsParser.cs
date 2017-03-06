@@ -34,21 +34,6 @@ namespace System.Data.SqlClient
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
         }
 
-
-        private static Task s_completedTask;
-        private static Task CompletedTask
-        {
-            get
-            {
-                if (s_completedTask == null)
-                {
-                    s_completedTask = Task.FromResult<object>(null);
-                }
-                return s_completedTask;
-            }
-        }
-
-
         // Default state object for parser
         internal TdsParserStateObject _physicalStateObj = null; // Default stateObj and connection for Dbnetlib and non-MARS SNI.
 
@@ -8455,14 +8440,8 @@ namespace System.Data.SqlClient
                     _parser.WriteInt(count, _stateObj); // write length of chunk
                     task = _stateObj.WriteByteArray(buffer, count, offset, canAccumulate: false);
                 }
-                if (task == null)
-                {
-                    return CompletedTask;
-                }
-                else
-                {
-                    return task;
-                }
+
+                return task ?? Task.CompletedTask;
             }
 
             internal static void ValidateWriteParameters(byte[] buffer, int offset, int count)
@@ -8566,7 +8545,7 @@ namespace System.Data.SqlClient
                     return _next.WriteAsync(value);
                 }
 
-                return CompletedTask;
+                return Task.CompletedTask;
             }
 
             public override Task WriteAsync(char[] buffer, int index, int count)
@@ -8581,7 +8560,7 @@ namespace System.Data.SqlClient
                     return _next.WriteAsync(buffer, index, count);
                 }
 
-                return CompletedTask;
+                return Task.CompletedTask;
             }
 
             public override Task WriteAsync(string value)
