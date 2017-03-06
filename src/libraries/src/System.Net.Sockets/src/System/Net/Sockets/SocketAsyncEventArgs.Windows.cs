@@ -2,15 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
-using System.Collections;
-using System.ComponentModel;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
-using System.Net;
 using System.Runtime.InteropServices;
-using System.Threading.Tasks;
 using System.Threading;
 
 namespace System.Net.Sockets
@@ -1014,7 +1008,10 @@ namespace System.Net.Sockets
 
         internal void LogBuffer(int size)
         {
-            if (!NetEventSource.IsEnabled) return;
+            // This should only be called if tracing is enabled. However, there is the potential for a race
+            // condition where tracing is disabled between a calling check and here, in which case the assert
+            // may fire erroneously.
+            Debug.Assert(NetEventSource.IsEnabled);
 
             switch (_pinState)
             {

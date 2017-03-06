@@ -429,21 +429,6 @@ namespace System.Net.Sockets.Tests
 
         #endregion Files
 
-        #region GC Finalizer test
-        // This test assumes sequential execution of tests and that it is going to be executed after other tests
-        // that used Sockets. 
-        [Fact]
-        public void TestFinalizers()
-        {
-            // Making several passes through the FReachable list.
-            for (int i = 0; i < 3; i++)
-            {
-                GC.Collect();
-                GC.WaitForPendingFinalizers();
-            }
-        }
-        #endregion
-
         #region Helpers
         private void SendPackets(SocketImplementationType type, SendPacketsElement element, TransmitFileOptions flags, int bytesExpected)
         {

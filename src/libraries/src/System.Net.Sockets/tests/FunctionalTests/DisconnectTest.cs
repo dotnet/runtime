@@ -4,7 +4,7 @@
 
 using System.Net.Test.Common;
 using System.Threading;
-
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -23,6 +23,21 @@ namespace System.Net.Sockets.Tests
         {
             EventWaitHandle handle = (EventWaitHandle)args.UserToken;
             handle.Set();
+        }
+
+        [Fact]
+        public void InvalidArguments_Throw()
+        {
+            using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                Assert.Throws<ArgumentNullException>("asyncResult", () => s.EndDisconnect(null));
+                Assert.Throws<ArgumentException>("asyncResult", () => s.EndDisconnect(Task.CompletedTask));
+                s.Dispose();
+                Assert.Throws<ObjectDisposedException>(() => s.Disconnect(true));
+                Assert.Throws<ObjectDisposedException>(() => s.BeginDisconnect(true, null, null));
+                Assert.Throws<ObjectDisposedException>(() => s.EndDisconnect(null));
+                Assert.Throws<ObjectDisposedException>(() => { s.DisconnectAsync(null); });
+            }
         }
 
         [Fact]
@@ -117,7 +132,9 @@ namespace System.Net.Sockets.Tests
                     completed.WaitOne();
                     Assert.Equal(SocketError.Success, args.SocketError);
 
-                    client.EndDisconnect(client.BeginDisconnect(true, null, null));
+                    IAsyncResult ar = client.BeginDisconnect(true, null, null);
+                    client.EndDisconnect(ar);
+                    Assert.Throws<InvalidOperationException>(() => client.EndDisconnect(ar));
 
                     args.RemoteEndPoint = server2.EndPoint;
 

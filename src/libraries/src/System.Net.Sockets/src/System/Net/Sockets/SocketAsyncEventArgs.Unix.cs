@@ -45,6 +45,20 @@ namespace System.Net.Sockets
             // No-op for *nix.
         }
 
+        private void FinishOperationSync(SocketError socketError, int bytesTransferred, SocketFlags flags)
+        {
+            Debug.Assert(socketError != SocketError.IOPending);
+
+            if (socketError == SocketError.Success)
+            {
+                FinishOperationSyncSuccess(bytesTransferred, flags);
+            }
+            else
+            {
+                FinishOperationSyncFailure(socketError, bytesTransferred, flags);
+            }
+        }
+
         private void InnerStartOperationAccept(bool userSuppliedBuffer)
         {
             _acceptedFileDescriptor = (IntPtr)(-1);
@@ -301,7 +315,10 @@ namespace System.Net.Sockets
 
         internal void LogBuffer(int size)
         {
-            if (!NetEventSource.IsEnabled) return;
+            // This should only be called if tracing is enabled. However, there is the potential for a race
+            // condition where tracing is disabled between a calling check and here, in which case the assert
+            // may fire erroneously.
+            Debug.Assert(NetEventSource.IsEnabled);
 
             if (_buffer != null)
             {

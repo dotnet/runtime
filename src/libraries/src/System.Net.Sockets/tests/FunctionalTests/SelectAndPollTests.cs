@@ -4,13 +4,9 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Net.Test.Common;
-using System.Runtime.InteropServices;
 using System.Threading;
-using System.Threading.Tasks;
 
 using Xunit;
-using Xunit.Abstractions;
 
 namespace System.Net.Sockets.Tests
 {
