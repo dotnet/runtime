@@ -140,25 +140,36 @@ namespace System.Net.Sockets
             if (saea.BufferList != null) saea.BufferList = null;
             saea.SetBuffer(buffer.Array, buffer.Offset, buffer.Count);
             saea.SocketFlags = socketFlags;
-            saea.WrapExceptionsInIOExceptions = wrapExceptionsInIOExceptions;
+            saea._wrapExceptionsInIOExceptions = wrapExceptionsInIOExceptions;
 
             // Initiate the receive
             Task<int> t;
+            bool responsibleForReturningToPool;
             if (!ReceiveAsync(saea))
             {
-                // The operation completed synchronously.  Get a task for it and return the SAEA for future use.
+                // The operation completed synchronously.  Get a task for it.
                 t = saea.SocketError == SocketError.Success ?
                     GetSuccessTask(saea) :
                     Task.FromException<int>(GetException(saea.SocketError, wrapExceptionsInIOExceptions));
-                ReturnSocketAsyncEventArgs(saea, isReceive: true);
+                responsibleForReturningToPool = true;
             }
             else
             {
                 // The operation completed asynchronously.  Get the task for the operation,
                 // with appropriate synchronization to coordinate with the async callback
                 // that'll be completing the task.
-                t = saea.GetTaskSafe();
+                t = saea.GetCompletionResponsibility(out responsibleForReturningToPool).Task;
             }
+
+            // If the operation completed synchronously, then we're responsible for returning
+            // the object to the pool.  If it completed asynchronously, then we're responsible
+            // for returning it only if the callback has already been invoked and gotten what
+            // it needs from the SAEA; otherwise, the responsibility will be with the callback.
+            if (responsibleForReturningToPool)
+            {
+                ReturnSocketAsyncEventArgs(saea, isReceive: true);
+            }
+
             return t;
         }
 
@@ -193,21 +204,32 @@ namespace System.Net.Sockets
 
             // Initiate the receive
             Task<int> t;
+            bool responsibleForReturningToPool;
             if (!ReceiveAsync(saea))
             {
-                // The operation completed synchronously.  Get a task for it and return the SAEA for future use.
+                // The operation completed synchronously.  Get a task for it.
                 t = saea.SocketError == SocketError.Success ?
                     GetSuccessTask(saea) :
                     Task.FromException<int>(new SocketException((int)saea.SocketError));
-                ReturnSocketAsyncEventArgs(saea, isReceive: true);
+                responsibleForReturningToPool = true;
             }
             else
             {
                 // The operation completed asynchronously.  Get the task for the operation,
                 // with appropriate synchronization to coordinate with the async callback
                 // that'll be completing the task.
-                t = saea.GetTaskSafe();
+                t = saea.GetCompletionResponsibility(out responsibleForReturningToPool).Task;
             }
+
+            // If the operation completed synchronously, then we're responsible for returning
+            // the object to the pool.  If it completed asynchronously, then we're responsible
+            // for returning it only if the callback has already been invoked and gotten what
+            // it needs from the SAEA; otherwise, the responsibility will be with the callback.
+            if (responsibleForReturningToPool)
+            {
+                ReturnSocketAsyncEventArgs(saea, isReceive: true);
+            }
+
             return t;
         }
 
@@ -282,25 +304,36 @@ namespace System.Net.Sockets
             if (saea.BufferList != null) saea.BufferList = null;
             saea.SetBuffer(buffer.Array, buffer.Offset, buffer.Count);
             saea.SocketFlags = socketFlags;
-            saea.WrapExceptionsInIOExceptions = wrapExceptionsInIOExceptions;
+            saea._wrapExceptionsInIOExceptions = wrapExceptionsInIOExceptions;
 
             // Initiate the send
             Task<int> t;
+            bool responsibleForReturningToPool;
             if (!SendAsync(saea))
             {
-                // The operation completed synchronously.  Get a task for it and return the SAEA for future use.
+                // The operation completed synchronously.  Get a task for it.
                 t = saea.SocketError == SocketError.Success ?
                     GetSuccessTask(saea) :
                     Task.FromException<int>(GetException(saea.SocketError, wrapExceptionsInIOExceptions));
-                ReturnSocketAsyncEventArgs(saea, isReceive: false);
+                responsibleForReturningToPool = true;
             }
             else
             {
                 // The operation completed asynchronously.  Get the task for the operation,
                 // with appropriate synchronization to coordinate with the async callback
                 // that'll be completing the task.
-                t = saea.GetTaskSafe();
+                t = saea.GetCompletionResponsibility(out responsibleForReturningToPool).Task;
             }
+
+            // If the operation completed synchronously, then we're responsible for returning
+            // the object to the pool.  If it completed asynchronously, then we're responsible
+            // for returning it only if the callback has already been invoked and gotten what
+            // it needs from the SAEA; otherwise, the responsibility will be with the callback.
+            if (responsibleForReturningToPool)
+            {
+                ReturnSocketAsyncEventArgs(saea, isReceive: false);
+            }
+
             return t;
         }
 
@@ -335,21 +368,32 @@ namespace System.Net.Sockets
 
             // Initiate the send
             Task<int> t;
+            bool responsibleForReturningToPool;
             if (!SendAsync(saea))
             {
-                // The operation completed synchronously.  Get a task for it and return the SAEA for future use.
+                // The operation completed synchronously.  Get a task for it.
                 t = saea.SocketError == SocketError.Success ?
                     GetSuccessTask(saea) :
                     Task.FromException<int>(new SocketException((int)saea.SocketError));
-                ReturnSocketAsyncEventArgs(saea, isReceive: false);
+                responsibleForReturningToPool = true;
             }
             else
             {
                 // The operation completed asynchronously.  Get the task for the operation,
                 // with appropriate synchronization to coordinate with the async callback
                 // that'll be completing the task.
-                t = saea.GetTaskSafe();
+                t = saea.GetCompletionResponsibility(out responsibleForReturningToPool).Task;
             }
+
+            // If the operation completed synchronously, then we're responsible for returning
+            // the object to the pool.  If it completed asynchronously, then we're responsible
+            // for returning it only if the callback has already been invoked and gotten what
+            // it needs from the SAEA; otherwise, the responsibility will be with the callback.
+            if (responsibleForReturningToPool)
+            {
+                ReturnSocketAsyncEventArgs(saea, isReceive: false);
+            }
+
             return t;
         }
 
@@ -398,17 +442,21 @@ namespace System.Net.Sockets
         /// <summary>Completes the SocketAsyncEventArg's Task with the result of the send or receive, and returns it to the specified pool.</summary>
         private static void CompleteSendReceive(Int32TaskSocketAsyncEventArgs saea, bool isReceive)
         {
-            // Synchronize with the initiating thread accessing the task from the builder.
-            saea.GetTaskSafe();
-
-            // Pull the relevant state off of the SAEA and only then return it to the pool.
+            // Pull the relevant state off of the SAEA
             Socket s = (Socket)saea.UserToken;
-            AsyncTaskMethodBuilder<int> builder = saea.Builder;
             SocketError error = saea.SocketError;
             int bytesTransferred = saea.BytesTransferred;
-            bool wrapExceptionsInIOExceptions = saea.WrapExceptionsInIOExceptions;
+            bool wrapExceptionsInIOExceptions = saea._wrapExceptionsInIOExceptions;
 
-            s.ReturnSocketAsyncEventArgs(saea, isReceive);
+            // Synchronize with the initiating thread. If the synchronous caller already got what
+            // it needs from the SAEA, then we can return it to the pool now. Otherwise, it'll be
+            // responsible for returning it once it's gotten what it needs from it.
+            bool responsibleForReturningToPool;
+            AsyncTaskMethodBuilder<int> builder = saea.GetCompletionResponsibility(out responsibleForReturningToPool);
+            if (responsibleForReturningToPool)
+            {
+                s.ReturnSocketAsyncEventArgs(saea, isReceive);
+            }
 
             // Complete the builder/task with the results.
             if (error == SocketError.Success)
@@ -428,7 +476,7 @@ namespace System.Net.Sockets
             int bytesTransferred = saea.BytesTransferred;
 
             // And get any cached, successfully-completed cached task that may exist on this SAEA.
-            Task<int> lastTask = saea.SuccessfullyCompletedTask;
+            Task<int> lastTask = saea._successfullyCompletedTask;
             Debug.Assert(lastTask == null || lastTask.Status == TaskStatus.RanToCompletion);
 
             // If there is a task and if it has the desired result, simply reuse it.
@@ -436,7 +484,7 @@ namespace System.Net.Sockets
             // also store it into the SAEA for potential future reuse.
             return lastTask != null && lastTask.Result == bytesTransferred ?
                 lastTask :
-                (saea.SuccessfullyCompletedTask = Task.FromResult(bytesTransferred));
+                (saea._successfullyCompletedTask = Task.FromResult(bytesTransferred));
         }
 
         /// <summary>Gets a SocketException or an IOException wrapping a SocketException for the specified error.</summary>
@@ -492,8 +540,9 @@ namespace System.Net.Sockets
             // if necessary by the consumer, but we want to keep the buffers due to likely subsequent reuse
             // and the costs associated with changing them.
             saea.UserToken = null;
-            saea.Builder = default(AsyncTaskMethodBuilder<int>);
-            saea.WrapExceptionsInIOExceptions = false;
+            saea._accessed = false;
+            saea._builder = default(AsyncTaskMethodBuilder<int>);
+            saea._wrapExceptionsInIOExceptions = false;
 
             // Write this instance back as a cached instance.  It should only ever be overwriting the sentinel,
             // never null or another instance.
@@ -537,36 +586,33 @@ namespace System.Net.Sockets
         internal sealed class Int32TaskSocketAsyncEventArgs : SocketAsyncEventArgs
         {
             /// <summary>A cached, successfully completed task.</summary>
-            internal Task<int> SuccessfullyCompletedTask;
+            internal Task<int> _successfullyCompletedTask;
             /// <summary>
             /// The builder used to create the Task representing the result of the async operation.
             /// This is a mutable struct.
             /// </summary>
-            internal AsyncTaskMethodBuilder<int> Builder;
+            internal AsyncTaskMethodBuilder<int> _builder;
             /// <summary>Whether exceptions that emerge should be wrapped in IOExceptions.</summary>
-            internal bool WrapExceptionsInIOExceptions;
+            internal bool _wrapExceptionsInIOExceptions;
             /// <summary>
-            /// The lock used to protect initialization fo the Builder's Task.  AsyncTaskMethodBuilder
-            /// expects a particular access pattern as generated by the language compiler, such that
-            /// its Task property is always accessed in a serialized manner and no synchronization is
-            /// needed.  As such, since in our pattern here the initiater of the async operation may race
-            /// with asynchronous completion to access the Task, we need to synchronize on its initial
-            /// access so that the same Task is published/accessed by both sides.
+            /// Whether the instance was already accessed as part of the operation.  We expect
+            /// at most two accesses: one from the synchronous caller to initiate the operation,
+            /// and one from the callback if the operation completes asynchronously.  If it completes
+            /// synchronously, then it's the initiator's responsbility to return the instance to
+            /// the pool.  If it completes asynchronously, then it's the responsibility of whoever
+            /// accesses this second, so we track whether it's already been accessed.
             /// </summary>
-            private SpinLock BuilderTaskLock = new SpinLock(enableThreadOwnerTracking: false);
+            internal bool _accessed = false;
 
             /// <summary>Gets the builder's task with appropriate synchronization.</summary>
-            internal Task<int> GetTaskSafe()
+            internal AsyncTaskMethodBuilder<int> GetCompletionResponsibility(out bool responsibleForReturningToPool)
             {
-                bool lockTaken = false;
-                try
+                lock (this)
                 {
-                    BuilderTaskLock.Enter(ref lockTaken);
-                    return Builder.Task;
-                }
-                finally
-                {
-                    if (lockTaken) BuilderTaskLock.Exit(useMemoryBarrier: false);
+                    responsibleForReturningToPool = _accessed;
+                    _accessed = true;
+                    var ignored = _builder.Task; // force initialization under the lock (builder itself lazily initializes w/o synchronization)
+                    return _builder;
                 }
             }
         }
