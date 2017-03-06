@@ -80,6 +80,23 @@
     </Otherwise>
   </Choose>
 
+  <!-- Determine per-platform native binary extensions. -->
+  <Choose>
+    <When Condition="'$(_runtimeOSFamily)' == 'win'" />
+    <When Condition="'$(_runtimeOSFamily)' == 'osx'">
+      <PropertyGroup>
+        <LibraryFileExtension>.dylib</LibraryFileExtension>
+        <SymbolFileExtension>.dwarf</SymbolFileExtension>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <LibraryFileExtension>.so</LibraryFileExtension>
+        <SymbolFileExtension>.dbg</SymbolFileExtension>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
+
   <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';Linux;'))">
     <OfficialBuildRID Include="alpine.3.4.3-x64" />
     <OfficialBuildRID Include="debian.8-armel">
