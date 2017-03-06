@@ -54,8 +54,6 @@ namespace System.Security.Cryptography.EcDsa.Tests
                 return true;
             }
         }
-
-        public bool SupportsKeyGeneration => true;
     }
 
     public partial class ECDsaFactory
