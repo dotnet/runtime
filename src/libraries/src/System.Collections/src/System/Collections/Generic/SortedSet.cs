@@ -1575,7 +1575,9 @@ namespace System.Collections.Generic
 
         #region ISorted members
 
-        public T Min
+        public T Min => MinInternal;
+
+        internal virtual T MinInternal
         {
             get
             {
@@ -1594,7 +1596,9 @@ namespace System.Collections.Generic
             }
         }
 
-        public T Max
+        public T Max => MaxInternal;
+        
+        internal virtual T MaxInternal 
         {
             get
             {
