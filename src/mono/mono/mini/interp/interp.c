@@ -3421,7 +3421,13 @@ array_constructed:
 			++ip;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_I4_I8)
-			if (sp [-1].data.l <= MYGINT32_MIN || sp [-1].data.l > MYGINT32_MAX)
+			if (sp [-1].data.l < MYGINT32_MIN || sp [-1].data.l > MYGINT32_MAX)
+				THROW_EX (mono_get_exception_overflow (), ip);
+			sp [-1].data.i = (gint32) sp [-1].data.l;
+			++ip;
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_CONV_OVF_I4_U8)
+			if (sp [-1].data.l < 0 || sp [-1].data.l > MYGINT32_MAX)
 				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.i = (gint32) sp [-1].data.l;
 			++ip;

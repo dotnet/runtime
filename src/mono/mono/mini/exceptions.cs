@@ -981,7 +981,6 @@ class Tests
 		return 0;
 	}
 	
-	[Category ("!INTERPRETER")]
 	public static int test_0_int_cast () {
 		int a;
 		long l;

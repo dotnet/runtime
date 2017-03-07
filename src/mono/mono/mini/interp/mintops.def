@@ -445,6 +445,7 @@ OPDEF(MINT_CONV_OVF_U2_R8, "conv.ovf.u2.r8", 1, MintOpNoArgs)
 
 OPDEF(MINT_CONV_OVF_I4_U4, "conv.ovf.i4.u4", 1, MintOpNoArgs)
 OPDEF(MINT_CONV_OVF_I4_I8, "conv.ovf.i4.i8", 1, MintOpNoArgs)
+OPDEF(MINT_CONV_OVF_I4_U8, "conv.ovf.i4.u8", 1, MintOpNoArgs)
 OPDEF(MINT_CONV_OVF_I4_R8, "conv.ovf.i4.r8", 1, MintOpNoArgs)
 
 OPDEF(MINT_CONV_OVF_I4_UN_I8, "conv.ovf.i4.un.i8", 1, MintOpNoArgs)
