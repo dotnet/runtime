@@ -796,13 +796,19 @@ static MethodArguments* build_args_from_sig (MonoMethodSignature *sig, MonoInvoc
 		case MONO_TYPE_GENERICINST:
 			margs->iargs [int_i] = frame->stack_args [i].data.p;
 #if DEBUG_INTERP
-			g_print ("build_args_from_sig: margs->iargs[%d]: %p (frame @ %d)\n", int_i, margs->iargs[int_i], i);
+			g_print ("build_args_from_sig: margs->iargs [%d]: %p (frame @ %d)\n", int_i, margs->iargs [int_i], i);
 #endif
 			int_i++;
 			break;
 		case MONO_TYPE_R4:
 		case MONO_TYPE_R8:
-			margs->fargs [int_f] = frame->stack_args [i].data.f;
+			if (ptype == MONO_TYPE_R4)
+				* (float *) &(margs->fargs [int_f]) = (float) frame->stack_args [i].data.f;
+			else
+				margs->fargs [int_f] = frame->stack_args [i].data.f;
+#if DEBUG_INTERP
+			g_print ("build_args_from_sig: margs->fargs [%d]: %p (%f) (frame @ %d)\n", int_f, margs->fargs [int_f], margs->fargs [int_f], i);
+#endif
 			int_f++;
 			break;
 		default:

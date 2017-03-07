@@ -257,6 +257,14 @@ class Tests
 		return 0;
 	}
 
+	public static int test_0_float_abs () {
+		float f = -1.0f;
+
+		if (Math.Abs (f) != 1.0f)
+			return 1;
+		return 0;
+	}
+
 	public static int test_0_round () {
 		if (Math.Round (5.0) != 5.0)
 			return 1;
