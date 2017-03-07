@@ -1654,7 +1654,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 	if (!frame->runtime_method->transformed) {
 		context->managed_code = 0;
 #if DEBUG_INTERP
-		char *mn = mono_method_full_name (frame->runtime_method->method, FALSE);
+		char *mn = mono_method_full_name (frame->runtime_method->method, TRUE);
 		g_print ("(%p) Transforming %s\n", mono_thread_internal_current (), mn);
 		g_free (mn);
 #endif

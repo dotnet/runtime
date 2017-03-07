@@ -686,16 +686,15 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 					op = MINT_ARRAY_RANK;
 				else if (strcmp (target_method->name, "get_Length") == 0)
 					op = MINT_LDLEN;
+			} else if (target_method && generic_context) {
+				csignature = mono_inflate_generic_signature (csignature, generic_context, &error);
+				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+				target_method = mono_class_inflate_generic_method_checked (target_method, generic_context, &error);
+				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			}
 		}
 	} else {
 		csignature = mono_method_signature (target_method);
-	}
-
-	/* TODO: that's oddly specific? */
-	if (generic_context && target_method && !strcmp ("Invoke", target_method->name) && target_method->klass->parent == mono_defaults.multicastdelegate_class) {
-		csignature = mono_inflate_generic_signature (csignature, generic_context, &error);
-		mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 	}
 
 	if (constrained_class) {

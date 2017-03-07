@@ -952,7 +952,6 @@ class Tests
 		}
 	}
 
-	[Category ("!INTERPRETER")]
 	[Category ("GSHAREDVT")]
 	static int test_0_synchronized_gshared () {
 		var c = new SyncClass<string> ();
