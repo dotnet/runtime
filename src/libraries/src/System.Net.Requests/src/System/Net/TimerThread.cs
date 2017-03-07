@@ -153,28 +153,32 @@ namespace System.Net
             }
 
             TimerQueue queue;
-            WeakReference weakQueue = (WeakReference)s_queuesCache[durationMilliseconds];
+            object key = durationMilliseconds; // Box once.
+            WeakReference weakQueue = (WeakReference)s_queuesCache[key];
             if (weakQueue == null || (queue = (TimerQueue)weakQueue.Target) == null)
             {
                 lock (s_newQueues)
                 {
-                    weakQueue = (WeakReference)s_queuesCache[durationMilliseconds];
+                    weakQueue = (WeakReference)s_queuesCache[key];
                     if (weakQueue == null || (queue = (TimerQueue)weakQueue.Target) == null)
                     {
                         queue = new TimerQueue(durationMilliseconds);
                         weakQueue = new WeakReference(queue);
                         s_newQueues.AddLast(weakQueue);
-                        s_queuesCache[durationMilliseconds] = weakQueue;
+                        s_queuesCache[key] = weakQueue;
 
                         // Take advantage of this lock to periodically scan the table for garbage.
                         if (++s_cacheScanIteration % CacheScanPerIterations == 0)
                         {
-                            List<int> garbage = new List<int>();
-                            foreach (DictionaryEntry pair in s_queuesCache)
+                            var garbage = new List<object>();
+                            // Manual use of IDictionaryEnumerator instead of foreach to avoid DictionaryEntry box allocations.
+                            IDictionaryEnumerator e = s_queuesCache.GetEnumerator();
+                            while (e.MoveNext())
                             {
+                                DictionaryEntry pair = e.Entry;
                                 if (((WeakReference)pair.Value).Target == null)
                                 {
-                                    garbage.Add((int)pair.Key);
+                                    garbage.Add(pair.Key);
                                 }
                             }
                             for (int i = 0; i < garbage.Count; i++)
