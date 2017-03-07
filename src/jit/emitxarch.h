@@ -452,35 +452,41 @@ enum EmitCallType
     EC_COUNT
 };
 
+// clang-format off
 void emitIns_Call(EmitCallType          callType,
                   CORINFO_METHOD_HANDLE methHnd,
                   CORINFO_SIG_INFO*     sigInfo, // used to report call sites to the EE
                   void*                 addr,
                   ssize_t               argSize,
-                  emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
-                  VARSET_VALARG_TP ptrVars,
-                  regMaskTP        gcrefRegs,
-                  regMaskTP        byrefRegs,
-                  GenTreeIndir*    indir,
-                  bool             isJump = false,
-                  bool             isNoGC = false);
+                  emitAttr              retSize
+                  MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
+                  VARSET_VALARG_TP      ptrVars,
+                  regMaskTP             gcrefRegs,
+                  regMaskTP             byrefRegs,
+                  GenTreeIndir*         indir,
+                  bool                  isJump = false,
+                  bool                  isNoGC = false);
+// clang-format on
 
+// clang-format off
 void emitIns_Call(EmitCallType          callType,
                   CORINFO_METHOD_HANDLE methHnd,
                   INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo) // used to report call sites to the EE
-                  void*    addr,
-                  ssize_t  argSize,
-                  emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
-                  VARSET_VALARG_TP ptrVars,
-                  regMaskTP        gcrefRegs,
-                  regMaskTP        byrefRegs,
-                  IL_OFFSETX       ilOffset = BAD_IL_OFFSET,
-                  regNumber        ireg     = REG_NA,
-                  regNumber        xreg     = REG_NA,
-                  unsigned         xmul     = 0,
-                  ssize_t          disp     = 0,
-                  bool             isJump   = false,
-                  bool             isNoGC   = false);
+                  void*                 addr,
+                  ssize_t               argSize,
+                  emitAttr              retSize
+                  MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
+                  VARSET_VALARG_TP      ptrVars,
+                  regMaskTP             gcrefRegs,
+                  regMaskTP             byrefRegs,
+                  IL_OFFSETX            ilOffset = BAD_IL_OFFSET,
+                  regNumber             ireg     = REG_NA,
+                  regNumber             xreg     = REG_NA,
+                  unsigned              xmul     = 0,
+                  ssize_t               disp     = 0,
+                  bool                  isJump   = false,
+                  bool                  isNoGC   = false);
+// clang-format on
 
 #ifdef _TARGET_AMD64_
 // Is the last instruction emitted a call instruction?
