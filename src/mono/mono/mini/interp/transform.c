@@ -1952,7 +1952,10 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 			klass = mono_class_get_full (image, token, generic_context);
 
 			if (mini_type_is_reference (&klass->byval_arg)) {
-				g_error ("unbox_any: generic class is reference type");
+				ADD_CODE (&td, MINT_CASTCLASS);
+				ADD_CODE (&td, get_data_item_index (&td, klass));
+				SET_TYPE (td.sp - 1, stack_type [mt], klass);
+				td.ip += 5;
 			} else if (mono_class_is_nullable (klass)) {
 				MonoMethod *target_method = mono_class_get_method_from_name (klass, "Unbox", 1);
 				/* td.ip is incremented by interp_transform_call */
