@@ -1462,7 +1462,6 @@ class Tests
 		return 0;
 	}
 	
-	[Category ("!INTERPRETER")]
 	[Category ("NaClDisable")]
 	public static int test_0_div_zero () {
 		int d = 1;
@@ -1634,7 +1633,6 @@ class Tests
 		return 0;
 	}
 
-	[Category ("!INTERPRETER")]
 	[Category ("NaClDisable")]
 	public static int test_0_long_div_zero () {
 		long d = 1;
