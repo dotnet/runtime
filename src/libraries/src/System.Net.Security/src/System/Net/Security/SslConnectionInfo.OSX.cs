@@ -29,19 +29,12 @@ namespace System.Net.Security
                 s_tlsLookup.Count == LookupMapCount,
                 $"Lookup dictionary was of size {s_tlsLookup.Count} instead of {LookupMapCount}");
 
-#if DEBUG_VERBOSE
-            // Check every value to see that it's present.
-            // Since TlsCipherSuite defines both SSL_ and TLS_ versions of the same values
-            // the returned array is longer than the dictionary, so only true walk can identify it.
-            //
-            // But this is a fairly high cost if the enum isn't changing.
             Array enumValues = Enum.GetValues(typeof(TlsCipherSuite));
 
             foreach (TlsCipherSuite val in enumValues)
             {
                 Debug.Assert(s_tlsLookup.ContainsKey(val), $"No mapping found for {val} ({(int)val})");
             }
-#endif
         }
 #endif
 
@@ -91,65 +84,41 @@ namespace System.Net.Security
             internal HashAlgorithmType HashAlgorithm;
             internal int HashAlgorithmStrength;
 
-            public static TlsMapping DhEphem(CipherAlgorithmType cipher, HashAlgorithmType hash)
-            {
-                return Build(ExchangeAlgorithmType.DiffieHellman, cipher, GetCipherSize(cipher), hash);
-            }
+            internal static TlsMapping DhEphem(CipherAlgorithmType cipher, HashAlgorithmType hash) =>
+                Build(ExchangeAlgorithmType.DiffieHellman, cipher, GetCipherSize(cipher), hash);
 
-            public static TlsMapping DhEphem(CipherAlgorithmType cipher, int cipherSize, HashAlgorithmType hash)
-            {
-                return Build(ExchangeAlgorithmType.DiffieHellman, cipher, cipherSize, hash);
-            }
+            internal static TlsMapping DhEphem(CipherAlgorithmType cipher, int cipherSize, HashAlgorithmType hash) =>
+                Build(ExchangeAlgorithmType.DiffieHellman, cipher, cipherSize, hash);
 
-            public static TlsMapping DhStatic(CipherAlgorithmType cipher, HashAlgorithmType hash)
-            {
-                return Build(DiffieHellmanStatic, cipher, GetCipherSize(cipher), hash);
-            }
+            internal static TlsMapping DhStatic(CipherAlgorithmType cipher, HashAlgorithmType hash) =>
+                Build(DiffieHellmanStatic, cipher, GetCipherSize(cipher), hash);
 
-            public static TlsMapping DhStatic(CipherAlgorithmType cipher, int cipherSize, HashAlgorithmType hash)
-            {
-                return Build(DiffieHellmanStatic, cipher, cipherSize, hash);
-            }
+            internal static TlsMapping DhStatic(CipherAlgorithmType cipher, int cipherSize, HashAlgorithmType hash) =>
+                Build(DiffieHellmanStatic, cipher, cipherSize, hash);
 
-            internal static TlsMapping EcDhEphem(CipherAlgorithmType cipher, HashAlgorithmType hash)
-            {
-                return Build(EcDheAlgorithm, cipher, GetCipherSize(cipher), hash);
-            }
+            internal static TlsMapping EcDhEphem(CipherAlgorithmType cipher, HashAlgorithmType hash) =>
+                Build(EcDheAlgorithm, cipher, GetCipherSize(cipher), hash);
 
-            internal static TlsMapping EcDhEphem(CipherAlgorithmType cipher, int cipherSize, HashAlgorithmType hash)
-            {
-                return Build(EcDheAlgorithm, cipher, cipherSize, hash);
-            }
+            internal static TlsMapping EcDhEphem(CipherAlgorithmType cipher, int cipherSize, HashAlgorithmType hash) =>
+                Build(EcDheAlgorithm, cipher, cipherSize, hash);
 
-            public static TlsMapping EcDhStatic(CipherAlgorithmType cipher, HashAlgorithmType hash)
-            {
-                return Build(EcDhAlgorithm, cipher, GetCipherSize(cipher), hash);
-            }
+            internal static TlsMapping EcDhStatic(CipherAlgorithmType cipher, HashAlgorithmType hash) =>
+                Build(EcDhAlgorithm, cipher, GetCipherSize(cipher), hash);
 
-            public static TlsMapping EcDhStatic(CipherAlgorithmType cipher, int cipherSize, HashAlgorithmType hash)
-            {
-                return Build(EcDhAlgorithm, cipher, cipherSize, hash);
-            }
+            internal static TlsMapping EcDhStatic(CipherAlgorithmType cipher, int cipherSize, HashAlgorithmType hash) =>
+                Build(EcDhAlgorithm, cipher, cipherSize, hash);
 
-            public static TlsMapping NoExchange(CipherAlgorithmType cipher, HashAlgorithmType hash)
-            {
-                return Build(ExchangeAlgorithmType.None, cipher, GetCipherSize(cipher), hash);
-            }
+            internal static TlsMapping NoExchange(CipherAlgorithmType cipher, HashAlgorithmType hash) =>
+                Build(ExchangeAlgorithmType.None, cipher, GetCipherSize(cipher), hash);
 
-            public static TlsMapping NoExchange(CipherAlgorithmType cipher, int cipherSize, HashAlgorithmType hash)
-            {
-                return Build(ExchangeAlgorithmType.None, cipher, cipherSize, hash);
-            }
+            internal static TlsMapping NoExchange(CipherAlgorithmType cipher, int cipherSize, HashAlgorithmType hash) =>
+                Build(ExchangeAlgorithmType.None, cipher, cipherSize, hash);
 
-            public static TlsMapping Rsa(CipherAlgorithmType cipher, HashAlgorithmType hash)
-            {
-                return Build(ExchangeAlgorithmType.RsaKeyX, cipher, GetCipherSize(cipher), hash);
-            }
+            internal static TlsMapping Rsa(CipherAlgorithmType cipher, HashAlgorithmType hash) =>
+                Build(ExchangeAlgorithmType.RsaKeyX, cipher, GetCipherSize(cipher), hash);
 
-            public static TlsMapping Rsa(CipherAlgorithmType cipher, int cipherSize, HashAlgorithmType hash)
-            {
-                return Build(ExchangeAlgorithmType.RsaKeyX, cipher, cipherSize, hash);
-            }
+            internal static TlsMapping Rsa(CipherAlgorithmType cipher, int cipherSize, HashAlgorithmType hash) =>
+                Build(ExchangeAlgorithmType.RsaKeyX, cipher, cipherSize, hash);
 
             private static TlsMapping Build(
                 ExchangeAlgorithmType exchange,
