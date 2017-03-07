@@ -2630,7 +2630,6 @@ END:
   	}
 
 	.method public static default int32 test_1_sizeof_gshared () cil managed {
-		.custom instance void [TestDriver]CategoryAttribute::.ctor(string) = ( 01 00 0C 21 49 4E 54 45 52 50 52 45 54 45 52 00 00 )   // ...!INTERPRETER.
 	    call   int32 Tests::SizeOfT<int8>()
 		ldc.i4.1
 		ceq

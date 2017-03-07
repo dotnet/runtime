@@ -3110,19 +3110,19 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 				gint32 size;
 				token = read32 (td.ip + 1);
 				td.ip += 5;
-				if (mono_metadata_token_table (token) == MONO_TABLE_TYPESPEC) {
+				if (mono_metadata_token_table (token) == MONO_TABLE_TYPESPEC && !image_is_dynamic (method->klass->image) && !generic_context) {
 					int align;
 					MonoType *type = mono_type_create_from_typespec (image, token);
 					size = mono_type_size (type, &align);
 				} else {
-					guint32 align;
+					int align;
 					MonoClass *szclass = mono_class_get_full (image, token, generic_context);
 					mono_class_init (szclass);
 #if 0
 					if (!szclass->valuetype)
 						THROW_EX (mono_exception_from_name (mono_defaults.corlib, "System", "InvalidProgramException"), ip - 5);
 #endif
-					size = mono_class_value_size (szclass, &align);
+					size = mono_type_size (&szclass->byval_arg, &align);
 				} 
 				ADD_CODE(&td, MINT_LDC_I4);
 				WRITE32(&td, &size);
