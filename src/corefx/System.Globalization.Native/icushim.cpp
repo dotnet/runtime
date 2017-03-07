@@ -111,6 +111,22 @@ bool FindLibUsingOverride(int* majorVer, int* minorVer, int* subVer)
 }
 
 // Select the highest supported version of ICU present on the local machine
+// Search for library files with names including the major version.
+bool FindLibWithMajorVersion(int* majorVer)
+{
+    for (int i = MaxICUVersion; i >= MinICUVersion; i--)
+    {
+        if (OpenICULibraries(i, -1, -1))
+        {
+            *majorVer = i;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+// Select the highest supported version of ICU present on the local machine
 // Search for library files with names including the major and minor version.
 bool FindLibWithMajorMinorVersion(int* majorVer, int* minorVer)
 {
@@ -164,7 +180,9 @@ void InitializeICUShim()
 
     if (!FindLibUsingOverride(&majorVer, &minorVer, &subVer) &&
         !FindLibWithMajorMinorVersion(&majorVer, &minorVer) &&
-        !FindLibWithMajorMinorSubVersion(&majorVer, &minorVer, &subVer))
+        !FindLibWithMajorMinorSubVersion(&majorVer, &minorVer, &subVer) &&
+        // This is a fallback for the rare case when there are only lib files with major version
+        !FindLibWithMajorVersion(&majorVer))
     {
         // No usable ICU version found
         fprintf(stderr, "No usable version of the ICU libraries was found\n");
@@ -181,12 +199,12 @@ void InitializeICUShim()
         // Now try just the _majorVer added
         sprintf(symbolVersion, "_%d", majorVer);
         sprintf(symbolName, "u_strlen%s", symbolVersion);
-        if (dlsym(libicuuc, symbolName) == nullptr)
+        if ((dlsym(libicuuc, symbolName) == nullptr) && (minorVer != -1))
         {
             // Now try the _majorVer_minorVer added
             sprintf(symbolVersion, "_%d_%d", majorVer, minorVer);
             sprintf(symbolName, "u_strlen%s", symbolVersion);
-            if (dlsym(libicuuc, symbolName) == nullptr)
+            if ((dlsym(libicuuc, symbolName) == nullptr) && (subVer != -1))
             {
                 // Finally, try the _majorVer_minorVer_subVer added
                 sprintf(symbolVersion, "_%d_%d_%d", majorVer, minorVer, subVer);
