@@ -1218,7 +1218,6 @@ class Tests
 		return t.GetHashCode ();
 	}
 
-	[Category ("!INTERPRETER")]
 	public static int test_0_constrained_partial_sharing () {
 		string s;
 
