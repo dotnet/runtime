@@ -1251,9 +1251,12 @@ void CodeGen::sched_AM(instruction ins,
  *  Emit a "call [r/m]" instruction (the r/m operand given by a tree).
  */
 
+// clang-format off
 void CodeGen::instEmit_indCall(GenTreePtr call,
                                size_t     argSize,
-                               emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize))
+                               emitAttr   retSize
+                               MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize))
+// clang-format on
 {
     GenTreePtr addr;
 
@@ -1290,11 +1293,19 @@ void CodeGen::instEmit_indCall(GenTreePtr call,
         {
             ssize_t funcPtr = addr->gtIntCon.gtIconVal;
 
+            // clang-format off
             getEmitter()->emitIns_Call(emitter::EC_FUNC_ADDR,
                                        NULL, // methHnd
-                                       INDEBUG_LDISASM_COMMA(sigInfo)(void*) funcPtr, argSize,
-                                       retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                                       gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur);
+                                       INDEBUG_LDISASM_COMMA(sigInfo)
+                                       (void*) funcPtr,
+                                       argSize,
+                                       retSize
+                                       MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                                       gcInfo.gcVarPtrSetCur,
+                                       gcInfo.gcRegGCrefSetCur,
+                                       gcInfo.gcRegByrefSetCur);
+            // clang-format on
+
             return;
         }
     }
@@ -1347,11 +1358,19 @@ void CodeGen::instEmit_indCall(GenTreePtr call,
             {
                 ssize_t funcPtr = addr->gtIntCon.gtIconVal;
 
+                // clang-format off
                 getEmitter()->emitIns_Call(emitter::EC_FUNC_ADDR,
                                            nullptr, // methHnd
-                                           INDEBUG_LDISASM_COMMA(sigInfo)(void*) funcPtr, argSize,
-                                           retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                                           gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur);
+                                           INDEBUG_LDISASM_COMMA(sigInfo)
+                                           (void*) funcPtr,
+                                           argSize,
+                                           retSize
+                                           MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                                           gcInfo.gcVarPtrSetCur,
+                                           gcInfo.gcRegGCrefSetCur,
+                                           gcInfo.gcRegByrefSetCur);
+                // clang-format on
+
                 return;
             }
         }
@@ -1409,14 +1428,23 @@ void CodeGen::instEmit_indCall(GenTreePtr call,
 
 #endif // CPU_LOAD_STORE_ARCH
 
+    // clang-format off
     getEmitter()->emitIns_Call(emitCallType,
                                nullptr,                                // methHnd
-                               INDEBUG_LDISASM_COMMA(sigInfo) nullptr, // addr
-                               argSize, retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                               gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur,
+                               INDEBUG_LDISASM_COMMA(sigInfo)
+                               nullptr, // addr
+                               argSize,
+                               retSize
+                               MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                               gcInfo.gcVarPtrSetCur,
+                               gcInfo.gcRegGCrefSetCur,
+                               gcInfo.gcRegByrefSetCur,
                                BAD_IL_OFFSET, // ilOffset
-                               brg, xrg, mul,
+                               brg,
+                               xrg,
+                               mul,
                                cns); // addressing mode values
+    // clang-format on
 }
 
 #ifdef LEGACY_BACKEND
