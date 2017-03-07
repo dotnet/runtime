@@ -22,7 +22,7 @@
     <ExternalCurrentRef>3b8a99621d89ad9877f053ba8af25e0f25dcd9d8</ExternalCurrentRef>
     <ProjectNTfsCurrentRef>d9076a006edfd716b4b54d702703fcb1f5575619</ProjectNTfsCurrentRef>
     <SniCurrentRef>05650e53f2aa4497f74cd6e9b053d3f69f64b0bd</SniCurrentRef>
-    <StandardCurrentRef>955fc73c2b773ed2377d020107a2c79524c2cdee</StandardCurrentRef>
+    <StandardCurrentRef>4acc48f467bcec6ec7737c427974f29afdd24195</StandardCurrentRef>
   </PropertyGroup>
 
   <!-- Auto-upgraded properties for each build info dependency. -->
@@ -31,7 +31,7 @@
     <CoreClrExpectedPrerelease>beta-25106-02</CoreClrExpectedPrerelease>
     <ExternalExpectedPrerelease>beta-25016-01</ExternalExpectedPrerelease>
     <ProjectNTfsExpectedPrerelease>beta-25028-00</ProjectNTfsExpectedPrerelease>
-    <NETStandardPackageVersion>2.0.0-beta-25106-01</NETStandardPackageVersion>
+    <NETStandardPackageVersion>2.0.0-beta-25107-01</NETStandardPackageVersion>
     <NETStandardPackageId>NETStandard.Library</NETStandardPackageId>
     <!-- Use the SNI runtime package -->
     <SniPackageVersion>4.4.0-beta-25007-02</SniPackageVersion>
