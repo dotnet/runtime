@@ -1066,7 +1066,6 @@ class Tests
 		}
 	}
 
-	[Category ("!INTERPRETER")]
 	public static int test_1_regress_constrained_iface_call_7571 () {
         var r = new Record [10];
         Foo2<Record>.Extract (r);
@@ -1077,7 +1076,6 @@ class Tests
 		Val = 1
 	}
 
-	[Category ("!INTERPRETER")]
 	public static int test_0_regress_constrained_iface_call_enum () {
 		var r = new ConstrainedEnum [10];
 		return Foo3<ConstrainedEnum>.CompareTo (r);
