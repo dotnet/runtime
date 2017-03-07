@@ -276,6 +276,7 @@ OPDEF(MINT_UNBOX, "unbox", 2, MintOpClassToken)
 OPDEF(MINT_LDTOKEN, "ldtoken", 2, MintOpClassToken) /* not really */
 OPDEF(MINT_LDFTN, "ldftn", 2, MintOpMethodToken) 
 OPDEF(MINT_LDVIRTFTN, "ldvirtftn", 2, MintOpMethodToken) 
+OPDEF(MINT_CPOBJ, "cpobj", 2, MintOpClassToken)
 OPDEF(MINT_LDOBJ, "ldobj", 2, MintOpClassToken) 
 OPDEF(MINT_STOBJ, "stobj", 2, MintOpClassToken) 
 OPDEF(MINT_STOBJ_VT, "stobj.vt", 2, MintOpClassToken) 

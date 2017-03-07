@@ -1793,17 +1793,23 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 			++td.ip;
 			SET_SIMPLE_TYPE(td.sp - 1, STACK_TYPE_I8);
 			break;
-#if 0
 		case CEE_CPOBJ: {
-			MonoClass *vtklass;
-			++ip;
-			vtklass = mono_class_get_full (image, read32 (ip), generic_context);
-			ip += 4;
-			sp -= 2;
-			memcpy (sp [0].data.p, sp [1].data.p, mono_class_value_size (vtklass, NULL));
+			CHECK_STACK (&td, 2);
+
+			token = read32 (td.ip + 1);
+			klass = mono_class_get_full (image, token, generic_context);
+
+			if (klass->valuetype) {
+				ADD_CODE (&td, MINT_CPOBJ);
+				ADD_CODE (&td, get_data_item_index(&td, klass));
+			} else {
+				ADD_CODE (&td, MINT_LDIND_REF);
+				ADD_CODE (&td, MINT_STIND_REF);
+			}
+			td.ip += 5;
+			td.sp -= 2;
 			break;
 		}
-#endif
 		case CEE_LDOBJ: {
 			int size;
 			CHECK_STACK (&td, 1);

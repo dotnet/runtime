@@ -2758,17 +2758,14 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			sp [-1].data.l = (guint64)sp [-1].data.f;
 			++ip;
 			MINT_IN_BREAK;
-#if 0
 		MINT_IN_CASE(MINT_CPOBJ) {
-			MonoClass *vtklass;
-			++ip;
-			vtklass = rtm->data_items[READ32 (ip)];
+			c = rtm->data_items[* (guint16 *)(ip + 1)];
+			g_assert (c->byval_arg.type == MONO_TYPE_VALUETYPE);
+			stackval_from_data (&c->byval_arg, &sp [-2], sp [-1].data.p, FALSE);
 			ip += 2;
 			sp -= 2;
-			memcpy (sp [0].data.p, sp [1].data.p, mono_class_value_size (vtklass, NULL));
 			MINT_IN_BREAK;
 		}
-#endif
 		MINT_IN_CASE(MINT_LDOBJ) {
 			void *p;
 			c = rtm->data_items[* (guint16 *)(ip + 1)];
