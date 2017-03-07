@@ -965,7 +965,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 
 	for (i = 0; i < header->num_locals; i++) {
 		int mt = mint_type(header->locals [i]);
-		if (mt == MINT_TYPE_VT || mt == MINT_TYPE_O) {
+		if (mt == MINT_TYPE_VT || mt == MINT_TYPE_O || mt == MINT_TYPE_P) {
 			ADD_CODE(&td, MINT_INITLOCALS);
 			break;
 		}
