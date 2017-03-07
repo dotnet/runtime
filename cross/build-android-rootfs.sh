@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+__NDK_Version=r14
 
 usage()
 {
@@ -12,7 +13,7 @@ usage()
     echo "By default, the toolchain and sysroot will be generated in cross/android-rootfs/toolchain/[BuildArch]. You can change this behavior"
     echo "by setting the TOOLCHAIN_DIR environment variable"
     echo.
-    echo "By default, the NDK will be downloaded into the cross/android-rootfs/android-ndk-r13b directory. If you already have an NDK installation,"
+    echo "By default, the NDK will be downloaded into the cross/android-rootfs/android-ndk-$__NDK_Version directory. If you already have an NDK installation,"
     echo "you can set the NDK_DIR environment variable to have this script use that installation of the NDK."
     exit 1
 }
@@ -20,6 +21,7 @@ usage()
 __ApiLevel=21 # The minimum platform for arm64 is API level 21
 __BuildArch=arm64
 __AndroidArch=aarch64
+__AndroidToolchain=aarch64-linux-android
 
 for i in "$@"
     do
@@ -32,6 +34,12 @@ for i in "$@"
         arm64)
             __BuildArch=arm64
             __AndroidArch=aarch64
+            __AndroidToolchain=aarch64-linux-android
+            ;;
+        arm)
+            __BuildArch=arm
+            __AndroidArch=arm
+            __AndroidToolchain=arm-linux-androideabi
             ;;
         *[0-9])
             __ApiLevel=$i
@@ -46,7 +54,7 @@ done
 __CrossDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 __Android_Cross_Dir="$__CrossDir/android-rootfs"
-__NDK_Dir="$__Android_Cross_Dir/android-ndk-r13b"
+__NDK_Dir="$__Android_Cross_Dir/android-ndk-$__NDK_Version"
 __libunwind_Dir="$__Android_Cross_Dir/libunwind"
 __lldb_Dir="$__Android_Cross_Dir/lldb"
 __ToolchainDir="$__Android_Cross_Dir/toolchain/$__BuildArch"
@@ -68,8 +76,8 @@ echo "Target Toolchain location: $__ToolchainDir"
 if [ ! -d $__NDK_Dir ]; then
     echo Downloading the NDK into $__NDK_Dir
     mkdir -p $__NDK_Dir
-    wget -nv -nc --show-progress https://dl.google.com/android/repository/android-ndk-r13b-linux-x86_64.zip -O $__Android_Cross_Dir/android-ndk-r13b-linux-x86_64.zip
-    unzip -q $__Android_Cross_Dir/android-ndk-r13b-linux-x86_64.zip -d $__Android_Cross_Dir
+    wget -nv -nc --show-progress https://dl.google.com/android/repository/android-ndk-$__NDK_Version-linux-x86_64.zip -O $__Android_Cross_Dir/android-ndk-$__NDK_Version-linux-x86_64.zip
+    unzip -q $__Android_Cross_Dir/android-ndk-$__NDK_Version-linux-x86_64.zip -d $__Android_Cross_Dir
 fi
 
 if [ ! -d $__lldb_Dir ]; then
@@ -93,16 +101,21 @@ mkdir -p $__Android_Cross_Dir/deb/
 mkdir -p $__Android_Cross_Dir/tmp/$arch/
 wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libicu_58.2_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/libicu_58.2_$__AndroidArch.deb
 wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libicu-dev_58.2_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/libicu-dev_58.2_$__AndroidArch.deb
-wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libuuid-dev_1.0.3_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/libuuid-dev_1.0.3_$__AndroidArch.deb
-wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libuuid_1.0.3_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/libuuid_1.0.3_$__AndroidArch.deb
+
+if [ "$__AndroidArch" == "arm" ]; then
+    wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libuuid-dev-1.0.3_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/libuuid-dev_1.0.3_$__AndroidArch.deb
+    wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libuuid-1.0.3_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/libuuid_1.0.3_$__AndroidArch.deb
+else
+    wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libuuid-dev_1.0.3_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/libuuid-dev_1.0.3_$__AndroidArch.deb
+    wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libuuid_1.0.3_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/libuuid_1.0.3_$__AndroidArch.deb
+fi
+
 wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libandroid-glob-dev_0.3_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/libandroid-glob-dev_0.3_$__AndroidArch.deb
 wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libandroid-glob_0.3_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/libandroid-glob_0.3_$__AndroidArch.deb
 wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libandroid-support-dev_13.10_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/libandroid-support-dev_13.10_$__AndroidArch.deb
 wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libandroid-support_13.10_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/libandroid-support_13.10_$__AndroidArch.deb
 wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/liblzma-dev_5.2.3_$__AndroidArch.deb  -O $__Android_Cross_Dir/deb/liblzma-dev_5.2.3_$__AndroidArch.deb
 wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/liblzma_5.2.3_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/liblzma_5.2.3_$__AndroidArch.deb
-wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libcurl-dev_7.52.1_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/libcurl-dev_7.52.1_$__AndroidArch.deb
-wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libcurl_7.52.1_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/libcurl_7.52.1_$__AndroidArch.deb
 
 echo Unpacking Termux packages
 dpkg -x $__Android_Cross_Dir/deb/libicu_58.2_$__AndroidArch.deb $__Android_Cross_Dir/tmp/$__AndroidArch/
@@ -115,8 +128,6 @@ dpkg -x $__Android_Cross_Dir/deb/libandroid-support-dev_13.10_$__AndroidArch.deb
 dpkg -x $__Android_Cross_Dir/deb/libandroid-support_13.10_$__AndroidArch.deb $__Android_Cross_Dir/tmp/$__AndroidArch/
 dpkg -x $__Android_Cross_Dir/deb/liblzma-dev_5.2.3_$__AndroidArch.deb $__Android_Cross_Dir/tmp/$__AndroidArch/
 dpkg -x $__Android_Cross_Dir/deb/liblzma_5.2.3_$__AndroidArch.deb $__Android_Cross_Dir/tmp/$__AndroidArch/
-dpkg -x $__Android_Cross_Dir/deb/libcurl-dev_7.52.1_$__AndroidArch.deb $__Android_Cross_Dir/tmp/$__AndroidArch/
-dpkg -x $__Android_Cross_Dir/deb/libcurl_7.52.1_$__AndroidArch.deb $__Android_Cross_Dir/tmp/$__AndroidArch/
 
 cp -R $__Android_Cross_Dir/tmp/$__AndroidArch/data/data/com.termux/files/usr/* $__ToolchainDir/sysroot/usr/
 
@@ -138,7 +149,8 @@ git clean -xfd
 # libunwind is available on Android, but not included in the NDK.
 echo Building libunwind
 autoreconf --force -v --install 2> /dev/null
-./configure CC=$__ToolchainDir/bin/$__AndroidArch-linux-android-clang --with-sysroot=$__ToolchainDir/sysroot --host=$__AndroidArch-eabi --target=$__AndroidArch-eabi --disable-tests --disable-coredump --prefix=$__ToolchainDir/sysroot/usr 2> /dev/null
+echo ./configure CC=$__ToolchainDir/bin/$__AndroidToolchain-clang --with-sysroot=$__ToolchainDir/sysroot --host=$__AndroidArch-eabi --target=$__AndroidArch-eabi --disable-tests --disable-coredump --prefix=$__ToolchainDir/sysroot/usr 2> /dev/null
+./configure CC=$__ToolchainDir/bin/$__AndroidToolchain-clang --with-sysroot=$__ToolchainDir/sysroot --host=$__AndroidArch-eabi --target=$__AndroidArch-eabi --disable-tests --disable-coredump --prefix=$__ToolchainDir/sysroot/usr 2> /dev/null
 make > /dev/null
 make install > /dev/null
 
@@ -146,5 +158,5 @@ make install > /dev/null
 cp include/libunwind.h $__ToolchainDir/sysroot/usr/include/
 
 echo Now run:
-echo CONFIG_DIR=\`realpath cross/android/arm64\` ROOTFS_DIR=\`realpath $__ToolchainDir/sysroot\` ./build.sh cross arm64 skipgenerateversion skipnuget cmakeargs -DENABLE_LLDBPLUGIN=0
+echo CONFIG_DIR=\`realpath cross/android/$__BuildArch\` ROOTFS_DIR=\`realpath $__ToolchainDir/sysroot\` ./build.sh cross $__BuildArch skipgenerateversion skipnuget cmakeargs -DENABLE_LLDBPLUGIN=0
 

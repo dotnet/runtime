@@ -499,7 +499,7 @@ DbiGetThreadContext(HANDLE hThread,
     DT_CONTEXT *lpContext)
 {
     // if we aren't local debugging this isn't going to work
-#if !defined(_ARM_) || defined(FEATURE_DBGIPC_TRANSPORT_DI)
+#if !defined(_ARM_) || defined(FEATURE_DBGIPC_TRANSPORT_DI) || defined(__ANDROID__)
     _ASSERTE(!"Can't use local GetThreadContext remotely, this needed to go to datatarget");
     return FALSE;
 #else
@@ -538,7 +538,7 @@ BOOL
 DbiSetThreadContext(HANDLE hThread,
     const DT_CONTEXT *lpContext)
 {
-#if !defined(_ARM_) || defined(FEATURE_DBGIPC_TRANSPORT_DI)
+#if !defined(_ARM_) || defined(FEATURE_DBGIPC_TRANSPORT_DI) || defined(__ANDROID__)
     _ASSERTE(!"Can't use local GetThreadContext remotely, this needed to go to datatarget");
     return FALSE;
 #else
