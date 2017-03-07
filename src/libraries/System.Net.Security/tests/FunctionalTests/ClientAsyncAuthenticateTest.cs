@@ -38,6 +38,7 @@ namespace System.Net.Security.Tests
 
         [Theory]
         [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
+        [ActiveIssue(16534, TestPlatforms.Windows)]
         public async Task ClientAsyncAuthenticate_EachSupportedProtocol_Success(SslProtocols protocol)
         {
             await ClientAsyncSslHelper(protocol, protocol);
