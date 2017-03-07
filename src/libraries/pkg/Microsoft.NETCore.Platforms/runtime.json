@@ -11,20 +11,20 @@
             "#import": [ "any" ]
         },
         "android-arm": {
-	           "#import": [ "any" ]
+	    "#import": [ "any" ]
         },
         "android-arm64": {
-	           "#import": [ "any" ]
+	    "#import": [ "any" ]
         },
 
         "android.21": {
-	           "#import": [ "android" ]
+            "#import": [ "android" ]
 	},
         "android.21-arm": {
-	           "#import": [ "android.21", "android-arm" ]
+	    "#import": [ "android.21", "android-arm" ]
         },
         "android.21-arm64": {
-	           "#import": [ "android.21", "android-arm64" ]
+	    "#import": [ "android.21", "android-arm64" ]
         },
 
         "win": {
