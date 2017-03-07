@@ -765,6 +765,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                             assert (os == 'Windows_NT') || (os in Constants.crossList)
                             Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Build and Test (Jit - ForceRelocs)",
                                "(?i).*test\\W+${os}\\W+${scenario}.*")
+                            break
                         case 'jitstressregs1':
                             assert (os == 'Windows_NT') || (os in Constants.crossList)
                             Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Build and Test (Jit - JitStressRegs=1)",
