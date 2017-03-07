@@ -936,12 +936,11 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 		td.stack_height [c->handler_offset] = 0;
 		td.vt_stack_size [c->handler_offset] = 0;
 		td.is_bb_start [c->handler_offset] = 1;
-		if (c->flags == MONO_EXCEPTION_CLAUSE_NONE) {
-			td.stack_height [c->handler_offset] = 1;
-			td.stack_state [c->handler_offset] = g_malloc0(sizeof(StackInfo));
-			td.stack_state [c->handler_offset][0].type = STACK_TYPE_O;
-			td.stack_state [c->handler_offset][0].klass = NULL; /*FIX*/
-		}
+
+		td.stack_height [c->handler_offset] = 1;
+		td.stack_state [c->handler_offset] = g_malloc0(sizeof(StackInfo));
+		td.stack_state [c->handler_offset][0].type = STACK_TYPE_O;
+		td.stack_state [c->handler_offset][0].klass = NULL; /*FIX*/
 	}
 
 	td.ip = header->code;

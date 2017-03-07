@@ -4054,8 +4054,7 @@ array_constructed:
 							goto handle_finally;
 						}
 					} else {
-						/* FIXME: handle filter clauses */
-						g_assert (0);
+						g_error ("FIXME: handle filter clause");
 					}
 				}
 			}
