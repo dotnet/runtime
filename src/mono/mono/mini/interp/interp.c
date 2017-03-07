@@ -3931,12 +3931,19 @@ array_constructed:
 			ip += 4;
 			MINT_IN_BREAK;
 
-		MINT_IN_CASE(MINT_LOCALLOC)
+		MINT_IN_CASE(MINT_LOCALLOC) {
 			if (sp != frame->stack + 1) /*FIX?*/
 				THROW_EX (mono_get_exception_execution_engine (NULL), ip);
-			sp [-1].data.p = alloca (sp [-1].data.i);
+
+			int len = sp [-1].data.i;
+			sp [-1].data.p = alloca (len);
+			MonoMethodHeader *header = mono_method_get_header_checked (frame->runtime_method->method, &error);
+			mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+			if (header->init_locals)
+				memset (sp [-1].data.p, 0, len);
 			++ip;
 			MINT_IN_BREAK;
+		}
 #if 0
 		MINT_IN_CASE(MINT_ENDFILTER) ves_abort(); MINT_IN_BREAK;
 #endif
