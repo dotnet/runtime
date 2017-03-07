@@ -1995,7 +1995,12 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 				ADD_CODE (&td, MINT_LDSFLDA);
 				ADD_CODE (&td, get_data_item_index (&td, field));
 			} else {
-				ADD_CODE (&td, MINT_LDFLDA);
+				if ((td.sp - 1)->type == STACK_TYPE_O) {
+					ADD_CODE (&td, MINT_LDFLDA);
+				} else {
+					g_assert ((td.sp -1)->type == STACK_TYPE_MP);
+					ADD_CODE (&td, MINT_LDFLDA_UNSAFE);
+				}
 				ADD_CODE (&td, klass->valuetype ? field->offset - sizeof (MonoObject) : field->offset);
 			}
 			td.ip += 5;

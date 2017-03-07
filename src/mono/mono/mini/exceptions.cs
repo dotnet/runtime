@@ -2708,7 +2708,6 @@ class Tests
 		public static Foo* pFoo;
 	}
 
-	[Category ("!INTERPRETER")]
 	/* MS.NET doesn't seem to throw in this case */
 	public unsafe static int test_0_ldflda_null_pointer () {
 		int* pi = &Foo.pFoo->i;

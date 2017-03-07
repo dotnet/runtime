@@ -2907,6 +2907,11 @@ array_constructed:
 				sp->data.p = mono_get_exception_null_reference ();
 			THROW_EX ((MonoException *)sp->data.p, ip);
 			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDFLDA_UNSAFE)
+			o = sp [-1].data.p;
+			sp[-1].data.p = (char *)o + * (guint16 *)(ip + 1);
+			ip += 2;
+			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDFLDA)
 			o = sp [-1].data.p;
 			if (!o)
