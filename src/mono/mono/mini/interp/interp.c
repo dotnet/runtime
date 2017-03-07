@@ -1967,8 +1967,12 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			child_frame.retval = sp;
 			/* decrement by the actual number of args */
 			sp -= child_frame.runtime_method->param_count;
-			if (child_frame.runtime_method->hasthis)
+			if (child_frame.runtime_method->hasthis) {
 				--sp;
+				MonoObject *this_arg = sp->data.p;
+				if (!this_arg)
+					THROW_EX (mono_get_exception_null_reference(), ip - 2);
+			}
 			child_frame.stack_args = sp;
 
 			if (child_frame.runtime_method->hasthis && !child_frame.runtime_method->method->klass->valuetype && mono_object_is_transparent_proxy (sp->data.p)) {

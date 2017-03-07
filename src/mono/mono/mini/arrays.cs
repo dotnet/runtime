@@ -318,7 +318,6 @@ class Tests
 		return 0;
 	}
 
-	[Category ("!INTERPRETER")]
 	public static int test_0_multi_dimension_arrays () {
 		int sum;
 
