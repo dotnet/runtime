@@ -551,42 +551,50 @@ ves_array_create (MonoDomain *domain, MonoClass *klass, MonoMethodSignature *sig
 	return obj;
 }
 
-static void 
+static gint32
+ves_array_calculate_index (MonoArray *ao, stackval *sp, MonoInvocation *frame)
+{
+	g_assert (!frame->ex);
+	MonoClass *ac = ((MonoObject *) ao)->vtable->klass;
+
+	guint32 pos = 0;
+	if (ao->bounds) {
+		for (gint32 i = 0; i < ac->rank; i++) {
+			guint32 idx = sp [i].data.i;
+			guint32 lower = ao->bounds [i].lower_bound;
+			guint32 len = ao->bounds [i].length;
+			if (idx < lower || (idx - lower) >= len) {
+				frame->ex = mono_get_exception_index_out_of_range ();
+				FILL_IN_TRACE (frame->ex, frame);
+				return -1;
+			}
+			pos = (pos * len) + idx - lower;
+		}
+	} else {
+		pos = sp [0].data.i;
+		if (pos >= ao->max_length) {
+			frame->ex = mono_get_exception_index_out_of_range ();
+			FILL_IN_TRACE (frame->ex, frame);
+			return -1;
+		}
+	}
+	return pos;
+}
+
+static void
 ves_array_set (MonoInvocation *frame)
 {
 	stackval *sp = frame->stack_args + 1;
-	MonoObject *o;
-	MonoArray *ao;
-	MonoClass *ac;
-	gint32 i, t, pos, esize;
-	gpointer ea;
-	MonoType *mt;
 
-	o = frame->stack_args->data.p;
-	ao = (MonoArray *)o;
-	ac = o->vtable->klass;
+	MonoObject *o = frame->stack_args->data.p;
+	MonoArray *ao = (MonoArray *) o;
+	MonoClass *ac = o->vtable->klass;
 
 	g_assert (ac->rank >= 1);
 
-	pos = sp [0].data.i;
-	if (ao->bounds != NULL) {
-		pos -= ao->bounds [0].lower_bound;
-		for (i = 1; i < ac->rank; i++) {
-			if ((t = sp [i].data.i - ao->bounds [i].lower_bound) >= 
-			    ao->bounds [i].length) {
-				frame->ex = mono_get_exception_index_out_of_range ();
-				FILL_IN_TRACE(frame->ex, frame);
-				return;
-			}
-			pos = pos*ao->bounds [i].length + sp [i].data.i - 
-				ao->bounds [i].lower_bound;
-		}
-	} else if (pos >= ao->max_length) {
-		frame->ex = mono_get_exception_index_out_of_range ();
-		FILL_IN_TRACE(frame->ex, frame);
+	gint32 pos = ves_array_calculate_index (ao, sp, frame);
+	if (frame->ex)
 		return;
-	}
-
 
 	if (sp [ac->rank].data.p && !mono_object_class (o)->element_class->valuetype) {
 		MonoError error;
@@ -599,88 +607,52 @@ ves_array_set (MonoInvocation *frame)
 		}
 	}
 
-	esize = mono_array_element_size (ac);
-	ea = mono_array_addr_with_size (ao, esize, pos);
+	gint32 esize = mono_array_element_size (ac);
+	gpointer ea = mono_array_addr_with_size (ao, esize, pos);
 
-	mt = mono_method_signature (frame->runtime_method->method)->params [ac->rank];
+	MonoType *mt = mono_method_signature (frame->runtime_method->method)->params [ac->rank];
 	stackval_to_data (mt, &sp [ac->rank], ea, FALSE);
 }
 
-static void 
+static void
 ves_array_get (MonoInvocation *frame)
 {
 	stackval *sp = frame->stack_args + 1;
-	MonoObject *o;
-	MonoArray *ao;
-	MonoClass *ac;
-	gint32 i, t, pos, esize;
-	gpointer ea;
-	MonoType *mt;
 
-	o = frame->stack_args->data.p;
-	ao = (MonoArray *)o;
-	ac = o->vtable->klass;
+	MonoObject *o = frame->stack_args->data.p;
+	MonoArray *ao = (MonoArray *) o;
+	MonoClass *ac = o->vtable->klass;
 
 	g_assert (ac->rank >= 1);
 
-	pos = sp [0].data.i;
-	if (ao->bounds != NULL) {
-		pos -= ao->bounds [0].lower_bound;
-		for (i = 1; i < ac->rank; i++) {
-			if ((t = sp [i].data.i - ao->bounds [i].lower_bound) >= 
-			    ao->bounds [i].length) {
-				frame->ex = mono_get_exception_index_out_of_range ();
-				FILL_IN_TRACE(frame->ex, frame);
-				return;
-			}
-
-			pos = pos*ao->bounds [i].length + sp [i].data.i - 
-				ao->bounds [i].lower_bound;
-		}
-	} else if (pos >= ao->max_length) {
-		frame->ex = mono_get_exception_index_out_of_range ();
-		FILL_IN_TRACE(frame->ex, frame);
+	gint32 pos = ves_array_calculate_index (ao, sp, frame);
+	if (frame->ex)
 		return;
-	}
 
-	esize = mono_array_element_size (ac);
-	ea = mono_array_addr_with_size (ao, esize, pos);
+	gint32 esize = mono_array_element_size (ac);
+	gpointer ea = mono_array_addr_with_size (ao, esize, pos);
 
-	mt = mono_method_signature (frame->runtime_method->method)->ret;
+	MonoType *mt = mono_method_signature (frame->runtime_method->method)->ret;
 	stackval_from_data (mt, frame->retval, ea, FALSE);
 }
 
 static gpointer
 ves_array_element_address (MonoInvocation *frame, MonoClass *required_type, MonoArray *ao, stackval *sp, gboolean needs_typecheck)
 {
-	gint32 i, pos, esize;
 	MonoClass *ac = ((MonoObject *) ao)->vtable->klass;
 
 	g_assert (ac->rank >= 1);
 
-	pos = sp [0].data.i;
-	if (ao->bounds != NULL) {
-		pos -= ao->bounds [0].lower_bound;
-		for (i = 1; i < ac->rank; i++) {
-			if ((sp [i].data.i - ao->bounds [i].lower_bound) >= ao->bounds [i].length) {
-				frame->ex = mono_get_exception_index_out_of_range ();
-				FILL_IN_TRACE(frame->ex, frame);
-				return NULL;
-			}
-			pos = pos * ao->bounds [i].length + sp [i].data.i - ao->bounds [i].lower_bound;
-		}
-	} else if (pos >= ao->max_length) {
-		frame->ex = mono_get_exception_index_out_of_range ();
-		FILL_IN_TRACE(frame->ex, frame);
+	gint32 pos = ves_array_calculate_index (ao, sp, frame);
+	if (frame->ex)
 		return NULL;
-	}
 
 	if (needs_typecheck && !mono_class_is_assignable_from (mono_object_class ((MonoObject *) ao)->element_class, required_type->element_class)) {
 		frame->ex = mono_get_exception_array_type_mismatch ();
 		FILL_IN_TRACE (frame->ex, frame);
 		return NULL;
 	}
-	esize = mono_array_element_size (ac);
+	gint32 esize = mono_array_element_size (ac);
 	return mono_array_addr_with_size (ao, esize, pos);
 }
 

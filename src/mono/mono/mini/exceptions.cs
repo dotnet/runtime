@@ -1842,7 +1842,6 @@ class Tests
 		7, 0, 7, 1, 7, 2, 7, 3, 7, 4, 7, 5, 7, 6, 7, 7, 7, 8,
 	};
 
-	[Category ("!INTERPRETER")]
 	public static int test_0_multi_dim_array_access () {
 		int [,] a = System.Array.CreateInstance (typeof (int),
 			new int [] {3,6}, new int [] {2,2 }) as int[,];
