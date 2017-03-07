@@ -1878,7 +1878,6 @@ class Tests
 		o = "buddy";
 	}
 
-	[Category ("!INTERPRETER")]
 	public static int test_2_array_mismatch () {
 		string[] a = { "hello", "world" };
 		object[] b = a;
