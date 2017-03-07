@@ -38,8 +38,12 @@
         /// <seealso cref="Activity"/>
         public void StopActivity(Activity activity, object args)
         {
+            // Stop sets the end time if it was unset, but we want it set before we issue the write
+            // so we do it now.   
+            if (activity.Duration == TimeSpan.Zero)
+                activity.SetEndTime(DateTime.UtcNow);
             Write(activity.OperationName + ".Stop", args);
-            activity.Stop();
+            activity.Stop();    // Resets Activity.Current (we want this after the Write)
         }
     }
 }
