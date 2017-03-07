@@ -169,7 +169,7 @@ namespace System.Security.Cryptography.Xml.Tests
             }
         }
 
-        [Fact(Skip = "TODO: fix me")]
+        [Fact]
         public void OnlyInner()
         {
             string test = "<xsl:stylesheet xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\" xmlns=\"http://www.w3.org/TR/xhtml1/strict\" version=\"1.0\">";
@@ -182,8 +182,7 @@ namespace System.Security.Cryptography.Xml.Tests
             doc.LoadXml(test);
 
             transform.LoadInnerXml(doc.ChildNodes);
-            Stream s = (Stream)transform.GetOutput();
-            Assert.Throws<ArgumentNullException>(() => Stream2Array(s));
+            Assert.Throws<ArgumentNullException>(() => transform.GetOutput());
         }
 
         private XmlDocument GetXslDoc()

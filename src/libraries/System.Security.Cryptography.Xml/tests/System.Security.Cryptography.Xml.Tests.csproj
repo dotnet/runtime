@@ -47,9 +47,6 @@
     <Compile Include="XmlLicenseTransformTest.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\..\Common\tests\System\IO\TempFile.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <EmbeddedResource Include="EncryptedXmlSample3.xml" />
     <EmbeddedResource Include="EncryptedXmlSample2.xml" />
     <EmbeddedResource Include="EncryptedXmlSample1.xml" />

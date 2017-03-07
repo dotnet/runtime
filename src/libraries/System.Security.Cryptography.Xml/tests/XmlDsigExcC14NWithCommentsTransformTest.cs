@@ -99,7 +99,7 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal(typeof(Stream), output[0]);
         }
 
-        [Fact(Skip = "TODO: fix me")]
+        [Fact]
         public void InputTypes()
         {
             Type[] input = transform.InputTypes;
@@ -107,7 +107,7 @@ namespace System.Security.Cryptography.Xml.Tests
             input[1] = null;
             input[2] = null;
             // property does not return a clone
-            Assert.All(transform.InputTypes, Assert.NotNull);
+            Assert.All(transform.InputTypes, Assert.Null);
 
             // it's not a static array
             transform = new UnprotectedXmlDsigExcC14NWithCommentsTransform();
