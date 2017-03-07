@@ -2767,20 +2767,16 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 		}
 #endif
 		MINT_IN_CASE(MINT_LDOBJ) {
-			int size;
 			void *p;
 			c = rtm->data_items[* (guint16 *)(ip + 1)];
 			ip += 2;
-			if (c->byval_arg.type != MONO_TYPE_VALUETYPE || c->byval_arg.data.klass->enumtype) {
-				p = sp [-1].data.p;
-				stackval_from_data (&c->byval_arg, &sp [-1], p, FALSE);
-			} else {
-				size = mono_class_value_size (c, NULL);
-				p = sp [-1].data.p;
+			p = sp [-1].data.p;
+			if (c->byval_arg.type == MONO_TYPE_VALUETYPE && !c->enumtype) {
+				int size = mono_class_value_size (c, NULL);
 				sp [-1].data.p = vt_sp;
-				memcpy(vt_sp, p, size);
 				vt_sp += (size + 7) & ~7;
 			}
+			stackval_from_data (&c->byval_arg, &sp [-1], p, FALSE);
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_LDSTR)
@@ -2919,12 +2915,7 @@ array_constructed:
 			if (!(isinst_obj || ((o->vtable->klass->rank == 0) && (o->vtable->klass->element_class == c->element_class))))
 				THROW_EX (mono_get_exception_invalid_cast (), ip);
 
-			if (c->byval_arg.type == MONO_TYPE_VALUETYPE && !c->enumtype) {
-				int size = mono_class_native_size (c, NULL);
-				sp [-1].data.p = vt_sp;
-				vt_sp += (size + 7) & ~7;
-			}
-			stackval_from_data (&c->byval_arg, &sp [-1], mono_object_unbox (o), FALSE);
+			sp [-1].data.p = mono_object_unbox (o);
 			ip += 2;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_THROW)
