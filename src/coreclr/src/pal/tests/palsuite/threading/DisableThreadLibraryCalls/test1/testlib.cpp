@@ -15,7 +15,7 @@
 
 static int Count;
 
-BOOL __stdcall DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
+BOOL PALAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 {
 
     if (fdwReason == DLL_PROCESS_ATTACH)
@@ -32,7 +32,7 @@ BOOL __stdcall DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 }
 
 #ifdef WIN32
-BOOL __stdcall _DllMainCRTStartup(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
+BOOL PALAPI _DllMainCRTStartup(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 {
     return DllMain(hinstDLL, fdwReason, lpvReserved);
 }
@@ -41,7 +41,7 @@ BOOL __stdcall _DllMainCRTStartup(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lp
 #ifdef WIN32
 __declspec(dllexport)
 #endif
-int __stdcall GetCallCount()
+int PALAPI GetCallCount()
 {
     return Count;
 }

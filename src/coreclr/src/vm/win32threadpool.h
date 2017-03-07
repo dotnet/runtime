@@ -997,7 +997,7 @@ public:
 
     // Private methods
 
-    static DWORD __stdcall intermediateThreadProc(PVOID arg);
+    static DWORD WINAPI intermediateThreadProc(PVOID arg);
 
     typedef struct {
         LPTHREAD_START_ROUTINE  lpThreadFunction;
@@ -1107,7 +1107,7 @@ public:
 
     static DWORD SafeWait(CLREvent * ev, DWORD sleepTime, BOOL alertable);
 
-    static DWORD __stdcall WorkerThreadStart(LPVOID lpArgs);
+    static DWORD WINAPI WorkerThreadStart(LPVOID lpArgs);
 
     static BOOL AddWaitRequest(HANDLE waitHandle, WaitInfo* waitInfo);
 
@@ -1116,7 +1116,7 @@ public:
 
     static BOOL CreateWaitThread();
 
-    static void __stdcall InsertNewWaitForSelf(WaitInfo* pArg);
+    static void WINAPI InsertNewWaitForSelf(WaitInfo* pArg);
 
     static int FindWaitIndex(const ThreadCB* threadCB, const HANDLE waitHandle);
 
@@ -1126,9 +1126,9 @@ public:
                                 unsigned index,      // array index 
                                 BOOL waitTimedOut);
 
-    static DWORD __stdcall WaitThreadStart(LPVOID lpArgs);
+    static DWORD WINAPI WaitThreadStart(LPVOID lpArgs);
 
-    static DWORD __stdcall AsyncCallbackCompletion(PVOID pArgs);
+    static DWORD WINAPI AsyncCallbackCompletion(PVOID pArgs);
 
     static void QueueTimerInfoForRelease(TimerInfo *pTimerInfo);
 
@@ -1152,7 +1152,7 @@ public:
                count * sizeof(LIST_ENTRY));
     }
 
-    static void __stdcall DeregisterWait(WaitInfo* pArgs);
+    static void WINAPI DeregisterWait(WaitInfo* pArgs);
 
 #ifndef FEATURE_PAL
     // holds the aggregate of system cpu usage of all processors
@@ -1169,7 +1169,7 @@ public:
 
     static int GetCPUBusyTime_NT(PROCESS_CPU_INFORMATION* pOldInfo);
     static BOOL CreateCompletionPortThread(LPVOID lpArgs);
-    static DWORD __stdcall CompletionPortThreadStart(LPVOID lpArgs);
+    static DWORD WINAPI CompletionPortThreadStart(LPVOID lpArgs);
 public:
     inline static bool HaveNativeWork()
     {
@@ -1190,7 +1190,7 @@ private:
     static BOOL CreateGateThread();
     static void EnsureGateThreadRunning();
     static bool ShouldGateThreadKeepRunning();
-    static DWORD __stdcall GateThreadStart(LPVOID lpArgs);
+    static DWORD WINAPI GateThreadStart(LPVOID lpArgs);
     static BOOL SufficientDelaySinceLastSample(unsigned int LastThreadCreationTime, 
                                                unsigned NumThreads, // total number of threads of that type (worker or CP)
                                                double   throttleRate=0.0 // the delay is increased by this percentage for each extra thread
@@ -1199,17 +1199,17 @@ private:
 
     static LPVOID   GetRecycledMemory(enum MemType memType);
 
-    static DWORD __stdcall TimerThreadStart(LPVOID args);
+    static DWORD WINAPI TimerThreadStart(LPVOID args);
     static void TimerThreadFire(); // helper method used by TimerThreadStart
-    static void __stdcall InsertNewTimer(TimerInfo* pArg);
+    static void WINAPI InsertNewTimer(TimerInfo* pArg);
     static DWORD FireTimers();
-    static DWORD __stdcall AsyncTimerCallbackCompletion(PVOID pArgs);
+    static DWORD WINAPI AsyncTimerCallbackCompletion(PVOID pArgs);
     static void DeactivateTimer(TimerInfo* timerInfo);
-    static DWORD __stdcall AsyncDeleteTimer(PVOID pArgs);
+    static DWORD WINAPI AsyncDeleteTimer(PVOID pArgs);
     static void DeleteTimer(TimerInfo* timerInfo);
-    static void __stdcall UpdateTimer(TimerUpdateInfo* pArgs);
+    static void WINAPI UpdateTimer(TimerUpdateInfo* pArgs);
 
-    static void __stdcall DeregisterTimer(TimerInfo* pArgs);
+    static void WINAPI DeregisterTimer(TimerInfo* pArgs);
 
     inline static DWORD QueueDeregisterWait(HANDLE waitThread, WaitInfo* waitInfo)
     {

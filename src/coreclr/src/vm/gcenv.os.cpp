@@ -576,7 +576,7 @@ struct GCThreadStubParam
 };
 
 // GC thread stub to convert GC thread function to an OS specific thread function
-static DWORD __stdcall GCThreadStub(void* param)
+static DWORD WINAPI GCThreadStub(void* param)
 {
     WRAPPER_NO_CONTRACT;
 

@@ -205,9 +205,9 @@ inline void *__cdecl operator new(size_t, void *_P)
 
 #endif // DEBUG
 
-#define NTAPI       __stdcall
-#define WINAPI      __stdcall
-#define CALLBACK    __stdcall
+#define NTAPI       __cdecl
+#define WINAPI      __cdecl
+#define CALLBACK    __cdecl
 #define NTSYSAPI
 
 #define _WINNT_
@@ -1110,7 +1110,7 @@ typedef struct _LIST_ENTRY {
    struct _LIST_ENTRY *Blink;
 } LIST_ENTRY, *PLIST_ENTRY;
 
-typedef VOID (__stdcall *WAITORTIMERCALLBACK)(PVOID, BOOLEAN);
+typedef VOID (NTAPI *WAITORTIMERCALLBACK)(PVOID, BOOLEAN);
 
 // PORTABILITY_ASSERT and PORTABILITY_WARNING macros are meant to be used to
 // mark places in the code that needs attention for portability. The usual

@@ -89,7 +89,7 @@ public:
 
     static VOID FinalizerThreadWorker(void *args);
     static void FinalizeObjectsOnShutdown(LPVOID args);
-    static DWORD __stdcall FinalizerThreadStart(void *args);
+    static DWORD WINAPI FinalizerThreadStart(void *args);
 
     static void FinalizerThreadCreate();
     static BOOL FinalizerThreadWatchDog();

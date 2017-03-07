@@ -26,7 +26,7 @@
 #define GETCALLCOUNT "_GetCallCount@0"
 #endif
 
-DWORD __stdcall ThreadFunc(LPVOID lpParam);
+DWORD PALAPI ThreadFunc(LPVOID lpParam);
 int RunTest(int DisableThreadCalls);
 
 int __cdecl main(int argc, char **argv)
@@ -78,7 +78,7 @@ int __cdecl main(int argc, char **argv)
 /*
  * Thread entry point.  Doesn't do anything.
  */
-DWORD __stdcall ThreadFunc(LPVOID lpParam)
+DWORD PALAPI ThreadFunc(LPVOID lpParam)
 {
     return 0;
 }

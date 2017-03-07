@@ -118,7 +118,11 @@
 // }
 
 
+#ifdef PLATFORM_UNIX
+#define QCALLTYPE __cdecl
+#else // PLATFORM_UNIX
 #define QCALLTYPE __stdcall
+#endif // !PLATFORM_UNIX
 
 #define BEGIN_QCALL                      \
     INSTALL_MANAGED_EXCEPTION_DISPATCHER \
