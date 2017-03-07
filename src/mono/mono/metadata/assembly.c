@@ -1125,6 +1125,16 @@ mono_assembly_remap_version (MonoAssemblyName *aname, MonoAssemblyName *dest_ana
 		dest_aname->minor = vset->minor;
 		dest_aname->build = vset->build;
 		dest_aname->revision = vset->revision;
+		if (current_runtime->public_key_token != NULL &&
+		    dest_aname->public_key_token [0] != 0 &&
+		    !mono_public_tokens_are_equal (dest_aname->public_key_token, (const mono_byte *)current_runtime->public_key_token)) {
+			mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_ASSEMBLY,
+				    "The request for assembly name '%s' with PublicKeyToken=%s was remapped to PublicKeyToken=%s",
+				    dest_aname->name,
+				    dest_aname->public_key_token,
+				    current_runtime->public_key_token);
+			memcpy (dest_aname->public_key_token, current_runtime->public_key_token, MONO_PUBLIC_KEY_TOKEN_LENGTH);
+		}
 		if (vmap->new_assembly_name != NULL) {
 			dest_aname->name = vmap->new_assembly_name;
 			mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_ASSEMBLY,
