@@ -356,15 +356,27 @@ namespace System.Diagnostics.Tests
 
                     var activity = new Activity("activity");
 
+                    // Test Activity.Stop
                     source.StartActivity(activity, arguments);
                     Assert.Equal(activity.OperationName + ".Start", observer.EventName);
                     Assert.Equal(arguments, observer.EventObject);
 
+                    Assert.NotNull(observer.Activity);
+                    Assert.True(DateTime.UtcNow - new TimeSpan(0, 1, 0) <= observer.Activity.StartTimeUtc);
+                    Assert.True(observer.Activity.StartTimeUtc <= DateTime.UtcNow);
+                    Assert.True(observer.Activity.Duration == TimeSpan.Zero);
+
                     observer.Reset();
 
+                    // Test Activity.Stop
                     source.StopActivity(activity, arguments);
                     Assert.Equal(activity.OperationName + ".Stop", observer.EventName);
                     Assert.Equal(arguments, observer.EventObject);
+
+                    // Confirm that duration is set. 
+                    Assert.NotNull(observer.Activity);
+                    Assert.True(TimeSpan.Zero < observer.Activity.Duration);
+                    Assert.True(observer.Activity.StartTimeUtc + observer.Activity.Duration < DateTime.UtcNow);
                 } 
             }
         }
@@ -430,16 +442,20 @@ namespace System.Diagnostics.Tests
             public string EventName { get; private set; }
             public object EventObject { get; private set; }
 
+            public Activity Activity { get; private set; }
+
             public void OnNext(KeyValuePair<string, object> value)
             {
                 EventName = value.Key;
                 EventObject = value.Value;
+                Activity = Activity.Current;
             }
 
             public void Reset()
             {
                 EventName = null;
                 EventObject = null;
+                Activity = null;
             }
 
             public void OnCompleted() { }
