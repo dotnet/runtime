@@ -19,7 +19,7 @@
 
         "android.21": {
             "#import": [ "android" ]
-	},
+        },
         "android.21-arm": {
             "#import": [ "android.21", "android-arm" ]
         },
