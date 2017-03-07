@@ -1800,7 +1800,6 @@ class Tests
 		return 0;
 	}
 
-	[Category ("!INTERPRETER")]
 	public static int test_3_checked_cast_un () {
                 ulong i = 0x8000000034000000;
                 long j;

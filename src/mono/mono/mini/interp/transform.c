@@ -2175,6 +2175,8 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 				ADD_CODE(&td, MINT_CONV_OVF_I8_UN_R8);
 				break;
 			case STACK_TYPE_I8:
+				if (*td.ip == CEE_CONV_OVF_I8_UN)
+					ADD_CODE (&td, MINT_CONV_OVF_I8_U8);
 				break;
 			case STACK_TYPE_I4:
 				ADD_CODE(&td, MINT_CONV_I8_U4);

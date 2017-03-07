@@ -3168,9 +3168,14 @@ array_constructed:
 			sp [-1].data.l = sp [-1].data.i;
 			++ip;
 			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_CONV_OVF_I8_U8)
+			if ((guint64) sp [-1].data.l > MYGINT64_MAX)
+				THROW_EX (mono_get_exception_overflow (), ip);
+			++ip;
+			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_U8_R8)
 		MINT_IN_CASE(MINT_CONV_OVF_I8_UN_R8)
-			if (sp [-1].data.f < 0 || sp [-1].data.f > 9223372036854775807LL)
+			if (sp [-1].data.f < 0 || sp [-1].data.f > MYGINT64_MAX)
 				THROW_EX (mono_get_exception_overflow (), ip);
 			sp [-1].data.l = (guint64)sp [-1].data.f;
 			++ip;
