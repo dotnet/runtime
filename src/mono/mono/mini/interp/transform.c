@@ -2482,6 +2482,9 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 			token = read32 (td.ip + 1);
 			klass = mono_class_get_full (image, token, generic_context);
 			switch (mint_type (&klass->byval_arg)) {
+				case MINT_TYPE_U1:
+					SIMPLE_OP (td, MINT_STELEM_U1);
+					break;
 				case MINT_TYPE_I4:
 					SIMPLE_OP (td, MINT_STELEM_I4);
 					break;
