@@ -8701,73 +8701,99 @@ void CEEInfo::getMethodVTableOffset (CORINFO_METHOD_HANDLE methodHnd,
 }
 
 /*********************************************************************/
+static CORINFO_METHOD_HANDLE resolveVirtualMethodHelper(MethodDesc* callerMethod,
+                                                        CORINFO_METHOD_HANDLE baseMethod,
+                                                        CORINFO_CLASS_HANDLE derivedClass)
+{
+    STANDARD_VM_CONTRACT;
+
+    MethodDesc* pBaseMD = GetMethod(baseMethod);
+    MethodTable* pBaseMT = pBaseMD->GetMethodTable();
+
+    // Method better be from a fully loaded class
+    _ASSERTE(pBaseMD->IsRestored() && pBaseMT->IsFullyLoaded());
+
+    //@GENERICS: shouldn't be doing this for instantiated methods as they live elsewhere
+    _ASSERTE(!pBaseMD->HasMethodInstantiation());
+
+    // Interface call devirtualization is not yet supported.
+    if (pBaseMT->IsInterface())
+    {
+        return nullptr;
+    }
+
+    // Method better be virtual
+    _ASSERTE(pBaseMD->IsVirtual());
+
+    TypeHandle DerivedClsHnd(derivedClass);
+    MethodTable* pDerivedMT = DerivedClsHnd.GetMethodTable();
+    _ASSERTE(pDerivedMT->IsRestored() && pDerivedMT->IsFullyLoaded());
+
+    // Can't devirtualize from __Canon.
+    if (DerivedClsHnd == TypeHandle(g_pCanonMethodTableClass))
+    {
+        return nullptr;
+    }
+
+    // The derived class should be a subclass of the the base class.
+    MethodTable* pCheckMT = pDerivedMT;
+
+    while (pCheckMT != nullptr)
+    {
+        if (pCheckMT->HasSameTypeDefAs(pBaseMT))
+        {
+            break;
+        }
+
+        pCheckMT = pCheckMT->GetParentMethodTable();
+    }
+
+    if (pCheckMT == nullptr)
+    {
+        return nullptr;
+    }
+
+    // The base method should be in the base vtable
+    WORD slot = pBaseMD->GetSlot();
+    _ASSERTE(slot < pBaseMT->GetNumVirtuals());
+    _ASSERTE(pBaseMD == pBaseMT->GetMethodDescForSlot(slot));
+
+    // Fetch the method that would be invoked if the class were
+    // exactly derived class. It is up to the jit to determine whether
+    // directly calling this method is correct.
+    MethodDesc* pDevirtMD = pDerivedMT->GetMethodDescForSlot(slot);
+    _ASSERTE(pDevirtMD->IsRestored());
+
+#ifdef FEATURE_READYTORUN_COMPILER
+    // Check if devirtualization is dependent upon cross-version
+    // bubble information and if so, disallow it.
+    if (IsReadyToRunCompilation())
+    {
+        Assembly* pCallerAssembly = callerMethod->GetModule()->GetAssembly();
+        bool allowDevirt =
+            IsInSameVersionBubble(pCallerAssembly , pDevirtMD->GetModule()->GetAssembly())
+            && IsInSameVersionBubble(pCallerAssembly , pDerivedMT->GetAssembly());
+
+        if (!allowDevirt)
+        {
+            return nullptr;
+        }
+    }
+#endif
+
+    return (CORINFO_METHOD_HANDLE) pDevirtMD;
+}
+
 CORINFO_METHOD_HANDLE CEEInfo::resolveVirtualMethod(CORINFO_METHOD_HANDLE methodHnd,
                                                     CORINFO_CLASS_HANDLE derivedClass)
 {
-    CONTRACTL {
-        SO_TOLERANT;
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     CORINFO_METHOD_HANDLE result = nullptr;
 
     JIT_TO_EE_TRANSITION();
 
-    MethodDesc* method = GetMethod(methodHnd);
-
-    // Method better be from a fully loaded class
-    _ASSERTE(method->IsRestored() && method->GetMethodTable()->IsFullyLoaded());
-
-    // Method better be virtual
-    _ASSERTE(method->IsVirtual());
-
-    //@GENERICS: shouldn't be doing this for instantiated methods as they live elsewhere
-    _ASSERTE(!method->HasMethodInstantiation());
-
-    // Method's class better not be an interface
-    _ASSERTE(!method->GetMethodTable()->IsInterface());
-
-    // Method better be in the vtable
-    WORD slot = method->GetSlot();
-    _ASSERTE(slot < method->GetMethodTable()->GetNumVirtuals());
-
-    // TODO: Derived class should have base class as parent...
-    TypeHandle DerivedClsHnd(derivedClass);
-
-    // If derived class is _Canon, we can't devirtualize.
-    if (DerivedClsHnd != TypeHandle(g_pCanonMethodTableClass))
-    {
-        MethodTable* pMT = DerivedClsHnd.GetMethodTable();
-
-        // MethodDescs returned to JIT at runtime are always fully loaded. Verify that it is the case.
-        _ASSERTE(pMT->IsRestored() && pMT->IsFullyLoaded());
-
-        MethodDesc* pDevirtMD = pMT->GetMethodDescForSlot(slot);
-
-        _ASSERTE(pDevirtMD->IsRestored());
-
-        // Allow devirtialization if jitting, or if prejitting and the
-        // method being jitted, the devirtualized class, and the
-        // devirtualized method are all in the same versioning bubble.
-        bool allowDevirt = true;
-
-#ifdef FEATURE_READYTORUN_COMPILER
-        if (IsReadyToRunCompilation())
-        {
-            Assembly * pCallerAssembly = m_pMethodBeingCompiled->GetModule()->GetAssembly();
-            allowDevirt =
-                IsInSameVersionBubble(pCallerAssembly , pDevirtMD->GetModule()->GetAssembly())
-                && IsInSameVersionBubble(pCallerAssembly , pMT->GetAssembly());
-        }
-#endif
-
-        if (allowDevirt)
-        {
-            result = (CORINFO_METHOD_HANDLE) pDevirtMD;
-        }
-    }
+    result = resolveVirtualMethodHelper(m_pMethodBeingCompiled, methodHnd, derivedClass);
 
     EE_TO_JIT_TRANSITION();
 
