@@ -351,5 +351,14 @@ namespace System.Collections.Tests
             Assert.True(comparerSet2.SetEquals(set));
         }
         #endregion
+
+        [Fact]
+        public void IntersectWith_SupersetEnumerableWithDups_ExpectedResultsInCorrectOrder ()
+        {
+            var set = new SortedSet<int> { 1, 3, 5, 7, 9 };
+            set.IntersectWith(new [] { 5, 7, 3, 7, 11, 7, 5, 2 });
+
+            Assert.Equal(new int[] { 3, 5, 7 }, set);
+        }
     }
 }

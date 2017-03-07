@@ -1070,6 +1070,9 @@ namespace System.Collections.Generic
             if (Count == 0)
                 return;
 
+            if (other == this)
+                return;
+
             // HashSet<T> optimizations can't be done until equality comparers and comparers are related
 
             // Technically, this would work as well with an ISorted<T>
@@ -1135,10 +1138,10 @@ namespace System.Collections.Generic
                 }
             }
 
-            if (toSave.Count < Count)
+            Clear();
+            foreach (T item in toSave)
             {
-                Clear();
-                AddAllElements(toSave);
+                AddIfNotPresent(item);
             }
         }
 
