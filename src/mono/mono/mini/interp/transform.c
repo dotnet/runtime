@@ -929,7 +929,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 	td.new_ip = td.new_code;
 	td.last_new_ip = NULL;
 
-	td.stack = g_malloc0(header->max_stack * sizeof(td.stack[0]));
+	td.stack = g_malloc0 ((header->max_stack + 1) * sizeof (td.stack [0]));
 	td.sp = td.stack;
 	td.max_stack_height = 0;
 
@@ -3168,6 +3168,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 			printf("\n");
 		}
 	}
+	g_assert (td.max_stack_height <= (header->max_stack + 1));
 
 	rtm->clauses = mono_mempool_alloc (domain->mp, header->num_clauses * sizeof(MonoExceptionClause));
 	memcpy (rtm->clauses, header->clauses, header->num_clauses * sizeof(MonoExceptionClause));
