@@ -15,7 +15,7 @@
 **===========================================================================*/
 #include <palsuite.h>
 
-typedef int (__stdcall *SIMPLEFUNCTION)(int);
+typedef int (PALAPI *SIMPLEFUNCTION)(int);
 
 /* SHLEXT is defined only for Unix variants */
 #if defined(SHLEXT)

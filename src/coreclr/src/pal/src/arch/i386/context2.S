@@ -83,7 +83,7 @@ LOCAL_LABEL(Done_CONTEXT_EXTENDED_REGISTERS):
     // Restore
     pop   ebx
     pop   eax
-    ret   4
+    ret
 LEAF_END CONTEXT_CaptureContext, _TEXT
 
 LEAF_ENTRY RtlCaptureContext, _TEXT

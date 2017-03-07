@@ -23,7 +23,7 @@
 static int g_attachCount = 0;
 
 /* standard DllMain() */
-BOOL __stdcall DllMain(HINSTANCE hinstDLL, DWORD reason, LPVOID lpvReserved)
+BOOL PALAPI DllMain(HINSTANCE hinstDLL, DWORD reason, LPVOID lpvReserved)
 {
     switch( reason )
     {
@@ -53,7 +53,7 @@ BOOL __stdcall DllMain(HINSTANCE hinstDLL, DWORD reason, LPVOID lpvReserved)
 }
 
 #if _WIN32
-BOOL __stdcall _DllMainCRTStartup(HINSTANCE hinstDLL, DWORD reason, LPVOID lpvReserved)
+BOOL PALAPI _DllMainCRTStartup(HINSTANCE hinstDLL, DWORD reason, LPVOID lpvReserved)
 {
     return DllMain(hinstDLL, reason, lpvReserved);
 }

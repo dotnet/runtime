@@ -1834,7 +1834,7 @@ void ThreadpoolMgr::RecycleMemory(LPVOID mem, enum MemType memType)
 
 // This is to avoid the 64KB/1MB aliasing problem present on Pentium 4 processors,
 // which can significantly impact performance with HyperThreading enabled
-DWORD __stdcall ThreadpoolMgr::intermediateThreadProc(PVOID arg)
+DWORD WINAPI ThreadpoolMgr::intermediateThreadProc(PVOID arg)
 {
     WRAPPER_NO_CONTRACT;
     STATIC_CONTRACT_SO_INTOLERANT;
@@ -1973,7 +1973,7 @@ BOOL ThreadpoolMgr::CreateWorkerThread()
 }
 
 
-DWORD __stdcall ThreadpoolMgr::WorkerThreadStart(LPVOID lpArgs)
+DWORD WINAPI ThreadpoolMgr::WorkerThreadStart(LPVOID lpArgs)
 {
     ClrFlsSetThreadType (ThreadType_Threadpool_Worker);
 
@@ -2670,7 +2670,7 @@ DWORD ThreadpoolMgr::MinimumRemainingWait(LIST_ENTRY* waitInfo, unsigned int num
 #pragma warning(disable:22008) // "Prefast integer overflow check on (0 + lval) is bogus.  Tried local disable without luck, doing whole method."
 #endif
 
-DWORD __stdcall ThreadpoolMgr::WaitThreadStart(LPVOID lpArgs)
+DWORD WINAPI ThreadpoolMgr::WaitThreadStart(LPVOID lpArgs)
 {
     CONTRACTL
     {
@@ -2937,7 +2937,7 @@ void ThreadpoolMgr::ProcessWaitCompletion(WaitInfo* waitInfo,
 }
 
 
-DWORD __stdcall ThreadpoolMgr::AsyncCallbackCompletion(PVOID pArgs)
+DWORD WINAPI ThreadpoolMgr::AsyncCallbackCompletion(PVOID pArgs)
 {
     CONTRACTL
     {
@@ -3350,7 +3350,7 @@ BOOL ThreadpoolMgr::CreateCompletionPortThread(LPVOID lpArgs)
     return FALSE;
 }
 
-DWORD __stdcall ThreadpoolMgr::CompletionPortThreadStart(LPVOID lpArgs)
+DWORD WINAPI ThreadpoolMgr::CompletionPortThreadStart(LPVOID lpArgs)
 {
     ClrFlsSetThreadType (ThreadType_Threadpool_IOCompletion);
 
@@ -4194,7 +4194,7 @@ public:
 };
 
 
-DWORD __stdcall ThreadpoolMgr::GateThreadStart(LPVOID lpArgs)
+DWORD WINAPI ThreadpoolMgr::GateThreadStart(LPVOID lpArgs)
 {
     ClrFlsSetThreadType (ThreadType_Gate);
 
@@ -4645,7 +4645,7 @@ BOOL ThreadpoolMgr::CreateTimerQueueTimer(PHANDLE phNewTimer,
 #pragma warning (disable : 4715)
 #endif
 #endif
-DWORD __stdcall ThreadpoolMgr::TimerThreadStart(LPVOID p)
+DWORD WINAPI ThreadpoolMgr::TimerThreadStart(LPVOID p)
 {
     ClrFlsSetThreadType (ThreadType_Timer);
 
@@ -4872,7 +4872,7 @@ DWORD ThreadpoolMgr::FireTimers()
     return nextFiringInterval;
 }
 
-DWORD __stdcall ThreadpoolMgr::AsyncTimerCallbackCompletion(PVOID pArgs)
+DWORD WINAPI ThreadpoolMgr::AsyncTimerCallbackCompletion(PVOID pArgs)
 {
     CONTRACTL
     {
@@ -4928,7 +4928,7 @@ void ThreadpoolMgr::DeactivateTimer(TimerInfo* timerInfo)
     timerInfo->state = timerInfo->state & ~TIMER_ACTIVE;
 }
 
-DWORD __stdcall ThreadpoolMgr::AsyncDeleteTimer(PVOID pArgs)
+DWORD WINAPI ThreadpoolMgr::AsyncDeleteTimer(PVOID pArgs)
 {
     CONTRACTL
     {

@@ -25,7 +25,7 @@ extern "C"
 {
 #endif // __cplusplus
 
-typedef BOOL (__stdcall *PDLLMAIN)(HINSTANCE, DWORD, LPVOID);   /* entry point of module */
+typedef BOOL (PALAPI *PDLLMAIN)(HINSTANCE, DWORD, LPVOID);   /* entry point of module */
 typedef HINSTANCE (PALAPI *PREGISTER_MODULE)(LPCSTR);           /* used to create the HINSTANCE for above DLLMain entry point */
 typedef VOID (PALAPI *PUNREGISTER_MODULE)(HINSTANCE);           /* used to cleanup the HINSTANCE for above DLLMain entry point */
 

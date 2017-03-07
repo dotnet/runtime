@@ -289,7 +289,7 @@ static void PulseAllHelper(Thread* pThread)
 }
 
 // When an exposed thread is started by Win32, this is where it starts.
-ULONG __stdcall ThreadNative::KickOffThread(void* pass)
+ULONG WINAPI ThreadNative::KickOffThread(void* pass)
 {
 
     CONTRACTL

@@ -50,7 +50,7 @@ BOOL PALAPI DllMain(HINSTANCE hinstDLL, DWORD reason, LPVOID lpvReserved)
 
 
 #ifdef WIN32
-BOOL __stdcall _DllMainCRTStartup(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
+BOOL PALAPI _DllMainCRTStartup(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 {
     return DllMain(hinstDLL, fdwReason, lpvReserved);
 }
