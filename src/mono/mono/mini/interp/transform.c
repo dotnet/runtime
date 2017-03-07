@@ -2685,6 +2685,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 				ADD_CODE(&td, MINT_CONV_OVF_U8_I4);
 				break;
 			case STACK_TYPE_I8:
+				ADD_CODE (&td, MINT_CONV_OVF_U8_I8);
 				break;
 			default:
 				g_assert_not_reached ();

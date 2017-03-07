@@ -3168,6 +3168,11 @@ array_constructed:
 			sp [-1].data.l = sp [-1].data.i;
 			++ip;
 			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_CONV_OVF_U8_I8)
+			if (sp [-1].data.l < 0)
+				THROW_EX (mono_get_exception_overflow (), ip);
+			++ip;
+			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CONV_OVF_I8_U8)
 			if ((guint64) sp [-1].data.l > MYGINT64_MAX)
 				THROW_EX (mono_get_exception_overflow (), ip);

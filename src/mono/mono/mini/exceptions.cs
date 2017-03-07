@@ -1815,7 +1815,6 @@ class Tests
 		return 3;
 	}
 	
-	[Category ("!INTERPRETER")]
 	public static int test_4_checked_cast () {
                 long i;
                 ulong j;
