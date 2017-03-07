@@ -506,25 +506,6 @@ namespace System.Tests
             Assert.True(einit);
             Assert.NotNull(elock);
             Assert.Null(LazyInitializer.EnsureInitialized(ref e, ref einit, ref elock, () => { initCount++; return null; }));
-
-            // Func based initialization without tracking boolean (uninitialized).
-            string f = null;
-            object fLock = null;
-            Assert.Equal(strTemplate, LazyInitializer.EnsureInitialized(ref f, ref fLock, () => strTemplate));
-            Assert.Equal(strTemplate, f);
-            Assert.NotNull(fLock);
-
-            // Func based initialization without tracking boolean (already initialized).
-            string g = strTemplate;
-            object gLock = null;
-            Assert.Equal(strTemplate, LazyInitializer.EnsureInitialized(ref g, ref gLock, () => strTemplate + "bar"));
-            Assert.Equal(strTemplate, g);
-            Assert.Null(gLock);
-
-            // Func based initialization without tracking boolean (nulls not permitted).
-            string h = null;
-            object hLock = null;
-            Assert.Throws<InvalidOperationException>(() => LazyInitializer.EnsureInitialized(ref h, ref hLock, () => null));
         }
 
         [Fact]
