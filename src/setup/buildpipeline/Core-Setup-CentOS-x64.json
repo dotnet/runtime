@@ -20,7 +20,7 @@
     },
     {
       "enabled": true,
-      "continueOnError": false,
+      "continueOnError": true,
       "alwaysRun": false,
       "displayName": "Clean up Docker images and containers.",
       "timeoutInMinutes": 0,
@@ -30,7 +30,7 @@
         "definitionType": "task"
       },
       "inputs": {
-        "scriptPath": "pkg/Tools/scripts/docker/cleanup-build.sh",
+        "scriptPath": "pkg/Tools/scripts/docker/cleanup-docker.sh",
         "args": "",
         "disableAutoCwd": "false",
         "cwd": "",
