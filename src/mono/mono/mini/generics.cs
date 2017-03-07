@@ -1135,7 +1135,6 @@ class Tests
 	}
 #endif
 
-	[Category ("!INTERPRETER")]
 	public static int test_0_delegate_callvirt_fullaot () {
 		Func<string> f = delegate () { return "A"; };
         var f2 = (Func<Func<string>, string>)Delegate.CreateDelegate (typeof

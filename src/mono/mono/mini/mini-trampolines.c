@@ -20,6 +20,10 @@
 #include "mini.h"
 #include "lldb.h"
 
+#ifdef ENABLE_INTERPRETER
+#include "interp/interp.h"
+#endif
+
 /*
  * Address of the trampoline code.  This is used by the debugger to check
  * whether a method is a trampoline.
@@ -1458,6 +1462,15 @@ mono_create_jump_trampoline (MonoDomain *domain, MonoMethod *method, gboolean ad
 	guint32 code_size = 0;
 
 	error_init (error);
+
+#ifdef ENABLE_INTERPRETER
+	if (mono_use_interpreter) {
+		gpointer ret = mono_interp_create_trampoline (domain, method, error);
+		if (!mono_error_ok (error))
+			return NULL;
+		return ret;
+	}
+#endif
 
 	code = mono_jit_find_compiled_method_with_jit_info (domain, method, &ji);
 	/*

@@ -277,8 +277,8 @@ mono_interp_get_runtime_method (MonoDomain *domain, MonoMethod *method, MonoErro
 	return rtm;
 }
 
-static gpointer
-interp_create_trampoline (MonoDomain *domain, MonoMethod *method, MonoError *error)
+gpointer
+mono_interp_create_trampoline (MonoDomain *domain, MonoMethod *method, MonoError *error)
 {
 	if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
 		method = mono_marshal_get_synchronized_wrapper (method);
@@ -937,9 +937,8 @@ ves_pinvoke_method (MonoInvocation *frame, MonoMethodSignature *sig, MonoFuncV a
 void
 mono_interp_init_delegate (MonoDelegate *del)
 {
-	g_assert (!del->method);
-	del->method = ((RuntimeMethod *) del->method_ptr)->method;
-	g_assert (del->method);
+	if (!del->method)
+		del->method = ((RuntimeMethod *) del->method_ptr)->method;
 }
 
 /*
