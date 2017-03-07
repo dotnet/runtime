@@ -3254,11 +3254,13 @@ array_constructed:
 			sp [-1].data.i = mono_object_class (sp [-1].data.p)->rank;
 			ip++;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDELEMA) {
+		MINT_IN_CASE(MINT_LDELEMA)
+		MINT_IN_CASE(MINT_LDELEMA_TC) {
+			gboolean needs_typecheck = *ip == MINT_LDELEMA_TC;
 			guint32 esize;
 			mono_u aindex;
 			
-			/*token = READ32 (ip)*/;
+			MonoClass *klass = rtm->data_items [*(guint16 *) (ip + 1)];
 			ip += 2;
 			sp -= 2;
 
@@ -3268,10 +3270,12 @@ array_constructed:
 			if (aindex >= mono_array_length ((MonoArray *) o))
 				THROW_EX (mono_get_exception_index_out_of_range (), ip - 2);
 
-			/* check the array element corresponds to token */
+			if (needs_typecheck && o->vtable->klass->element_class != klass)
+				THROW_EX (mono_get_exception_array_type_mismatch (), ip);
+
 			esize = mono_array_element_size (((MonoArray *) o)->obj.vtable->klass);
-			
 			sp->data.p = mono_array_addr_with_size ((MonoArray *) o, esize, aindex);
+
 			++sp;
 			MINT_IN_BREAK;
 		}

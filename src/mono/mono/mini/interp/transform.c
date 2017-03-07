@@ -863,9 +863,8 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 	MonoDomain *domain = mono_domain_get ();
 	MonoClass *constrained_class = NULL;
 	MonoError error;
-	int offset, mt;
-	int i;
-	int i32;
+	int offset, mt, i, i32;
+	gboolean readonly = FALSE;
 	MonoClass *klass;
 	MonoClassField *field;
 	const unsigned char *end;
@@ -2172,12 +2171,18 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 			token = read32 (td.ip + 1);
 
 			if (method->wrapper_type != MONO_WRAPPER_NONE)
-				klass = (MonoClass *)mono_method_get_wrapper_data (method, token);
+				klass = (MonoClass *) mono_method_get_wrapper_data (method, token);
 			else
 				klass = mono_class_get_full (image, token, generic_context);
 
-			ADD_CODE(&td, MINT_LDELEMA);
+			if (!klass->valuetype && method->wrapper_type == MONO_WRAPPER_NONE && !readonly) {
+				ADD_CODE (&td, MINT_LDELEMA_TC);
+			} else {
+				ADD_CODE (&td, MINT_LDELEMA);
+			}
 			ADD_CODE(&td, get_data_item_index (&td, klass));
+			readonly = FALSE;
+
 			td.ip += 5;
 			--td.sp;
 			SET_SIMPLE_TYPE(td.sp - 1, STACK_TYPE_MP);
@@ -2993,6 +2998,10 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 				ADD_CODE(&td, MINT_CPBLK);
 				td.sp -= 3;
 				++td.ip;
+				break;
+			case CEE_READONLY_:
+				readonly = TRUE;
+				td.ip += 1;
 				break;
 			case CEE_CONSTRAINED_:
 				token = read32 (td.ip + 1);
