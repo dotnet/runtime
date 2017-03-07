@@ -158,6 +158,7 @@
 	// you should not see tons of register spilling.
 	//
 	.method static public int32 test_0_bytesreg1_free () il managed {
+		.custom instance void [TestDriver]CategoryAttribute::.ctor(string) = ( 01 00 0C 21 49 4E 54 45 52 50 52 45 54 45 52 00 00 )   // ...!INTERPRETER.
 		.locals init (
 			unsigned int8	   dest,
 			int32	           src,
@@ -219,6 +220,7 @@
 	
 	// this only happens with the managed pointer, not an unmanaged one.
 	.method static public int32 test_0_foo () il managed {
+		.custom instance void [TestDriver]CategoryAttribute::.ctor(string) = ( 01 00 0C 21 49 4E 54 45 52 50 52 45 54 45 52 00 00 )   // ...!INTERPRETER.
 	
 		.locals init (
 			int32&	buf
@@ -236,6 +238,7 @@
 	}
 
 	.method static public int32 test_0_localloc () cil managed {
+		.custom instance void [TestDriver]CategoryAttribute::.ctor(string) = ( 01 00 0C 21 49 4E 54 45 52 50 52 45 54 45 52 00 00 )   // ...!INTERPRETER.
 		.locals init (native int, native int, native int, native int, int32)
 
 		ldc.i4 6
@@ -640,6 +643,7 @@ COND:   ldloc.0
 	}
 
 	.method static public int32 test_11_switch_with_nonempty_stack () il managed {
+		.custom instance void [TestDriver]CategoryAttribute::.ctor(string) = ( 01 00 0C 21 49 4E 54 45 52 50 52 45 54 45 52 00 00 )   // ...!INTERPRETER.
 		.maxstack 16
 
 		ldc.i4.5
@@ -752,6 +756,7 @@ COND:   ldloc.0
 	}
 
 	.method public static int32 test_0_conv_ovf_u_un () cil managed {
+		.custom instance void [TestDriver]CategoryAttribute::.ctor(string) = ( 01 00 0C 21 49 4E 54 45 52 50 52 45 54 45 52 00 00 )   // ...!INTERPRETER.
 		.maxstack 16
 
 		ldc.i4 1234
@@ -854,6 +859,7 @@ COND:   ldloc.0
 	}
 
 	.method public static int32 test_0_lconv_ovf_u_un () cil managed {
+		.custom instance void [TestDriver]CategoryAttribute::.ctor(string) = ( 01 00 0C 21 49 4E 54 45 52 50 52 45 54 45 52 00 00 )   // ...!INTERPRETER.
 		.maxstack 16
 
 		ldc.i4 1234
@@ -886,6 +892,7 @@ COND:   ldloc.0
 	}
 
 	.method public static int32 test_0_lconv_to_ovf_u8_un () cil managed {
+		.custom instance void [TestDriver]CategoryAttribute::.ctor(string) = ( 01 00 0C 21 49 4E 54 45 52 50 52 45 54 45 52 00 00 )   // ...!INTERPRETER.
 		.maxstack 16
 
 		ldc.i4 1234
@@ -902,6 +909,7 @@ COND:   ldloc.0
 	}
 
 	.method public static int32 test_2_lconv_to_ovf_i4_un () cil managed {
+		.custom instance void [TestDriver]CategoryAttribute::.ctor(string) = ( 01 00 0C 21 49 4E 54 45 52 50 52 45 54 45 52 00 00 )   // ...!INTERPRETER.
 		.maxstack 16
 		.locals init (int32 res)
 
@@ -1124,6 +1132,7 @@ COND:   ldloc.0
 	}
 
 	.method public static int32 test_7_conv_ovf_u8_un () {
+		.custom instance void [TestDriver]CategoryAttribute::.ctor(string) = ( 01 00 0C 21 49 4E 54 45 52 50 52 45 54 45 52 00 00 )   // ...!INTERPRETER.
     	.maxstack  2
         .locals    init (unsigned int64)
 
@@ -1210,6 +1219,7 @@ COND:   ldloc.0
    } // end of class xxx
 
 	.method public static int32 test_0_newobj_vtype () {
+		.custom instance void [TestDriver]CategoryAttribute::.ctor(string) = ( 01 00 0C 21 49 4E 54 45 52 50 52 45 54 45 52 00 00 )   // ...!INTERPRETER.
 		.maxstack 6
 		.locals init (
 			valuetype Tests/xxx V_0
@@ -1247,7 +1257,8 @@ COND:   ldloc.0
 	}
 
 	.method public static int32 test_1_filters () {
-		.custom instance void [TestDriver]CategoryAttribute::.ctor(string) = ( 01 00 08 21 42 49 54 43 4F 44 45 00 00 )          // ...!BITCODE..
+		.custom instance void [TestDriver]CategoryAttribute::.ctor(string) = ( 01 00 0C 21 49 4E 54 45 52 50 52 45 54 45 52 00 00 )   // ...!INTERPRETER.
+		// .custom instance void [TestDriver]CategoryAttribute::.ctor(string) = ( 01 00 08 21 42 49 54 43 4F 44 45 00 00 )          // ...!BITCODE..
 		.maxstack 16
 		.locals init (
 			int32 res
@@ -1295,6 +1306,7 @@ COND:   ldloc.0
 	}
 
 	.method public static int32 test_5_cpobj () {
+		.custom instance void [TestDriver]CategoryAttribute::.ctor(string) = ( 01 00 0C 21 49 4E 54 45 52 50 52 45 54 45 52 00 00 )   // ...!INTERPRETER.
 		.maxstack 8
 		.locals init (  
 				valuetype Tests/TheStruct v_0, 
@@ -1351,6 +1363,7 @@ COND:   ldloc.0
 	}
 
 	.method public static int32 test_1_cpobj_reference () {
+		.custom instance void [TestDriver]CategoryAttribute::.ctor(string) = ( 01 00 0C 21 49 4E 54 45 52 50 52 45 54 45 52 00 00 )   // ...!INTERPRETER.
 		.maxstack 8
 		.locals init (  
 				object v_0, 
@@ -1371,6 +1384,7 @@ COND:   ldloc.0
 	}
 
 	.method public static int32 test_1_initobj_reference () {
+		.custom instance void [TestDriver]CategoryAttribute::.ctor(string) = ( 01 00 0C 21 49 4E 54 45 52 50 52 45 54 45 52 00 00 )   // ...!INTERPRETER.
 		.maxstack 8
 		.locals init (  
 				object v_0
@@ -1810,6 +1824,7 @@ HAS_VALUE:	ldc.i4.1
 
 	//Bug 372410
 	.method static public int32 test_0_array_address_type_check () cil managed {
+		.custom instance void [TestDriver]CategoryAttribute::.ctor(string) = ( 01 00 0C 21 49 4E 54 45 52 50 52 45 54 45 52 00 00 )   // ...!INTERPRETER.
 		.maxstack 16
 		.locals init (object[] V_0,
 					  object[,] V_1)
@@ -2485,6 +2500,7 @@ OK_2:
 
 	.method public static int32 test_2_leave_multiple_blocks_from_end ()
 	{
+		.custom instance void [TestDriver]CategoryAttribute::.ctor(string) = ( 01 00 0C 21 49 4E 54 45 52 50 52 45 54 45 52 00 00 )   // ...!INTERPRETER.
 		.locals init (int32 V_0)
 
 		.try {
@@ -2515,6 +2531,7 @@ END:
 
 	.method public static int32 test_3_leave_multiple_blocks_from_hole ()
 	{
+		.custom instance void [TestDriver]CategoryAttribute::.ctor(string) = ( 01 00 0C 21 49 4E 54 45 52 50 52 45 54 45 52 00 00 )   // ...!INTERPRETER.
 		.locals init (int32 V_0)
 
 		.try {
@@ -2599,6 +2616,7 @@ END:
 
 	.method public static default int32 test_0_wrap_non_exception_throws () cil managed
 	{
+	  .custom instance void [TestDriver]CategoryAttribute::.ctor(string) = ( 01 00 0C 21 49 4E 54 45 52 50 52 45 54 45 52 00 00 )   // ...!INTERPRETER.
 	  .try {
 	  	    newobj instance void class [mscorlib]System.Object::'.ctor'()
 			throw
@@ -2612,6 +2630,7 @@ END:
     }
 
 	.method public static default int32 test_0_typespec_modopt () cil managed {
+		.custom instance void [TestDriver]CategoryAttribute::.ctor(string) = ( 01 00 0C 21 49 4E 54 45 52 50 52 45 54 45 52 00 00 )   // ...!INTERPRETER.
 		ldtoken class Tests modopt (Tests)
 		pop
 		ldc.i4.0
@@ -2627,6 +2646,7 @@ END:
   	}
 
 	.method public static default int32 test_1_sizeof_gshared () cil managed {
+		.custom instance void [TestDriver]CategoryAttribute::.ctor(string) = ( 01 00 0C 21 49 4E 54 45 52 50 52 45 54 45 52 00 00 )   // ...!INTERPRETER.
 	    call   int32 Tests::SizeOfT<int8>()
 		ldc.i4.1
 		ceq
@@ -2688,6 +2708,7 @@ END:
 	.method public static
 			default int32 test_0_llvm_regress_171 () cil managed
 	{
+		.custom instance void [TestDriver]CategoryAttribute::.ctor(string) = ( 01 00 0C 21 49 4E 54 45 52 50 52 45 54 45 52 00 00 )   // ...!INTERPRETER.
 		.locals init (
 			int32 i
 		)
@@ -2710,6 +2731,7 @@ END:
 	.method public static
 			default int32 test_4_ldfld_stfld_static () cil managed
 	{
+		.custom instance void [TestDriver]CategoryAttribute::.ctor(string) = ( 01 00 0C 21 49 4E 54 45 52 50 52 45 54 45 52 00 00 )   // ...!INTERPRETER.
 		ldnull
 		ldc.i4 2
 		stfld int32 Tests::static_a

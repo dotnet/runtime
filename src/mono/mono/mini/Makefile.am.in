@@ -547,6 +547,7 @@ iregtests = \
 	arrays.exe \
 	basic-math.exe \
 	exceptions.exe \
+	iltests.exe \
 	devirtualization.exe \
 	generics.exe \
 	basic-simd.exe \
