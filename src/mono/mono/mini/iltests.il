@@ -2695,7 +2695,6 @@ END:
 	.method public static
 			default int32 test_0_llvm_regress_171 () cil managed
 	{
-		.custom instance void [TestDriver]CategoryAttribute::.ctor(string) = ( 01 00 0C 21 49 4E 54 45 52 50 52 45 54 45 52 00 00 )   // ...!INTERPRETER.
 		.locals init (
 			int32 i
 		)
@@ -2718,7 +2717,6 @@ END:
 	.method public static
 			default int32 test_4_ldfld_stfld_static () cil managed
 	{
-		.custom instance void [TestDriver]CategoryAttribute::.ctor(string) = ( 01 00 0C 21 49 4E 54 45 52 50 52 45 54 45 52 00 00 )   // ...!INTERPRETER.
 		ldnull
 		ldc.i4 2
 		stfld int32 Tests::static_a

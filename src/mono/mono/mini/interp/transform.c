@@ -1981,10 +1981,17 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 			CHECK_STACK (&td, 1);
 			token = read32 (td.ip + 1);
 			field = mono_field_from_token (image, token, &klass, generic_context);
+			gboolean is_static = !!(field->type->attrs & FIELD_ATTRIBUTE_STATIC);
 			mono_class_init (klass);
-			mt = mint_type(field->type);
-			ADD_CODE(&td, MINT_LDFLDA);
-			ADD_CODE(&td, klass->valuetype ? field->offset - sizeof(MonoObject) : field->offset);
+			if (is_static) {
+				ADD_CODE (&td, MINT_POP);
+				ADD_CODE (&td, 0);
+				ADD_CODE (&td, MINT_LDSFLDA);
+				ADD_CODE (&td, get_data_item_index (&td, field));
+			} else {
+				ADD_CODE (&td, MINT_LDFLDA);
+				ADD_CODE (&td, klass->valuetype ? field->offset - sizeof (MonoObject) : field->offset);
+			}
 			td.ip += 5;
 			SET_SIMPLE_TYPE(td.sp - 1, STACK_TYPE_MP);
 			break;
@@ -1992,16 +1999,25 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 			CHECK_STACK (&td, 1);
 			token = read32 (td.ip + 1);
 			field = mono_field_from_token (image, token, &klass, generic_context);
+			gboolean is_static = !!(field->type->attrs & FIELD_ATTRIBUTE_STATIC);
 			mono_class_init (klass);
 
 			MonoClass *field_klass = mono_class_from_mono_type (field->type);
 			mt = mint_type (&field_klass->byval_arg);
 			if (klass->marshalbyref) {
+				g_assert (!is_static);
 				ADD_CODE(&td, mt == MINT_TYPE_VT ? MINT_LDRMFLD_VT :  MINT_LDRMFLD);
 				ADD_CODE(&td, get_data_item_index (&td, field));
 			} else  {
-				ADD_CODE(&td, MINT_LDFLD_I1 + mt - MINT_TYPE_I1);
-				ADD_CODE(&td, klass->valuetype ? field->offset - sizeof(MonoObject) : field->offset);
+				if (is_static) {
+					ADD_CODE (&td, MINT_POP);
+					ADD_CODE (&td, 0);
+					ADD_CODE (&td, mt == MINT_TYPE_VT ? MINT_LDSFLD_VT : MINT_LDSFLD);
+					ADD_CODE (&td, get_data_item_index (&td, field));
+				} else {
+					ADD_CODE (&td, MINT_LDFLD_I1 + mt - MINT_TYPE_I1);
+					ADD_CODE (&td, klass->valuetype ? field->offset - sizeof(MonoObject) : field->offset);
+				}
 			}
 			if (mt == MINT_TYPE_VT) {
 				int size = mono_class_value_size (field_klass, NULL);
@@ -2020,18 +2036,28 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 			SET_TYPE(td.sp - 1, stack_type [mt], field_klass);
 			break;
 		}
-		case CEE_STFLD:
+		case CEE_STFLD: {
 			CHECK_STACK (&td, 2);
 			token = read32 (td.ip + 1);
 			field = mono_field_from_token (image, token, &klass, generic_context);
+			gboolean is_static = !!(field->type->attrs & FIELD_ATTRIBUTE_STATIC);
 			mono_class_init (klass);
 			mt = mint_type(field->type);
+
 			if (klass->marshalbyref) {
+				g_assert (!is_static);
 				ADD_CODE(&td, mt == MINT_TYPE_VT ? MINT_STRMFLD_VT : MINT_STRMFLD);
 				ADD_CODE(&td, get_data_item_index (&td, field));
 			} else  {
-				ADD_CODE(&td, MINT_STFLD_I1 + mt - MINT_TYPE_I1);
-				ADD_CODE(&td, klass->valuetype ? field->offset - sizeof(MonoObject) : field->offset);
+				if (is_static) {
+					ADD_CODE (&td, MINT_POP);
+					ADD_CODE (&td, 1);
+					ADD_CODE (&td, mt == MINT_TYPE_VT ? MINT_STSFLD_VT : MINT_STSFLD);
+					ADD_CODE (&td, get_data_item_index (&td, field));
+				} else {
+					ADD_CODE (&td, MINT_STFLD_I1 + mt - MINT_TYPE_I1);
+					ADD_CODE (&td, klass->valuetype ? field->offset - sizeof(MonoObject) : field->offset);
+				}
 			}
 			if (mt == MINT_TYPE_VT) {
 				MonoClass *klass = mono_class_from_mono_type (field->type);
@@ -2042,6 +2068,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 			td.ip += 5;
 			td.sp -= 2;
 			break;
+		}
 		case CEE_LDSFLDA:
 			token = read32 (td.ip + 1);
 			field = mono_field_from_token (image, token, &klass, generic_context);
