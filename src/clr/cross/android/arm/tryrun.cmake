@@ -1,3 +1,7 @@
+SET( HAVE_PT_REGS 
+     0
+     CACHE STRING "PT_SETREGS is not available on Android" FORCE)
+
 SET( HAVE_COMPATIBLE_EXP_EXITCODE 
      1
      CACHE STRING "Result from TRY_RUN" FORCE)
