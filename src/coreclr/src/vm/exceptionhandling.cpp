@@ -47,6 +47,13 @@ inline void RestoreNonvolatileRegisters(PCONTEXT pContext, PKNONVOLATILE_CONTEXT
     ENUM_CALLEE_SAVED_REGISTERS();
 #undef CALLEE_SAVED_REGISTER
 }
+
+inline void RestoreNonvolatileRegisterPointers(PT_KNONVOLATILE_CONTEXT_POINTERS pContextPointers, PKNONVOLATILE_CONTEXT pNonvolatileContext)
+{
+#define CALLEE_SAVED_REGISTER(reg) pContextPointers->reg = &pNonvolatileContext->reg;
+    ENUM_CALLEE_SAVED_REGISTERS();
+#undef CALLEE_SAVED_REGISTER
+}
 #endif
 #ifndef DACCESS_COMPILE
 
@@ -1312,6 +1319,7 @@ void ExceptionTracker::InitializeCurrentContextForCrawlFrame(CrawlFrame* pcfThis
         SetIP(pRD->pCurrentContext, 0);
 #else // !USE_CURRENT_CONTEXT_IN_FILTER
         RestoreNonvolatileRegisters(pRD->pCurrentContext, pDispatcherContext->CurrentNonVolatileContextRecord);
+        RestoreNonvolatileRegisterPointers(pRD->pCurrentContextPointers, pDispatcherContext->CurrentNonVolatileContextRecord);
 #endif // USE_CURRENT_CONTEXT_IN_FILTER
 
         *(pRD->pCallerContext)      = *(pDispatcherContext->ContextRecord);
