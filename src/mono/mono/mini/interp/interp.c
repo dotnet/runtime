@@ -3198,6 +3198,9 @@ array_constructed:
 		}
 		MINT_IN_CASE(MINT_NEWARR)
 			sp [-1].data.p = (MonoObject*) mono_array_new_checked (context->domain, rtm->data_items[*(guint16 *)(ip + 1)], sp [-1].data.i, &error);
+			if (!mono_error_ok (&error)) {
+				THROW_EX (mono_error_convert_to_exception (&error), ip);
+			}
 			mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			ip += 2;
 			/*if (profiling_classes) {

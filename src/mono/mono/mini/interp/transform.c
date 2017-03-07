@@ -2219,7 +2219,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 
 			break;
 		}
-		case CEE_NEWARR:
+		case CEE_NEWARR: {
 			CHECK_STACK (&td, 1);
 			token = read32 (td.ip + 1);
 
@@ -2228,11 +2228,21 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 			else
 				klass = mono_class_get_full (image, token, generic_context);
 
-			ADD_CODE(&td, MINT_NEWARR);
-			ADD_CODE(&td, get_data_item_index (&td, klass));
-			SET_TYPE(td.sp - 1, STACK_TYPE_O, klass);
+			unsigned char lentype = (td.sp - 1)->type;
+			if (lentype == STACK_TYPE_I8) {
+				/* mimic mini behaviour */
+				ADD_CODE (&td, MINT_CONV_OVF_U4_I8);
+			} else {
+				g_assert (lentype == STACK_TYPE_I4);
+				ADD_CODE (&td, MINT_CONV_OVF_U4_I4);
+			}
+			SET_SIMPLE_TYPE (td.sp - 1, STACK_TYPE_I4);
+			ADD_CODE (&td, MINT_NEWARR);
+			ADD_CODE (&td, get_data_item_index (&td, klass));
+			SET_TYPE (td.sp - 1, STACK_TYPE_O, klass);
 			td.ip += 5;
 			break;
+		}
 		case CEE_LDLEN:
 			CHECK_STACK (&td, 1);
 			SIMPLE_OP (td, MINT_LDLEN);

@@ -779,7 +779,6 @@ class Tests
 	}
 
 	// #13544
-	[Category ("!INTERPRETER")]
 	public static int test_0_newarr_ovf () {
 		if (!alloc_long (5000000000))
 			return 1;
