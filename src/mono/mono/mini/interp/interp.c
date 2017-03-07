@@ -1669,16 +1669,19 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 
 	rtm = frame->runtime_method;
 	frame->args = alloca (rtm->alloca_size);
+	memset (frame->args, 0, rtm->alloca_size);
+
 	sp = frame->stack = (stackval *)((char *)frame->args + rtm->args_size);
-#if DEBUG_INTERP
-	if (tracing > 1)
-		memset(sp, 0, rtm->stack_size);
-#endif
+	memset (sp, 0, rtm->stack_size);
+
 	vt_sp = (unsigned char *) sp + rtm->stack_size;
+	memset (vt_sp, 0, rtm->vt_stack_size);
 #if DEBUG_INTERP
 	vtalloc = vt_sp;
 #endif
+
 	locals = (unsigned char *) vt_sp + rtm->vt_stack_size;
+	memset (vt_sp, 0, rtm->locals_size);
 
 	child_frame.parent = frame;
 
@@ -2823,11 +2826,11 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			 */
 			if (newobj_class->valuetype) {
 				MonoType *t = &newobj_class->byval_arg;
+				memset (&valuetype_this, 0, sizeof (stackval));
 				if (!newobj_class->enumtype && (t->type == MONO_TYPE_VALUETYPE || (t->type == MONO_TYPE_GENERICINST && mono_type_generic_inst_is_valuetype (t)))) {
 					sp->data.p = vt_sp;
 					valuetype_this.data.p = vt_sp;
 				} else {
-					memset (&valuetype_this, 0, sizeof (stackval));
 					sp->data.p = &valuetype_this;
 				}
 			} else {
