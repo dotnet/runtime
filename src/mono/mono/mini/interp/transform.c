@@ -2688,14 +2688,16 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 			} else {
 				handle = mono_ldtoken (image, token, &klass, generic_context);
 			}
-			mt = mint_type(&klass->byval_arg);
+			mt = mint_type (&klass->byval_arg);
 			g_assert (mt == MINT_TYPE_VT);
 			size = mono_class_value_size (klass, NULL);
 			g_assert (size == sizeof(gpointer));
-			PUSH_VT(&td, sizeof(gpointer));
-			ADD_CODE(&td, MINT_LDTOKEN);
-			ADD_CODE(&td, get_data_item_index (&td, handle));
-			PUSH_SIMPLE_TYPE(&td, stack_type [mt]);
+			PUSH_VT (&td, sizeof(gpointer));
+			ADD_CODE (&td, MINT_LDTOKEN);
+			ADD_CODE (&td, get_data_item_index (&td, handle));
+
+			SET_TYPE (td.sp, stack_type [mt], klass);
+			td.sp++;
 			td.ip += 5;
 			break;
 		}

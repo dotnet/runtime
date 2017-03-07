@@ -2487,7 +2487,6 @@ OK_2:
 
 	.method public static int32 test_2_leave_multiple_blocks_from_end ()
 	{
-		.custom instance void [TestDriver]CategoryAttribute::.ctor(string) = ( 01 00 0C 21 49 4E 54 45 52 50 52 45 54 45 52 00 00 )   // ...!INTERPRETER.
 		.locals init (int32 V_0)
 
 		.try {
@@ -2616,7 +2615,6 @@ END:
     }
 
 	.method public static default int32 test_0_typespec_modopt () cil managed {
-		.custom instance void [TestDriver]CategoryAttribute::.ctor(string) = ( 01 00 0C 21 49 4E 54 45 52 50 52 45 54 45 52 00 00 )   // ...!INTERPRETER.
 		ldtoken class Tests modopt (Tests)
 		pop
 		ldc.i4.0
