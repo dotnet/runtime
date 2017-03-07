@@ -5190,11 +5190,7 @@ OBJECTREF EECodeManager::GetInstance( PREGDISPLAY    pContext,
     if (info.ebpFrame)
     {
         _ASSERTE(stackDepth == 0);
-#if defined(WIN64EXCEPTIONS)
-        taArgBase = GetCallerSp(pContext) - 2 * sizeof(TADDR);
-#else
-        taArgBase = *pContext->pEbp;
-#endif
+        taArgBase = GetRegdisplayFP(pContext);
     }
     else
     {
@@ -5365,11 +5361,7 @@ PTR_VOID EECodeManager::GetParamTypeArg(PREGDISPLAY     pContext,
         return NULL;
     }
 
-#if defined(WIN64EXCEPTIONS)
-    TADDR fp = GetCallerSp(pContext) - 2 * sizeof(TADDR);
-#else
     TADDR fp = GetRegdisplayFP(pContext);
-#endif
     TADDR taParamTypeArg = *PTR_TADDR(fp - GetParamTypeArgOffset(&info));
     return PTR_VOID(taParamTypeArg);
 
@@ -5497,13 +5489,7 @@ void * EECodeManager::GetGSCookieAddr(PREGDISPLAY     pContext,
     
     if  (info->ebpFrame)
     {
-        DWORD curEBP;
-
-#ifdef WIN64EXCEPTIONS
-        curEBP = GetCallerSp(pContext) - 2 * 4;
-#else
-        curEBP = *pContext->pEbp;
-#endif
+        DWORD curEBP = GetRegdisplayFP(pContext);
 
         return PVOID(SIZE_T(curEBP - info->gsCookieOffset));
     }
