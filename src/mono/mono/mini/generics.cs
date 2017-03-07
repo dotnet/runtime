@@ -570,7 +570,6 @@ class Tests
 		}
 	}
 
-	[Category ("!INTERPRETER")]
 	public static int test_0_fullaot_linq () {
 		var allWords = new XElement [] { new XElement { Value = "one" } };
 		var filteredWords = allWords.Where(kw => kw.Value.StartsWith("T"));
@@ -988,7 +987,6 @@ class Tests
 	}
 
 	// #2155
-	[Category ("!INTERPRETER")]
 	[Category ("GSHAREDVT")]
 	public static int test_0_fullaot_sflda_cctor () {
 		List<Doc> documents = new List<Doc>();

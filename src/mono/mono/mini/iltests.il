@@ -1373,7 +1373,6 @@ COND:   ldloc.0
 	}
 
 	.method public static int32 test_1_initobj_reference () {
-		.custom instance void [TestDriver]CategoryAttribute::.ctor(string) = ( 01 00 0C 21 49 4E 54 45 52 50 52 45 54 45 52 00 00 )   // ...!INTERPRETER.
 		.maxstack 8
 		.locals init (  
 				object v_0

@@ -3024,9 +3024,14 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 				CHECK_STACK(&td, 1);
 				token = read32 (td.ip + 1);
 				klass = mono_class_get_full (image, token, generic_context);
-				ADD_CODE(&td, MINT_INITOBJ);
-				i32 = mono_class_value_size (klass, NULL);
-				WRITE32(&td, &i32);
+				if (klass->valuetype) {
+					ADD_CODE (&td, MINT_INITOBJ);
+					i32 = mono_class_value_size (klass, NULL);
+					WRITE32 (&td, &i32);
+				} else {
+					ADD_CODE (&td, MINT_LDNULL);
+					ADD_CODE (&td, MINT_STIND_REF);
+				}
 				td.ip += 5;
 				--td.sp;
 				break;
