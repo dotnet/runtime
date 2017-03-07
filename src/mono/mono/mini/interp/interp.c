@@ -913,10 +913,15 @@ ves_pinvoke_method (MonoInvocation *frame, MonoMethodSignature *sig, MonoFuncV a
 	/* domain can only be changed by native code */
 	context->domain = mono_domain_get ();
 
-	if (*mono_thread_interruption_request_flag ())
-		mono_thread_interruption_checkpoint ();
+	if (*mono_thread_interruption_request_flag ()) {
+		MonoException *exc = mono_thread_interruption_checkpoint ();
+		if (exc) {
+			frame->ex = exc;
+			context->search_for_handler = 1;
+		}
+	}
 	
- 	if (!MONO_TYPE_ISSTRUCT (sig->ret))
+	if (!frame->ex && !MONO_TYPE_ISSTRUCT (sig->ret))
 		stackval_from_data (sig->ret, frame->retval, (char*)&frame->retval->data.p, sig->pinvoke);
 
 	context->current_frame = old_frame;
