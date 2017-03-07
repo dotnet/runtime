@@ -1363,28 +1363,35 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 			unsigned short *next_new_ip;
 			++td.ip;
 			n = read32 (td.ip);
-			ADD_CODE(&td, MINT_SWITCH);
-			ADD_CODE(&td, * (unsigned short *)(&n));
-			ADD_CODE(&td, * ((unsigned short *)&n + 1));
+			ADD_CODE (&td, MINT_SWITCH);
+			WRITE32 (&td, &n);
 			td.ip += 4;
 			next_ip = td.ip + n * 4;
 			next_new_ip = td.new_ip + n * 2;
+			--td.sp;
+			int stack_height = td.sp - td.stack;
 			for (i = 0; i < n; i++) {
 				offset = read32 (td.ip);
 				target = next_ip - td.il_code + offset;
-				if (offset < 0)
+				if (offset < 0) {
+#if DEBUG_INTERP
+					if (stack_height > 0 && stack_height != td.stack_height [target])
+						g_warning ("SWITCH with back branch and non-empty stack");
+#endif
 					target = td.in_offsets [target] - (next_new_ip - td.new_code);
-				else {
+				} else {
+					td.stack_height [target] = stack_height;
+					td.vt_stack_size [target] = td.vt_sp;
+					if (stack_height > 0)
+						td.stack_state [target] = g_memdup (td.stack, stack_height * sizeof (td.stack [0]));
 					int prev = td.forward_refs [target];
 					td.forward_refs [td.ip - td.il_code] = prev;
 					td.forward_refs [target] = td.ip - td.il_code;
 					td.in_offsets [td.ip - td.il_code] = - (base_ip - td.il_code);
 				}
-				ADD_CODE(&td, * (unsigned short *)(&target));
-				ADD_CODE(&td, * ((unsigned short *)&target + 1));
+				WRITE32 (&td, &target);
 				td.ip += 4;
 			}
-			--td.sp;
 			break;
 		}
 		case CEE_LDIND_I1:
