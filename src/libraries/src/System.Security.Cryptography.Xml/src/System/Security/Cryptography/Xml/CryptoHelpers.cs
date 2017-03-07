@@ -53,8 +53,7 @@ namespace System.Security.Cryptography.Xml
                     throw new NotImplementedException(name);
                     //return new System.Security.Cryptography.HMACRIPEMD160();
                 case "http://www.w3.org/2000/09/xmldsig#dsa-sha1":
-                    throw new NotImplementedException(name);
-                    //return new DSASignatureDescription();
+                    return new DSASignatureDescription();
                 case "System.Security.Cryptography.DSASignatureDescription":
                     throw new NotImplementedException(name);
                     //return new DSASignatureDescription();

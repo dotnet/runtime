@@ -34,6 +34,7 @@
     <Compile Include="System\Security\Cryptography\Xml\DataReference.cs" />
     <Compile Include="System\Security\Cryptography\Xml\DocPosition.cs" />
     <Compile Include="System\Security\Cryptography\Xml\DSAKeyValue.cs" />
+    <Compile Include="System\Security\Cryptography\Xml\DSASignatureDescription.cs" />
     <Compile Include="System\Security\Cryptography\Xml\EncryptedData.cs" />
     <Compile Include="System\Security\Cryptography\Xml\EncryptedKey.cs" />
     <Compile Include="System\Security\Cryptography\Xml\EncryptedReference.cs" />
