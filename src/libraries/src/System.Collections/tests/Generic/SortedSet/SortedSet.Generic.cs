@@ -54,6 +54,15 @@ namespace System.Collections.Tests
             Assert.Equal(5, view.Min);
             Assert.Equal(7, view.Max);
         }
+
+        [Fact]
+        public void SortedSet_Generic_IntersectWith_SupersetEnumerableWithDups()
+        {
+            var set = (SortedSet<int>)CreateSortedSet(new[] { 1, 3, 5, 7, 9 }, 5, 5);
+            set.IntersectWith(new[] { 5, 7, 3, 7, 11, 7, 5, 2 });
+
+            Assert.Equal(new[] { 3, 5, 7 }, set);
+        }
     }
 
     public class SortedSet_Generic_Tests_int_With_NullComparer : SortedSet_Generic_Tests_int
