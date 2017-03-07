@@ -2230,7 +2230,6 @@ class Tests
 		}
 	}
 
-	[Category ("!INTERPRETER")]
 	public static int test_0_exception_in_cctor () {
 		try {
 			Broken.DoSomething ();

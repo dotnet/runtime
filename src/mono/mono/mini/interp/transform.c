@@ -3250,9 +3250,11 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 	// g_printerr ("TRANSFORM(0x%016lx): begin %s::%s\n", mono_thread_current (), method->klass->name, method->name);
 	method_class_vt = mono_class_vtable (domain, runtime_method->method->klass);
 	if (!method_class_vt->initialized) {
+		MonoError error;
 		jmp_buf env;
 		MonoInvocation *last_env_frame = context->env_frame;
 		jmp_buf *old_env = context->current_env;
+		error_init (&error);
 
 		if (setjmp(env)) {
 			MonoException *failed = context->env_frame->ex;
@@ -3263,7 +3265,10 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 		}
 		context->env_frame = context->current_frame;
 		context->current_env = &env;
-		mono_runtime_class_init (method_class_vt);
+		mono_runtime_class_init_full (method_class_vt, &error);
+		if (!mono_error_ok (&error)) {
+			return mono_error_convert_to_exception (&error);
+		}
 		context->env_frame = last_env_frame;
 		context->current_env = old_env;
 	}

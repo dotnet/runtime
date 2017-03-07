@@ -1930,7 +1930,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 				 * An exception occurred, need to run finally, fault and catch handlers..
 				 */
 				frame->ex = child_frame.ex;
-				goto handle_finally;
+				goto handle_exception;;
 			}
 
 			/* need to handle typedbyref ... */
