@@ -636,7 +636,7 @@ get_data_item_index (TransformData *td, void *ptr)
 }
 
 static void
-interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target_method, MonoDomain *domain, MonoGenericContext *generic_context, unsigned char *is_bb_start, int body_start_offset, MonoClass *constrained_class)
+interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target_method, MonoDomain *domain, MonoGenericContext *generic_context, unsigned char *is_bb_start, int body_start_offset, MonoClass *constrained_class, gboolean readonly)
 {
 	MonoImage *image = method->klass->image;
 	MonoMethodSignature *csignature;
@@ -681,11 +681,14 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 					else if (strcmp (target_method->name, "get_Length") == 0)
 						op = MINT_STRLEN;
 				}
-			} else if (target_method->klass == mono_defaults.array_class) {
-				if (strcmp (target_method->name, "get_Rank") == 0)
+			} else if (mono_class_is_subclass_of (target_method->klass, mono_defaults.array_class, FALSE)) {
+				if (!strcmp (target_method->name, "get_Rank")) {
 					op = MINT_ARRAY_RANK;
-				else if (strcmp (target_method->name, "get_Length") == 0)
+				} else if (!strcmp (target_method->name, "get_Length")) {
 					op = MINT_LDLEN;
+				} else if (!strcmp (target_method->name, "Address")) {
+					op = readonly ? MINT_LDELEMA : MINT_LDELEMA_TC;
+				}
 			} else if (target_method && generic_context) {
 				csignature = mono_inflate_generic_signature (csignature, generic_context, &error);
 				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
@@ -850,11 +853,15 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		is_void = TRUE;
 
 	if (op >= 0) {
-		ADD_CODE(td, op);
+		ADD_CODE (td, op);
 #if SIZEOF_VOID_P == 8
 		if (op == MINT_LDLEN)
-			ADD_CODE(td, MINT_CONV_I4_I8);
+			ADD_CODE (td, MINT_CONV_I4_I8);
 #endif
+		if (op == MINT_LDELEMA || op == MINT_LDELEMA_TC) {
+			ADD_CODE (td, get_data_item_index (td, target_method->klass));
+			ADD_CODE (td, 1 + target_method->klass->rank);
+		}
 	} else {
 		if (calli)
 			ADD_CODE(td, native ? MINT_CALLI_NAT : MINT_CALLI);
@@ -1219,8 +1226,9 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 		case CEE_CALLVIRT: /* Fall through */
 		case CEE_CALLI:    /* Fall through */
 		case CEE_CALL: {
-			interp_transform_call (&td, method, NULL, domain, generic_context, is_bb_start, body_start_offset, constrained_class);
+			interp_transform_call (&td, method, NULL, domain, generic_context, is_bb_start, body_start_offset, constrained_class, readonly);
 			constrained_class = NULL;
+			readonly = FALSE;
 			break;
 		}
 		case CEE_RET: {
@@ -1953,7 +1961,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 			} else if (mono_class_is_nullable (klass)) {
 				MonoMethod *target_method = mono_class_get_method_from_name (klass, "Unbox", 1);
 				/* td.ip is incremented by interp_transform_call */
-				interp_transform_call (&td, method, target_method, domain, generic_context, is_bb_start, body_start_offset, NULL);
+				interp_transform_call (&td, method, target_method, domain, generic_context, is_bb_start, body_start_offset, NULL, FALSE);
 			} else {
 				int mt = mint_type (&klass->byval_arg);
 				ADD_CODE (&td, MINT_UNBOX);
@@ -2192,7 +2200,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 			if (mono_class_is_nullable (klass)) {
 				MonoMethod *target_method = mono_class_get_method_from_name (klass, "Box", 1);
 				/* td.ip is incremented by interp_transform_call */
-				interp_transform_call (&td, method, target_method, domain, generic_context, is_bb_start, body_start_offset, NULL);
+				interp_transform_call (&td, method, target_method, domain, generic_context, is_bb_start, body_start_offset, NULL, FALSE);
 			} else if (!klass->valuetype) {
 				/* already boxed, do nothing. */
 				td.ip += 5;
@@ -2245,7 +2253,9 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 			} else {
 				ADD_CODE (&td, MINT_LDELEMA);
 			}
-			ADD_CODE(&td, get_data_item_index (&td, klass));
+			ADD_CODE (&td, get_data_item_index (&td, klass));
+			/* according to spec, ldelema bytecode is only used for 1-dim arrays */
+			ADD_CODE (&td, 2);
 			readonly = FALSE;
 
 			td.ip += 5;
@@ -2737,7 +2747,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 					ADD_CODE (&td, MINT_POP);
 					ADD_CODE (&td, 1);
 					--td.sp;
-					interp_transform_call (&td, method, NULL, domain, generic_context, is_bb_start, body_start_offset, NULL);
+					interp_transform_call (&td, method, NULL, domain, generic_context, is_bb_start, body_start_offset, NULL, FALSE);
 					break;
 				case CEE_MONO_JIT_ICALL_ADDR: {
 					guint32 token;

@@ -587,6 +587,7 @@ ves_array_set (MonoInvocation *frame)
 		return;
 	}
 
+
 	if (sp [ac->rank].data.p && !mono_object_class (o)->element_class->valuetype) {
 		MonoError error;
 		MonoObject *isinst = mono_object_isinst_checked (sp [ac->rank].data.p, mono_object_class (o)->element_class, &error);
@@ -649,19 +650,11 @@ ves_array_get (MonoInvocation *frame)
 	stackval_from_data (mt, frame->retval, ea, FALSE);
 }
 
-static void
-ves_array_element_address (MonoInvocation *frame)
+static gpointer
+ves_array_element_address (MonoInvocation *frame, MonoClass *required_type, MonoArray *ao, stackval *sp, gboolean needs_typecheck)
 {
-	stackval *sp = frame->stack_args + 1;
-	MonoObject *o;
-	MonoArray *ao;
-	MonoClass *ac;
-	gint32 i, t, pos, esize;
-	gpointer ea;
-
-	o = frame->stack_args->data.p;
-	ao = (MonoArray *)o;
-	ac = o->vtable->klass;
+	gint32 i, pos, esize;
+	MonoClass *ac = ((MonoObject *) ao)->vtable->klass;
 
 	g_assert (ac->rank >= 1);
 
@@ -669,25 +662,26 @@ ves_array_element_address (MonoInvocation *frame)
 	if (ao->bounds != NULL) {
 		pos -= ao->bounds [0].lower_bound;
 		for (i = 1; i < ac->rank; i++) {
-			if ((t = sp [i].data.i - ao->bounds [i].lower_bound) >= 
-			    ao->bounds [i].length) {
+			if ((sp [i].data.i - ao->bounds [i].lower_bound) >= ao->bounds [i].length) {
 				frame->ex = mono_get_exception_index_out_of_range ();
 				FILL_IN_TRACE(frame->ex, frame);
-				return;
+				return NULL;
 			}
-			pos = pos*ao->bounds [i].length + sp [i].data.i - 
-				ao->bounds [i].lower_bound;
+			pos = pos * ao->bounds [i].length + sp [i].data.i - ao->bounds [i].lower_bound;
 		}
 	} else if (pos >= ao->max_length) {
 		frame->ex = mono_get_exception_index_out_of_range ();
 		FILL_IN_TRACE(frame->ex, frame);
-		return;
+		return NULL;
 	}
 
+	if (needs_typecheck && !mono_class_is_assignable_from (mono_object_class ((MonoObject *) ao)->element_class, required_type->element_class)) {
+		frame->ex = mono_get_exception_array_type_mismatch ();
+		FILL_IN_TRACE (frame->ex, frame);
+		return NULL;
+	}
 	esize = mono_array_element_size (ac);
-	ea = mono_array_addr_with_size (ao, esize, pos);
-
-	frame->retval->data.p = ea;
+	return mono_array_addr_with_size (ao, esize, pos);
 }
 
 void
@@ -966,10 +960,6 @@ ves_runtime_method (MonoInvocation *frame, ThreadContext *context)
 		}
 		if (*name == 'G' && (strcmp (name, "Get") == 0)) {
 			ves_array_get (frame);
-			return;
-		}
-		if (*name == 'A' && (strcmp (name, "Address") == 0)) {
-			ves_array_element_address (frame);
 			return;
 		}
 	}
@@ -3247,26 +3237,18 @@ array_constructed:
 		MINT_IN_CASE(MINT_LDELEMA)
 		MINT_IN_CASE(MINT_LDELEMA_TC) {
 			gboolean needs_typecheck = *ip == MINT_LDELEMA_TC;
-			guint32 esize;
-			mono_u aindex;
 			
 			MonoClass *klass = rtm->data_items [*(guint16 *) (ip + 1)];
-			ip += 2;
-			sp -= 2;
+			guint16 numargs = *(guint16 *) (ip + 2);
+			ip += 3;
+			sp -= numargs;
 
 			o = sp [0].data.p;
-
-			aindex = sp [1].data.i;
-			if (aindex >= mono_array_length ((MonoArray *) o))
-				THROW_EX (mono_get_exception_index_out_of_range (), ip - 2);
-
-			if (needs_typecheck && o->vtable->klass->element_class != klass)
-				THROW_EX (mono_get_exception_array_type_mismatch (), ip);
-
-			esize = mono_array_element_size (((MonoArray *) o)->obj.vtable->klass);
-			sp->data.p = mono_array_addr_with_size ((MonoArray *) o, esize, aindex);
-
+			sp->data.p = ves_array_element_address (frame, klass, (MonoArray *) o, &sp [1], needs_typecheck);
+			if (frame->ex)
+				THROW_EX (frame->ex, ip);
 			++sp;
+
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_LDELEM_I1) /* fall through */
