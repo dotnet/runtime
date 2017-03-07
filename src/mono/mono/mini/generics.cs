@@ -1014,7 +1014,6 @@ class Tests
     static List<A> sources = new List<A>();
 
 	// #6112
-	[Category ("!INTERPRETER")]
     public static int test_0_fullaot_imt () {
         sources.Add(null);
         sources.Add(null);
@@ -1036,7 +1035,6 @@ class Tests
 	class BClass : AClass {
 	}
 
-	[Category ("!INTERPRETER")]
 	public static int test_0_fullaot_variant_iface () {
 		var arr = new BClass [10];
 		var enumerable = (IEnumerable<AClass>)arr;

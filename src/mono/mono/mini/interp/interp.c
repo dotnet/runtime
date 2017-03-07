@@ -311,7 +311,8 @@ get_virtual_method (MonoDomain *domain, RuntimeMethod *runtime_method, MonoObjec
 	if (mono_class_is_interface (m->klass)) {
 		g_assert (obj->vtable->klass != m->klass);
 		/* TODO: interface offset lookup is slow, go through IMT instead */
-		slot += mono_class_interface_offset (obj->vtable->klass, m->klass);
+		gboolean non_exact_match;
+		slot += mono_class_interface_offset_with_variance (obj->vtable->klass, m->klass, &non_exact_match);
 	}
 
 	MonoMethod *virtual_method = obj->vtable->klass->vtable [slot];
