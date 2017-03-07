@@ -2098,6 +2098,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 			break;
 		}
 		case CEE_CONV_OVF_I_UN:
+		case CEE_CONV_OVF_U_UN:
 			CHECK_STACK (&td, 1);
 			switch (td.sp [-1].type) {
 			case STACK_TYPE_R8:
@@ -2108,7 +2109,9 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 #endif
 				break;
 			case STACK_TYPE_I8:
-				/*FIX*/
+#if SIZEOF_VOID_P == 4
+				ADD_CODE (&td, MINT_CONV_OVF_I4_UN_I8);
+#endif
 				break;
 			case STACK_TYPE_I4:
 #if SIZEOF_VOID_P == 8
@@ -2123,6 +2126,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 			++td.ip;
 			break;
 		case CEE_CONV_OVF_I8_UN:
+		case CEE_CONV_OVF_U8_UN:
 			CHECK_STACK (&td, 1);
 			switch (td.sp [-1].type) {
 			case STACK_TYPE_R8:

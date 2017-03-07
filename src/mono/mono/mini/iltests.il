@@ -753,7 +753,6 @@ COND:   ldloc.0
 	}
 
 	.method public static int32 test_0_conv_ovf_u_un () cil managed {
-		.custom instance void [TestDriver]CategoryAttribute::.ctor(string) = ( 01 00 0C 21 49 4E 54 45 52 50 52 45 54 45 52 00 00 )   // ...!INTERPRETER.
 		.maxstack 16
 
 		ldc.i4 1234
@@ -856,7 +855,6 @@ COND:   ldloc.0
 	}
 
 	.method public static int32 test_0_lconv_ovf_u_un () cil managed {
-		.custom instance void [TestDriver]CategoryAttribute::.ctor(string) = ( 01 00 0C 21 49 4E 54 45 52 50 52 45 54 45 52 00 00 )   // ...!INTERPRETER.
 		.maxstack 16
 
 		ldc.i4 1234
@@ -889,7 +887,6 @@ COND:   ldloc.0
 	}
 
 	.method public static int32 test_0_lconv_to_ovf_u8_un () cil managed {
-		.custom instance void [TestDriver]CategoryAttribute::.ctor(string) = ( 01 00 0C 21 49 4E 54 45 52 50 52 45 54 45 52 00 00 )   // ...!INTERPRETER.
 		.maxstack 16
 
 		ldc.i4 1234
@@ -906,7 +903,6 @@ COND:   ldloc.0
 	}
 
 	.method public static int32 test_2_lconv_to_ovf_i4_un () cil managed {
-		.custom instance void [TestDriver]CategoryAttribute::.ctor(string) = ( 01 00 0C 21 49 4E 54 45 52 50 52 45 54 45 52 00 00 )   // ...!INTERPRETER.
 		.maxstack 16
 		.locals init (int32 res)
 
@@ -1129,7 +1125,6 @@ COND:   ldloc.0
 	}
 
 	.method public static int32 test_7_conv_ovf_u8_un () {
-		.custom instance void [TestDriver]CategoryAttribute::.ctor(string) = ( 01 00 0C 21 49 4E 54 45 52 50 52 45 54 45 52 00 00 )   // ...!INTERPRETER.
     	.maxstack  2
         .locals    init (unsigned int64)
 
