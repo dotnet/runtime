@@ -75,7 +75,7 @@ extern "C" {
 
 #endif  // !defined(__i386__)
 
-#define CALLBACK __stdcall
+#define CALLBACK __cdecl
 
 #if !defined(_declspec)
 #define _declspec(e)  __declspec(e)
@@ -105,7 +105,7 @@ extern "C" {
 
 #endif
 
-#define PALAPI      __stdcall
+#define PALAPI      __cdecl
 #define PALAPIV     __cdecl
 
 ////////////////////////////////////////////////////////////////////////

@@ -638,7 +638,7 @@ DWORD GetAppDomainTLSIndex();
 
 DWORD GetRuntimeId();
 
-EXTERN_C Thread* __stdcall CreateThreadBlockThrow();
+EXTERN_C Thread* WINAPI CreateThreadBlockThrow();
 
 //---------------------------------------------------------------------------
 // One-time initialization. Called during Dll initialization.
@@ -651,9 +651,9 @@ void InitThreadManager();
 
 #ifdef FEATURE_HIJACK
 
-EXTERN_C void __stdcall OnHijackTripThread();
+EXTERN_C void WINAPI OnHijackTripThread();
 #ifdef _TARGET_X86_
-EXTERN_C void __stdcall OnHijackFPTripThread();  // hijacked JIT code is returning an FP value
+EXTERN_C void WINAPI OnHijackFPTripThread();  // hijacked JIT code is returning an FP value
 #endif // _TARGET_X86_
 
 #endif // FEATURE_HIJACK
@@ -3852,7 +3852,7 @@ private:
     void        HandleThreadInterrupt(BOOL fWaitForADUnload);
 
 public:
-    static void __stdcall UserInterruptAPC(ULONG_PTR ignore);
+    static void WINAPI UserInterruptAPC(ULONG_PTR ignore);
 
 #if defined(_DEBUG) && defined(TRACK_SYNC)
 
@@ -4760,7 +4760,7 @@ public:
 private:
     // used to pad stack on thread creation to avoid aliasing penalty in P4 HyperThread scenarios
 
-    static DWORD __stdcall intermediateThreadProc(PVOID arg);
+    static DWORD WINAPI intermediateThreadProc(PVOID arg);
     static int m_offset_counter;
     static const int offset_multiplier = 128;
 

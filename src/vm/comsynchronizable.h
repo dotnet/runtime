@@ -121,7 +121,7 @@ private:
     };
 
     static void KickOffThread_Worker(LPVOID /* KickOffThread_Args* */);
-    static ULONG __stdcall KickOffThread(void *pass);
+    static ULONG WINAPI KickOffThread(void *pass);
     static BOOL DoJoin(THREADBASEREF DyingThread, INT32 timeout);
 };
 
