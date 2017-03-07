@@ -230,6 +230,8 @@ NESTED_ENTRY StubRareEnable, _TEXT, NoHandler
     push    edx
 
     push    ebx
+
+    CHECK_STACK_ALIGNMENT
     call    C_FUNC(StubRareEnableWorker)
 
     pop     edx
@@ -242,6 +244,8 @@ NESTED_ENTRY StubRareDisableTHROW, _TEXT, NoHandler
     push    edx
 
     push    ebx     // Thread
+
+    CHECK_STACK_ALIGNMENT
     call    C_FUNC(StubRareDisableTHROWWorker)
 
     pop     edx
