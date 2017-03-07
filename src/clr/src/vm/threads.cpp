@@ -1140,7 +1140,7 @@ DWORD GetRuntimeId()
 //---------------------------------------------------------------------------
 // Creates new Thread for reverse p-invoke calls.  
 //---------------------------------------------------------------------------
-Thread* __stdcall CreateThreadBlockThrow()
+Thread* WINAPI CreateThreadBlockThrow()
 {
 
     WRAPPER_NO_CONTRACT;
@@ -2585,7 +2585,7 @@ BOOL Thread::CreateNewThread(SIZE_T stackSize, LPTHREAD_START_ROUTINE start, voi
 
 // This is to avoid the 64KB/1MB aliasing problem present on Pentium 4 processors,
 // which can significantly impact performance with HyperThreading enabled
-DWORD __stdcall Thread::intermediateThreadProc(PVOID arg)
+DWORD WINAPI Thread::intermediateThreadProc(PVOID arg)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -4638,7 +4638,7 @@ void PendingSync::Restore(BOOL bRemoveFromSB)
 
 // This is the callback from the OS, when we queue an APC to interrupt a waiting thread.
 // The callback occurs on the thread we wish to interrupt.  It is a STATIC method.
-void __stdcall Thread::UserInterruptAPC(ULONG_PTR data)
+void WINAPI Thread::UserInterruptAPC(ULONG_PTR data)
 {
     CONTRACTL {
         NOTHROW;

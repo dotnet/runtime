@@ -20,13 +20,13 @@ __declspec(dllexport)
 /**
  * Simple function that returns i+1
  */
-int __stdcall SimpleFunction(int i)
+int PALAPI SimpleFunction(int i)
 {
     return i+1;
 }
 
 #if WIN32
-int __stdcall _DllMainCRTStartup(void *hinstDLL, int reason, void *lpvReserved)
+int PALAPI _DllMainCRTStartup(void *hinstDLL, int reason, void *lpvReserved)
 {
     return 1;
 }

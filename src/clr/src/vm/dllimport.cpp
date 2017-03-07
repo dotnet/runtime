@@ -2971,8 +2971,14 @@ void PInvokeStaticSigInfo::DllImportInit(MethodDesc* pMD, LPCUTF8 *ppLibName, LP
     }
 }
 
-
-
+inline CorPinvokeMap GetDefaultCallConv(BOOL bIsVarArg)
+{
+#ifdef PLATFORM_UNIX
+    return pmCallConvCdecl;
+#else // PLATFORM_UNIX
+    return bIsVarArg ? pmCallConvCdecl : pmCallConvStdcall;
+#endif // !PLATFORM_UNIX
+}
 
 void PInvokeStaticSigInfo::InitCallConv(CorPinvokeMap callConv, BOOL bIsVarArg)
 {
@@ -2986,7 +2992,7 @@ void PInvokeStaticSigInfo::InitCallConv(CorPinvokeMap callConv, BOOL bIsVarArg)
 
     // Convert WinAPI methods to either StdCall or CDecl based on if they are varargs or not.
     if (callConv == pmCallConvWinapi)
-        callConv = bIsVarArg ? pmCallConvCdecl : pmCallConvStdcall;
+        callConv = GetDefaultCallConv(bIsVarArg);
 
     CorPinvokeMap sigCallConv = (CorPinvokeMap)0;
     BOOL fSuccess = MetaSig::GetUnmanagedCallingConvention(m_pModule, m_sig.GetRawSig(), m_sig.GetRawSigLen(), &sigCallConv);
@@ -3000,13 +3006,13 @@ void PInvokeStaticSigInfo::InitCallConv(CorPinvokeMap callConv, BOOL bIsVarArg)
     // to do this before we check to make sure the PInvoke map calling convention and the 
     // signature calling convention match for compatibility reasons.
     if (sigCallConv == pmCallConvWinapi)
-        sigCallConv = bIsVarArg ? pmCallConvCdecl : pmCallConvStdcall;
+        sigCallConv = GetDefaultCallConv(bIsVarArg);
 
     if (callConv != 0 && sigCallConv != 0 && callConv != sigCallConv)
         SetError(IDS_EE_NDIRECT_BADNATL_CALLCONV);
 
     if (callConv == 0 && sigCallConv == 0)
-        m_callConv = bIsVarArg ? pmCallConvCdecl : pmCallConvStdcall;
+        m_callConv = GetDefaultCallConv(bIsVarArg);
     else if (callConv != 0)
         m_callConv = callConv;
     else

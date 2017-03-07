@@ -19,13 +19,13 @@
 __declspec(dllexport)
 #endif
 
-int _stdcall DllTest()
+int PALAPI DllTest()
 {
     return 1;
 }
 
 #if WIN32
-int __stdcall _DllMainCRTStartup(void *hinstDLL, int reason, void * lpvReserved)
+int PALAPI _DllMainCRTStartup(void *hinstDLL, int reason, void * lpvReserved)
 {
     return 1;
 }

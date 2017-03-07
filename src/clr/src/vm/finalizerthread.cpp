@@ -705,7 +705,7 @@ void FinalizerThread::FinalizeObjectsOnShutdown(LPVOID args)
 }
 
 
-DWORD __stdcall FinalizerThread::FinalizerThreadStart(void *args)
+DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
 {
     ClrFlsSetThreadType (ThreadType_Finalizer);
 
