@@ -387,7 +387,7 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal("urn:foo", doc.DocumentElement.GetAttribute("xmlns"));
         }
 
-        [Fact]
+        [Fact(Skip = "https://github.com/dotnet/corefx/issues/16798")]
         public void PropagatedNamespaces()
         {
             XmlDocument doc = new XmlDocument();
