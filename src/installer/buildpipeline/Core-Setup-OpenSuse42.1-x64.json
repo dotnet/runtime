@@ -3,8 +3,26 @@
     {
       "enabled": true,
       "continueOnError": false,
+      "alwaysRun": true,
+      "displayName": "Initialize tools",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "6c731c3c-3c68-459a-a5c9-bde6e6595b5b",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "pkg/init-tools.sh",
+        "arguments": "",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Clean up for build.",
+      "displayName": "Clean up Docker images and containers.",
       "timeoutInMinutes": 0,
       "task": {
         "id": "6c731c3c-3c68-459a-a5c9-bde6e6595b5b",
@@ -12,7 +30,7 @@
         "definitionType": "task"
       },
       "inputs": {
-        "scriptPath": "scripts/cleanup-build.sh",
+        "scriptPath": "pkg/Tools/scripts/docker/cleanup-build.sh",
         "args": "",
         "disableAutoCwd": "false",
         "cwd": "",
