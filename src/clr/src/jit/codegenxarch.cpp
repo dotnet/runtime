@@ -5046,11 +5046,20 @@ void CodeGen::genCallInstruction(GenTreePtr node)
             genCopyRegIfNeeded(addr, REG_VIRTUAL_STUB_TARGET);
 
             getEmitter()->emitIns_Nop(3);
-            getEmitter()->emitIns_Call(emitter::EmitCallType(emitter::EC_INDIR_ARD), methHnd,
-                                       INDEBUG_LDISASM_COMMA(sigInfo) nullptr, argSizeForEmitter,
-                                       retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
-                                       gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur,
+
+            // clang-format off
+            getEmitter()->emitIns_Call(emitter::EmitCallType(emitter::EC_INDIR_ARD),
+                                       methHnd,
+                                       INDEBUG_LDISASM_COMMA(sigInfo)
+                                       nullptr,
+                                       argSizeForEmitter,
+                                       retSize
+                                       MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                                       gcInfo.gcVarPtrSetCur,
+                                       gcInfo.gcRegGCrefSetCur,
+                                       gcInfo.gcRegByrefSetCur,
                                        ilOffset, REG_VIRTUAL_STUB_TARGET, REG_NA, 1, 0);
+            // clang-format on
         }
         else
 #endif
@@ -5062,18 +5071,29 @@ void CodeGen::genCallInstruction(GenTreePtr node)
                 // contained only if it can be encoded as PC-relative offset.
                 assert(target->AsIndir()->Base()->AsIntConCommon()->FitsInAddrBase(compiler));
 
-                genEmitCall(emitter::EC_FUNC_TOKEN_INDIR, methHnd,
-                            INDEBUG_LDISASM_COMMA(sigInfo)(void*) target->AsIndir()
-                                ->Base()
-                                ->AsIntConCommon()
-                                ->IconValue() X86_ARG(argSizeForEmitter),
-                            retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize), ilOffset);
+                // clang-format off
+                genEmitCall(emitter::EC_FUNC_TOKEN_INDIR,
+                            methHnd,
+                            INDEBUG_LDISASM_COMMA(sigInfo)
+                            (void*) target->AsIndir()->Base()->AsIntConCommon()->IconValue()
+                            X86_ARG(argSizeForEmitter),
+                            retSize
+                            MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                            ilOffset);
+                // clang-format on
             }
             else
             {
-                genEmitCall(emitter::EC_INDIR_ARD, methHnd,
-                            INDEBUG_LDISASM_COMMA(sigInfo) target->AsIndir() X86_ARG(argSizeForEmitter),
-                            retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize), ilOffset);
+                // clang-format off
+                genEmitCall(emitter::EC_INDIR_ARD,
+                            methHnd,
+                            INDEBUG_LDISASM_COMMA(sigInfo)
+                            target->AsIndir()
+                            X86_ARG(argSizeForEmitter),
+                            retSize
+                            MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                            ilOffset);
+                // clang-format on
             }
         }
         else
@@ -5081,19 +5101,34 @@ void CodeGen::genCallInstruction(GenTreePtr node)
             // We have already generated code for gtControlExpr evaluating it into a register.
             // We just need to emit "call reg" in this case.
             assert(genIsValidIntReg(target->gtRegNum));
-            genEmitCall(emitter::EC_INDIR_R, methHnd,
-                        INDEBUG_LDISASM_COMMA(sigInfo) nullptr // addr
+
+            // clang-format off
+            genEmitCall(emitter::EC_INDIR_R,
+                        methHnd,
+                        INDEBUG_LDISASM_COMMA(sigInfo)
+                        nullptr // addr
                         X86_ARG(argSizeForEmitter),
-                        retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize), ilOffset, genConsumeReg(target));
+                        retSize
+                        MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                        ilOffset,
+                        genConsumeReg(target));
+            // clang-format on
         }
     }
 #ifdef FEATURE_READYTORUN_COMPILER
     else if (call->gtEntryPoint.addr != nullptr)
     {
+        // clang-format off
         genEmitCall((call->gtEntryPoint.accessType == IAT_VALUE) ? emitter::EC_FUNC_TOKEN
                                                                  : emitter::EC_FUNC_TOKEN_INDIR,
-                    methHnd, INDEBUG_LDISASM_COMMA(sigInfo)(void*) call->gtEntryPoint.addr X86_ARG(argSizeForEmitter),
-                    retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize), ilOffset);
+                    methHnd,
+                    INDEBUG_LDISASM_COMMA(sigInfo)
+                    (void*) call->gtEntryPoint.addr
+                    X86_ARG(argSizeForEmitter),
+                    retSize
+                    MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                    ilOffset);
+        // clang-format on
     }
 #endif
     else
@@ -5129,8 +5164,17 @@ void CodeGen::genCallInstruction(GenTreePtr node)
         }
 
         // Non-virtual direct calls to known addresses
-        genEmitCall(emitter::EC_FUNC_TOKEN, methHnd, INDEBUG_LDISASM_COMMA(sigInfo) addr X86_ARG(argSizeForEmitter),
-                    retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize), ilOffset);
+
+        // clang-format off
+        genEmitCall(emitter::EC_FUNC_TOKEN,
+                    methHnd,
+                    INDEBUG_LDISASM_COMMA(sigInfo)
+                    addr
+                    X86_ARG(argSizeForEmitter),
+                    retSize
+                    MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(secondRetSize),
+                    ilOffset);
+        // clang-format on
     }
 
 #if defined(UNIX_X86_ABI)
@@ -8475,14 +8519,22 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         }
     }
 
-    getEmitter()->emitIns_Call(callType, compiler->eeFindHelper(helper), INDEBUG_LDISASM_COMMA(nullptr) addr, argSize,
-                               retSize FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(EA_UNKNOWN), gcInfo.gcVarPtrSetCur,
-                               gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur,
+    // clang-format off
+    getEmitter()->emitIns_Call(callType,
+                               compiler->eeFindHelper(helper),
+                               INDEBUG_LDISASM_COMMA(nullptr) addr,
+                               argSize,
+                               retSize
+                               FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(EA_UNKNOWN),
+                               gcInfo.gcVarPtrSetCur,
+                               gcInfo.gcRegGCrefSetCur,
+                               gcInfo.gcRegByrefSetCur,
                                BAD_IL_OFFSET, // IL offset
                                callTarget,    // ireg
                                REG_NA, 0, 0,  // xreg, xmul, disp
                                false,         // isJump
                                emitter::emitNoGChelper(helper));
+    // clang-format on
 
     regTracker.rsTrashRegSet(killMask);
     regTracker.rsTrashRegsForGCInterruptability();

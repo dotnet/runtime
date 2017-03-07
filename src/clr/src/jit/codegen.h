@@ -416,20 +416,30 @@ protected:
 
     void genPrologPadForReJit();
 
+    // clang-format off
     void genEmitCall(int                   callType,
                      CORINFO_METHOD_HANDLE methHnd,
-                     INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo) void* addr X86_ARG(ssize_t argSize),
-                     emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
-                     IL_OFFSETX ilOffset,
-                     regNumber  base   = REG_NA,
-                     bool       isJump = false,
-                     bool       isNoGC = false);
+                     INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo)
+                     void*                 addr
+                     X86_ARG(ssize_t argSize),
+                     emitAttr              retSize
+                     MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
+                     IL_OFFSETX            ilOffset,
+                     regNumber             base   = REG_NA,
+                     bool                  isJump = false,
+                     bool                  isNoGC = false);
+    // clang-format on
 
+    // clang-format off
     void genEmitCall(int                   callType,
                      CORINFO_METHOD_HANDLE methHnd,
-                     INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo) GenTreeIndir* indir X86_ARG(ssize_t argSize),
-                     emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
-                     IL_OFFSETX ilOffset);
+                     INDEBUG_LDISASM_COMMA(CORINFO_SIG_INFO* sigInfo)
+                     GenTreeIndir*         indir
+                     X86_ARG(ssize_t argSize),
+                     emitAttr              retSize
+                     MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize),
+                     IL_OFFSETX            ilOffset);
+    // clang-format on
 
     //
     // Epilog functions
