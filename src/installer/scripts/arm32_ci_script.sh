@@ -213,7 +213,7 @@ function cross_build_core_setup_with_docker {
     fi
 
     # Cross building core-setup with rootfs in Docker
-    __buildCmd="./build.sh --env-vars DISABLE_CROSSGEN=1,TARGETPLATFORM=$__buildArch,TARGETRID=$__runtimeOS-$__buildArch,CROSS=1,ROOTFS_DIR=$__rootfsDir"
+    __buildCmd="./build.sh --configuration $__buildConfig --env-vars DISABLE_CROSSGEN=1,TARGETPLATFORM=$__buildArch,TARGETRID=$__runtimeOS-$__buildArch,CROSS=1,ROOTFS_DIR=$__rootfsDir"
     $__dockerCmd $__buildCmd
 }
 
@@ -242,8 +242,14 @@ do
         ;;
     --buildConfig=*)
         __buildConfig="$(echo ${arg#*=} | awk '{print tolower($0)}')"
-        if [[ "$__buildConfig" != "debug" && "$__buildConfig" != "release" ]]; then
-            exit_with_error "--buildConfig can be only Debug or Release" true
+        if [[ "$__buildConfig" == "release" ]]; then
+            __buildConfig="Release"
+        else
+            if [[ "$__buildConfig" == "debug" ]]; then
+                __buildConfig="Debug"
+            else
+                exit_with_error "--buildConfig can be only Debug or Release" true
+            fi
         fi
         ;;
     --mode=*)
