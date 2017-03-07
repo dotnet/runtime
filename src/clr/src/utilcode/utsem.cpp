@@ -22,10 +22,10 @@ Revision History:
 #include "contract.h"
 
 // Consider replacing this with a #ifdef INTEROP_DEBUGGING
-#if !defined(SELF_NO_HOST) && defined(_TARGET_X86_)
+#if !defined(SELF_NO_HOST) && defined(_TARGET_X86_) && !defined(FEATURE_PAL)
 // For Interop debugging, the UTSemReadWrite class must inform the debugger
 // that this thread can't be suspended currently.  See vm\util.hpp for the
-// implementation of these methods.  
+// implementation of these methods.
 void IncCantStopCount();
 void DecCantStopCount();
 #else
