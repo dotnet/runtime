@@ -64,7 +64,8 @@ internal static partial class Interop
 
             SSL_RSA_EXPORT_WITH_RC2_CBC_40_MD5 = 0x0006,
 
-            SSL_RSA_WITH_IDEA_CBC_SHA = 0x0007,
+            //Windows has no value for IDEA, so .NET Framework didn't get one.
+            //SSL_RSA_WITH_IDEA_CBC_SHA = 0x0007,
 
             SSL_RSA_EXPORT_WITH_DES40_CBC_SHA = 0x0008,
 
@@ -113,9 +114,11 @@ internal static partial class Interop
             TLS_DH_anon_WITH_3DES_EDE_CBC_SHA = 0x001B,
             SSL_DH_anon_WITH_3DES_EDE_CBC_SHA = 0x001B,
 
-            SSL_FORTEZZA_DMS_WITH_NULL_SHA = 0x001C,
+            // Windows doesn't support FORTEZZA_DMS, so unclear what value to use.
+            //SSL_FORTEZZA_DMS_WITH_NULL_SHA = 0x001C,
 
-            SSL_FORTEZZA_DMS_WITH_FORTEZZA_CBC_SHA = 0x001D,
+            // Windows doesn't support FORTEZZA_DMS, so unclear what value to use.
+            //SSL_FORTEZZA_DMS_WITH_FORTEZZA_CBC_SHA = 0x001D,
 
             TLS_PSK_WITH_NULL_SHA = 0x002C,
 
@@ -257,7 +260,8 @@ internal static partial class Interop
 
             TLS_RSA_PSK_WITH_NULL_SHA384 = 0x00B9,
 
-            TLS_EMPTY_RENEGOTIATION_INFO_SCSV = 0x00FF,
+            // Not a real CipherSuite
+            //TLS_EMPTY_RENEGOTIATION_INFO_SCSV = 0x00FF,
 
             TLS_ECDH_ECDSA_WITH_NULL_SHA = 0xC001,
 
@@ -330,16 +334,6 @@ internal static partial class Interop
             TLS_ECDH_RSA_WITH_AES_128_GCM_SHA256 = 0xC031,
 
             TLS_ECDH_RSA_WITH_AES_256_GCM_SHA384 = 0xC032,
-
-            SSL_RSA_WITH_RC2_CBC_MD5 = 0xFF80,
-
-            SSL_RSA_WITH_IDEA_CBC_MD5 = 0xFF81,
-
-            SSL_RSA_WITH_DES_CBC_MD5 = 0xFF82,
-
-            SSL_RSA_WITH_3DES_EDE_CBC_MD5 = 0xFF83,
-
-            SSL_NO_SUCH_CIPHERSUITE = 0xFFFF
         }
 
         [DllImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslCreateContext")]
