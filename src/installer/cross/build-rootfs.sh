@@ -111,6 +111,11 @@ for i in "$@" ; do
     esac
 done
 
+if [ "$__BuildArch" == "armel" ]; then
+    __LLDB_Package="lldb-3.5-dev"
+fi
+__UbuntuPackages+=" ${__LLDB_Package:-}"
+
 __RootfsDir="$__CrossDir/rootfs/$__BuildArch"
 
 if [[ -n "$ROOTFS_DIR" ]]; then
