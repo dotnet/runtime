@@ -525,7 +525,7 @@ fill_in_trace (MonoException *exception, MonoInvocation *frame)
 	} while (0)
 
 static MonoObject*
-ves_array_create (MonoDomain *domain, MonoClass *klass, MonoMethodSignature *sig, stackval *values)
+ves_array_create (MonoInvocation *frame, MonoDomain *domain, MonoClass *klass, MonoMethodSignature *sig, stackval *values)
 {
 	uintptr_t *lengths;
 	intptr_t *lower_bounds;
@@ -547,6 +547,10 @@ ves_array_create (MonoDomain *domain, MonoClass *klass, MonoMethodSignature *sig
 		lengths += klass->rank;
 	}
 	obj = (MonoObject*) mono_array_new_full_checked (domain, klass, lengths, lower_bounds, &error);
+	if (!mono_error_ok (&error)) {
+		frame->ex = mono_error_convert_to_exception (&error);
+		FILL_IN_TRACE (frame->ex, frame);
+	}
 	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 	return obj;
 }
@@ -2771,6 +2775,9 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			token = * (guint16 *)(ip + 1);
 			ip += 2;
 
+			child_frame.ip = NULL;
+			child_frame.ex = NULL;
+
 			child_frame.runtime_method = rtm->data_items [token];
 			csig = mono_method_signature (child_frame.runtime_method->method);
 			newobj_class = child_frame.runtime_method->method->klass;
@@ -2779,10 +2786,13 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 				count++;
 				g_hash_table_insert (profiling_classes, newobj_class, GUINT_TO_POINTER (count));
 			}*/
-				
+
 			if (newobj_class->parent == mono_defaults.array_class) {
 				sp -= csig->param_count;
-				o = ves_array_create (context->domain, newobj_class, csig, sp);
+				child_frame.stack_args = sp;
+				o = ves_array_create (&child_frame, context->domain, newobj_class, csig, sp);
+				if (child_frame.ex)
+					THROW_EX (child_frame.ex, ip);
 				goto array_constructed;
 			}
 
@@ -2821,9 +2831,6 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 			}
 
 			g_assert (csig->call_convention == MONO_CALL_DEFAULT);
-
-			child_frame.ip = NULL;
-			child_frame.ex = NULL;
 
 			ves_exec_method_with_context (&child_frame, context);
 

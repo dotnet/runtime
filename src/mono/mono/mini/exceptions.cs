@@ -2382,7 +2382,6 @@ class Tests
 		}
 	}
 
-	[Category ("!INTERPRETER")]
 	public static int test_0_array_size () {
 		bool failed;
 
