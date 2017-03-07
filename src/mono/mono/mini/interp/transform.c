@@ -3198,6 +3198,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 	g_free (td.stack_height);
 	g_free (td.vt_stack_size);
 	g_free (td.data_items);
+	g_free (td.stack);
 	g_hash_table_destroy (td.data_hash);
 }
 
