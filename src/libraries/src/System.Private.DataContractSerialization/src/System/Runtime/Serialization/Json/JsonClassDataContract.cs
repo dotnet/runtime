@@ -37,14 +37,14 @@ namespace System.Runtime.Serialization.Json
 #if NET_NATIVE
                             else if (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup)
                             {
-                                tempDelegate = JsonDataContract.TryGetReadWriteDelegatesFromGeneratedAssembly(TraditionalClassDataContract).ClassReaderDelegate;
+                                tempDelegate = JsonDataContract.TryGetReadWriteDelegatesFromGeneratedAssembly(TraditionalClassDataContract)?.ClassReaderDelegate;
                                 tempDelegate = tempDelegate ?? new ReflectionJsonClassReader(TraditionalClassDataContract).ReflectionReadClass;
 
                                 if (tempDelegate == null)
                                     throw new InvalidDataContractException(SR.Format(SR.SerializationCodeIsMissingForType, TraditionalClassDataContract.UnderlyingType.ToString()));
                             }
 #endif
-                            else 
+                            else
                             {
 #if NET_NATIVE
                                 tempDelegate = JsonDataContract.GetReadWriteDelegatesFromGeneratedAssembly(TraditionalClassDataContract).ClassReaderDelegate;
