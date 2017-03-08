@@ -2,18 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*============================================================
-**
-** Interface:  IList
-** 
-** 
-**
-**
-** Purpose: Base interface for all generic lists.
-**
-** 
-===========================================================*/
-
 using System;
 using System.Collections;
 using System.Runtime.CompilerServices;
@@ -24,13 +12,6 @@ namespace System.Collections.Generic
     // An IList is an ordered collection of objects.  The exact ordering
     // is up to the implementation of the list, ranging from a sorted
     // order to insertion order.  
-
-    // Note that T[] : IList<T>, and we want to ensure that if you use
-    // IList<YourValueType>, we ensure a YourValueType[] can be used 
-    // without jitting.  Hence the TypeDependencyAttribute on SZArrayHelper.
-    // This is a special workaround internally though - see VM\compile.cpp.
-    // The same attribute is on IEnumerable<T> and ICollection<T>.
-    [TypeDependencyAttribute("System.SZArrayHelper")]
     public interface IList<T> : ICollection<T>
     {
         // The Item property provides methods to read and edit entries in the List.

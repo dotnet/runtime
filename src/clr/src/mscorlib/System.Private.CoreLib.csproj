@@ -182,16 +182,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Collections\ListDictionaryInternal.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\EmptyReadOnlyDictionaryInternal.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\Hashtable.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Collections\DictionaryEntry.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Collections\ICollection.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Collections\IComparer.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Collections\IDictionary.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Collections\IDictionaryEnumerator.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Collections\IEnumerable.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Collections\IEnumerator.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Collections\IEqualityComparer.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\IHashCodeProvider.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Collections\IList.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\StructuralComparisons.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -931,18 +922,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\Dictionary.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\EqualityComparer.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\DebugView.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\ICollection.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\IComparer.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\IDictionary.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\IEnumerable.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\IEnumerator.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\IEqualityComparer.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\IList.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\IReadOnlyCollection.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\IReadOnlyList.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\IReadOnlyDictionary.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\KeyNotFoundException.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\KeyValuePair.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\List.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\Generic\ArraySortHelper.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\ObjectModel\Collection.cs" />

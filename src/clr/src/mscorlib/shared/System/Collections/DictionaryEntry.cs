@@ -2,19 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*============================================================
-**
-** Interface:  DictionaryEntry
-** 
-** 
-**
-**
-** Purpose: Return Value for IDictionaryEnumerator::GetEntry
-**
-** 
-===========================================================*/
-
-using System;
 using System.ComponentModel;
 
 namespace System.Collections
