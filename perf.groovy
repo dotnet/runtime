@@ -99,7 +99,7 @@ def static getOSGroup(def os) {
 				TriggerBuilder builder = TriggerBuilder.triggerOnPullRequest()
 				builder.setGithubContext("${os} ${arch} CoreCLR Perf Tests")
 				builder.triggerOnlyOnComment()
-				builder.setCustomTriggerPhrase("(?i).*test\\W+${os}_${arch}\\W+perf.*")
+				builder.setCustomTriggerPhrase("(?i).*test\\W+${os}\\W+${arch}\\W+perf.*")
 				builder.triggerForBranch(branch)
 				builder.emitTrigger(newJob)
 			}
@@ -179,7 +179,7 @@ def static getOSGroup(def os) {
 				TriggerBuilder builder = TriggerBuilder.triggerOnPullRequest()
 				builder.setGithubContext("${os} ${arch} CoreCLR Throughput Perf Tests")
 				builder.triggerOnlyOnComment()
-				builder.setCustomTriggerPhrase("(?i).*test\\W+${os}_${arch}\\W+throughput.*")
+				builder.setCustomTriggerPhrase("(?i).*test\\W+${os}\\W+${arch}\\W+throughput.*")
 				builder.triggerForBranch(branch)
 				builder.emitTrigger(newJob)
 			}
