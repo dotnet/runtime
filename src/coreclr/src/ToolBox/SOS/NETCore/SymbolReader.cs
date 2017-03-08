@@ -296,6 +296,9 @@ namespace SOS
                     return false;
 
                 MethodDebugInformationHandle methodDebugHandle = ((MethodDefinitionHandle)handle).ToDebugInformationHandle();
+                if (methodDebugHandle.IsNil)
+                    return false;
+
                 MethodDebugInformation methodDebugInfo = reader.GetMethodDebugInformation(methodDebugHandle);
                 SequencePointCollection sequencePoints = methodDebugInfo.GetSequencePoints();
 
