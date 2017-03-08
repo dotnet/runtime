@@ -496,11 +496,11 @@ store_arg(TransformData *td, int n)
 	mt = mint_type (type);
 	if (mt == MINT_TYPE_VT) {
 		gint32 size;
-		g_error ("data.klass");
+		MonoClass *klass = mono_class_from_mono_type (type);
 		if (mono_method_signature (td->method)->pinvoke)
-			size = mono_class_native_size (type->data.klass, NULL);
+			size = mono_class_native_size (klass, NULL);
 		else
-			size = mono_class_value_size (type->data.klass, NULL);
+			size = mono_class_value_size (klass, NULL);
 		ADD_CODE(td, MINT_STARG_VT);
 		ADD_CODE(td, n);
 		WRITE32(td, &size);
