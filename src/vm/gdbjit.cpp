@@ -1739,7 +1739,7 @@ void NotifyGdb::MethodCompiled(MethodDesc* MethodDescPtr)
     {
         cCharsNeeded = GetEnvironmentVariableW(W("CORECLR_GDBJIT"), NULL, 0);
 
-        if((cCharsNeeded == 0) || (cCharsNeeded >= MAX_LONGPATH))
+        if(cCharsNeeded == 0)
             return;
         wszModuleNames = new WCHAR[cCharsNeeded+1];
         cCharsNeeded = GetEnvironmentVariableW(W("CORECLR_GDBJIT"), wszModuleNames, cCharsNeeded);
