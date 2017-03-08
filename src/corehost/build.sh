@@ -44,7 +44,7 @@ usage()
     echo "Usage: $0 --arch <Architecture> --hostver <Dotnet exe version> --apphostver <app host exe version> --fxrver <HostFxr library version> --policyver <HostPolicy library version> --commithash <Git commit hash> [--xcompiler <Cross C++ Compiler>]"
     echo ""
     echo "Options:"
-    echo "  --arch <Architecture>             Target Architecture (x64, x86, arm, armel)"
+    echo "  --arch <Architecture>             Target Architecture (x64, x86, arm, arm64, armel)"
     echo "  --hostver <Dotnet host version>   Version of the dotnet executable"
     echo "  --apphostver <app host version>   Version of the apphost executable"
     echo "  --fxrver <HostFxr version>        Version of the hostfxr library"
@@ -135,6 +135,9 @@ case $__build_arch in
         ;;
     arm|armel)
         __arch_define=-DCLI_CMAKE_PLATFORM_ARCH_ARM=1
+        ;;
+    arm64)
+        __arch_define=-DCLI_CMAKE_PLATFORM_ARCH_ARM64=1
         ;;
     *)
         echo "Unknown architecture $__build_arch"; usage; exit 1
