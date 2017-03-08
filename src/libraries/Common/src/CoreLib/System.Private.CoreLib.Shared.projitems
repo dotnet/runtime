@@ -65,6 +65,27 @@
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.Write.cs"/>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Collections\DictionaryEntry.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\ICollection.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\IComparer.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\IDictionary.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\IEnumerable.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\IEnumerator.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\IEqualityComparer.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\IList.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\IReadOnlyCollection.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\IReadOnlyDictionary.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\IReadOnlyList.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\KeyNotFoundException.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Collections\Generic\KeyValuePair.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Collections\ICollection.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Collections\IComparer.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Collections\IDictionary.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Collections\IDictionaryEnumerator.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Collections\IEnumerable.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Collections\IEnumerator.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Collections\IEqualityComparer.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Collections\IList.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Action.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\ApplicationException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\ArgumentNullException.cs"/>
