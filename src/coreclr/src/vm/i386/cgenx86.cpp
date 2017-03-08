@@ -1462,7 +1462,7 @@ extern "C" DWORD __stdcall getcpuid(DWORD arg, unsigned char result[16])
             "  mov %%edx, 12(%[result])\n" \
         : "=a"(eax) /*output in eax*/\
         : "a"(arg), [result]"r"(result) /*inputs - arg in eax, result in any register*/\
-        : "eax", "rbx", "ecx", "edx", "memory" /* registers that are clobbered, *result is clobbered */
+        : "eax", "ebx", "ecx", "edx", "memory" /* registers that are clobbered, *result is clobbered */
         );
     return eax;
 }
@@ -1477,7 +1477,7 @@ extern "C" DWORD __stdcall getextcpuid(DWORD arg1, DWORD arg2, unsigned char res
             "  mov %%edx, 12(%[result])\n" \
         : "=a"(eax) /*output in eax*/\
         : "c"(arg1), "a"(arg2), [result]"r"(result) /*inputs - arg1 in ecx, arg2 in eax, result in any register*/\
-        : "eax", "rbx", "ecx", "edx", "memory" /* registers that are clobbered, *result is clobbered */
+        : "eax", "ebx", "ecx", "edx", "memory" /* registers that are clobbered, *result is clobbered */
         );
     return eax;
 }
