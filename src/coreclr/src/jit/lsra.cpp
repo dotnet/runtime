@@ -731,7 +731,8 @@ void LinearScan::associateRefPosWithInterval(RefPosition* rp)
                     }
                 }
 
-                rp->lastUse = (rp->refType != RefTypeExpUse) && (rp->refType != RefTypeParamDef) && (rp->refType != RefTypeZeroInit);
+                rp->lastUse = (rp->refType != RefTypeExpUse) && (rp->refType != RefTypeParamDef) &&
+                              (rp->refType != RefTypeZeroInit);
             }
             else if (RefTypeIsUse(rp->refType))
             {
