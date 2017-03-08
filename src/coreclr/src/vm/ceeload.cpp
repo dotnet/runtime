@@ -437,6 +437,55 @@ Module::Module(Assembly *pAssembly, mdFile moduleRef, PEFile *file)
     file->AddRef();
 }
 
+void Module::InitializeForProfiling()
+{
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+        PRECONDITION(HasNativeOrReadyToRunImage());
+    }
+    CONTRACTL_END;
+
+    COUNT_T  cbProfileList = 0;
+
+    m_nativeImageProfiling = FALSE;
+
+    if (HasNativeImage())
+    {
+        PEImageLayout * pNativeImage = GetNativeImage();
+        CORCOMPILE_VERSION_INFO * pNativeVersionInfo = pNativeImage->GetNativeVersionInfoMaybeNull();
+        if ((pNativeVersionInfo != NULL) && (pNativeVersionInfo->wConfigFlags & CORCOMPILE_CONFIG_INSTRUMENTATION))
+        {
+            m_nativeImageProfiling = GetAssembly()->IsInstrumented();
+        }
+
+        // Link the module to the profile data list if available.
+        m_methodProfileList = pNativeImage->GetNativeProfileDataList(&cbProfileList);
+    }
+    else // ReadyToRun image
+    {
+        // We already setup the m_methodProfileList in the ReadyToRunInfo constructor
+        if (m_methodProfileList != nullptr)
+        {
+            ReadyToRunInfo * pInfo = GetReadyToRunInfo();
+            PEImageLayout *  pImage = pInfo->GetImage();
+
+            // Enable profiling if the ZapBBInstr value says to
+            m_nativeImageProfiling = GetAssembly()->IsInstrumented();
+        }
+    }
+
+#ifdef FEATURE_LAZY_COW_PAGES
+    // When running a IBC tuning image to gather profile data 
+    // we increment the block counts contained in this area.
+    //
+    if (cbProfileList)
+        EnsureWritablePages(m_methodProfileList, cbProfileList);
+#endif
+}
 
 #ifdef FEATURE_PREJIT 
 
@@ -460,20 +509,6 @@ void Module::InitializeNativeImage(AllocMemTracker* pamTracker)
     PEImageLayout * pNativeImage = GetNativeImage();
 
     ExecutionManager::AddNativeImageRange(dac_cast<TADDR>(pNativeImage->GetBase()), pNativeImage->GetVirtualSize(), this);
-
-    CORCOMPILE_VERSION_INFO * pNativeVersionInfo = pNativeImage->GetNativeVersionInfoMaybeNull();
-    if ((pNativeVersionInfo != NULL) && (pNativeVersionInfo->wConfigFlags & CORCOMPILE_CONFIG_INSTRUMENTATION))
-    {
-        m_nativeImageProfiling = GetAssembly()->IsInstrumented();
-    }
-
-    // Link the module to the profile data list if available.
-    COUNT_T cbProfileList;
-    m_methodProfileList = pNativeImage->GetNativeProfileDataList(&cbProfileList);
-#ifdef FEATURE_LAZY_COW_PAGES
-    if (cbProfileList)
-        EnsureWritablePages(m_methodProfileList, cbProfileList);
-#endif
 
 #ifndef CROSSGEN_COMPILE
     LoadTokenTables();
@@ -652,9 +687,15 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
 #ifdef FEATURE_PREJIT 
     // Set up native image
     if (HasNativeImage())
+    {
         InitializeNativeImage(pamTracker);
+    }
 #endif // FEATURE_PREJIT
 
+    if (HasNativeOrReadyToRunImage())
+    {
+        InitializeForProfiling();
+    }
 
 #ifdef FEATURE_NATIVE_IMAGE_GENERATION
     if (g_CorCompileVerboseLevel)
@@ -4277,6 +4318,16 @@ BOOL Module::IsVisibleToDebugger()
         return FALSE;
     }
     return TRUE;
+}
+
+BOOL            Module::HasNativeOrReadyToRunImage()
+{
+#ifdef FEATURE_READYTORUN
+    if (IsReadyToRun())
+        return TRUE;
+#endif
+
+    return HasNativeImage();
 }
 
 PEImageLayout * Module::GetNativeOrReadyToRunImage()
