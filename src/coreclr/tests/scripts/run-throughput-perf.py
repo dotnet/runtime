@@ -24,6 +24,7 @@ import shutil
 import subprocess
 import sys
 import time
+import timeit
 import stat
 import csv
 
@@ -32,7 +33,8 @@ import csv
 ##########################################################################
 
 # List of dlls we want to crossgen
-dll_list = [
+dll_list = {
+    'Windows_NT': [
         "System.Private.CoreLib",
         "System.Reflection.Metadata",
         "System.Linq.Expressions",
@@ -46,7 +48,38 @@ dll_list = [
         "Microsoft.CodeAnalysis",
         "System.Linq.Parallel",
         "System.Private.Xml"
-        ]
+    ],
+    'Linux': [
+        "System.Private.CoreLib",
+        "System.Reflection.Metadata",
+        "System.Linq.Expressions",
+        "Microsoft.CSharp",
+        "System.Private.DataContractSerialization",
+        "System.Linq.Parallel",
+        "System.Private.Xml"
+    ]
+}
+
+jit_list = {
+    'Windows_NT': {
+        'x64': 'clrjit.dll',
+        'x86': 'clrjit.dll',
+        'x86jit32': 'compatjit.dll'
+    },
+    'Linux': {
+        'x64': 'libclrjit.so'
+    }
+}
+
+os_group_list = {
+    'Windows_NT': 'Windows_NT',
+    'Ubuntu14.04': 'Linux'
+}
+
+python_exe_list = {
+    'Windows_NT': 'py',
+    'Linux': 'python3.5'
+}
 
 ##########################################################################
 # Argument Parser
@@ -104,18 +137,21 @@ def validate_args(args):
         if not helper(arg):
             raise Exception('Argument: %s is not valid.' % (arg))
 
-    valid_archs = ['x86', 'x64', 'x86jit32']
+    valid_archs = {'Windows_NT': ['x86', 'x64', 'x86jit32'], 'Linux': ['x64']}
     valid_build_types = ['Release']
     valid_run_types = ['rolling', 'private']
-    valid_os = ['Windows_NT', 'Linux']
+    valid_os = ['Windows_NT', 'Ubuntu14.04']
 
     arch = next((a for a in valid_archs if a.lower() == arch.lower()), arch)
     build_type = next((b for b in valid_build_types if b.lower() == build_type.lower()), build_type)
 
-    validate_arg(arch, lambda item: item in valid_archs)
+    validate_arg(operating_system, lambda item: item in valid_os)
+
+    os_group = os_group_list[operating_system]
+
+    validate_arg(arch, lambda item: item in valid_archs[os_group])
     validate_arg(build_type, lambda item: item in valid_build_types)
     validate_arg(run_type, lambda item: item in valid_run_types)
-    validate_arg(operating_system, lambda item: item in valid_os)
 
     if clr_root is None:
         raise Exception('--clr_root must be set')
@@ -133,12 +169,13 @@ def validate_args(args):
         benchview_path = os.path.normpath(benchview_path)
         validate_arg(benchview_path, lambda item: os.path.isdir(benchview_path))
 
-    args = (arch, operating_system, build_type, run_type, clr_root, assembly_root, benchview_path)
+    args = (arch, operating_system, os_group, build_type, run_type, clr_root, assembly_root, benchview_path)
 
     # Log configuration
     log('Configuration:')
     log(' arch: %s' % arch)
     log(' os: %s' % operating_system)
+    log(' os_group: %s' % os_group)
     log(' build_type: %s' % build_type)
     log(' run_type: %s' % run_type)
     log(' clr_root: %s' % clr_root)
@@ -228,9 +265,9 @@ def runIterations(dll_name, dll_path, iterations, crossgen_path, jit_path, assem
     for iteration in range(0,iterations):
         proc = subprocess.Popen(run_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-        start_time = time.clock()
+        start_time = timeit.default_timer()
         (out, err) = proc.communicate()
-        end_time = time.clock()
+        end_time = timeit.default_timer()
 
         if proc.returncode == 0:
             # Calculate the runtime
@@ -248,17 +285,22 @@ def runIterations(dll_name, dll_path, iterations, crossgen_path, jit_path, assem
 
 def main(args):
     global dll_list
+    global jit_list
+    global os_group_list
+    global python_exe_list
 
-    architecture, operating_system, build_type, run_type, clr_root, assembly_root, benchview_path = validate_args(args)
+    architecture, operating_system, os_group, build_type, run_type, clr_root, assembly_root, benchview_path = validate_args(args)
     arch = architecture
 
-    current_dir = os.getcwd()
-    jit = "clrjit.dll"
-
-    # jit32 uses compatjit.dll
     if architecture == 'x86jit32':
         arch = 'x86'
-        jit = "compatjit.dll"
+
+    current_dir = os.getcwd()
+    jit = jit_list[os_group][architecture]
+    crossgen = 'crossgen'
+
+    if os_group == 'Windows_NT':
+        crossgen += '.exe'
 
     # Make sandbox
     sandbox_path = os.path.join(clr_root, "sandbox")
@@ -269,16 +311,17 @@ def main(args):
     os.chdir(sandbox_path)
 
     # Set up paths
-    test_root = os.path.join(clr_root, 'bin', 'Tests', operating_system + '.' + arch + '.' + build_type)
-    core_root_path = os.path.join(test_root, 'Tests', 'Core_Root')
+    bin_path = os.path.join(clr_root, 'bin', 'Product',  os_group + '.' + arch + '.' + build_type)
 
-    crossgen_path = os.path.join(core_root_path,'crossgen.exe')
-    jit_path = os.path.join(core_root_path, jit)
+    crossgen_path = os.path.join(bin_path,crossgen)
+    jit_path = os.path.join(bin_path, jit)
 
     iterations = 6
 
+    python_exe = python_exe_list[os_group]
+
     # Run throughput testing
-    for dll_name in dll_list:
+    for dll_name in dll_list[os_group]:
         dll_file_name = dll_name + ".dll"
         dll_path = os.path.join(assembly_root, dll_file_name)
         dll_elapsed_times = runIterations(dll_file_name, dll_path, iterations, crossgen_path, jit_path, assembly_root)
@@ -290,7 +333,7 @@ def main(args):
                 shutil.copy(csv_file_name, clr_root)
 
                 # For each benchmark, call measurement.py
-                measurement_args = ["py",
+                measurement_args = [python_exe,
                         os.path.join(benchview_path, "measurement.py"),
                         "csv",
                         os.path.join(os.getcwd(), csv_file_name),
@@ -314,7 +357,7 @@ def main(args):
     # Upload the data
     if not benchview_path is None:
         # Call submission.py
-        submission_args = ["py",
+        submission_args = [python_exe,
                 os.path.join(benchview_path, "submission.py"),
                 "measurement.json",
                 "--build",
@@ -345,7 +388,7 @@ def main(args):
         proc.communicate()
 
         # Call upload.py
-        upload_args = ["py",
+        upload_args = [python_exe,
                 os.path.join(benchview_path, "upload.py"),
                 "submission.json",
                 "--container",
