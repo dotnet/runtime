@@ -2,7 +2,7 @@
 
 usage()
 {
-    echo "Usage: $0 [BuildArch] [LinuxCodeName] [--skipunmount]"
+    echo "Usage: $0 [BuildArch] [LinuxCodeName] [lldbx.y] [--skipunmount]"
     echo "BuildArch can be: arm(default), armel, arm64, x86"
     echo "LinuxCodeName - optional, Code name for Linux, can be: trusty(default), vivid, wily, xenial. If BuildArch is armel, LinuxCodeName is jessie(default) or tizen."
     echo "lldbx.y - optional, LLDB version, can be: lldb3.6(default), lldb3.8, no-lldb"

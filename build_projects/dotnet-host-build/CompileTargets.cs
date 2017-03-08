@@ -32,6 +32,7 @@ namespace Microsoft.DotNet.Host.Build
             { "linux-x64", "linux-x64" },
             { "ubuntu.14.04-x64", "ubuntu.14.04-x64" },
             { "ubuntu.16.04-x64", "ubuntu.16.04-x64" },
+            { "ubuntu.16.10-x64", "ubuntu.16.10-x64" },
             { "ubuntu.14.04-arm", "ubuntu.14.04-arm" },
             { "ubuntu.16.04-arm", "ubuntu.16.04-arm" },
 //          { "ubuntu.14.04-arm64", "ubuntu.14.04-arm64" },
