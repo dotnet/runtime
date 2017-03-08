@@ -2,18 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*============================================================
-**
-** Interface:  IEnumerator
-** 
-** 
-**
-**
-** Purpose: Base interface for all enumerators.
-**
-** 
-===========================================================*/
-
 using System;
 using System.Runtime.InteropServices;
 
@@ -21,10 +9,8 @@ namespace System.Collections
 {
     // Base interface for all enumerators, providing a simple approach
     // to iterating over a collection.
-    [Guid("496B0ABF-CDEE-11d3-88E8-00902754C43A")]
     public interface IEnumerator
     {
-        // Interfaces are not serializable
         // Advances the enumerator to the next element of the enumeration and
         // returns a boolean indicating whether an element is available. Upon
         // creation, an enumerator is conceptually positioned before the first

@@ -2,21 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*============================================================
-**
-** Interface:  IDictionaryEnumerator
-** 
-** 
-**
-**
-** Purpose: Base interface for dictionary enumerators.
-**
-** 
-===========================================================*/
-// Interfaces are not serializable
-
-using System;
-
 namespace System.Collections
 {
     // This interface represents an enumerator that allows sequential access to the

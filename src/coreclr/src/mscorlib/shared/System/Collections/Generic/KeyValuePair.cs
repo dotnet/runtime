@@ -2,19 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*============================================================
-**
-** Interface:  KeyValuePair
-** 
-** 
-**
-**
-** Purpose: Generic key-value pair for dictionary enumerators.
-**
-** 
-===========================================================*/
-
-using System;
 using System.ComponentModel;
 using System.Text;
 
@@ -28,6 +15,31 @@ namespace System.Collections.Generic
         {
             return new KeyValuePair<TKey, TValue>(key, value);
         }
+
+        /// <summary>
+        /// Used by KeyValuePair.ToString to reduce generic code
+        /// </summary>
+        internal static string PairToString(object key, object value)
+        {
+            StringBuilder s = StringBuilderCache.Acquire();
+            s.Append('[');
+
+            if (key != null)
+            {
+                s.Append(key);
+            }
+
+            s.Append(", ");
+
+            if (value != null)
+            {
+                s.Append(value);
+            }
+
+            s.Append(']');
+
+            return StringBuilderCache.GetStringAndRelease(s);
+        }
     }
 
     // A KeyValuePair holds a key and a value from a dictionary.
@@ -36,8 +48,8 @@ namespace System.Collections.Generic
     [Serializable]
     public struct KeyValuePair<TKey, TValue>
     {
-        private TKey key;
-        private TValue value;
+        private TKey key;       // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.
+        private TValue value;   // DO NOT change the field name, it's required for compatibility with desktop .NET as it appears in serialization payload.
 
         public KeyValuePair(TKey key, TValue value)
         {
@@ -57,19 +69,7 @@ namespace System.Collections.Generic
 
         public override string ToString()
         {
-            StringBuilder s = StringBuilderCache.Acquire();
-            s.Append('[');
-            if (Key != null)
-            {
-                s.Append(Key.ToString());
-            }
-            s.Append(", ");
-            if (Value != null)
-            {
-                s.Append(Value.ToString());
-            }
-            s.Append(']');
-            return StringBuilderCache.GetStringAndRelease(s);
+            return KeyValuePair.PairToString(Key, Value);
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
