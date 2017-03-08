@@ -872,16 +872,15 @@ mono_class_inflate_generic_type_with_mempool (MonoImage *image, MonoType *type, 
 
 /*
  * mono_class_inflate_generic_type:
- * @type: a type
- * @context: a generics context
+ * \param type a type
+ * \param context a generics context
+ * \deprecated Please use \c mono_class_inflate_generic_type_checked instead
  *
- * If @type is a generic type and @context is not NULL, instantiate it using the 
- * generics context @context.
+ * If \p type is a generic type and \p context is not NULL, instantiate it using the 
+ * generics context \p context.
  *
- * Returns: The instantiated type or a copy of @type. The returned MonoType is allocated
+ * \returns The instantiated type or a copy of \p type. The returned \c MonoType is allocated
  * on the heap and is owned by the caller. Returns NULL on error.
- *
- * @deprecated Please use mono_class_inflate_generic_type_checked instead
  */
 MonoType*
 mono_class_inflate_generic_type (MonoType *type, MonoGenericContext *context)
@@ -984,12 +983,12 @@ fail:
 
 /*
  * mono_class_inflate_generic_method:
- * @method: a generic method
- * @context: a generics context
+ * \param method a generic method
+ * \param context a generics context
  *
- * Instantiate the generic method @method using the generics context @context.
+ * Instantiate the generic method \p method using the generics context \p context.
  *
- * Returns: The new instantiated method
+ * \returns The new instantiated method
  */
 MonoMethod *
 mono_class_inflate_generic_method (MonoMethod *method, MonoGenericContext *context)
@@ -4788,10 +4787,10 @@ concat_two_strings_with_zero (MonoImage *image, const char *s1, const char *s2)
  * mono_class_init:
  * \param klass: the class to initialize
  *
- * Compute the instance_size, class_size and other infos that cannot be 
- * computed at mono_class_get() time. Also compute vtable_size if possible. 
+ * Compute the \c instance_size, \c class_size and other infos that cannot be 
+ * computed at \c mono_class_get time. Also compute vtable_size if possible. 
  * Initializes the following fields in \p klass:
- * - all the fields initialized by mono_class_init_sizes ()
+ * - all the fields initialized by \c mono_class_init_sizes
  * - has_cctor
  * - ghcimpl
  * - inited
@@ -6319,7 +6318,7 @@ mono_fnptr_class_get (MonoMethodSignature *sig)
 /**
  * mono_class_from_mono_type:
  * \param type describes the type to return
- * \returns a MonoClass for the specified MonoType, the value is never NULL.
+ * \returns a \c MonoClass for the specified \c MonoType, the value is never NULL.
  */
 MonoClass *
 mono_class_from_mono_type (MonoType *type)
@@ -6795,7 +6794,7 @@ mono_class_get_field_idx (MonoClass *klass, int idx)
  * \param class the class to lookup the field.
  * \param field_token the field token
  *
- * \returns A MonoClassField representing the type and offset of
+ * \returns A \c MonoClassField representing the type and offset of
  * the field, or a NULL value if the field does not belong to this
  * class.
  */
@@ -6816,7 +6815,7 @@ mono_class_get_field (MonoClass *klass, guint32 field_token)
  *
  * Search the class \p klass and its parents for a field with the name \p name.
  * 
- * \returns The MonoClassField pointer of the named field or NULL
+ * \returns The \c MonoClassField pointer of the named field or NULL
  */
 MonoClassField *
 mono_class_get_field_from_name (MonoClass *klass, const char *name)
@@ -7003,6 +7002,9 @@ mono_class_get_property_default_value (MonoProperty *property, MonoTypeEnum *def
 	return (const char *)mono_metadata_blob_heap (klass->image, constant_cols [MONO_CONSTANT_VALUE]);
 }
 
+/**
+ * mono_class_get_event_token:
+ */
 guint32
 mono_class_get_event_token (MonoEvent *event)
 {
@@ -7030,7 +7032,7 @@ mono_class_get_event_token (MonoEvent *event)
  * \param name name of the property to lookup in the specified class
  *
  * Use this method to lookup a property in a class
- * \returns the MonoProperty with the given name, or NULL if the property
+ * \returns the \c MonoProperty with the given name, or NULL if the property
  * does not exist on the \p klass.
  */
 MonoProperty*
@@ -7076,6 +7078,9 @@ mono_class_get_property_token (MonoProperty *prop)
 	return 0;
 }
 
+/**
+ * mono_class_name_from_token:
+ */
 char *
 mono_class_name_from_token (MonoImage *image, guint32 type_token)
 {
@@ -7196,9 +7201,8 @@ mono_assembly_name_from_token (MonoImage *image, guint32 type_token)
  * \param image the image where the class resides
  * \param type_token the token for the class
  * \param context the generic context used to evaluate generic instantiations in
- * \param deprecated Functions that expose MonoGenericContext are going away in mono 4.0
- *
- * \returns The MonoClass that represents \p type_token in \p image
+ * \deprecated Functions that expose \c MonoGenericContext are going away in mono 4.0
+ * \returns The \c MonoClass that represents \p type_token in \p image
  */
 MonoClass *
 mono_class_get_full (MonoImage *image, guint32 type_token, MonoGenericContext *context)
@@ -7344,7 +7348,7 @@ mono_type_get_checked (MonoImage *image, guint32 type_token, MonoGenericContext 
  * mono_class_get:
  * \param image image where the class token will be looked up.
  * \param type_token a type token from the image
- * \returns the MonoClass with the given \p type_token on the \p image
+ * \returns the \c MonoClass with the given \p type_token on the \p image
  */
 MonoClass *
 mono_class_get (MonoImage *image, guint32 type_token)
@@ -7501,8 +7505,8 @@ find_nocase (gpointer key, gpointer value, gpointer user_data)
  * \param name the type short name.
  * \deprecated use the mono_class_from_name_case_checked variant instead.
  *
- * Obtains a MonoClass with a given namespace and a given name which
- * is located in the given MonoImage.   The namespace and name
+ * Obtains a \c MonoClass with a given namespace and a given name which
+ * is located in the given \c MonoImage.   The namespace and name
  * lookups are case insensitive.
  */
 MonoClass *
@@ -7793,16 +7797,16 @@ mono_class_from_name_checked (MonoImage *image, const char* name_space, const ch
 
 /**
  * mono_class_from_name:
- * \param image The MonoImage where the type is looked up in
+ * \param image The \c MonoImage where the type is looked up in
  * \param name_space the type namespace
  * \param name the type short name.
  *
- * Obtains a MonoClass with a given namespace and a given name which
- * is located in the given MonoImage.
+ * Obtains a \c MonoClass with a given namespace and a given name which
+ * is located in the given \c MonoImage.
  *
  * To reference nested classes, use the "/" character as a separator.
- * For example use "Foo/Bar" to reference the class Bar that is nested
- * inside Foo, like this: "class Foo { class Bar {} }".
+ * For example use \c "Foo/Bar" to reference the class \c Bar that is nested
+ * inside \c Foo, like this: "class Foo { class Bar {} }".
  */
 MonoClass *
 mono_class_from_name (MonoImage *image, const char* name_space, const char *name)
@@ -7878,11 +7882,11 @@ mono_class_try_load_from_name (MonoImage *image, const char* name_space, const c
  * this method return TRUE if the \p klass implements the interface or
  * if \p klass is an interface, if one of its base classes is \p klass.
  *
- * If \p check_interfaces is false then, then if \p klass is not an interface
- * then it returns TRUE if the \p klass is a subclass of \p klassc.
+ * If \p check_interfaces is false, then if \p klass is not an interface,
+ * it returns TRUE if the \p klass is a subclass of \p klassc.
  *
- * if \p klass is an interface and \p klassc is System.Object, then this function
- * return true.
+ * if \p klass is an interface and \p klassc is \c System.Object, then this function
+ * returns TRUE.
  *
  */
 gboolean
@@ -8121,8 +8125,8 @@ mono_gparam_is_assignable_from (MonoClass *target, MonoClass *candidate)
  * \param klass the class to be assigned to
  * \param oklass the source class
  *
- * \returns TRUE if an instance of object oklass can be assigned to an
- * instance of object \p klass
+ * \returns TRUE if an instance of class \p oklass can be assigned to an
+ * instance of class \p klass
  */
 gboolean
 mono_class_is_assignable_from (MonoClass *klass, MonoClass *oklass)
@@ -8728,7 +8732,7 @@ mono_class_get_image (MonoClass *klass)
 
 /**
  * mono_class_get_element_class:
- * \param klass the MonoClass to act on
+ * \param klass the \c MonoClass to act on
  *
  * Use this function to get the element class of an array.
  *
@@ -8747,7 +8751,7 @@ mono_class_get_element_class (MonoClass *klass)
  * Use this method to determine if the provided \c MonoClass* represents a value type,
  * or a reference type.
  *
- * \returns TRUE if the MonoClass represents a ValueType, FALSE if it represents a reference type.
+ * \returns TRUE if the \c MonoClass represents a \c ValueType, FALSE if it represents a reference type.
  */
 gboolean
 mono_class_is_valuetype (MonoClass *klass)
@@ -8771,7 +8775,7 @@ mono_class_is_enum (MonoClass *klass)
 
 /**
  * mono_class_enum_basetype:
- * \param klass: the \c MonoClass to act on
+ * \param klass the \c MonoClass to act on
  *
  * Use this function to get the underlying type for an enumeration value.
  * 
@@ -8855,7 +8859,7 @@ mono_class_get_namespace (MonoClass *klass)
  * mono_class_get_type:
  * \param klass the \c MonoClass to act on
  *
- * This method returns the internal Type representation for the class.
+ * This method returns the internal \c MonoType representation for the class.
  *
  * \returns The \c MonoType from the class.
  */
@@ -8949,11 +8953,11 @@ mono_class_num_events (MonoClass *klass)
  *
  * This routine is an iterator routine for retrieving the fields in a class.
  *
- * You must pass a gpointer that points to zero and is treated as an opaque handle to
+ * You must pass a \c gpointer that points to zero and is treated as an opaque handle to
  * iterate over all of the elements.  When no more values are
  * available, the return value is NULL.
  *
- * Returns: a \c MonoClassField* on each iteration, or NULL when no more fields are available.
+ * \returns a \c MonoClassField* on each iteration, or NULL when no more fields are available.
  */
 MonoClassField*
 mono_class_get_fields (MonoClass* klass, gpointer *iter)
@@ -8984,16 +8988,16 @@ mono_class_get_fields (MonoClass* klass, gpointer *iter)
 }
 
 /**
- * mono_class_get_methods
+ * mono_class_get_methods:
  * \param klass the \c MonoClass to act on
  *
  * This routine is an iterator routine for retrieving the fields in a class.
  *
- * You must pass a gpointer that points to zero and is treated as an opaque handle to
+ * You must pass a \c gpointer that points to zero and is treated as an opaque handle to
  * iterate over all of the elements.  When no more values are
  * available, the return value is NULL.
  *
- * Returns: a MonoMethod on each iteration or NULL when no more methods are available.
+ * \returns a \c MonoMethod on each iteration or NULL when no more methods are available.
  */
 MonoMethod*
 mono_class_get_methods (MonoClass* klass, gpointer *iter)
@@ -9151,7 +9155,7 @@ mono_class_get_properties (MonoClass* klass, gpointer *iter)
  *
  * This routine is an iterator routine for retrieving the properties in a class.
  *
- * You must pass a gpointer that points to zero and is treated as an opaque handle to
+ * You must pass a \c gpointer that points to zero and is treated as an opaque handle to
  * iterate over all of the elements.  When no more values are
  * available, the return value is NULL.
  *
@@ -9191,11 +9195,11 @@ mono_class_get_events (MonoClass* klass, gpointer *iter)
  *
  * This routine is an iterator routine for retrieving the interfaces implemented by this class.
  *
- * You must pass a gpointer that points to zero and is treated as an opaque handle to
+ * You must pass a \c gpointer that points to zero and is treated as an opaque handle to
  * iterate over all of the elements.  When no more values are
  * available, the return value is NULL.
  *
- * \returns a \c Monoclass* on each invocation, or NULL when no more are available.
+ * \returns a \c MonoClass* on each invocation, or NULL when no more are available.
  */
 MonoClass*
 mono_class_get_interfaces (MonoClass* klass, gpointer *iter)
@@ -9290,7 +9294,7 @@ setup_nested_types (MonoClass *klass)
  * This routine is an iterator routine for retrieving the nested types of a class.
  * This works only if \p klass is non-generic, or a generic type definition.
  *
- * You must pass a gpointer that points to zero and is treated as an opaque handle to
+ * You must pass a \c gpointer that points to zero and is treated as an opaque handle to
  * iterate over all of the elements.  When no more values are
  * available, the return value is NULL.
  *
@@ -9634,7 +9638,7 @@ mono_event_get_flags (MonoEvent *event)
  * \param name name of the method
  * \param param_count number of parameters. -1 for any number.
  *
- * Obtains a MonoMethod with a given name and number of parameters.
+ * Obtains a \c MonoMethod with a given name and number of parameters.
  * It only works if there are no multiple signatures for any given method name.
  */
 MonoMethod *
