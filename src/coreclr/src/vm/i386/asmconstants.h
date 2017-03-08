@@ -33,9 +33,6 @@
 #define DBG_FRE(dbg,fre) fre
 #endif
 
-//***************************************************************************
- #define HAS_TRACK_CXX_EXCEPTION_CODE_HACK 0
-
 #define INITIAL_SUCCESS_COUNT               0x100
 
 #define DynamicHelperFrameFlags_Default     0
@@ -195,14 +192,7 @@ ASMCONSTANTS_C_ASSERT(CORINFO_ArgumentException_ASM == CORINFO_ArgumentException
 #ifndef CROSSGEN_COMPILE
 
 // from clr/src/vm/threads.h
-#if defined(TRACK_CXX_EXCEPTION_CODE_HACK) // Is C++ exception code tracking turned on?
-    #define Thread_m_LastCxxSEHExceptionCode      0x20
-    ASMCONSTANTS_C_ASSERT(Thread_m_LastCxxSEHExceptionCode == offsetof(Thread, m_LastCxxSEHExceptionCode))
-
-    #define Thread_m_Context    0x3C
-#else
-    #define Thread_m_Context    0x38
-#endif // TRACK_CXX_EXCEPTION_CODE_HACK
+#define Thread_m_Context    0x38
 ASMCONSTANTS_C_ASSERT(Thread_m_Context == offsetof(Thread, m_Context))
 
 #define Thread_m_State      0x04

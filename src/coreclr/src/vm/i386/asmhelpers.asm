@@ -61,11 +61,6 @@ endif ; FEATURE_IMPLICIT_TLS
 EXTERN _VarargPInvokeStubWorker@12:PROC
 EXTERN _GenericPInvokeCalliStubWorker@12:PROC
 
-; To debug that LastThrownObjectException really is EXCEPTION_COMPLUS
-ifdef TRACK_CXX_EXCEPTION_CODE_HACK	
-EXTERN __imp____CxxFrameHandler:PROC
-endif
-
 EXTERN _GetThread@0:PROC
 EXTERN _GetAppDomain@0:PROC
 
@@ -270,52 +265,6 @@ _RestoreFPUContext@4 PROC public
         retn 4
 
 _RestoreFPUContext@4 ENDP
-
-ifndef FEATURE_CORECLR
-ifdef _DEBUG
-; For C++ exceptions, we desperately need to know the SEH code.  This allows us to properly
-; distinguish managed exceptions from C++ exceptions from standard SEH like hard stack overflow.
-; We do this by providing our own handler that squirrels away the exception code and then
-; defers to the C++ service.  Fortunately, two symbols exist for the C++ symbol.
-___CxxFrameHandler3 PROC public
-
-        ; We don't know what arguments are passed to us (except for the first arg on stack)
-        ; It turns out that EAX is part of the non-standard calling convention of this
-        ; function.
-
-        push            eax
-        push            edx
-
-        cmp             dword ptr [_gThreadTLSIndex], -1
-        je              Chain                   ; CLR is not initialized yet
-
-        call            _GetThread@0
-
-        test            eax, eax                ; not a managed thread
-        jz              Chain
-
-        mov             edx, [esp + 0ch]        ; grab the first argument
-        mov             edx, [edx]              ; grab the SEH exception code
-        
-        mov             dword ptr [eax + Thread_m_LastCxxSEHExceptionCode], edx
-
-Chain:        
-
-        pop             edx
-
-        ; [esp] contains the value of EAX we must restore.  We would like
-        ; [esp] to contain the address of the real imported CxxFrameHandler
-        ; so we can chain to it.
-        
-        mov             eax, [__imp____CxxFrameHandler]
-        mov             eax, [eax]
-        xchg            [esp], eax
-        
-        ret
-        
-___CxxFrameHandler3 ENDP
-endif ; _DEBUG
-endif ; FEATURE_CORECLR
 
 ; Register CLR exception handlers defined on the C++ side with SAFESEH.
 ; Note that these directives must be in a file that defines symbols that will be used during linking,
