@@ -19,7 +19,7 @@ const int ArraySIZE = 5;
 
 //Reverse PInvoke
 //Pass by value
-typedef BOOL (__stdcall *CallBackIn)(int size,bool arr[]);
+typedef BOOL (CALLBACK *CallBackIn)(int size,bool arr[]);
 extern "C" DLL_EXPORT BOOL DoCallBackIn(CallBackIn callback)
 {
 	//Init
@@ -62,7 +62,7 @@ extern "C" DLL_EXPORT BOOL DoCallBackIn(CallBackIn callback)
 	return true;
 }
 
-typedef BOOL (__stdcall *CallBackOut)(int size,bool arr[]);
+typedef BOOL (CALLBACK *CallBackOut)(int size,bool arr[]);
 extern "C" DLL_EXPORT BOOL DoCallBackOut(CallBackOut callback)
 {
 	bool * arr =(bool *)CoTaskMemAlloc(ArraySIZE);
@@ -87,7 +87,7 @@ extern "C" DLL_EXPORT BOOL DoCallBackOut(CallBackOut callback)
 	return true;
 }
 
-typedef BOOL (__stdcall *CallBackInOut)(int size,bool arr[]);
+typedef BOOL (CALLBACK *CallBackInOut)(int size,bool arr[]);
 extern "C" DLL_EXPORT BOOL DoCallBackInOut(CallBackInOut callback)
 {
 	//Init
@@ -128,7 +128,7 @@ extern "C" DLL_EXPORT BOOL DoCallBackInOut(CallBackInOut callback)
 
 //Reverse PInvoke
 //Pass by reference
-typedef BOOL (__stdcall *CallBackRefIn)(int size,bool ** arr);
+typedef BOOL (CALLBACK *CallBackRefIn)(int size,bool ** arr);
 extern "C" DLL_EXPORT BOOL DoCallBackRefIn(CallBackRefIn callback)
 {
 	//Init:true,false,true,false,true
@@ -172,7 +172,7 @@ extern "C" DLL_EXPORT BOOL DoCallBackRefIn(CallBackRefIn callback)
 	return true;
 }
 
-typedef BOOL (__stdcall *CallBackRefOut)(int size,bool ** arr);
+typedef BOOL (CALLBACK *CallBackRefOut)(int size,bool ** arr);
 extern "C" DLL_EXPORT BOOL DoCallBackRefOut(CallBackRefOut callback)
 {
 
@@ -198,7 +198,7 @@ extern "C" DLL_EXPORT BOOL DoCallBackRefOut(CallBackRefOut callback)
 	return true;
 }
 
-typedef BOOL (__stdcall *CallBackRefInOut)(int size,bool ** arr);
+typedef BOOL (CALLBACK *CallBackRefInOut)(int size,bool ** arr);
 extern "C" DLL_EXPORT BOOL DoCallBackRefInOut(CallBackRefInOut callback)
 {
 	//Init,true,false,true,false
