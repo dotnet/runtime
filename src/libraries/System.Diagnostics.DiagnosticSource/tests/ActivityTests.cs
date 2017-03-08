@@ -356,7 +356,7 @@ namespace System.Diagnostics.Tests
 
                     var activity = new Activity("activity");
 
-                    // Test Activity.Stop
+                    // Test Activity.Start
                     source.StartActivity(activity, arguments);
                     Assert.Equal(activity.OperationName + ".Start", observer.EventName);
                     Assert.Equal(arguments, observer.EventObject);
@@ -367,6 +367,10 @@ namespace System.Diagnostics.Tests
                     Assert.True(observer.Activity.Duration == TimeSpan.Zero);
 
                     observer.Reset();
+
+                    //DateTime.UtcNow is not precise on some platforms 
+                    //duration could be Zero if activity lasts less than 16ms
+                    Thread.Sleep(20);
 
                     // Test Activity.Stop
                     source.StopActivity(activity, arguments);
