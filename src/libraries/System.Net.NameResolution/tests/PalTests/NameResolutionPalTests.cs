@@ -189,6 +189,18 @@ namespace System.Net.NameResolution.PalTests
         }
 
         [Fact]
+        public void TryGetAddrInfo_ExternalHost()
+        {
+            string hostName = "microsoft.com";
+
+            IPHostEntry hostEntry;
+            int nativeErrorCode;
+            SocketError error = NameResolutionPal.TryGetAddrInfo(hostName, out hostEntry, out nativeErrorCode);
+            Assert.Equal(SocketError.Success, error);
+            Assert.NotNull(hostEntry);
+        }
+
+        [Fact]
         public void TryGetNameInfo_LocalHost_IPv4_TryGetAddrInfo()
         {
             SocketError error;
