@@ -115,20 +115,19 @@ get_dl_name_from_libtool (const char *libtool_file)
 
 /**
  * mono_dl_open:
- * @name: name of file containing shared module
- * @flags: flags
- * @error_msg: pointer for error message on failure
+ * \param name name of file containing shared module
+ * \param flags flags
+ * \param error_msg pointer for error message on failure
  *
- * Load the given file @name as a shared library or dynamically loadable
- * module. @name can be NULL to indicate loading the currently executing
+ * Load the given file \p name as a shared library or dynamically loadable
+ * module. \p name can be NULL to indicate loading the currently executing
  * binary image.
- * @flags can have the MONO_DL_LOCAL bit set to avoid exporting symbols
- * from the module to the shared namespace. The MONO_DL_LAZY bit can be set
+ * \p flags can have the \c MONO_DL_LOCAL bit set to avoid exporting symbols
+ * from the module to the shared namespace. The \c MONO_DL_LAZY bit can be set
  * to lazily load the symbols instead of resolving everithing at load time.
- * @error_msg points to a string where an error message will be stored in
- * case of failure.   The error must be released with g_free.
- *
- * Returns: a MonoDl pointer on success, NULL on failure.
+ * \p error_msg points to a string where an error message will be stored in
+ * case of failure.   The error must be released with \c g_free.
+ * \returns a \c MonoDl pointer on success, NULL on failure.
  */
 MonoDl*
 mono_dl_open (const char *name, int flags, char **error_msg)
@@ -205,14 +204,12 @@ mono_dl_open (const char *name, int flags, char **error_msg)
 
 /**
  * mono_dl_symbol:
- * @module: a MonoDl pointer
- * @name: symbol name
- * @symbol: pointer for the result value
- *
- * Load the address of symbol @name from the given @module.
- * The address is stored in the pointer pointed to by @symbol.
- *
- * Returns: NULL on success, an error message on failure
+ * \param module a MonoDl pointer
+ * \param name symbol name
+ * \param symbol pointer for the result value
+ * Load the address of symbol \p name from the given \p module.
+ * The address is stored in the pointer pointed to by \p symbol.
+ * \returns NULL on success, an error message on failure
  */
 char*
 mono_dl_symbol (MonoDl *module, const char *name, void **symbol)
@@ -248,11 +245,9 @@ mono_dl_symbol (MonoDl *module, const char *name, void **symbol)
 
 /**
  * mono_dl_close:
- * @module: a MonoDl pointer
- *
+ * \param module a \c MonoDl pointer
  * Unload the given module and free the module memory.
- *
- * Returns: 0 on success.
+ * \returns \c 0 on success.
  */
 void
 mono_dl_close (MonoDl *module)
@@ -270,18 +265,17 @@ mono_dl_close (MonoDl *module)
 
 /**
  * mono_dl_build_path:
- * @directory: optional directory
- * @name: base name of the library
- * @iter: iterator token
- *
+ * \param directory optional directory
+ * \param name base name of the library
+ * \param iter iterator token
  * Given a directory name and the base name of a library, iterate
  * over the possible file names of the library, taking into account
  * the possible different suffixes and prefixes on the host platform.
  *
  * The returned file name must be freed by the caller.
- * @iter must point to a NULL pointer the first time the function is called
+ * \p iter must point to a NULL pointer the first time the function is called
  * and then passed unchanged to the following calls.
- * Returns: the filename or NULL at the end of the iteration
+ * \returns the filename or NULL at the end of the iteration
  */
 char*
 mono_dl_build_path (const char *directory, const char *name, void **iter)

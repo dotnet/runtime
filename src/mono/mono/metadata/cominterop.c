@@ -931,9 +931,8 @@ cominterop_get_native_wrapper_adjusted (MonoMethod *method)
 
 /**
  * mono_cominterop_get_native_wrapper:
- * @method: managed method
- *
- * Returns: the generated method to call
+ * \param method managed method
+ * \returns the generated method to call
  */
 MonoMethod *
 mono_cominterop_get_native_wrapper (MonoMethod *method)
@@ -1046,9 +1045,8 @@ mono_cominterop_get_native_wrapper (MonoMethod *method)
 
 /**
  * mono_cominterop_get_invoke:
- * @method: managed method
- *
- * Returns: the generated method that calls the underlying __ComObject
+ * \param method managed method
+ * \returns the generated method that calls the underlying \c __ComObject
  * rather than the proxy object.
  */
 MonoMethod *
@@ -2180,9 +2178,8 @@ mono_marshal_free_ccw_entry (gpointer key, gpointer value, gpointer user_data)
 
 /**
  * mono_marshal_free_ccw:
- * @object: the mono object
- *
- * Returns: whether the object had a CCW
+ * \param object the mono object
+ * \returns whether the object had a CCW
  */
 gboolean
 mono_marshal_free_ccw (MonoObject* object)

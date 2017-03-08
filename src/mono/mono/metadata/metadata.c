@@ -521,12 +521,12 @@ mono_tables_names [] = {
 
 /**
  * mono_meta_table_name:
- * @table: table index
+ * \param table table index
  *
  * Returns the name of the given ECMA metadata logical format table
  * as described in ECMA 335, Partition II, Section 22.
  * 
- * Returns: the name for the @table index
+ * \returns the name for the \p table index
  */
 const char *
 mono_meta_table_name (int table)
@@ -975,7 +975,7 @@ mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bit
 
 /**
  * mono_metadata_compute_table_bases:
- * @meta: metadata context to compute table values
+ * \param meta metadata context to compute table values
  *
  * Computes the table bases for the metadata structure.
  * This is an internal function used by the image loader code.
@@ -999,12 +999,12 @@ mono_metadata_compute_table_bases (MonoImage *meta)
 
 /**
  * mono_metadata_locate:
- * @meta: metadata context
- * @table: table code.
- * @idx: index of element to retrieve from @table.
+ * \param meta metadata context
+ * \param table table code.
+ * \param idx index of element to retrieve from \p table.
  *
- * Returns: a pointer to the @idx element in the metadata table
- * whose code is @table.
+ * \returns a pointer to the \p idx element in the metadata table
+ * whose code is \p table.
  */
 const char *
 mono_metadata_locate (MonoImage *meta, int table, int idx)
@@ -1017,11 +1017,11 @@ mono_metadata_locate (MonoImage *meta, int table, int idx)
 
 /**
  * mono_metadata_locate_token:
- * @meta: metadata context
- * @token: metadata token
+ * \param meta metadata context
+ * \param token metadata token
  *
- * Returns: a pointer to the data in the metadata represented by the
- * token #token.
+ * \returns a pointer to the data in the metadata represented by the
+ * token \p token .
  */
 const char *
 mono_metadata_locate_token (MonoImage *meta, guint32 token)
@@ -1031,10 +1031,9 @@ mono_metadata_locate_token (MonoImage *meta, guint32 token)
 
 /**
  * mono_metadata_string_heap:
- * @meta: metadata context
- * @index: index into the string heap.
- *
- * Returns: an in-memory pointer to the @index in the string heap.
+ * \param meta metadata context
+ * \param index index into the string heap.
+ * \returns an in-memory pointer to the \p index in the string heap.
  */
 const char *
 mono_metadata_string_heap (MonoImage *meta, guint32 index)
@@ -1046,10 +1045,9 @@ mono_metadata_string_heap (MonoImage *meta, guint32 index)
 
 /**
  * mono_metadata_user_string:
- * @meta: metadata context
- * @index: index into the user string heap.
- *
- * Returns: an in-memory pointer to the @index in the user string heap ("#US").
+ * \param meta metadata context
+ * \param index index into the user string heap.
+ * \returns an in-memory pointer to the \p index in the user string heap ("#US").
  */
 const char *
 mono_metadata_user_string (MonoImage *meta, guint32 index)
@@ -1061,10 +1059,9 @@ mono_metadata_user_string (MonoImage *meta, guint32 index)
 
 /**
  * mono_metadata_blob_heap:
- * @meta: metadata context
- * @index: index into the blob.
- *
- * Returns: an in-memory pointer to the @index in the Blob heap.
+ * \param meta metadata context
+ * \param index index into the blob.
+ * \returns an in-memory pointer to the \p index in the Blob heap.
  */
 const char *
 mono_metadata_blob_heap (MonoImage *meta, guint32 index)
@@ -1076,10 +1073,9 @@ mono_metadata_blob_heap (MonoImage *meta, guint32 index)
 
 /**
  * mono_metadata_guid_heap:
- * @meta: metadata context
- * @index: index into the guid heap.
- *
- * Returns: an in-memory pointer to the @index in the guid heap.
+ * \param meta metadata context
+ * \param index index into the guid heap.
+ * \returns an in-memory pointer to the \p index in the guid heap.
  */
 const char *
 mono_metadata_guid_heap (MonoImage *meta, guint32 index)
@@ -1102,12 +1098,12 @@ dword_align (const unsigned char *ptr)
 
 /**
  * mono_metadata_decode_row:
- * @t: table to extract information from.
- * @idx: index in table.
- * @res: array of @res_size cols to store the results in
+ * \param t table to extract information from.
+ * \param idx index in table.
+ * \param res array of \p res_size cols to store the results in
  *
- * This decompresses the metadata element @idx in table @t
- * into the guint32 @res array that has res_size elements
+ * This decompresses the metadata element \p idx in table \p t
+ * into the \c guint32 \p res array that has \p res_size elements
  */
 void
 mono_metadata_decode_row (const MonoTableInfo *t, int idx, guint32 *res, int res_size)
@@ -1141,12 +1137,12 @@ mono_metadata_decode_row (const MonoTableInfo *t, int idx, guint32 *res, int res
 
 /**
  * mono_metadata_decode_row_col:
- * @t: table to extract information from.
- * @idx: index for row in table.
- * @col: column in the row.
+ * \param t table to extract information from.
+ * \param idx index for row in table.
+ * \param col column in the row.
  *
- * This function returns the value of column @col from the @idx
- * row in the table @t.
+ * This function returns the value of column \p col from the \p idx
+ * row in the table \p t .
  */
 guint32
 mono_metadata_decode_row_col (const MonoTableInfo *t, int idx, guint col)
@@ -1180,12 +1176,12 @@ mono_metadata_decode_row_col (const MonoTableInfo *t, int idx, guint col)
 
 /**
  * mono_metadata_decode_blob_size:
- * @ptr: pointer to a blob object
- * @rptr: the new position of the pointer
+ * \param ptr pointer to a blob object
+ * \param rptr the new position of the pointer
  *
  * This decodes a compressed size as described by 23.1.4 (a blob or user string object)
  *
- * Returns: the size of the blob object
+ * \returns the size of the blob object
  */
 guint32
 mono_metadata_decode_blob_size (const char *xptr, const char **rptr)
@@ -1213,13 +1209,13 @@ mono_metadata_decode_blob_size (const char *xptr, const char **rptr)
 
 /**
  * mono_metadata_decode_value:
- * @ptr: pointer to decode from
- * @rptr: the new position of the pointer
+ * \param ptr pointer to decode from
+ * \param rptr the new position of the pointer
  *
  * This routine decompresses 32-bit values as specified in the "Blob and
  * Signature" section (23.2)
  *
- * Returns: the decoded value
+ * \returns the decoded value
  */
 guint32
 mono_metadata_decode_value (const char *_ptr, const char **rptr)
@@ -1249,13 +1245,13 @@ mono_metadata_decode_value (const char *_ptr, const char **rptr)
 
 /**
  * mono_metadata_decode_signed_value:
- * @ptr: pointer to decode from
- * @rptr: the new position of the pointer
+ * \param ptr pointer to decode from
+ * \param rptr the new position of the pointer
  *
  * This routine decompresses 32-bit signed values
  * (not specified in the spec)
  *
- * Returns: the decoded value
+ * \returns the decoded value
  */
 gint32
 mono_metadata_decode_signed_value (const char *ptr, const char **rptr)
@@ -1667,28 +1663,28 @@ mono_metadata_cleanup (void)
 
 /**
  * mono_metadata_parse_type:
- * @m: metadata context
- * @mode: king of type that may be found at @ptr
- * @opt_attrs: optional attributes to store in the returned type
- * @ptr: pointer to the type representation
- * @rptr: pointer updated to match the end of the decoded stream
- * @transient: whenever to allocate the result from the heap or from a mempool
+ * \param m metadata context
+ * \param mode king of type that may be found at \p ptr
+ * \param opt_attrs optional attributes to store in the returned type
+ * \param ptr pointer to the type representation
+ * \param rptr pointer updated to match the end of the decoded stream
+ * \param transient whenever to allocate the result from the heap or from a mempool
  * 
- * Decode a compressed type description found at @ptr in @m.
- * @mode can be one of MONO_PARSE_MOD_TYPE, MONO_PARSE_PARAM, MONO_PARSE_RET,
+ * Decode a compressed type description found at \p ptr in \p m .
+ * \p mode can be one of MONO_PARSE_MOD_TYPE, MONO_PARSE_PARAM, MONO_PARSE_RET,
  * MONO_PARSE_FIELD, MONO_PARSE_LOCAL, MONO_PARSE_TYPE.
  * This function can be used to decode type descriptions in method signatures,
  * field signatures, locals signatures etc.
  *
- * To parse a generic type, `generic_container' points to the current class'es
- * (the `generic_container' field in the MonoClass) or the current generic method's
+ * To parse a generic type, \c generic_container points to the current class'es
+ * (the \c generic_container field in the \c MonoClass ) or the current generic method's
  * (stored in image->property_hash) generic container.
  * When we encounter any MONO_TYPE_VAR or MONO_TYPE_MVAR's, they're looked up in
  * this MonoGenericContainer.
  *
  * LOCKING: Acquires the loader lock.
  *
- * Returns: a #MonoType structure representing the decoded type.
+ * \returns a \c MonoType structure representing the decoded type.
  */
 static MonoType*
 mono_metadata_parse_type_internal (MonoImage *m, MonoGenericContainer *container,
@@ -3001,9 +2997,9 @@ mono_metadata_get_generic_inst (int type_argc, MonoType **type_argv)
 
 /**
  * mono_metadata_get_canonical_generic_inst:
- * @candidate: an arbitrary generic instantiation
+ * \param candidate an arbitrary generic instantiation
  *
- * Returns the canonical generic instantiation that represents the given
+ * \returns the canonical generic instantiation that represents the given
  * candidate by identifying the image set for the candidate instantiation and
  * finding the instance in the image set or adding a copy of the given instance
  * to the image set.
@@ -4042,13 +4038,13 @@ mono_method_header_get_clauses (MonoMethodHeader *header, MonoMethod *method, gp
 
 /**
  * mono_metadata_parse_field_type:
- * @m: metadata context to extract information from
- * @ptr: pointer to the field signature
- * @rptr: pointer updated to match the end of the decoded stream
+ * \param m metadata context to extract information from
+ * \param ptr pointer to the field signature
+ * \param rptr pointer updated to match the end of the decoded stream
  *
  * Parses the field signature, and returns the type information for it. 
  *
- * Returns: The MonoType that was extracted from @ptr.
+ * \returns The \c MonoType that was extracted from \p ptr .
  */
 MonoType *
 mono_metadata_parse_field_type (MonoImage *m, short field_flags, const char *ptr, const char **rptr)
@@ -4061,13 +4057,13 @@ mono_metadata_parse_field_type (MonoImage *m, short field_flags, const char *ptr
 
 /**
  * mono_metadata_parse_param:
- * @m: metadata context to extract information from
- * @ptr: pointer to the param signature
- * @rptr: pointer updated to match the end of the decoded stream
+ * \param m metadata context to extract information from
+ * \param ptr pointer to the param signature
+ * \param rptr pointer updated to match the end of the decoded stream
  *
  * Parses the param signature, and returns the type information for it. 
  *
- * Returns: The MonoType that was extracted from @ptr.
+ * \returns The \c MonoType that was extracted from \p ptr .
  */
 MonoType *
 mono_metadata_parse_param (MonoImage *m, const char *ptr, const char **rptr)
@@ -4248,11 +4244,11 @@ search_ptr_table (MonoImage *image, int table, int idx)
 
 /**
  * mono_metadata_typedef_from_field:
- * @meta: metadata context
- * @index: FieldDef token
+ * \param meta metadata context
+ * \param index FieldDef token
  *
- * Returns: the 1-based index into the TypeDef table of the type that
- * declared the field described by @index, or 0 if not found.
+ * \returns the 1-based index into the TypeDef table of the type that
+ * declared the field described by \p index , or 0 if not found.
  */
 guint32
 mono_metadata_typedef_from_field (MonoImage *meta, guint32 index)
@@ -5201,14 +5197,14 @@ mono_metadata_type_equal (MonoType *t1, MonoType *t2)
 
 /**
  * mono_metadata_type_equal_full:
- * @t1: a type
- * @t2: another type
- * @signature_only: if signature only comparison should be made
+ * \param t1 a type
+ * \param t2 another type
+ * \param signature_only if signature only comparison should be made
  *
- * Determine if @t1 and @t2 are signature compatible if @signature_only is #TRUE, otherwise
+ * Determine if \p t1 and \p t2 are signature compatible if \p signature_only is TRUE, otherwise
  * behaves the same way as mono_metadata_type_equal.
  * The function mono_metadata_type_equal(a, b) is just a shortcut for mono_metadata_type_equal_full(a, b, FALSE).
- * Returns: #TRUE if @t1 and @t2 are equal taking @signature_only into account.
+ * \returns TRUE if \p t1 and \p t2 are equal taking \p signature_only into account.
  */
 gboolean
 mono_metadata_type_equal_full (MonoType *t1, MonoType *t2, gboolean signature_only)
@@ -5218,12 +5214,12 @@ mono_metadata_type_equal_full (MonoType *t1, MonoType *t2, gboolean signature_on
 
 /**
  * mono_metadata_signature_equal:
- * @sig1: a signature
- * @sig2: another signature
+ * \param sig1 a signature
+ * \param sig2 another signature
  *
- * Determine if @sig1 and @sig2 represent the same signature, with the
+ * Determine if \p sig1 and \p sig2 represent the same signature, with the
  * same number of arguments and the same types.
- * Returns: #TRUE if @sig1 and @sig2 are equal.
+ * \returns TRUE if \p sig1 and \p sig2 are equal.
  */
 gboolean
 mono_metadata_signature_equal (MonoMethodSignature *sig1, MonoMethodSignature *sig2)
@@ -5263,10 +5259,9 @@ mono_metadata_signature_equal (MonoMethodSignature *sig1, MonoMethodSignature *s
 
 /**
  * mono_metadata_type_dup:
- * @image: image to alloc memory from
- * @original: type to duplicate
- *
- * Returns: copy of type allocated from the image's mempool (or from the heap, if @image is null).
+ * \param image image to alloc memory from
+ * \param original type to duplicate
+ * \returns copy of type allocated from the image's mempool (or from the heap, if \p image is null).
  */
 MonoType *
 mono_metadata_type_dup (MonoImage *image, const MonoType *o)
@@ -6419,10 +6414,10 @@ mono_get_shared_generic_inst (MonoGenericContainer *container)
 
 /**
  * mono_type_is_byref:
- * @type: the MonoType operated on
+ * \param type the \c MonoType operated on
  *
- * Returns: #TRUE if @type represents a type passed by reference,
- * #FALSE otherwise.
+ * \returns TRUE if \p type represents a type passed by reference,
+ * FALSE otherwise.
  */
 gboolean
 mono_type_is_byref (MonoType *type)
@@ -6432,9 +6427,8 @@ mono_type_is_byref (MonoType *type)
 
 /**
  * mono_type_get_type:
- * @type: the MonoType operated on
- *
- * Returns: the IL type value for @type. This is one of the MonoTypeEnum
+ * \param type the \c MonoType operated on
+ * \returns the IL type value for \p type. This is one of the MonoTypeEnum
  * enum members like MONO_TYPE_I4 or MONO_TYPE_STRING.
  */
 int
@@ -6445,12 +6439,10 @@ mono_type_get_type (MonoType *type)
 
 /**
  * mono_type_get_signature:
- * @type: the MonoType operated on
- *
- * It is only valid to call this function if @type is a MONO_TYPE_FNPTR.
- *
- * Returns: the MonoMethodSignature pointer that describes the signature
- * of the function pointer @type represents.
+ * \param type the \c MonoType operated on
+ * It is only valid to call this function if \p type is a \c MONO_TYPE_FNPTR .
+ * \returns the \c MonoMethodSignature pointer that describes the signature
+ * of the function pointer \p type represents.
  */
 MonoMethodSignature*
 mono_type_get_signature (MonoType *type)
@@ -6461,13 +6453,11 @@ mono_type_get_signature (MonoType *type)
 
 /**
  * mono_type_get_class:
- * @type: the MonoType operated on
- *
- * It is only valid to call this function if @type is a MONO_TYPE_CLASS or a
- * MONO_TYPE_VALUETYPE. For more general functionality, use mono_class_from_mono_type (),
- * instead
- *
- * Returns: the MonoClass pointer that describes the class that @type represents.
+ * \param type the \c MonoType operated on
+ * It is only valid to call this function if \p type is a \c MONO_TYPE_CLASS or a
+ * \c MONO_TYPE_VALUETYPE . For more general functionality, use mono_class_from_mono_type(),
+ * instead.
+ * \returns the \c MonoClass pointer that describes the class that \p type represents.
  */
 MonoClass*
 mono_type_get_class (MonoType *type)
@@ -6478,11 +6468,9 @@ mono_type_get_class (MonoType *type)
 
 /**
  * mono_type_get_array_type:
- * @type: the MonoType operated on
- *
- * It is only valid to call this function if @type is a MONO_TYPE_ARRAY.
- *
- * Returns: a MonoArrayType struct describing the array type that @type
+ * \param type the \c MonoType operated on
+ * It is only valid to call this function if \p type is a \c MONO_TYPE_ARRAY .
+ * \returns a \c MonoArrayType struct describing the array type that \p type
  * represents. The info includes details such as rank, array element type
  * and the sizes and bounds of multidimensional arrays.
  */
@@ -6494,12 +6482,9 @@ mono_type_get_array_type (MonoType *type)
 
 /**
  * mono_type_get_ptr_type:
- * @type: the MonoType operated on
- *
- * It is only valid to call this function if @type is a MONO_TYPE_PTR.
- * instead
- *
- * Returns: the MonoType pointer that describes the type that @type
+ * \pararm type the \c MonoType operated on
+ * It is only valid to call this function if \p type is a \c MONO_TYPE_PTR .
+ * \returns the \c MonoType pointer that describes the type that \p type
  * represents a pointer to.
  */
 MonoType*
@@ -6518,10 +6503,9 @@ mono_type_get_modifiers (MonoType *type, gboolean *is_required, gpointer *iter)
 
 /**
  * mono_type_is_struct:
- * @type: the MonoType operated on
- *
- * Returns: #TRUE is @type is a struct, that is a ValueType but not en enum
- * or a basic type like System.Int32. #FALSE otherwise.
+ * \param type the \c MonoType operated on
+ * \returns TRUE if \p type is a struct, that is a \c ValueType but not an enum
+ * or a basic type like \c System.Int32 . FALSE otherwise.
  */
 mono_bool
 mono_type_is_struct (MonoType *type)
@@ -6535,9 +6519,8 @@ mono_type_is_struct (MonoType *type)
 
 /**
  * mono_type_is_void:
- * @type: the MonoType operated on
- *
- * Returns: #TRUE is @type is System.Void. #FALSE otherwise.
+ * \param type the \c MonoType operated on
+ * \returns TRUE if \p type is \c System.Void . FALSE otherwise.
  */
 mono_bool
 mono_type_is_void (MonoType *type)
@@ -6547,9 +6530,8 @@ mono_type_is_void (MonoType *type)
 
 /**
  * mono_type_is_pointer:
- * @type: the MonoType operated on
- *
- * Returns: #TRUE is @type is a managed or unmanaged pointer type. #FALSE otherwise.
+ * \param type the \c MonoType operated on
+ * \returns TRUE if \p type is a managed or unmanaged pointer type. FALSE otherwise.
  */
 mono_bool
 mono_type_is_pointer (MonoType *type)
@@ -6563,9 +6545,8 @@ mono_type_is_pointer (MonoType *type)
 
 /**
  * mono_type_is_reference:
- * @type: the MonoType operated on
- *
- * Returns: #TRUE is @type represents an object reference . #FALSE otherwise.
+ * \param type the \c MonoType operated on
+ * \returns TRUE if \p type represents an object reference. FALSE otherwise.
  */
 mono_bool
 mono_type_is_reference (MonoType *type)
@@ -6585,9 +6566,8 @@ mono_type_is_generic_parameter (MonoType *type)
 
 /**
  * mono_signature_get_return_type:
- * @sig: the method signature inspected
- *
- * Returns: the return type of the method signature @sig
+ * \param sig the method signature inspected
+ * \returns the return type of the method signature \p sig
  */
 MonoType*
 mono_signature_get_return_type (MonoMethodSignature *sig)
@@ -6597,16 +6577,14 @@ mono_signature_get_return_type (MonoMethodSignature *sig)
 
 /**
  * mono_signature_get_params:
- * @sig: the method signature inspected
- * #iter: pointer to an iterator
- *
- * Iterates over the parameters for the method signature @sig.
- * A void* pointer must be initualized to #NULL to start the iteration
- * and it's address is passed to this function repeteadly until it returns
- * #NULL.
- *
- * Returns: the next parameter type of the method signature @sig,
- * #NULL when finished.
+ * \param sig the method signature inspected
+ * \param iter pointer to an iterator
+ * Iterates over the parameters for the method signature \p sig.
+ * A \c void* pointer must be initialized to NULL to start the iteration
+ * and its address is passed to this function repeteadly until it returns
+ * NULL.
+ * \returns: the next parameter type of the method signature \p sig,
+ * NULL when finished.
  */
 MonoType*
 mono_signature_get_params (MonoMethodSignature *sig, gpointer *iter)
@@ -6635,9 +6613,8 @@ mono_signature_get_params (MonoMethodSignature *sig, gpointer *iter)
 
 /**
  * mono_signature_get_param_count:
- * @sig: the method signature inspected
- *
- * Returns: the number of parameters in the method signature @sig.
+ * \param sig the method signature inspected
+ * \returns the number of parameters in the method signature \p sig.
  */
 guint32
 mono_signature_get_param_count (MonoMethodSignature *sig)
@@ -6647,9 +6624,8 @@ mono_signature_get_param_count (MonoMethodSignature *sig)
 
 /**
  * mono_signature_get_call_conv:
- * @sig: the method signature inspected
- *
- * Returns: the call convention of the method signature @sig.
+ * \param sig the method signature inspected
+ * \returns the call convention of the method signature \p sig.
  */
 guint32
 mono_signature_get_call_conv (MonoMethodSignature *sig)
@@ -6659,10 +6635,9 @@ mono_signature_get_call_conv (MonoMethodSignature *sig)
 
 /**
  * mono_signature_vararg_start:
- * @sig: the method signature inspected
- *
- * Returns: the number of the first vararg parameter in the
- * method signature @sig. -1 if this is not a vararg signature.
+ * \param sig the method signature inspected
+ * \returns the number of the first vararg parameter in the
+ * method signature \param sig. \c -1 if this is not a vararg signature.
  */
 int
 mono_signature_vararg_start (MonoMethodSignature *sig)
@@ -6672,10 +6647,9 @@ mono_signature_vararg_start (MonoMethodSignature *sig)
 
 /**
  * mono_signature_is_instance:
- * @sig: the method signature inspected
- *
- * Returns: #TRUE if this the method signature @sig has an implicit
- * first instance argument. #FALSE otherwise.
+ * \param sig the method signature inspected
+ * \returns TRUE if this the method signature \p sig has an implicit
+ * first instance argument. FALSE otherwise.
  */
 gboolean
 mono_signature_is_instance (MonoMethodSignature *sig)
@@ -6685,10 +6659,9 @@ mono_signature_is_instance (MonoMethodSignature *sig)
 
 /**
  * mono_signature_param_is_out
- * @sig: the method signature inspected
- * @param_num: the 0-based index of the inspected parameter
- * 
- * Returns: #TRUE if the parameter is an out parameter, #FALSE
+ * \param sig the method signature inspected
+ * \param param_num the 0-based index of the inspected parameter
+ * \returns TRUE if the parameter is an out parameter, FALSE
  * otherwise.
  */
 mono_bool
@@ -6700,10 +6673,9 @@ mono_signature_param_is_out (MonoMethodSignature *sig, int param_num)
 
 /**
  * mono_signature_explicit_this:
- * @sig: the method signature inspected
- *
- * Returns: #TRUE if this the method signature @sig has an explicit
- * instance argument. #FALSE otherwise.
+ * \param sig the method signature inspected
+ * \returns TRUE if this the method signature \p sig has an explicit
+ * instance argument. FALSE otherwise.
  */
 gboolean
 mono_signature_explicit_this (MonoMethodSignature *sig)

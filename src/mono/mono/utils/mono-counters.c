@@ -38,11 +38,11 @@ static void initialize_system_counters (void);
 
 /**
  * mono_counter_get_variance:
- * @counter: counter to get the variance
+ * \param counter counter to get the variance
  *
  * Variance specifies how the counter value is expected to behave between any two samplings.
  *
- * Returns: the monotonicity of the counter.
+ * \returns the monotonicity of the counter.
  */
 int
 mono_counter_get_variance (MonoCounter *counter)
@@ -52,11 +52,11 @@ mono_counter_get_variance (MonoCounter *counter)
 
 /**
  * mono_counter_get_unit:
- * @counter: counter to get the unit
+ * \param counter counter to get the unit
  *
  * The unit gives a high level view of the unit that the counter is measuring.
  *
- * Returns: the unit of the counter.
+ * \returns the unit of the counter.
  */
 int
 mono_counter_get_unit (MonoCounter *counter)
@@ -66,11 +66,9 @@ mono_counter_get_unit (MonoCounter *counter)
 
 /**
  * mono_counter_get_section:
- * @counter: counter to get the section
- *
+ * \param counter counter to get the section
  * Sections are the unit of organization between all counters.
- *
- * Returns: the section of the counter.
+ * \returns the section of the counter.
  */
 
 int
@@ -81,11 +79,8 @@ mono_counter_get_section (MonoCounter *counter)
 
 /**
  * mono_counter_get_type:
- * @counter: counter to get the type
- *
- * Returns the type used to strong the value of the counter.
- *
- * Returns:the type of the counter.
+ * \param counter counter to get the type
+ * \returns the type used to store the value of the counter.
  */
 int
 mono_counter_get_type (MonoCounter *counter)
@@ -95,11 +90,8 @@ mono_counter_get_type (MonoCounter *counter)
 
 /**
  * mono_counter_get_name:
- * @counter: counter to get the name
- *
- * Returns the counter name. The string should not be freed.
- *
- * Returns the name of the counter.
+ * \param counter counter to get the name
+ * \returns the counter name. The string should not be freed.
  */
 
 const char*
@@ -110,11 +102,9 @@ mono_counter_get_name (MonoCounter *counter)
 
 /**
  * mono_counter_get_size:
- * @counter: counter to get the max size of the counter
- *
- * Use the returned size to create the buffer used with mono_counters_sample
- *
- * Returns: the max size of the counter data.
+ * \param counter counter to get the max size of the counter
+ * Use the returned size to create the buffer used with \c mono_counters_sample
+ * \returns the max size of the counter data.
  */
 size_t
 mono_counter_get_size (MonoCounter *counter)
@@ -124,8 +114,7 @@ mono_counter_get_size (MonoCounter *counter)
 
 /**
  * mono_counters_enable:
- * @section_mask: a mask listing the sections that will be displayed
- *
+ * \param sectionmask: a mask listing the sections that will be displayed
  * This is used to track which counters will be displayed.
  */
 void
@@ -198,19 +187,18 @@ register_internal (const char *name, int type, void *addr, int size)
 
 /**
  * mono_counters_register:
- * @name: The name for this counters.
- * @type: One of the possible MONO_COUNTER types, or MONO_COUNTER_CALLBACK for a function pointer.
- * @addr: The address to register.
+ * \param name The name for this counters.
+ * \param type One of the possible \c MONO_COUNTER types, or \c MONO_COUNTER_CALLBACK for a function pointer.
+ * \param addr The address to register.
  *
- * Register addr as the address of a counter of type type.
- * Note that @name must be a valid string at all times until
- * mono_counters_dump () is called.
+ * Register \p addr as the address of a counter of type type.
+ * Note that \p name must be a valid string at all times until
+ * \c mono_counters_dump() is called.
  *
  * This function should not be used with counter types that require an explicit size such as string
  * as the counter size will be set to zero making them effectively useless.
  *
- *
- * It may be a function pointer if MONO_COUNTER_CALLBACK is specified:
+ * It may be a function pointer if \c MONO_COUNTER_CALLBACK is specified:
  * the function should return the value and take no arguments.
  */
 void 
@@ -252,23 +240,23 @@ mono_counters_register (const char* name, int type, void *addr)
 
 /**
  * mono_counters_register_with_size:
- * @name: The name for this counters.
- * @type: One of the possible MONO_COUNTER types, or MONO_COUNTER_CALLBACK for a function pointer.
- * @addr: The address to register.
- * @size: Max size of the counter data.
+ * \param name The name for this counters.
+ * \param type One of the possible MONO_COUNTER types, or MONO_COUNTER_CALLBACK for a function pointer.
+ * \param addr The address to register.
+ * \param size Max size of the counter data.
  *
- * Register addr as the address of a counter of type @type.
- * Note that @name must be a valid string at all times until
- * mono_counters_dump () is called.
+ * Register \p addr as the address of a counter of type \p type.
+ * Note that \p name must be a valid string at all times until
+ * \c mono_counters_dump() is called.
  *
- * It may be a function pointer if MONO_COUNTER_CALLBACK is specified:
+ * It may be a function pointer if \c MONO_COUNTER_CALLBACK is specified:
  * the function should return the value and take no arguments.
  *
- * The value of @size is ignored for types with fixed size such as int and long.
+ * The value of \p size is ignored for types with fixed size such as int and long.
  *
- * Use @size for types that can have dynamic size such as string.
+ * Use \p size for types that can have dynamic size such as string.
  *
- * If @size is negative, it's silently converted to zero.
+ * If \p size is negative, it's silently converted to zero.
  */
 void
 mono_counters_register_with_size (const char *name, int type, void *addr, int size)
@@ -281,8 +269,7 @@ mono_counters_register_with_size (const char *name, int type, void *addr, int si
 
 /**
  * mono_counters_on_register
- * @callback : function to callback when a counter is registered
- *
+ * \param callback function to callback when a counter is registered
  * Add a callback that is going to be called when a counter is registered
  */
 void
@@ -429,12 +416,10 @@ initialize_system_counters (void)
 
 /**
  * mono_counters_foreach:
- * @cb: The callback that will be called for each counter.
- * @user_data: Value passed as second argument of the callback.
- *
- * Iterate over all counters and call @cb for each one of them. Stop iterating if
+ * \param cb The callback that will be called for each counter.
+ * \param user_data Value passed as second argument of the callback.
+ * Iterate over all counters and call \p cb for each one of them. Stop iterating if
  * the callback returns FALSE.
- *
  */
 void
 mono_counters_foreach (CountersEnumCallback cb, gpointer user_data)
@@ -594,12 +579,11 @@ mono_counters_dump_section (int section, int variance, FILE *outfile)
 
 /**
  * mono_counters_dump:
- * @section_mask: The sections to dump counters for
- * @outfile: a FILE to dump the results to
- *
+ * \param section_mask The sections to dump counters for
+ * \param outfile a FILE to dump the results to
  * Displays the counts of all the enabled counters registered. 
  * To filter by variance, you can OR one or more variance with the specific section you want.
- * Use MONO_COUNTER_SECTION_MASK to dump all categories of a specific variance.
+ * Use \c MONO_COUNTER_SECTION_MASK to dump all categories of a specific variance.
  */
 void
 mono_counters_dump (int section_mask, FILE *outfile)
@@ -668,9 +652,8 @@ static uintptr_t resource_limits [MONO_RESOURCE_COUNT * 2];
 
 /**
  * mono_runtime_resource_check_limit:
- * @resource_type: one of the #MonoResourceType enum values
- * @value: the current value of the resource usage
- *
+ * \param resource_type one of the \c MonoResourceType enum values
+ * \param value the current value of the resource usage
  * Check if a runtime resource limit has been reached. This function
  * is intended to be used by the runtime only.
  */
@@ -690,17 +673,15 @@ mono_runtime_resource_check_limit (int resource_type, uintptr_t value)
 
 /**
  * mono_runtime_resource_limit:
- * @resource_type: one of the #MonoResourceType enum values
- * @soft_limit: the soft limit value
- * @hard_limit: the hard limit value
- *
+ * \param resource_type one of the \c MonoResourceType enum values
+ * \param soft_limit the soft limit value
+ * \param hard_limit the hard limit value
  * This function sets the soft and hard limit for runtime resources. When the limit
  * is reached, a user-specified callback is called. The callback runs in a restricted
  * environment, in which the world coult be stopped, so it can't take locks, perform
  * allocations etc. The callback may be called multiple times once a limit has been reached
  * if action is not taken to decrease the resource use.
- *
- * Returns: 0 on error or a positive integer otherwise.
+ * \returns 0 on error or a positive integer otherwise.
  */
 int
 mono_runtime_resource_limit (int resource_type, uintptr_t soft_limit, uintptr_t hard_limit)
@@ -716,8 +697,7 @@ mono_runtime_resource_limit (int resource_type, uintptr_t soft_limit, uintptr_t 
 
 /**
  * mono_runtime_resource_set_callback:
- * @callback: a function pointer
- * 
+ * \param callback a function pointer
  * Set the callback to be invoked when a resource limit is reached.
  * The callback will receive the resource type, the resource amount in resource-specific
  * units and a flag indicating whether the soft or hard limit was reached.

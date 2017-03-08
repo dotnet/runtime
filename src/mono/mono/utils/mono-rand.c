@@ -254,14 +254,12 @@ mono_rand_close (gpointer provider)
 
 /**
  * mono_rand_try_get_uint32:
- * @handle: A pointer to an RNG handle. Handle is set to NULL on failure.
- * @val: A pointer to a 32-bit unsigned int, to which the result will be written.
- * @min: Result will be greater than or equal to this value.
- * @max: Result will be less than or equal to this value.
- *
- * Returns: FALSE on failure, TRUE on success.
- *
+ * \param handle A pointer to an RNG handle. Handle is set to NULL on failure.
+ * \param val A pointer to a 32-bit unsigned int, to which the result will be written.
+ * \param min Result will be greater than or equal to this value.
+ * \param max Result will be less than or equal to this value.
  * Extracts one 32-bit unsigned int from an RNG handle.
+ * \returns FALSE on failure, TRUE on success.
  */
 gboolean
 mono_rand_try_get_uint32 (gpointer *handle, guint32 *val, guint32 min, guint32 max, MonoError *error)

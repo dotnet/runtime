@@ -986,10 +986,9 @@ compile_all_methods (MonoAssembly *ass, int verbose, guint32 opts, guint32 recom
 
 /**
  * mono_jit_exec:
- * @assembly: reference to an assembly
- * @argc: argument count
- * @argv: argument vector
- *
+ * \param assembly reference to an assembly
+ * \param argc argument count
+ * \param argv argument vector
  * Start execution of a program.
  */
 int 
@@ -1552,9 +1551,8 @@ switch_arch (char* argv[], const char* target_arch)
 
 /**
  * mono_main:
- * @argc: number of arguments in the argv array
- * @argv: array of strings containing the startup arguments
- *
+ * \param argc number of arguments in the argv array
+ * \param argv array of strings containing the startup arguments
  * Launches the Mono JIT engine and parses all the command line options
  * in the same way that the mono command line VM would.
  */
@@ -2296,22 +2294,22 @@ mono_jit_init (const char *file)
 
 /**
  * mono_jit_init_version:
- * @domain_name: the name of the root domain
- * @runtime_version: the version of the runtime to load
+ * \param domain_name the name of the root domain
+ * \param runtime_version the version of the runtime to load
  *
  * Use this version when you want to force a particular runtime
  * version to be used.  By default Mono will pick the runtime that is
- * referenced by the initial assembly (specified in @file), this
+ * referenced by the initial assembly (specified in \p file), this
  * routine allows programmers to specify the actual runtime to be used
  * as the initial runtime is inherited by all future assemblies loaded
  * (since Mono does not support having more than one mscorlib runtime
  * loaded at once).
  *
- * The @runtime_version can be one of these strings: "v4.0.30319" for
+ * The \p runtime_version can be one of these strings: "v4.0.30319" for
  * desktop, "mobile" for mobile or "moonlight" for Silverlight compat.
  * If an unrecognized string is input, the vm will default to desktop.
  *
- * Returns: the MonoDomain representing the domain where the assembly
+ * \returns the \c MonoDomain representing the domain where the assembly
  * was loaded.
  */
 MonoDomain * 
@@ -2356,12 +2354,11 @@ mono_jit_set_aot_mode (MonoAotMode mode)
 
 /**
  * mono_jit_set_trace_options:
- * @options: string representing the trace options
- *
+ * \param options string representing the trace options
  * Set the options of the tracing engine. This function can be called before initializing
  * the mono runtime. See the --trace mono(1) manpage for the options format.
  *
- * Returns: #TRUE if the options where parsed and set correctly, #FALSE otherwise.
+ * \returns TRUE if the options were parsed and set correctly, FALSE otherwise.
  */
 gboolean
 mono_jit_set_trace_options (const char* options)
@@ -2407,14 +2404,14 @@ mono_set_crash_chaining (gboolean chain_crashes)
 
 /**
  * mono_parse_options_from:
- * @options: string containing strings 
- * @ref_argc: pointer to the argc variable that might be updated 
- * @ref_argv: pointer to the argv string vector variable that might be updated
+ * \param options string containing strings 
+ * \param ref_argc pointer to the \c argc variable that might be updated 
+ * \param ref_argv pointer to the \c argv string vector variable that might be updated
  *
- * This function parses the contents of the `MONO_ENV_OPTIONS`
+ * This function parses the contents of the \c MONO_ENV_OPTIONS
  * environment variable as if they were parsed by a command shell
  * splitting the contents by spaces into different elements of the
- * @argv vector.  This method supports quoting with both the " and '
+ * \p argv vector.  This method supports quoting with both the " and '
  * characters.  Inside quoting, spaces and tabs are significant,
  * otherwise, they are considered argument separators.
  *
@@ -2423,14 +2420,14 @@ mono_set_crash_chaining (gboolean chain_crashes)
  * inside quotes.   If the quotes are not balanced, this method 
  *
  * If the environment variable is empty, no changes are made
- * to the values pointed by @ref_argc and @ref_argv.
+ * to the values pointed by \p ref_argc and \p ref_argv.
  *
- * Otherwise the @ref_argv is modified to point to a new array that contains
+ * Otherwise the \p ref_argv is modified to point to a new array that contains
  * all the previous elements contained in the vector, plus the values parsed.
- * The @argc is updated to match the new number of parameters.
+ * The \p argc is updated to match the new number of parameters.
  *
- * Returns: The value NULL is returned on success, otherwise a g_strdup allocated
- * string is returned (this is an alias to malloc under normal circumstances) that
+ * \returns The value NULL is returned on success, otherwise a \c g_strdup allocated
+ * string is returned (this is an alias to \c malloc under normal circumstances) that
  * contains the error message that happened during parsing.
  */
 char *
@@ -2514,13 +2511,13 @@ mono_parse_options_from (const char *options, int *ref_argc, char **ref_argv [])
 
 /**
  * mono_parse_env_options:
- * @ref_argc: pointer to the argc variable that might be updated 
- * @ref_argv: pointer to the argv string vector variable that might be updated
+ * \param ref_argc pointer to the \c argc variable that might be updated 
+ * \param ref_argv pointer to the \c argv string vector variable that might be updated
  *
- * This function parses the contents of the `MONO_ENV_OPTIONS`
+ * This function parses the contents of the \c MONO_ENV_OPTIONS
  * environment variable as if they were parsed by a command shell
  * splitting the contents by spaces into different elements of the
- * @argv vector.  This method supports quoting with both the " and '
+ * \p argv vector.  This method supports quoting with both the " and '
  * characters.  Inside quoting, spaces and tabs are significant,
  * otherwise, they are considered argument separators.
  *
@@ -2529,11 +2526,11 @@ mono_parse_options_from (const char *options, int *ref_argc, char **ref_argv [])
  * inside quotes.   If the quotes are not balanced, this method 
  *
  * If the environment variable is empty, no changes are made
- * to the values pointed by @ref_argc and @ref_argv.
+ * to the values pointed by \p ref_argc and \p ref_argv.
  *
- * Otherwise the @ref_argv is modified to point to a new array that contains
+ * Otherwise the \p ref_argv is modified to point to a new array that contains
  * all the previous elements contained in the vector, plus the values parsed.
- * The @argc is updated to match the new number of parameters.
+ * The \p argc is updated to match the new number of parameters.
  *
  * If there is an error parsing, this method will terminate the process by
  * calling exit(1).

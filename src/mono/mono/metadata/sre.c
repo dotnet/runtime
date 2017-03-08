@@ -2217,16 +2217,15 @@ encode_named_val (MonoReflectionAssembly *assembly, char *buffer, char *p, char 
 
 /**
  * mono_reflection_get_custom_attrs_blob:
- * @ctor: custom attribute constructor
- * @ctorArgs: arguments o the constructor
- * @properties:
- * @propValues:
- * @fields:
- * @fieldValues:
- * 
+ * \param ctor custom attribute constructor
+ * \param ctorArgs arguments o the constructor
+ * \param properties
+ * \param propValues
+ * \param fields
+ * \param fieldValues
  * Creates the blob of data that needs to be saved in the metadata and that represents
- * the custom attributed described by @ctor, @ctorArgs etc.
- * Returns: a Byte array representing the blob of data.
+ * the custom attributed described by \p ctor, \p ctorArgs etc.
+ * \returns a \c Byte array representing the blob of data.
  */
 MonoArray*
 mono_reflection_get_custom_attrs_blob (MonoReflectionAssembly *assembly, MonoObject *ctor, MonoArray *ctorArgs, MonoArray *properties, MonoArray *propValues, MonoArray *fields, MonoArray* fieldValues) 
@@ -2239,17 +2238,16 @@ mono_reflection_get_custom_attrs_blob (MonoReflectionAssembly *assembly, MonoObj
 
 /**
  * mono_reflection_get_custom_attrs_blob_checked:
- * @ctor: custom attribute constructor
- * @ctorArgs: arguments o the constructor
- * @properties:
- * @propValues:
- * @fields:
- * @fieldValues:
- * @error: set on error
- * 
+ * \param ctor custom attribute constructor
+ * \param ctorArgs arguments o the constructor
+ * \param properties
+ * \param propValues
+ * \param fields
+ * \param fieldValues
+ * \param error set on error
  * Creates the blob of data that needs to be saved in the metadata and that represents
- * the custom attributed described by @ctor, @ctorArgs etc.
- * Returns: a Byte array representing the blob of data.  On failure returns NULL and sets @error.
+ * the custom attributed described by \p ctor, \p ctorArgs etc.
+ * \returns a \c Byte array representing the blob of data.  On failure returns NULL and sets \p error.
  */
 MonoArray*
 mono_reflection_get_custom_attrs_blob_checked (MonoReflectionAssembly *assembly, MonoObject *ctor, MonoArray *ctorArgs, MonoArray *properties, MonoArray *propValues, MonoArray *fields, MonoArray* fieldValues, MonoError *error) 

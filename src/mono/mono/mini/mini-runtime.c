@@ -218,15 +218,15 @@ get_method_from_ip (void *ip)
 
 /**
  * mono_pmip:
- * @ip: an instruction pointer address
+ * \param ip an instruction pointer address
  *
  * This method is used from a debugger to get the name of the
- * method at address @ip.   This routine is typically invoked from
+ * method at address \p ip.   This routine is typically invoked from
  * a debugger like this:
  *
  * (gdb) print mono_pmip ($pc)
  *
- * Returns: the name of the method at address @ip.
+ * \returns the name of the method at address \p ip.
  */
 G_GNUC_UNUSED char *
 mono_pmip (void *ip)
@@ -236,12 +236,12 @@ mono_pmip (void *ip)
 
 /**
  * mono_print_method_from_ip
- * @ip: an instruction pointer address
+ * \param ip an instruction pointer address
  *
  * This method is used from a debugger to get the name of the
- * method at address @ip.
+ * method at address \p ip.
  *
- * This prints the name of the method at address @ip in the standard
+ * This prints the name of the method at address \p ip in the standard
  * output.  Unlike mono_pmip which returns a string, this routine
  * prints the value on the standard output.
  */
@@ -843,9 +843,8 @@ mono_jit_set_domain (MonoDomain *domain)
 
 /**
  * mono_thread_abort:
- * @obj: exception object
- *
- * abort the thread, print exception information and stack trace
+ * \param obj exception object
+ * Abort the thread, print exception information and stack trace
  */
 static void
 mono_thread_abort (MonoObject *obj)
@@ -2338,13 +2337,14 @@ mono_llvmonly_runtime_invoke (MonoMethod *method, RuntimeInvokeInfo *info, void 
 
 /**
  * mono_jit_runtime_invoke:
- * @method: the method to invoke
- * @obj: this pointer
- * @params: array of parameter values.
- * @exc: Set to the exception raised in the managed method.  If NULL, error is thrown instead.
- *       If coop is enabled, this argument is ignored - all exceptoins are caught and propagated
- *       through @error
- * @error: error or caught exception object
+ * \param method: the method to invoke
+ * \param obj: this pointer
+ * \param params: array of parameter values.
+ * \param exc: Set to the exception raised in the managed method.
+ * \param error: error or caught exception object
+ * If \p exc is NULL, \p error is thrown instead.
+ * If coop is enabled, \p exc argument is ignored -
+ * all exceptions are caught and propagated through \p error
  */
 static MonoObject*
 mono_jit_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc, MonoError *error)
@@ -4198,10 +4198,9 @@ mono_set_verbose_level (guint32 level)
 
 /**
  * mono_get_runtime_build_info:
- *
- * Return the runtime version + build date in string format.
  * The returned string is owned by the caller. The returned string
  * format is "VERSION (FULL_VERSION BUILD_DATE)" and build date is optional.
+ * \returns the runtime version + build date in string format.
  */
 char*
 mono_get_runtime_build_info (void)

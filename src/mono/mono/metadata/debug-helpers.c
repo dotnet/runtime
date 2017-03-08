@@ -317,10 +317,10 @@ mono_context_get_desc (MonoGenericContext *context)
 
 /**
  * mono_method_desc_new:
- * @name: the method name.
- * @include_namespace: whether the name includes a namespace or not.
+ * \param name the method name.
+ * \param include_namespace whether the name includes a namespace or not.
  *
- * Creates a method description for @name, which conforms to the following
+ * Creates a method description for \p name, which conforms to the following
  * specification:
  *
  * [namespace.]classname:methodname[(args...)]
@@ -329,7 +329,7 @@ mono_context_get_desc (MonoGenericContext *context)
  *
  * Both classname and methodname can contain '*' which matches anything.
  *
- * Returns: a parsed representation of the method description.
+ * \returns a parsed representation of the method description.
  */
 MonoMethodDesc*
 mono_method_desc_new (const char *name, gboolean include_namespace)
@@ -416,9 +416,8 @@ mono_method_desc_from_method (MonoMethod *method)
 
 /**
  * mono_method_desc_free:
- * @desc: method description to be released
- *
- * Releases the MonoMethodDesc object @desc.
+ * \param desc method description to be released
+ * Releases the MonoMethodDesc object \p desc.
  */
 void
 mono_method_desc_free (MonoMethodDesc *desc)
@@ -432,13 +431,13 @@ mono_method_desc_free (MonoMethodDesc *desc)
 
 /**
  * mono_method_descr_match:
- * @desc: MonoMethoDescription
- * @method: MonoMethod to test
+ * \param desc \c MonoMethoDescription
+ * \param method \c MonoMethod to test
  *
- * Determines whether the specified @method matches the provided @desc description.
+ * Determines whether the specified \p method matches the provided \p desc description.
  *
  * namespace and class are supposed to match already if this function is used.
- * Returns: True if the method matches the description, false otherwise.
+ * \returns TRUE if the method matches the description, FALSE otherwise.
  */
 gboolean
 mono_method_desc_match (MonoMethodDesc *desc, MonoMethod *method)
@@ -791,9 +790,8 @@ mono_disasm_code (MonoDisHelper *dh, MonoMethod *method, const guchar *ip, const
 
 /**
  * mono_field_full_name:
- * @field: field to retrieve information for
- *
- * Returns: the full name for the field, made up of the namespace, type name and the field name.
+ * \param field field to retrieve information for
+ * \returns the full name for the field, made up of the namespace, type name and the field name.
  */
 char *
 mono_field_full_name (MonoClassField *field)
@@ -924,7 +922,7 @@ print_name_space (MonoClass *klass)
 /**
  * mono_object_describe:
  *
- * Prints to stdout a small description of the object @obj.
+ * Prints to stdout a small description of the object \p obj.
  * For use in a debugger.
  */
 void
@@ -1076,7 +1074,7 @@ objval_describe (MonoClass *klass, const char *addr)
 /**
  * mono_object_describe_fields:
  *
- * Prints to stdout a small description of each field of the object @obj.
+ * Prints to stdout a small description of each field of the object \p obj.
  * For use in a debugger.
  */
 void
@@ -1090,7 +1088,7 @@ mono_object_describe_fields (MonoObject *obj)
  * mono_value_describe_fields:
  *
  * Prints to stdout a small description of each field of the value type
- * stored at @addr of type @klass.
+ * stored at \p addr of type \p klass.
  * For use in a debugger.
  */
 void
@@ -1102,7 +1100,7 @@ mono_value_describe_fields (MonoClass* klass, const char* addr)
 /**
  * mono_class_describe_statics:
  *
- * Prints to stdout a small description of each static field of the type @klass
+ * Prints to stdout a small description of each static field of the type \p klass
  * in the current application domain.
  * For use in a debugger.
  */
@@ -1141,7 +1139,7 @@ mono_class_describe_statics (MonoClass* klass)
 
 /**
  * mono_print_method_code
- * @MonoMethod: a pointer to the method
+ * \param method: a pointer to the method
  *
  * This method is used from a debugger to print the code of the method.
  *

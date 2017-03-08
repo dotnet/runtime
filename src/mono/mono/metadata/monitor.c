@@ -308,10 +308,9 @@ monitor_is_on_freelist (MonoThreadsSync *mon)
 
 /**
  * mono_locks_dump:
- * @include_untaken:
- *
+ * \param include_untaken Whether to list unheld inflated locks.
  * Print a report on stdout of the managed locks currently held by
- * threads. If @include_untaken is specified, list also inflated locks
+ * threads. If \p include_untaken is specified, list also inflated locks
  * which are unheld.
  * This is supposed to be used in debuggers like gdb.
  */

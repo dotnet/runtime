@@ -183,12 +183,12 @@ mono_gc_toggleref_add (MonoObject *object, mono_bool strong_ref)
 
 /**
  * mono_gc_toggleref_register_callback:
- * @callback callback used to determine the new state of the given object.
+ * \param callback callback used to determine the new state of the given object.
  *
- * The callback must decide the status of a given object. It must return one of the values in the MONO_TOGGLE_REF_ enum.
+ * The callback must decide the status of a given object. It must return one of the values in the \c MONO_TOGGLE_REF_ enum.
  * This function is called with the world running but with the GC locked. This means that you can do everything that doesn't
  * require GC interaction. This includes, but not limited to, allocating objects, (de)registering for finalization, manipulating
- *gchandles, storing to reference fields or interacting with other threads that might perform such operations.
+ * gchandles, storing to reference fields or interacting with other threads that might perform such operations.
  */
 void
 mono_gc_toggleref_register_callback (MonoToggleRefStatus (*proccess_toggleref) (MonoObject *obj))

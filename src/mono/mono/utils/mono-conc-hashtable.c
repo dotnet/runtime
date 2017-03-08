@@ -215,10 +215,8 @@ retry:
 
 /**
  * mono_conc_hashtable_remove:
- *
  * Remove a value from the hashtable. Requires external locking
- *
- * @Returns the old value if key is already present or null
+ * \returns the old value if \p key is already present or NULL
  */
 gpointer
 mono_conc_hashtable_remove (MonoConcurrentHashTable *hash_table, gpointer key)
@@ -284,9 +282,8 @@ mono_conc_hashtable_remove (MonoConcurrentHashTable *hash_table, gpointer key)
 }
 /**
  * mono_conc_hashtable_insert:
- * 
  * Insert a value into the hashtable. Requires external locking.
- * @Returns the old value if key is already present or null
+ * \returns the old value if \p key is already present or NULL
  */
 gpointer
 mono_conc_hashtable_insert (MonoConcurrentHashTable *hash_table, gpointer key, gpointer value)
@@ -346,8 +343,7 @@ mono_conc_hashtable_insert (MonoConcurrentHashTable *hash_table, gpointer key, g
 
 /**
  * mono_conc_hashtable_foreach:
- *
- * Calls @func for each value in the hashtable. Requires external locking.
+ * Calls \p func for each value in the hashtable. Requires external locking.
  */
 void
 mono_conc_hashtable_foreach (MonoConcurrentHashTable *hash_table, GHFunc func, gpointer userdata)

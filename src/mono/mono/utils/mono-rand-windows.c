@@ -79,12 +79,10 @@ mono_rand_open (void)
 
 /**
  * mono_rand_init:
- * @seed: A string containing seed data
- * @seed_size: Length of seed string
- *
- * Returns: On success, a non-NULL handle which can be used to fetch random data from mono_rand_try_get_bytes. On failure, NULL.
- *
+ * \param seed A string containing seed data
+ * \param seed_size Length of seed string
  * Initializes an RNG client.
+ * \returns On success, a non-NULL handle which can be used to fetch random data from \c mono_rand_try_get_bytes. On failure, NULL.
  */
 gpointer
 mono_rand_init (guchar *seed, gint seed_size)
@@ -114,14 +112,12 @@ mono_rand_init (guchar *seed, gint seed_size)
 
 /**
  * mono_rand_try_get_bytes:
- * @handle: A pointer to an RNG handle. Handle is set to NULL on failure.
- * @buffer: A buffer into which to write random data.
- * @buffer_size: Number of bytes to write into buffer.
- * @error: Set on error.
- *
- * Returns: FALSE on failure and sets @error, TRUE on success.
- *
+ * \param handle A pointer to an RNG handle. Handle is set to NULL on failure.
+ * \param buffer A buffer into which to write random data.
+ * \param buffer_size Number of bytes to write into buffer.
+ * \param error Set on error.
  * Extracts bytes from an RNG handle.
+ * \returns FALSE on failure and sets \p error, TRUE on success.
  */
 gboolean
 mono_rand_try_get_bytes (gpointer *handle, guchar *buffer, gint buffer_size, MonoError *error)
@@ -161,8 +157,7 @@ mono_rand_try_get_bytes (gpointer *handle, guchar *buffer, gint buffer_size, Mon
 
 /**
  * mono_rand_close:
- * @handle: An RNG handle.
- *
+ * \param handle An RNG handle.
  * Releases an RNG handle.
  */
 void

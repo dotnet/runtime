@@ -917,6 +917,12 @@ mono_assembly_fill_assembly_name_full (MonoImage *image, MonoAssemblyName *aname
 	return TRUE;
 }
 
+/**
+ * mono_assembly_fill_assembly_name:
+ * \param image Image
+ * \param aname Name
+ * \returns TRUE if successful
+ */
 gboolean
 mono_assembly_fill_assembly_name (MonoImage *image, MonoAssemblyName *aname)
 {
@@ -1154,7 +1160,7 @@ mono_assembly_remap_version (MonoAssemblyName *aname, MonoAssemblyName *dest_ana
  * mono_assembly_get_assemblyref:
  * \param image pointer to the MonoImage to extract the information from.
  * \param index index to the assembly reference in the image.
- * \param aname pointer to a `MonoAssemblyName` that will hold the returned value.
+ * \param aname pointer to a \c MonoAssemblyName that will hold the returned value.
  *
  * Fills out the \p aname with the assembly name of the \p index assembly reference in \p image.
  */
@@ -1303,7 +1309,7 @@ mono_assembly_load_reference (MonoImage *image, int index)
  * \param status
  * \deprecated There is no reason to use this method anymore, it does nothing
  *
- * This method is now a no-op, it does nothing other than setting the @status to #MONO_IMAGE_OK
+ * This method is now a no-op, it does nothing other than setting the \p status to \c MONO_IMAGE_OK
  */
 void
 mono_assembly_load_references (MonoImage *image, MonoImageOpenStatus *status)
@@ -1655,11 +1661,11 @@ mono_assembly_open_from_bundle (const char *filename, MonoImageOpenStatus *statu
 }
 
 /**
- * mono_assemblies_open_full:
+ * mono_assembly_open_full:
  * \param filename the file to load
  * \param status return status code 
  * \param refonly Whether this assembly is being opened in "reflection-only" mode.
-* 
+ *
  * This loads an assembly from the specified \p filename. The \p filename allows
  * a local URL (starting with a file:// prefix).  If a file prefix is used, the
  * filename is interpreted as a URL, and the filename is URL-decoded.   Otherwise the file

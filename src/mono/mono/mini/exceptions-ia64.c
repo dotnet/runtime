@@ -361,11 +361,9 @@ get_throw_trampoline (gboolean rethrow)
 
 /**
  * mono_arch_get_throw_exception:
- *
- * Returns a function pointer which can be used to raise 
+ * \returns a function pointer which can be used to raise 
  * exceptions. The returned function has the following 
  * signature: void (*func) (MonoException *exc); 
- *
  */
 gpointer
 mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
@@ -389,8 +387,7 @@ mono_arch_get_rethrow_exception (MonoTrampInfo **info, gboolean aot)
 
 /**
  * mono_arch_get_throw_corlib_exception:
- *
- * Returns a function pointer which can be used to raise 
+ * \returns a function pointer which can be used to raise 
  * corlib exceptions. The returned function has the following 
  * signature: void (*func) (guint32 ex_token_index, guint32 offset); 
  * Here, offset is the offset which needs to be substracted from the caller IP 
@@ -569,9 +566,8 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 
 /**
  * mono_arch_handle_exception:
- *
- * @ctx: saved processor state
- * @obj: the exception object
+ * \param ctx saved processor state
+ * \param obj the exception object
  */
 gboolean
 mono_arch_handle_exception (void *sigctx, gpointer obj)

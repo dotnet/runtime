@@ -18,14 +18,11 @@
 
 /**
  * mono_gc_parse_environment_string_extract_number:
- *
- * @str: points to the first digit of the number
- * @out: pointer to the variable that will receive the value
- *
+ * \param str points to the first digit of the number
+ * \param out pointer to the variable that will receive the value
  * Tries to extract a number from the passed string, taking in to account m, k
  * and g suffixes
- *
- * Returns true if passing was successful
+ * \returns TRUE if passing was successful
  */
 gboolean
 mono_gc_parse_environment_string_extract_number (const char *str, size_t *out)

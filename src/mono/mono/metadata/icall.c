@@ -8095,12 +8095,12 @@ mono_icall_cleanup (void)
 
 /**
  * mono_add_internal_call:
- * @name: method specification to surface to the managed world
- * @method: pointer to a C method to invoke when the method is called
+ * \param name method specification to surface to the managed world
+ * \param method pointer to a C method to invoke when the method is called
  *
- * This method surfaces the C function pointed by @method as a method
+ * This method surfaces the C function pointed by \p method as a method
  * that has been surfaced in managed code with the method specified in
- * @name as an internal call.
+ * \p name as an internal call.
  *
  * Internal calls are surfaced to all app domains loaded and they are
  * accessibly by a type with the specified name.
@@ -8279,11 +8279,10 @@ no_icall_table (void)
 
 /**
  * mono_lookup_internal_call_full:
- * @method: the method to look up
- * @uses_handles: out argument if method needs handles around managed objects.
- *
- * Returns a pointer to the icall code for the given method.  If
- * uses_handles is not NULL, it will be set to TRUE if the method
+ * \param method the method to look up
+ * \param uses_handles out argument if method needs handles around managed objects.
+ * \returns a pointer to the icall code for the given method.  If
+ * \p uses_handles is not NULL, it will be set to TRUE if the method
  * needs managed objects wrapped using the infrastructure in handle.h
  *
  * If the method is not found, warns and returns NULL.

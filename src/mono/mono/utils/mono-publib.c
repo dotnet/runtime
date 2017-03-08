@@ -15,11 +15,9 @@ mono_free (void *ptr)
 
 /**
  * mono_set_allocator_vtable
- *
- * Make the runtime use the functions in @vtable for allocating memory.
+ * Make the runtime use the functions in \p vtable for allocating memory.
  * The provided functions must have the same semantics of their libc's equivalents.
- *
- * @return TRUE is the vtable was installed. FALSE if the version is incompatible.
+ * \returns TRUE if the vtable was installed. FALSE if the version is incompatible.
  */
 mono_bool
 mono_set_allocator_vtable (MonoAllocatorVTable* vtable)

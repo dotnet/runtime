@@ -1023,23 +1023,23 @@ mono_dllmap_lookup (MonoImage *assembly, const char *dll, const char* func, cons
 
 /**
  * mono_dllmap_insert:
- * @assembly: if NULL, this is a global mapping, otherwise the remapping of the dynamic library will only apply to the specified assembly
- * @dll: The name of the external library, as it would be found in the DllImport declaration.  If prefixed with 'i:' the matching of the library name is done without case sensitivity
- * @func: if not null, the mapping will only applied to the named function (the value of EntryPoint)
- * @tdll: The name of the library to map the specified @dll if it matches.
- * @tfunc: The name of the function that replaces the invocation.  If NULL, it is replaced with a copy of @func.
+ * \param assembly if NULL, this is a global mapping, otherwise the remapping of the dynamic library will only apply to the specified assembly
+ * \param dll The name of the external library, as it would be found in the DllImport declaration.  If prefixed with 'i:' the matching of the library name is done without case sensitivity
+ * \param func if not null, the mapping will only applied to the named function (the value of EntryPoint)
+ * \param tdll The name of the library to map the specified \p dll if it matches.
+ * \param tfunc The name of the function that replaces the invocation.  If NULL, it is replaced with a copy of \p func.
  *
  * LOCKING: Acquires the loader lock.
  *
  * This function is used to programatically add DllImport remapping in either
  * a specific assembly, or as a global remapping.   This is done by remapping
- * references in a DllImport attribute from the @dll library name into the @tdll
- * name.    If the @dll name contains the prefix "i:", the comparison of the 
+ * references in a DllImport attribute from the \p dll library name into the \p tdll
+ * name.    If the \p dll name contains the prefix "i:", the comparison of the 
  * library name is done without case sensitivity.
  *
- * If you pass @func, this is the name of the EntryPoint in a DllImport if specified
- * or the name of the function as determined by DllImport.    If you pass @func, you
- * must also pass @tfunc which is the name of the target function to invoke on a match.
+ * If you pass \p func, this is the name of the EntryPoint in a DllImport if specified
+ * or the name of the function as determined by DllImport.    If you pass \p func, you
+ * must also pass \p tfunc which is the name of the target function to invoke on a match.
  *
  * Example:
  * mono_dllmap_insert (NULL, "i:libdemo.dll", NULL, relocated_demo_path, NULL);

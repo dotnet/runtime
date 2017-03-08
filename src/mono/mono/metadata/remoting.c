@@ -1932,11 +1932,10 @@ leave:
 
 /**
  * mono_marshal_xdomain_copy_value_handle:
- * @val: The value to copy.
- * @error: set on failure.
- *
- * Makes a copy of @val suitable for the current domain.
- * On failure returns NULL and sets @error.
+ * \param val The value to copy.
+ * \param error set on failure.
+ * Makes a copy of \p val suitable for the current domain.
+ * On failure returns NULL and sets \p error.
  */
 MonoObjectHandle
 mono_marshal_xdomain_copy_value_handle (MonoObjectHandle val, MonoError *error)

@@ -178,17 +178,15 @@ prot_from_flags (int flags)
 
 /**
  * mono_valloc:
- * @addr: memory address
- * @length: memory area size
- * @flags: protection flags
- *
- * Allocates @length bytes of virtual memory with the @flags
- * protection. @addr can be a preferred memory address or a
- * mandatory one if MONO_MMAP_FIXED is set in @flags.
- * @addr must be pagesize aligned and can be NULL.
- * @length must be a multiple of pagesize.
- *
- * Returns: NULL on failure, the address of the memory area otherwise
+ * \param addr memory address
+ * \param length memory area size
+ * \param flags protection flags
+ * Allocates \p length bytes of virtual memory with the \p flags
+ * protection. \p addr can be a preferred memory address or a
+ * mandatory one if MONO_MMAP_FIXED is set in \p flags.
+ * \p addr must be pagesize aligned and can be NULL.
+ * \p length must be a multiple of pagesize.
+ * \returns NULL on failure, the address of the memory area otherwise
  */
 void*
 mono_valloc (void *addr, size_t length, int flags, MonoMemAccountType type)
@@ -226,12 +224,10 @@ mono_valloc (void *addr, size_t length, int flags, MonoMemAccountType type)
 
 /**
  * mono_vfree:
- * @addr: memory address returned by mono_valloc ()
- * @length: size of memory area
- *
- * Remove the memory mapping at the address @addr.
- *
- * Returns: 0 on success.
+ * \param addr memory address returned by mono_valloc ()
+ * \param length size of memory area
+ * Remove the memory mapping at the address \p addr.
+ * \returns \c 0 on success.
  */
 int
 mono_vfree (void *addr, size_t length, MonoMemAccountType type)
@@ -248,19 +244,17 @@ mono_vfree (void *addr, size_t length, MonoMemAccountType type)
 
 /**
  * mono_file_map:
- * @length: size of data to map
- * @flags: protection flags
- * @fd: file descriptor
- * @offset: offset in the file
- * @ret_handle: pointer to storage for returning a handle for the map
- *
- * Map the area of the file pointed to by the file descriptor @fd, at offset
- * @offset and of size @length in memory according to the protection flags
- * @flags.
- * @offset and @length must be multiples of the page size.
- * @ret_handle must point to a void*: this value must be used when unmapping
- * the memory area using mono_file_unmap ().
- *
+ * \param length size of data to map
+ * \param flags protection flags
+ * \param fd file descriptor
+ * \param offset offset in the file
+ * \param ret_handle pointer to storage for returning a handle for the map
+ * Map the area of the file pointed to by the file descriptor \p fd, at offset
+ * \p offset and of size \p length in memory according to the protection flags
+ * \p flags.
+ * \p offset and \p length must be multiples of the page size.
+ * \p ret_handle must point to a void*: this value must be used when unmapping
+ * the memory area using \c mono_file_unmap().
  */
 void*
 mono_file_map (size_t length, int flags, int fd, guint64 offset, void **ret_handle)
@@ -289,13 +283,11 @@ mono_file_map (size_t length, int flags, int fd, guint64 offset, void **ret_hand
 
 /**
  * mono_file_unmap:
- * @addr: memory address returned by mono_file_map ()
- * @handle: handle of memory map
- *
- * Remove the memory mapping at the address @addr.
- * @handle must be the value returned in ret_handle by mono_file_map ().
- *
- * Returns: 0 on success.
+ * \param addr memory address returned by mono_file_map ()
+ * \param handle handle of memory map
+ * Remove the memory mapping at the address \p addr.
+ * \p handle must be the value returned in ret_handle by \c mono_file_map().
+ * \returns \c 0 on success.
  */
 int
 mono_file_unmap (void *addr, void *handle)
@@ -311,18 +303,16 @@ mono_file_unmap (void *addr, void *handle)
 
 /**
  * mono_mprotect:
- * @addr: memory address
- * @length: size of memory area
- * @flags: new protection flags
- *
- * Change the protection for the memory area at @addr for @length bytes
- * to matche the supplied @flags.
- * If @flags includes MON_MMAP_DISCARD the pages are discarded from memory
+ * \param addr memory address
+ * \param length size of memory area
+ * \param flags new protection flags
+ * Change the protection for the memory area at \p addr for \p length bytes
+ * to matche the supplied \p flags.
+ * If \p flags includes MON_MMAP_DISCARD the pages are discarded from memory
  * and the area is cleared to zero.
- * @addr must be aligned to the page size.
- * @length must be a multiple of the page size.
- *
- * Returns: 0 on success.
+ * \p addr must be aligned to the page size.
+ * \p length must be a multiple of the page size.
+ * \returns \c 0 on success.
  */
 #if defined(__native_client__)
 int

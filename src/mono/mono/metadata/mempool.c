@@ -92,9 +92,8 @@ mono_mempool_new (void)
 
 /**
  * mono_mempool_new_size:
- * @initial_size: the amount of memory to initially reserve for the memory pool.
- *
- * Returns: a new memory pool with a specific initial memory reservation.
+ * \param initial_size the amount of memory to initially reserve for the memory pool.
+ * \returns a new memory pool with a specific initial memory reservation.
  */
 MonoMemPool *
 mono_mempool_new_size (int initial_size)
@@ -121,7 +120,7 @@ mono_mempool_new_size (int initial_size)
 
 /**
  * mono_mempool_destroy:
- * @pool: the memory pool to destroy
+ * \param pool the memory pool to destroy
  *
  * Free all memory associated with this pool.
  */
@@ -142,7 +141,7 @@ mono_mempool_destroy (MonoMemPool *pool)
 
 /**
  * mono_mempool_invalidate:
- * @pool: the memory pool to invalidate
+ * \param pool the memory pool to invalidate
  *
  * Fill the memory associated with this pool to 0x2a (42). Useful for debugging.
  */
@@ -161,7 +160,7 @@ mono_mempool_invalidate (MonoMemPool *pool)
 
 /**
  * mono_mempool_stats:
- * @pool: the momory pool we need stats for
+ * \param pool the momory pool we need stats for
  *
  * Print a few stats about the mempool:
  * - Total memory allocated (malloced) by mem pool
@@ -252,12 +251,12 @@ get_next_size (MonoMemPool *pool, int size)
 
 /**
  * mono_mempool_alloc:
- * @pool: the memory pool to use
- * @size: size of the memory block
+ * \param pool the memory pool to use
+ * \param size size of the memory block
  *
- * Allocates a new block of memory in @pool.
+ * Allocates a new block of memory in \p pool .
  *
- * Returns: the address of a newly allocated memory block.
+ * \returns the address of a newly allocated memory block.
  */
 gpointer
 mono_mempool_alloc (MonoMemPool *pool, guint size)

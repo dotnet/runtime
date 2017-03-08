@@ -299,13 +299,12 @@ check_line (StatementMachine *stm, int offset, MonoDebugSourceLocation **locatio
 
 /**
  * mono_debug_symfile_lookup_location:
- * @minfo: A `MonoDebugMethodInfo' which can be retrieved by
- *         mono_debug_lookup_method().
- * @offset: IL offset within the corresponding method's CIL code.
+ * \param minfo A \c MonoDebugMethodInfo which can be retrieved by mono_debug_lookup_method().
+ * \param offset IL offset within the corresponding method's CIL code.
  *
  * This function is similar to mono_debug_lookup_location(), but we
  * already looked up the method and also already did the
- * `native address -> IL offset' mapping.
+ * native address -> IL offset mapping.
  */
 MonoDebugSourceLocation *
 mono_debug_symfile_lookup_location (MonoDebugMethodInfo *minfo, uint32_t offset)

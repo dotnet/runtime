@@ -226,12 +226,12 @@ mono_install_free_domain_hook (MonoFreeDomainFunc func)
 
 /**
  * mono_string_equal:
- * @s1: First string to compare
- * @s2: Second string to compare
+ * \param s1 First string to compare
+ * \param s2 Second string to compare
  *
- * Compares two `MonoString*` instances ordinally for equality.
+ * Compares two \c MonoString* instances ordinally for equality.
  *
- * Returns FALSE if the strings differ.
+ * \returns FALSE if the strings differ.
  */
 gboolean
 mono_string_equal (MonoString *s1, MonoString *s2)
@@ -249,10 +249,10 @@ mono_string_equal (MonoString *s1, MonoString *s2)
 
 /**
  * mono_string_hash:
- * @s: the string to hash
+ * \param s the string to hash
  *
- * Compute the hash for a `MonoString*`
- * Returns the hash for the string.
+ * Compute the hash for a \c MonoString*
+ * \returns the hash for the string.
  */
 guint
 mono_string_hash (MonoString *s)
@@ -787,8 +787,8 @@ mono_init (const char *domain_name)
 
 /**
  * mono_init_from_assembly:
- * @domain_name: name to give to the initial domain
- * @filename: filename to load on startup
+ * \param domain_name name to give to the initial domain
+ * \param filename filename to load on startup
  *
  * Used by the runtime, users should use mono_jit_init instead.
  *
@@ -799,7 +799,7 @@ mono_init (const char *domain_name)
  * provided executable. The version is determined by looking at the exe 
  * configuration file and the version PE field)
  *
- * Returns: the initial domain.
+ * \returns the initial domain.
  */
 MonoDomain *
 mono_init_from_assembly (const char *domain_name, const char *filename)
@@ -920,9 +920,9 @@ mono_domain_set_internal_with_options (MonoDomain *domain, gboolean migrate_exce
 
 /**
  * mono_domain_set_internal:
- * @domain: the new domain
+ * \param domain the new domain
  *
- * Sets the current domain to @domain.
+ * Sets the current domain to \p domain.
  */
 void
 mono_domain_set_internal (MonoDomain *domain)
@@ -932,12 +932,12 @@ mono_domain_set_internal (MonoDomain *domain)
 
 /**
  * mono_domain_foreach:
- * @func: function to invoke with the domain data
- * @user_data: user-defined pointer that is passed to the supplied @func fo reach domain
+ * \param func function to invoke with the domain data
+ * \param user_data user-defined pointer that is passed to the supplied \p func fo reach domain
  *
  * Use this method to safely iterate over all the loaded application
- * domains in the current runtime.   The provided @func is invoked with a
- * pointer to the MonoDomain and is given the value of the @user_data
+ * domains in the current runtime.   The provided \p func is invoked with a
+ * pointer to the MonoDomain and is given the value of the \p user_data
  * parameter which can be used to pass state to your called routine.
  */
 void
@@ -967,8 +967,8 @@ mono_domain_foreach (MonoDomainFunc func, gpointer user_data)
 
 /**
  * mono_domain_assembly_open:
- * @domain: the application domain
- * @name: file name of the assembly
+ * \param domain the application domain
+ * \param name file name of the assembly
  *
  * fixme: maybe we should integrate this with mono_assembly_open ??
  */
@@ -1013,8 +1013,8 @@ unregister_vtable_reflection_type (MonoVTable *vtable)
 
 /**
  * mono_domain_free:
- * @domain: the domain to release
- * @force: if true, it allows the root domain to be released (used at shutdown only).
+ * \param domain the domain to release
+ * \param force if TRUE, it allows the root domain to be released (used at shutdown only).
  *
  * This releases the resources associated with the specific domain.
  * This is a low-level function that is invoked by the AppDomain infrastructure
@@ -1234,9 +1234,8 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 
 /**
  * mono_domain_get_by_id:
- * @domainid: the ID
- *
- * Returns: the domain for a specific domain id.
+ * \param domainid the ID
+ * \returns the domain for a specific domain id.
  */
 MonoDomain * 
 mono_domain_get_by_id (gint32 domainid) 
@@ -1412,12 +1411,12 @@ mono_context_get (void)
 
 /**
  * mono_context_get_id:
- * @context: the context to operate on.
+ * \param context the context to operate on.
  *
  * Context IDs are guaranteed to be unique for the duration of a Mono
  * process; they are never reused.
  *
- * Returns: The unique ID for @context.
+ * \returns The unique ID for \p context.
  */
 gint32
 mono_context_get_id (MonoAppContext *context)
@@ -1427,9 +1426,8 @@ mono_context_get_id (MonoAppContext *context)
 
 /**
  * mono_context_get_domain_id:
- * @context: the context to operate on.
- *
- * Returns: The ID of the domain that @context was created in.
+ * \param context the context to operate on.
+ * \returns The ID of the domain that \p context was created in.
  */
 gint32
 mono_context_get_domain_id (MonoAppContext *context)
@@ -1473,10 +1471,8 @@ mono_domain_add_class_static_data (MonoDomain *domain, MonoClass *klass, gpointe
 
 /**
  * mono_get_corlib:
- *
- * Use this function to get the `MonoImage*` for the mscorlib.dll assembly
- *
- * Returns: The MonoImage for mscorlib.dll
+ * Use this function to get the \c MonoImage* for the \c mscorlib.dll assembly
+ * \returns The \c MonoImage for mscorlib.dll
  */
 MonoImage*
 mono_get_corlib (void)
@@ -1486,10 +1482,8 @@ mono_get_corlib (void)
 
 /**
  * mono_get_object_class:
- *
- * Use this function to get the `MonoClass*` that the runtime is using for `System.Object`.
- *
- * Returns: The `MonoClass*` for the `System.Object` type.
+ * Use this function to get the \c MonoClass* that the runtime is using for \c System.Object .
+ * \returns The \c MonoClass* for the \c System.Object type.
  */
 MonoClass*
 mono_get_object_class (void)
@@ -1499,10 +1493,8 @@ mono_get_object_class (void)
 
 /**
  * mono_get_byte_class:
- *
- * Use this function to get the `MonoClass*` that the runtime is using for `System.Byte`.
- *
- * Returns: The `MonoClass*` for the `System.Byte` type.
+ * Use this function to get the \c MonoClass* that the runtime is using for \c System.Byte .
+ * \returns The \c MonoClass* for the \c System.Byte type.
  */
 MonoClass*
 mono_get_byte_class (void)
@@ -1512,10 +1504,8 @@ mono_get_byte_class (void)
 
 /**
  * mono_get_void_class:
- *
- * Use this function to get the `MonoClass*` that the runtime is using for `System.Void`.
- *
- * Returns: The `MonoClass*` for the `System.Void` type.
+ * Use this function to get the \c MonoClass* that the runtime is using for \c System.Void .
+ * \returns The \c MonoClass* for the \c System.Void type.
  */
 MonoClass*
 mono_get_void_class (void)
@@ -1525,10 +1515,8 @@ mono_get_void_class (void)
 
 /**
  * mono_get_boolean_class:
- *
- * Use this function to get the `MonoClass*` that the runtime is using for `System.Boolean`.
- *
- * Returns: The `MonoClass*` for the `System.Boolean` type.
+ * Use this function to get the \c MonoClass* that the runtime is using for \c System.Boolean .
+ * \returns The \c MonoClass* for the \c System.Boolean type.
  */
 MonoClass*
 mono_get_boolean_class (void)
@@ -1538,10 +1526,8 @@ mono_get_boolean_class (void)
 
 /**
  * mono_get_sbyte_class:
- *
- * Use this function to get the `MonoClass*` that the runtime is using for `System.SByte`.
- *
- * Returns: The `MonoClass*` for the `System.SByte` type.
+ * Use this function to get the \c MonoClass* that the runtime is using for \c System.SByte.
+ * \returns The \c MonoClass* for the \c System.SByte type.
  */
 MonoClass*
 mono_get_sbyte_class (void)
@@ -1551,10 +1537,8 @@ mono_get_sbyte_class (void)
 
 /**
  * mono_get_int16_class:
- *
- * Use this function to get the `MonoClass*` that the runtime is using for `System.Int16`.
- *
- * Returns: The `MonoClass*` for the `System.Int16` type.
+ * Use this function to get the \c MonoClass* that the runtime is using for \c System.Int16 .
+ * \returns The \c MonoClass* for the \c System.Int16 type.
  */
 MonoClass*
 mono_get_int16_class (void)
@@ -1564,10 +1548,8 @@ mono_get_int16_class (void)
 
 /**
  * mono_get_uint16_class:
- *
- * Use this function to get the `MonoClass*` that the runtime is using for `System.UInt16`.
- *
- * Returns: The `MonoClass*` for the `System.UInt16` type.
+ * Use this function to get the \c MonoClass* that the runtime is using for \c System.UInt16 .
+ * \returns The \c MonoClass* for the \c System.UInt16 type.
  */
 MonoClass*
 mono_get_uint16_class (void)
@@ -1577,10 +1559,8 @@ mono_get_uint16_class (void)
 
 /**
  * mono_get_int32_class:
- *
- * Use this function to get the `MonoClass*` that the runtime is using for `System.Int32`.
- *
- * Returns: The `MonoClass*` for the `System.Int32` type.
+ * Use this function to get the \c MonoClass* that the runtime is using for \c System.Int32 .
+ * \returns The \c MonoClass* for the \c System.Int32 type.
  */
 MonoClass*
 mono_get_int32_class (void)
@@ -1590,10 +1570,8 @@ mono_get_int32_class (void)
 
 /**
  * mono_get_uint32_class:
- *
- * Use this function to get the `MonoClass*` that the runtime is using for `System.UInt32`.
- *
- * Returns: The `MonoClass*` for the `System.UInt32` type.
+ * Use this function to get the \c MonoClass* that the runtime is using for \c System.UInt32 .
+ * \returns The \c MonoClass* for the \c System.UInt32 type.
  */
 MonoClass*
 mono_get_uint32_class (void)
@@ -1603,10 +1581,8 @@ mono_get_uint32_class (void)
 
 /**
  * mono_get_intptr_class:
- *
- * Use this function to get the `MonoClass*` that the runtime is using for `System.IntPtr`.
- *
- * Returns: The `MonoClass*` for the `System.IntPtr` type.
+ * Use this function to get the \c MonoClass* that the runtime is using for \c System.IntPtr .
+ * \returns The \c MonoClass* for the \c System.IntPtr type.
  */
 MonoClass*
 mono_get_intptr_class (void)
@@ -1616,10 +1592,8 @@ mono_get_intptr_class (void)
 
 /**
  * mono_get_uintptr_class:
- *
- * Use this function to get the `MonoClass*` that the runtime is using for `System.UIntPtr`.
- *
- * Returns: The `MonoClass*` for the `System.UIntPtr` type.
+ * Use this function to get the \c MonoClass* that the runtime is using for \c System.UIntPtr .
+ * \returns The \c MonoClass* for the \c System.UIntPtr type.
  */
 MonoClass*
 mono_get_uintptr_class (void)
@@ -1629,10 +1603,8 @@ mono_get_uintptr_class (void)
 
 /**
  * mono_get_int64_class:
- *
- * Use this function to get the `MonoClass*` that the runtime is using for `System.Int64`.
- *
- * Returns: The `MonoClass*` for the `System.Int64` type.
+ * Use this function to get the \c MonoClass* that the runtime is using for \c System.Int64 .
+ * \returns The \c MonoClass* for the \c System.Int64 type.
  */
 MonoClass*
 mono_get_int64_class (void)
@@ -1642,10 +1614,8 @@ mono_get_int64_class (void)
 
 /**
  * mono_get_uint64_class:
- *
- * Use this function to get the `MonoClass*` that the runtime is using for `System.UInt64`.
- *
- * Returns: The `MonoClass*` for the `System.UInt64` type.
+ * Use this function to get the \c MonoClass* that the runtime is using for \c System.UInt64 .
+ * \returns The \c MonoClass* for the \c System.UInt64 type.
  */
 MonoClass*
 mono_get_uint64_class (void)
@@ -1655,10 +1625,8 @@ mono_get_uint64_class (void)
 
 /**
  * mono_get_single_class:
- *
- * Use this function to get the `MonoClass*` that the runtime is using for `System.Single` (32-bit floating points).
- *
- * Returns: The `MonoClass*` for the `System.Single` type.
+ * Use this function to get the \c MonoClass* that the runtime is using for \c System.Single  (32-bit floating points).
+ * \returns The \c MonoClass* for the \c System.Single type.
  */
 MonoClass*
 mono_get_single_class (void)
@@ -1668,10 +1636,8 @@ mono_get_single_class (void)
 
 /**
  * mono_get_double_class:
- *
- * Use this function to get the `MonoClass*` that the runtime is using for `System.Double` (64-bit floating points).
- *
- * Returns: The `MonoClass*` for the `System.Double` type.
+ * Use this function to get the \c MonoClass* that the runtime is using for \c System.Double  (64-bit floating points).
+ * \returns The \c MonoClass* for the \c System.Double type.
  */
 MonoClass*
 mono_get_double_class (void)
@@ -1681,10 +1647,8 @@ mono_get_double_class (void)
 
 /**
  * mono_get_char_class:
- *
- * Use this function to get the `MonoClass*` that the runtime is using for `System.Char`.
- *
- * Returns: The `MonoClass*` for the `System.Char` type.
+ * Use this function to get the \c MonoClass* that the runtime is using for \c System.Char .
+ * \returns The \c MonoClass* for the \c System.Char type.
  */
 MonoClass*
 mono_get_char_class (void)
@@ -1694,10 +1658,8 @@ mono_get_char_class (void)
 
 /**
  * mono_get_string_class:
- *
- * Use this function to get the `MonoClass*` that the runtime is using for `System.String`.
- *
- * Returns: The `MonoClass*` for the `System.String` type.
+ * Use this function to get the \c MonoClass* that the runtime is using for \c System.String .
+ * \returns The \c MonoClass* for the \c System.String type.
  */
 MonoClass*
 mono_get_string_class (void)
@@ -1707,10 +1669,8 @@ mono_get_string_class (void)
 
 /**
  * mono_get_enum_class:
- *
- * Use this function to get the `MonoClass*` that the runtime is using for `System.Enum`.
- *
- * Returns: The `MonoClass*` for the `System.Enum` type.
+ * Use this function to get the \c MonoClass* that the runtime is using for \c System.Enum .
+ * \returns The \c MonoClass* for the \c System.Enum type.
  */
 MonoClass*
 mono_get_enum_class (void)
@@ -1720,10 +1680,8 @@ mono_get_enum_class (void)
 
 /**
  * mono_get_array_class:
- *
- * Use this function to get the `MonoClass*` that the runtime is using for `System.Array`.
- *
- * Returns: The `MonoClass*` for the `System.Array` type.
+ * Use this function to get the \c MonoClass* that the runtime is using for \c System.Array .
+ * \returns The \c MonoClass* for the \c System.Array type.
  */
 MonoClass*
 mono_get_array_class (void)
@@ -1733,10 +1691,8 @@ mono_get_array_class (void)
 
 /**
  * mono_get_thread_class:
- *
- * Use this function to get the `MonoClass*` that the runtime is using for `System.Threading.Thread`.
- *
- * Returns: The `MonoClass*` for the `System.Threading.Thread` type.
+ * Use this function to get the \c MonoClass* that the runtime is using for \c System.Threading.Thread .
+ * \returns The \c MonoClass* for the \c System.Threading.Thread type.
  */
 MonoClass*
 mono_get_thread_class (void)
@@ -1746,10 +1702,8 @@ mono_get_thread_class (void)
 
 /**
  * mono_get_exception_class:
- *
- * Use this function to get the `MonoClass*` that the runtime is using for `System.Exception`.
- *
- * Returns: The `MonoClass*` for the `` type.
+ * Use this function to get the \c MonoClass* that the runtime is using for \c System.Exception .
+ * \returns The \c MonoClass* for the \c  type.
  */
 MonoClass*
 mono_get_exception_class (void)

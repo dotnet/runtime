@@ -127,14 +127,12 @@ MonoProfileFlags mono_profiler_events;
 
 /**
  * mono_profiler_install:
- * @prof: a MonoProfiler structure pointer, or a pointer to a derived structure.
- * @callback: the function to invoke at shutdown
- *
- * Use mono_profiler_install to activate profiling in the Mono runtime.
+ * \param prof a \c MonoProfiler structure pointer, or a pointer to a derived structure.
+ * \param callback the function to invoke at shutdown
+ * Use \c mono_profiler_install to activate profiling in the Mono runtime.
  * Typically developers of new profilers will create a new structure whose
- * first field is a MonoProfiler and put any extra information that they need
+ * first field is a \c MonoProfiler and put any extra information that they need
  * to access from the various profiling callbacks there.
- *
  */
 void
 mono_profiler_install (MonoProfiler *prof, MonoProfileFunc callback)
@@ -150,16 +148,15 @@ mono_profiler_install (MonoProfiler *prof, MonoProfileFunc callback)
 
 /**
  * mono_profiler_set_events:
- * @events: an ORed set of values made up of MONO_PROFILER_ flags
- *
- * The events descriped in the @events argument is a set of flags
+ * \param events an ORed set of values made up of \c MONO_PROFILER_ flags
+ * The events described in the \p events argument is a set of flags
  * that represent which profiling events must be triggered.  For
  * example if you have registered a set of methods for tracking
- * JIT compilation start and end with mono_profiler_install_jit_compile,
- * you will want to pass the MONO_PROFILE_JIT_COMPILATION flag to
+ * JIT compilation start and end with \c mono_profiler_install_jit_compile,
+ * you will want to pass the \c MONO_PROFILE_JIT_COMPILATION flag to
  * this routine.
  *
- * You can call mono_profile_set_events more than once and you can
+ * You can call \c mono_profile_set_events more than once and you can
  * do this at runtime to modify which methods are invoked.
  */
 void
@@ -187,12 +184,12 @@ mono_profiler_get_events (void)
 
 /**
  * mono_profiler_install_enter_leave:
- * @enter: the routine to be called on each method entry
- * @fleave: the routine to be called each time a method returns
+ * \param enter the routine to be called on each method entry
+ * \param fleave the routine to be called each time a method returns
  *
  * Use this routine to install routines that will be called everytime
  * a method enters and leaves.   The routines will receive as an argument
- * the MonoMethod representing the method that is entering or leaving.
+ * the \c MonoMethod representing the method that is entering or leaving.
  */
 void
 mono_profiler_install_enter_leave (MonoProfileMethodFunc enter, MonoProfileMethodFunc fleave)
@@ -205,8 +202,8 @@ mono_profiler_install_enter_leave (MonoProfileMethodFunc enter, MonoProfileMetho
 
 /**
  * mono_profiler_install_jit_compile:
- * @start: the routine to be called when the JIT process starts.
- * @end: the routine to be called when the JIT process ends.
+ * \param start the routine to be called when the JIT process starts.
+ * \param end the routine to be called when the JIT process ends.
  *
  * Use this routine to install routines that will be called when JIT 
  * compilation of a method starts and completes.
@@ -291,8 +288,8 @@ static int64_t sampling_frequency = 100; // Hz
 
 /**
  * mono_profiler_set_statistical_mode:
- * @mode the sampling mode used.
- * @sample_frequency_is_us the sampling frequency in microseconds.
+ * \param mode the sampling mode used.
+ * \param sample_frequency_is_us the sampling frequency in microseconds.
  *
  * Set the sampling parameters for the profiler. Sampling mode affects the effective sampling rate as in samples/s you'll witness.
  * The default sampling mode is process mode, which only reports samples when there's activity in the process.
@@ -883,9 +880,9 @@ mono_profiler_install_gc (MonoProfileGCFunc callback, MonoProfileGCResizeFunc he
 
 /**
  * mono_profiler_install_gc_moves:
- * @callback: callback function
+ * \param callback callback function
  *
- * Install the @callback function that the GC will call when moving objects.
+ * Install the \p callback function that the GC will call when moving objects.
  * The callback receives an array of pointers and the number of elements
  * in the array. Every even element in the array is the original object location
  * and the following odd element is the new location of the object in memory.
@@ -905,15 +902,15 @@ mono_profiler_install_gc_moves (MonoProfileGCMoveFunc callback)
 
 /**
  * mono_profiler_install_gc_roots:
- * @handle_callback: callback function
- * @roots_callback: callback function
+ * \param handle_callback callback function
+ * \param roots_callback callback function
  *
- * Install the @handle_callback function that the GC will call when GC
+ * Install the \p handle_callback function that the GC will call when GC
  * handles are created or destroyed.
- * The callback receives an operation, which is either #MONO_PROFILER_GC_HANDLE_CREATED
- * or #MONO_PROFILER_GC_HANDLE_DESTROYED, the handle type, the handle value and the
+ * The callback receives an operation, which is either \c MONO_PROFILER_GC_HANDLE_CREATED
+ * or \c MONO_PROFILER_GC_HANDLE_DESTROYED, the handle type, the handle value and the
  * object pointer, if present.
- * Install the @roots_callback function that the GC will call when tracing
+ * Install the \p roots_callback function that the GC will call when tracing
  * the roots for a collection.
  * The callback receives the number of elements and three arrays: an array
  * of objects, an array of root types and flags and an array of extra info.
@@ -1099,15 +1096,15 @@ mono_profiler_coverage_free (MonoMethod *method)
 
 /**
  * mono_profiler_coverage_get:
- * @prof: The profiler handle, installed with mono_profiler_install
- * @method: the method to gather information from.
- * @func: A routine that will be called back with the results
+ * \param prof The profiler handle, installed with mono_profiler_install
+ * \param method the method to gather information from.
+ * \param func A routine that will be called back with the results
  *
- * If the MONO_PROFILER_INS_COVERAGE flag was active during JIT compilation
- * it is posisble to obtain coverage information about a give method.
+ * If the \c MONO_PROFILER_INS_COVERAGE flag was active during JIT compilation
+ * it is possible to obtain coverage information about a give method.
  *
- * The function @func will be invoked repeatedly with instances of the
- * MonoProfileCoverageEntry structure.
+ * The function \p func will be invoked repeatedly with instances of the
+ * \c MonoProfileCoverageEntry structure.
  */
 void 
 mono_profiler_coverage_get (MonoProfiler *prof, MonoMethod *method, MonoProfileCoverageFunc func)
@@ -1255,7 +1252,7 @@ load_profiler_from_mono_installation (const char *libname, const char *desc)
 
 /**
  * mono_profiler_load:
- * @desc: arguments to configure the profiler
+ * \param desc arguments to configure the profiler
  *
  * Invoke this method to initialize the profiler.   This will drive the
  * loading of the internal ("default") or any external profilers.

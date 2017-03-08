@@ -160,9 +160,8 @@ typedef struct {
 
 /**
  * mono_ssa_rename_vars:
- *
- *  Implement renaming of SSA variables. Also compute def-use information in parallel.
- * @stack_history points to an area of memory which can be used for storing changes 
+ * Implement renaming of SSA variables. Also compute def-use information in parallel.
+ * \p stack_history points to an area of memory which can be used for storing changes 
  * made to the stack, so they can be reverted later.
  */
 static void

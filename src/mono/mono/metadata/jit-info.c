@@ -314,18 +314,18 @@ mono_jit_info_table_find_internal (MonoDomain *domain, char *addr, gboolean try_
 
 /**
  * mono_jit_info_table_find:
- * @domain: Domain that you want to look up
- * @addr: Points to an address with JITed code.
+ * \param domain Domain that you want to look up
+ * \param addr Points to an address with JITed code.
  *
- * Use this function to obtain a `MonoJitInfo*` object that can be used to get
- * some statistics.   You should provide both the @domain on which you will be
- * performing the probe, and an address.   Since application domains can share code
+ * Use this function to obtain a \c MonoJitInfo* object that can be used to get
+ * some statistics. You should provide both the \p domain on which you will be
+ * performing the probe, and an address. Since application domains can share code
  * the same address can be in use by multiple domains at once.
  *
  * This does not return any results for trampolines.
  *
- * Returns: NULL if the address does not belong to JITed code (it might be native
- * code or a trampoline) or a valid pointer to a `MonoJitInfo*`.
+ * \returns NULL if the address does not belong to JITed code (it might be native
+ * code or a trampoline) or a valid pointer to a \c MonoJitInfo* .
  */
 MonoJitInfo*
 mono_jit_info_table_find (MonoDomain *domain, char *addr)
@@ -824,13 +824,13 @@ mono_jit_info_init (MonoJitInfo *ji, MonoMethod *method, guint8 *code, int code_
 
 /**
  * mono_jit_info_get_code_start:
- * @ji: the JIT information handle
+ * \param ji the JIT information handle
  *
  * Use this function to get the starting address for the method described by
- * the @ji object.  You can use this plus the `mono_jit_info_get_code_size`
+ * the \p ji object.  You can use this plus the \c mono_jit_info_get_code_size
  * to determine the start and end of the native code.
  *
- * Returns: Starting address with the native code.
+ * \returns Starting address with the native code.
  */
 gpointer
 mono_jit_info_get_code_start (MonoJitInfo* ji)
@@ -840,13 +840,13 @@ mono_jit_info_get_code_start (MonoJitInfo* ji)
 
 /**
  * mono_jit_info_get_code_size:
- * @ji: the JIT information handle
+ * \param ji the JIT information handle
  *
  * Use this function to get the code size for the method described by
- * the @ji object.   You can use this plus the `mono_jit_info_get_code_start`
+ * the \p ji object. You can use this plus the \c mono_jit_info_get_code_start
  * to determine the start and end of the native code.
  *
- * Returns: Starting address with the native code.
+ * \returns Starting address with the native code.
  */
 int
 mono_jit_info_get_code_size (MonoJitInfo* ji)
@@ -856,13 +856,13 @@ mono_jit_info_get_code_size (MonoJitInfo* ji)
 
 /**
  * mono_jit_info_get_method:
- * @ji: the JIT information handle
+ * \param ji the JIT information handle
  *
- * Use this function to get the `MonoMethod *` that backs
- * the @ji object.
+ * Use this function to get the \c MonoMethod* that backs
+ * the \p ji object.
  *
- * Returns: The MonoMethod that represents the code tracked
- * by @ji.
+ * \returns The \c MonoMethod that represents the code tracked
+ * by \p ji.
  */
 MonoMethod*
 mono_jit_info_get_method (MonoJitInfo* ji)

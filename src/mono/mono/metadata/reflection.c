@@ -797,13 +797,13 @@ fail:
 
 /**
  * mono_property_get_object_handle:
- * @domain: an app domain
- * @klass: a type
- * @property: a property
- * @error: set on error
+ * \param domain an app domain
+ * \param klass a type
+ * \param property a property
+ * \param error set on error
  *
- * Return an System.Reflection.MonoProperty object representing the property @property
- * in class @klass.  On error returns NULL and sets @error.
+ * \returns A \c System.Reflection.MonoProperty object representing the property \p property
+ * in class \p klass.  On error returns NULL and sets \p error.
  */
 MonoReflectionPropertyHandle
 mono_property_get_object_handle (MonoDomain *domain, MonoClass *klass, MonoProperty *property, MonoError *error)
@@ -813,13 +813,12 @@ mono_property_get_object_handle (MonoDomain *domain, MonoClass *klass, MonoPrope
 
 /**
  * mono_property_get_object:
- * @domain: an app domain
- * @klass: a type
- * @property: a property
- * @error: set on error
- *
- * Return an System.Reflection.MonoProperty object representing the property @property
- * in class @klass.  On error returns NULL and sets @error.
+ * \param domain an app domain
+ * \param klass a type
+ * \param property a property
+ * \param error set on error
+ * \returns a \c System.Reflection.MonoProperty object representing the property \p property
+ * in class \p klass.  On error returns NULL and sets \p error.
  */
 MonoReflectionProperty*
 mono_property_get_object_checked (MonoDomain *domain, MonoClass *klass, MonoProperty *property, MonoError *error)
@@ -863,13 +862,12 @@ event_object_construct (MonoDomain *domain, MonoClass *klass, MonoEvent *event, 
 
 /**
  * mono_event_get_object_handle:
- * @domain: an app domain
- * @klass: a type
- * @event: a event
- * @error: set on error
- *
- * Return an System.Reflection.MonoEvent object representing the event @event
- * in class @klass. On failure sets @error and returns NULL
+ * \param domain an app domain
+ * \param klass a type
+ * \param event a event
+ * \param error set on error
+ * \returns a \c System.Reflection.MonoEvent object representing the event \p event
+ * in class \p klass. On failure sets \p error and returns NULL
  */
 MonoReflectionEventHandle
 mono_event_get_object_handle (MonoDomain *domain, MonoClass *klass, MonoEvent *event, MonoError *error)
@@ -881,12 +879,12 @@ mono_event_get_object_handle (MonoDomain *domain, MonoClass *klass, MonoEvent *e
 
 /**
  * mono_get_reflection_missing_object:
- * @domain: Domain where the object lives
+ * \param domain Domain where the object lives
  *
- * Returns the System.Reflection.Missing.Value singleton object
- * (of type System.Reflection.Missing).
+ * \returns the \c System.Reflection.Missing.Value singleton object
+ * (of type \c System.Reflection.Missing).
  *
- * Used as the value for ParameterInfo.DefaultValue when Optional
+ * Used as the value for \c ParameterInfo.DefaultValue when Optional
  * is present
  */
 static MonoObjectHandle
@@ -1302,12 +1300,11 @@ fail:
 
 /**
  * mono_method_body_get_object_handle:
- * @domain: an app domain
- * @method: a method
- * @error: set on error
- *
- * Return an System.Reflection.MethodBody object representing the
- * method @method.  On failure, returns NULL and sets @error.
+ * \param domain an app domain
+ * \param method a method
+ * \param error set on error
+ * \returns a \c System.Reflection.MethodBody object representing the
+ * method \p method.  On failure, returns NULL and sets \p error.
  */
 MonoReflectionMethodBodyHandle
 mono_method_body_get_object_handle (MonoDomain *domain, MonoMethod *method, MonoError *error)
@@ -1319,11 +1316,9 @@ mono_method_body_get_object_handle (MonoDomain *domain, MonoMethod *method, Mono
 
 /**
  * mono_get_dbnull_object:
- * @domain: Domain where the object lives
- *
- * Returns the System.DBNull.Value singleton object
- *
- * Used as the value for ParameterInfo.DefaultValue 
+ * \param domain Domain where the object lives
+ * Used as the value for \c ParameterInfo.DefaultValue
+ * \returns the \c System.DBNull.Value singleton object
  */
 MonoObject *
 mono_get_dbnull_object (MonoDomain *domain)
@@ -1753,12 +1748,11 @@ _mono_reflection_parse_type (char *name, char **endptr, gboolean is_recursed,
 
 /**
  * mono_identifier_unescape_type_name_chars:
- * @identifier: the display name of a mono type
+ * \param identifier the display name of a mono type
  *
- * Returns:
- *  The name in internal form, that is without escaping backslashes.
+ * \returns The name in internal form, that is without escaping backslashes.
  *
- *  The string is modified in place!
+ * The string is modified in place!
  */
 char*
 mono_identifier_unescape_type_name_chars(char* identifier)
@@ -1803,9 +1797,7 @@ unescape_each_nested_name (void* data, void* user_data)
 /**
  * mono_identifier_unescape_info:
  *
- * @info: a parsed display form of an (optionally assembly qualified) full type name.
- *
- * Returns: nothing.
+ * \param info a parsed display form of an (optionally assembly qualified) full type name.
  *
  * Destructively updates the info by unescaping the identifiers that
  * comprise the type namespace, name, nested types (if any) and
@@ -2033,15 +2025,13 @@ mono_reflection_get_type (MonoImage* image, MonoTypeNameParse *info, gboolean ig
 
 /**
  * mono_reflection_get_type_checked:
- * @rootimage: the image of the currently active managed caller
- * @image: a metadata context
- * @info: type description structure
- * @ignorecase: flag for case-insensitive string compares
- * @type_resolve: whenever type resolve was already tried
- * @error: set on error.
- *
- * Build a MonoType from the type description in @info. On failure returns NULL and sets @error.
- *
+ * \param rootimage the image of the currently active managed caller
+ * \param image a metadata context
+ * \param info type description structure
+ * \param ignorecase flag for case-insensitive string compares
+ * \param type_resolve whenever type resolve was already tried
+ * \param error set on error.
+ * Build a \c MonoType from the type description in \p info. On failure returns NULL and sets \p error.
  */
 MonoType*
 mono_reflection_get_type_checked (MonoImage *rootimage, MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, gboolean *type_resolve, MonoError *error) {
@@ -2220,14 +2210,12 @@ mono_reflection_type_from_name (char *name, MonoImage *image)
 
 /**
  * mono_reflection_type_from_name_checked:
- * @name: type name.
- * @image: a metadata context (can be NULL).
- * @error: set on errror.
- *
- * Retrieves a MonoType from its @name. If the name is not fully qualified,
- * it defaults to get the type from @image or, if @image is NULL or loading
- * from it fails, uses corlib.  On failure returns NULL and sets @error.
- * 
+ * \param name type name.
+ * \param image a metadata context (can be NULL).
+ * \param error set on errror.
+ * Retrieves a MonoType from its \p name. If the name is not fully qualified,
+ * it defaults to get the type from \p image or, if \p image is NULL or loading
+ * from it fails, uses corlib.  On failure returns NULL and sets \p error.
  */
 MonoType*
 mono_reflection_type_from_name_checked (char *name, MonoImage *image, MonoError *error)
@@ -2274,11 +2262,10 @@ mono_reflection_get_token (MonoObject *obj_raw)
 
 /**
  * mono_reflection_get_token_checked:
- * @obj: the object
- * @error: set on error
- *
- *   Return the metadata token of @obj which should be an object
- * representing a metadata element.  On failure sets @error.
+ * \param obj the object
+ * \param error set on error
+ * \returns the metadata token of \p obj which should be an object
+ * representing a metadata element.  On failure sets \p error.
  */
 guint32
 mono_reflection_get_token_checked (MonoObjectHandle obj, MonoError *error)
@@ -2370,13 +2357,12 @@ mono_reflection_is_usertype (MonoReflectionTypeHandle ref)
 
 /**
  * mono_reflection_bind_generic_parameters:
- * @type: a managed type object (which should be some kind of generic (instance? definition?))
- * @type_args: the number of type arguments to bind
- * @types: array of type arguments
- * @error: set on error
- *
+ * \param type a managed type object (which should be some kind of generic (instance? definition?))
+ * \param type_args the number of type arguments to bind
+ * \param types array of type arguments
+ * \param error set on error
  * Given a managed type object for a generic type instance, binds each of its arguments to the specified types.
- * Returns the MonoType* for the resulting type instantiation.  On failure returns NULL and sets @error.
+ * \returns the \c MonoType* for the resulting type instantiation.  On failure returns NULL and sets \p error.
  */
 MonoType*
 mono_reflection_bind_generic_parameters (MonoReflectionTypeHandle reftype, int type_argc, MonoType **types, MonoError *error)
@@ -2992,9 +2978,8 @@ mono_reflection_call_is_assignable_to (MonoClass *klass, MonoClass *oklass, Mono
 
 /**
  * mono_reflection_type_get_type:
- * @reftype: the System.Type object
- *
- * Returns the MonoType* associated with the C# System.Type object @reftype.
+ * \param reftype the \c System.Type object
+ * \returns the \c MonoType* associated with the C# \c System.Type object \p reftype.
  */
 MonoType*
 mono_reflection_type_get_type (MonoReflectionType *reftype)
@@ -3009,9 +2994,8 @@ mono_reflection_type_get_type (MonoReflectionType *reftype)
 
 /**
  * mono_reflection_assembly_get_assembly:
- * @refassembly: the System.Reflection.Assembly object
- *
- * Returns the MonoAssembly* associated with the C# System.Reflection.Assembly object @refassembly.
+ * \param refassembly the \c System.Reflection.Assembly object
+ * \returns the \c MonoAssembly* associated with the C# \c System.Reflection.Assembly object \p refassembly.
  */
 MonoAssembly*
 mono_reflection_assembly_get_assembly (MonoReflectionAssembly *refassembly)
@@ -3023,9 +3007,8 @@ mono_reflection_assembly_get_assembly (MonoReflectionAssembly *refassembly)
 
 /**
  * mono_class_from_mono_type_handle:
- * @reftype: the System.Type handle
- *
- * Returns the MonoClass* corresponding to the given type.
+ * \param reftype the \c System.Type handle
+ * \returns the \c MonoClass* corresponding to the given type.
  */
 MonoClass*
 mono_class_from_mono_type_handle (MonoReflectionTypeHandle reftype)

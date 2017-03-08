@@ -252,9 +252,8 @@ free_chunklist (CodeChunk *chunk)
 
 /**
  * mono_code_manager_destroy:
- * @cman: a code manager
- *
- * Free all the memory associated with the code manager @cman.
+ * \param cman a code manager
+ * Free all the memory associated with the code manager \p cman.
  */
 void
 mono_code_manager_destroy (MonoCodeManager *cman)
@@ -266,11 +265,10 @@ mono_code_manager_destroy (MonoCodeManager *cman)
 
 /**
  * mono_code_manager_invalidate:
- * @cman: a code manager
- *
+ * \param cman a code manager
  * Fill all the memory with an invalid native code value
  * so that any attempt to execute code allocated in the code
- * manager @cman will fail. This is used for debugging purposes.
+ * manager \p cman will fail. This is used for debugging purposes.
  */
 void             
 mono_code_manager_invalidate (MonoCodeManager *cman)
@@ -291,8 +289,7 @@ mono_code_manager_invalidate (MonoCodeManager *cman)
 
 /**
  * mono_code_manager_set_read_only:
- * @cman: a code manager
- *
+ * \param cman a code manager
  * Make the code manager read only, so further allocation requests cause an assert.
  */
 void             
@@ -303,12 +300,11 @@ mono_code_manager_set_read_only (MonoCodeManager *cman)
 
 /**
  * mono_code_manager_foreach:
- * @cman: a code manager
- * @func: a callback function pointer
- * @user_data: additional data to pass to @func
- *
- * Invokes the callback @func for each different chunk of memory allocated
- * in the code manager @cman.
+ * \param cman a code manager
+ * \param func a callback function pointer
+ * \param user_data additional data to pass to \p func
+  * Invokes the callback \p func for each different chunk of memory allocated
+ * in the code manager \p cman.
  */
 void
 mono_code_manager_foreach (MonoCodeManager *cman, MonoCodeManagerFunc func, void *user_data)
@@ -437,13 +433,11 @@ new_codechunk (CodeChunk *last, int dynamic, int size)
 
 /**
  * mono_code_manager_reserve_align:
- * @cman: a code manager
- * @size: size of memory to allocate
- * @alignment: power of two alignment value
- *
- * Allocates at least @size bytes of memory inside the code manager @cman.
- *
- * Returns: the pointer to the allocated memory or #NULL on failure
+ * \param cman a code manager
+ * \param size size of memory to allocate
+ * \param alignment power of two alignment value
+ * Allocates at least \p size bytes of memory inside the code manager \p cman.
+ * \returns the pointer to the allocated memory or NULL on failure
  */
 void*
 mono_code_manager_reserve_align (MonoCodeManager *cman, int size, int alignment)
@@ -514,12 +508,10 @@ mono_code_manager_reserve_align (MonoCodeManager *cman, int size, int alignment)
 
 /**
  * mono_code_manager_reserve:
- * @cman: a code manager
- * @size: size of memory to allocate
- *
- * Allocates at least @size bytes of memory inside the code manager @cman.
- *
- * Returns: the pointer to the allocated memory or #NULL on failure
+ * \param cman a code manager
+ * \param size size of memory to allocate
+ * Allocates at least \p size bytes of memory inside the code manager \p cman.
+ * \returns the pointer to the allocated memory or NULL on failure
  */
 void*
 mono_code_manager_reserve (MonoCodeManager *cman, int size)
@@ -529,11 +521,10 @@ mono_code_manager_reserve (MonoCodeManager *cman, int size)
 
 /**
  * mono_code_manager_commit:
- * @cman: a code manager
- * @data: the pointer returned by mono_code_manager_reserve ()
- * @size: the size requested in the call to mono_code_manager_reserve ()
- * @newsize: the new size to reserve
- *
+ * \param cman a code manager
+ * \param data the pointer returned by mono_code_manager_reserve ()
+ * \param size the size requested in the call to mono_code_manager_reserve ()
+ * \param newsize the new size to reserve
  * If we reserved too much room for a method and we didn't allocate
  * already from the code manager, we can get back the excess allocation
  * for later use in the code manager.
@@ -550,14 +541,12 @@ mono_code_manager_commit (MonoCodeManager *cman, void *data, int size, int newsi
 
 /**
  * mono_code_manager_size:
- * @cman: a code manager
- * @used_size: pointer to an integer for the result
- *
+ * \param cman a code manager
+ * \param used_size pointer to an integer for the result
  * This function can be used to get statistics about a code manager:
- * the integer pointed to by @used_size will contain how much
- * memory is actually used inside the code managed @cman.
- *
- * Returns: the amount of memory allocated in @cman
+ * the integer pointed to by \p used_size will contain how much
+ * memory is actually used inside the code managed \p cman.
+ * \returns the amount of memory allocated in \p cman
  */
 int
 mono_code_manager_size (MonoCodeManager *cman, int *used_size)

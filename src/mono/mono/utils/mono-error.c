@@ -102,10 +102,9 @@ mono_error_init_flags (MonoError *oerror, unsigned short flags)
 
 /**
  * mono_error_init:
- * @error: Pointer to MonoError struct to initialize
- *
- * Any function which takes a MonoError for purposes of reporting an error
- * is required to call either this or mono_error_init_flags on entry.
+ * \param error Pointer to \c MonoError struct to initialize
+ * Any function which takes a \c MonoError for purposes of reporting an error
+ * is required to call either this or \c mono_error_init_flags on entry.
  */
 void
 mono_error_init (MonoError *error)
@@ -786,14 +785,12 @@ mono_error_move (MonoError *dest, MonoError *src)
 
 /**
  * mono_error_box:
- * @ierror: The input error that will be boxed.
- * @image: The mempool of this image will hold the boxed error.
- *
- * Creates a new boxed error in the given mempool from MonoError.
- * It does not alter ierror, so you still have to clean it up with
- * mono_error_cleanup or mono_error_convert_to_exception or another such function.
- *
- * Returns the boxed error, or NULL if the mempool could not allocate.
+ * \param ierror The input error that will be boxed.
+ * \param image The mempool of this image will hold the boxed error.
+ * Creates a new boxed error in the given mempool from \c MonoError.
+ * It does not alter \p ierror, so you still have to clean it up with
+ * \c mono_error_cleanup or \c mono_error_convert_to_exception or another such function.
+ * \returns the boxed error, or NULL if the mempool could not allocate.
  */
 MonoErrorBoxed*
 mono_error_box (const MonoError *ierror, MonoImage *image)
@@ -834,16 +831,14 @@ mono_error_box (const MonoError *ierror, MonoImage *image)
 
 /**
  * mono_error_set_from_boxed:
- * @oerror: The error that will be set to the contents of the box.
- * @box: A mempool-allocated error.
- *
+ * \param oerror The error that will be set to the contents of the box.
+ * \param box A mempool-allocated error.
  * Sets the error condition in the oerror from the contents of the
  * given boxed error.  Does not alter the boxed error, so it can be
- * used in a future call to mono_error_set_from_boxed as needed.  The
- * oerror should've been previously initialized with mono_error_init,
+ * used in a future call to \c mono_error_set_from_boxed as needed.  The
+ * \p oerror should've been previously initialized with \c mono_error_init,
  * as usual.
- *
- * Returns TRUE on success or FALSE on failure.
+ * \returns TRUE on success or FALSE on failure.
  */
 gboolean
 mono_error_set_from_boxed (MonoError *oerror, const MonoErrorBoxed *box)

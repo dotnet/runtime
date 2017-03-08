@@ -1298,8 +1298,7 @@ mono_arch_get_allocatable_int_vars (MonoCompile *cfg)
 
 /**
  * mono_arch_compute_omit_fp:
- *
- *   Determine whenever the frame pointer can be eliminated.
+ * Determine whether the frame pointer can be eliminated.
  */
 static void
 mono_arch_compute_omit_fp (MonoCompile *cfg)

@@ -13,10 +13,9 @@
 
 /**
  * mono_networkinterface_list:
- * @size: a pointer to a location where the size of the returned array is stored
- *
- * Return an array of names for the interfaces currently on the system.
- * The size of the array is stored in @size.
+ * \param size a pointer to a location where the size of the returned array is stored
+ * \returns an array of names for the interfaces currently on the system.
+ * The size of the array is stored in \p size.
  */
 gpointer*
 mono_networkinterface_list (int *size)
@@ -67,11 +66,10 @@ mono_networkinterface_list (int *size)
 
 /**
  * mono_network_get_data:
- * @name: name of the interface
- * @data: description of data to return
- *
- * Return a data item of a network adapter like bytes sent per sec, etc
- * according to the @data argumet.
+ * \param name name of the interface
+ * \param data description of data to return
+ * \return a data item of a network adapter like bytes sent per sec, etc
+ * according to the \p data argumet.
  */
 gint64
 mono_network_get_data (char* name, MonoNetworkData data, MonoNetworkError *error)

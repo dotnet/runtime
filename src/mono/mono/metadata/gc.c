@@ -384,9 +384,9 @@ object_register_finalizer (MonoObject *obj, void (*callback)(void *, void*))
 
 /**
  * mono_object_register_finalizer:
- * @obj: object to register
+ * \param obj object to register
  *
- * Records that object @obj has a finalizer, this will call the
+ * Records that object \p obj has a finalizer, this will call the
  * Finalize method when the garbage collector disposes the object.
  * 
  */
@@ -399,13 +399,13 @@ mono_object_register_finalizer (MonoObject *obj)
 
 /**
  * mono_domain_finalize:
- * @domain: the domain to finalize
- * @timeout: msects to wait for the finalization to complete, -1 to wait indefinitely
+ * \param domain the domain to finalize
+ * \param timeout msects to wait for the finalization to complete, -1 to wait indefinitely
  *
- *  Request finalization of all finalizable objects inside @domain. Wait
- * @timeout msecs for the finalization to complete.
+ * Request finalization of all finalizable objects inside \p domain. Wait
+ * \p timeout msecs for the finalization to complete.
  *
- * Returns: TRUE if succeeded, FALSE if there was a timeout
+ * \returns TRUE if succeeded, FALSE if there was a timeout
  */
 
 gboolean
@@ -1047,13 +1047,13 @@ mono_gc_is_finalizer_internal_thread (MonoInternalThread *thread)
 
 /**
  * mono_gc_is_finalizer_thread:
- * @thread: the thread to test.
+ * \param thread the thread to test.
  *
  * In Mono objects are finalized asynchronously on a separate thread.
- * This routine tests whether the @thread argument represents the
+ * This routine tests whether the \p thread argument represents the
  * finalization thread.
  * 
- * Returns: TRUE if @thread is the finalization thread.
+ * \returns TRUE if \p thread is the finalization thread.
  */
 gboolean
 mono_gc_is_finalizer_thread (MonoThread *thread)
@@ -1174,20 +1174,20 @@ reference_queue_clear_for_domain (MonoDomain *domain)
 }
 /**
  * mono_gc_reference_queue_new:
- * @callback callback used when processing collected entries.
+ * \param callback callback used when processing collected entries.
  *
  * Create a new reference queue used to process collected objects.
  * A reference queue let you add a pair of (managed object, user data)
  * using the mono_gc_reference_queue_add method.
  *
- * Once the managed object is collected @callback will be called
+ * Once the managed object is collected \p callback will be called
  * in the finalizer thread with 'user data' as argument.
  *
  * The callback is called from the finalizer thread without any locks held.
  * When a AppDomain is unloaded, all callbacks for objects belonging to it
  * will be invoked.
  *
- * @returns the new queue.
+ * \returns the new queue.
  */
 MonoReferenceQueue*
 mono_gc_reference_queue_new (mono_reference_queue_callback callback)
@@ -1205,15 +1205,15 @@ mono_gc_reference_queue_new (mono_reference_queue_callback callback)
 
 /**
  * mono_gc_reference_queue_add:
- * @queue the queue to add the reference to.
- * @obj the object to be watched for collection
- * @user_data parameter to be passed to the queue callback
+ * \param queue the queue to add the reference to.
+ * \param obj the object to be watched for collection
+ * \param user_data parameter to be passed to the queue callback
  *
- * Queue an object to be watched for collection, when the @obj is
- * collected, the callback that was registered for the @queue will
- * be invoked with @user_data as argument.
+ * Queue an object to be watched for collection, when the \p obj is
+ * collected, the callback that was registered for the \p queue will
+ * be invoked with \p user_data as argument.
  *
- * @returns false if the queue is scheduled to be freed.
+ * \returns FALSE if the queue is scheduled to be freed.
  */
 gboolean
 mono_gc_reference_queue_add (MonoReferenceQueue *queue, MonoObject *obj, void *user_data)
@@ -1237,9 +1237,9 @@ mono_gc_reference_queue_add (MonoReferenceQueue *queue, MonoObject *obj, void *u
 
 /**
  * mono_gc_reference_queue_free:
- * @queue the queue that should be freed.
+ * \param queue the queue that should be freed.
  *
- * This operation signals that @queue should be freed. This operation is deferred
+ * This operation signals that \p queue should be freed. This operation is deferred
  * as it happens on the finalizer thread.
  *
  * After this call, no further objects can be queued. It's the responsibility of the

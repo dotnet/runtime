@@ -557,12 +557,11 @@ object_in_domain_predicate (MonoObject *obj, void *user_data)
 
 /**
  * mono_gc_finalizers_for_domain:
- * @domain: the unloading appdomain
- * @out_array: output array
- * @out_size: size of output array
- *
- * Enqueue for finalization all objects that belong to the unloading appdomain @domain
- * @suspend is used for early termination of the enqueuing process.
+ * \param domain the unloading appdomain
+ * \param out_array output array
+ * \param out_size size of output array
+ * Enqueue for finalization all objects that belong to the unloading appdomain \p domain.
+ * \p suspend is used for early termination of the enqueuing process.
  */
 void
 mono_gc_finalize_domain (MonoDomain *domain)
@@ -2132,22 +2131,20 @@ walk_references (GCObject *start, size_t size, void *data)
 
 /**
  * mono_gc_walk_heap:
- * @flags: flags for future use
- * @callback: a function pointer called for each object in the heap
- * @data: a user data pointer that is passed to callback
- *
+ * \param flags flags for future use
+ * \param callback a function pointer called for each object in the heap
+ * \param data a user data pointer that is passed to callback
  * This function can be used to iterate over all the live objects in the heap:
- * for each object, @callback is invoked, providing info about the object's
+ * for each object, \p callback is invoked, providing info about the object's
  * location in memory, its class, its size and the objects it references.
  * For each referenced object it's offset from the object address is
  * reported in the offsets array.
  * The object references may be buffered, so the callback may be invoked
  * multiple times for the same object: in all but the first call, the size
  * argument will be zero.
- * Note that this function can be only called in the #MONO_GC_EVENT_PRE_START_WORLD
+ * Note that this function can be only called in the \c MONO_GC_EVENT_PRE_START_WORLD
  * profiler event handler.
- *
- * Returns: a non-zero value if the GC doesn't support heap walking
+ * \returns a non-zero value if the GC doesn't support heap walking
  */
 int
 mono_gc_walk_heap (int flags, MonoGCReferences callback, void *data)
@@ -2662,10 +2659,9 @@ sgen_client_metadata_for_object (GCObject *obj)
 
 /**
  * mono_gchandle_is_in_domain:
- * @gchandle: a GCHandle's handle.
- * @domain: An application domain.
- *
- * Returns: TRUE if the object wrapped by the @gchandle belongs to the specific @domain.
+ * \param gchandle a GCHandle's handle.
+ * \param domain An application domain.
+ * \returns TRUE if the object wrapped by the \p gchandle belongs to the specific \p domain.
  */
 gboolean
 mono_gchandle_is_in_domain (guint32 gchandle, MonoDomain *domain)
@@ -2676,7 +2672,7 @@ mono_gchandle_is_in_domain (guint32 gchandle, MonoDomain *domain)
 
 /**
  * mono_gchandle_free_domain:
- * @unloading: domain that is unloading
+ * \param unloading domain that is unloading
  *
  * Function used internally to cleanup any GC handle for objects belonging
  * to the specified domain during appdomain unload.

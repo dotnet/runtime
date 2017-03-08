@@ -1099,8 +1099,7 @@ mono_custom_attrs_from_index (MonoImage *image, guint32 idx)
 }
 /**
  * mono_custom_attrs_from_index_checked:
- *
- * Returns: NULL if no attributes are found.  On error returns NULL and sets @error.
+ * \returns NULL if no attributes are found.  On error returns NULL and sets \p error.
  */
 MonoCustomAttrInfo*
 mono_custom_attrs_from_index_checked (MonoImage *image, guint32 idx, gboolean ignore_missing, MonoError *error)
@@ -1361,12 +1360,12 @@ mono_custom_attrs_from_field_checked (MonoClass *klass, MonoClassField *field, M
 
 /**
  * mono_custom_attrs_from_param:
- * @method: handle to the method that we want to retrieve custom parameter information from
- * @param: parameter number, where zero represent the return value, and one is the first parameter in the method
+ * \param method handle to the method that we want to retrieve custom parameter information from
+ * \param param parameter number, where zero represent the return value, and one is the first parameter in the method
  *
  * The result must be released with mono_custom_attrs_free().
  *
- * Returns: the custom attribute object for the specified parameter, or NULL if there are none.
+ * \returns the custom attribute object for the specified parameter, or NULL if there are none.
  */
 MonoCustomAttrInfo*
 mono_custom_attrs_from_param (MonoMethod *method, guint32 param)
@@ -1379,13 +1378,13 @@ mono_custom_attrs_from_param (MonoMethod *method, guint32 param)
 
 /**
  * mono_custom_attrs_from_param_checked:
- * @method: handle to the method that we want to retrieve custom parameter information from
- * @param: parameter number, where zero represent the return value, and one is the first parameter in the method
- * @error: set on error
+ * \param method handle to the method that we want to retrieve custom parameter information from
+ * \param param parameter number, where zero represent the return value, and one is the first parameter in the method
+ * \param error set on error
  *
  * The result must be released with mono_custom_attrs_free().
  *
- * Returns: the custom attribute object for the specified parameter, or NULL if there are none.  On failure returns NULL and sets @error.
+ * \returns the custom attribute object for the specified parameter, or NULL if there are none.  On failure returns NULL and sets \p error.
  */
 MonoCustomAttrInfo*
 mono_custom_attrs_from_param_checked (MonoMethod *method, guint32 param, MonoError *error)
@@ -1523,13 +1522,11 @@ mono_reflection_get_custom_attrs_info (MonoObject *obj)
 
 /**
  * mono_reflection_get_custom_attrs_info_checked:
- * @obj: a reflection object handle
- * @error: set on error
+ * \param obj a reflection object handle
+ * \param error set on error
  *
- * Return the custom attribute info for attributes defined for the
- * reflection handle @obj. The objects.
- *
- * On failure returns NULL and sets @error.
+ * \returns the custom attribute info for attributes defined for the
+ * reflection handle \p obj. The objects. On failure returns NULL and sets \p error.
  *
  * FIXME this function leaks like a sieve for SRE objects.
  */
@@ -1839,13 +1836,11 @@ custom_attr_class_name_from_method_token (MonoImage *image, guint32 method_token
 
 /**
  * mono_assembly_metadata_foreach_custom_attr:
- * @assembly: the assembly to iterate over
- * @func: the function to call for each custom attribute
- * @user_data: passed to @func
- *
- * Calls @func for each custom attribute type on the given assembly until @func returns TRUE.
+ * \param assembly the assembly to iterate over
+ * \param func the function to call for each custom attribute
+ * \param user_data passed to \p func
+ * Calls \p func for each custom attribute type on the given assembly until \p func returns TRUE.
  * Everything is done using low-level metadata APIs, so it is safe to use during assembly loading.
- *
  */
 void
 mono_assembly_metadata_foreach_custom_attr (MonoAssembly *assembly, MonoAssemblyMetadataCustomAttrIterFunc func, gpointer user_data)

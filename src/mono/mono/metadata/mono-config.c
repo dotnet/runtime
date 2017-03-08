@@ -516,8 +516,7 @@ mono_config_parse_file_with_context (ParseState *state, const char *filename)
 
 /**
  * mono_config_parse_memory:
- * @buffer: a pointer to an string XML representation of the configuration
- *
+ * \param buffer a pointer to an string XML representation of the configuration
  * Parses the configuration from a buffer
  */
 void
@@ -633,10 +632,9 @@ mono_config_for_assembly (MonoImage *assembly)
 
 /**
  * mono_config_parse:
- * @filename: the filename to load the configuration variables from.
- *
+ * \param filename the filename to load the configuration variables from.
  * Pass a NULL filename to parse the default config files
- * (or the file in the MONO_CONFIG env var).
+ * (or the file in the \c MONO_CONFIG env var).
  */
 void
 mono_config_parse (const char *filename) {

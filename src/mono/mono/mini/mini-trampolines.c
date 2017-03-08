@@ -68,8 +68,8 @@ rgctx_tramp_info_hash (gconstpointer data)
 
 /**
  * mono_create_static_rgctx_trampoline:
- * @m: the mono method to create a trampoline for
- * @addr: the address to jump to (where the compiled code for M lives)
+ * \param m the mono method to create a trampoline for
+ * \param addr the address to jump to (where the compiled code for M lives)
  *
  * Creates a static rgctx trampoline for M which branches to ADDR which should
  * point to the compiled code of M.
@@ -83,7 +83,7 @@ rgctx_tramp_info_hash (gconstpointer data)
  *
  * On PPC addr should be an ftnptr and the return value is an ftnptr too.
  *
- * Returns the generated static rgctx trampoline.
+ * \returns the generated static rgctx trampoline.
  */
 gpointer
 mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer addr)

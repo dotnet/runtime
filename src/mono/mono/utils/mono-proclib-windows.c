@@ -21,8 +21,7 @@ mono_process_current_pid ()
 
 /**
  * mono_cpu_count:
- *
- * Return the number of processors on the system.
+ * \returns the number of processors on the system.
  */
 int
 mono_cpu_count (void)

@@ -288,18 +288,18 @@ mono_hazard_pointer_restore_for_signal_handler (int small_id)
 
 /**
  * mono_thread_hazardous_try_free:
- * @p: the pointer to free
- * @free_func: the function that can free the pointer
+ * \param p the pointer to free
+ * \param free_func the function that can free the pointer
  *
- * If @p is not a hazardous pointer it will be immediately freed by calling @free_func.
+ * If \p p is not a hazardous pointer it will be immediately freed by calling \p free_func.
  * Otherwise it will be queued for later.
  *
- * Use this function if @free_func can ALWAYS be called in the context where this function is being called.
+ * Use this function if \p free_func can ALWAYS be called in the context where this function is being called.
  *
  * This function doesn't pump the free queue so try to accommodate a call at an appropriate time.
  * See mono_thread_hazardous_try_free_some for when it's appropriate.
  *
- * Return: TRUE if @p was free or FALSE if it was queued.
+ * \returns TRUE if \p p was free or FALSE if it was queued.
  */
 gboolean
 mono_thread_hazardous_try_free (gpointer p, MonoHazardousFreeFunc free_func)
@@ -315,14 +315,12 @@ mono_thread_hazardous_try_free (gpointer p, MonoHazardousFreeFunc free_func)
 
 /**
  * mono_thread_hazardous_queue_free:
- * @p: the pointer to free
- * @free_func: the function that can free the pointer
- *
- * Queue @p to be freed later. @p will be freed once the hazard free queue is pumped.
+ * \param p the pointer to free
+ * \param free_func the function that can free the pointer
+ * Queue \p p to be freed later. \p p will be freed once the hazard free queue is pumped.
  *
  * This function doesn't pump the free queue so try to accommodate a call at an appropriate time.
- * See mono_thread_hazardous_try_free_some for when it's appropriate.
- *
+ * See \c mono_thread_hazardous_try_free_some for when it's appropriate.
  */
 void
 mono_thread_hazardous_queue_free (gpointer p, MonoHazardousFreeFunc free_func)

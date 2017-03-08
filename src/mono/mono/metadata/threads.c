@@ -2322,10 +2322,8 @@ void ves_icall_System_Threading_Thread_Interrupt_internal (MonoThread *this_obj)
 
 /**
  * mono_thread_current_check_pending_interrupt:
- *
  * Checks if there's a interruption request and set the pending exception if so.
- *
- * @returns true if a pending exception was set
+ * \returns true if a pending exception was set
  */
 gboolean
 mono_thread_current_check_pending_interrupt (void)
@@ -2403,10 +2401,8 @@ ves_icall_System_Threading_Thread_Abort (MonoInternalThread *thread, MonoObject 
 
 /**
  * mono_thread_internal_abort:
- *
- * Request thread @thread to be aborted.
- *
- * @thread MUST NOT be the current thread.
+ * Request thread \p thread to be aborted.
+ * \p thread MUST NOT be the current thread.
  */
 void
 mono_thread_internal_abort (MonoInternalThread *thread)
@@ -4623,10 +4619,8 @@ mono_thread_set_state (MonoInternalThread *thread, MonoThreadState state)
 
 /**
  * mono_thread_test_and_set_state:
- *
- * Test if current state of @thread include @test. If it does not, OR @set into the state.
- *
- * Returns TRUE is @set was OR'd in.
+ * Test if current state of \p thread include \p test. If it does not, OR \p set into the state.
+ * \returns TRUE if \p set was OR'd in.
  */
 gboolean
 mono_thread_test_and_set_state (MonoInternalThread *thread, MonoThreadState test, MonoThreadState set)

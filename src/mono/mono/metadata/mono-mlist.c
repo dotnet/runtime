@@ -34,9 +34,8 @@ static MonoVTable *monolist_item_vtable = NULL;
 
 /**
  * mono_mlist_alloc:
- * @data: object to use as data
- *
- * Allocates a new managed list node with @data as the contents.
+ * \param data object to use as data
+ * Allocates a new managed list node with \p data as the contents.
  * A managed list node also represents a singly-linked list.
  * Managed lists are garbage collected, so there is no free routine
  * and the user is required to keep references to the managed list
@@ -53,15 +52,14 @@ mono_mlist_alloc (MonoObject *data)
 
 /**
  * mono_mlist_alloc_checked:
- * @data: object to use as data
- * @error: set on error
- *
- * Allocates a new managed list node with @data as the contents.  A
+ * \param data object to use as data
+ * \param error set on error
+ * Allocates a new managed list node with \p data as the contents.  A
  * managed list node also represents a singly-linked list.  Managed
  * lists are garbage collected, so there is no free routine and the
  * user is required to keep references to the managed list to prevent
  * it from being garbage collected. On failure returns NULL and sets
- * @error.
+ * \p error.
  */
 MonoMList*
 mono_mlist_alloc_checked (MonoObject *data, MonoError *error)
@@ -81,9 +79,8 @@ mono_mlist_alloc_checked (MonoObject *data, MonoError *error)
 
 /**
  * mono_mlist_get_data:
- * @list: the managed list node
- *
- * Get the object stored in the list node @list.
+ * \param list the managed list node
+ * Get the object stored in the list node \p list.
  */
 MonoObject*
 mono_mlist_get_data (MonoMList* list)
@@ -93,9 +90,8 @@ mono_mlist_get_data (MonoMList* list)
 
 /**
  * mono_mlist_set_data:
- * @list: the managed list node
- *
- * Set the object content in the list node @list.
+ * \param list the managed list node
+ * Set the object content in the list node \p list.
  */
 void
 mono_mlist_set_data (MonoMList* list, MonoObject *data)
@@ -105,10 +101,9 @@ mono_mlist_set_data (MonoMList* list, MonoObject *data)
 
 /**
  * mono_mlist_set_next:
- * @list: a managed list node
- * @next: list node that will be next for the @list node.
- *
- * Set next node for @list to @next.
+ * \param list a managed list node
+ * \param next list node that will be next for the \p list node.
+ * Set next node for \p list to \p next.
  */
 MonoMList *
 mono_mlist_set_next (MonoMList* list, MonoMList *next)
@@ -122,9 +117,8 @@ mono_mlist_set_next (MonoMList* list, MonoMList *next)
 
 /**
  * mono_mlist_length:
- * @list: the managed list
- *
- * Get the number of items in the list @list.
+ * \param list the managed list
+ * Get the number of items in the list \p list.
  * Since managed lists are singly-linked, this operation takes O(n) time.
  */
 int
@@ -140,9 +134,8 @@ mono_mlist_length (MonoMList* list)
 
 /**
  * mono_mlist_next:
- * @list: the managed list node
- *
- * Returns the next managed list node starting from @list.
+ * \param list the managed list node
+ * Returns the next managed list node starting from \p list.
  */
 MonoMList*
 mono_mlist_next (MonoMList* list)
@@ -152,9 +145,8 @@ mono_mlist_next (MonoMList* list)
 
 /**
  * mono_mlist_last:
- * @list: the managed list node
- *
- * Returns the last managed list node in list @list.
+ * \param list the managed list node
+ * Returns the last managed list node in list \p list.
  * Since managed lists are singly-linked, this operation takes O(n) time.
  */
 MonoMList*
@@ -170,11 +162,10 @@ mono_mlist_last (MonoMList* list)
 
 /**
  * mono_mlist_prepend:
- * @list: the managed list
- * @data: the object to add to the list
- *
- * Allocate a new list node with @data as content and prepend it
- * to the list @list. @list can be NULL.
+ * \param list the managed list
+ * \param data the object to add to the list
+ * Allocate a new list node with \p data as content and prepend it
+ * to the list \p list. \p list can be NULL.
  */
 MonoMList*
 mono_mlist_prepend (MonoMList* list, MonoObject *data)
@@ -187,13 +178,12 @@ mono_mlist_prepend (MonoMList* list, MonoObject *data)
 
 /**
  * mono_mlist_prepend_checked:
- * @list: the managed list
- * @data: the object to add to the list
- * @error: set on error
- *
- * Allocate a new list node with @data as content and prepend it to
- * the list @list. @list can be NULL. On failure returns NULL and sets
- * @error.
+ * \param list the managed list
+ * \param data the object to add to the list
+ * \param error set on error
+ * Allocate a new list node with \p data as content and prepend it to
+ * the list \p list. \p list can be NULL. On failure returns NULL and sets
+ * \p error.
  */
 MonoMList*
 mono_mlist_prepend_checked (MonoMList* list, MonoObject *data, MonoError *error)
@@ -209,11 +199,10 @@ mono_mlist_prepend_checked (MonoMList* list, MonoObject *data, MonoError *error)
 
 /**
  * mono_mlist_append:
- * @list: the managed list
- * @data: the object to add to the list
- *
- * Allocate a new list node with @data as content and append it
- * to the list @list. @list can be NULL.
+ * \param list the managed list
+ * \param data the object to add to the list
+ * Allocate a new list node with \p data as content and append it
+ * to the list \p list. \p list can be NULL.
  * Since managed lists are singly-linked, this operation takes O(n) time.
  */
 MonoMList*
@@ -227,14 +216,13 @@ mono_mlist_append (MonoMList* list, MonoObject *data)
 
 /**
  * mono_mlist_append_checked:
- * @list: the managed list
- * @data: the object to add to the list
- * @error: set on error
- *
- * Allocate a new list node with @data as content and append it
- * to the list @list. @list can be NULL.
+ * \param list the managed list
+ * \param data the object to add to the list
+ * \param error set on error
+ * Allocate a new list node with \p data as content and append it
+ * to the list \p list. \p list can be NULL.
  * Since managed lists are singly-linked, this operation takes O(n) time.
- * On failure returns NULL and sets @error.
+ * On failure returns NULL and sets \p error.
  */
 MonoMList*
 mono_mlist_append_checked (MonoMList* list, MonoObject *data, MonoError *error)
@@ -267,10 +255,9 @@ find_prev (MonoMList* list, MonoMList *item)
 
 /**
  * mono_mlist_remove_item:
- * @list: the managed list
- * @data: the object to remove from the list
- *
- * Remove the list node @item from the managed list @list.
+ * \param list the managed list
+ * \param data the object to remove from the list
+ * Remove the list node \p item from the managed list \p list.
  * Since managed lists are singly-linked, this operation can take O(n) time.
  */
 MonoMList*

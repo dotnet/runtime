@@ -4788,17 +4788,18 @@ concat_two_strings_with_zero (MonoImage *image, const char *s1, const char *s2)
  * mono_class_init:
  * \param klass: the class to initialize
  *
- *   Compute the instance_size, class_size and other infos that cannot be 
+ * Compute the instance_size, class_size and other infos that cannot be 
  * computed at mono_class_get() time. Also compute vtable_size if possible. 
- * Returns TRUE on success or FALSE if there was a problem in loading
- * the type (incorrect assemblies, missing assemblies, methods, etc).
- * Initializes the following fields in \param klass:
+ * Initializes the following fields in \p klass:
  * - all the fields initialized by mono_class_init_sizes ()
  * - has_cctor
  * - ghcimpl
  * - inited
  *
  * LOCKING: Acquires the loader lock.
+ *
+ * \returns TRUE on success or FALSE if there was a problem in loading
+ * the type (incorrect assemblies, missing assemblies, methods, etc).
  */
 gboolean
 mono_class_init (MonoClass *klass)
@@ -6318,7 +6319,6 @@ mono_fnptr_class_get (MonoMethodSignature *sig)
 /**
  * mono_class_from_mono_type:
  * \param type describes the type to return
- *
  * \returns a MonoClass for the specified MonoType, the value is never NULL.
  */
 MonoClass *
@@ -7344,7 +7344,6 @@ mono_type_get_checked (MonoImage *image, guint32 type_token, MonoGenericContext 
  * mono_class_get:
  * \param image image where the class token will be looked up.
  * \param type_token a type token from the image
- *
  * \returns the MonoClass with the given \p type_token on the \p image
  */
 MonoClass *
@@ -8505,8 +8504,7 @@ mono_class_needs_cctor_run (MonoClass *klass, MonoMethod *caller)
  * mono_class_array_element_size:
  * \param klass
  *
- * \returns The number of bytes an element of type \p klass
- * uses when stored into an array.
+ * \returns The number of bytes an element of type \p klass uses when stored into an array.
  */
 gint32
 mono_class_array_element_size (MonoClass *klass)
@@ -9606,9 +9604,8 @@ mono_event_get_raise_method (MonoEvent *event)
 
 /**
  * mono_event_get_parent:
- * @event: the MonoEvent to act on.
- *
- * Returns: The MonoClass where the event is defined.
+ * \param event the MonoEvent to act on.
+ * \returns The \c MonoClass where the event is defined.
  */
 MonoClass*
 mono_event_get_parent (MonoEvent *event)
@@ -9618,12 +9615,12 @@ mono_event_get_parent (MonoEvent *event)
 
 /**
  * mono_event_get_flags
- * @event: the MonoEvent to act on.
+ * \param event the \c MonoEvent to act on.
  *
  * The metadata flags for an event are encoded using the
- * EVENT_* constants.  See the tabledefs.h file for details.
+ * \c EVENT_* constants.  See the tabledefs.h file for details.
  *
- * Returns: The flags for the event.
+ * \returns The flags for the event.
  */
 guint32
 mono_event_get_flags (MonoEvent *event)
@@ -9633,9 +9630,9 @@ mono_event_get_flags (MonoEvent *event)
 
 /**
  * mono_class_get_method_from_name:
- * @klass: where to look for the method
- * @name: name of the method
- * @param_count: number of parameters. -1 for any number.
+ * \param klass where to look for the method
+ * \param name name of the method
+ * \param param_count number of parameters. -1 for any number.
  *
  * Obtains a MonoMethod with a given name and number of parameters.
  * It only works if there are no multiple signatures for any given method name.
@@ -9691,12 +9688,12 @@ find_method_in_metadata (MonoClass *klass, const char *name, int param_count, in
 
 /**
  * mono_class_get_method_from_name_flags:
- * @klass: where to look for the method
- * @name_space: name of the method
- * @param_count: number of parameters. -1 for any number.
- * @flags: flags which must be set in the method
+ * \param klass where to look for the method
+ * \param name_space name of the method
+ * \param param_count number of parameters. -1 for any number.
+ * \param flags flags which must be set in the method
  *
- * Obtains a MonoMethod with a given name and number of parameters.
+ * Obtains a \c MonoMethod with a given name and number of parameters.
  * It only works if there are no multiple signatures for any given method name.
  */
 MonoMethod *
@@ -9749,9 +9746,9 @@ mono_class_get_method_from_name_flags (MonoClass *klass, const char *name, int p
 
 /**
  * mono_class_set_failure:
- * @klass: class in which the failure was detected
- * @ex_type: the kind of exception/error to be thrown (later)
- * @ex_data: exception data (specific to each type of exception/error)
+ * \param klass class in which the failure was detected
+ * \param ex_type the kind of exception/error to be thrown (later)
+ * \param ex_data exception data (specific to each type of exception/error)
  *
  * Keep a detected failure informations in the class for later processing.
  * Note that only the first failure is kept.
@@ -9784,16 +9781,16 @@ mono_class_has_failure (const MonoClass *klass)
 
 /**
  * mono_class_set_type_load_failure:
- * @klass: class in which the failure was detected
- * @fmt: Printf-style error message string.
+ * \param klass class in which the failure was detected
+ * \param fmt \c printf -style error message string.
  *
  * Collect detected failure informaion in the class for later processing.
- * The error is stored as a MonoErrorBoxed as with mono_error_set_type_load_class ()
+ * The error is stored as a MonoErrorBoxed as with mono_error_set_type_load_class()
  * Note that only the first failure is kept.
  *
- * Returns FALSE if a failure was already set on the class, or TRUE otherwise.
- *
  * LOCKING: Acquires the loader lock.
+ *
+ * \returns FALSE if a failure was already set on the class, or TRUE otherwise.
  */
 gboolean
 mono_class_set_type_load_failure (MonoClass *klass, const char * fmt, ...)
@@ -9867,9 +9864,9 @@ mono_classes_cleanup (void)
 
 /**
  * mono_class_get_exception_for_failure:
- * @klass: class in which the failure was detected
+ * \param klass class in which the failure was detected
  *
- * Return a constructed MonoException than the caller can then throw
+ * \returns a constructed MonoException than the caller can then throw
  * using mono_raise_exception - or NULL if no failure is present (or
  * doesn't result in an exception).
  */
@@ -10156,12 +10153,12 @@ can_access_member (MonoClass *access_klass, MonoClass *member_klass, MonoClass* 
 
 /**
  * mono_method_can_access_field:
- * @method: Method that will attempt to access the field
- * @field: the field to access
+ * \param method Method that will attempt to access the field
+ * \param field the field to access
  *
  * Used to determine if a method is allowed to access the specified field.
  *
- * Returns: TRUE if the given @method is allowed to access the @field while following
+ * \returns TRUE if the given \p method is allowed to access the \p field while following
  * the accessibility rules of the CLI.
  */
 gboolean
@@ -10183,12 +10180,12 @@ mono_method_can_access_field (MonoMethod *method, MonoClassField *field)
 
 /**
  * mono_method_can_access_method:
- * @method: Method that will attempt to access the other method
- * @called: the method that we want to probe for accessibility.
+ * \param method Method that will attempt to access the other method
+ * \param called the method that we want to probe for accessibility.
  *
- * Used to determine if the @method is allowed to access the specified @called method.
+ * Used to determine if the \p method is allowed to access the specified \p called method.
  *
- * Returns: TRUE if the given @method is allowed to invoke the @called while following
+ * \returns TRUE if the given \p method is allowed to invoke the \p called while following
  * the accessibility rules of the CLI.
  */
 gboolean
@@ -10321,9 +10318,8 @@ mono_class_can_access_class (MonoClass *source_class, MonoClass *target_class)
 
 /**
  * mono_type_is_valid_enum_basetype:
- * @type: The MonoType to check
- *
- * Returns: TRUE if the type can be used as the basetype of an enum
+ * \param type The MonoType to check
+ * \returns TRUE if the type can be used as the basetype of an enum
  */
 gboolean mono_type_is_valid_enum_basetype (MonoType * type) {
 	switch (type->type) {
@@ -10347,15 +10343,15 @@ gboolean mono_type_is_valid_enum_basetype (MonoType * type) {
 
 /**
  * mono_class_is_valid_enum:
- * @klass: An enum class to be validated
+ * \param klass An enum class to be validated
  *
  * This method verify the required properties an enum should have.
- *  
- * Returns: TRUE if the informed enum class is valid 
  *
  * FIXME: TypeBuilder enums are allowed to implement interfaces, but since they cannot have methods, only empty interfaces are possible
  * FIXME: enum types are not allowed to have a cctor, but mono_reflection_create_runtime_class sets has_cctor to 1 for all types
  * FIXME: TypeBuilder enums can have any kind of static fields, but the spec is very explicit about that (P II 14.3)
+ *
+ * \returns TRUE if the informed enum class is valid 
  */
 gboolean
 mono_class_is_valid_enum (MonoClass *klass)
@@ -10572,7 +10568,7 @@ mono_field_resolve_flags (MonoClassField *field)
 
 /**
  * mono_class_get_fields_lazy:
- * @klass: the MonoClass to act on
+ * \param klass the MonoClass to act on
  *
  * This routine is an iterator routine for retrieving the fields in a class.
  * Only minimal information about fields are loaded. Accessors must be used
@@ -10582,7 +10578,7 @@ mono_field_resolve_flags (MonoClassField *field)
  * iterate over all of the elements.  When no more values are
  * available, the return value is NULL.
  *
- * Returns: a @MonoClassField* on each iteration, or NULL when no more fields are available.
+ * \returns a \c MonoClassField* on each iteration, or NULL when no more fields are available.
  */
 MonoClassField*
 mono_class_get_fields_lazy (MonoClass* klass, gpointer *iter)
@@ -10623,17 +10619,17 @@ GENERATE_TRY_GET_CLASS_WITH_CACHE (safehandle, "System.Runtime.InteropServices",
 
 /**
  * mono_method_get_base_method:
- * @method: a method
- * @definition: if true, get the definition
- * @error: set on failure
+ * \param method a method
+ * \param definition if true, get the definition
+ * \param error set on failure
  *
  * Given a virtual method associated with a subclass, return the corresponding
- * method from an ancestor.  If @definition is FALSE, returns the method in the
- * superclass of the given method.  If @definition is TRUE, return the method
+ * method from an ancestor.  If \p definition is FALSE, returns the method in the
+ * superclass of the given method.  If \p definition is TRUE, return the method
  * in the ancestor class where it was first declared.  The type arguments will
  * be inflated in the ancestor classes.  If the method is not associated with a
  * class, or isn't virtual, returns the method itself.  On failure returns NULL
- * and sets @error.
+ * and sets \p error.
  */
 MonoMethod*
 mono_method_get_base_method (MonoMethod *method, gboolean definition, MonoError *error)

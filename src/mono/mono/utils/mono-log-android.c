@@ -16,12 +16,10 @@
 #include "mono-logger-internals.h"
 
 /**
- * mono_log_open_logcat
- *
- *	Open access to Android logcat (no-op)
- *
- * 	@path - Not used
- * 	@userData - Not used
+ * mono_log_open_logcat:
+ * \param path Unused
+ * \param userData Unused
+ * Open access to Android logcat (no-op)
  */   
 void
 mono_log_open_logcat (const char *path, void *userData)
@@ -30,14 +28,12 @@ mono_log_open_logcat (const char *path, void *userData)
 }
 
 /**
- * mono_log_write_logcat
- *
- * 	Write data to Android logcat.
- *
- * 	@domain - Identifier string
- * 	@level - Logging level flags
- * 	@format - Printf format string
- * 	@vargs - Variable argument list
+ * mono_log_write_logcat:
+ * \param domain Identifier string
+ * \param level Logging level flags
+ * \param format \c printf format string
+ * \param vargs Variable argument list
+ * Write data to Android logcat.
  */
 void
 mono_log_write_logcat (const char *log_domain, GLogLevelFlags level, mono_bool hdr, const char *message)

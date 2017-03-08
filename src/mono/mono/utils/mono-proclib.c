@@ -83,10 +83,9 @@ CPU_COUNT(cpu_set_t *set)
 
 /**
  * mono_process_list:
- * @size: a pointer to a location where the size of the returned array is stored
- *
- * Return an array of pid values for the processes currently running on the system.
- * The size of the array is stored in @size.
+ * \param size a pointer to a location where the size of the returned array is stored
+ * \returns an array of pid values for the processes currently running on the system.
+ * The size of the array is stored in \p size.
  */
 gpointer*
 mono_process_list (int *size)
@@ -290,12 +289,11 @@ sysctl_kinfo_proc (gpointer pid, KINFO_PROC* processi)
 
 /**
  * mono_process_get_name:
- * @pid: pid of the process
- * @buf: byte buffer where to store the name of the prcoess
- * @len: size of the buffer @buf
- *
- * Return the name of the process identified by @pid, storing it
- * inside @buf for a maximum of len bytes (including the terminating 0).
+ * \param pid pid of the process
+ * \param buf byte buffer where to store the name of the prcoess
+ * \param len size of the buffer \p buf
+ * \returns the name of the process identified by \p pid, storing it
+ * inside \p buf for a maximum of len bytes (including the terminating 0).
  */
 char*
 mono_process_get_name (gpointer pid, char *buf, int len)
@@ -602,11 +600,10 @@ get_pid_status_item (int pid, const char *item, MonoProcessError *error, int mul
 
 /**
  * mono_process_get_data:
- * @pid: pid of the process
- * @data: description of data to return
- *
- * Return a data item of a process like user time, memory use etc,
- * according to the @data argumet.
+ * \param pid pid of the process
+ * \param data description of data to return
+ * \returns a data item of a process like user time, memory use etc,
+ * according to the \p data argumet.
  */
 gint64
 mono_process_get_data_with_error (gpointer pid, MonoProcessData data, MonoProcessError *error)
@@ -679,8 +676,7 @@ mono_process_current_pid ()
 
 /**
  * mono_cpu_count:
- *
- * Return the number of processors on the system.
+ * \returns the number of processors on the system.
  */
 #ifndef HOST_WIN32
 int
@@ -857,9 +853,8 @@ get_cpu_times (int cpu_id, gint64 *user, gint64 *systemt, gint64 *irq, gint64 *s
 
 /**
  * mono_cpu_get_data:
- * @cpu_id: processor number or -1 to get a summary of all the processors
- * @data: type of data to retrieve
- *
+ * \param cpu_id processor number or -1 to get a summary of all the processors
+ * \param data type of data to retrieve
  * Get data about a processor on the system, like time spent in user space or idle time.
  */
 gint64

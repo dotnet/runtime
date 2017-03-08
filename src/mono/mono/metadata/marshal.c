@@ -986,11 +986,11 @@ mono_string_utf16_to_builder (MonoStringBuilder *sb, gunichar2 *text)
 
 /**
  * mono_string_builder_to_utf8:
- * @sb: the string builder
+ * \param sb the string builder
  *
- * Converts to utf8 the contents of the MonoStringBuilder.
+ * Converts to utf8 the contents of the \c MonoStringBuilder .
  *
- * Returns: a utf8 string with the contents of the StringBuilder.
+ * \returns a utf8 string with the contents of the \c StringBuilder .
  *
  * The return value must be released with mono_marshal_free.
  *
@@ -1037,11 +1037,11 @@ mono_string_builder_to_utf8 (MonoStringBuilder *sb)
 
 /**
  * mono_string_builder_to_utf16:
- * @sb: the string builder
+ * \param sb the string builder
  *
- * Converts to utf16 the contents of the MonoStringBuilder.
+ * Converts to utf16 the contents of the \c MonoStringBuilder .
  *
- * Returns: a utf16 string with the contents of the StringBuilder.
+ * Returns: a utf16 string with the contents of the \c StringBuilder .
  *
  * The return value must be released with mono_marshal_free.
  *
@@ -1114,12 +1114,12 @@ mono_string_to_ansibstr (MonoString *string_obj)
 
 /**
  * mono_string_to_byvalstr:
- * @dst: Where to store the null-terminated utf8 decoded string.
- * @src: the MonoString to copy.
- * @size: the maximum number of bytes to copy.
+ * \param dst Where to store the null-terminated utf8 decoded string.
+ * \param src the \c MonoString to copy.
+ * \param size the maximum number of bytes to copy.
  *
- * Copies the MonoString pointed to by @src as a utf8 string
- * into @dst, it copies at most @size bytes into the destination.
+ * Copies the \c MonoString pointed to by \p src as a utf8 string
+ * into \p dst, it copies at most \p size bytes into the destination.
  */
 void
 mono_string_to_byvalstr (gpointer dst, MonoString *src, int size)
@@ -1147,12 +1147,12 @@ mono_string_to_byvalstr (gpointer dst, MonoString *src, int size)
 
 /**
  * mono_string_to_byvalwstr:
- * @dst: Where to store the null-terminated utf16 decoded string.
- * @src: the MonoString to copy.
- * @size: the maximum number of wide characters to copy (each consumes 2 bytes)
+ * \param dst Where to store the null-terminated utf16 decoded string.
+ * \param src the \c MonoString to copy.
+ * \param size the maximum number of wide characters to copy (each consumes 2 bytes)
  *
- * Copies the MonoString pointed to by @src as a utf16 string into
- * @dst, it copies at most @size bytes into the destination (including
+ * Copies the \c MonoString pointed to by \p src as a utf16 string into
+ * \p dst, it copies at most \p size bytes into the destination (including
  * a terminating 16-bit zero terminator).
  */
 void
@@ -7533,16 +7533,16 @@ signature_param_uses_handles (MonoMethodSignature *sig, int param)
 #ifndef DISABLE_JIT
 /**
  * mono_marshal_emit_native_wrapper:
- * @image: the image to use for looking up custom marshallers
- * @sig: The signature of the native function
- * @piinfo: Marshalling information
- * @mspecs: Marshalling information
- * @aot: whenever the created method will be compiled by the AOT compiler
- * @method: if non-NULL, the pinvoke method to call
- * @check_exceptions: Whenever to check for pending exceptions after the native call
- * @func_param: the function to call is passed as a boxed IntPtr as the first parameter
+ * \param image the image to use for looking up custom marshallers
+ * \param sig The signature of the native function
+ * \param piinfo Marshalling information
+ * \param mspecs Marshalling information
+ * \param aot whenever the created method will be compiled by the AOT compiler
+ * \param method if non-NULL, the pinvoke method to call
+ * \param check_exceptions Whenever to check for pending exceptions after the native call
+ * \param func_param the function to call is passed as a boxed IntPtr as the first parameter
  *
- * generates IL code for the pinvoke wrapper, the generated code calls @func.
+ * generates IL code for the pinvoke wrapper, the generated code calls \p func .
  */
 void
 mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodPInvoke *piinfo, MonoMarshalSpec **mspecs, gpointer func, gboolean aot, gboolean check_exceptions, gboolean func_param)
@@ -7818,8 +7818,8 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 
 /**
  * mono_marshal_get_native_wrapper:
- * @method: The MonoMethod to wrap.
- * @check_exceptions: Whenever to check for pending exceptions
+ * \param method The MonoMethod to wrap.
+ * \param check_exceptions Whenever to check for pending exceptions
  *
  * generates IL code for the pinvoke wrapper (the generated method
  * calls the unmanaged code in piinfo->addr)
@@ -8229,11 +8229,11 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 
 /**
  * mono_marshal_get_native_func_wrapper:
- * @image: The image to use for memory allocation and for looking up custom marshallers.
- * @sig: The signature of the function
- * @func: The native function to wrap
+ * \param image The image to use for memory allocation and for looking up custom marshallers.
+ * \param sig The signature of the function
+ * \param func The native function to wrap
  *
- *   Returns a wrapper method around native functions, similar to the pinvoke
+ * \returns a wrapper method around native functions, similar to the pinvoke
  * wrapper.
  */
 MonoMethod *
@@ -9210,7 +9210,7 @@ mono_marshal_get_isinst_with_cache (void)
 
 /**
  * mono_marshal_get_struct_to_ptr:
- * @klass:
+ * \param klass \c MonoClass
  *
  * generates IL code for StructureToPtr (object structure, IntPtr ptr, bool fDeleteOld)
  */
@@ -9284,7 +9284,7 @@ mono_marshal_get_struct_to_ptr (MonoClass *klass)
 
 /**
  * mono_marshal_get_ptr_to_struct:
- * @klass:
+ * \param klass \c MonoClass
  *
  * generates IL code for PtrToStructure (IntPtr src, object structure)
  */
@@ -10387,13 +10387,13 @@ static int elem_addr_cache_next = 0;
 
 /**
  * mono_marshal_get_array_address:
- * @rank: rank of the array type
- * @elem_size: size in bytes of an element of an array.
+ * \param rank rank of the array type
+ * \param elem_size size in bytes of an element of an array.
  *
  * Returns a MonoMethod that implements the code to get the address
- * of an element in a multi-dimenasional array of @rank dimensions.
+ * of an element in a multi-dimenasional array of \p rank dimensions.
  * The returned method takes an array as the first argument and then
- * @rank indexes for the @rank dimensions.
+ * \p rank indexes for the \p rank dimensions.
  * If ELEM_SIZE is 0, read the array size from the array object.
  */
 MonoMethod*
@@ -11515,9 +11515,8 @@ mono_marshal_load_type_info (MonoClass* klass)
 
 /**
  * mono_class_native_size:
- * @klass: a class 
- * 
- * Returns: the native size of an object instance (when marshaled 
+ * \param klass a class 
+ * \returns the native size of an object instance (when marshaled 
  * to unmanaged code) 
  */
 gint32

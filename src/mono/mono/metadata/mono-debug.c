@@ -331,8 +331,8 @@ mono_debug_lookup_method_internal (MonoMethod *method)
 /**
  * mono_debug_lookup_method:
  *
- * Lookup symbol file information for the method @method.  The returned
- * `MonoDebugMethodInfo' is a private structure, but it can be passed to
+ * Lookup symbol file information for the method \p method.  The returned
+ * \c MonoDebugMethodInfo is a private structure, but it can be passed to
  * mono_debug_symfile_lookup_location().
  */
 MonoDebugMethodInfo *
@@ -738,12 +738,10 @@ mono_debug_il_offset_from_address (MonoMethod *method, MonoDomain *domain, guint
 
 /**
  * mono_debug_lookup_source_location:
- * @address: Native offset within the @method's machine code.
- *
+ * \param address Native offset within the \p method's machine code.
  * Lookup the source code corresponding to the machine instruction located at
- * native offset @address within @method.
- *
- * The returned `MonoDebugSourceLocation' contains both file / line number
+ * native offset \p address within \p method.
+ * The returned \c MonoDebugSourceLocation contains both file / line number
  * information and the corresponding IL offset.  It must be freed by
  * mono_debug_free_source_location().
  */
@@ -897,9 +895,8 @@ mono_debug_free_method_async_debug_info (MonoDebugMethodAsyncInfo *info)
 
 /**
  * mono_debug_free_source_location:
- * @location: A `MonoDebugSourceLocation'.
- *
- * Frees the @location.
+ * \param location A \c MonoDebugSourceLocation
+ * Frees the \p location.
  */
 void
 mono_debug_free_source_location (MonoDebugSourceLocation *location)
@@ -920,8 +917,7 @@ mono_install_get_seq_point (MonoGetSeqPointFunc func)
 
 /**
  * mono_debug_print_stack_frame:
- * @native_offset: Native offset within the @method's machine code.
- *
+ * \param native_offset Native offset within the \p method's machine code.
  * Conventient wrapper around mono_debug_lookup_source_location() which can be
  * used if you only want to use the location to print a stack frame.
  */

@@ -440,7 +440,6 @@ mono_runtime_quit ()
  * mono_domain_create_appdomain:
  * \param friendly_name The friendly name of the appdomain to create
  * \param configuration_file The configuration file to initialize the appdomain with
- * 
  * \returns a MonoDomain initialized with the appdomain
  */
 MonoDomain *

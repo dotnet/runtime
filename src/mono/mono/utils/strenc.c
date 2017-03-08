@@ -27,18 +27,17 @@ static const char trailingBytesForUTF8[256] = {
 
 /**
  * mono_unicode_from_external:
- * @in: pointers to the buffer.
- * @bytes: number of bytes in the string.
+ * \param in pointers to the buffer.
+ * \param bytes number of bytes in the string.
+ * Tries to turn a NULL-terminated string into UTF-16.
  *
- * Tries to turn a NULL-terminated string into UTF16.
- *
- * First, see if it's valid UTF8, in which case just turn it directly
- * into UTF16.  Next, run through the colon-separated encodings in
- * MONO_EXTERNAL_ENCODINGS and do an iconv conversion on each,
- * returning the first successful conversion to UTF16.  If no
+ * First, see if it's valid UTF-8, in which case just turn it directly
+ * into UTF-16.  Next, run through the colon-separated encodings in
+ * \c MONO_EXTERNAL_ENCODINGS and do an \c iconv conversion on each,
+ * returning the first successful conversion to UTF-16.  If no
  * conversion succeeds, return NULL.
  *
- * Callers must free the returned string if not NULL. bytes holds the number
+ * Callers must free the returned string if not NULL. \p bytes holds the number
  * of bytes in the returned string, not including the terminator.
  */
 gunichar2 *
@@ -100,21 +99,20 @@ mono_unicode_from_external (const gchar *in, gsize *bytes)
 
 /**
  * mono_utf8_from_external:
- * @in: pointer to the string buffer.
- *
+ * \param in pointer to the string buffer.
  * Tries to turn a NULL-terminated string into UTF8.
  *
- * First, see if it's valid UTF8, in which case there's nothing more
+ * First, see if it's valid UTF-8, in which case there's nothing more
  * to be done.  Next, run through the colon-separated encodings in
- * MONO_EXTERNAL_ENCODINGS and do an iconv conversion on each,
- * returning the first successful conversion to utf8.  If no
+ * \c MONO_EXTERNAL_ENCODINGS and do an \c iconv conversion on each,
+ * returning the first successful conversion to UTF-8.  If no
  * conversion succeeds, return NULL.
  *
  * Callers must free the returned string if not NULL.
  *
- * This function is identical to mono_unicode_from_external, apart
- * from returning utf8 not utf16; it's handy in a few places to work
- * in utf8.
+ * This function is identical to \c mono_unicode_from_external, apart
+ * from returning UTF-8 not UTF-16; it's handy in a few places to work
+ * in UTF-8.
  */
 gchar *mono_utf8_from_external (const gchar *in)
 {
@@ -164,12 +162,10 @@ gchar *mono_utf8_from_external (const gchar *in)
 
 /**
  * mono_unicode_to_external:
- * @uni: an UTF16 string to conver to an external representation.
- *
- * Turns NULL-terminated UTF16 into either UTF8, or the first
- * working item in MONO_EXTERNAL_ENCODINGS if set.  If no conversions
- * work, then UTF8 is returned.
- *
+ * \param uni a UTF-16 string to convert to an external representation.
+ * Turns NULL-terminated UTF-16 into either UTF-8, or the first
+ * working item in \c MONO_EXTERNAL_ENCODINGS if set.  If no conversions
+ * work, then UTF-8 is returned.
  * Callers must free the returned string.
  */
 gchar *mono_unicode_to_external (const gunichar2 *uni)
@@ -218,15 +214,13 @@ gchar *mono_unicode_to_external (const gunichar2 *uni)
 
 /**
  * mono_utf8_validate_and_len
- * @source: Pointer to putative UTF-8 encoded string.
- *
- * Checks @source for being valid UTF-8. @utf is assumed to be
+ * \param source Pointer to putative UTF-8 encoded string.
+ * Checks \p source for being valid UTF-8. \p utf is assumed to be
  * null-terminated.
- *
- * Return value: true if @source is valid.
- * oEnd : will equal the null terminator at the end of the string if valid.
- *            if not valid, it will equal the first charater of the invalid sequence.
- * oLengh : will equal the length to @oEnd
+ * \returns TRUE if \p source is valid.
+ * \p oEnd will equal the null terminator at the end of the string if valid.
+ * if not valid, it will equal the first charater of the invalid sequence.
+ * \p oLength will equal the length to \p oEnd
  **/
 gboolean
 mono_utf8_validate_and_len (const gchar *source, glong* oLength, const gchar** oEnd)
@@ -285,17 +279,18 @@ mono_utf8_validate_and_len (const gchar *source, glong* oLength, const gchar** o
 
 /**
  * mono_utf8_validate_and_len_with_bounds
- * @source: Pointer to putative UTF-8 encoded string.
- * @max_bytes: Max number of bytes that can be decoded. This function returns FALSE if
- * it needs to decode characters beyond that.
+ * \param source: Pointer to putative UTF-8 encoded string.
+ * \param max_bytes: Max number of bytes that can be decoded.
  *
- * Checks @source for being valid UTF-8. @utf is assumed to be
+ * Checks \p source for being valid UTF-8. \p utf is assumed to be
  * null-terminated.
  *
- * Return value: true if @source is valid.
- * oEnd : will equal the null terminator at the end of the string if valid.
- *            if not valid, it will equal the first charater of the invalid sequence.
- * oLengh : will equal the length to @oEnd
+ * This function returns FALSE if it needs to decode characters beyond \p max_bytes.
+ *
+ * \returns TRUE if \p source is valid.
+ * \p oEnd will equal the null terminator at the end of the string if valid.
+ * if not valid, it will equal the first charater of the invalid sequence.
+ * \p oLength will equal the length to \p oEnd
  **/
 gboolean
 mono_utf8_validate_and_len_with_bounds (const gchar *source, glong max_bytes, glong* oLength, const gchar** oEnd)

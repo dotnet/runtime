@@ -55,13 +55,11 @@ mapSyslogLevel(GLogLevelFlags level)
 }
 
 /**
- * mono_log_open_logfile
- * 	
- *	Open the syslog interface specifying that we want our PID recorded 
- *	and that we're using the LOG_USER facility.
- *
- * 	@ident - Identifier: ignored
- * 	@userData - Not used
+ * mono_log_open_syslog:
+ * \param ident Identifier: ignored
+ * \param userData Not used
+ * Open the syslog interface specifying that we want our PID recorded 
+ * and that we're using the \c LOG_USER facility.
  */
 void
 mono_log_open_syslog(const char *ident, void *userData)
@@ -71,14 +69,12 @@ mono_log_open_syslog(const char *ident, void *userData)
 }
 
 /**
- * mono_log_write_syslog
- * 	
- * 	Write data to the log file.
- *
- * 	@domain - Identifier string
- * 	@level - Logging level flags
- * 	@format - Printf format string
- * 	@vargs - Variable argument list
+ * mono_log_write_syslog:
+ * \param domain Identifier string
+ * \param level Logging level flags
+ * \param format \c printf format string
+ * \param vargs Variable argument list
+ * Write data to the log file.
  */
 void
 mono_log_write_syslog(const char *domain, GLogLevelFlags level, mono_bool hdr, const char *message)
@@ -90,9 +86,8 @@ mono_log_write_syslog(const char *domain, GLogLevelFlags level, mono_bool hdr, c
 }
 
 /**
- * mono_log_close_logfile
- *
- * 	Close the log file
+ * mono_log_close_syslog:
+ * Close the log file
  */
 void
 mono_log_close_syslog()

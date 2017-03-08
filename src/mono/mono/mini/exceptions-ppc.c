@@ -454,11 +454,9 @@ mono_arch_get_throw_exception_generic (int size, MonoTrampInfo **info, int corli
 
 /**
  * mono_arch_get_rethrow_exception:
- *
- * Returns a function pointer which can be used to rethrow 
+ * \returns a function pointer which can be used to rethrow 
  * exceptions. The returned function has the following 
  * signature: void (*func) (MonoException *exc); 
- *
  */
 gpointer
 mono_arch_get_rethrow_exception (MonoTrampInfo **info, gboolean aot)
@@ -494,8 +492,7 @@ mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
 
 /**
  * mono_arch_get_throw_corlib_exception:
- *
- * Returns a function pointer which can be used to raise 
+ * \returns a function pointer which can be used to raise 
  * corlib exceptions. The returned function has the following 
  * signature: void (*func) (guint32 ex_token, guint32 offset); 
  * On PPC, we pass the ip instead of the offset
