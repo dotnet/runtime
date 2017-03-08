@@ -18,7 +18,8 @@ namespace SampleDynamicTests
     {
         private delegate T Create<out T>();
 
-        [Fact(Skip = "906219")]
+        [Fact]
+        [ActiveIssue(16748)]
         public static void VarianceTest_RunTest()
         {
             dynamic d1 = (Create<Tiger>)(() => new Tiger());
