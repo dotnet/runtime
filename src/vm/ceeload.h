@@ -1790,6 +1790,7 @@ protected:
 protected:
 #ifndef DACCESS_COMPILE
     virtual void Initialize(AllocMemTracker *pamTracker, LPCWSTR szName = NULL);
+    void InitializeForProfiling();
 #ifdef FEATURE_PREJIT 
     void InitializeNativeImage(AllocMemTracker* pamTracker);
 #endif
@@ -2734,6 +2735,8 @@ public:
     }
 #endif // FEATURE_PREJIT
 
+
+    BOOL            HasNativeOrReadyToRunImage();
     PEImageLayout * GetNativeOrReadyToRunImage();
     PTR_CORCOMPILE_IMPORT_SECTION GetImportSections(COUNT_T *pCount);
     PTR_CORCOMPILE_IMPORT_SECTION GetImportSectionFromIndex(COUNT_T index);
@@ -3066,6 +3069,10 @@ public:
     static void ProfileDataAllocateTokenLists(ProfileEmitter * pEmitter, TokenProfileData* pTokenProfileData);
     HRESULT WriteMethodProfileDataLogFile(bool cleanup);
     static void WriteAllModuleProfileData(bool cleanup);
+    void SetMethodProfileList(CORCOMPILE_METHOD_PROFILE_LIST * value)
+    {
+        m_methodProfileList = value;
+    }
 
     void CreateProfilingData();
     void DeleteProfilingData();
