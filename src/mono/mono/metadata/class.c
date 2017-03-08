@@ -870,7 +870,7 @@ mono_class_inflate_generic_type_with_mempool (MonoImage *image, MonoType *type, 
 	return inflated;
 }
 
-/*
+/**
  * mono_class_inflate_generic_type:
  * \param type a type
  * \param context a generics context
@@ -981,7 +981,7 @@ fail:
 	return res;
 }
 
-/*
+/**
  * mono_class_inflate_generic_method:
  * \param method a generic method
  * \param context a generics context
@@ -4785,7 +4785,7 @@ concat_two_strings_with_zero (MonoImage *image, const char *s1, const char *s2)
 
 /**
  * mono_class_init:
- * \param klass: the class to initialize
+ * \param klass the class to initialize
  *
  * Compute the \c instance_size, \c class_size and other infos that cannot be 
  * computed at \c mono_class_get time. Also compute vtable_size if possible. 
@@ -6667,7 +6667,7 @@ mono_array_class_get (MonoClass *eclass, guint32 rank)
 
 /**
  * mono_class_instance_size:
- * \param klass: a class 
+ * \param klass a class
  *
  * Use to get the size of a class in bytes.
  *
@@ -6810,8 +6810,8 @@ mono_class_get_field (MonoClass *klass, guint32 field_token)
 
 /**
  * mono_class_get_field_from_name:
- * \param klass: the class to lookup the field.
- * \param name: the field name
+ * \param klass the class to lookup the field.
+ * \param name the field name
  *
  * Search the class \p klass and its parents for a field with the name \p name.
  * 
