@@ -17251,10 +17251,30 @@ Compiler::fgWalkResult Compiler::fgMorphStructField(GenTreePtr tree, fgWalkData*
                 tree->gtFlags &= ~GTF_GLOB_REF;
 
                 GenTreePtr parent = fgWalkPre->parentStack->Index(1);
-                if ((parent->gtOper == GT_ASG) && (parent->gtOp.gtOp1 == tree))
+                if (parent->gtOper == GT_ASG)
                 {
-                    tree->gtFlags |= GTF_VAR_DEF;
-                    tree->gtFlags |= GTF_DONT_CSE;
+                    if (parent->gtOp.gtOp1 == tree)
+                    {
+                        tree->gtFlags |= GTF_VAR_DEF;
+                        tree->gtFlags |= GTF_DONT_CSE;
+                    }
+
+                    // Promotion of struct containing struct fields where the field
+                    // is a struct with a single pointer sized scalar type field: in
+                    // this case struct promotion uses the type  of the underlying
+                    // scalar field as the type of struct field instead of recursively
+                    // promoting. This can lead to a case where we have a block-asgn
+                    // with its RHS replaced with a scalar type.  Mark RHS value as
+                    // DONT_CSE so that assertion prop will not do const propagation.
+                    // The reason this is required is that if RHS of a block-asg is a
+                    // constant, then it is interpreted as init-block incorrectly.
+                    //
+                    // TODO - This can also be avoided if we implement recursive struct
+                    // promotion.
+                    if (varTypeIsStruct(parent) && parent->gtOp.gtOp2 == tree && !varTypeIsStruct(tree))
+                    {
+                        tree->gtFlags |= GTF_DONT_CSE;
+                    }
                 }
 #ifdef DEBUG
                 if (verbose)
