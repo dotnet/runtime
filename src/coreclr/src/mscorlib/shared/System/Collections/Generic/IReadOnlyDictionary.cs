@@ -2,16 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*============================================================
-**
-** Interface:  IReadOnlyDictionary<TKey, TValue>
-** 
-** 
-**
-** Purpose: Base interface for read-only generic dictionaries.
-** 
-===========================================================*/
-
 using System;
 using System.Diagnostics.Contracts;
 
