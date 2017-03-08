@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "2.0.0-beta-25022-02",
+    "Microsoft.NETCore.Platforms": "2.0.0-beta-25108-02",
     "xunit": "2.2.0-beta2-build3300",
     "xunit.assert": "2.2.0-beta2-build3300",
     "xunit.core": "2.2.0-beta2-build3300",
