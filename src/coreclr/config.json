@@ -54,6 +54,12 @@
       "values": [],
       "defaultValue": ""
     },
+    "RestoreOptData": {
+      "description": "MsBuild target that restores optimization profile data.",
+      "valueType": "target",
+      "values": [],
+      "defaultValue": ""
+    },
     "RestoreDuringBuild": {
       "description": "Enables/disables package restore.",
       "valueType": "property",
@@ -433,6 +439,14 @@
             "Project": "./build.proj",
             "RestoreDuringBuild": true,
             "RestoreNETCorePlatforms": "default"
+          }
+        },
+        "optdata": {
+          "description": "Restores optimization profile data for the repository.",
+          "settings": {
+            "Project": "./build.proj",
+            "RestoreDuringBuild": true,
+            "RestoreOptData": "default"
           }
         },
         "ab": {
