@@ -1,19 +1,13 @@
 project(compatjit)
 
 # This compatjit.dll is only built if we are not building JIT32 as compatjit.dll.
-# It is the same build as legacyjit.dll, just with a different name, and not
-# built as an altjit.
-
-add_definitions(-DLEGACY_BACKEND)
+# It is a normal JIT build, and only exists so the JIT nuget package can build,
+# with both clrjit.dll and compatjit.dll, if JIT32 is not being built.
 
 add_definitions(-DFEATURE_NO_HOST)
 add_definitions(-DSELF_NO_HOST)
 add_definitions(-DFEATURE_READYTORUN_COMPILER)
 remove_definitions(-DFEATURE_MERGE_JIT_AND_ENGINE)
-
-# No SIMD in legacy back-end.
-remove_definitions(-DFEATURE_SIMD)
-remove_definitions(-DFEATURE_AVX_SUPPORT)
 
 if(WIN32)
   add_definitions(-DFX_VER_INTERNALNAME_STR=compatjit.dll)
