@@ -270,9 +270,9 @@ mono_public_tokens_are_equal (const unsigned char *pubt1, const unsigned char *p
  *
  * Use this method to override the standard assembly lookup system and
  * override any assemblies coming from the GAC.  This is the method
- * that supports the MONO_PATH variable.
+ * that supports the \c MONO_PATH variable.
  *
- * Notice that MONO_PATH and this method are really a very bad idea as
+ * Notice that \c MONO_PATH and this method are really a very bad idea as
  * it prevents the GAC from working and it prevents the standard
  * resolution mechanisms from working.  Nonetheless, for some debugging
  * situations and bootstrapping setups, this is useful to have. 
@@ -495,7 +495,7 @@ check_policy_versions (MonoAssemblyBindingInfo *info, MonoAssemblyName *name)
  * \param l first assembly
  * \param r second assembly.
  *
- * Compares two MonoAssemblyNames and returns whether they are equal.
+ * Compares two \c MonoAssemblyName instances and returns whether they are equal.
  *
  * This compares the names, the cultures, the release version and their
  * public tokens.
@@ -1158,7 +1158,7 @@ mono_assembly_remap_version (MonoAssemblyName *aname, MonoAssemblyName *dest_ana
 
 /**
  * mono_assembly_get_assemblyref:
- * \param image pointer to the MonoImage to extract the information from.
+ * \param image pointer to the \c MonoImage to extract the information from.
  * \param index index to the assembly reference in the image.
  * \param aname pointer to a \c MonoAssemblyName that will hold the returned value.
  *
@@ -1195,6 +1195,9 @@ mono_assembly_get_assemblyref (MonoImage *image, int index, MonoAssemblyName *an
 	}
 }
 
+/**
+ * mono_assembly_load_reference:
+ */
 void
 mono_assembly_load_reference (MonoImage *image, int index)
 {
@@ -1327,6 +1330,9 @@ struct AssemblyLoadHook {
 
 AssemblyLoadHook *assembly_load_hook = NULL;
 
+/**
+ * mono_assembly_invoke_load_hook:
+ */
 void
 mono_assembly_invoke_load_hook (MonoAssembly *ass)
 {
@@ -1337,6 +1343,9 @@ mono_assembly_invoke_load_hook (MonoAssembly *ass)
 	}
 }
 
+/**
+ * mono_install_assembly_load_hook:
+ */
 void
 mono_install_assembly_load_hook (MonoAssemblyLoadFunc func, gpointer user_data)
 {
@@ -1412,6 +1421,9 @@ mono_assembly_invoke_search_hook_internal (MonoAssemblyName *aname, MonoAssembly
 	return NULL;
 }
 
+/**
+ * mono_assembly_invoke_search_hook:
+ */
 MonoAssembly*
 mono_assembly_invoke_search_hook (MonoAssemblyName *aname)
 {
@@ -1434,6 +1446,9 @@ mono_install_assembly_search_hook_internal (MonoAssemblySearchFunc func, gpointe
 	assembly_search_hook = hook;
 }
 
+/**
+ * mono_install_assembly_search_hook:
+ */
 void          
 mono_install_assembly_search_hook (MonoAssemblySearchFunc func, gpointer user_data)
 {
@@ -1451,12 +1466,18 @@ free_assembly_search_hooks (void)
 	}
 }
 
+/**
+ * mono_install_assembly_refonly_search_hook:
+ */
 void
 mono_install_assembly_refonly_search_hook (MonoAssemblySearchFunc func, gpointer user_data)
 {
 	mono_install_assembly_search_hook_internal (func, user_data, TRUE, FALSE);
 }
 
+/**
+ * mono_install_assembly_postload_search_hook:
+ */
 void          
 mono_install_assembly_postload_search_hook (MonoAssemblySearchFunc func, gpointer user_data)
 {
@@ -1509,6 +1530,9 @@ invoke_assembly_refonly_preload_hook (MonoAssemblyName *aname, gchar **assemblie
 	return NULL;
 }
 
+/**
+ * mono_install_assembly_preload_hook:
+ */
 void
 mono_install_assembly_preload_hook (MonoAssemblyPreLoadFunc func, gpointer user_data)
 {
@@ -1523,6 +1547,9 @@ mono_install_assembly_preload_hook (MonoAssemblyPreLoadFunc func, gpointer user_
 	assembly_preload_hook = hook;
 }
 
+/**
+ * mono_install_assembly_refonly_preload_hook:
+ */
 void
 mono_install_assembly_refonly_preload_hook (MonoAssemblyPreLoadFunc func, gpointer user_data)
 {
@@ -1667,7 +1694,7 @@ mono_assembly_open_from_bundle (const char *filename, MonoImageOpenStatus *statu
  * \param refonly Whether this assembly is being opened in "reflection-only" mode.
  *
  * This loads an assembly from the specified \p filename. The \p filename allows
- * a local URL (starting with a file:// prefix).  If a file prefix is used, the
+ * a local URL (starting with a \c file:// prefix).  If a file prefix is used, the
  * filename is interpreted as a URL, and the filename is URL-decoded.   Otherwise the file
  * is treated as a local path.
  *
@@ -1967,7 +1994,7 @@ mono_assembly_has_reference_assembly_attribute (MonoAssembly *assembly, MonoErro
  * If the pointed assembly does not live in the Global Assembly Cache, a shadow copy of
  * the assembly is made.
  *
- * \returns a pointer to the MonoAssembly if \p filename contains a valid
+ * \returns a pointer to the \c MonoAssembly if \p filename contains a valid
  * assembly or NULL on error.  Details about the error are stored in the
  * \p status variable.
  */
@@ -2606,7 +2633,7 @@ mono_assembly_name_parse (const char *name, MonoAssemblyName *aname)
  * mono_assembly_name_new:
  * \param name name to parse
  *
- * Allocate a new MonoAssemblyName and fill its values from the
+ * Allocate a new \c MonoAssemblyName and fill its values from the
  * passed \p name.
  *
  * \returns a newly allocated structure or NULL if there was any failure.
@@ -2621,18 +2648,27 @@ mono_assembly_name_new (const char *name)
 	return NULL;
 }
 
+/**
+ * mono_assembly_name_get_name:
+ */
 const char*
 mono_assembly_name_get_name (MonoAssemblyName *aname)
 {
 	return aname->name;
 }
 
+/**
+ * mono_assembly_name_get_culture:
+ */
 const char*
 mono_assembly_name_get_culture (MonoAssemblyName *aname)
 {
 	return aname->culture;
 }
 
+/**
+ * mono_assembly_name_get_pubkeytoken:
+ */
 mono_byte*
 mono_assembly_name_get_pubkeytoken (MonoAssemblyName *aname)
 {
@@ -2641,6 +2677,9 @@ mono_assembly_name_get_pubkeytoken (MonoAssemblyName *aname)
 	return NULL;
 }
 
+/**
+ * mono_assembly_name_get_version:
+ */
 uint16_t
 mono_assembly_name_get_version (MonoAssemblyName *aname, uint16_t *minor, uint16_t *build, uint16_t *revision)
 {
@@ -2729,17 +2768,17 @@ probe_for_partial_name (const char *basepath, const char *fullname, MonoAssembly
  * \param name an assembly name that is then parsed by `api:mono_assembly_name_parse`.
  * \param status return status code
  *
- * Loads a Mono Assembly from a name.  The name is parsed using `api:mono_assembly_name_parse`,
+ * Loads a \c MonoAssembly from a name.  The name is parsed using `api:mono_assembly_name_parse`,
  * so it might contain a qualified type name, version, culture and token.
  *
  * This will load the assembly from the file whose name is derived from the assembly name
- * by appending the .dll extension.
+ * by appending the \c .dll extension.
  *
  * The assembly is loaded from either one of the extra Global Assembly Caches specified
  * by the extra GAC paths (specified by the \c MONO_GAC_PREFIX environment variable) or
  * if that fails from the GAC.
  *
- * \returns NULL on failure, or a pointer to a MonoAssembly on success.   
+ * \returns NULL on failure, or a pointer to a \c MonoAssembly on success.
  */
 MonoAssembly*
 mono_assembly_load_with_partial_name (const char *name, MonoImageOpenStatus *status)
@@ -3635,6 +3674,9 @@ mono_assembly_close (MonoAssembly *assembly)
 		mono_assembly_close_finish (assembly);
 }
 
+/**
+ * mono_assembly_load_module:
+ */
 MonoImage*
 mono_assembly_load_module (MonoAssembly *assembly, guint32 idx)
 {
@@ -3737,6 +3779,9 @@ mono_assembly_cleanup_domain_bindings (guint32 domain_id)
  */
 static MonoAssembly *main_assembly=NULL;
 
+/**
+ * mono_assembly_set_main:
+ */
 void
 mono_assembly_set_main (MonoAssembly *assembly)
 {
@@ -3758,7 +3803,7 @@ mono_assembly_get_main (void)
  * mono_assembly_get_image:
  * \param assembly The assembly to retrieve the image from
  *
- * \returns the MonoImage associated with this assembly.
+ * \returns the \c MonoImage associated with this assembly.
  */
 MonoImage*
 mono_assembly_get_image (MonoAssembly *assembly)
@@ -3772,7 +3817,7 @@ mono_assembly_get_image (MonoAssembly *assembly)
  *
  * The returned name's lifetime is the same as \p assembly's.
  *
- * \returns the MonoAssemblyName associated with this assembly.
+ * \returns the \c MonoAssemblyName associated with this assembly.
  */
 MonoAssemblyName *
 mono_assembly_get_name (MonoAssembly *assembly)

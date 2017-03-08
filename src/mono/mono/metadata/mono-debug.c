@@ -999,6 +999,9 @@ struct _BundledSymfile {
 
 static BundledSymfile *bundled_symfiles = NULL;
 
+/**
+ * mono_register_symfile_for_assembly:
+ */
 void
 mono_register_symfile_for_assembly (const char *assembly_name, const mono_byte *raw_contents, int size)
 {

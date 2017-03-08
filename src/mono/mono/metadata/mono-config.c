@@ -566,6 +566,9 @@ static BundledConfig *bundled_configs = NULL;
 
 static const char *bundled_machine_config = NULL;
 
+/**
+ * mono_register_config_for_assembly:
+ */
 void
 mono_register_config_for_assembly (const char* assembly_name, const char* config_xml)
 {

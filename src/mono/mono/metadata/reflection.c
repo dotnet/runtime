@@ -213,12 +213,11 @@ mono_reflection_cleanup_domain (MonoDomain *domain)
 }
 
 
-/*
+/**
  * mono_assembly_get_object:
- * @domain: an app domain
- * @assembly: an assembly
- *
- * Return an System.Reflection.Assembly object representing the MonoAssembly @assembly.
+ * \param domain an app domain
+ * \param assembly an assembly
+ * \returns a \c System.Reflection.Assembly object representing the \c MonoAssembly \p assembly.
  */
 MonoReflectionAssembly*
 mono_assembly_get_object (MonoDomain *domain, MonoAssembly *assembly)
@@ -254,6 +253,9 @@ mono_assembly_get_object_handle (MonoDomain *domain, MonoAssembly *assembly, Mon
 	return CHECK_OR_CONSTRUCT_HANDLE (MonoReflectionAssemblyHandle, assembly, NULL, assembly_object_construct, NULL);
 }
 
+/**
+ * mono_module_get_object:
+ */
 MonoReflectionModule*   
 mono_module_get_object   (MonoDomain *domain, MonoImage *image)
 {
@@ -320,6 +322,9 @@ mono_module_get_object_handle (MonoDomain *domain, MonoImage *image, MonoError *
 	return CHECK_OR_CONSTRUCT_HANDLE (MonoReflectionModuleHandle, image, NULL, module_object_construct, NULL);
 }
 
+/**
+ * mono_module_file_get_object:
+ */
 MonoReflectionModule*
 mono_module_file_get_object (MonoDomain *domain, MonoImage *image, int table_index)
 {
