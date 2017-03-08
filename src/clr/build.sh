@@ -36,6 +36,7 @@ usage()
     echo "skipmscorlib - do not build mscorlib.dll."
     echo "skiptests - skip the tests in the 'tests' subdirectory."
     echo "skipnuget - skip building nuget packages."
+    echo "skiprestoreoptdata - skip restoring optimization data used by profile-based optimizations."
     echo "portableLinux - build for Portable Linux Distribution"
     echo "verbose - optional argument to enable verbose build output."
     echo "-skiprestore: skip restoring packages ^(default: packages are restored during build^)."
@@ -117,6 +118,19 @@ check_prereqs()
 
 }
 
+restore_optdata()
+{
+    # if msbuild is not supported, then set __SkipRestoreOptData to 1
+    if [ $__isMSBuildOnNETCoreSupported == 0 ]; then __SkipRestoreOptData=1; fi
+    if [ $__SkipRestoreOptData == 0 ]; then
+        echo "Restoring the OptimizationData package"
+        "$__ProjectRoot/run.sh" sync -optdata
+        if [ $? != 0 ]; then
+            echo "Failed to restore the optimization data package."
+            exit 1
+        fi
+    fi
+}
 
 generate_event_logging_sources()
 {
@@ -215,6 +229,7 @@ build_native()
             fi
         fi
 
+
         pushd "$intermediatesForBuild"
         # Regenerate the CMake solution
         echo "Invoking \"$__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh\" \"$__ProjectRoot\" $__ClangMajorVersion $__ClangMinorVersion $platformArch $__BuildType $__CodeCoverage $__IncludeTests $generator $extraCmakeArguments $__cmakeargs"
@@ -289,7 +304,7 @@ build_cross_arch_component()
         fi
     fi
 
-    __ExtraCmakeArgs="-DCLR_CMAKE_TARGET_ARCH=$__BuildArch -DCLR_CMAKE_TARGET_OS=$__BuildOS -DCLR_CMAKE_PACKAGES_DIR=$__PackagesDir -DCLR_CMAKE_PGO_INSTRUMENT=$__PgoInstrument"
+    __ExtraCmakeArgs="-DCLR_CMAKE_TARGET_ARCH=$__BuildArch -DCLR_CMAKE_TARGET_OS=$__BuildOS -DCLR_CMAKE_PACKAGES_DIR=$__PackagesDir -DCLR_CMAKE_PGO_INSTRUMENT=$__PgoInstrument -DCLR_CMAKE_OPTDATA_VERSION=$__OptDataVersion"
     build_native $__SkipCrossArchBuild "$__CrossArch" "$__CrossCompIntermediatesDir" "$__ExtraCmakeArgs" "cross-architecture component"
    
     # restore ROOTFS_DIR, CROSSCOMPONENT, and CROSSCOMPILE 
@@ -548,6 +563,7 @@ __SkipRestore=""
 __SkipNuget=0
 __SkipCoreCLR=0
 __SkipMSCorLib=0
+__SkipRestoreOptData=0
 __CrossBuild=0
 __ClangMajorVersion=0
 __ClangMinorVersion=0
@@ -559,6 +575,7 @@ __SkipGenerateVersion=0
 __DoCrossArchBuild=0
 __PortableLinux=0
 __msbuildonunsupportedplatform=0
+__OptDataVersion=""
 
 while :; do
     if [ $# -le 0 ]; then
@@ -694,6 +711,10 @@ while :; do
             __SkipGenerateVersion=1
             ;;
 
+        skiprestoreoptdata)
+            __SkipRestoreOptData=1
+            ;;
+
         includetests)
             ;;
 
@@ -815,6 +836,12 @@ if [ $__CrossBuild == 1 ]; then
     fi
 fi
 
+# Parse the optdata package version from its project.json file
+optDataProjectJsonPath="$__ProjectRoot/src/.nuget/optdata/project.json"
+if [ -f $optDataProjectJsonPath ]; then
+    __OptDataVersion=$("$__ProjectRoot/extract-from-json.py" -rf $optDataProjectJsonPath dependencies optimization.PGO.CoreCLR)
+fi
+
 # init the target distro name
 initTargetDistroRid
 
@@ -824,11 +851,14 @@ setup_dirs
 # Check prereqs.
 check_prereqs
 
+# Restore the package containing profile counts for profile-guided optimizations
+restore_optdata
+
 # Generate event logging infrastructure sources
 generate_event_logging_sources
 
 # Build the coreclr (native) components.
-__ExtraCmakeArgs="-DCLR_CMAKE_TARGET_OS=$__BuildOS -DCLR_CMAKE_PACKAGES_DIR=$__PackagesDir -DCLR_CMAKE_PGO_INSTRUMENT=$__PgoInstrument"
+__ExtraCmakeArgs="-DCLR_CMAKE_TARGET_OS=$__BuildOS -DCLR_CMAKE_PACKAGES_DIR=$__PackagesDir -DCLR_CMAKE_PGO_INSTRUMENT=$__PgoInstrument -DCLR_CMAKE_OPTDATA_VERSION=$__OptDataVersion"
 build_native $__SkipCoreCLR "$__BuildArch" "$__IntermediatesDir" "$__ExtraCmakeArgs" "CoreCLR component"
 
 # Build cross-architecture components

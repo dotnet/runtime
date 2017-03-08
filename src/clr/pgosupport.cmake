@@ -12,8 +12,9 @@ function(add_pgo TargetName)
         set(ProfileFileName "${TargetName}.pgd")
     endif(WIN32)
 
+    set(CLR_CMAKE_OPTDATA_PACKAGEWITHRID "optimization.${CLR_CMAKE_TARGET_OS}-${CLR_CMAKE_TARGET_ARCH}.PGO.CoreCLR")
     file(TO_NATIVE_PATH
-        "${CLR_CMAKE_PACKAGES_DIR}/Microsoft.DotNet.OptimizationData.Coreclr/${CLR_CMAKE_TARGET_OS}.${CLR_CMAKE_TARGET_ARCH}/${ProfileFileName}"
+        "${CLR_CMAKE_PACKAGES_DIR}/${CLR_CMAKE_OPTDATA_PACKAGEWITHRID}/${CLR_CMAKE_OPTDATA_VERSION}/data/${ProfileFileName}"
         ProfilePath
     )
 
