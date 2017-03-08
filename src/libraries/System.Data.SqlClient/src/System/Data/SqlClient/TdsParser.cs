@@ -2,10 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
-
-//------------------------------------------------------------------------------
-
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Data.SqlTypes;
@@ -16,17 +12,27 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
-#if MANAGED_SNI
-using System.Data.SqlClient.SNI;
-#endif
+
 
 using MSS = Microsoft.SqlServer.Server;
 
 namespace System.Data.SqlClient
 {
+
+    internal struct SNIErrorDetails
+    {
+        public string errorMessage;
+        public uint nativeError;
+        public uint sniErrorNumber;
+        public int provider;
+        public uint lineNumber;
+        public string function;
+        public Exception exception;
+    }
+
     // The TdsParser Object controls reading/writing to the netlib, parsing the tds,
     // and surfacing objects to the user.
-    sealed internal class TdsParser
+    internal sealed partial class TdsParser
     {
         static TdsParser()
         {
@@ -65,7 +71,7 @@ namespace System.Data.SqlClient
 
         internal Encoding _defaultEncoding = null;                  // for sql character data
 
-        private static EncryptionOptions s_sniSupportedEncryptionOption = SNILoadHandle.SingletonInstance.Options;
+        private static EncryptionOptions s_sniSupportedEncryptionOption = TdsParserStateObjectFactory.Singleton.EncryptionOptions;
 
         private EncryptionOptions _encryptionOption = s_sniSupportedEncryptionOption;
 
@@ -111,7 +117,6 @@ namespace System.Data.SqlClient
         private static byte[] s_nicAddress;             // cache the NIC address from the registry
 
         // SSPI variables
-        private static bool s_fSSPILoaded = false; // bool to indicate whether library has been loaded
 
         private volatile static UInt32 s_maxSSPILength = 0;     // variable to hold max SSPI data size, keep for token from server
 
@@ -133,7 +138,8 @@ namespace System.Data.SqlClient
         internal TdsParser(bool MARS, bool fAsynchronous)
         {
             _fMARS = MARS; // may change during Connect to pre Yukon servers
-            _physicalStateObj = new TdsParserStateObject(this);
+            
+            _physicalStateObj = TdsParserStateObjectFactory.Singleton.CreateTdsParserStateObject(this);
         }
 
         internal SqlInternalConnectionTds Connection
@@ -291,7 +297,7 @@ namespace System.Data.SqlClient
             _connHandler = connHandler;
             _loginWithFailover = withFailover;
 
-            uint sniStatus = SNILoadHandle.SingletonInstance.Status;
+            uint sniStatus = TdsParserStateObjectFactory.Singleton.SNIStatus;
 
             if (sniStatus != TdsEnums.SNI_SUCCESS)
             {
@@ -302,15 +308,11 @@ namespace System.Data.SqlClient
             }
 
             _sniSpnBuffer = null;
-#if !MANAGED_SNI
+
             if (integratedSecurity)
             {
                 LoadSSPILibrary();
-
-                // now allocate proper length of buffer
-                _sniSpnBuffer = new byte[SNINativeMethodWrapper.SniMaxComposedSpnLength];
             }
-#endif
 
             byte[] instanceName = null;
 
@@ -320,13 +322,8 @@ namespace System.Data.SqlClient
 
             bool fParallel = _connHandler.ConnectionOptions.MultiSubnetFailover;
 
-#if MANAGED_SNI
-            _physicalStateObj.CreateConnectionHandle(serverInfo.ExtendedServerName, ignoreSniOpenTimeout, timerExpire,
-                        out instanceName, ref _sniSpnBuffer, false, true, fParallel, integratedSecurity);
-#else
             _physicalStateObj.CreatePhysicalSNIHandle(serverInfo.ExtendedServerName, ignoreSniOpenTimeout, timerExpire,
-                        out instanceName, _sniSpnBuffer, false, true, fParallel);
-#endif // MANAGED_SNI
+                        out instanceName, ref _sniSpnBuffer, false, true, fParallel, integratedSecurity);
 
             if (TdsEnums.SNI_SUCCESS != _physicalStateObj.Status)
             {
@@ -362,12 +359,7 @@ namespace System.Data.SqlClient
             _connHandler.TimeoutErrorInternal.EndPhase(SqlConnectionTimeoutErrorPhase.InitializeConnection);
             _connHandler.TimeoutErrorInternal.SetAndBeginPhase(SqlConnectionTimeoutErrorPhase.SendPreLoginHandshake);
 
-#if MANAGED_SNI
-            UInt32 result = SNIProxy.Singleton.GetConnectionId(_physicalStateObj.Handle, ref _connHandler._clientConnectionId);
-#else
-            UInt32 result = SNINativeMethodWrapper.SniGetConnectionId(_physicalStateObj.Handle, ref _connHandler._clientConnectionId);
-#endif // MANAGED_SNI
-
+            UInt32 result = _physicalStateObj.SniGetConnectionId(ref _connHandler._clientConnectionId);
             Debug.Assert(result == TdsEnums.SNI_SUCCESS, "Unexpected failure state upon calling SniGetConnectionId");
 
             SendPreLoginHandshake(instanceName, encrypt);
@@ -386,11 +378,7 @@ namespace System.Data.SqlClient
                 // On Instance failure re-connect and flush SNI named instance cache.
                 _physicalStateObj.SniContext = SniContext.Snix_Connect;
 
-#if MANAGED_SNI
-                _physicalStateObj.CreateConnectionHandle(serverInfo.ExtendedServerName, ignoreSniOpenTimeout, timerExpire, out instanceName, ref _sniSpnBuffer, true, true, fParallel, integratedSecurity);
-#else
-                _physicalStateObj.CreatePhysicalSNIHandle(serverInfo.ExtendedServerName, ignoreSniOpenTimeout, timerExpire, out instanceName, _sniSpnBuffer, true, true, fParallel);
-#endif
+                _physicalStateObj.CreatePhysicalSNIHandle(serverInfo.ExtendedServerName, ignoreSniOpenTimeout, timerExpire, out instanceName, ref _sniSpnBuffer, true, true, fParallel, integratedSecurity);
 
                 if (TdsEnums.SNI_SUCCESS != _physicalStateObj.Status)
                 {
@@ -398,11 +386,7 @@ namespace System.Data.SqlClient
                     ThrowExceptionAndWarning(_physicalStateObj);
                 }
 
-#if MANAGED_SNI
-                UInt32 retCode = SNIProxy.Singleton.GetConnectionId(_physicalStateObj.Handle, ref _connHandler._clientConnectionId);
-#else
-                UInt32 retCode = SNINativeMethodWrapper.SniGetConnectionId(_physicalStateObj.Handle, ref _connHandler._clientConnectionId);
-#endif // MANAGED_SNI
+                UInt32 retCode = _physicalStateObj.SniGetConnectionId(ref _connHandler._clientConnectionId);
 
                 Debug.Assert(retCode == TdsEnums.SNI_SUCCESS, "Unexpected failure state upon calling SniGetConnectionId");
 
@@ -433,14 +417,8 @@ namespace System.Data.SqlClient
         {
             Debug.Assert(_encryptionOption == EncryptionOptions.LOGIN, "Invalid encryption option state");
 
-#if MANAGED_SNI
-            uint error = SNIProxy.Singleton.DisableSsl(_physicalStateObj.Handle);
-#else
-            UInt32 error = 0;
+            UInt32 error = _physicalStateObj.DisabeSsl();
 
-            // Remove SSL (Encryption) SNI provider since we only wanted to encrypt login.
-            error = SNINativeMethodWrapper.SNIRemoveProvider(_physicalStateObj.Handle, SNINativeMethodWrapper.ProviderEnum.SSL_PROV);
-#endif // MANAGED_SNI
             if (error != TdsEnums.SNI_SUCCESS)
             {
                 _physicalStateObj.AddError(ProcessSNIError(_physicalStateObj));
@@ -448,11 +426,8 @@ namespace System.Data.SqlClient
             }
 
             // create a new packet encryption changes the internal packet size
-            try { }   // EmptyTry/Finally to avoid FXCop violation
-            finally
-            {
-                _physicalStateObj.ClearAllWritePackets();
-            }
+            _physicalStateObj.ClearAllWritePackets();
+            
         }
 
         internal void EnableMars()
@@ -462,16 +437,10 @@ namespace System.Data.SqlClient
                 // Cache physical stateObj and connection.
                 _pMarsPhysicalConObj = _physicalStateObj;
 
-                uint error = 0;
+                if(TdsParserStateObjectFactory.useManagedSni) _pMarsPhysicalConObj.IncrementPendingCallbacks();
 
-#if MANAGED_SNI
-                _pMarsPhysicalConObj.IncrementPendingCallbacks();
-                error = SNIProxy.Singleton.EnableMars(_pMarsPhysicalConObj.Handle);
-#else
-                // Add SMUX (MARS) SNI provider.
                 UInt32 info = 0;
-                error = SNINativeMethodWrapper.SNIAddProvider(_pMarsPhysicalConObj.Handle, SNINativeMethodWrapper.ProviderEnum.SMUX_PROV, ref info);
-#endif // MANAGED_SNI
+                uint error = _pMarsPhysicalConObj.EnableMars(ref info);
 
                 if (error != TdsEnums.SNI_SUCCESS)
                 {
@@ -479,34 +448,7 @@ namespace System.Data.SqlClient
                     ThrowExceptionAndWarning(_physicalStateObj);
                 }
 
-#if !MANAGED_SNI
-                // HACK HACK HACK - for Async only
-                // Have to post read to initialize MARS - will get callback on this when connection goes
-                // down or is closed.
-
-                IntPtr temp = IntPtr.Zero;
-
-                try { }
-                finally
-                {
-                    _pMarsPhysicalConObj.IncrementPendingCallbacks();
-
-                    error = SNINativeMethodWrapper.SNIReadAsync(_pMarsPhysicalConObj.Handle, ref temp);
-
-                    if (temp != IntPtr.Zero)
-                    {
-                        // Be sure to release packet, otherwise it will be leaked by native.
-                        SNINativeMethodWrapper.SNIPacketRelease(temp);
-                    }
-                }
-                Debug.Assert(IntPtr.Zero == temp, "unexpected syncReadPacket without corresponding SNIPacketRelease");
-                if (TdsEnums.SNI_SUCCESS_IO_PENDING != error)
-                {
-                    Debug.Assert(TdsEnums.SNI_SUCCESS != error, "Unexpected successful read async on physical connection before enabling MARS!");
-                    _physicalStateObj.AddError(ProcessSNIError(_physicalStateObj));
-                    ThrowExceptionAndWarning(_physicalStateObj);
-                }
-#endif // MANAGED_SNI
+                PostReadAsyncForMars();
 
                 _physicalStateObj = CreateSession(); // Create and open default MARS stateObj and connection.
             }
@@ -514,8 +456,7 @@ namespace System.Data.SqlClient
 
         internal TdsParserStateObject CreateSession()
         {
-            TdsParserStateObject session = new TdsParserStateObject(this, (SNIHandle)_pMarsPhysicalConObj.Handle, true);
-            return session;
+            return TdsParserStateObjectFactory.Singleton.CreateSessionObject(this, _pMarsPhysicalConObj, true);
         }
 
         internal TdsParserStateObject GetSession(object owner)
@@ -719,7 +660,6 @@ namespace System.Data.SqlClient
         private PreLoginHandshakeStatus ConsumePreLoginHandshake(bool encrypt, bool trustServerCert, bool integratedSecurity, out bool marsCapable)
         {
             marsCapable = _fMARS; // Assign default value
-
             bool isYukonOrLater = false;
             Debug.Assert(_physicalStateObj._syncOverAsync, "Should not attempt pends in a synchronous call");
             bool result = _physicalStateObj.TryReadNetworkPacket();
@@ -840,20 +780,15 @@ namespace System.Data.SqlClient
                             UInt32 info = ((encrypt && !trustServerCert) ? TdsEnums.SNI_SSL_VALIDATE_CERTIFICATE : 0)
                                 | (isYukonOrLater ? TdsEnums.SNI_SSL_USE_SCHANNEL_CACHE : 0);
 
-#if MANAGED_SNI
-                            error = SNIProxy.Singleton.EnableSsl(_physicalStateObj.Handle, info);
-#else
-
                             if (encrypt && !integratedSecurity)
                             {
                                 // optimization: in case of SQL Authentication and encryption, set SNI_SSL_IGNORE_CHANNEL_BINDINGS to let SNI 
                                 // know that it does not need to allocate/retrieve the Channel Bindings from the SSL context.
+                                // This applies to Native SNI 
                                 info |= TdsEnums.SNI_SSL_IGNORE_CHANNEL_BINDINGS;
                             }
 
-                            // Add SSL (Encryption) SNI provider.
-                            error = SNINativeMethodWrapper.SNIAddProvider(_physicalStateObj.Handle, SNINativeMethodWrapper.ProviderEnum.SSL_PROV, ref info);
-#endif // MANAGED_SNI
+                            error = _physicalStateObj.EnableSsl(ref info);
 
                             if (error != TdsEnums.SNI_SUCCESS)
                             {
@@ -861,25 +796,10 @@ namespace System.Data.SqlClient
                                 ThrowExceptionAndWarning(_physicalStateObj);
                             }
 
-#if !MANAGED_SNI
-                            // in the case where an async connection is made, encryption is used and Windows Authentication is used, 
-                            // wait for SSL handshake to complete, so that the SSL context is fully negotiated before we try to use its 
-                            // Channel Bindings as part of the Windows Authentication context build (SSL handshake must complete 
-                            // before calling SNISecGenClientContext).
-                            error = SNINativeMethodWrapper.SNIWaitForSSLHandshakeToComplete(_physicalStateObj.Handle, _physicalStateObj.GetTimeoutRemaining());
-                            if (error != TdsEnums.SNI_SUCCESS)
-                            {
-                                _physicalStateObj.AddError(ProcessSNIError(_physicalStateObj));
-                                ThrowExceptionAndWarning(_physicalStateObj);
-                            }
-#endif
-
+                            WaitForSSLHandShakeToComplete(ref error);
+                            
                             // create a new packet encryption changes the internal packet size
-                            try { } // EmptyTry/Finally to avoid FXCop violation
-                            finally
-                            {
-                                _physicalStateObj.ClearAllWritePackets();
-                            }
+                            _physicalStateObj.ClearAllWritePackets();
                         }
 
                         break;
@@ -1206,16 +1126,12 @@ namespace System.Data.SqlClient
             // There is an exception here for MARS as its possible that another thread has closed the connection just as we see an error
             Debug.Assert(SniContext.Undefined != stateObj.DebugOnlyCopyOfSniContext || ((_fMARS) && ((_state == TdsParserState.Closed) || (_state == TdsParserState.Broken))), "SniContext must not be None");
 #endif
-#if MANAGED_SNI
-            SNIError sniError = SNIProxy.Singleton.GetLastError();
-#else
-            SNINativeMethodWrapper.SNI_Error sniError;
-            SNINativeMethodWrapper.SNIGetLastError(out sniError);
-#endif // MANAGED_SNI
-            if (sniError.sniError != 0)
+            SNIErrorDetails details = GetSniErrorDetails();
+            
+            if (details.sniErrorNumber != 0)
             {
                 // handle special SNI error codes that are converted into exception which is not a SqlException.
-                switch (sniError.sniError)
+                switch (details.sniErrorNumber)
                 {
                     case (int)SNINativeMethodWrapper.SniSpecialErrors.MultiSubnetFailoverWithMoreThan64IPs:
                         // Connecting with the MultiSubnetFailover connection option to a SQL Server instance configured with more than 64 IP addresses is not supported.
@@ -1233,7 +1149,7 @@ namespace System.Data.SqlClient
             }
             // PInvoke code automatically sets the length of the string for us
             // So no need to look for \0
-            string errorMessage = sniError.errorMessage;
+            string errorMessage = details.errorMessage;
 
             //  Format SNI errors and add Context Information
             //
@@ -1248,19 +1164,18 @@ namespace System.Data.SqlClient
             // !=null       | == 0     | replace text left of errorMessage
             //
 
-#if MANAGED_SNI
-            Debug.Assert(!string.IsNullOrEmpty(errorMessage) || sniError.sniError != 0, "Empty error message received from SNI");
-#else
-            Debug.Assert(!string.IsNullOrEmpty(errorMessage), "Empty error message received from SNI");
-#endif
+            if (TdsParserStateObjectFactory.useManagedSni)
+                Debug.Assert(!string.IsNullOrEmpty(details.errorMessage) || details.sniErrorNumber != 0, "Empty error message received from SNI");
+            else
+                Debug.Assert(!string.IsNullOrEmpty(details.errorMessage), "Empty error message received from SNI");
 
             string sqlContextInfo = SR.GetResourceString(Enum.GetName(typeof(SniContext), stateObj.SniContext), Enum.GetName(typeof(SniContext), stateObj.SniContext));
-            string providerRid = String.Format((IFormatProvider)null, "SNI_PN{0}", (int)sniError.provider);
+            string providerRid = String.Format((IFormatProvider)null, "SNI_PN{0}", details.provider);
             string providerName = SR.GetResourceString(providerRid, providerRid);
             Debug.Assert(!string.IsNullOrEmpty(providerName), String.Format((IFormatProvider)null, "invalid providerResourceId '{0}'", providerRid));
-            uint win32ErrorCode = sniError.nativeError;
+            uint win32ErrorCode = details.nativeError;
 
-            if (sniError.sniError == 0)
+            if (details.sniErrorNumber == 0)
             {
                 // Provider error. The message from provider is preceded with non-localizable info from SNI
                 // strip provider info from SNI
@@ -1290,36 +1205,35 @@ namespace System.Data.SqlClient
             }
             else
             {
-#if MANAGED_SNI
-                // SNI error. Append additional error message info if available.
-                //
-                string sniLookupMessage = SQL.GetSNIErrorMessage((int)sniError.sniError);
-                errorMessage =  (sniError.errorMessage != string.Empty) ?
-                                (sniLookupMessage + ": " + sniError.errorMessage) :
-                                sniLookupMessage;
-#else
-                // SNI error. Replace the entire message.
-                //
-                errorMessage = SQL.GetSNIErrorMessage((int)sniError.sniError);
 
-                // If its a LocalDB error, then nativeError actually contains a LocalDB-specific error code, not a win32 error code
-                if (sniError.sniError == (int)SNINativeMethodWrapper.SniSpecialErrors.LocalDBErrorCode)
+                if (TdsParserStateObjectFactory.useManagedSni)
                 {
-                    errorMessage += LocalDBAPI.GetLocalDBMessage((int)sniError.nativeError);
-                    win32ErrorCode = 0;
+                    // SNI error. Append additional error message info if available.
+                    //
+                    string sniLookupMessage = SQL.GetSNIErrorMessage((int)details.sniErrorNumber);
+                    errorMessage = (errorMessage != string.Empty) ?
+                                    (sniLookupMessage + ": " + errorMessage) :
+                                    sniLookupMessage;
                 }
-#endif // MANAGED_SNI
+                else
+                {
+                    // SNI error. Replace the entire message.
+                    //
+                    errorMessage = SQL.GetSNIErrorMessage((int)details.sniErrorNumber);
+
+                    // If its a LocalDB error, then nativeError actually contains a LocalDB-specific error code, not a win32 error code
+                    if (details.sniErrorNumber == (int)SNINativeMethodWrapper.SniSpecialErrors.LocalDBErrorCode)
+                    {
+                        errorMessage += LocalDBAPI.GetLocalDBMessage((int)details.nativeError);
+                        win32ErrorCode = 0;
+                    }
+                }
             }
             errorMessage = String.Format((IFormatProvider)null, "{0} (provider: {1}, error: {2} - {3})",
-                sqlContextInfo, providerName, (int)sniError.sniError, errorMessage);
+                sqlContextInfo, providerName, (int)details.sniErrorNumber, errorMessage);
 
-#if MANAGED_SNI
-            return new SqlError((int)sniError.nativeError, 0x00, TdsEnums.FATAL_ERROR_CLASS,
-                                _server, errorMessage, sniError.function, (int)sniError.lineNumber, win32ErrorCode, sniError.exception);
-#else
-            return new SqlError((int)sniError.nativeError, 0x00, TdsEnums.FATAL_ERROR_CLASS,
-                    _server, errorMessage, sniError.function, (int)sniError.lineNumber, win32ErrorCode);
-#endif
+            return new SqlError((int)details.nativeError, 0x00, TdsEnums.FATAL_ERROR_CLASS,
+                                _server, errorMessage, details.function, (int)details.lineNumber, details.nativeError, details.exception);
         }
 
         internal void CheckResetConnection(TdsParserStateObject stateObj)
@@ -2286,12 +2200,8 @@ namespace System.Data.SqlClient
 
                             // Update SNI ConsumerInfo value to be resulting packet size
                             UInt32 unsignedPacketSize = (UInt32)packetSize;
-#if MANAGED_SNI
-                            UInt32 result = SNIProxy.Singleton.SetConnectionBufferSize(_physicalStateObj.Handle, unsignedPacketSize);
-#else
-                            UInt32 result = SNINativeMethodWrapper.SNISetInfo(_physicalStateObj.Handle, SNINativeMethodWrapper.QTypes.SNI_QUERY_CONN_BUFSIZE, ref unsignedPacketSize);
-#endif // MANAGED_SNI
 
+                            UInt32 result = _physicalStateObj.SetConnectionBufferSize(ref unsignedPacketSize);
                             Debug.Assert(result == TdsEnums.SNI_SUCCESS, "Unexpected failure state upon calling SNISetInfo");
                         }
 
@@ -6025,13 +5935,11 @@ namespace System.Data.SqlClient
                     Debug.Assert(SniContext.Snix_Login == _physicalStateObj.SniContext, String.Format((IFormatProvider)null, "Unexpected SniContext. Expecting Snix_Login, actual value is '{0}'", _physicalStateObj.SniContext));
                     _physicalStateObj.SniContext = SniContext.Snix_LoginSspi;
 
-#if MANAGED_SNI
-                    SSPIData(null, ref outSSPIBuff);
-                    outSSPILength = outSSPIBuff != null ? (uint)outSSPIBuff.Length : 0;
-#else
                     SSPIData(null, 0, outSSPIBuff, ref outSSPILength);
-#endif
-
+                    if (TdsParserStateObjectFactory.useManagedSni)
+                    {
+                        outSSPILength = outSSPIBuff != null ? (uint)outSSPIBuff.Length : 0;
+                    }
                     if (outSSPILength > Int32.MaxValue)
                     {
                         throw SQL.InvalidSSPIPacketSize();  // SqlBu 332503
@@ -6285,47 +6193,40 @@ namespace System.Data.SqlClient
             _physicalStateObj._messageStatus = 0;
         }// tdsLogin
 
-#if MANAGED_SNI
-        private void SSPIData(byte[] receivedBuff, ref byte[] sendBuff)
-        {
-            SNISSPIData(receivedBuff, ref sendBuff);
-        }
-#else
         private void SSPIData(byte[] receivedBuff, UInt32 receivedLength, byte[] sendBuff, ref UInt32 sendLength)
         {
             SNISSPIData(receivedBuff, receivedLength, sendBuff, ref sendLength);
         }
-#endif
 
 
-#if MANAGED_SNI
-        private void SNISSPIData(byte[] receivedBuff, ref byte[] sendBuff)
-        {
-            try
-            {
-                SNIProxy.Singleton.GenSspiClientContext(_physicalStateObj.sspiClientContextStatus, receivedBuff, ref sendBuff, _sniSpnBuffer);
-            }
-            catch (Exception e)
-            {
-                SSPIError(e.Message + "\n" + e.StackTrace, TdsEnums.GEN_CLIENT_CONTEXT);
-            }
-        }
-#else
         private void SNISSPIData(byte[] receivedBuff, UInt32 receivedLength, byte[] sendBuff, ref UInt32 sendLength)
         {
-            if (receivedBuff == null)
+            if (TdsParserStateObjectFactory.useManagedSni)
             {
-                // if we do not have SSPI data coming from server, send over 0's for pointer and length
-                receivedLength = 0;
+                try
+                {
+                    _physicalStateObj.GenerateSspiClientContext(receivedBuff, receivedLength, sendBuff, ref sendLength, _sniSpnBuffer);
+                }
+                catch (Exception e)
+                {
+                    SSPIError(e.Message + Environment.NewLine + e.StackTrace, TdsEnums.GEN_CLIENT_CONTEXT);
+                }
             }
+            else
+            { 
+                if (receivedBuff == null)
+                {
+                    // if we do not have SSPI data coming from server, send over 0's for pointer and length
+                    receivedLength = 0;
+                }
 
-            // we need to respond to the server's message with SSPI data
-            if (0 != SNINativeMethodWrapper.SNISecGenClientContext(_physicalStateObj.Handle, receivedBuff, receivedLength, sendBuff, ref sendLength, _sniSpnBuffer))
-            {
-                SSPIError(SQLMessage.SSPIGenerateError(), TdsEnums.GEN_CLIENT_CONTEXT);
+                // we need to respond to the server's message with SSPI data
+                if (0 != _physicalStateObj.GenerateSspiClientContext(receivedBuff, receivedLength, sendBuff, ref sendLength, _sniSpnBuffer))
+                {
+                    SSPIError(SQLMessage.SSPIGenerateError(), TdsEnums.GEN_CLIENT_CONTEXT);
+                }
             }
         }
-#endif
 
         private void ProcessSSPI(int receivedLength)
         {
@@ -6344,11 +6245,8 @@ namespace System.Data.SqlClient
             UInt32 sendLength = s_maxSSPILength;
 
             // make call for SSPI data
-#if MANAGED_SNI            
-            SSPIData(receivedBuff, ref sendBuff);
-#else
+
             SSPIData(receivedBuff, (UInt32)receivedLength, sendBuff, ref sendLength);
-#endif
 
             // DO NOT SEND LENGTH - TDS DOC INCORRECT!  JUST SEND SSPI DATA!
             _physicalStateObj.WriteByteArray(sendBuff, (int)sendLength, 0);
@@ -6370,36 +6268,7 @@ namespace System.Data.SqlClient
             ThrowExceptionAndWarning(_physicalStateObj);
         }
 
-        private void LoadSSPILibrary()
-        {
-            // Outer check so we don't acquire lock once it's loaded.
-            if (!s_fSSPILoaded)
-            {
-                lock (s_tdsParserLock)
-                {
-                    // re-check inside lock
-                    if (!s_fSSPILoaded)
-                    {
-                        // use local for ref param to defer setting s_maxSSPILength until we know the call succeeded.
-                        UInt32 maxLength = 0;
-#if MANAGED_SNI
-                        if (0 != SNIProxy.Singleton.InitializeSspiPackage(ref maxLength))
-#else
-                        if (0 != SNINativeMethodWrapper.SNISecInitPackage(ref maxLength))
-#endif // MANAGED_SNI
-                            SSPIError(SQLMessage.SSPIInitializeError(), TdsEnums.INIT_SSPI_PACKAGE);
-
-                        s_maxSSPILength = maxLength;
-                        s_fSSPILoaded = true;
-                    }
-                }
-            }
-
-            if (s_maxSSPILength > Int32.MaxValue)
-            {
-                throw SQL.InvalidSSPIPacketSize();   // SqlBu 332503
-            }
-        }
+        
 
 
         internal SqlDataReader TdsExecuteTransactionManagerRequest(
