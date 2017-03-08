@@ -101,7 +101,7 @@ extern "C" DLL_EXPORT LPWSTR MarshalPointer_Out(/*[out]*/ LPWSTR *s)
 }
 
 typedef LPTSTR (__stdcall * Test_Del_MarshalStrB_InOut)(/*[in,out]*/ LPTSTR s);
-extern "C" DLL_EXPORT BOOL __stdcall ReverseP_MarshalStrB_InOut(Test_Del_MarshalStrB_InOut d, /*[in]*/ LPCTSTR  s)
+extern "C" DLL_EXPORT BOOL NATIVEAPI ReverseP_MarshalStrB_InOut(Test_Del_MarshalStrB_InOut d, /*[in]*/ LPCTSTR  s)
 {
     LPTSTR ret = d((LPTSTR)s);
     LPTSTR expectedret =(LPTSTR)W("Native");
@@ -127,7 +127,7 @@ extern "C" DLL_EXPORT BOOL __stdcall ReverseP_MarshalStrB_InOut(Test_Del_Marshal
 }
 
 typedef LPTSTR (__cdecl * Test_Del_MarshalStrB_Out)(/*[out]*/ LPTSTR * s);
-extern "C" DLL_EXPORT BOOL __stdcall ReverseP_MarshalStrB_Out(Test_Del_MarshalStrB_Out d)
+extern "C" DLL_EXPORT BOOL NATIVEAPI ReverseP_MarshalStrB_Out(Test_Del_MarshalStrB_Out d)
 {
     LPTSTR s;
     LPTSTR ret = d((LPTSTR*)&s);

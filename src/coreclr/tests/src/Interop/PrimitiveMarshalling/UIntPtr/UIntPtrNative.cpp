@@ -10,7 +10,10 @@ UINT_PTR uintPtrNative = 2000;
 UINT_PTR uintPtrReturn = 3000;
 UINT_PTR uintPtrErrReturn = 4000;
 
-extern "C" DLL_EXPORT UINT_PTR WINAPI Marshal_In(/*[in]*/UINT_PTR uintPtr)
+//
+// PInvokeUIntPtrTest.cs declares that all of these APIs use STDCALL.
+//
+extern "C" DLL_EXPORT UINT_PTR __stdcall Marshal_In(/*[in]*/UINT_PTR uintPtr)
 {
     //Check the input
     if(uintPtr != uintPtrManaged)
@@ -24,7 +27,7 @@ extern "C" DLL_EXPORT UINT_PTR WINAPI Marshal_In(/*[in]*/UINT_PTR uintPtr)
     return uintPtrReturn;
 }
 
-extern "C" DLL_EXPORT UINT_PTR WINAPI Marshal_InOut(/*[In,Out]*/UINT_PTR uintPtr)
+extern "C" DLL_EXPORT UINT_PTR __stdcall Marshal_InOut(/*[In,Out]*/UINT_PTR uintPtr)
 {
     //Check the input
     if(uintPtr != uintPtrManaged)
@@ -42,7 +45,7 @@ extern "C" DLL_EXPORT UINT_PTR WINAPI Marshal_InOut(/*[In,Out]*/UINT_PTR uintPtr
     return uintPtrReturn;
 }
 
-extern "C" DLL_EXPORT UINT_PTR WINAPI Marshal_Out(/*[Out]*/UINT_PTR uintPtr)
+extern "C" DLL_EXPORT UINT_PTR __stdcall Marshal_Out(/*[Out]*/UINT_PTR uintPtr)
 {
     uintPtr = uintPtrNative;
 
@@ -50,7 +53,7 @@ extern "C" DLL_EXPORT UINT_PTR WINAPI Marshal_Out(/*[Out]*/UINT_PTR uintPtr)
     return uintPtrReturn;
 }
 
-extern "C" DLL_EXPORT UINT_PTR WINAPI MarshalPointer_In(/*[in]*/UINT_PTR *puintPtr)
+extern "C" DLL_EXPORT UINT_PTR __stdcall MarshalPointer_In(/*[in]*/UINT_PTR *puintPtr)
 {
     //Check the input
     if(*puintPtr != uintPtrManaged)
@@ -63,7 +66,7 @@ extern "C" DLL_EXPORT UINT_PTR WINAPI MarshalPointer_In(/*[in]*/UINT_PTR *puintP
     return uintPtrReturn;
 }
 
-extern "C" DLL_EXPORT UINT_PTR WINAPI MarshalPointer_InOut(/*[in,out]*/UINT_PTR *puintPtr)
+extern "C" DLL_EXPORT UINT_PTR __stdcall MarshalPointer_InOut(/*[in,out]*/UINT_PTR *puintPtr)
 {
     //Check the input
     if(*puintPtr != uintPtrManaged)
@@ -80,7 +83,7 @@ extern "C" DLL_EXPORT UINT_PTR WINAPI MarshalPointer_InOut(/*[in,out]*/UINT_PTR 
     return uintPtrReturn;
 }
 
-extern "C" DLL_EXPORT UINT_PTR WINAPI MarshalPointer_Out(/*[out]*/ UINT_PTR *puintPtr)
+extern "C" DLL_EXPORT UINT_PTR __stdcall MarshalPointer_Out(/*[out]*/ UINT_PTR *puintPtr)
 {
     *puintPtr = uintPtrNative;
 
