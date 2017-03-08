@@ -4830,10 +4830,12 @@ invoke_array_extract_argument (MonoArray *params, int i, MonoType *t, gboolean* 
 						*has_byref_nullables = TRUE;
 				} else {
 					/* MS seems to create the objects if a null is passed in */
+					gboolean was_null = FALSE;
 					if (!mono_array_get (params, MonoObject*, i)) {
 						MonoObject *o = mono_object_new_checked (mono_domain_get (), mono_class_from_mono_type (t_orig), error);
 						return_val_if_nok (error, NULL);
 						mono_array_setref (params, i, o); 
+						was_null = TRUE;
 					}
 
 					if (t->byref) {
@@ -4851,6 +4853,8 @@ invoke_array_extract_argument (MonoArray *params, int i, MonoType *t, gboolean* 
 					}
 						
 					result = mono_object_unbox (mono_array_get (params, MonoObject*, i));
+					if (!t->byref && was_null)
+						mono_array_setref (params, i, NULL);
 				}
 				break;
 			case MONO_TYPE_STRING:
