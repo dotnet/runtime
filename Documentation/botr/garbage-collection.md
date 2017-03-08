@@ -189,8 +189,8 @@ Code Flow
 
 Terms:
 
-- **WKS GC:** Workstation GC.
-- **SRV GC:** Server GC
+- **WKS GC:** Workstation GC
+- **SVR GC:** Server GC
 
 Functional Behavior
 -------------------
