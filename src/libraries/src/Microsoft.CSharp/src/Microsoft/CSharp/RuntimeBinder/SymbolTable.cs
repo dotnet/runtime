@@ -320,9 +320,9 @@ namespace Microsoft.CSharp.RuntimeBinder
             {
                 TypeArray collectioniFaces = ctype.AsAggregateType().GetWinRTCollectionIfacesAll(_semanticChecker.GetSymbolLoader());
 
-                for (int i = 0; i < collectioniFaces.size; i++)
+                for (int i = 0; i < collectioniFaces.Count; i++)
                 {
-                    CType collectionType = collectioniFaces.Item(i);
+                    CType collectionType = collectioniFaces[i];
                     Debug.Assert(collectionType.isInterfaceType());
 
                     // Insert into our list of Types.
@@ -408,7 +408,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 Type genericDefinition = type.GetGenericTypeDefinition();
                 Type[] genericArguments = genericDefinition.GetGenericArguments();
                 List<CType> ctypes = new List<CType>();
-                int outerParameters = agg.isNested() ? agg.GetOuterAgg().GetTypeVarsAll().size : 0;
+                int outerParameters = agg.isNested() ? agg.GetOuterAgg().GetTypeVarsAll().Count : 0;
 
                 for (int i = 0; i < genericArguments.Length; i++)
                 {
@@ -940,7 +940,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 agg != null;
                 agg = BSYMMGR.LookupNextSym(agg, agg.Parent, symbmask_t.MASK_AggregateSymbol) as AggregateSymbol)
             {
-                if (agg.GetTypeVarsAll().size == type.GetGenericArguments().Length)
+                if (agg.GetTypeVarsAll().Count == type.GetGenericArguments().Length)
                 {
                     return agg;
                 }
@@ -1093,12 +1093,12 @@ namespace Microsoft.CSharp.RuntimeBinder
                 Type[] genericArguments = genericDefinition.GetGenericArguments();
 
                 // After we load the type parameters, we need to resolve their bounds.
-                for (int i = 0; i < agg.GetTypeVars().size; i++)
+                for (int i = 0; i < agg.GetTypeVars().Count; i++)
                 {
                     Type t = genericArguments[i];
-                    if (agg.GetTypeVars().Item(i).IsTypeParameterType())
+                    if (agg.GetTypeVars()[i].IsTypeParameterType())
                     {
-                        agg.GetTypeVars().Item(i).AsTypeParameterType().GetTypeParameterSymbol().SetBounds(
+                        agg.GetTypeVars()[i].AsTypeParameterType().GetTypeParameterSymbol().SetBounds(
                             _bsymmgr.AllocParams(
                             GetCTypeArrayFromTypes(t.GetGenericParameterConstraints())));
                     }
@@ -1312,7 +1312,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             Type eventRegistrationTokenType = EventRegistrationTokenType;
             if ((object)eventRegistrationTokenType != null && (object)WindowsRuntimeMarshalType != null &&
                 ev.methAdd.RetType.AssociatedSystemType == eventRegistrationTokenType &&
-                ev.methRemove.Params.Item(0).AssociatedSystemType == eventRegistrationTokenType)
+                ev.methRemove.Params[0].AssociatedSystemType == eventRegistrationTokenType)
             {
                 ev.IsWindowsRuntimeEvent = true;
             }
@@ -1464,7 +1464,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
                 // If we have an indexed property, leave the method as a method we can call,
                 // and mark the property as bogus.
-                if (isIndexer || prop.methGet.Params.size == 0)
+                if (isIndexer || prop.methGet.Params.Count == 0)
                 {
                     prop.methGet.SetProperty(prop);
                 }
@@ -1485,7 +1485,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
                 // If we have an indexed property, leave the method as a method we can call,
                 // and mark the property as bogus.
-                if (isIndexer || prop.methSet.Params.size == 1)
+                if (isIndexer || prop.methSet.Params.Count == 1)
                 {
                     prop.methSet.SetProperty(prop);
                 }
@@ -2066,7 +2066,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             if (t.IsTypeParameterType())
             {
                 // Add conversions for the bounds.
-                foreach (CType bound in t.AsTypeParameterType().GetBounds().ToArray())
+                foreach (CType bound in t.AsTypeParameterType().GetBounds().Items)
                 {
                     AddConversionsForType(bound.AssociatedSystemType);
                 }

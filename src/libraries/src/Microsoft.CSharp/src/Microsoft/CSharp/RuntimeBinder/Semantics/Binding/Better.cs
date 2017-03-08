@@ -57,14 +57,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             // Non-generic wins.
-            if (mpwi1.TypeArgs.size != 0)
+            if (mpwi1.TypeArgs.Count != 0)
             {
-                if (mpwi2.TypeArgs.size == 0)
+                if (mpwi2.TypeArgs.Count == 0)
                 {
                     return BetterType.Right;
                 }
             }
-            else if (mpwi2.TypeArgs.size != 0)
+            else if (mpwi2.TypeArgs.Count != 0)
             {
                 return BetterType.Left;
             }
@@ -137,20 +137,20 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 #if DEBUG
             // We never have a named argument that is in a position in the argument
             // list past the end of what would be the formal parameter list.
-            for (int i = pta.size; i < args.carg; i++)
+            for (int i = pta.Count; i < args.carg; i++)
             {
                 Debug.Assert(!args.prgexpr[i].isNamedArgumentSpecification());
             }
 #endif
 
             CType type = pTypeThrough != null ? pTypeThrough : mpwi.GetType();
-            CType[] typeList = new CType[pta.size];
+            CType[] typeList = new CType[pta.Count];
             MethodOrPropertySymbol methProp = GroupToArgsBinder.FindMostDerivedMethod(GetSymbolLoader(), mpwi.MethProp(), type);
 
             // We initialize the new type array with the parameters for the method. 
-            for (int iParam = 0; iParam < pta.size; iParam++)
+            for (int iParam = 0; iParam < pta.Count; iParam++)
             {
-                typeList[iParam] = pta.Item(iParam);
+                typeList[iParam] = pta[iParam];
             }
 
             // We then go over the specified arguments and put the type for any named argument in the right position in the array.
@@ -161,7 +161,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 {
                     // We find the index of the type of the argument in the method parameter list and store that in a temp
                     int index = FindName(methProp.ParameterNames, arg.asNamedArgumentSpecification().Name);
-                    CType tempType = pta.Item(index);
+                    CType tempType = pta[index];
 
                     // Starting from the current position in the type list up until the location of the type of the optional argument
                     //  We shift types by one:
@@ -177,7 +177,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
             }
 
-            return GetSymbolLoader().getBSymmgr().AllocParams(pta.size, typeList);
+            return GetSymbolLoader().getBSymmgr().AllocParams(pta.Count, typeList);
         }
 
         ////////////////////////////////////////////////////////////////////////////////
@@ -245,9 +245,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             for (int i = 0; i < args.carg; i++)
             {
                 EXPR arg = args.fHasExprs ? args.prgexpr[i] : null;
-                CType argType = args.types.Item(i);
-                CType p1 = pta1.Item(i);
-                CType p2 = pta2.Item(i);
+                CType argType = args.types[i];
+                CType p1 = pta1[i];
+                CType p2 = pta2[i];
 
                 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 // RUNTIME BINDER ONLY CHANGE
@@ -289,7 +289,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // We may have different sizes if we had optional parameters. If thats the case,
             // the one with fewer parameters wins (ie less optional parameters) unless it is
             // expanded. If so, the one with more parameters wins (ie option beats expanded).
-            if (pta1.size != pta2.size && betterMethod == BetterType.Neither)
+            if (pta1.Count != pta2.Count && betterMethod == BetterType.Neither)
             {
                 if (node1.fExpanded && !node2.fExpanded)
                 {
@@ -304,11 +304,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // then we are ambiguous. Otherwise, take the one that didn't need any 
                 // optionals.
 
-                if (pta1.size == args.carg)
+                if (pta1.Count == args.carg)
                 {
                     return BetterType.Left;
                 }
-                else if (pta2.size == args.carg)
+                else if (pta2.Count == args.carg)
                 {
                     return BetterType.Right;
                 }
