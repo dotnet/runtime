@@ -143,8 +143,11 @@ extern "C" DLL_EXPORT BOOL __cdecl RPinvoke_DelMarshal_InOut(Test_DelMarshal_InO
     return TRUE;
 }
 
+//
+// PInvokeDef.cs explicitly declares that RPinvoke_DelMarshalPointer_Out uses STDCALL
+//
 typedef LPCSTR (__cdecl * Test_DelMarshalPointer_Out)(/*[out]*/ LPSTR * s);
-extern "C" DLL_EXPORT BOOL WINAPI RPinvoke_DelMarshalPointer_Out(Test_DelMarshalPointer_Out d)
+extern "C" DLL_EXPORT BOOL __stdcall RPinvoke_DelMarshalPointer_Out(Test_DelMarshalPointer_Out d)
 {
     LPSTR str;
     LPCSTR ret = d(&str);
@@ -173,8 +176,11 @@ extern "C" DLL_EXPORT BOOL WINAPI RPinvoke_DelMarshalPointer_Out(Test_DelMarshal
     return TRUE;
 }
 
+//
+// PInvokeDef.cs explicitly declares that ReverseP_MarshalStrB_InOut uses STDCALL
+//
 typedef LPSTR (__stdcall * Test_Del_MarshalStrB_InOut)(/*[in,out]*/ LPSTR s);
-extern "C" DLL_EXPORT  BOOL WINAPI ReverseP_MarshalStrB_InOut(Test_Del_MarshalStrB_InOut d, /*[in]*/ LPCSTR s)
+extern "C" DLL_EXPORT  BOOL __stdcall ReverseP_MarshalStrB_InOut(Test_Del_MarshalStrB_InOut d, /*[in]*/ LPCSTR s)
 {
     LPSTR ret = d((LPSTR)s);
     LPCSTR expected = "Return";
