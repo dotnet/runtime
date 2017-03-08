@@ -356,7 +356,7 @@ namespace System.Diagnostics.Tests
 
                     var activity = new Activity("activity");
 
-                    // Test Activity.Stop
+                    // Test Activity.Start
                     source.StartActivity(activity, arguments);
                     Assert.Equal(activity.OperationName + ".Start", observer.EventName);
                     Assert.Equal(arguments, observer.EventObject);
@@ -372,11 +372,16 @@ namespace System.Diagnostics.Tests
                     source.StopActivity(activity, arguments);
                     Assert.Equal(activity.OperationName + ".Stop", observer.EventName);
                     Assert.Equal(arguments, observer.EventObject);
+                    Assert.True(observer.Activity.StartTimeUtc + observer.Activity.Duration <= DateTime.UtcNow);
 
-                    // Confirm that duration is set. 
-                    Assert.NotNull(observer.Activity);
-                    Assert.True(TimeSpan.Zero < observer.Activity.Duration);
-                    Assert.True(observer.Activity.StartTimeUtc + observer.Activity.Duration < DateTime.UtcNow);
+                    observer.Reset();
+
+                    // Confirm that duration is set in Stop. 
+                    activity = new Activity("activity");
+                    activity.SetStartTime(DateTime.UtcNow.AddMilliseconds(-1));
+                    source.StartActivity(activity, arguments);
+                    source.StopActivity(activity, arguments);
+                    Assert.True(TimeSpan.FromMilliseconds(1) <= observer.Activity.Duration);
                 } 
             }
         }
