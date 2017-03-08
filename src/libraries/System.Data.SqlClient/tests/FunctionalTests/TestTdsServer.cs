@@ -37,8 +37,12 @@ namespace System.Data.SqlClient.Tests
             TestTdsServer server = engine == null ? new TestTdsServer(args) : new TestTdsServer(engine, args);
             server._endpoint = new TDSServerEndPoint(server) { ServerEndPoint = new IPEndPoint(IPAddress.Any, 0) };
             server._endpoint.Start();
+
+            // The server EventLog should be enabled as it logs the exceptions.
+            server._endpoint.EventLog = Console.Out;
+
             int port = server._endpoint.ServerEndPoint.Port;
-            server.connectionStringBuilder = new SqlConnectionStringBuilder() { DataSource = "localhost," + port, ConnectTimeout = 30, Encrypt = false };
+            server.connectionStringBuilder = new SqlConnectionStringBuilder() { DataSource = "localhost," + port, ConnectTimeout = 5, Encrypt = false };
             server.ConnectionString = server.connectionStringBuilder.ConnectionString;
             return server;
         }
