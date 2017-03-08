@@ -7,7 +7,7 @@ FEATUREFUL_RUNTIME_TEST = test-appdomain-unload
 endif
 
 check-local: assemblyresolve/test/asm.dll testjit test-generic-sharing test-type-load test-multi-netmodule test-cattr-type-load test-reflection-load-with-context test_platform	\
-		 test-console-output test-messages test-env-options test-unhandled-exception-2 $(FEATUREFUL_RUNTIME_TEST) test-process-stress test-pedump rm-empty-logs
+		 test-console-output test-env-options test-unhandled-exception-2 $(FEATUREFUL_RUNTIME_TEST) test-process-stress test-pedump rm-empty-logs
 check-full: test-sgen check-local
 check-parallel: compile-tests check-full
 
@@ -481,7 +481,8 @@ BASE_TEST_CS_SRC=		\
 	thread6.cs	\
 	appdomain-threadpool-unload.cs	\
 	process-unref-race.cs	\
-	bug-46661.cs
+	bug-46661.cs	\
+	w32message.cs
 
 TEST_CS_SRC_DIST=	\
 	$(BASE_TEST_CS_SRC)	\
@@ -580,6 +581,11 @@ TEST_IL_SRC=			\
 if AMD64
 # #651684
 PLATFORM_DISABLED_TESTS = finally_guard.exe
+
+if HOST_WIN32
+PLATFORM_DISABLED_TESTS += w32message.exe
+endif
+
 endif
 
 if IA64
@@ -592,7 +598,7 @@ if X86
 
 if HOST_WIN32
 PLATFORM_DISABLED_TESTS=async-exc-compilation.exe finally_guard.exe finally_block_ending_in_dead_bb.exe \
-	bug-18026.exe monitor.exe threadpool-exceptions5.exe process-unref-race.exe
+	bug-18026.exe monitor.exe threadpool-exceptions5.exe process-unref-race.exe w32message.exe
 endif
 
 endif
@@ -642,6 +648,8 @@ PLATFORM_DISABLED_TESTS= abort-stress-1.exe \
                          thread6.exe \
                          threadpool-exceptions5.exe \
                          threadpool-exceptions6.exe
+
+PLATFORM_DISABLED_TESTS+= w32message.exe
 
 # Tests that rely on AppDomain.Unload
 PLATFORM_DISABLED_TESTS+= appdomain-async-invoke.exe \
@@ -1186,22 +1194,6 @@ else
 test-eglib-remap:
 	@echo "Testing eglib remap..."
 	@if which nm > /dev/null; then if nm $(top_builddir)/mono/mini/mono | grep -v $(OK_G_SYMBOLS) | grep 't g_'; then exit 1; else exit 0; fi; fi
-endif
-
-#
-# Tests that the internals in mono/io-layer/messages.c are ok by triggering the 
-# code that checks that the table is properly sorted
-#
-if NACL_CODEGEN
-test-messages:
-else
-if HOST_WIN32
-test-messages:
-else
-test-messages: w32message.exe
-	> test_messages.zero
-	$(with_mono_path) $(JITTEST_PROG_RUN) w32message.exe > w32message.allout 2>&1 && cmp test_messages.zero w32message.allout
-endif
 endif
 
 test-env-options:

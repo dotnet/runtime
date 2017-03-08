@@ -2,9 +2,6 @@
 // This test merely creates a Win32Exception that triggers the
 // code in mono/io-layer/message.c that validates that the
 // error table is propertly sorted
-//
-// If there is output on stderr, we have an error
-//
 using System;
 using System.ComponentModel;
 
@@ -14,13 +11,16 @@ class X {
 		return new Win32Exception (c).Message;
 	}
 
-	static void check (int c, string s)
+	static bool check (int c, string s)
 	{
-		if (msg (c) != s)
-			Console.WriteLine ("For {0} expected {1} got {2}", c, s, msg (c));
+		if (msg (c) != s) {
+			Console.Error.WriteLine ("For {0} expected {1} got {2}", c, s, msg (c));
+			return false;
+		}
+		return true;
 	}
 	
-	static void Main ()
+	static int Main ()
 	{
 		//
 		// All this test does is instantiate two Win32Exceptions
@@ -33,8 +33,11 @@ class X {
 		Exception a = new Win32Exception (99999);
 		a = new Win32Exception (9805);
 
-		check (2, "Cannot find the specified file");
+		if (!check (2, "Cannot find the specified file"))
+			return 1;
 
+
+		return 0;
 	}
 	
 }
