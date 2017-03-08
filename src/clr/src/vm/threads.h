@@ -552,9 +552,6 @@ inline Thread* GetThreadNULLOk()
 #define GetThreadNULLOk() GetThread()
 #endif
 
-//***************************************************************************
- #define HAS_TRACK_CXX_EXCEPTION_CODE_HACK 0
-
 // manifest constant for waiting in the exposed classlibs
 const INT32 INFINITE_TIMEOUT = -1;
 

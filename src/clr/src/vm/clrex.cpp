@@ -2478,10 +2478,6 @@ CLRLastThrownObjectException* CLRLastThrownObjectException::Validate()
 
     DWORD dwCurrentExceptionCode = GetCurrentExceptionCode();
 
-#if HAS_TRACK_CXX_EXCEPTION_CODE_HACK
-    DWORD dwLastCxxSEHExceptionCode = pThread->m_LastCxxSEHExceptionCode;
-#endif // HAS_TRACK_CXX_EXCEPTION_CODE_HACK
-
     if (dwCurrentExceptionCode == BOOTUP_EXCEPTION_COMPLUS)
     {
         // BOOTUP_EXCEPTION_COMPLUS can be thrown when a thread setup is failed due to reasons like
@@ -2521,75 +2517,7 @@ CLRLastThrownObjectException* CLRLastThrownObjectException::Validate()
         //
         // This also ensures that the handling of BOOTUP_EXCEPTION_COMPLUS is now insync between the chk and fre builds in terms of the throwable returned.
     }
-    else 
-    
-#if HAS_TRACK_CXX_EXCEPTION_CODE_HACK // ON x86, we grab the exception code.
-
-    // The exception code can legitimately take several values.
-    // The most obvious is EXCEPTION_COMPLUS, as when managed code does 'throw new Exception'.
-    // Another case is EXCEPTION_MSVC, when we EX_RETHROW a CLRLastThrownObjectException, which will
-    //  throw an actual CLRLastThrownObjectException C++ exception.
-    // Other values are possible, if we are wrapping an SEH exception (say, AV) in 
-    //  a managed exception.  In these other cases, the exception object should have 
-    //  an XCode that is the same as the exception code.
-    // So, if the exception code isn't EXCEPTION_COMPLUS, and isn't EXCEPTION_MSVC, then 
-    //  we shouldn't be getting a CLRLastThrownObjectException.  This indicates that 
-    //  we are missing a "callout filter", which should have transformed the SEH 
-    //  exception into a COMPLUS exception.
-    // It also turns out that sometimes we see STATUS_UNWIND more recently than the exception
-    //  code.  In that case, we have lost the original exception code, and so can't check.
-    
-    if (dwLastCxxSEHExceptionCode != EXCEPTION_COMPLUS &&
-        dwLastCxxSEHExceptionCode != EXCEPTION_MSVC &&
-        dwLastCxxSEHExceptionCode != STATUS_UNWIND)
-    {
-        // Maybe there is an exception wrapping a Win32 fault.  In that case, the 
-        //  last exception code won't be EXCEPTION_COMPLUS, but the last thrown exception
-        //  will have an XCode equal to the last exception code.
-
-        // Get the exception code from the exception object.
-        DWORD dwExceptionXCode = GetExceptionXCode(throwable);
-
-        // If that code is the same as the last exception code, call it good...
-        if (dwLastCxxSEHExceptionCode != dwExceptionXCode)
-        {
-            // For rude thread abort, we may have updated the LastThrownObject without throwing exception.
-            BOOL fIsRudeThreadAbortException =
-                throwable == CLRException::GetPreallocatedRudeThreadAbortException();
-
-            // For stack overflow, we may have updated the LastThrownObject without throwing exception.
-            BOOL fIsStackOverflowException =
-                throwable == CLRException::GetPreallocatedStackOverflowException()  &&
-                (IsSOExceptionCode(dwLastCxxSEHExceptionCode));
-
-            // ... but if not, raise an error.
-            if (!fIsRudeThreadAbortException && !fIsStackOverflowException)
-            {
-            static int iSuppress = -1;
-            if (iSuppress == -1) 
-                iSuppress = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SuppressLostExceptionTypeAssert);
-            if (!iSuppress)
-            {   
-                // Raising an assert message can  cause a mode violation.
-                CONTRACT_VIOLATION(ModeViolation);
-
-                // Use DbgAssertDialog to get the formatting right.
-                DbgAssertDialog(__FILE__, __LINE__, 
-                    "The 'current' exception is not EXCEPTION_COMPLUS, yet the runtime is\n"
-                    " requesting the 'LastThrownObject'.\n"
-                    "The runtime may have lost track of the type of an exception in flight.\n"
-                    "  Please get a good stack trace of the exception that was thrown first\n"
-                    "  (by re-running the app & catching first chance exceptions), find\n"
-                    "  the caller of Validate, and file a bug against the owner.\n\n"
-                    "To suppress this assert 'set COMPlus_SuppressLostExceptionTypeAssert=1'");
-                }
-            }
-        }
-    }
-    else
-#endif // _x86_
-    
-    if (throwable == NULL)
+    else if (throwable == NULL)
     {   // If there isn't a LastThrownObject at all, that's a problem for GetLastThrownObject
         // We've lost track of the exception's type.  Raise an assert.  (This is configurable to allow
         //  stress labs to turn off the assert.)
