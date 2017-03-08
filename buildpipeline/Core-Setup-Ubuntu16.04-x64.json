@@ -4,6 +4,25 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
+      "displayName": "Shell Script build.sh",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "6c731c3c-3c68-459a-a5c9-bde6e6595b5b",
+        "versionSpec": "2.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "scriptPath": "build.sh",
+        "args": "$(BuildArguments)",
+        "disableAutoCwd": "false",
+        "cwd": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": true,
+      "alwaysRun": true,
       "displayName": "Initialize tools",
       "timeoutInMinutes": 0,
       "task": {
@@ -21,7 +40,7 @@
     {
       "enabled": true,
       "continueOnError": true,
-      "alwaysRun": false,
+      "alwaysRun": true,
       "displayName": "Clean up Docker images and containers.",
       "timeoutInMinutes": 0,
       "task": {
@@ -32,25 +51,6 @@
       "inputs": {
         "scriptPath": "pkg/Tools/scripts/docker/cleanup-docker.sh",
         "args": "",
-        "disableAutoCwd": "false",
-        "cwd": "",
-        "failOnStandardError": "false"
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Shell Script build.sh",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "6c731c3c-3c68-459a-a5c9-bde6e6595b5b",
-        "versionSpec": "2.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "scriptPath": "build.sh",
-        "args": "$(BuildArguments)",
         "disableAutoCwd": "false",
         "cwd": "",
         "failOnStandardError": "false"
