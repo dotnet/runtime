@@ -781,7 +781,7 @@ mono_arch_init (void)
 	mono_aot_register_jit_icall ("mono_arm_start_gsharedvt_call", mono_arm_start_gsharedvt_call);
 #endif
 	mono_aot_register_jit_icall ("mono_arm_unaligned_stack", mono_arm_unaligned_stack);
-
+	mono_aot_register_jit_icall ("mono_arm_handler_block_trampoline_helper", mono_arm_handler_block_trampoline_helper);
 #if defined(__ARM_EABI__)
 	eabi_supported = TRUE;
 #endif
@@ -7443,6 +7443,20 @@ emit_aotconst (MonoCompile *cfg, guint8 *code, int dreg, int patch_type, gpointe
 	*(gpointer*)code = NULL;
 	code += 4;
 	/* Load the value from the GOT */
+	ARM_LDR_REG_REG (code, dreg, ARMREG_PC, dreg);
+	return code;
+}
+
+guint8*
+mono_arm_emit_aotconst (gpointer ji_list, guint8 *code, guint8 *buf, int dreg, int patch_type, gconstpointer data)
+{
+	MonoJumpInfo **ji = (MonoJumpInfo**)ji_list;
+
+	*ji = mono_patch_info_list_prepend (*ji, code - buf, patch_type, data);
+	ARM_LDR_IMM (code, dreg, ARMREG_PC, 0);
+	ARM_B (code, 0);
+	*(gpointer*)code = NULL;
+	code += 4;
 	ARM_LDR_REG_REG (code, dreg, ARMREG_PC, dreg);
 	return code;
 }

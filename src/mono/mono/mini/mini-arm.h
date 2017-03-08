@@ -340,6 +340,7 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_HAVE_SETUP_ASYNC_CALLBACK 1
 #define MONO_ARCH_HAVE_CONTEXT_SET_INT_REG 1
 #define MONO_ARCH_HAVE_HANDLER_BLOCK_GUARD 1
+#define MONO_ARCH_HAVE_HANDLER_BLOCK_GUARD_AOT 1
 #define MONO_ARCH_HAVE_SETUP_RESUME_FROM_SIGNAL_HANDLER_CTX 1
 #define MONO_ARCH_GSHAREDVT_SUPPORTED 1
 #define MONO_ARCH_HAVE_GENERAL_RGCTX_LAZY_FETCH_TRAMPOLINE 1
@@ -402,6 +403,13 @@ mono_arm_is_hard_float (void);
 
 void
 mono_arm_unaligned_stack (MonoMethod *method);
+
+gpointer
+mono_arm_handler_block_trampoline_helper (gpointer *ptr);
+
+/* MonoJumpInfo **ji */
+guint8*
+mono_arm_emit_aotconst (gpointer ji, guint8 *code, guint8 *buf, int dreg, int patch_type, gconstpointer data);
 
 CallInfo*
 mono_arch_get_call_info (MonoMemPool *mp, MonoMethodSignature *sig);
