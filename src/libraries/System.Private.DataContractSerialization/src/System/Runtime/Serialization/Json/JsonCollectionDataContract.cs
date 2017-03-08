@@ -36,7 +36,7 @@ namespace System.Runtime.Serialization.Json
 #if NET_NATIVE
                             else if (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup)
                             {
-                                tempDelegate = JsonDataContract.TryGetReadWriteDelegatesFromGeneratedAssembly(TraditionalCollectionDataContract).CollectionReaderDelegate;
+                                tempDelegate = JsonDataContract.TryGetReadWriteDelegatesFromGeneratedAssembly(TraditionalCollectionDataContract)?.CollectionReaderDelegate;
                                 tempDelegate = tempDelegate ?? new ReflectionJsonCollectionReader().ReflectionReadCollection;
 
                                 if (tempDelegate == null)
@@ -85,7 +85,7 @@ namespace System.Runtime.Serialization.Json
 #if NET_NATIVE
                             else if (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup)
                             {
-                                tempDelegate = JsonDataContract.TryGetReadWriteDelegatesFromGeneratedAssembly(TraditionalCollectionDataContract).GetOnlyCollectionReaderDelegate;
+                                tempDelegate = JsonDataContract.TryGetReadWriteDelegatesFromGeneratedAssembly(TraditionalCollectionDataContract)?.GetOnlyCollectionReaderDelegate;
                                 tempDelegate = tempDelegate ?? new ReflectionJsonCollectionReader().ReflectionReadGetOnlyCollection;
 
                                 if (tempDelegate == null)
@@ -128,7 +128,7 @@ namespace System.Runtime.Serialization.Json
 #if NET_NATIVE
                             else if (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup)
                             {
-                                tempDelegate = JsonDataContract.TryGetReadWriteDelegatesFromGeneratedAssembly(TraditionalCollectionDataContract).CollectionWriterDelegate;
+                                tempDelegate = JsonDataContract.TryGetReadWriteDelegatesFromGeneratedAssembly(TraditionalCollectionDataContract)?.CollectionWriterDelegate;
                                 tempDelegate = tempDelegate ?? new ReflectionJsonFormatWriter().ReflectionWriteCollection;
 
                                 if (tempDelegate == null)
