@@ -178,6 +178,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\UnhandledExceptionEventArgs.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\UnhandledExceptionEventHandler.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Void.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\CriticalHandleMinusOneIsInvalid.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\CriticalHandleZeroOrMinusOneIsInvalid.cs"/>
   </ItemGroup>
   <ItemGroup Condition="$(TargetsWindows)">
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.Win32.cs" Condition="'$(IsProjectNLibrary)' != 'true'"/>
