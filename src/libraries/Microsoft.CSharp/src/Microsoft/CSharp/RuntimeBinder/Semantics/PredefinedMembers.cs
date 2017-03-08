@@ -460,7 +460,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     {
                         int index = signature[indexIntoSignatures];
                         indexIntoSignatures++;
-                        return classTyVars.Item(index);
+                        return classTyVars[index];
                     }
                 case (MethodSignatureEnum)PredefinedType.PT_VOID:
                     return GetTypeManager().GetVoid();
@@ -470,8 +470,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         AggregateSymbol agg = GetOptPredefAgg((PredefinedType)current);
                         if (agg != null)
                         {
-                            CType[] typeArgs = new CType[agg.GetTypeVars().size];
-                            for (int iTypeArg = 0; iTypeArg < agg.GetTypeVars().size; iTypeArg++)
+                            CType[] typeArgs = new CType[agg.GetTypeVars().Count];
+                            for (int iTypeArg = 0; iTypeArg < agg.GetTypeVars().Count; iTypeArg++)
                             {
                                 typeArgs[iTypeArg] = LoadTypeFromSignature(signature, ref indexIntoSignatures, classTyVars);
                                 if (typeArgs[iTypeArg] == null)
@@ -479,7 +479,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                                     return null;
                                 }
                             }
-                            AggregateType type = GetTypeManager().GetAggregate(agg, getBSymmgr().AllocParams(agg.GetTypeVars().size, typeArgs));
+                            AggregateType type = GetTypeManager().GetAggregate(agg, getBSymmgr().AllocParams(agg.GetTypeVars().Count, typeArgs));
                             if (type.isPredefType(PredefinedType.PT_G_OPTIONAL))
                             {
                                 return GetTypeManager().GetNubFromNullable(type);
@@ -627,7 +627,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     if ((methsym.GetAccess() == methodAccess || methodAccess == ACCESS.ACC_UNKNOWN) &&
                         methsym.isStatic == isStatic &&
                         methsym.isVirtual == isVirtual &&
-                        methsym.typeVars.size == cMethodTyVars &&
+                        methsym.typeVars.Count == cMethodTyVars &&
                         GetTypeManager().SubstEqualTypes(methsym.RetType, returnType, null, methsym.typeVars, SubstTypeFlags.DenormMeth) &&
                         GetTypeManager().SubstEqualTypeArrays(methsym.Params, argumentTypes, (TypeArray)null,
                             methsym.typeVars, SubstTypeFlags.DenormMeth) &&
