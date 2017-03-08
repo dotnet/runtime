@@ -103,8 +103,6 @@ namespace System.Net.Sockets
             _socketType = socketType;
             _protocolType = protocolType;
 
-            // TODO: Investigate this problematic assertion: Issue #4500.
-            // Debug.Assert(addressFamily != AddressFamily.InterNetworkV6 || !DualMode);
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
