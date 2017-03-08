@@ -376,7 +376,6 @@ namespace System.Tests
             ValueTupleDriverA.TestToString("(" + ((short)10000) + ", " + ((int)1000000) + ", " + ((long)10000000) + ", 2008?7?2?, 0, " + ((Single)0.0001) + ", " + ((Double)0.0000001) + ", " + now + ", (False, System.Object), " + TimeSpan.Zero + ")");
         }
 
-        [ActiveIssue(10207, TestPlatforms.AnyUnix)]
         [Fact]
         public static void TestEquals_GetHashCode()
         {
@@ -468,7 +467,6 @@ namespace System.Tests
             ValueTupleDriverA.TestEquals_GetHashCode(ValueTupleDriverC, false, false);
         }
 
-        [ActiveIssue(10207, TestPlatforms.AnyUnix)]
         [Fact]
         public static void TestCompareTo()
         {
