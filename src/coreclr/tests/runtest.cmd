@@ -8,6 +8,20 @@ set __BuildOS=Windows_NT
 set __MSBuildBuildArch=x64
 
 :: Default to highest Visual Studio version available
+::
+:: For VS2015 (and prior), only a single instance is allowed to be installed on a box
+:: and VS140COMNTOOLS is set as a global environment variable by the installer. This
+:: allows users to locate where the instance of VS2015 is installed.
+::
+:: For VS2017, multiple instances can be installed on the same box SxS and VS150COMNTOOLS
+:: is no longer set as a global environment variable and is instead only set if the user
+:: has launched the VS2017 Developer Command Prompt.
+::
+:: Following this logic, we will default to the VS2017 toolset if VS150COMNTOOLS tools is
+:: set, as this indicates the user is running from the VS2017 Developer Command Prompt and
+:: is already configured to use that toolset. Otherwise, we will fallback to using the VS2015
+:: toolset if it is installed. Finally, we will fail the script if no supported VS instance
+:: can be found.
 set __VSVersion=vs2017
 
 if defined VS140COMNTOOLS set __VSVersion=vs2015
