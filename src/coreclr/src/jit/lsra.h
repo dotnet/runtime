@@ -681,7 +681,9 @@ private:
 
     void buildPhysRegRecords();
 
-    void setLastUses(BasicBlock* block);
+#ifdef DEBUG
+    void checkLastUses(BasicBlock* block);
+#endif // DEBUG
 
     void setFrameType();
 
