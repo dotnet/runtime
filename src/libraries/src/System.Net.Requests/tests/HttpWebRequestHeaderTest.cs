@@ -38,7 +38,8 @@ namespace System.Net.Tests
         }
 
         [OuterLoop]
-        [Theory, MemberData(nameof(EchoServers))]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotFedoraOrRedHatOrCentos))] // #16201
+        [MemberData(nameof(EchoServers))]
         public WebResponse GetResponse_UseDefaultCredentials_ExpectSuccess(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
