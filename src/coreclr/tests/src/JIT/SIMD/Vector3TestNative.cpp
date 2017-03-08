@@ -25,6 +25,12 @@
 #define _countof(_array) (sizeof(_array)/sizeof(_array[0]))
 #endif
 
+#ifdef _MSC_VER
+#define CALLBACK __stdcall
+#else // _MSC_VER
+#define CALLBACK
+#endif // !_MSC_VER
+
 typedef struct _Vector3 
 {
     float x;
@@ -266,7 +272,7 @@ EXPORT(void) __stdcall nativeCall_PInvoke_Vector3InComplexStruct(ComplexDT* arg)
 //
 // RPInvoke native call for Vector3 argument
 //
-typedef void (__stdcall *CallBack_RPInvoke_Vector3Arg)(int i, Vector3 v1, char* s, Vector3 v2);
+typedef void (CALLBACK *CallBack_RPInvoke_Vector3Arg)(int i, Vector3 v1, char* s, Vector3 v2);
 
 
 EXPORT(void) __stdcall nativeCall_RPInvoke_Vector3Arg(
@@ -285,7 +291,7 @@ EXPORT(void) __stdcall nativeCall_RPInvoke_Vector3Arg(
 //
 // RPInvoke native call for Vector3 argument
 //
-typedef void (__stdcall *CallBack_RPInvoke_Vector3Arg_Unix)(
+typedef void (CALLBACK *CallBack_RPInvoke_Vector3Arg_Unix)(
     Vector3 v3f32_xmm0, 
     float   f32_xmm2,
     float   f32_xmm3,
@@ -319,7 +325,7 @@ EXPORT(void) __stdcall nativeCall_RPInvoke_Vector3Arg_Unix(
 //
 // RPInvoke native call for Vector3 argument
 //
-typedef void (__stdcall *CallBack_RPInvoke_Vector3Arg_Unix2)(
+typedef void (CALLBACK *CallBack_RPInvoke_Vector3Arg_Unix2)(
     Vector3 v3f32_xmm0, 
     float   f32_xmm2,
     float   f32_xmm3,
@@ -358,7 +364,7 @@ EXPORT(void) __stdcall nativeCall_RPInvoke_Vector3Arg_Unix2(
 // RPInvoke native call for Vector3 array
 //
 
-typedef Vector3 (__stdcall *CallBack_RPInvoke_Vector3Ret)();
+typedef Vector3 (CALLBACK *CallBack_RPInvoke_Vector3Ret)();
 
 EXPORT(bool) __stdcall nativeCall_RPInvoke_Vector3Ret(
   CallBack_RPInvoke_Vector3Ret notify)
@@ -377,7 +383,7 @@ EXPORT(bool) __stdcall nativeCall_RPInvoke_Vector3Ret(
 // RPInvoke native call for Vector3 array
 //
 
-typedef void (__stdcall *CallBack_RPInvoke_Vector3Array)(Vector3* v, int size);
+typedef void (CALLBACK *CallBack_RPInvoke_Vector3Array)(Vector3* v, int size);
 
 static Vector3 arr[2];
 
@@ -398,7 +404,7 @@ EXPORT(void) __stdcall nativeCall_RPInvoke_Vector3Array(
 // RPInvoke native call for Vector3-in-struct test
 //
 
-typedef void (__stdcall *CallBack_RPInvoke_Vector3InStruct)(DT v);
+typedef void (CALLBACK *CallBack_RPInvoke_Vector3InStruct)(DT v);
 
 static DT v;
 
@@ -419,7 +425,7 @@ EXPORT(void) __stdcall nativeCall_RPInvoke_Vector3InStruct(
 // RPInvoke native call for complex Vector3-in-struct test
 //
 
-typedef bool (__stdcall *CallBack_RPInvoke_Vector3InComplexStruct)(ComplexDT* v);
+typedef bool (CALLBACK *CallBack_RPInvoke_Vector3InComplexStruct)(ComplexDT* v);
 
 EXPORT(bool) __stdcall nativeCall_RPInvoke_Vector3InComplexStruct(
   CallBack_RPInvoke_Vector3InComplexStruct notify)
