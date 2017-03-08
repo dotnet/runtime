@@ -40,6 +40,7 @@ set "__SourceDir=%__ProjectDir%\src"
 set "__PackagesDir=%__ProjectDir%\packages"
 set "__RootBinDir=%__ProjectDir%\bin"
 set "__LogsDir=%__RootBinDir%\Logs"
+set "__OptDataVersion="
 
 set __BuildAll=
 
@@ -71,6 +72,7 @@ set __BuildNative=1
 set __BuildTests=1
 set __BuildPackages=1
 set __BuildNativeCoreLib=1
+set __RestoreOptData=1
 
 :Arg_Loop
 if "%1" == "" goto ArgsDone
@@ -105,6 +107,7 @@ if /i "%1" == "skipmscorlib"        (set __BuildCoreLib=0&set __BuildNativeCoreL
 if /i "%1" == "skipnative"          (set __BuildNative=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skiptests"           (set __BuildTests=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skipbuildpackages"   (set __BuildPackages=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "skiprestoreoptdata"  (set __RestoreOptData=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "usenmakemakefiles"   (set __NMakeMakefiles=1&set __ConfigureOnly=1&set __BuildNative=1&set __BuildNativeCoreLib=0&set __BuildCoreLib=0&set __BuildTests=0&set __BuildPackages=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "buildjit32"          (set __BuildJit32="-DBUILD_JIT32=1"&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "pgoinstrument"       (set __PgoInstrument=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -204,6 +207,33 @@ call                                 "%__VSToolsRoot%\VsDevCmd.bat"
 
 REM =========================================================================================
 REM ===
+REM === Restore optimization profile data
+REM ===
+REM =========================================================================================
+
+REM Parse the package version out of project.json so that we can pass it on to CMake
+where /q python || (
+    echo %__MsgPrefix%Error: Python not found on PATH, please make sure that it is installed.
+    exit /b 1
+)
+set OptDataProjectJsonPath=%__ProjectDir%\src\.nuget\optdata\project.json
+if EXIST "%OptDataProjectJsonPath%" (
+    for /f "tokens=*" %%s in ('python "%__ProjectDir%\extract-from-json.py" -rf "%OptDataProjectJsonPath%" dependencies optimization.PGO.CoreCLR') do @(
+        set __OptDataVersion=%%s
+    )
+)
+
+if %__RestoreOptData% EQU 1 (
+    echo %__MsgPrefix%Restoring the OptimizationData Package
+    @call %__ProjectDir%\run.cmd sync -optdata
+    if not !errorlevel! == 0 (
+        echo %__MsgPrefix%Error: Failed to restore the optimization data package.
+        exit /b 1
+    )
+)
+
+REM =========================================================================================
+REM ===
 REM === Build the CLR VM
 REM ===
 REM =========================================================================================
@@ -251,7 +281,7 @@ if %__BuildNative% EQU 1 (
     echo %__MsgPrefix%Regenerating the Visual Studio solution
 
     pushd "%__IntermediatesDir%"
-    set __ExtraCmakeArgs=!___SDKVersion! "-DCLR_CMAKE_TARGET_OS=%__BuildOs%" "-DCLR_CMAKE_PACKAGES_DIR=%__PackagesDir%" "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%"
+    set __ExtraCmakeArgs=!___SDKVersion! "-DCLR_CMAKE_TARGET_OS=%__BuildOs%" "-DCLR_CMAKE_PACKAGES_DIR=%__PackagesDir%" "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_VERSION=%__OptDataVersion%"
     call "%__SourceDir%\pal\tools\gen-buildsys-win.bat" "%__ProjectDir%" %__VSVersion% %__BuildArch% %__BuildJit32% %__BuildStandaloneGC% !__ExtraCmakeArgs!
 	@if defined _echo @echo on
     popd
@@ -305,7 +335,7 @@ if /i "%__DoCrossArchBuild%"=="1" (
     pushd "%__CrossCompIntermediatesDir%"
     set __CMakeBinDir=%__CrossComponentBinDir%
     set "__CMakeBinDir=!__CMakeBinDir:\=/!"
-    set __ExtraCmakeArgs="-DCLR_CROSS_COMPONENTS_BUILD=1" "-DCLR_CMAKE_TARGET_ARCH=%__BuildArch%" "-DCLR_CMAKE_TARGET_OS=%__BuildOs%" "-DCLR_CMAKE_PACKAGES_DIR=%__PackagesDir%" "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%"
+    set __ExtraCmakeArgs="-DCLR_CROSS_COMPONENTS_BUILD=1" "-DCLR_CMAKE_TARGET_ARCH=%__BuildArch%" "-DCLR_CMAKE_TARGET_OS=%__BuildOs%" "-DCLR_CMAKE_PACKAGES_DIR=%__PackagesDir%" "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_VERSION=%__OptDataVersion%"
     call "%__SourceDir%\pal\tools\gen-buildsys-win.bat" "%__ProjectDir%" %__VSVersion% %__CrossArch% !__ExtraCmakeArgs!
     @if defined _echo @echo on
     popd
@@ -593,6 +623,7 @@ echo skipmscorlib: skip building System.Private.CoreLib ^(default: System.Privat
 echo skipnative: skip building native components ^(default: native components are built^).
 echo skiptests: skip building tests ^(default: tests are built^).
 echo skipbuildpackages: skip building nuget packages ^(default: packages are built^).
+echo skiprestoreoptdata: skip restoring optimization data used by profile-based optimizations.
 echo buildstandalonegc: builds the GC in a standalone mode.
 echo -skiprestore: skip restoring packages ^(default: packages are restored during build^).
 echo -disableoss: Disable Open Source Signing for System.Private.CoreLib.

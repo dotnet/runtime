@@ -24,6 +24,14 @@
     <Delete Files="$(BinDir)System.Private.CoreLib.*" />
   </Target>
 
+  <PropertyGroup>
+    <OptDataProjectJson>$(SourceDir).nuget/optdata/project.json</OptDataProjectJson>
+    <OptDataPackageFeed>https://dotnet.myget.org/F/dotnet-core-optimization-data/api/v3/index.json</OptDataPackageFeed>
+  </PropertyGroup>
+  <Target Name="RestoreOptData">
+    <Exec Condition="Exists('$(OptDataProjectJson)')" Command="$(DnuRestoreCommand) &quot;$(OptDataProjectJson)&quot; --source &quot;$(OptDataPackageFeed)&quot;" />
+  </Target>
+
   <Target Name="RestoreNETCorePlatforms" AfterTargets="Build" Condition="'$(RestoreDuringBuild)'=='true'">
     <Exec Command="$(DnuRestoreCommand) &quot;$(SourceDir).nuget/init/project.json&quot; --source https://dotnet.myget.org/F/dotnet-core/api/v3/index.json" />
   </Target>
