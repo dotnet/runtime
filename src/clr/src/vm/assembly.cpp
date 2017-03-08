@@ -141,6 +141,9 @@ Assembly::Assembly(BaseDomain *pDomain, PEAssembly* pFile, DebuggerAssemblyContr
 #ifdef FEATURE_COMINTEROP
     , m_InteropAttributeStatus(INTEROP_ATTRIBUTE_UNSET)
 #endif
+#ifdef FEATURE_PREJIT
+    , m_isInstrumentedStatus(IS_INSTRUMENTED_UNSET)
+#endif
 {
     STANDARD_VM_CONTRACT;
 }
@@ -2329,21 +2332,37 @@ BOOL Assembly::IsInstrumented()
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_FAULT;
 
-    BOOL isInstrumented = false;
-
-    EX_TRY
+    // This will set the value of m_isInstrumentedStatus by calling IsInstrumentedHelper()
+    // that method performs string pattern matching using the Config value of ZapBBInstr
+    // We cache the value returned from that method in m_isInstrumentedStatus
+    //
+    if (m_isInstrumentedStatus == IS_INSTRUMENTED_UNSET)
     {
-        FAULT_NOT_FATAL();
+        EX_TRY
+        {
+            FAULT_NOT_FATAL();
 
-        isInstrumented = IsInstrumentedHelper();
-    }
-    EX_CATCH
-    {
-        isInstrumented = false;
-    }
-    EX_END_CATCH(RethrowTerminalExceptions);
+            if (IsInstrumentedHelper())
+            {
+                m_isInstrumentedStatus = IS_INSTRUMENTED_TRUE;
+            }
+            else
+            {
+                m_isInstrumentedStatus = IS_INSTRUMENTED_FALSE;
+            }
+        }
 
-    return isInstrumented;
+        EX_CATCH
+        {
+            m_isInstrumentedStatus = IS_INSTRUMENTED_FALSE;
+        }
+        EX_END_CATCH(RethrowTerminalExceptions);
+    }
+
+    // At this point m_isInstrumentedStatus can't have the value of IS_INSTRUMENTED_UNSET
+    _ASSERTE(m_isInstrumentedStatus != IS_INSTRUMENTED_UNSET);
+
+    return (m_isInstrumentedStatus == IS_INSTRUMENTED_TRUE);
 }
 
 BOOL Assembly::IsInstrumentedHelper()
@@ -2357,7 +2376,7 @@ BOOL Assembly::IsInstrumentedHelper()
         return false;
 
     // We must have a native image in order to perform IBC instrumentation
-    if (!GetManifestFile()->HasNativeImage())
+    if (!GetManifestFile()->HasNativeOrReadyToRunImage())
         return false;
     
     // @Consider using the full name instead of the short form

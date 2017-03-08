@@ -378,6 +378,7 @@ public:
     PEImage *GetNativeImageWithRef();
     PEImage *GetPersistentNativeImage();
 #endif
+    BOOL HasNativeOrReadyToRunImage();
     BOOL HasNativeImage();
     PTR_PEImageLayout GetLoaded();
     PTR_PEImageLayout GetLoadedNative();

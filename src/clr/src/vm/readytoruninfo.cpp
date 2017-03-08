@@ -590,17 +590,29 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYT
         m_entryPointToMethodDescMap.Init(TRUE, &lock);
     }
 
-	//In format version >= 2.1 there is an optional inlining table 
-	if (IsImageVersionAtLeast(2, 1))
-	{
-		IMAGE_DATA_DIRECTORY * pInlineTrackingInfoDir = FindSection(READYTORUN_SECTION_INLINING_INFO);
-		if (pInlineTrackingInfoDir != NULL)
-		{
-			const BYTE* pInlineTrackingMapData = (const BYTE*)GetImage()->GetDirectoryData(pInlineTrackingInfoDir);
-			PersistentInlineTrackingMapR2R::TryLoad(pModule, pInlineTrackingMapData, pInlineTrackingInfoDir->Size,
-				pamTracker, &m_pPersistentInlineTrackingMap);
-		}
-	}
+    // For format version 2.1 and later, there is an optional inlining table 
+    if (IsImageVersionAtLeast(2, 1))
+    {
+        IMAGE_DATA_DIRECTORY * pInlineTrackingInfoDir = FindSection(READYTORUN_SECTION_INLINING_INFO);
+        if (pInlineTrackingInfoDir != NULL)
+        {
+            const BYTE* pInlineTrackingMapData = (const BYTE*)GetImage()->GetDirectoryData(pInlineTrackingInfoDir);
+            PersistentInlineTrackingMapR2R::TryLoad(pModule, pInlineTrackingMapData, pInlineTrackingInfoDir->Size,
+                                                    pamTracker, &m_pPersistentInlineTrackingMap);
+        }
+    }
+    // Fpr format version 2.2 and later, there is an optional profile-data section
+    if (IsImageVersionAtLeast(2, 2))
+    {
+        IMAGE_DATA_DIRECTORY * pProfileDataInfoDir = FindSection(READYTORUN_SECTION_PROFILEDATA_INFO);
+        if (pProfileDataInfoDir != NULL)
+        {
+            CORCOMPILE_METHOD_PROFILE_LIST * pMethodProfileList;
+            pMethodProfileList = (CORCOMPILE_METHOD_PROFILE_LIST *)GetImage()->GetDirectoryData(pProfileDataInfoDir);
+
+            pModule->SetMethodProfileList(pMethodProfileList);  
+        }
+    }
 }
 
 static bool SigMatchesMethodDesc(MethodDesc* pMD, SigPointer &sig, Module * pModule)
