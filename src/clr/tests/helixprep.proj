@@ -47,6 +47,7 @@
     <Delete Files="@(RequiresSigningFilesToDelete)" />
     <MSBuild Projects="helixprep.proj"
              Properties="BuildPath=%(XunitDlls.RootDir)%(XunitDlls.Directory);ProjectName=%(XunitDlls.Filename);BuildArchiveDir=$(TestWorkingDir)archive\tests\"
+             BuildInParallel="true"
              Targets="ArchiveBuild" />
   </Target>
 
