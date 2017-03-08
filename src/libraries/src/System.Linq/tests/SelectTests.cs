@@ -139,8 +139,7 @@ namespace System.Linq.Tests
             Assert.Equal(expected, source.Select((e, i) => i == 5 ? e.name : null));
         }
 
-        [Fact]
-        [ActiveIssue("Valid test but too intensive to enable even in OuterLoop")]
+        [Fact(Skip = "Valid test but too intensive to enable even in OuterLoop")]
         public void Overflow()
         {
             var selected = new FastInfiniteEnumerator<int>().Select((e, i) => e);

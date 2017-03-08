@@ -997,8 +997,7 @@ namespace System.Linq.Tests
             Assert.Equal(source.Skip(source.Length - 1), source.Where((e, i) => i == source.Length - 1));
         }
 
-        [Fact]
-        [ActiveIssue("Valid test but too intensive to enable even in OuterLoop")]
+        [Fact(Skip = "Valid test but too intensive to enable even in OuterLoop")]
         public void IndexOverflows()
         {
             var infiniteWhere = new FastInfiniteEnumerator<int>().Where((e, i) => true);
