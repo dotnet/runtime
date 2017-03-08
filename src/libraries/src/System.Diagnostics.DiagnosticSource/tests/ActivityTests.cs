@@ -368,20 +368,19 @@ namespace System.Diagnostics.Tests
 
                     observer.Reset();
 
+                    //DateTime.UtcNow is not precise on some platforms 
+                    //duration could be Zero if activity lasts less than 16ms
+                    Thread.Sleep(20);
+
                     // Test Activity.Stop
                     source.StopActivity(activity, arguments);
                     Assert.Equal(activity.OperationName + ".Stop", observer.EventName);
                     Assert.Equal(arguments, observer.EventObject);
-                    Assert.True(observer.Activity.StartTimeUtc + observer.Activity.Duration <= DateTime.UtcNow);
 
-                    observer.Reset();
-
-                    // Confirm that duration is set in Stop. 
-                    activity = new Activity("activity");
-                    activity.SetStartTime(DateTime.UtcNow.AddMilliseconds(-1));
-                    source.StartActivity(activity, arguments);
-                    source.StopActivity(activity, arguments);
-                    Assert.True(TimeSpan.FromMilliseconds(1) <= observer.Activity.Duration);
+                    // Confirm that duration is set. 
+                    Assert.NotNull(observer.Activity);
+                    Assert.True(TimeSpan.Zero < observer.Activity.Duration);
+                    Assert.True(observer.Activity.StartTimeUtc + observer.Activity.Duration < DateTime.UtcNow);
                 } 
             }
         }
