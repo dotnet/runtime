@@ -81,7 +81,7 @@ DLL_EXPORT ExplStruct* _cdecl CdeclSimpleExplStruct(ExplStruct p,BOOL *result)
 }
 
 extern "C"
-DLL_EXPORT voidPtr __stdcall GetFptr(int i)
+DLL_EXPORT voidPtr NATIVEAPI GetFptr(int i)
 {
 	switch(i)
 	{
