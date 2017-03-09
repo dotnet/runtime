@@ -22,7 +22,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="System\AppDomain.cs" Condition="'$(TargetGroup)' != 'uapaot' and '$(TargetGroup)' != 'netcoreapp1.2corert'" />
+    <Compile Include="System\AppDomain.cs" Condition="'$(TargetGroup)' != 'uapaot'" />
     <Compile Include="System\Context.cs" />
     <Compile Include="System\AppDomainUnloadedException.cs" />
     <Compile Include="System\ApplicationId.cs" />
@@ -92,7 +92,7 @@
       <Link>Common\System\HResults.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap' or '$(TargetGroup)' == 'netcoreapp1.2corert'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap'">
     <Compile Include="System\IO\FileStreamHelpers.CoreClr.cs" />
   </ItemGroup>
   <!-- WINDOWS: Shared CoreCLR and .NET Native -->
@@ -295,7 +295,7 @@
       <Link>Common\System\Runtime\InteropServices\StringBuffer.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'uapaot' or '$(TargetGroup)' == 'netcoreapp1.2corert'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'uapaot'">
     <Compile Include="System\IO\BinaryWriter.cs" />
   </ItemGroup>
   <ItemGroup>
