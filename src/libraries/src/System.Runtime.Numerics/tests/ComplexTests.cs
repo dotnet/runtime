@@ -334,6 +334,31 @@ namespace System.Numerics.Tests
             VerifyRealImaginaryProperties(result, expectedReal, expectedImaginary);
         }
 
+        public static IEnumerable<object[]> ACos_Legacy_TestData ()
+        {
+            // Boundary values
+            yield return new object[] { double.MaxValue, 0, double.NaN, double.NaN };
+            yield return new object[] { double.MinValue, 0, double.NaN, double.NaN };
+
+            // Invalid values
+            foreach (double invalidReal in s_invalidDoubleValues) {
+                yield return new object[] { invalidReal, 1, double.NaN, double.NaN }; // Invalid real
+                foreach (double invalidImaginary in s_invalidDoubleValues) {
+                    yield return new object[] { 1, invalidImaginary, double.NaN, double.NaN }; // Invalid imaginary
+                    yield return new object[] { invalidReal, invalidImaginary, double.NaN, double.NaN }; // Invalid real, invalid imaginary
+                }
+            }
+        }
+
+        [Theory, MemberData("ACos_Legacy_TestData")]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
+        public static void ACos_Legacy (double real, double imaginary, double expectedReal, double expectedImaginary)
+        {
+            var complex = new Complex(real, imaginary);
+            Complex result = Complex.Acos(complex);
+            VerifyRealImaginaryProperties(result, expectedReal, expectedImaginary);
+        }
+
         public static IEnumerable<object[]> Add_TestData()
         {
             yield return new object[] { 0, 0, RandomPositiveDouble(), RandomPositiveDouble() }; // 0 + x = x
@@ -394,7 +419,12 @@ namespace System.Numerics.Tests
             yield return new object[] { -1234000000, 0, -1.5707963267948966, 21.62667394298955 }; // Real part is negative, imaginary part is 0
             yield return new object[] { 0, 1234000000, 0, 21.62667394298955 }; // Imaginary part is positive
 
-            // Extreme values
+            // Extremely tiny values
+            yield return new object[] { 1.0 / double.MaxValue, 0.0, 1.0 / double.MaxValue, 0.0 };
+            yield return new object[] { 0.0, -1.0 / double.MaxValue, 0.0, -1.0 / double.MaxValue };
+            yield return new object[] { -1.0 / double.MaxValue, 1.0 / double.MaxValue, -1.0 / double.MaxValue, 1.0 / double.MaxValue };
+
+            // Extremely large values
             yield return new object[] { double.MaxValue, 0.0, Math.PI / 2.0, Math.Log(2.0) + Math.Log(double.MaxValue) };
             yield return new object[] { 0.0, double.MaxValue, 0.0, Math.Log(2.0) + Math.Log(double.MaxValue) };
             yield return new object[] { double.MaxValue, double.MaxValue, Math.PI / 4.0, Math.Log(2.0 * Math.Sqrt(2.0)) + Math.Log(double.MaxValue) };
@@ -411,12 +441,39 @@ namespace System.Numerics.Tests
         [ActiveIssue(15455)]
         [Theory, MemberData(nameof(ASin_Advanced_TestData))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
-        public static void ASin_Advanced(double real, double imaginary, double expectedReal, double expectedImaginary)
-        {
+        public static void ASin_Advanced (double real, double imaginary, double expectedReal, double expectedImaginary) {
             var complex = new Complex(real, imaginary);
             Complex result = Complex.Asin(complex);
             VerifyRealImaginaryProperties(result, expectedReal, expectedImaginary);
         }
+
+        public static IEnumerable<object[]> ASin_Legacy_TestData()
+        {
+            // Boundary values
+            yield return new object[] { double.MaxValue, 0, double.NaN, double.NaN };
+            yield return new object[] { double.MinValue, 0, double.NaN, double.NaN };
+
+            // Invalid values
+            foreach (double invalidReal in s_invalidDoubleValues)
+            {
+                yield return new object[] { invalidReal, 1, double.NaN, double.NaN }; // Invalid real
+                foreach (double invalidImaginary in s_invalidDoubleValues)
+                {
+                    yield return new object[] { 1, invalidImaginary, double.NaN, double.NaN }; // Invalid imaginary
+                    yield return new object[] { invalidReal, invalidImaginary, double.NaN, double.NaN }; // Invalid real, invalid imaginary
+                }
+            }
+        }
+
+        [Theory, MemberData("ASin_Legacy_TestData")]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
+        public static void ASin_Legacy (double real, double imaginary, double expectedReal, double expectedImaginary) {
+            var complex = new Complex(real, imaginary);
+            Complex result = Complex.Asin(complex);
+            VerifyRealImaginaryProperties(result, expectedReal, expectedImaginary);
+        }
+
+
 
         [Theory]
         [MemberData(nameof(Primitives_2_TestData))]
