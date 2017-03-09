@@ -6,8 +6,31 @@ set __BuildArch=x64
 set __VCBuildArch=x86_amd64
 set __BuildType=Debug
 set __BuildOS=Windows_NT
-set __VSVersion=vs2015
-set __VSToolsRoot=%VS140COMNTOOLS%
+
+:: Default to highest Visual Studio version available
+::
+:: For VS2015 (and prior), only a single instance is allowed to be installed on a box
+:: and VS140COMNTOOLS is set as a global environment variable by the installer. This
+:: allows users to locate where the instance of VS2015 is installed.
+::
+:: For VS2017, multiple instances can be installed on the same box SxS and VS150COMNTOOLS
+:: is no longer set as a global environment variable and is instead only set if the user
+:: has launched the VS2017 Developer Command Prompt.
+::
+:: Following this logic, we will default to the VS2017 toolset if VS150COMNTOOLS tools is
+:: set, as this indicates the user is running from the VS2017 Developer Command Prompt and
+:: is already configured to use that toolset. Otherwise, we will fallback to using the VS2015
+:: toolset if it is installed. Finally, we will fail the script if no supported VS instance
+:: can be found.
+if defined VS150COMNTOOLS (
+  set "__VSToolsRoot=%VS150COMNTOOLS%"
+  set "__VCToolsRoot=%VS150COMNTOOLS%\..\..\VC\Auxiliary\Build"
+  set __VSVersion=vs2017
+) else (
+  set "__VSToolsRoot=%VS140COMNTOOLS%"
+  set "__VCToolsRoot=%VS140COMNTOOLS%\..\..\VC"
+  set __VSVersion=vs2015
+)
 
 :: Define a prefix for most output progress messages that come from this script. That makes
 :: it easier to see where these are coming from. Note that there is a trailing space here.
@@ -137,8 +160,8 @@ if defined __ToolsetDir (
 )
 
 :: Set the environment for the native build
-echo %__MsgPrefix%Using environment: "%__VSToolsRoot%\..\..\VC\vcvarsall.bat" %__VCBuildArch%
-call                                 "%__VSToolsRoot%\..\..\VC\vcvarsall.bat" %__VCBuildArch%
+echo %__MsgPrefix%Using environment: "%__VCToolsRoot%\vcvarsall.bat" %__VCBuildArch%
+call                                 "%__VCToolsRoot%\vcvarsall.bat" %__VCBuildArch%
 @if defined _echo @echo on
 
 if not defined VSINSTALLDIR (
@@ -397,8 +420,8 @@ This is due to a bug in the Visual Studio installer. It does not install DIA SDK
 at the install location of previous Visual Studio version. The workaround is to copy the DIA SDK folder from the Visual Studio install location ^
 of the previous version to "%VSINSTALLDIR%" and then build.
 :: DIA SDK not included in Express editions
-echo Visual Studio 2013 Express does not include the DIA SDK. ^
-You need Visual Studio 2013+ (Community is free).
+echo Visual Studio Express does not include the DIA SDK. ^
+You need Visual Studio 2015 or 2017 (Community is free).
 echo See: https://github.com/dotnet/coreclr/blob/master/Documentation/project-docs/developer-guide.md#prerequisites
 exit /b 1
 
