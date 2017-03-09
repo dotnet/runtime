@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -322,7 +323,7 @@ namespace System.Net.Sockets
             }
             else
             {
-                throw e;
+                ExceptionDispatchInfo.Capture(e).Throw();
             }
         }
 
