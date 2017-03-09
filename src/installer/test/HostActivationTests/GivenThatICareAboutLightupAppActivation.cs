@@ -28,19 +28,19 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.LightupApp
             RepoDirectories = new RepoDirectoriesProvider();
 
             PreviouslyBuiltAndRestoredLightupLibTestProjectFixture = new TestProjectFixture("LightupLib", RepoDirectories)
-                .EnsureRestored(RepoDirectories.CorehostPackages, RepoDirectories.CorehostDummyPackages)
+                .EnsureRestored(RepoDirectories.CorehostPackages)
                 .BuildProject();
 
             PreviouslyPublishedAndRestoredLightupLibTestProjectFixture = new TestProjectFixture("LightupLib", RepoDirectories)
-                .EnsureRestored(RepoDirectories.CorehostPackages, RepoDirectories.CorehostDummyPackages)
+                .EnsureRestored(RepoDirectories.CorehostPackages)
                 .PublishProject();
 
             PreviouslyBuiltAndRestoredLightupAppTestProjectFixture = new TestProjectFixture("LightupClient", RepoDirectories)
-                .EnsureRestored(RepoDirectories.CorehostPackages, RepoDirectories.CorehostDummyPackages)
+                .EnsureRestored(RepoDirectories.CorehostPackages)
                 .BuildProject();
 
             PreviouslyPublishedAndRestoredLightupAppTestProjectFixture = new TestProjectFixture("LightupClient", RepoDirectories)
-                .EnsureRestored(RepoDirectories.CorehostPackages, RepoDirectories.CorehostDummyPackages)
+                .EnsureRestored(RepoDirectories.CorehostPackages)
                 .PublishProject();
 
         }
