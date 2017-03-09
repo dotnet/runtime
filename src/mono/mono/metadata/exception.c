@@ -862,6 +862,9 @@ mono_get_exception_reflection_type_load_checked (MonoArrayHandle types, MonoArra
 	return exc;
 }
 
+/**
+ * mono_get_exception_runtime_wrapped:
+ */
 MonoException *
 mono_get_exception_runtime_wrapped (MonoObject *wrapped_exception)
 {
