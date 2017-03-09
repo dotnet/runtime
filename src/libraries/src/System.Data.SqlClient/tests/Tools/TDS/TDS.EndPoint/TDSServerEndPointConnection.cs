@@ -128,7 +128,7 @@ namespace Microsoft.SqlServer.TDS.EndPoint
             StopRequested = false;
 
             // Prepare and start a thread
-            ProcessorThread = new Thread(new ThreadStart(_ConnectionHandler));
+            ProcessorThread = new Thread(new ThreadStart(_ConnectionHandler)) { IsBackground = true };
             ProcessorThread.Name = string.Format("TDS Server Connection {0} Thread", Connection.Client.RemoteEndPoint);
             ProcessorThread.Start();
         }
