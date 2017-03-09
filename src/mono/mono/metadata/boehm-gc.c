@@ -1734,7 +1734,7 @@ mono_gchandle_new (MonoObject *obj, gboolean pinned)
  *
  * This returns a weak handle that wraps the object, this is used to
  * keep a reference to a managed object from the unmanaged world.
- * Unlike the mono_gchandle_new the object can be reclaimed by the
+ * Unlike the \c mono_gchandle_new the object can be reclaimed by the
  * garbage collector.  In this case the value of the GCHandle will be
  * set to zero.
  * 
