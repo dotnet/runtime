@@ -51,9 +51,6 @@ mono_method_get_flags      (MonoMethod *method, uint32_t *iflags);
 MONO_API uint32_t
 mono_method_get_index      (MonoMethod *method);
 
-MONO_API MonoImage *
-mono_load_image            (const char *fname, MonoImageOpenStatus *status);
-
 MONO_API void
 mono_add_internal_call     (const char *name, const void* method);
 
