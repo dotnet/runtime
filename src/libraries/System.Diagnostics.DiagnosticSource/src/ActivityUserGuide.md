@@ -30,7 +30,6 @@ The current activity is exposed as static variable, `Activity.Current`, and flow
 
 Applications may access `Activity.Current` anywhere in the code to log events along with the context stored in Activity.
 # Activity Usage
-At the moment an application writes log record, it can access `Activity.Current` to get all required details from it.
 
 ## Creating Activities
 ```C#
@@ -277,7 +276,7 @@ Id is passed to external dependencies and considered as [ParentId](#parentid) fo
 `string ParentId { get; private set; }` - Activity may have either an in-process [Parent](#parent) or an external Parent if it was deserialized from request. ParentId together with Id represent the parent-child relationship in logs and allows you to correlate outgoing and incoming requests.
 
 ### RootId
-`string RootId  { get; private set; }` - Returns [root id](#root-id): Id (or ParentId) substring from '/' to first '.' occurence.
+`string RootId  { get; private set; }` - Returns [root id](#root-id): Id (or ParentId) substring from '|' to first '.' occurence.
 
 ### Current
 `static Activity Current { get; }` - Returns current Activity which flows across async calls.
