@@ -27,6 +27,7 @@
       IL_0002:  call       void [mscorlib]System.GC::Collect()
                 ldc.i4 100
                 call       void [mscorlib]System.Threading.Thread::Sleep(int32)
+                volatile.
                 ldsfld     bool Test.App::signal
                 brfalse.s  IL_0002
                 ret
@@ -54,6 +55,7 @@
       IL_0014:  newobj     instance void [mscorlib]System.Threading.Thread::.ctor(class [mscorlib]System.Threading.ThreadStart)
       IL_0019:  stloc.2
                 ldc.i4.0
+                volatile.
                 stsfld     bool  Test.App::signal
       IL_001a:  ldloc.2     
       IL_001b:  call       instance void [mscorlib]System.Threading.Thread::Start()
@@ -137,6 +139,7 @@
       IL_00bf:  blt      IL_0041
 
       IL_00c1:  ldc.i4.1
+                volatile.
       IL_00c2:  stsfld     bool  Test.App::signal
       IL_00c7:  ldstr      "**** PASSED ****"
       IL_00cc:  call       void [System.Console]System.Console::WriteLine(class System.String)
