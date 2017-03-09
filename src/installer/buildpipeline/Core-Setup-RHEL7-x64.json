@@ -4,6 +4,25 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
+      "displayName": "git checkout",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "6c731c3c-3c68-459a-a5c9-bde6e6595b5b",
+        "versionSpec": "2.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "scriptPath": "git",
+        "args": "checkout $(SourceVersion)",
+        "disableAutoCwd": "false",
+        "cwd": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
       "displayName": "Docker cleanup",
       "timeoutInMinutes": 0,
       "task": {
