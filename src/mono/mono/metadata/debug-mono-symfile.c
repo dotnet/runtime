@@ -139,6 +139,9 @@ load_symfile (MonoDebugHandle *handle, MonoSymbolFile *symfile, mono_bool in_the
 	return TRUE;
 }
 
+/**
+ * mono_debug_open_mono_symbols:
+ */
 MonoSymbolFile *
 mono_debug_open_mono_symbols (MonoDebugHandle *handle, const uint8_t *raw_contents,
 			      int size, gboolean in_the_debugger)
@@ -187,6 +190,9 @@ mono_debug_open_mono_symbols (MonoDebugHandle *handle, const uint8_t *raw_conten
 	return symfile;
 }
 
+/**
+ * mono_debug_close_mono_symbol_file:
+ */
 void
 mono_debug_close_mono_symbol_file (MonoSymbolFile *symfile)
 {
@@ -210,6 +216,9 @@ mono_debug_close_mono_symbol_file (MonoSymbolFile *symfile)
 	mono_debugger_unlock ();
 }
 
+/**
+ * mono_debug_symfile_is_loaded:
+ */
 mono_bool
 mono_debug_symfile_is_loaded (MonoSymbolFile *symfile)
 {
@@ -299,10 +308,10 @@ check_line (StatementMachine *stm, int offset, MonoDebugSourceLocation **locatio
 
 /**
  * mono_debug_symfile_lookup_location:
- * \param minfo A \c MonoDebugMethodInfo which can be retrieved by mono_debug_lookup_method().
+ * \param minfo A \c MonoDebugMethodInfo which can be retrieved by \c mono_debug_lookup_method.
  * \param offset IL offset within the corresponding method's CIL code.
  *
- * This function is similar to mono_debug_lookup_location(), but we
+ * This function is similar to \c mono_debug_lookup_location, but we
  * already looked up the method and also already did the
  * native address -> IL offset mapping.
  */
@@ -425,11 +434,11 @@ add_line (StatementMachine *stm, GPtrArray *il_offset_array, GPtrArray *line_num
 		stm->first_file = stm->file;
 }
 
-/*
+/**
  * mono_debug_symfile_free_location:
  *
- *   Free a MonoDebugSourceLocation returned by
- *   mono_debug_symfile_lookup_location
+ * Free a \c MonoDebugSourceLocation returned by
+ * \c mono_debug_symfile_lookup_location
  */
 void
 mono_debug_symfile_free_location (MonoDebugSourceLocation  *location)
@@ -726,6 +735,9 @@ compare_method (const void *key, const void *object)
 	return token - read32(&(me->_token));
 }
 
+/**
+ * mono_debug_symfile_lookup_method:
+ */
 MonoDebugMethodInfo *
 mono_debug_symfile_lookup_method (MonoDebugHandle *handle, MonoMethod *method)
 {
@@ -773,12 +785,12 @@ mono_debug_symfile_lookup_method (MonoDebugHandle *handle, MonoMethod *method)
 	return minfo;
 }
 
-/*
+/**
  * mono_debug_symfile_lookup_locals:
  *
- *   Return information about the local variables of MINFO from the symbol file.
+ * Return information about the local variables of \p minfo from the symbol file.
  * Return NULL if no information can be found.
- * The result should be freed using mono_debug_symfile_free_locals ().
+ * The result should be freed using \c mono_debug_symfile_free_locals.
  */
 MonoDebugLocalsInfo*
 mono_debug_symfile_lookup_locals (MonoDebugMethodInfo *minfo)

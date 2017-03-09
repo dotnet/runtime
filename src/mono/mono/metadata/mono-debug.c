@@ -178,6 +178,9 @@ mono_debug_cleanup (void)
 	}
 }
 
+/**
+ * mono_debug_domain_create:
+ */
 void
 mono_debug_domain_create (MonoDomain *domain)
 {
@@ -223,6 +226,9 @@ mono_debug_get_image (MonoImage *image)
 	return (MonoDebugHandle *)g_hash_table_lookup (mono_debug_handles, image);
 }
 
+/**
+ * mono_debug_close_image:
+ */
 void
 mono_debug_close_image (MonoImage *image)
 {
@@ -333,7 +339,7 @@ mono_debug_lookup_method_internal (MonoMethod *method)
  *
  * Lookup symbol file information for the method \p method.  The returned
  * \c MonoDebugMethodInfo is a private structure, but it can be passed to
- * mono_debug_symfile_lookup_location().
+ * \c mono_debug_symfile_lookup_location.
  */
 MonoDebugMethodInfo *
 mono_debug_lookup_method (MonoMethod *method)
@@ -431,6 +437,9 @@ write_variable (MonoDebugVarInfo *var, guint8 *ptr, guint8 **rptr)
 	*rptr = ptr;
 }
 
+/**
+ * mono_debug_add_method:
+ */
 MonoDebugMethodAddress *
 mono_debug_add_method (MonoMethod *method, MonoDebugMethodJitInfo *jit, MonoDomain *domain)
 {
@@ -530,6 +539,9 @@ mono_debug_remove_method (MonoMethod *method, MonoDomain *domain)
 	mono_debugger_unlock ();
 }
 
+/**
+ * mono_debug_add_delegate_trampoline:
+ */
 void
 mono_debug_add_delegate_trampoline (gpointer code, int size)
 {
@@ -719,8 +731,8 @@ cleanup_and_fail:
 /**
  * mono_debug_il_offset_from_address:
  *
- *   Compute the IL offset corresponding to NATIVE_OFFSET inside the native
- * code of METHOD in DOMAIN.
+ * Compute the IL offset corresponding to \p native_offset inside the native
+ * code of \p method in \p domain.
  */
 gint32
 mono_debug_il_offset_from_address (MonoMethod *method, MonoDomain *domain, guint32 native_offset)
@@ -743,7 +755,7 @@ mono_debug_il_offset_from_address (MonoMethod *method, MonoDomain *domain, guint
  * native offset \p address within \p method.
  * The returned \c MonoDebugSourceLocation contains both file / line number
  * information and the corresponding IL offset.  It must be freed by
- * mono_debug_free_source_location().
+ * \c mono_debug_free_source_location.
  */
 MonoDebugSourceLocation *
 mono_debug_lookup_source_location (MonoMethod *method, guint32 address, MonoDomain *domain)
@@ -918,7 +930,7 @@ mono_install_get_seq_point (MonoGetSeqPointFunc func)
 /**
  * mono_debug_print_stack_frame:
  * \param native_offset Native offset within the \p method's machine code.
- * Conventient wrapper around mono_debug_lookup_source_location() which can be
+ * Conventient wrapper around \c mono_debug_lookup_source_location which can be
  * used if you only want to use the location to print a stack frame.
  */
 gchar *
