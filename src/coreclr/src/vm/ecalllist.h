@@ -1287,7 +1287,8 @@ FCFuncEnd()
 #endif // ifdef FEATURE_COMINTEROP
 
 FCFuncStart(gRuntimeImportsFuncs)
-    QCFuncElement("RhZeroMemory", SpanNative::SpanClear)
+    QCFuncElement("RhZeroMemory", MemoryNative::Clear)
+    FCFuncElement("RhBulkMoveWithWriteBarrier", MemoryNative::BulkMoveWithWriteBarrier)
 FCFuncEnd()
 
 FCFuncStart(gWeakReferenceFuncs)
