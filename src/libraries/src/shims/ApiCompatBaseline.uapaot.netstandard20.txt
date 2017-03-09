@@ -360,13 +360,11 @@ MembersMustExist : Member 'System.Threading.ExecutionContext.GetObjectData(Syste
 MembersMustExist : Member 'System.Threading.ExecutionContext.IsFlowSuppressed()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.ExecutionContext.RestoreFlow()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.ExecutionContext.SuppressFlow()' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Threading.LockCookie' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.ManualResetEvent' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Threading.Monitor.Wait(System.Object, System.Int32, System.Boolean)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.Monitor.Wait(System.Object, System.TimeSpan, System.Boolean)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.Mutex' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
 TypesMustExist : Type 'System.Threading.Overlapped' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Threading.ReaderWriterLock' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Threading.RegisteredWaitHandle' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.SynchronizationContext.IsWaitNotificationRequired()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.SynchronizationContext.SetWaitNotificationRequired()' does not exist in the implementation but it does exist in the contract.
@@ -796,8 +794,6 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Text.StringBuilder' does not impl
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.AbandonedMutexException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
 TypesMustExist : Type 'System.Threading.AsyncFlowControl' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.AutoResetEvent' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
-TypesMustExist : Type 'System.Threading.Barrier' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Threading.BarrierPostPhaseException' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.EventWaitHandle' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.ExecutionContext' does not implement interface 'System.IDisposable' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Threading.ExecutionContext.CreateCopy()' does not exist in the implementation but it does exist in the contract.
@@ -806,13 +802,11 @@ MembersMustExist : Member 'System.Threading.ExecutionContext.GetObjectData(Syste
 MembersMustExist : Member 'System.Threading.ExecutionContext.IsFlowSuppressed()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.ExecutionContext.RestoreFlow()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.ExecutionContext.SuppressFlow()' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Threading.LockCookie' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.ManualResetEvent' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Threading.Monitor.Wait(System.Object, System.Int32, System.Boolean)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.Monitor.Wait(System.Object, System.TimeSpan, System.Boolean)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.Mutex' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
 TypesMustExist : Type 'System.Threading.Overlapped' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Threading.ReaderWriterLock' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Threading.RegisteredWaitHandle' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.Semaphore' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Threading.SynchronizationContext.IsWaitNotificationRequired()' does not exist in the implementation but it does exist in the contract.
@@ -899,8 +893,6 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Net.Security.NegotiateStream' doe
 CannotRemoveBaseTypeOrInterface : Type 'System.Net.Security.SslStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Net.Sockets.NetworkStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
 TypesMustExist : Type 'System.Net.WebSockets.HttpListenerWebSocketContext' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Threading.Barrier' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Threading.BarrierPostPhaseException' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.Semaphore' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
 Compat issues with assembly System.AppContext:
 TypesMustExist : Type 'System.AppContext' does not exist in the implementation but it does exist in the contract.
@@ -1420,8 +1412,6 @@ MembersMustExist : Member 'System.Text.Encoding.WindowsCodePage.get()' does not 
 Compat issues with assembly System.Threading:
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.AbandonedMutexException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.AutoResetEvent' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
-TypesMustExist : Type 'System.Threading.Barrier' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Threading.BarrierPostPhaseException' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.EventWaitHandle' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.ExecutionContext' does not implement interface 'System.IDisposable' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Threading.ExecutionContext.CreateCopy()' does not exist in the implementation but it does exist in the contract.
@@ -1479,4 +1469,4 @@ MembersMustExist : Member 'System.Threading.Timer..ctor(System.Threading.TimerCa
 MembersMustExist : Member 'System.Threading.Timer.Change(System.Int64, System.Int64)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.Timer.Change(System.UInt32, System.UInt32)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.Timer.Dispose(System.Threading.WaitHandle)' does not exist in the implementation but it does exist in the contract.
-Total Issues: 1431
+Total Issues: 1421
