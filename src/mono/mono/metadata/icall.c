@@ -8111,15 +8111,16 @@ mono_icall_cleanup (void)
  *
  * For example, the following are all valid declarations:
  *
- * "MyApp.Services.ScriptService:Accelerate"
- * "MyApp.Services.ScriptService:Slowdown(int,bool)"
+ * \c MyApp.Services.ScriptService:Accelerate
+ *
+ * \c MyApp.Services.ScriptService:Slowdown(int,bool)
  *
  * You use method parameters in cases where there might be more than
  * one surface method to managed code.  That way you can register different
  * internal calls for different method overloads.
  *
  * The internal calls are invoked with no marshalling.   This means that .NET
- * types like System.String are exposed as `MonoString *` parameters.   This is
+ * types like \c System.String are exposed as \c MonoString* parameters.   This is
  * different than the way that strings are surfaced in P/Invoke.
  *
  * For more information on how the parameters are marshalled, see the

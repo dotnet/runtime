@@ -273,6 +273,9 @@ mono_parse_graph_options (const char* p)
 	exit (1);
 }
 
+/**
+ * mono_parse_default_optimizations:
+ */
 int
 mono_parse_default_optimizations (const char* p)
 {
@@ -1359,11 +1362,11 @@ static const char info[] =
 
 static gboolean enable_debugging;
 
-/*
+/**
  * mono_jit_parse_options:
  *
- *   Process the command line options in ARGV as done by the runtime executable. 
- * This should be called before mono_jit_init ().
+ * Process the command line options in \p argv as done by the runtime executable.
+ * This should be called before \c mono_jit_init.
  */
 void
 mono_jit_parse_options (int argc, char * argv[])
@@ -2286,6 +2289,9 @@ mono_main (int argc, char* argv[])
  	return 0;
 }
 
+/**
+ * mono_jit_init:
+ */
 MonoDomain * 
 mono_jit_init (const char *file)
 {
@@ -2318,6 +2324,9 @@ mono_jit_init_version (const char *domain_name, const char *runtime_version)
 	return mini_init (domain_name, runtime_version);
 }
 
+/**
+ * mono_jit_cleanup:
+ */
 void        
 mono_jit_cleanup (MonoDomain *domain)
 {
@@ -2332,6 +2341,9 @@ mono_jit_set_aot_only (gboolean val)
 	mono_aot_only = val;
 }
 
+/**
+ * mono_jit_set_aot_mode:
+ */
 void
 mono_jit_set_aot_mode (MonoAotMode mode)
 {
@@ -2373,14 +2385,14 @@ mono_jit_set_trace_options (const char* options)
 /**
  * mono_set_signal_chaining:
  *
- *   Enable/disable signal chaining. This should be called before mono_jit_init ().
+ * Enable/disable signal chaining. This should be called before \c mono_jit_init.
  * If signal chaining is enabled, the runtime saves the original signal handlers before
  * installing its own handlers, and calls the original ones in the following cases:
- * - a SIGSEGV/SIGABRT signal received while executing native (i.e. not JITted) code.
- * - SIGPROF
- * - SIGFPE
- * - SIGQUIT
- * - SIGUSR2
+ * - a \c SIGSEGV / \c SIGABRT signal received while executing native (i.e. not JITted) code.
+ * - \c SIGPROF
+ * - \c SIGFPE
+ * - \c SIGQUIT
+ * - \c SIGUSR2
  * Signal chaining only works on POSIX platforms.
  */
 void

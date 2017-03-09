@@ -4199,7 +4199,7 @@ mono_set_verbose_level (guint32 level)
 /**
  * mono_get_runtime_build_info:
  * The returned string is owned by the caller. The returned string
- * format is "VERSION (FULL_VERSION BUILD_DATE)" and build date is optional.
+ * format is <code>VERSION (FULL_VERSION BUILD_DATE)</code> and build date is optional.
  * \returns the runtime version + build date in string format.
  */
 char*

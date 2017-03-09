@@ -810,15 +810,15 @@ mono_init_from_assembly (const char *domain_name, const char *filename)
 /**
  * mono_init_version:
  * 
- * Used by the runtime, users should use mono_jit_init instead.
+ * Used by the runtime, users should use \c mono_jit_init instead.
  * 
- * Creates the initial application domain and initializes the mono_defaults
+ * Creates the initial application domain and initializes the \c mono_defaults
  * structure.
  *
  * This function is guaranteed to not run any IL code.
  * The runtime is initialized using the provided rutime version.
  *
- * Returns: the initial domain.
+ * \returns the initial domain.
  */
 MonoDomain *
 mono_init_version (const char *domain_name, const char *version)

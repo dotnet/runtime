@@ -3988,7 +3988,7 @@ free_main_args (void)
  * \param argc number of arguments from the command line
  * \param argv array of strings from the command line
  * Set the command line arguments from an embedding application that doesn't otherwise call
- * mono_runtime_run_main().
+ * \c mono_runtime_run_main.
  */
 int
 mono_runtime_set_main_args (int argc, char* argv[])
