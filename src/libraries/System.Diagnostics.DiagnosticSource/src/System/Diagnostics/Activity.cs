@@ -79,11 +79,11 @@ namespace System.Diagnostics
                 {
                     if (Id != null)
                     {
-                        _rootId = getRootId(Id);
+                        _rootId = GetRootId(Id);
                     }
                     else if (ParentId != null)
                     {
-                        _rootId = getRootId(ParentId);
+                        _rootId = GetRootId(ParentId);
                     }
                 }
                 return _rootId;
@@ -307,7 +307,7 @@ namespace System.Diagnostics
             {
                 // Normal start within the process
                 Debug.Assert(!string.IsNullOrEmpty(Parent.Id));
-                ret = appendSuffix(Parent.Id, Interlocked.Increment(ref Parent._currentChildId).ToString(), s_internalIdDelimiter);
+                ret = AppendSuffix(Parent.Id, Interlocked.Increment(ref Parent._currentChildId).ToString(), s_internalIdDelimiter);
             }
             else if (ParentId != null)
             {
@@ -322,18 +322,18 @@ namespace System.Diagnostics
                     parentId += s_internalIdDelimiter;
                 }
                 
-                ret = appendSuffix(parentId, Interlocked.Increment(ref s_currentRootId).ToString("x"), s_externalIdDelimiter);
+                ret = AppendSuffix(parentId, Interlocked.Increment(ref s_currentRootId).ToString("x"), s_externalIdDelimiter);
             }
             else
             {
                 // A Root Activity (no parent).  
-                ret = generateRootId();
+                ret = GenerateRootId();
             }
             // Useful place to place a conditional breakpoint.  
             return ret;
         }
 
-        private string getRootId(string id)
+        private string GetRootId(string id)
         {
             //id MAY start with '|' and contain '.'. We return substring between them
             //ParentId MAY NOT have hierarchical structure and we don't know if initially rootId was started with '|',
@@ -345,7 +345,7 @@ namespace System.Diagnostics
             return id.Substring(rootStart, rootEnd - rootStart);
         }
 
-        private string appendSuffix(string parentId, string suffix, char delimiter)
+        private string AppendSuffix(string parentId, string suffix, char delimiter)
         {
 #if DEBUG
             suffix = OperationName + "-" + suffix;
@@ -365,7 +365,7 @@ namespace System.Diagnostics
 
             //ParentId is not valid Request-Id, let's generate proper one.
             if (trimPosition == 0)
-                return generateRootId();
+                return GenerateRootId();
 
             byte[] bytes = new byte[4];
             s_random.NextBytes(bytes);
@@ -374,14 +374,14 @@ namespace System.Diagnostics
             return parentId.Substring(0, trimPosition) + BitConverter.ToUInt32(bytes, 0).ToString("x8") + s_overflowDelimiter;
         }
 
-        private string generateRootId()
+        private string GenerateRootId()
         {
             if (s_uniqPrefix == null)
             {
                 // Here we make an ID to represent the Process/AppDomain.   Ideally we use process ID but 
                 // it is unclear if we have that ID handy.   Currently we use low bits of high freq tick 
                 // as a unique random number (which is not bad, but loses randomness for startup scenarios).  
-                Interlocked.CompareExchange(ref s_uniqPrefix, generateInstancePrefix(), null);
+                Interlocked.CompareExchange(ref s_uniqPrefix, GenerateInstancePrefix(), null);
             }
 
 #if DEBUG
