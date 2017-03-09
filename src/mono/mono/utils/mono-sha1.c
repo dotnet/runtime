@@ -78,18 +78,27 @@ A million repetitions of "a"
 
 #if HAVE_COMMONCRYPTO_COMMONDIGEST_H
 
+/**
+ * mono_sha1_init:
+ */
 void
 mono_sha1_init (MonoSHA1Context* context)
 {
 	CC_SHA1_Init (context);
 }
 
+/**
+ * mono_sha1_update:
+ */
 void
 mono_sha1_update (MonoSHA1Context* context, const guchar* data, guint32 len)
 {
 	CC_SHA1_Update (context, data, len);
 }
 
+/**
+ * mono_sha1_final:
+ */
 void
 mono_sha1_final (MonoSHA1Context* context, unsigned char digest[20])
 {
@@ -268,7 +277,10 @@ unsigned char finalcount[8];
 }
 
 #endif
- 
+
+/**
+ * mono_sha1_get_digest:
+ */
 void
 mono_sha1_get_digest (const guchar *buffer, gint buffer_size, guchar digest [20])
 {	
@@ -281,15 +293,15 @@ mono_sha1_get_digest (const guchar *buffer, gint buffer_size, guchar digest [20]
 }
 
 /**
- * mono_sha1_get_digest_from_file: get the sha1 hash of a file
- * @filename: file name
- * @digest: 20 bytes buffer receiving the hash code.
+ * mono_sha1_get_digest_from_file:
+ * \param filename file name
+ * \param digest 20-byte buffer receiving the hash code.
  * 
- * Get the sha1 hash of a file. The result is put in 
- * the 20 bytes buffer @digest .
+ * Get the SHA-1 hash of a file. The result is put in 
+ * the 20-byte buffer \p digest.
  * 
- * If an IO error happens the value in @digest is not updated.
- **/
+ * If an IO error happens the value in \p digest is not updated.
+ */
 void
 mono_sha1_get_digest_from_file (const gchar *filename, guchar digest [20])
 {	
@@ -317,11 +329,11 @@ mono_sha1_get_digest_from_file (const gchar *filename, guchar digest [20])
 	mono_sha1_final (&ctx, digest);
 }
 
-/*
+/**
  * mono_digest_get_public_token:
  *
  * Get the public token from public key data.
- * @token must point to at least 8 bytes of storage.
+ * \p token must point to at least 8 bytes of storage.
  */
 void 
 mono_digest_get_public_token (guchar* token, const guchar *pubkey, guint32 len)

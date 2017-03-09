@@ -10,14 +10,13 @@
 
 #define BITS_PER_CHUNK MONO_BITSET_BITS_PER_CHUNK
 
-/*
+/**
  * mono_bitset_alloc_size:
- * @max_size: The number of bits you want to hold
- * @flags: unused
- *
- * Return the number of bytes required to hold the bitset.
+ * \param max_size The number of bits you want to hold
+ * \param flags unused
+ * \returns the number of bytes required to hold the bitset.
  * Useful to allocate it on the stack or with mempool.
- * Use with mono_bitset_mem_new ().
+ * Use with \c mono_bitset_mem_new.
  */
 guint32
 mono_bitset_alloc_size (guint32 max_size, guint32 flags) {
@@ -26,13 +25,12 @@ mono_bitset_alloc_size (guint32 max_size, guint32 flags) {
 	return sizeof (MonoBitSet) + sizeof (gsize) * (real_size - MONO_ZERO_LEN_ARRAY);
 }
 
-/*
+/**
  * mono_bitset_new:
- * @max_size: The numer of bits you want to hold
- * @flags: bitfield of flags
- *
- * Return a bitset of size max_size. It must be freed using
- * mono_bitset_free.
+ * \param max_size The numer of bits you want to hold
+ * \param flags bitfield of flags
+ * \returns a bitset of size \p max_size. It must be freed using
+ * \c mono_bitset_free.
  */
 MonoBitSet *
 mono_bitset_new (guint32 max_size, guint32 flags) {
@@ -45,15 +43,15 @@ mono_bitset_new (guint32 max_size, guint32 flags) {
 	return result;
 }
 
-/*
+/**
  * mono_bitset_mem_new:
- * @mem: The location the bitset is stored
- * @max_size: The number of bits you want to hold
- * @flags: bitfield of flags
+ * \param mem The location the bitset is stored
+ * \param max_size The number of bits you want to hold
+ * \param flags bitfield of flags
  *
- * Return mem, which is now a initialized bitset of size max_size. It is
- * not freed even if called with mono_bitset_free. mem must be at least
- * as big as mono_bitset_alloc_size returns for the same max_size.
+ * Return \p mem, which is now a initialized bitset of size \p max_size. It is
+ * not freed even if called with \c mono_bitset_free. \p mem must be at least
+ * as big as \c mono_bitset_alloc_size returns for the same \p max_size.
  */
 MonoBitSet *
 mono_bitset_mem_new (gpointer mem, guint32 max_size, guint32 flags) {
@@ -67,11 +65,11 @@ mono_bitset_mem_new (gpointer mem, guint32 max_size, guint32 flags) {
 
 /*
  * mono_bitset_free:
- * @set: bitset ptr to free
+ * \param set bitset ptr to free
  *
- * Free bitset unless flags have MONO_BITSET_DONT_FREE set. Does not
- * free anything if flag MONO_BITSET_DONT_FREE is set or bitset was
- * made with mono_bitset_mem_new.
+ * Free bitset unless flags have \c MONO_BITSET_DONT_FREE set. Does not
+ * free anything if flag \c MONO_BITSET_DONT_FREE is set or bitset was
+ * made with \c mono_bitset_mem_new.
  */
 void
 mono_bitset_free (MonoBitSet *set) {
@@ -79,12 +77,12 @@ mono_bitset_free (MonoBitSet *set) {
 		g_free (set);
 }
 
-/*
+/**
  * mono_bitset_set:
- * @set: bitset ptr
- * @pos: set bit at this pos
+ * \param set bitset ptr
+ * \param pos set bit at this pos
  *
- * Set bit at pos @pos, counting from 0.
+ * Set bit at \p pos, counting from 0.
  */
 void
 mono_bitset_set (MonoBitSet *set, guint32 pos) {
@@ -96,13 +94,12 @@ mono_bitset_set (MonoBitSet *set, guint32 pos) {
 	set->data [j] |= (gsize)1 << bit;
 }
 
-/*
+/**
  * mono_bitset_test:
- * @set: bitset ptr
- * @pos: test bit at this pos
- *
- * Test bit at pos @pos, counting from 0.
- * Returns a value != 0 if set, 0 otherwise.
+ * \param set bitset ptr
+ * \param pos test bit at this pos
+ * Test bit at \p pos, counting from 0.
+ * \returns a nonzero value if set, 0 otherwise.
  */
 int
 mono_bitset_test (const MonoBitSet *set, guint32 pos) {
@@ -114,12 +111,11 @@ mono_bitset_test (const MonoBitSet *set, guint32 pos) {
 	return (set->data [j] & ((gsize)1 << bit)) > 0;
 }
 
-/*
+/**
  * mono_bitset_test_bulk:
- * @set: bitset ptr
- * @pos: test bit at this pos
- *
- * Return 32/64 bits from the bitset, starting from @pos, which must be 
+ * \param set bitset ptr
+ * \param pos test bit at this pos
+ * \returns 32/64 bits from the bitset, starting from \p pos, which must be 
  * divisible with 32/64.
  */
 gsize
@@ -132,12 +128,12 @@ mono_bitset_test_bulk (const MonoBitSet *set, guint32 pos) {
 		return set->data [j];
 }
 
-/*
+/**
  * mono_bitset_clear:
- * @set: bitset ptr
- * @pos: unset bit at this pos
+ * \param set bitset ptr
+ * \param pos unset bit at this pos
  *
- * Unset bit at pos 'pos', counting from 0.
+ * Unset bit at \p pos, counting from 0.
  */
 void
 mono_bitset_clear (MonoBitSet *set, guint32 pos) {
@@ -149,9 +145,9 @@ mono_bitset_clear (MonoBitSet *set, guint32 pos) {
 	set->data [j] &= ~((gsize)1 << bit);
 }
 
-/*
+/**
  * mono_bitset_clear_all:
- * @set: bitset ptr
+ * \param set bitset ptr
  *
  * Unset all bits.
  */
@@ -160,9 +156,9 @@ mono_bitset_clear_all (MonoBitSet *set) {
 	memset (set->data, 0, set->size / 8);
 }
 
-/*
+/**
  * mono_bitset_set_all:
- * @set: bitset ptr
+ * \param set bitset ptr
  *
  * Set all bits.
  */
@@ -171,9 +167,9 @@ mono_bitset_set_all (MonoBitSet *set) {
 	memset (set->data, -1, set->size / 8);
 }
 
-/*
+/**
  * mono_bitset_invert:
- * @set: bitset ptr
+ * \param set bitset ptr
  *
  * Flip all bits.
  */
@@ -184,11 +180,10 @@ mono_bitset_invert (MonoBitSet *set) {
 		set->data [i] = ~set->data [i];
 }
 
-/*
+/**
  * mono_bitset_size:
- * @set: bitset ptr
- *
- * Returns the number of bits this bitset can hold.
+ * \param set bitset ptr
+ * \returns the number of bits this bitset can hold.
  */
 guint32
 mono_bitset_size (const MonoBitSet *set) {
@@ -200,11 +195,10 @@ mono_bitset_size (const MonoBitSet *set) {
  */
 #if 1
 
-/*
+/**
  * mono_bitset_count:
- * @set: bitset ptr
- *
- * return number of bits that is set.
+ * \param set bitset ptr
+ * \returns number of bits that are set.
  */
 guint32
 mono_bitset_count (const MonoBitSet *set) {
@@ -387,11 +381,10 @@ find_first_unset (gsize mask, gint nth_bit)
 	return -1;
 }
 
-/*
+/**
  * mono_bitset_find_start:
- * @set: bitset ptr
- *
- * Equivalent to mono_bitset_find_first (set, -1) but faster.
+ * \param set bitset ptr
+ * Equivalent to <code>mono_bitset_find_first (set, -1)</code> but faster.
  */
 int
 mono_bitset_find_start   (const MonoBitSet *set)
@@ -405,13 +398,12 @@ mono_bitset_find_start   (const MonoBitSet *set)
 	return -1;
 }
 
-/*
+/**
  * mono_bitset_find_first:
- * @set: bitset ptr
- * @pos: pos to search _after_ (not including)
- *
- * Returns position of first set bit after @pos. If pos < 0 begin search from
- * start. Return -1 if no bit set is found.
+ * \param set bitset ptr
+ * \param pos pos to search after (not including)
+ * \returns position of first set bit after \p pos. If \p pos < 0, begin search from
+ * start. Return \c -1 if no bit set is found.
  */
 int
 mono_bitset_find_first (const MonoBitSet *set, gint pos) {
@@ -441,13 +433,12 @@ mono_bitset_find_first (const MonoBitSet *set, gint pos) {
 	return -1;
 }
 
-/*
+/**
  * mono_bitset_find_last:
- * @set: bitset ptr
- * @pos: pos to search _before_ (not including)
- *
- * Returns position of last set bit before pos. If pos < 0 search is
- * started from the end. Returns -1 if no set bit is found.
+ * \param set bitset ptr
+ * \param pos pos to search before (not including)
+ * \returns position of last set bit before \p pos. If \p pos < 0 search is
+ * started from the end. Returns \c -1 if no set bit is found.
  */
 int
 mono_bitset_find_last (const MonoBitSet *set, gint pos) {
@@ -473,13 +464,12 @@ mono_bitset_find_last (const MonoBitSet *set, gint pos) {
 	return -1;
 }
 
-/*
+/**
  * mono_bitset_find_first_unset:
- * @set: bitset ptr
- * @pos: pos to search _after_ (not including)
- *
- * Returns position of first unset bit after @pos. If pos < 0 begin search from
- * start. Return -1 if no bit set is found.
+ * \param set bitset ptr
+ * \param pos pos to search after (not including)
+ * \returns position of first unset bit after \p pos. If \p pos < 0 begin search from
+ * start. Return \c -1 if no bit set is found.
  */
 int
 mono_bitset_find_first_unset (const MonoBitSet *set, gint pos) {
@@ -510,13 +500,12 @@ mono_bitset_find_first_unset (const MonoBitSet *set, gint pos) {
 	return -1;
 }
 
-/*
+/**
  * mono_bitset_clone:
- * @set: bitset ptr to clone
- * @new_size: number of bits the cloned bitset can hold
- *
- * Return a cloned bitset of size new_size. MONO_BITSET_DONT_FREE
- * unset in cloned bitset. If new_size is 0, the cloned object is just
+ * \param set bitset ptr to clone
+ * \param new_size number of bits the cloned bitset can hold
+ * \returns a cloned bitset of size \p new_size. \c MONO_BITSET_DONT_FREE
+ * unset in cloned bitset. If \p new_size is 0, the cloned object is just
  * as big.
  */
 MonoBitSet*
@@ -531,10 +520,10 @@ mono_bitset_clone (const MonoBitSet *set, guint32 new_size) {
 	return result;
 }
 
-/*
+/**
  * mono_bitset_copyto:
- * @src: bitset ptr to copy from
- * @dest: bitset ptr to copy to
+ * \param src bitset ptr to copy from
+ * \param dest bitset ptr to copy to
  *
  * Copy one bitset to another.
  */
@@ -545,10 +534,10 @@ mono_bitset_copyto (const MonoBitSet *src, MonoBitSet *dest) {
 	memcpy (&dest->data, &src->data, dest->size / 8);
 }
 
-/*
+/**
  * mono_bitset_union:
- * @dest: bitset ptr to hold union
- * @src: bitset ptr to copy
+ * \param dest bitset ptr to hold union
+ * \param src bitset ptr to copy
  *
  * Make union of one bitset and another.
  */
@@ -563,10 +552,10 @@ mono_bitset_union (MonoBitSet *dest, const MonoBitSet *src) {
 		dest->data [i] |= src->data [i];
 }
 
-/*
+/**
  * mono_bitset_intersection:
- * @dest: bitset ptr to hold intersection
- * @src: bitset ptr to copy
+ * \param dest bitset ptr to hold intersection
+ * \param src bitset ptr to copy
  *
  * Make intersection of one bitset and another.
  */
@@ -581,11 +570,11 @@ mono_bitset_intersection (MonoBitSet *dest, const MonoBitSet *src) {
 		dest->data [i] &= src->data [i];
 }
 
-/*
+/**
  * mono_bitset_intersection_2:
- * @dest: bitset ptr to hold intersection
- * @src1: first bitset
- * @src2: second bitset
+ * \param dest bitset ptr to hold intersection
+ * \param src1 first bitset
+ * \param src2 second bitset
  *
  * Make intersection of two bitsets
  */
@@ -601,12 +590,12 @@ mono_bitset_intersection_2 (MonoBitSet *dest, const MonoBitSet *src1, const Mono
 		dest->data [i] = src1->data [i] & src2->data [i];
 }
 
-/*
+/**
  * mono_bitset_sub:
- * @dest: bitset ptr to hold bitset - src
- * @src: bitset ptr to copy
+ * \param dest bitset ptr to hold bitset - src
+ * \param src bitset ptr to copy
  *
- * Unset all bits in dest, which are set in src.
+ * Unset all bits in \p dest that are set in \p src.
  */
 void
 mono_bitset_sub (MonoBitSet *dest, const MonoBitSet *src) {
@@ -619,12 +608,11 @@ mono_bitset_sub (MonoBitSet *dest, const MonoBitSet *src) {
 		dest->data [i] &= ~src->data [i];
 }
 
-/*
+/**
  * mono_bitset_equal:
- * @src: bitset ptr
- * @src1: bitset ptr
- *
- * return TRUE if their size are the same and the same bits are set in
+ * \param src bitset ptr
+ * \param src1 bitset ptr
+ * \returns TRUE if their size are the same and the same bits are set in
  * both bitsets.
  */
 gboolean
@@ -639,13 +627,12 @@ mono_bitset_equal (const MonoBitSet *src, const MonoBitSet *src1) {
 	return TRUE;
 }
 
-/*
+/**
  * mono_bitset_foreach:
- * @set: bitset ptr
- * @func: Function to call for every set bit
- * @data: pass this as second arg to func
- *
- * Calls func for every bit set in bitset. Argument 1 is the number of
+ * \param set bitset ptr
+ * \param func Function to call for every set bit
+ * \param data pass this as second arg to func
+ * Calls \p func for every bit set in bitset. Argument 1 is the number of
  * the bit set, argument 2 is data
  */
 void

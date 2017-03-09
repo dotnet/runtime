@@ -8231,10 +8231,10 @@ mono_store_remote_field_new_checked (MonoObject *this_obj, MonoClass *klass, Mon
 }
 #endif
 
-/*
+/**
  * mono_create_ftnptr:
  *
- *   Given a function address, create a function descriptor for it.
+ * Given a function address, create a function descriptor for it.
  * This is only needed on some platforms.
  */
 gpointer

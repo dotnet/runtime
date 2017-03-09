@@ -30,18 +30,27 @@
 
 #if HAVE_COMMONCRYPTO_COMMONDIGEST_H
 
+/**
+ * mono_md5_init:
+ */
 void
 mono_md5_init (MonoMD5Context *ctx)
 {
 	CC_MD5_Init (ctx);
 }
 
+/**
+ * mono_md5_update:
+ */
 void
 mono_md5_update (MonoMD5Context *ctx, const guchar *buf, guint32 len)
 {
 	CC_MD5_Update (ctx, buf, len);
 }
 
+/**
+ * mono_md5_final:
+ */
 void
 mono_md5_final (MonoMD5Context *ctx, guchar digest[16])
 {
@@ -322,14 +331,14 @@ md5_transform (guint32 buf[4], const guint32 in[16])
 
 
 /**
- * mono_md5_get_digest: get the md5 hash of a buffer
- * @buffer: byte buffer
- * @buffer_size: buffer size (in bytes)
- * @digest: 16 bytes buffer receiving the hash code.
+ * mono_md5_get_digest:
+ * \param buffer byte buffer
+ * \param buffer_size buffer size (in bytes)
+ * \param digest 16-byte buffer receiving the hash code.
  * 
- * Get the md5 hash of a buffer. The result is put in 
- * the 16 bytes buffer @digest .
- **/
+ * Get the MD5 hash of a buffer. The result is put in 
+ * the 16-byte buffer \p digest.
+ */
 void
 mono_md5_get_digest (const guchar *buffer, gint buffer_size, guchar digest[16])
 {	
@@ -343,15 +352,15 @@ mono_md5_get_digest (const guchar *buffer, gint buffer_size, guchar digest[16])
 
 
 /**
- * mono_md5_get_digest_from_file: get the md5 hash of a file
- * @filename: file name
- * @digest: 16 bytes buffer receiving the hash code.
+ * mono_md5_get_digest_from_file:
+ * \param filename file name
+ * \param digest 16-byte buffer receiving the hash code.
  * 
- * Get the md5 hash of a file. The result is put in 
- * the 16 bytes buffer @digest .
+ * Get the MD5 hash of a file. The result is put in 
+ * the 16-byte buffer \p digest.
  * 
- * If an IO error happens the value in @digest is not updated.
- **/
+ * If an IO error happens the value in \p digest is not updated.
+ */
 void
 mono_md5_get_digest_from_file (const gchar *filename, guchar digest[16])
 {	

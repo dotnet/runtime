@@ -160,7 +160,7 @@ mono_mempool_invalidate (MonoMemPool *pool)
 
 /**
  * mono_mempool_stats:
- * \param pool the momory pool we need stats for
+ * \param pool the memory pool we need stats for
  *
  * Print a few stats about the mempool:
  * - Total memory allocated (malloced) by mem pool
@@ -314,7 +314,7 @@ mono_mempool_alloc (MonoMemPool *pool, guint size)
 /**
  * mono_mempool_alloc0:
  *
- * same as mono_mempool_alloc, but fills memory with zero.
+ * same as \c mono_mempool_alloc, but fills memory with zero.
  */
 gpointer
 mono_mempool_alloc0 (MonoMemPool *pool, guint size)
@@ -343,7 +343,7 @@ mono_mempool_alloc0 (MonoMemPool *pool, guint size)
 /**
  * mono_mempool_contains_addr:
  *
- *  Determines whenever ADDR is inside the memory used by the mempool.
+ * Determines whether \p addr is inside the memory used by the mempool.
  */
 gboolean
 mono_mempool_contains_addr (MonoMemPool *pool,

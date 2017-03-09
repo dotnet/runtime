@@ -119,7 +119,10 @@ match_option (const char* p, const char *opt, char **rval)
 void
 mono_profiler_startup (const char *desc);
 
-/* the entry point */
+/**
+ * mono_profiler_startup:
+ * the entry point
+ */
 void
 mono_profiler_startup (const char *desc)
 {

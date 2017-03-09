@@ -443,6 +443,9 @@ mono_profiler_install_class       (MonoProfileClassFunc start_load, MonoProfileC
 	prof_list->class_end_unload = end_unload;
 }
 
+/**
+ * mono_profiler_method_enter:
+ */
 void
 mono_profiler_method_enter (MonoMethod *method)
 {
@@ -453,6 +456,9 @@ mono_profiler_method_enter (MonoMethod *method)
 	}
 }
 
+/**
+ * mono_profiler_method_leave:
+ */
 void
 mono_profiler_method_leave (MonoMethod *method)
 {
@@ -463,6 +469,9 @@ mono_profiler_method_leave (MonoMethod *method)
 	}
 }
 
+/**
+ * mono_profiler_method_jit:
+ */
 void 
 mono_profiler_method_jit (MonoMethod *method)
 {
@@ -473,6 +482,9 @@ mono_profiler_method_jit (MonoMethod *method)
 	}
 }
 
+/**
+ * mono_profiler_method_end_jit:
+ */
 void 
 mono_profiler_method_end_jit (MonoMethod *method, MonoJitInfo* jinfo, int result)
 {
@@ -517,6 +529,9 @@ mono_profiler_method_end_invoke (MonoMethod *method)
 	}
 }
 
+/**
+ * mono_profiler_code_transition:
+ */
 void 
 mono_profiler_code_transition (MonoMethod *method, int result)
 {
@@ -527,6 +542,9 @@ mono_profiler_code_transition (MonoMethod *method, int result)
 	}
 }
 
+/**
+ * mono_profiler_allocation:
+ */
 void 
 mono_profiler_allocation (MonoObject *obj)
 {
@@ -546,6 +564,9 @@ mono_profiler_monitor_event      (MonoObject *obj, MonoProfilerMonitorEvent even
 	}
 }
 
+/**
+ * mono_profiler_stat_hit:
+ */
 void
 mono_profiler_stat_hit (guchar *ip, void *context)
 {
@@ -596,6 +617,9 @@ mono_profiler_exception_clause_handler (MonoMethod *method, int clause_type, int
 	}
 }
 
+/**
+ * mono_profiler_thread_start:
+ */
 void
 mono_profiler_thread_start (gsize tid)
 {
@@ -606,6 +630,9 @@ mono_profiler_thread_start (gsize tid)
 	}
 }
 
+/**
+ * mono_profiler_thread_end:
+ */
 void 
 mono_profiler_thread_end (gsize tid)
 {
@@ -626,6 +653,9 @@ mono_profiler_thread_name (gsize tid, const char *name)
 	}
 }
 
+/**
+ * mono_profiler_assembly_event:
+ */
 void 
 mono_profiler_assembly_event  (MonoAssembly *assembly, int code)
 {
@@ -653,6 +683,9 @@ mono_profiler_assembly_event  (MonoAssembly *assembly, int code)
 	}
 }
 
+/**
+ * mono_profiler_assembly_loaded:
+ */
 void 
 mono_profiler_assembly_loaded (MonoAssembly *assembly, int result)
 {
@@ -672,6 +705,9 @@ void mono_profiler_iomap (char *report, const char *pathname, const char *new_pa
 	}
 }
 
+/**
+ * mono_profiler_module_event:
+ */
 void 
 mono_profiler_module_event  (MonoImage *module, int code)
 {
@@ -699,6 +735,9 @@ mono_profiler_module_event  (MonoImage *module, int code)
 	}
 }
 
+/**
+ * mono_profiler_module_loaded:
+ */
 void 
 mono_profiler_module_loaded (MonoImage *module, int result)
 {
@@ -709,6 +748,9 @@ mono_profiler_module_loaded (MonoImage *module, int result)
 	}
 }
 
+/**
+ * mono_profiler_class_event:
+ */
 void 
 mono_profiler_class_event  (MonoClass *klass, int code)
 {
@@ -736,6 +778,9 @@ mono_profiler_class_event  (MonoClass *klass, int code)
 	}
 }
 
+/**
+ * mono_profiler_class_loaded:
+ */
 void 
 mono_profiler_class_loaded (MonoClass *klass, int result)
 {
@@ -746,6 +791,9 @@ mono_profiler_class_loaded (MonoClass *klass, int result)
 	}
 }
 
+/**
+ * mono_profiler_appdomain_event:
+ */
 void 
 mono_profiler_appdomain_event  (MonoDomain *domain, int code)
 {
@@ -773,6 +821,9 @@ mono_profiler_appdomain_event  (MonoDomain *domain, int code)
 	}
 }
 
+/**
+ * mono_profiler_appdomain_loaded:
+ */
 void 
 mono_profiler_appdomain_loaded (MonoDomain *domain, int result)
 {
@@ -807,6 +858,9 @@ mono_profiler_context_unloaded (MonoAppContext *context)
 			prof->context_unload (prof->profiler, context);
 }
 
+/**
+ * mono_profiler_shutdown:
+ */
 void 
 mono_profiler_shutdown (void)
 {
@@ -819,6 +873,9 @@ mono_profiler_shutdown (void)
 	mono_profiler_set_events ((MonoProfileFlags)0);
 }
 
+/**
+ * mono_profiler_gc_heap_resize:
+ */
 void
 mono_profiler_gc_heap_resize (gint64 new_size)
 {
@@ -829,6 +886,9 @@ mono_profiler_gc_heap_resize (gint64 new_size)
 	}
 }
 
+/**
+ * mono_profiler_gc_event:
+ */
 void
 mono_profiler_gc_event (MonoGCEvent event, int generation)
 {

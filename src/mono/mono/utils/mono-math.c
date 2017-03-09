@@ -6,6 +6,9 @@
 
 #ifndef HAVE_SIGNBIT
 
+/**
+ * mono_signbit_float:
+ */
 int
 mono_signbit_float (float x)
 {
@@ -16,6 +19,9 @@ mono_signbit_float (float x)
 	return u.i < 0;
 }
 
+/**
+ * mono_signbit_double:
+ */
 int
 mono_signbit_double (double x)
 {
