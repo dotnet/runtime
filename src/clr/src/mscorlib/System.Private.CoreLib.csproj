@@ -756,7 +756,7 @@
     <Compile Include="$(BclSourcesRoot)\System\IO\UnmanagedMemoryStreamWrapper.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\Security\Attributes.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Security\DynamicSecurityMethodAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Security\SecurityException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Security\SecurityState.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Security\VerificationException.cs" />
