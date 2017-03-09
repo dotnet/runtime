@@ -670,7 +670,6 @@
     <Compile Include="System\Xml\Xsl\XsltOld\IfAction.cs" />
     <Compile Include="System\Xml\Xsl\XsltOld\InputScope.cs" />
     <Compile Include="System\Xml\Xsl\XsltOld\InputScopeManager.cs" />
-    <Compile Include="System\Xml\Xsl\XsltOld\Keywords.cs" />
     <Compile Include="System\Xml\Xsl\XsltOld\MessageAction.cs" />
     <Compile Include="System\Xml\Xsl\XsltOld\NamespaceDecl.cs" />
     <Compile Include="System\Xml\Xsl\XsltOld\NameSpaceEvent.cs" />
