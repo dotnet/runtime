@@ -105,6 +105,9 @@ Note: Area triage will apply the new scheme (issue types and assignee) throughou
 1. Issue has no **Assignee**, unless someone is working on the issue at the moment
 1. Use **up for grabs** as much as possible, ideally with a quick note about next steps / complexity of the issue
 1. Set milestone to **Future**, unless you can 95%-commit you can fund the issue in specific milestone
-1. Each issue has exactly one "*issue type*" label (**bug**, **enhancement**, **api-needs-work**, **test bug**, etc.)
+1. Each issue has exactly one "*issue type*" label (**bug**, **enhancement**, **api-needs-work**, **test bug**, **test enhancement**, **question**, **documentation**, etc.)
+  * Don't be afraid to be wrong when deciding 'bug' vs. 'test bug' (flip a coin if you must). The most useful values for tracking are 'api-&#42;' vs. 'enhancement', 'question', and 'documentation'.
 1. Don't be afraid to say no, or close issues - just explain why and be polite
 1. Don't be afraid to be wrong - just be flexible when new information appears
+
+Feel free to use other labels if it helps your triage efforts (e.g. **needs more info**, **Design Discussion**, **blocked**, **blocking-partner**, **tenet-performance**, **tenet-compatibility**, **os-linux**/**os-windows**/**os-mac-os-x**/**os-unsupported**, **os-windows-uwp**/**os-windows-wsl**, **arm32**/**arm64**)
