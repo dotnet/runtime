@@ -3,10 +3,10 @@
     public partial class Activity
     {
         #region private
-        private string generateUniquePrefix()
+        private string generateInstancePrefix()
         {
             byte[] bytes = new byte[8];
-            s_random.Value.NextBytes(bytes);
+            s_random.NextBytes(bytes);
 
             return $"{s_rootIdPrefix}{BitConverter.ToUInt64(bytes, 0):x}";
         }
