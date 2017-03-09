@@ -80,7 +80,9 @@ abort_signal_get (void)
 static int
 suspend_signal_get (void)
 {
-#ifdef SIGRTMIN
+#if defined(PLATFORM_ANDROID)
+	return SIGPWR;
+#elif defined (SIGRTMIN)
 	static int suspend_signum = -1;
 	if (suspend_signum == -1)
 		suspend_signum = mono_threads_suspend_search_alternative_signal ();
@@ -97,7 +99,9 @@ suspend_signal_get (void)
 static int
 restart_signal_get (void)
 {
-#ifdef SIGRTMIN
+#if defined(PLATFORM_ANDROID)
+	return SIGXCPU;
+#elif defined (SIGRTMIN)
 	static int restart_signum = -1;
 	if (restart_signum == -1)
 		restart_signum = mono_threads_suspend_search_alternative_signal ();
@@ -236,6 +240,16 @@ mono_threads_suspend_init_signals (void)
 
 	/* ensure all the new signals are unblocked */
 	sigprocmask (SIG_UNBLOCK, &signal_set, NULL);
+
+	/*
+	On 32bits arm Android, signals with values >=32 are not usable as their headers ship a broken sigset_t.
+	See 5005c6f3fbc1da584c6a550281689cc23f59fe6d for more details.
+	*/
+#ifdef PLATFORM_ANDROID
+	g_assert (suspend_signal_num < 32);
+	g_assert (restart_signal_num < 32);
+	g_assert (abort_signal_num < 32);
+#endif
 }
 
 gint
