@@ -227,6 +227,8 @@ namespace System.Diagnostics
                 throw new InvalidOperationException($"{nameof(endTimeUtc)} is not UTC");
 
             Duration = endTimeUtc - StartTimeUtc;
+            if (Duration.Ticks <= 0)
+                Duration = new TimeSpan(1); // We want Duration of 0 to mean  'EndTime not set)
             return this;
         }
 
