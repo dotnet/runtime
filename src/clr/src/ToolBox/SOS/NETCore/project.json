@@ -6,7 +6,11 @@
     "System.Reflection.Metadata": "1.4.1"
   },
   "frameworks": {
-    "netcoreapp1.0": {}
+    "netcoreapp1.0": { 
+      "imports": [ 
+       "portable-net45+win8" 
+      ] 
+    } 
   },
   "runtimes": {
     "win7-x86": {},

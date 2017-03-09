@@ -5,7 +5,10 @@
   <PropertyGroup>
     <!-- defined in buildtools packaging.targets, but we need this before targets are imported -->
     <PackagePlatform>AnyCPU</PackagePlatform>
-  
+    
+    <!-- build the transport package which includes product and symbols in addition to standard packages -->
+    <CreatePackedPackage Condition="'$(CreatePackedPackage)' == ''">true</CreatePackedPackage>
+
     <!-- Distro rid is passed as runtimeos-arch-->
     <_parseDistroRid>$(__DistroRid)</_parseDistroRid>
     <_parseDistroRid Condition="'$(_parseDistroRid)' == '' and '$(__BuildOS)' == 'OSX'">osx.10.10-x64</_parseDistroRid>

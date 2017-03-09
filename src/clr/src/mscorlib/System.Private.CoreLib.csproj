@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <!-- Always use latest Roslyn compiler -->
-  <Import Project="..\..\Tools\net45\roslyn\build\Microsoft.Net.Compilers.props" Condition="'$(OS)'=='Windows_NT'" />
+  <Import Project="..\..\Tools\net46\roslyn\build\Microsoft.Net.Compilers.props" Condition="'$(OS)'=='Windows_NT'" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <!-- Include common build properties -->
   <Import Project="..\..\dir.props" />
@@ -35,6 +35,10 @@
     <SignAssembly>true</SignAssembly>
     <DelaySign>true</DelaySign>
     <DefineConstants>$(DefineConstants);CORECLR;_USE_NLS_PLUS_TABLE;RESOURCE_SATELLITE_CONFIG;CODE_ANALYSIS_BASELINE</DefineConstants>
+    <!-- We don't use any of MSBuild's resolution logic for resolving the framework, so just set these two properties to any folder that exists to skip
+         the GenerateReferenceAssemblyPaths task (not target) and to prevent it from outputting a warning (MSB3644). -->
+    <_TargetFrameworkDirectories>$(MSBuildThisFileDirectory)/Documentation</_TargetFrameworkDirectories>
+    <_FullFrameworkReferenceAssemblyPaths>$(MSBuildThisFileDirectory)/Documentation</_FullFrameworkReferenceAssemblyPaths>
   </PropertyGroup>
   <!-- Add Serviceable attribute to the project's metadata -->
   <ItemGroup>

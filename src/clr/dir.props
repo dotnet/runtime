@@ -160,7 +160,7 @@
     <!-- On Windows, MSbuild still runs against Desktop FX while it runs on .NET Core on non-Windows. this requires
          pulling in different packaging dependencies.
      -->
-    <PackagingTaskDir Condition="'$(TargetsWindows)' == 'true'">$(ToolsDir)net45/</PackagingTaskDir>
+    <PackagingTaskDir Condition="'$(TargetsWindows)' == 'true'">$(ToolsDir)net46/</PackagingTaskDir>
     <BuildNumberMajor Condition="'$(BuildNumberMajor)' == ''">00001</BuildNumberMajor>
     <!-- defined in buildtools packaging.targets, but we need this before targets are imported -->
     <PackagePlatform Condition="'$(PackagePlatform)' == ''">$(Platform)</PackagePlatform>
@@ -178,6 +178,10 @@
 
     <PackageOutputPath>$(PackagesBinDir)/pkg/</PackageOutputPath>
     <SymbolPackageOutputPath>$(PackagesBinDir)/symbolpkg/</SymbolPackageOutputPath>
+    <PackageIndexFile>$(MSBuildThisFileDirectory)/src/.nuget/packageIndex.json</PackageIndexFile>
+
+    <!-- coreclr doesn't currently use the index so don't force it to be in sync -->
+    <SkipIndexCheck>true</SkipIndexCheck>
   </PropertyGroup>
 
   <!-- Add required legal files to packages -->
@@ -190,6 +194,7 @@
           Include="$(PackageThirdPartyNoticesFile)" >
       <SkipPackageFileCheck>true</SkipPackageFileCheck>
     </File>
+    <PackageIndex Include="$(PackageIndexFile)" />
   </ItemGroup>
 
 </Project>
