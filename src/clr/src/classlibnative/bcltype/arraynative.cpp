@@ -17,6 +17,8 @@
 #include "security.h"
 #include "invokeutil.h"
 
+#include "arraynative.inl"
+
 FCIMPL1(INT32, ArrayNative::GetRank, ArrayBase* array)
 {
     FCALL_CONTRACT;
@@ -883,85 +885,25 @@ void memmoveGCRefs(void *dest, const void *src, size_t len)
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(dest));
-        PRECONDITION(CheckPointer(src));
-        PRECONDITION(len >= 0);
         SO_TOLERANT;
     }
     CONTRACTL_END;
+
+    _ASSERTE(dest != nullptr);
+    _ASSERTE(src != nullptr);
 
     // Make sure everything is pointer aligned
     _ASSERTE(IS_ALIGNED(dest, sizeof(SIZE_T)));
     _ASSERTE(IS_ALIGNED(src, sizeof(SIZE_T)));
     _ASSERTE(IS_ALIGNED(len, sizeof(SIZE_T)));
 
-    size_t size = len;
-    BYTE * dmem = (BYTE *)dest;
-    BYTE * smem = (BYTE *)src;
+    _ASSERTE(CheckPointer(dest));
+    _ASSERTE(CheckPointer(src));
 
-    GCHeapMemoryBarrier();
-
-    if (dmem <= smem || smem + size <= dmem)
+    if (len != 0 && dest != src)
     {
-        // copy 16 bytes at a time
-        while (size >= 4 * sizeof(SIZE_T))
-        {
-            size -= 4 * sizeof(SIZE_T);
-            ((SIZE_T *)dmem)[0] = ((SIZE_T *)smem)[0];
-            ((SIZE_T *)dmem)[1] = ((SIZE_T *)smem)[1];
-            ((SIZE_T *)dmem)[2] = ((SIZE_T *)smem)[2];
-            ((SIZE_T *)dmem)[3] = ((SIZE_T *)smem)[3];
-            smem += 4 * sizeof(SIZE_T);
-            dmem += 4 * sizeof(SIZE_T);
-        }
-
-        if ((size & (2 * sizeof(SIZE_T))) != 0)
-        {
-            ((SIZE_T *)dmem)[0] = ((SIZE_T *)smem)[0];
-            ((SIZE_T *)dmem)[1] = ((SIZE_T *)smem)[1];
-            smem += 2 * sizeof(SIZE_T);
-            dmem += 2 * sizeof(SIZE_T);
-        }
-
-        if ((size & sizeof(SIZE_T)) != 0)
-        {
-            ((SIZE_T *)dmem)[0] = ((SIZE_T *)smem)[0];
-        }
+        InlinedMemmoveGCRefsHelper(dest, src, len);
     }
-    else
-    {
-        smem += size;
-        dmem += size;
-
-        // copy 16 bytes at a time
-        while (size >= 4 * sizeof(SIZE_T))
-        {
-            size -= 4 * sizeof(SIZE_T);
-            smem -= 4 * sizeof(SIZE_T);
-            dmem -= 4 * sizeof(SIZE_T);
-            ((SIZE_T *)dmem)[3] = ((SIZE_T *)smem)[3];
-            ((SIZE_T *)dmem)[2] = ((SIZE_T *)smem)[2];
-            ((SIZE_T *)dmem)[1] = ((SIZE_T *)smem)[1];
-            ((SIZE_T *)dmem)[0] = ((SIZE_T *)smem)[0];
-        }
-
-        if ((size & (2 * sizeof(SIZE_T))) != 0)
-        {
-            smem -= 2 * sizeof(SIZE_T);
-            dmem -= 2 * sizeof(SIZE_T);
-            ((SIZE_T *)dmem)[1] = ((SIZE_T *)smem)[1];
-            ((SIZE_T *)dmem)[0] = ((SIZE_T *)smem)[0];
-        }
-
-        if ((size & sizeof(SIZE_T)) != 0)
-        {
-            smem -= sizeof(SIZE_T);
-            dmem -= sizeof(SIZE_T);
-            ((SIZE_T *)dmem)[0] = ((SIZE_T *)smem)[0];
-        }
-    }
-
-    SetCardsAfterBulkCopy((Object**)dest, len);
 }
 
 void ArrayNative::ArrayCopyNoTypeCheck(BASEARRAYREF pSrc, unsigned int srcIndex, BASEARRAYREF pDest, unsigned int destIndex, unsigned int length)
