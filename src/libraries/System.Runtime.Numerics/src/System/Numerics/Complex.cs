@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Globalization;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System.Numerics
@@ -25,6 +26,9 @@ namespace System.Numerics
 
         // This is the largest x for which 2 x^2 will not overflow. It is used for branching inside Asin and Acos.
         private static readonly double s_asinOverflowThreshold = Math.Sqrt(double.MaxValue) / 2.0;
+
+        // This constant is used inside Asin and Acos.
+        private static readonly double s_log2 = Math.Log(2.0);
 
         private double _real;
         private double _imaginary;
@@ -162,7 +166,9 @@ namespace System.Numerics
         private static double Log1P(double x)
         {
             // Compute log(1 + x) without loss of accuracy when x is small.
+
             // Our only use case so far is for positive values, so this isn't coded to handle negative values.
+            Debug.Assert(!(x < 0.0));
 
             double xp1 = 1.0 + x;
             if (xp1 == 1.0)
@@ -374,46 +380,50 @@ namespace System.Numerics
 
         private static void Asin_Internal (double x, double y, out double b, out double bPrime, out double v) {
 
-            // This method for the inverse complex sine (and cosine) is described in
-            // Hull and Tang, "Implementing the Complex Arcsine and Arccosine Functions Using Exception Handling",
+            // This method for the inverse complex sine (and cosine) is described in Hull, Fairgrieve,
+            // and Tang, "Implementing the Complex Arcsine and Arccosine Functions Using Exception Handling",
             // ACM Transactions on Mathematical Software (1997)
             // (https://www.researchgate.net/profile/Ping_Tang3/publication/220493330_Implementing_the_Complex_Arcsine_and_Arccosine_Functions_Using_Exception_Handling/links/55b244b208ae9289a085245d.pdf)
 
-            // First, the basics: start with sin(w) = (e^{iw} - e^{-iw})/(2i) = z. Here z is the input
+            // First, the basics: start with sin(w) = (e^{iw} - e^{-iw}) / (2i) = z. Here z is the input
             // and w is the output. To solve for w, define t = e^{i w} and multiply through by t to
             // get the quadratic equation t^2 - 2 i z t - 1 = 0. The solution is t = i z + sqrt(1 - z^2), so
             //   w = arcsin(z) = - i log( i z + sqrt(1 - z^2) )
             // Decompose z = x + i y, multiply out i z + sqrt(1 - z^2), use log(s) = |s| + i arg(s), and do a
             // bunch of algebra to get the components of w = arcsin(z) = u + i v
-            //   u = arcsin(\beta)  v = sign(y) log(\alpha + sqrt(\alpha^2 - 1))
+            //   u = arcsin(beta)  v = sign(y) log(alpha + sqrt(alpha^2 - 1))
             // where
-            //   \alpha = (\rho + \sigma)/2  \beta = (\rho - \sigma)/2
-            //   \rho = sqrt((x + 1)^2 + y^2)  \sigma = \sqrt((x - 1)^2 + y^2)
-            // This appears in DLMF section 4.23. (http://dlmf.nist.gov/4.23), along with the analogous
-            //   arccos(w) = arccos(\beta) - i sign(y) log(\alpha + sqrt(\alpha^2 - 1))
-            // So \alpha and \beta together give us arcsin(w) and arccos(w).
+            //   alpha = (rho + sigma) / 2      beta = (rho - sigma) / 2
+            //   rho = sqrt((x + 1)^2 + y^2)    sigma = sqrt((x - 1)^2 + y^2)
+            // These formulas appear in DLMF section 4.23. (http://dlmf.nist.gov/4.23), along with the analogous
+            //   arccos(w) = arccos(beta) - i sign(y) log(alpha + sqrt(alpha^2 - 1))
+            // So alpha and beta together give us arcsin(w) and arccos(w).
 
-            // As written, \alpha is not susceptible to cancelation errors, but \beta is. To avoid cancelation, note
-            //   \beta = (\rho^2 - \sigma^2)/(\rho + \sigma))/2 = (2 x)/(\rho + \sigma) = x / \alpha
-            // which is not subject to cancelation. Note \alpha >= 1 and |\beta| <= 1.
+            // As written, alpha is not susceptible to cancelation errors, but beta is. To avoid cancelation, note
+            //   beta = (rho^2 - sigma^2) / (rho + sigma) / 2 = (2 x) / (rho + sigma) = x / alpha
+            // which is not subject to cancelation. Note alpha >= 1 and |beta| <= 1.
 
-            // For \alpha ~ 1, the argument of the log is near unity, so we compute (\alpha - 1) instead,
-            // and write the argument as 1 + (\alpha - 1) + \sqrt{(\alpha - 1)(\alpha + 1)}.
-            // For \beta ~ 1, arccos does not accurately resolve small angles, so we compute the tangent of the angle
-            // instead. Hull and Tang derive formulas for (\alpha - 1) and \beta' = \tan(u) that do not suffer
-            // cancelation for these cases.
+            // For alpha ~ 1, the argument of the log is near unity, so we compute (alpha - 1) instead,
+            // write the argument as 1 + (alpha - 1) + sqrt((alpha - 1)(alpha + 1)), and use the log1p function
+            // to compute the log without loss of accuracy.
+            // For beta ~ 1, arccos does not accurately resolve small angles, so we compute the tangent of the angle
+            // instead.
+            // Hull, Fairgrieve, and Tang derive formulas for (alpha - 1) and beta' = tan(u) that do not suffer
+            // from cancelation in these cases.
 
             // For simplicity, we assume all positive inputs and return all positive outputs. The caller should
             // assign signs appropriate to the desired cut conventions. We return v directly since its magnitude
-            // is the same for both arcsin and arccos. Instead of u, we usually return \beta and sometimes \beta'.
-            // If \beta' is not computed, it is set to -1; if it is computed, it should be used instead of \beta
-            // to determine u. Compute u = \arcsin(\beta) or u = \arctan(\beta') for arcsin, u = \arccos(\beta)
-            // or \arctan(1/\beta') for arccos.
+            // is the same for both arcsin and arccos. Instead of u, we usually return beta and sometimes beta'.
+            // If beta' is not computed, it is set to -1; if it is computed, it should be used instead of beta
+            // to determine u. Compute u = arcsin(beta) or u = arctan(beta') for arcsin, u = arccos(beta)
+            // or arctan(1/beta') for arccos.
 
-            // For x or y large enough to overflow \alpha^2, we can simplify our formulas and avoid overflow.
+            Debug.Assert(!(x < 0.0));
+            Debug.Assert(!(y < 0.0));
+
+            // For x or y large enough to overflow alpha^2, we can simplify our formulas and avoid overflow.
             if ((x > s_asinOverflowThreshold) || (y > s_asinOverflowThreshold))
             {
-
                 b = -1.0;
                 bPrime = x / y;
 
@@ -429,30 +439,31 @@ namespace System.Numerics
                     big = x;
                 }
                 double ratio = small / big;
-                v = Math.Log(2.0) + Math.Log(big) + 0.5 * Log1P(ratio * ratio);
-
+                v = s_log2 + Math.Log(big) + 0.5 * Log1P(ratio * ratio);
             }
             else
             {
-
                 double r = Hypot((x + 1.0), y);
                 double s = Hypot((x - 1.0), y);
 
-                double a = (r + s) / 2.0;
+                double a = (r + s) * 0.5;
                 b = x / a;
 
                 if (b > 0.75)
                 {
-                    double amx;
                     if (x <= 1.0)
                     {
-                        amx = (y * y / (r + (x + 1.0)) + (s + (1.0 - x))) / 2.0;
+                        double amx = (y * y / (r + (x + 1.0)) + (s + (1.0 - x))) * 0.5;
+                        bPrime = x / Math.Sqrt((a + x) * amx);
                     }
                     else
                     {
-                        amx = y * y * (1.0 / (r + (x + 1.0)) + 1.0 / (s + (x - 1.0))) / 2.0;
+                        // In this case, amx ~ y^2. Since we take the square root of amx, we should
+                        // pull y out from under the square root so we don't lose its contribution
+                        // when y^2 underflows.
+                        double t = (1.0 / (r + (x + 1.0)) + 1.0 / (s + (x - 1.0))) * 0.5;
+                        bPrime = x / y / Math.Sqrt((a + x) * t);
                     }
-                    bPrime = x / Math.Sqrt((a + x) * amx);
                 }
                 else
                 {
@@ -461,25 +472,27 @@ namespace System.Numerics
 
                 if (a < 1.5)
                 {
-                    double am1;
                     if (x < 1.0)
                     {
-                        am1 = y * y / 2.0 * (1.0 / (r + (x + 1.0)) + 1.0 / (s + (1.0 - x)));
+                        // This is another case where our expression is proportional to y^2 and
+                        // we take its square root, so again we pull out a factor of y from
+                        // under the square root.
+                        double t = (1.0 / (r + (x + 1.0)) + 1.0 / (s + (1.0 - x))) * 0.5;
+                        double am1 = y * y * t;
+                        v = Log1P(am1 + y * Math.Sqrt(t * (a + 1.0)));
                     }
                     else
                     {
-                        am1 = (y * y / (r + (x + 1.0)) + (s + (x - 1.0))) / 2.0;
+                        double am1 = (y * y / (r + (x + 1.0)) + (s + (x - 1.0))) * 0.5;
+                        v = Log1P(am1 + Math.Sqrt(am1 * (a + 1.0)));
                     }
-                    v = Log1P(am1 + Math.Sqrt(am1 * (a + 1.0)));
                 }
                 else
                 {
                     // Because of the test above, we can be sure that a * a will not overflow.
                     v = Math.Log(a + Math.Sqrt((a - 1.0) * (a + 1.0)));
                 }
-
             }
-
         }
 
 
