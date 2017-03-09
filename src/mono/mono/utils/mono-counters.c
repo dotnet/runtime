@@ -114,7 +114,7 @@ mono_counter_get_size (MonoCounter *counter)
 
 /**
  * mono_counters_enable:
- * \param sectionmask: a mask listing the sections that will be displayed
+ * \param sectionmask a mask listing the sections that will be displayed
  * This is used to track which counters will be displayed.
  */
 void
