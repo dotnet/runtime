@@ -277,9 +277,9 @@ mono_gc_base_cleanup (void)
  * mean usually older objects. Collecting a high-numbered generation
  * implies collecting also the lower-numbered generations.
  * The maximum value for \p generation can be retrieved with a call to
- * mono_gc_max_generation(), so this function is usually called as:
+ * \c mono_gc_max_generation, so this function is usually called as:
  *
- * 	mono_gc_collect (mono_gc_max_generation ());
+ * <code>mono_gc_collect (mono_gc_max_generation ());</code>
  */
 void
 mono_gc_collect (int generation)
@@ -322,7 +322,7 @@ mono_gc_get_generation  (MonoObject *object)
 
 /**
  * mono_gc_collection_count:
- * \param generation: a GC generation number
+ * \param generation a GC generation number
  *
  * Get how many times a garbage collection has been performed
  * for the given \p generation number.

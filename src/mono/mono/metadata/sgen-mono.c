@@ -128,7 +128,7 @@ mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *
 /**
  * mono_gc_wbarrier_object_copy:
  *
- * Write barrier to call when obj is the result of a clone or copy of an object.
+ * Write barrier to call when \p obj is the result of a clone or copy of an object.
  */
 void
 mono_gc_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
@@ -153,6 +153,9 @@ mono_gc_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
 	sgen_get_remset ()->wbarrier_object_copy (obj, src);
 }
 
+/**
+ * mono_gc_wbarrier_set_arrayref:
+ */
 void
 mono_gc_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* value)
 {
@@ -168,6 +171,9 @@ mono_gc_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* va
 	sgen_get_remset ()->wbarrier_set_field ((GCObject*)arr, slot_ptr, value);
 }
 
+/**
+ * mono_gc_wbarrier_set_field:
+ */
 void
 mono_gc_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObject* value)
 {
@@ -2134,10 +2140,10 @@ walk_references (GCObject *start, size_t size, void *data)
  * \param flags flags for future use
  * \param callback a function pointer called for each object in the heap
  * \param data a user data pointer that is passed to callback
- * This function can be used to iterate over all the live objects in the heap:
+ * This function can be used to iterate over all the live objects in the heap;
  * for each object, \p callback is invoked, providing info about the object's
  * location in memory, its class, its size and the objects it references.
- * For each referenced object it's offset from the object address is
+ * For each referenced object its offset from the object address is
  * reported in the offsets array.
  * The object references may be buffered, so the callback may be invoked
  * multiple times for the same object: in all but the first call, the size

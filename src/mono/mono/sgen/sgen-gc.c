@@ -2742,6 +2742,9 @@ sgen_thread_unregister (SgenThreadInfo *p)
  * the conservative scan, otherwise by the remembered set scan.
  */
 
+/**
+ * mono_gc_wbarrier_arrayref_copy:
+ */
 void
 mono_gc_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int count)
 {
@@ -2767,6 +2770,9 @@ mono_gc_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int count)
 	remset.wbarrier_arrayref_copy (dest_ptr, src_ptr, count);
 }
 
+/**
+ * mono_gc_wbarrier_generic_nostore:
+ */
 void
 mono_gc_wbarrier_generic_nostore (gpointer ptr)
 {
@@ -2794,6 +2800,9 @@ mono_gc_wbarrier_generic_nostore (gpointer ptr)
 	remset.wbarrier_generic_nostore (ptr);
 }
 
+/**
+ * mono_gc_wbarrier_generic_store:
+ */
 void
 mono_gc_wbarrier_generic_store (gpointer ptr, GCObject* value)
 {
@@ -2804,7 +2813,9 @@ mono_gc_wbarrier_generic_store (gpointer ptr, GCObject* value)
 	sgen_dummy_use (value);
 }
 
-/* Same as mono_gc_wbarrier_generic_store () but performs the store
+/**
+ * mono_gc_wbarrier_generic_store_atomic:
+ * Same as \c mono_gc_wbarrier_generic_store but performs the store
  * as an atomic operation with release semantics.
  */
 void

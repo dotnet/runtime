@@ -1177,13 +1177,13 @@ reference_queue_clear_for_domain (MonoDomain *domain)
  *
  * Create a new reference queue used to process collected objects.
  * A reference queue let you add a pair of (managed object, user data)
- * using the mono_gc_reference_queue_add method.
+ * using the \c mono_gc_reference_queue_add method.
  *
  * Once the managed object is collected \p callback will be called
  * in the finalizer thread with 'user data' as argument.
  *
  * The callback is called from the finalizer thread without any locks held.
- * When a AppDomain is unloaded, all callbacks for objects belonging to it
+ * When an AppDomain is unloaded, all callbacks for objects belonging to it
  * will be invoked.
  *
  * \returns the new queue.

@@ -47,6 +47,9 @@ static SgenBridgeProcessor compare_to_bridge_processor;
 volatile gboolean bridge_processing_in_progress = FALSE;
 
 // FIXME: The current usage pattern for this function is unsafe. Bridge processing could start immediately after unlock
+/**
+ * mono_gc_wait_for_bridge_processing:
+ */
 void
 mono_gc_wait_for_bridge_processing (void)
 {
@@ -59,6 +62,9 @@ mono_gc_wait_for_bridge_processing (void)
 	sgen_gc_unlock ();
 }
 
+/**
+ * mono_gc_register_bridge_callbacks:
+ */
 void
 mono_gc_register_bridge_callbacks (MonoGCBridgeCallbacks *callbacks)
 {
