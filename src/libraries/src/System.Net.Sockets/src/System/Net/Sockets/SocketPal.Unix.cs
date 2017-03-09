@@ -362,9 +362,8 @@ namespace System.Net.Sockets
                 errno = Interop.Sys.ReceiveMessage(socket, &messageHeader, flags, &received);
                 receivedFlags = messageHeader.Flags;
                 sockAddrLen = messageHeader.SocketAddressLen;
+                ipPacketInformation = GetIPPacketInformation(&messageHeader, isIPv4, isIPv6);
             }
-
-            ipPacketInformation = GetIPPacketInformation(&messageHeader, isIPv4, isIPv6);
 
             if (errno != Interop.Error.SUCCESS)
             {
@@ -373,6 +372,74 @@ namespace System.Net.Sockets
 
             socketAddressLen = sockAddrLen;
             return checked((int)received);
+        }
+
+        private static unsafe int ReceiveMessageFrom(
+            SafeCloseSocket socket, SocketFlags flags, IList<ArraySegment<byte>> buffers,
+            byte[] socketAddress, ref int socketAddressLen, bool isIPv4, bool isIPv6,
+            out SocketFlags receivedFlags, out IPPacketInformation ipPacketInformation, out Interop.Error errno)
+        {
+            Debug.Assert(socketAddress != null, "Expected non-null socketAddress");
+
+            int buffersCount = buffers.Count;
+            var handles = new GCHandle[buffersCount];
+            var iovecs = new Interop.Sys.IOVector[buffersCount];
+            try
+            {
+                // Pin buffers and set up iovecs.
+                for (int i = 0; i < buffersCount; i++)
+                {
+                    ArraySegment<byte> buffer = buffers[i];
+                    handles[i] = GCHandle.Alloc(buffer.Array, GCHandleType.Pinned);
+                    iovecs[i].Base = &((byte*)handles[i].AddrOfPinnedObject())[buffer.Offset];
+                    iovecs[i].Count = (UIntPtr)buffer.Count;
+                }
+
+                // Make the call.
+                fixed (byte* sockAddr = socketAddress)
+                fixed (Interop.Sys.IOVector* iov = iovecs)
+                {
+                    int cmsgBufferLen = Interop.Sys.GetControlMessageBufferSize(isIPv4, isIPv6);
+                    var cmsgBuffer = stackalloc byte[cmsgBufferLen];
+
+                    var messageHeader = new Interop.Sys.MessageHeader
+                    {
+                        SocketAddress = sockAddr,
+                        SocketAddressLen = socketAddressLen,
+                        IOVectors = iov,
+                        IOVectorCount = buffersCount,
+                        ControlBuffer = cmsgBuffer,
+                        ControlBufferLen = cmsgBufferLen
+                    };
+
+                    long received;
+                    errno = Interop.Sys.ReceiveMessage(socket, &messageHeader, flags, &received);
+                    receivedFlags = messageHeader.Flags;
+                    int sockAddrLen = messageHeader.SocketAddressLen;
+                    ipPacketInformation = GetIPPacketInformation(&messageHeader, isIPv4, isIPv6);
+
+                    if (errno == Interop.Error.SUCCESS)
+                    {
+                        socketAddressLen = sockAddrLen;
+                        return checked((int)received);
+                    }
+                    else
+                    {
+                        return -1;
+                    }
+                }
+            }
+            finally
+            {
+                // Free GC handles.
+                for (int i = 0; i < buffersCount; i++)
+                {
+                    if (handles[i].IsAllocated)
+                    {
+                        handles[i].Free();
+                    }
+                }
+            }
         }
 
         public static unsafe bool TryCompleteAccept(SafeCloseSocket socket, byte[] socketAddress, ref int socketAddressLen, out IntPtr acceptedFd, out SocketError errorCode)
@@ -535,13 +602,19 @@ namespace System.Net.Sockets
             }
         }
 
-        public static unsafe bool TryCompleteReceiveMessageFrom(SafeCloseSocket socket, byte[] buffer, int offset, int count, SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, bool isIPv4, bool isIPv6, out int bytesReceived, out SocketFlags receivedFlags, out IPPacketInformation ipPacketInformation, out SocketError errorCode)
+        public static unsafe bool TryCompleteReceiveMessageFrom(SafeCloseSocket socket, byte[] buffer, IList<ArraySegment<byte>> buffers, int offset, int count, SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, bool isIPv4, bool isIPv6, out int bytesReceived, out SocketFlags receivedFlags, out IPPacketInformation ipPacketInformation, out SocketError errorCode)
         {
+            Debug.Assert(
+                (buffer == null) ^ (buffers == null),
+                "One and only one of buffer and buffers must be null");
+
             try
             {
                 Interop.Error errno;
 
-                int received = ReceiveMessageFrom(socket, flags, buffer, offset, count, socketAddress, ref socketAddressLen, isIPv4, isIPv6, out receivedFlags, out ipPacketInformation, out errno);
+                int received = buffer != null ?
+                    ReceiveMessageFrom(socket, flags, buffer, offset, count, socketAddress, ref socketAddressLen, isIPv4, isIPv6, out receivedFlags, out ipPacketInformation, out errno) :
+                    ReceiveMessageFrom(socket, flags, buffers, socketAddress, ref socketAddressLen, isIPv4, isIPv6, out receivedFlags, out ipPacketInformation, out errno);
 
                 if (received != -1)
                 {
@@ -860,11 +933,11 @@ namespace System.Net.Sockets
             SocketError errorCode;
             if (!handle.IsNonBlocking)
             {
-                errorCode = handle.AsyncContext.ReceiveMessageFrom(buffer, offset, count, ref socketFlags, socketAddressBuffer, ref socketAddressLen, isIPv4, isIPv6, handle.ReceiveTimeout, out ipPacketInformation, out bytesTransferred);
+                errorCode = handle.AsyncContext.ReceiveMessageFrom(buffer, null, offset, count, ref socketFlags, socketAddressBuffer, ref socketAddressLen, isIPv4, isIPv6, handle.ReceiveTimeout, out ipPacketInformation, out bytesTransferred);
             }
             else
             {
-                if (!TryCompleteReceiveMessageFrom(handle, buffer, offset, count, socketFlags, socketAddressBuffer, ref socketAddressLen, isIPv4, isIPv6, out bytesTransferred, out socketFlags, out ipPacketInformation, out errorCode))
+                if (!TryCompleteReceiveMessageFrom(handle, buffer, null, offset, count, socketFlags, socketAddressBuffer, ref socketAddressLen, isIPv4, isIPv6, out bytesTransferred, out socketFlags, out ipPacketInformation, out errorCode))
                 {
                     errorCode = SocketError.WouldBlock;
                 }
@@ -1456,7 +1529,7 @@ namespace System.Net.Sockets
             int bytesReceived;
             SocketFlags receivedFlags;
             IPPacketInformation ipPacketInformation;
-            SocketError socketError = handle.AsyncContext.ReceiveMessageFromAsync(buffer, offset, count, socketFlags, socketAddress.Buffer, ref socketAddressSize, isIPv4, isIPv6, out bytesReceived, out receivedFlags, out ipPacketInformation, asyncResult.CompletionCallback);
+            SocketError socketError = handle.AsyncContext.ReceiveMessageFromAsync(buffer, null, offset, count, socketFlags, socketAddress.Buffer, ref socketAddressSize, isIPv4, isIPv6, out bytesReceived, out receivedFlags, out ipPacketInformation, asyncResult.CompletionCallback);
             if (socketError == SocketError.Success)
             {
                 asyncResult.CompletionCallback(bytesReceived, socketAddress.Buffer, socketAddressSize, receivedFlags, ipPacketInformation, SocketError.Success);

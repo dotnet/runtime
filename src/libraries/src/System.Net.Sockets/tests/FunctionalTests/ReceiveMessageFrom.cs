@@ -129,14 +129,15 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ActiveIssue(16727, TestPlatforms.AnyUnix)]
         [OuterLoop] // TODO: Issue #11345
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
-        [InlineData(false, false)]
-        [InlineData(false, true)]
-        [InlineData(true, false)]
-        [InlineData(true, true)]
-        public void Success_EventArgs(bool ipv4, bool multiBuffers)
+        [InlineData(false, 0)]
+        [InlineData(false, 1)]
+        [InlineData(false, 2)]
+        [InlineData(true, 0)]
+        [InlineData(true, 1)]
+        [InlineData(true, 2)]
+        public void Success_EventArgs(bool ipv4, int bufferMode)
         {
             AddressFamily family;
             IPAddress loopback, any;
@@ -167,18 +168,29 @@ namespace System.Net.Sockets.Tests
                 sender.Bind(new IPEndPoint(loopback, 0));
 
                 saea.RemoteEndPoint = new IPEndPoint(any, 0);
-                if (multiBuffers)
+                switch (bufferMode)
                 {
-                    saea.BufferList = new List<ArraySegment<byte>> { new ArraySegment<byte>(new byte[1024]) };
-                }
-                else
-                {
-                    saea.SetBuffer(new byte[1024], 0, 1024);
+                    case 0: // single buffer
+                        saea.SetBuffer(new byte[1024], 0, 1024);
+                        break;
+                    case 1: // single buffer in buffer list
+                        saea.BufferList = new List<ArraySegment<byte>>
+                        {
+                            new ArraySegment<byte>(new byte[1024])
+                        };
+                        break;
+                    case 2: // multiple buffers in buffer list
+                        saea.BufferList = new List<ArraySegment<byte>>
+                        {
+                            new ArraySegment<byte>(new byte[512]),
+                            new ArraySegment<byte>(new byte[512])
+                        };
+                        break;
                 }
 
                 var mres = new ManualResetEventSlim();
                 saea.Completed += delegate { mres.Set(); };
-
+                
                 bool pending = receiver.ReceiveMessageFromAsync(saea);
                 for (int i = 0; i < TestSettings.UDPRedundancy; i++)
                 {

@@ -246,7 +246,8 @@ namespace System.Net.Sockets
             public SocketFlags Flags;
             public int BytesTransferred;
             public SocketFlags ReceivedFlags;
-
+            public IList<ArraySegment<byte>> Buffers;
+            
             public bool IsIPv4;
             public bool IsIPv6;
             public IPPacketInformation IPPacketInformation;
@@ -261,7 +262,7 @@ namespace System.Net.Sockets
 
             protected override bool DoTryComplete(SocketAsyncContext context)
             {
-                return SocketPal.TryCompleteReceiveMessageFrom(context._socket, Buffer, Offset, Count, Flags, SocketAddress, ref SocketAddressLen, IsIPv4, IsIPv6, out BytesTransferred, out ReceivedFlags, out IPPacketInformation, out ErrorCode);
+                return SocketPal.TryCompleteReceiveMessageFrom(context._socket, Buffer, Buffers, Offset, Count, Flags, SocketAddress, ref SocketAddressLen, IsIPv4, IsIPv6, out BytesTransferred, out ReceivedFlags, out IPPacketInformation, out ErrorCode);
             }
 
             protected override void InvokeCallback()
@@ -1032,7 +1033,8 @@ namespace System.Net.Sockets
             }
         }
 
-        public SocketError ReceiveMessageFrom(byte[] buffer, int offset, int count, ref SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, bool isIPv4, bool isIPv6, int timeout, out IPPacketInformation ipPacketInformation, out int bytesReceived)
+        public SocketError ReceiveMessageFrom(
+            byte[] buffer, IList<ArraySegment<byte>> buffers, int offset, int count, ref SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, bool isIPv4, bool isIPv6, int timeout, out IPPacketInformation ipPacketInformation, out int bytesReceived)
         {
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
@@ -1046,7 +1048,7 @@ namespace System.Net.Sockets
                     SocketFlags receivedFlags;
                     SocketError errorCode;
                     if (_receiveQueue.IsEmpty &&
-                        SocketPal.TryCompleteReceiveMessageFrom(_socket, buffer, offset, count, flags, socketAddress, ref socketAddressLen, isIPv4, isIPv6, out bytesReceived, out receivedFlags, out ipPacketInformation, out errorCode))
+                        SocketPal.TryCompleteReceiveMessageFrom(_socket, buffer, buffers, offset, count, flags, socketAddress, ref socketAddressLen, isIPv4, isIPv6, out bytesReceived, out receivedFlags, out ipPacketInformation, out errorCode))
                     {
                         flags = receivedFlags;
                         return errorCode;
@@ -1058,6 +1060,7 @@ namespace System.Net.Sockets
                     {
                         Event = @event,
                         Buffer = buffer,
+                        Buffers = buffers,
                         Offset = offset,
                         Count = count,
                         Flags = flags,
@@ -1103,7 +1106,7 @@ namespace System.Net.Sockets
             }
         }
 
-        public SocketError ReceiveMessageFromAsync(byte[] buffer, int offset, int count, SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, bool isIPv4, bool isIPv6, out int bytesReceived, out SocketFlags receivedFlags, out IPPacketInformation ipPacketInformation, Action<int, byte[], int, SocketFlags, IPPacketInformation, SocketError> callback)
+        public SocketError ReceiveMessageFromAsync(byte[] buffer, IList<ArraySegment<byte>> buffers, int offset, int count, SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, bool isIPv4, bool isIPv6, out int bytesReceived, out SocketFlags receivedFlags, out IPPacketInformation ipPacketInformation, Action<int, byte[], int, SocketFlags, IPPacketInformation, SocketError> callback)
         {
             SetNonBlocking();
 
@@ -1112,7 +1115,7 @@ namespace System.Net.Sockets
                 SocketError errorCode;
 
                 if (_receiveQueue.IsEmpty &&
-                    SocketPal.TryCompleteReceiveMessageFrom(_socket, buffer, offset, count, flags, socketAddress, ref socketAddressLen, isIPv4, isIPv6, out bytesReceived, out receivedFlags, out ipPacketInformation, out errorCode))
+                    SocketPal.TryCompleteReceiveMessageFrom(_socket, buffer, buffers, offset, count, flags, socketAddress, ref socketAddressLen, isIPv4, isIPv6, out bytesReceived, out receivedFlags, out ipPacketInformation, out errorCode))
                 {
                     // Synchronous success or failure
                     return errorCode;
@@ -1122,6 +1125,7 @@ namespace System.Net.Sockets
                 {
                     Callback = callback,
                     Buffer = buffer,
+                    Buffers = buffers,
                     Offset = offset,
                     Count = count,
                     Flags = flags,
