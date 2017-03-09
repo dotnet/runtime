@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Globalization;
@@ -366,7 +367,7 @@ namespace System.Net
                 if (NetEventSource.IsEnabled) NetEventSource.Error(this, "Rethrowing exception:" + exception);
                 _closed = true;
                 _httpContext.Abort();
-                throw exception;
+                ExceptionDispatchInfo.Capture(exception).Throw();
             }
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
