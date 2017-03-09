@@ -2094,7 +2094,6 @@ namespace System.Runtime.Serialization
                     }
                 }
 
-#if !NET_NATIVE
                 //For Json we need to add KeyValuePair<K,T> to KnownTypes if the UnderLyingType is a Dictionary<K,T>
                 try
                 {
@@ -2120,7 +2119,6 @@ namespace System.Runtime.Serialization
                     //types that may not be valid DC. This step is purely for KeyValuePair and shouldn't fail the (de)serialization.
                     //Any IDCE in this case fails the serialization/deserialization process which is not the optimal experience.
                 }
-#endif
 
                 type = type.BaseType;
             }
