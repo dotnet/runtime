@@ -426,6 +426,7 @@ namespace System
         /// <exception cref="System.ArgumentException">
         /// Thrown when <typeparamref name="T"/> contains pointers.
         /// </exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Span<byte> AsBytes<T>(this Span<T> source)
             where T : struct
         {
@@ -445,6 +446,7 @@ namespace System
         /// <exception cref="System.ArgumentException">
         /// Thrown when <typeparamref name="T"/> contains pointers.
         /// </exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ReadOnlySpan<byte> AsBytes<T>(this ReadOnlySpan<T> source)
             where T : struct
         {
@@ -467,6 +469,7 @@ namespace System
         /// <exception cref="System.ArgumentException">
         /// Thrown when <typeparamref name="TFrom"/> or <typeparamref name="TTo"/> contains pointers.
         /// </exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Span<TTo> NonPortableCast<TFrom, TTo>(this Span<TFrom> source)
             where TFrom : struct
             where TTo : struct
@@ -492,6 +495,7 @@ namespace System
         /// <exception cref="System.ArgumentException">
         /// Thrown when <typeparamref name="TFrom"/> or <typeparamref name="TTo"/> contains pointers.
         /// </exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ReadOnlySpan<TTo> NonPortableCast<TFrom, TTo>(this ReadOnlySpan<TFrom> source)
             where TFrom : struct
             where TTo : struct
