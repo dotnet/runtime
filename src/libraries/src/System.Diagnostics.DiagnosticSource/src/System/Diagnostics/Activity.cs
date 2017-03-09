@@ -297,6 +297,7 @@ namespace System.Diagnostics
                 Current = Parent;
             }
         }
+
         #region private 
 
         private string GenerateId()
@@ -306,7 +307,7 @@ namespace System.Diagnostics
             {
                 // Normal start within the process
                 Debug.Assert(!string.IsNullOrEmpty(Parent.Id));
-                ret = appendSuffix(Parent.Id, Interlocked.Increment(ref Parent._currentChildId).ToString());
+                ret = appendSuffix(Parent.Id, Interlocked.Increment(ref Parent._currentChildId).ToString(), s_internalIdDelimiter);
             }
             else if (ParentId != null)
             {
@@ -316,7 +317,12 @@ namespace System.Diagnostics
                 //sanitize external RequestId as it may not be hierarchical. 
                 //we cannot update ParentId, we must let it be logged exactly as it was passed.
                 string parentId = ParentId[0] == s_rootIdPrefix ? ParentId : s_rootIdPrefix + ParentId;
-                ret = appendSuffix(parentId, "I-" + Interlocked.Increment(ref s_currentRootId));
+                if (parentId[parentId.Length - 1] != s_internalIdDelimiter)
+                {
+                    parentId += s_internalIdDelimiter;
+                }
+                
+                ret = appendSuffix(parentId, Interlocked.Increment(ref s_currentRootId).ToString("x"), s_externalIdDelimiter);
             }
             else
             {
@@ -329,31 +335,30 @@ namespace System.Diagnostics
 
         private string getRootId(string id)
         {
-            //id MAY start with '/' and contain '.'. We return substring between them
-            //ParentId MAY NOT have hierarchical structure and we don't know if initially rootId was started with '/',
-            //so we must NOT include first '/' to allow mixed hierarchical and non-hierarchical request id scenarios
-            int rootEnd = id.IndexOf(s_idDelimiter);
+            //id MAY start with '|' and contain '.'. We return substring between them
+            //ParentId MAY NOT have hierarchical structure and we don't know if initially rootId was started with '|',
+            //so we must NOT include first '|' to allow mixed hierarchical and non-hierarchical request id scenarios
+            int rootEnd = id.IndexOf(s_internalIdDelimiter);
             if (rootEnd < 0)
                 rootEnd = id.Length;
             int rootStart = id[0] == s_rootIdPrefix ? 1 : 0;
             return id.Substring(rootStart, rootEnd - rootStart);
         }
 
-        private string appendSuffix(string parentId, string suffix)
+        private string appendSuffix(string parentId, string suffix, char delimiter)
         {
 #if DEBUG
             suffix = OperationName + "-" + suffix;
 #endif
-            if (parentId.Length + suffix.Length <= 127)
-                return parentId + s_idDelimiter + suffix;
+            if (parentId.Length + suffix.Length < s_requestIdMaxLength)
+                return parentId + suffix + delimiter;
 
             //Id overflow:
             //find position in RequestId to trim
-            int trimPosition = parentId.Length - 1;
-            while (trimPosition > 0)
+            int trimPosition = s_requestIdMaxLength - 9; // overflow suffix + delimiter length is 9
+            while (trimPosition > 1)
             {
-                if ((parentId[trimPosition] == s_idDelimiter || parentId[trimPosition] == s_overflowDelimiter)
-                    && trimPosition <= 119) //overflow suffix length is 8 + 1 for #.
+                if (parentId[trimPosition - 1] == s_internalIdDelimiter || parentId[trimPosition - 1] == s_externalIdDelimiter)
                     break;
                 trimPosition--;
             }
@@ -362,13 +367,11 @@ namespace System.Diagnostics
             if (trimPosition == 0)
                 return generateRootId();
 
-            //generate overflow suffix
             byte[] bytes = new byte[4];
-            s_random.Value.NextBytes(bytes);
+            s_random.NextBytes(bytes);
 
-            return parentId.Substring(0, trimPosition) + 
-                s_overflowDelimiter +
-                BitConverter.ToUInt32(bytes, 0).ToString("x8");
+            //generate overflow suffix
+            return parentId.Substring(0, trimPosition) + BitConverter.ToUInt32(bytes, 0).ToString("x8") + s_overflowDelimiter;
         }
 
         private string generateRootId()
@@ -378,28 +381,43 @@ namespace System.Diagnostics
                 // Here we make an ID to represent the Process/AppDomain.   Ideally we use process ID but 
                 // it is unclear if we have that ID handy.   Currently we use low bits of high freq tick 
                 // as a unique random number (which is not bad, but loses randomness for startup scenarios).  
-                Interlocked.CompareExchange(ref s_uniqPrefix, generateUniquePrefix(), null);
+                Interlocked.CompareExchange(ref s_uniqPrefix, generateInstancePrefix(), null);
             }
 
 #if DEBUG
-            string ret = s_uniqPrefix + OperationName + s_idDelimiter + Interlocked.Increment(ref s_currentRootId);
+            string ret = s_uniqPrefix + "-" + OperationName + "-" + Interlocked.Increment(ref s_currentRootId).ToString("x") + s_internalIdDelimiter;
 #else           // To keep things short, we drop the operation name 
-            string ret = s_uniqPrefix + s_idDelimiter + Interlocked.Increment(ref s_currentRootId);
+            string ret = s_uniqPrefix + "-" + Interlocked.Increment(ref s_currentRootId).ToString("x") + s_internalIdDelimiter;
 #endif
             return ret;
         }
 
-        // Used to generate an ID 
-        private int _currentChildId;            // A unique number for all children of this activity.  
-        private static int s_currentRootId;      // A unique number inside the appdomain.
-        private static string s_uniqPrefix;
-
         private string _rootId;
-        private static char s_idDelimiter = '.';
-        private static char s_overflowDelimiter = '#';
-        private static char s_rootIdPrefix = '/';
 
-        private static readonly Lazy<Random> s_random = new Lazy<Random>();
+        // Used to generate an ID 
+        static Activity()
+        {
+            s_random = new Random();
+            
+            //Randomized on different process instances
+            s_currentRootId = s_random.Next();
+        }
+
+        private static readonly Random s_random;
+
+        // A unique number for all children of this activity.  
+        private int _currentChildId;
+
+        // A unique number inside the appdomain. 
+        private static long s_currentRootId;
+
+        private static string s_uniqPrefix;
+        private static char s_internalIdDelimiter = '.';
+        private static char s_externalIdDelimiter = '_';
+        private static char s_overflowDelimiter = '#';
+        private static char s_rootIdPrefix = '|';
+        private static int s_requestIdMaxLength = 1024;
+
         /// <summary>
         /// Having our own key-value linked list allows us to be more efficient  
         /// </summary>
