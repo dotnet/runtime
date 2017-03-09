@@ -400,14 +400,13 @@ mono_object_register_finalizer (MonoObject *obj)
 /**
  * mono_domain_finalize:
  * \param domain the domain to finalize
- * \param timeout msects to wait for the finalization to complete, -1 to wait indefinitely
+ * \param timeout msecs to wait for the finalization to complete, \c -1 to wait indefinitely
  *
  * Request finalization of all finalizable objects inside \p domain. Wait
  * \p timeout msecs for the finalization to complete.
  *
  * \returns TRUE if succeeded, FALSE if there was a timeout
  */
-
 gboolean
 mono_domain_finalize (MonoDomain *domain, guint32 timeout) 
 {

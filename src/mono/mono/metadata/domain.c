@@ -350,11 +350,11 @@ static guint32 domain_shadow_serial = 0L;
  * mono_domain_create:
  *
  * Creates a new application domain, the unmanaged representation
- * of the actual domain.   Usually you will want to create the
+ * of the actual domain.
  *
  * Application domains provide an isolation facilty for assemblies.   You
  * can load assemblies and execute code in them that will not be visible
- * to other application domains.   This is a runtime-based virtualization
+ * to other application domains. This is a runtime-based virtualization
  * technology.
  *
  * It is possible to unload domains, which unloads the assemblies and
@@ -364,7 +364,7 @@ static guint32 domain_shadow_serial = 0L;
  * structures, along a dedicated code manager to hold code that is
  * associated with the domain.
  *
- * Returns: New initialized MonoDomain, with no configuration or assemblies
+ * \returns New initialized \c MonoDomain, with no configuration or assemblies
  * loaded into it.
  */
 MonoDomain *
@@ -878,11 +878,11 @@ mono_get_root_domain (void)
 /**
  * mono_domain_get:
  *
- * This method returns the value of the current MonoDomain that this thread
+ * This method returns the value of the current \c MonoDomain that this thread
  * and code are running under.   To obtain the root domain use
- * mono_get_root_domain() API.
+ * \c mono_get_root_domain API.
  *
- * Returns: the current domain
+ * \returns the current domain
  */
 MonoDomain *
 mono_domain_get ()
@@ -937,7 +937,7 @@ mono_domain_set_internal (MonoDomain *domain)
  *
  * Use this method to safely iterate over all the loaded application
  * domains in the current runtime.   The provided \p func is invoked with a
- * pointer to the MonoDomain and is given the value of the \p user_data
+ * pointer to the \c MonoDomain and is given the value of the \p user_data
  * parameter which can be used to pass state to your called routine.
  */
 void
@@ -965,12 +965,11 @@ mono_domain_foreach (MonoDomainFunc func, gpointer user_data)
 	mono_gc_free_fixed (copy);
 }
 
+/* FIXME: maybe we should integrate this with mono_assembly_open? */
 /**
  * mono_domain_assembly_open:
  * \param domain the application domain
  * \param name file name of the assembly
- *
- * fixme: maybe we should integrate this with mono_assembly_open ??
  */
 MonoAssembly *
 mono_domain_assembly_open (MonoDomain *domain, const char *name)
@@ -1252,14 +1251,14 @@ mono_domain_get_by_id (gint32 domainid)
 	return domain;
 }
 
-/*
+/**
  * mono_domain_get_id:
  *
  * A domain ID is guaranteed to be unique for as long as the domain
  * using it is alive. It may be reused later once the domain has been
  * unloaded.
  *
- * Returns: The unique ID for @domain.
+ * \returns The unique ID for \p domain.
  */
 gint32
 mono_domain_get_id (MonoDomain *domain)
@@ -1267,13 +1266,13 @@ mono_domain_get_id (MonoDomain *domain)
 	return domain->domain_id;
 }
 
-/*
+/**
  * mono_domain_get_friendly_name:
  *
- * The returned string's lifetime is the same as @domain's. Consider
+ * The returned string's lifetime is the same as \p domain's. Consider
  * copying it if you need to store it somewhere.
  *
- * Returns: The friendly name of @domain. Can be NULL if not yet set.
+ * \returns The friendly name of \p domain. Can be NULL if not yet set.
  */
 const char *
 mono_domain_get_friendly_name (MonoDomain *domain)
@@ -1391,7 +1390,9 @@ mono_domain_code_foreach (MonoDomain *domain, MonoCodeManagerFunc func, void *us
 	mono_domain_unlock (domain);
 }
 
-
+/**
+ * mono_context_set:
+ */
 void 
 mono_context_set (MonoAppContext * new_context)
 {
