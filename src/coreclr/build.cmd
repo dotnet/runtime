@@ -113,7 +113,6 @@ if /i "%1" == "buildjit32"          (set __BuildJit32="-DBUILD_JIT32=1"&set proc
 if /i "%1" == "pgoinstrument"       (set __PgoInstrument=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "toolset_dir"         (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%1" == "compatjitcrossgen"   (set __CompatJitCrossgen=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "legacyjitcrossgen"   (set __LegacyJitCrossgen=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "buildstandalonegc"   (set __BuildStandaloneGC="-DFEATURE_STANDALONE_GC=1"&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 @REM The following can be deleted once the CI system that passes it is updated to not pass it.
@@ -408,12 +407,6 @@ if %__BuildNativeCoreLib% EQU 1 (
         set COMPlus_UseWindowsX86CoreLegacyJit=1
     )
 
-    if "%__LegacyJitCrossgen%"=="1" (
-        set COMPlus_AltJit=*
-        set COMPlus_AltJitNgen=*
-        set COMPlus_AltJitName=legacyjit.dll
-    )
-
     echo "%__CrossgenExe%" /Platform_Assemblies_Paths "%__BinDir%" /out "%__BinDir%\System.Private.CoreLib.ni.dll" "%__BinDir%\System.Private.CoreLib.dll"
     "%__CrossgenExe%" /Platform_Assemblies_Paths "%__BinDir%" /out "%__BinDir%\System.Private.CoreLib.ni.dll" "%__BinDir%\System.Private.CoreLib.dll" > "%__CrossGenCoreLibLog%" 2>&1
     if NOT !errorlevel! == 0 (
@@ -440,12 +433,6 @@ if %__BuildNativeCoreLib% EQU 1 (
 
     if "%__CompatJitCrossgen%"=="1" (
         set COMPlus_UseWindowsX86CoreLegacyJit=
-    )
-
-    if "%__LegacyJitCrossgen%"=="1" (
-        set COMPlus_AltJit=
-        set COMPlus_AltJitNgen=
-        set COMPlus_AltJitName=
     )
 
     if NOT !err! == 0 (
