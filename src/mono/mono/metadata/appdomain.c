@@ -422,6 +422,9 @@ mono_runtime_cleanup (MonoDomain *domain)
 
 static MonoDomainFunc quit_function = NULL;
 
+/**
+ * mono_install_runtime_cleanup:
+ */
 void
 mono_install_runtime_cleanup (MonoDomainFunc func)
 {

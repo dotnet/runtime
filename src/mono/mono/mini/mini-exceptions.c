@@ -2671,11 +2671,11 @@ mono_print_thread_dump_internal (void *sigctx, MonoContext *start_ctx)
 	mono_runtime_stdout_fflush ();
 }
 
-/*
+/**
  * mono_print_thread_dump:
  *
- *   Print information about the current thread to stdout.
- * SIGCTX can be NULL, allowing this to be called from gdb.
+ * Print information about the current thread to stdout.
+ * \p sigctx can be NULL, allowing this to be called from gdb.
  */
 void
 mono_print_thread_dump (void *sigctx)

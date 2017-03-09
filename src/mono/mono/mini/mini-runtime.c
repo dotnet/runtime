@@ -235,21 +235,17 @@ mono_pmip (void *ip)
 }
 
 /**
- * mono_print_method_from_ip
+ * mono_print_method_from_ip:
  * \param ip an instruction pointer address
  *
  * This method is used from a debugger to get the name of the
  * method at address \p ip.
  *
  * This prints the name of the method at address \p ip in the standard
- * output.  Unlike mono_pmip which returns a string, this routine
+ * output.  Unlike \c mono_pmip which returns a string, this routine
  * prints the value on the standard output.
  */
-#ifdef __GNUC__
-/* Prevent the linker from optimizing this away in embedding setups to help debugging */
- __attribute__ ((__used__))
-#endif
-void
+MONO_ATTR_USED void
 mono_print_method_from_ip (void *ip)
 {
 	MonoJitInfo *ji;

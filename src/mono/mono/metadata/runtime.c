@@ -28,11 +28,10 @@ static gboolean shutting_down = FALSE;
 
 /** 
  * mono_runtime_set_shutting_down:
+ * \deprecated This function can break the shutdown sequence.
  *
- * Invoked by System.Environment.Exit to flag that the runtime
+ * Invoked by \c System.Environment.Exit to flag that the runtime
  * is shutting down.
- *
- * Deprecated. This function can break the shutdown sequence.
  */
 void
 mono_runtime_set_shutting_down (void)
