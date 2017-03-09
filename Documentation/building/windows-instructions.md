@@ -20,11 +20,31 @@ For Visual Studio 2015:
 * To build for Arm32, Make sure that you have the Windows SDK for Windows 10 installed (or selected to be installed as part of VS installation). To explicitly install Windows SDK, download it from here: [Windows SDK for Windows 10](https://developer.microsoft.com/en-us/windows/downloads)
 
 For Visual Studio 2017:
-* Make sure that you install the ".NET Core Cross-Platform Development" workload.
-* Make sure that you install the "Desktop Development with C++" workload.
- * Make sure that the "VC++ 2017 v141 toolset (x86,x64)" component is selected in list of Optional components
- * To build for Arm32, Make sure that you have the Windows SDK for Windows 10 installed (or selected to be installed as part of VS installation). To explicitly install Windows SDK, download it from here: [Windows SDK for Windows 10](https://developer.microsoft.com/en-us/windows/downloads)
-* Ensure you are running from the "Developer Command Prompt for VS2017"; Otherwise, the build will attempt to locate and use the VS2015 toolset.
+* When doing a 'Workloads' based install, the following are the minimum requirements:
+  * .NET Desktop Development
+    * All Required Components
+    * .NET Framework 4-4.6 Development Tools
+  * Desktop Development with C++
+    * All Required Components
+    * VC++ 2017 v141 Toolset (x86, x64)
+    * Windows 8.1 SDK and UCRT SDK
+    * VC++ 2015.3 v140 Toolset (x86, x64)
+* When doing an 'Individual Components' based install, the following are the minimum requirements:
+  * C# and Visual Basic Roslyn Compilers
+  * Static Analysis Tools
+  * .NET Portable Library Targeting Pack
+  * Windows 10 SDK or Windows 8.1 SDK
+  * Visual Studio C++ Core Features
+  * VC++ 2017 v141 Toolset (x86, x64)
+  * MSBuild
+  * .NET Framework 4.6 Targeting Pack
+  * Windows Universal CRT SDK
+  * VC++ 2015.3 v140 Toolset (x86, x64)
+* To build for Arm32, Make sure that you have the Windows 10 SDK installed (or selected to be installed as part of VS installation). To explicitly install Windows SDK, download it from here: [Windows SDK for Windows 10](https://developer.microsoft.com/en-us/windows/downloads)
+* **Important:** You must have the `msdia120.dll` COM Library registered in order to build the repository.
+  * This binary is registered by default when installing the "VC++ Tools" with Visual Studio 2015
+  * You can also manually register the binary by launching the "Developer Command Prompt for VS2017" with Administrative privileges and running `regsvr32.exe %VSINSTALLDIR%\Common7\IDE\msdia120.dll`
+* **Important:** By default, the build will attempt to use VS2015 as the toolset for the build. To build using VS2017 as your toolset, you must use the "Developer Command Prompt for VS2017".
 
 Visual Studio Express is not supported.
 
