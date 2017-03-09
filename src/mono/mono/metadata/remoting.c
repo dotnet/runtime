@@ -435,6 +435,9 @@ fail:
 } 
 
 
+/**
+ * mono_marshal_get_remoting_invoke:
+ */
 MonoMethod *
 mono_marshal_get_remoting_invoke (MonoMethod *method)
 {
@@ -908,7 +911,8 @@ mono_marshal_get_xappdomain_dispatch (MonoMethod *method, int *marshal_types, in
 	return res;
 }
 
-/* mono_marshal_get_xappdomain_invoke ()
+/**
+ * mono_marshal_get_xappdomain_invoke:
  * Generates a fast remoting wrapper for cross app domain calls.
  */
 MonoMethod *
@@ -1238,6 +1242,9 @@ mono_marshal_get_xappdomain_invoke (MonoMethod *method)
 	return res;
 }
 
+/**
+ * mono_marshal_get_remoting_invoke_for_target:
+ */
 MonoMethod *
 mono_marshal_get_remoting_invoke_for_target (MonoMethod *method, MonoRemotingTarget target_type)
 {
@@ -1270,6 +1277,9 @@ mono_marshal_load_remoting_wrapper (MonoRealProxy *rp, MonoMethod *method)
 	return compiled_ptr;
 }
 
+/**
+ * mono_marshal_get_remoting_invoke_with_check:
+ */
 MonoMethod *
 mono_marshal_get_remoting_invoke_with_check (MonoMethod *method)
 {
@@ -1331,13 +1341,14 @@ mono_marshal_get_remoting_invoke_with_check (MonoMethod *method)
 	return res;
 }
 
-/*
+/**
  * mono_marshal_get_ldfld_wrapper:
- * @type: the type of the field
+ * \param type the type of the field
  *
  * This method generates a function which can be use to load a field with type
- * @type from an object. The generated function has the following signature:
- * <@type> ldfld_wrapper (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, int offset)
+ * \p type from an object. The generated function has the following signature:
+ *
+ * <code><i>type</i> ldfld_wrapper (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, int offset)</code>
  */
 MonoMethod *
 mono_marshal_get_ldfld_wrapper (MonoType *type)
@@ -1625,13 +1636,14 @@ mono_marshal_get_ldflda_wrapper (MonoType *type)
 }
 
 
-/*
+/**
  * mono_marshal_get_stfld_wrapper:
- * @type: the type of the field
+ * \param type the type of the field
  *
  * This method generates a function which can be use to store a field with type
- * @type. The generated function has the following signature:
- * void stfld_wrapper (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, int offset, <@type> val)
+ * \p type. The generated function has the following signature:
+ *
+ * <code>void stfld_wrapper (MonoObject *this_obj, MonoClass *klass, MonoClassField *field, int offset, <i>type</i> val)</code>
  */
 MonoMethod *
 mono_marshal_get_stfld_wrapper (MonoType *type)
@@ -1771,6 +1783,9 @@ mono_marshal_get_stfld_wrapper (MonoType *type)
 	return res;
 }
 
+/**
+ * mono_marshal_get_proxy_cancast:
+ */
 MonoMethod *
 mono_marshal_get_proxy_cancast (MonoClass *klass)
 {

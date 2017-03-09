@@ -263,6 +263,9 @@ mono_gc_get_bitmap_for_descr (SgenDescriptor descr, int *numbits)
 	}
 }
 
+/**
+ * mono_gc_make_descr_from_bitmap:
+ */
 SgenDescriptor
 mono_gc_make_descr_from_bitmap (gsize *bitmap, int numbits)
 {

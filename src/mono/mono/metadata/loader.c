@@ -2261,7 +2261,7 @@ static gboolean loader_lock_track_ownership = FALSE;
 /**
  * mono_loader_lock:
  *
- * See docs/thread-safety.txt for the locking strategy.
+ * See \c docs/thread-safety.txt for the locking strategy.
  */
 void
 mono_loader_lock (void)
@@ -2272,6 +2272,9 @@ mono_loader_lock (void)
 	}
 }
 
+/**
+ * mono_loader_unlock:
+ */
 void
 mono_loader_unlock (void)
 {

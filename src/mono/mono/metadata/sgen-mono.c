@@ -526,12 +526,18 @@ sgen_client_run_finalize (MonoObject *obj)
 	mono_gc_run_finalize (obj, NULL);
 }
 
+/**
+ * mono_gc_invoke_finalizers:
+ */
 int
 mono_gc_invoke_finalizers (void)
 {
 	return sgen_gc_invoke_finalizers ();
 }
 
+/**
+ * mono_gc_pending_finalizers:
+ */
 MonoBoolean
 mono_gc_pending_finalizers (void)
 {
@@ -984,6 +990,9 @@ mono_gc_alloc_mature (MonoVTable *vtable, size_t size)
 	return obj;
 }
 
+/**
+ * mono_gc_alloc_fixed:
+ */
 void*
 mono_gc_alloc_fixed (size_t size, MonoGCDescriptor descr, MonoGCRootSource source, const char *msg)
 {
@@ -998,6 +1007,9 @@ mono_gc_alloc_fixed (size_t size, MonoGCDescriptor descr, MonoGCRootSource sourc
 	return res;
 }
 
+/**
+ * mono_gc_free_fixed:
+ */
 void
 mono_gc_free_fixed (void* addr)
 {
@@ -2295,12 +2307,18 @@ sgen_thread_detach (SgenThreadInfo *p)
 		mono_thread_detach_internal (mono_thread_internal_current ());
 }
 
+/**
+ * mono_gc_register_thread:
+ */
 gboolean
 mono_gc_register_thread (void *baseptr)
 {
 	return mono_thread_info_attach (baseptr) != NULL;
 }
 
+/**
+ * mono_gc_is_gc_thread:
+ */
 gboolean
 mono_gc_is_gc_thread (void)
 {
@@ -2972,6 +2990,9 @@ sgen_client_describe_invalid_pointer (GCObject *ptr)
 
 static gboolean gc_inited;
 
+/**
+ * mono_gc_base_init:
+ */
 void
 mono_gc_base_init (void)
 {
