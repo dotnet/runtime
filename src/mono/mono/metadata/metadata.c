@@ -572,17 +572,17 @@ get_nrows (MonoImage *meta, int tableidx)
 }
 
 /* Reference: Partition II - 23.2.6 */
-/*
+/**
  * mono_metadata_compute_size:
- * @meta: metadata context
- * @tableindex: metadata table number
- * @result_bitfield: pointer to guint32 where to store additional info
+ * \param meta metadata context
+ * \param tableindex metadata table number
+ * \param result_bitfield pointer to \c guint32 where to store additional info
  * 
- * mono_metadata_compute_size() computes the lenght in bytes of a single
+ * \c mono_metadata_compute_size computes the length in bytes of a single
  * row in a metadata table. The size of each column is encoded in the
- * @result_bitfield return value along with the number of columns in the table.
- * the resulting bitfield should be handed to the mono_metadata_table_size()
- * and mono_metadata_table_count() macros.
+ * \p result_bitfield return value along with the number of columns in the table.
+ * the resulting bitfield should be handed to the \c mono_metadata_table_size
+ * and \c mono_metadata_table_count macros.
  * This is a Mono runtime internal only function.
  */
 int
@@ -1047,7 +1047,7 @@ mono_metadata_string_heap (MonoImage *meta, guint32 index)
  * mono_metadata_user_string:
  * \param meta metadata context
  * \param index index into the user string heap.
- * \returns an in-memory pointer to the \p index in the user string heap ("#US").
+ * \returns an in-memory pointer to the \p index in the user string heap (<code>#US</code>).
  */
 const char *
 mono_metadata_user_string (MonoImage *meta, guint32 index)
@@ -1275,9 +1275,10 @@ mono_metadata_decode_signed_value (const char *ptr, const char **rptr)
 	return ival - 0x20000000;
 }
 
-/* 
- * Translates the given 1-based index into the Method, Field, Event, or Param tables
- * using the *Ptr tables in uncompressed metadata, if they are available.
+/**
+ * mono_metadata_translate_token_index:
+ * Translates the given 1-based index into the \c Method, \c Field, \c Event, or \c Param tables
+ * using the \c *Ptr tables in uncompressed metadata, if they are available.
  *
  * FIXME: The caller is not forced to call this function, which is error-prone, since 
  * forgetting to call it would only show up as a bug on uncompressed metadata.
@@ -1322,10 +1323,10 @@ mono_metadata_translate_token_index (MonoImage *image, int table, guint32 idx)
 /**
  * mono_metadata_decode_table_row:
  *
- *   Same as mono_metadata_decode_row, but takes an IMAGE+TABLE ID pair, and takes
+ * Same as \c mono_metadata_decode_row, but takes an \p image + \p table ID pair, and takes
  * uncompressed metadata into account, so it should be used to access the
- * Method, Field, Param and Event tables when the access is made from metadata, i.e.
- * IDX is retrieved from a metadata table, like MONO_TYPEDEF_FIELD_LIST.
+ * \c Method, \c Field, \c Param and \c Event tables when the access is made from metadata, i.e.
+ * \p idx is retrieved from a metadata table, like \c MONO_TYPEDEF_FIELD_LIST.
  */
 void
 mono_metadata_decode_table_row (MonoImage *image, int table, int idx, guint32 *res, int res_size)
@@ -1339,9 +1340,9 @@ mono_metadata_decode_table_row (MonoImage *image, int table, int idx, guint32 *r
 /**
  * mono_metadata_decode_table_row_col:
  *
- *   Same as mono_metadata_decode_row_col, but takes an IMAGE+TABLE ID pair, and takes
+ * Same as \c mono_metadata_decode_row_col, but takes an \p image + \p table ID pair, and takes
  * uncompressed metadata into account, so it should be used to access the
- * Method, Field, Param and Event tables.
+ * \c Method, \c Field, \c Param and \c Event tables.
  */
 guint32 mono_metadata_decode_table_row_col (MonoImage *image, int table, int idx, guint col)
 {
@@ -1351,13 +1352,12 @@ guint32 mono_metadata_decode_table_row_col (MonoImage *image, int table, int idx
 	return mono_metadata_decode_row_col (&image->tables [table], idx, col);
 }
 
-/*
+/**
  * mono_metadata_parse_typedef_or_ref:
- * @m: a metadata context.
- * @ptr: a pointer to an encoded TypedefOrRef in @m
- * @rptr: pointer updated to match the end of the decoded stream
- *
- * Returns: a token valid in the @m metadata decoded from
+ * \param m a metadata context.
+ * \param ptr a pointer to an encoded TypedefOrRef in \p m
+ * \param rptr pointer updated to match the end of the decoded stream
+ * \returns a token valid in the \p m metadata decoded from
  * the compressed representation.
  */
 guint32
@@ -1370,16 +1370,16 @@ mono_metadata_parse_typedef_or_ref (MonoImage *m, const char *ptr, const char **
 	return mono_metadata_token_from_dor (token);
 }
 
-/*
+/**
  * mono_metadata_parse_custom_mod:
- * @m: a metadata context.
- * @dest: storage where the info about the custom modifier is stored (may be NULL)
- * @ptr: a pointer to (possibly) the start of a custom modifier list
- * @rptr: pointer updated to match the end of the decoded stream
+ * \param m a metadata context.
+ * \param dest storage where the info about the custom modifier is stored (may be NULL)
+ * \param ptr a pointer to (possibly) the start of a custom modifier list
+ * \param rptr pointer updated to match the end of the decoded stream
  *
- * Checks if @ptr points to a type custom modifier compressed representation.
+ * Checks if \p ptr points to a type custom modifier compressed representation.
  *
- * Returns: #TRUE if a custom modifier was found, #FALSE if not.
+ * \returns TRUE if a custom modifier was found, FALSE if not.
  */
 int
 mono_metadata_parse_custom_mod (MonoImage *m, MonoCustomMod *dest, const char *ptr, const char **rptr)
@@ -1443,6 +1443,9 @@ mono_metadata_parse_array_internal (MonoImage *m, MonoGenericContainer *containe
 	return array;
 }
 
+/**
+ * mono_metadata_parse_array:
+ */
 MonoArrayType *
 mono_metadata_parse_array (MonoImage *m, const char *ptr, const char **rptr)
 {
@@ -1453,11 +1456,11 @@ mono_metadata_parse_array (MonoImage *m, const char *ptr, const char **rptr)
 	return ret;
 }
 
-/*
+/**
  * mono_metadata_free_array:
- * @array: array description
+ * \param array array description
  *
- * Frees the array description returned from mono_metadata_parse_array().
+ * Frees the array description returned from \c mono_metadata_parse_array.
  */
 void
 mono_metadata_free_array (MonoArrayType *array)
@@ -1664,23 +1667,23 @@ mono_metadata_cleanup (void)
 /**
  * mono_metadata_parse_type:
  * \param m metadata context
- * \param mode king of type that may be found at \p ptr
+ * \param mode kind of type that may be found at \p ptr
  * \param opt_attrs optional attributes to store in the returned type
  * \param ptr pointer to the type representation
  * \param rptr pointer updated to match the end of the decoded stream
  * \param transient whenever to allocate the result from the heap or from a mempool
  * 
  * Decode a compressed type description found at \p ptr in \p m .
- * \p mode can be one of MONO_PARSE_MOD_TYPE, MONO_PARSE_PARAM, MONO_PARSE_RET,
- * MONO_PARSE_FIELD, MONO_PARSE_LOCAL, MONO_PARSE_TYPE.
+ * \p mode can be one of \c MONO_PARSE_MOD_TYPE, \c MONO_PARSE_PARAM, \c MONO_PARSE_RET,
+ * \c MONO_PARSE_FIELD, \c MONO_PARSE_LOCAL, \c MONO_PARSE_TYPE.
  * This function can be used to decode type descriptions in method signatures,
  * field signatures, locals signatures etc.
  *
  * To parse a generic type, \c generic_container points to the current class'es
- * (the \c generic_container field in the \c MonoClass ) or the current generic method's
- * (stored in image->property_hash) generic container.
- * When we encounter any MONO_TYPE_VAR or MONO_TYPE_MVAR's, they're looked up in
- * this MonoGenericContainer.
+ * (the \c generic_container field in the <code>MonoClass</code>) or the current generic method's
+ * (stored in <code>image->property_hash</code>) generic container.
+ * When we encounter a \c MONO_TYPE_VAR or \c MONO_TYPE_MVAR, it's looked up in
+ * this \c MonoGenericContainer.
  *
  * LOCKING: Acquires the loader lock.
  *
@@ -1907,14 +1910,14 @@ mono_metadata_get_param_attrs (MonoImage *m, int def, int param_count)
 }
 
 
-/*
+/**
  * mono_metadata_parse_signature:
- * @image: metadata context
- * @token: metadata token
+ * \param image metadata context
+ * \param token metadata token
  *
- * Decode a method signature stored in the STANDALONESIG table
+ * Decode a method signature stored in the \c StandAloneSig table
  *
- * Returns: a MonoMethodSignature describing the signature.
+ * \returns a \c MonoMethodSignature describing the signature.
  */
 MonoMethodSignature*
 mono_metadata_parse_signature (MonoImage *image, guint32 token)
@@ -2196,19 +2199,19 @@ mono_metadata_parse_method_signature_full (MonoImage *m, MonoGenericContainer *c
 	return method;
 }
 
-/*
+/**
  * mono_metadata_parse_method_signature:
- * @m: metadata context
- * @def: the MethodDef index or 0 for Ref signatures.
- * @ptr: pointer to the signature metadata representation
- * @rptr: pointer updated to match the end of the decoded stream
+ * \param m metadata context
+ * \param def the \c MethodDef index or 0 for \c Ref signatures.
+ * \param ptr pointer to the signature metadata representation
+ * \param rptr pointer updated to match the end of the decoded stream
  *
- * Decode a method signature stored at @ptr.
+ * Decode a method signature stored at \p ptr.
  * This is a Mono runtime internal function.
  *
  * LOCKING: Assumes the loader lock is held.
  *
- * Returns: a MonoMethodSignature describing the signature.
+ * \returns a \c MonoMethodSignature describing the signature.
  */
 MonoMethodSignature *
 mono_metadata_parse_method_signature (MonoImage *m, int def, const char *ptr, const char **rptr)
@@ -2226,11 +2229,11 @@ mono_metadata_parse_method_signature (MonoImage *m, int def, const char *ptr, co
 	return ret;
 }
 
-/*
+/**
  * mono_metadata_free_method_signature:
- * @sig: signature to destroy
+ * \param sig signature to destroy
  *
- * Free the memory allocated in the signature @sig.
+ * Free the memory allocated in the signature \p sig.
  * This method needs to be robust and work also on partially-built
  * signatures, so it does extra checks.
  */
@@ -3552,11 +3555,11 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer 
 	return TRUE;
 }
 
-/*
+/**
  * mono_metadata_free_type:
- * @type: type to free
+ * \param type type to free
  *
- * Free the memory allocated for type @type which is allocated on the heap.
+ * Free the memory allocated for type \p type which is allocated on the heap.
  */
 void
 mono_metadata_free_type (MonoType *type)
@@ -3898,15 +3901,15 @@ fail:
 
 }
 
-/*
+/**
  * mono_metadata_parse_mh:
- * @generic_context: generics context
- * @ptr: pointer to the method header.
+ * \param generic_context generics context
+ * \param ptr pointer to the method header.
  *
- * Decode the method header at @ptr, including pointer to the IL code,
+ * Decode the method header at \p ptr, including pointer to the IL code,
  * info about local variables and optional exception tables.
  *
- * Returns: a transient MonoMethodHeader allocated from the heap.
+ * \returns a transient \c MonoMethodHeader allocated from the heap.
  */
 MonoMethodHeader *
 mono_metadata_parse_mh (MonoImage *m, const char *ptr)
@@ -3917,9 +3920,9 @@ mono_metadata_parse_mh (MonoImage *m, const char *ptr)
 	return header;
 }
 
-/*
+/**
  * mono_metadata_free_mh:
- * @mh: a method header
+ * \param mh a method header
  *
  * Free the memory allocated for the method header.
  */
@@ -4074,15 +4077,15 @@ mono_metadata_parse_param (MonoImage *m, const char *ptr, const char **rptr)
 	return type;
 }
 
-/*
+/**
  * mono_metadata_token_from_dor:
- * @dor_token: A TypeDefOrRef coded index
+ * \param dor_token A \c TypeDefOrRef coded index
  *
- * dor_token is a TypeDefOrRef coded index: it contains either
- * a TypeDef, TypeRef or TypeSpec in the lower bits, and the upper
+ * \p dor_token is a \c TypeDefOrRef coded index: it contains either
+ * a \c TypeDef, \c TypeRef or \c TypeSpec in the lower bits, and the upper
  * bits contain an index into the table.
  *
- * Returns: an expanded token
+ * \returns an expanded token
  */
 guint32
 mono_metadata_token_from_dor (guint32 dor_index)
@@ -4247,8 +4250,8 @@ search_ptr_table (MonoImage *image, int table, int idx)
  * \param meta metadata context
  * \param index FieldDef token
  *
- * \returns the 1-based index into the TypeDef table of the type that
- * declared the field described by \p index , or 0 if not found.
+ * \returns the 1-based index into the \c TypeDef table of the type that
+ * declared the field described by \p index, or 0 if not found.
  */
 guint32
 mono_metadata_typedef_from_field (MonoImage *meta, guint32 index)
@@ -4273,13 +4276,12 @@ mono_metadata_typedef_from_field (MonoImage *meta, guint32 index)
 	return loc.result + 1;
 }
 
-/*
+/**
  * mono_metadata_typedef_from_method:
- * @meta: metadata context
- * @index: MethodDef token
- *
- * Returns: the 1-based index into the TypeDef table of the type that
- * declared the method described by @index.  0 if not found.
+ * \param meta metadata context
+ * \param index \c MethodDef token
+ * \returns the 1-based index into the \c TypeDef table of the type that
+ * declared the method described by \p index.  0 if not found.
  */
 guint32
 mono_metadata_typedef_from_method (MonoImage *meta, guint32 index)
@@ -4385,20 +4387,20 @@ mono_metadata_interfaces_from_typedef_full (MonoImage *meta, guint32 index, Mono
 	return TRUE;
 }
 
-/*
- * @meta: metadata context
- * @index: typedef token
- * @count: Out parameter used to store the number of interfaces
+/**
+ * mono_metadata_interfaces_from_typedef:
+ * \param meta metadata context
+ * \param index typedef token
+ * \param count Out parameter used to store the number of interfaces
  * 
- * The array of interfaces that the @index typedef token implements is returned in
- * @interfaces. The number of elements in the array is returned in @count. The returned
- * array is g_malloc'd and the caller must free it.
+ * The array of interfaces that the \p index typedef token implements is returned in
+ * \p interfaces. The number of elements in the array is returned in \p count. The returned
+ * array is allocated with \c g_malloc and the caller must free it.
  *
  * LOCKING: Acquires the loader lock .
  *
- * Returns: the interface array on success, NULL on failure.
+ * \returns the interface array on success, NULL on failure.
  */
-
 MonoClass**
 mono_metadata_interfaces_from_typedef (MonoImage *meta, guint32 index, guint *count)
 {
@@ -4414,14 +4416,13 @@ mono_metadata_interfaces_from_typedef (MonoImage *meta, guint32 index, guint *co
 		return NULL;
 }
 
-/*
+/**
  * mono_metadata_nested_in_typedef:
- * @meta: metadata context
- * @index: typedef token
- * 
- * Returns: the 1-based index into the TypeDef table of the type
- * where the type described by @index is nested.
- * Returns 0 if @index describes a non-nested type.
+ * \param meta metadata context
+ * \param index typedef token
+ * \returns the 1-based index into the TypeDef table of the type
+ * where the type described by \p index is nested.
+ * Returns 0 if \p index describes a non-nested type.
  */
 guint32
 mono_metadata_nested_in_typedef (MonoImage *meta, guint32 index)
@@ -4443,14 +4444,13 @@ mono_metadata_nested_in_typedef (MonoImage *meta, guint32 index)
 	return mono_metadata_decode_row_col (tdef, loc.result, MONO_NESTED_CLASS_ENCLOSING) | MONO_TOKEN_TYPE_DEF;
 }
 
-/*
+/**
  * mono_metadata_nesting_typedef:
- * @meta: metadata context
- * @index: typedef token
- * 
- * Returns: the 1-based index into the TypeDef table of the first type
- * that is nested inside the type described by @index. The search starts at
- * @start_index.  returns 0 if no such type is found.
+ * \param meta metadata context
+ * \param index typedef token
+ * \returns the 1-based index into the \c TypeDef table of the first type
+ * that is nested inside the type described by \p index. The search starts at
+ * \p start_index. Returns 0 if no such type is found.
  */
 guint32
 mono_metadata_nesting_typedef (MonoImage *meta, guint32 index, guint32 start_index)
@@ -4477,13 +4477,12 @@ mono_metadata_nesting_typedef (MonoImage *meta, guint32 index, guint32 start_ind
 		return start;
 }
 
-/*
+/**
  * mono_metadata_packing_from_typedef:
- * @meta: metadata context
- * @index: token representing a type
- * 
- * Returns: the info stored in the ClassLAyout table for the given typedef token
- * into the @packing and @size pointers.
+ * \param meta metadata context
+ * \param index token representing a type
+ * \returns the info stored in the \c ClassLayout table for the given typedef token
+ * into the \p packing and \p size pointers.
  * Returns 0 if the info is not found.
  */
 guint32
@@ -4513,13 +4512,12 @@ mono_metadata_packing_from_typedef (MonoImage *meta, guint32 index, guint32 *pac
 	return loc.result + 1;
 }
 
-/*
+/**
  * mono_metadata_custom_attrs_from_index:
- * @meta: metadata context
- * @index: token representing the parent
- * 
- * Returns: the 1-based index into the CustomAttribute table of the first 
- * attribute which belongs to the metadata object described by @index.
+ * \param meta metadata context
+ * \param index token representing the parent
+ * \returns: the 1-based index into the \c CustomAttribute table of the first 
+ * attribute which belongs to the metadata object described by \p index.
  * Returns 0 if no such attribute is found.
  */
 guint32
@@ -4548,14 +4546,13 @@ mono_metadata_custom_attrs_from_index (MonoImage *meta, guint32 index)
 	return loc.result + 1;
 }
 
-/*
+/**
  * mono_metadata_declsec_from_index:
- * @meta: metadata context
- * @index: token representing the parent
- * 
- * Returns: the 0-based index into the DeclarativeSecurity table of the first 
- * attribute which belongs to the metadata object described by @index.
- * Returns -1 if no such attribute is found.
+ * \param meta metadata context
+ * \param index token representing the parent
+ * \returns the 0-based index into the \c DeclarativeSecurity table of the first 
+ * attribute which belongs to the metadata object described by \p index.
+ * Returns \c -1 if no such attribute is found.
  */
 guint32
 mono_metadata_declsec_from_index (MonoImage *meta, guint32 index)
@@ -4893,6 +4890,9 @@ mono_type_generic_inst_is_valuetype (MonoType *type)
 	return type->data.generic_class->container_class->valuetype;
 }
 
+/**
+ * mono_metadata_generic_class_is_valuetype:
+ */
 gboolean
 mono_metadata_generic_class_is_valuetype (MonoGenericClass *gclass)
 {
@@ -4967,11 +4967,10 @@ mono_metadata_str_hash (gconstpointer v1)
 	return hash;
 } 
 
-/*
+/**
  * mono_metadata_type_hash:
- * @t1: a type
- *
- * Computes an hash value for @t1 to be used in GHashTable.
+ * \param t1 a type
+ * Computes a hash value for \p t1 to be used in \c GHashTable.
  * The returned hash is guaranteed to be the same across executions.
  */
 guint
@@ -5189,6 +5188,9 @@ do_mono_metadata_type_equal (MonoType *t1, MonoType *t2, gboolean signature_only
 	return FALSE;
 }
 
+/**
+ * mono_metadata_type_equal:
+ */
 gboolean
 mono_metadata_type_equal (MonoType *t1, MonoType *t2)
 {
@@ -5329,20 +5331,17 @@ mono_metadata_encode_value (guint32 value, char *buf, char **endbuf)
 		*endbuf = p;
 }
 
-/*
+/**
  * mono_metadata_field_info:
- * @meta: the Image the field is defined in
- * @index: the index in the field table representing the field
- * @offset: a pointer to an integer where to store the offset that 
- * may have been specified for the field in a FieldLayout table
- * @rva: a pointer to the RVA of the field data in the image that
- * may have been defined in a FieldRVA table
- * @marshal_spec: a pointer to the marshal spec that may have been 
- * defined for the field in a FieldMarshal table.
+ * \param meta the Image the field is defined in
+ * \param index the index in the field table representing the field
+ * \param offset a pointer to an integer where to store the offset that  may have been specified for the field in a FieldLayout table
+ * \param rva a pointer to the RVA of the field data in the image that may have been defined in a \c FieldRVA table
+ * \param marshal_spec a pointer to the marshal spec that may have been defined for the field in a \c FieldMarshal table.
  *
- * Gather info for field @index that may have been defined in the FieldLayout, 
- * FieldRVA and FieldMarshal tables.
- * Either of offset, rva and marshal_spec can be NULL if you're not interested 
+ * Gather info for field \p index that may have been defined in the \c FieldLayout, 
+ * \c FieldRVA and \c FieldMarshal tables.
+ * Either of \p offset, \p rva and \p marshal_spec can be NULL if you're not interested 
  * in the data.
  */
 void
@@ -5407,15 +5406,15 @@ mono_metadata_field_info_full (MonoImage *meta, guint32 index, guint32 *offset, 
 
 }
 
-/*
+/**
  * mono_metadata_get_constant_index:
- * @meta: the Image the field is defined in
- * @index: the token that may have a row defined in the constants table
- * @hint: possible position for the row
+ * \param meta the Image the field is defined in
+ * \param index the token that may have a row defined in the constants table
+ * \param hint possible position for the row
  *
- * @token must be a FieldDef, ParamDef or PropertyDef token.
+ * \p token must be a \c FieldDef, \c ParamDef or \c PropertyDef token.
  *
- * Returns: the index into the Constants table or 0 if not found.
+ * \returns the index into the \c Constants table or 0 if not found.
  */
 guint32
 mono_metadata_get_constant_index (MonoImage *meta, guint32 token, guint32 hint)
@@ -5455,14 +5454,13 @@ mono_metadata_get_constant_index (MonoImage *meta, guint32 token, guint32 hint)
 	return 0;
 }
 
-/*
+/**
  * mono_metadata_events_from_typedef:
- * @meta: metadata context
- * @index: 0-based index (in the TypeDef table) describing a type
- *
- * Returns: the 0-based index in the Event table for the events in the
+ * \param meta metadata context
+ * \param index 0-based index (in the \c TypeDef table) describing a type
+ * \returns the 0-based index in the \c Event table for the events in the
  * type. The last event that belongs to the type (plus 1) is stored
- * in the @end_idx pointer.
+ * in the \p end_idx pointer.
  */
 guint32
 mono_metadata_events_from_typedef (MonoImage *meta, guint32 index, guint *end_idx)
@@ -5494,14 +5492,13 @@ mono_metadata_events_from_typedef (MonoImage *meta, guint32 index, guint *end_id
 	return start - 1;
 }
 
-/*
+/**
  * mono_metadata_methods_from_event:
- * @meta: metadata context
- * @index: 0-based index (in the Event table) describing a event
- *
- * Returns: the 0-based index in the MethodDef table for the methods in the
+ * \param meta metadata context
+ * \param index 0-based index (in the \c Event table) describing a event
+ * \returns the 0-based index in the \c MethodDef table for the methods in the
  * event. The last method that belongs to the event (plus 1) is stored
- * in the @end_idx pointer.
+ * in the \p end_idx pointer.
  */
 guint32
 mono_metadata_methods_from_event   (MonoImage *meta, guint32 index, guint *end_idx)
@@ -5546,14 +5543,13 @@ mono_metadata_methods_from_event   (MonoImage *meta, guint32 index, guint *end_i
 	return start;
 }
 
-/*
+/**
  * mono_metadata_properties_from_typedef:
- * @meta: metadata context
- * @index: 0-based index (in the TypeDef table) describing a type
- *
- * Returns: the 0-based index in the Property table for the properties in the
+ * \param meta metadata context
+ * \param index 0-based index (in the \c TypeDef table) describing a type
+ * \returns the 0-based index in the \c Property table for the properties in the
  * type. The last property that belongs to the type (plus 1) is stored
- * in the @end_idx pointer.
+ * in the \p end_idx pointer.
  */
 guint32
 mono_metadata_properties_from_typedef (MonoImage *meta, guint32 index, guint *end_idx)
@@ -5585,14 +5581,13 @@ mono_metadata_properties_from_typedef (MonoImage *meta, guint32 index, guint *en
 	return start - 1;
 }
 
-/*
+/**
  * mono_metadata_methods_from_property:
- * @meta: metadata context
- * @index: 0-based index (in the PropertyDef table) describing a property
- *
- * Returns: the 0-based index in the MethodDef table for the methods in the
+ * \param meta metadata context
+ * \param index 0-based index (in the \c PropertyDef table) describing a property
+ * \returns the 0-based index in the \c MethodDef table for the methods in the
  * property. The last method that belongs to the property (plus 1) is stored
- * in the @end_idx pointer.
+ * in the \p end_idx pointer.
  */
 guint32
 mono_metadata_methods_from_property   (MonoImage *meta, guint32 index, guint *end_idx)
@@ -5637,6 +5632,9 @@ mono_metadata_methods_from_property   (MonoImage *meta, guint32 index, guint *en
 	return start;
 }
 
+/**
+ * mono_metadata_implmap_from_method:
+ */
 guint32
 mono_metadata_implmap_from_method (MonoImage *meta, guint32 method_idx)
 {
@@ -5738,6 +5736,9 @@ mono_image_strndup (MonoImage *image, const char *data, guint len)
 	return res;
 }
 
+/**
+ * mono_metadata_parse_marshal_spec:
+ */
 MonoMarshalSpec *
 mono_metadata_parse_marshal_spec (MonoImage *image, const char *ptr)
 {
@@ -5828,6 +5829,9 @@ mono_metadata_parse_marshal_spec_full (MonoImage *image, MonoImage *parent_image
 	return res;
 }
 
+/**
+ * mono_metadata_free_marshal_spec:
+ */
 void 
 mono_metadata_free_marshal_spec (MonoMarshalSpec *spec)
 {
@@ -6037,6 +6041,9 @@ handle_enum:
 	return MONO_NATIVE_MAX;
 }
 
+/**
+ * mono_metadata_get_marshal_info:
+ */
 const char*
 mono_metadata_get_marshal_info (MonoImage *meta, guint32 idx, gboolean is_field)
 {

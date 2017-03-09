@@ -45,6 +45,9 @@ static const int16_t opidx [] = {
 #undef OPDEF
 };
 
+/**
+ * mono_opcode_name:
+ */
 const char*
 mono_opcode_name (int opcode)
 {

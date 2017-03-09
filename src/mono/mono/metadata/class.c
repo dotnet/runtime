@@ -8583,6 +8583,9 @@ mono_array_element_size (MonoClass *ac)
 	return ac->sizes.element_size;
 }
 
+/**
+ * mono_ldtoken:
+ */
 gpointer
 mono_ldtoken (MonoImage *image, guint32 token, MonoClass **handle_class,
 	      MonoGenericContext *context)

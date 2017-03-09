@@ -1738,8 +1738,8 @@ mono_image_open (const char *fname, MonoImageOpenStatus *status)
  * \param status An error condition is returned in this field
  * \returns An open image of type \c MonoImage or NULL on error.  if
  * NULL, then check the value of \p status for details on the error.
- * This variant for mono_image_open DOES NOT SET UP CLI METADATA.
- * It's just a PE file loader, used for FileVersionInfo.  It also does
+ * This variant for \c mono_image_open DOES NOT SET UP CLI METADATA.
+ * It's just a PE file loader, used for \c FileVersionInfo.  It also does
  * not use the image cache.
  */
 MonoImage *
