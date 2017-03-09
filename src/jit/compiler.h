@@ -5826,8 +5826,20 @@ public:
 
         bool HasSameOp1(AssertionDsc* that, bool vnBased)
         {
-            return (op1.kind == that->op1.kind) &&
-                   ((vnBased && (op1.vn == that->op1.vn)) || (!vnBased && (op1.lcl.lclNum == that->op1.lcl.lclNum)));
+            if (op1.kind != that->op1.kind)
+            {
+                return false;
+            }
+            else if (op1.kind == O1K_ARR_BND)
+            {
+                assert(vnBased);
+                return (op1.bnd.vnIdx == that->op1.bnd.vnIdx) && (op1.bnd.vnLen == that->op1.bnd.vnLen);
+            }
+            else
+            {
+                return ((vnBased && (op1.vn == that->op1.vn)) ||
+                        (!vnBased && (op1.lcl.lclNum == that->op1.lcl.lclNum)));
+            }
         }
 
         bool HasSameOp2(AssertionDsc* that, bool vnBased)
@@ -5876,7 +5888,19 @@ public:
 
         bool Equals(AssertionDsc* that, bool vnBased)
         {
-            return (assertionKind == that->assertionKind) && HasSameOp1(that, vnBased) && HasSameOp2(that, vnBased);
+            if (assertionKind != that->assertionKind)
+            {
+                return false;
+            }
+            else if (assertionKind == OAK_NO_THROW)
+            {
+                assert(op2.kind == O2K_INVALID);
+                return HasSameOp1(that, vnBased);
+            }
+            else
+            {
+                return HasSameOp1(that, vnBased) && HasSameOp2(that, vnBased);
+            }
         }
     };
 
