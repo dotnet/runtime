@@ -1961,18 +1961,18 @@ mono_metadata_parse_signature_checked (MonoImage *image, guint32 token, MonoErro
 	return mono_metadata_parse_method_signature_full (image, NULL, 0, ptr, NULL, error);
 }
 
-/*
+/**
  * mono_metadata_signature_alloc:
- * @image: metadata context
- * @nparmas: number of parameters in the signature
+ * \param image metadata context
+ * \param nparams number of parameters in the signature
  *
- * Allocate a MonoMethodSignature structure with the specified number of params.
+ * Allocate a \c MonoMethodSignature structure with the specified number of params.
  * The return type and the params types need to be filled later.
  * This is a Mono runtime internal function.
  *
  * LOCKING: Assumes the loader lock is held.
  *
- * Returns: the new MonoMethodSignature structure.
+ * \returns the new \c MonoMethodSignature structure.
  */
 MonoMethodSignature*
 mono_metadata_signature_alloc (MonoImage *m, guint32 nparams)
@@ -2067,14 +2067,14 @@ mono_metadata_signature_dup_mempool (MonoMemPool *mp, MonoMethodSignature *sig)
 	return mono_metadata_signature_dup_internal (NULL, mp, sig);
 }
 
-/*
+/**
  * mono_metadata_signature_dup:
- * @sig: method signature
+ * \param sig method signature
  *
- * Duplicate an existing MonoMethodSignature so it can be modified.
+ * Duplicate an existing \c MonoMethodSignature so it can be modified.
  * This is a Mono runtime internal function.
  *
- * Returns: the new MonoMethodSignature structure.
+ * \returns the new \c MonoMethodSignature structure.
  */
 MonoMethodSignature*
 mono_metadata_signature_dup (MonoMethodSignature *sig)

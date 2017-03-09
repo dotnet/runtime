@@ -87,6 +87,9 @@ mono_mb_new_no_dup_name (MonoClass *klass, const char *name, MonoWrapperType typ
 	return mb;
 }
 
+/**
+ * mono_mb_new:
+ */
 MonoMethodBuilder *
 mono_mb_new (MonoClass *klass, const char *name, MonoWrapperType type)
 {
@@ -95,6 +98,9 @@ mono_mb_new (MonoClass *klass, const char *name, MonoWrapperType type)
 	return mb;
 }
 
+/**
+ * mono_mb_free:
+ */
 void
 mono_mb_free (MonoMethodBuilder *mb)
 {
@@ -122,10 +128,8 @@ mono_mb_free (MonoMethodBuilder *mb)
 
 /**
  * mono_mb_create_method:
- *
- * Create a MonoMethod from this method builder.
- * Returns: the newly created method.
- *
+ * Create a \c MonoMethod from this method builder.
+ * \returns the newly created method.
  */
 MonoMethod *
 mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, int max_stack)
@@ -262,6 +266,9 @@ mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 	return method;
 }
 
+/**
+ * mono_mb_add_data:
+ */
 guint32
 mono_mb_add_data (MonoMethodBuilder *mb, gpointer data)
 {
@@ -279,6 +286,9 @@ mono_mb_add_data (MonoMethodBuilder *mb, gpointer data)
 
 #ifndef DISABLE_JIT
 
+/**
+ * mono_mb_add_local:
+ */
 int
 mono_mb_add_local (MonoMethodBuilder *mb, MonoType *type)
 {
@@ -301,6 +311,9 @@ mono_mb_add_local (MonoMethodBuilder *mb, MonoType *type)
 	return res;
 }
 
+/**
+ * mono_mb_patch_addr:
+ */
 void
 mono_mb_patch_addr (MonoMethodBuilder *mb, int pos, int value)
 {
@@ -310,12 +323,18 @@ mono_mb_patch_addr (MonoMethodBuilder *mb, int pos, int value)
 	mb->code [pos + 3] = (value >> 24) & 0xff;
 }
 
+/**
+ * mono_mb_patch_addr_s:
+ */
 void
 mono_mb_patch_addr_s (MonoMethodBuilder *mb, int pos, gint8 value)
 {
 	*((gint8 *)(&mb->code [pos])) = value;
 }
 
+/**
+ * mono_mb_emit_byte:
+ */
 void
 mono_mb_emit_byte (MonoMethodBuilder *mb, guint8 op)
 {
@@ -327,6 +346,9 @@ mono_mb_emit_byte (MonoMethodBuilder *mb, guint8 op)
 	mb->code [mb->pos++] = op;
 }
 
+/**
+ * mono_mb_emit_ldflda:
+ */
 void
 mono_mb_emit_ldflda (MonoMethodBuilder *mb, gint32 offset)
 {
@@ -339,6 +361,9 @@ mono_mb_emit_ldflda (MonoMethodBuilder *mb, gint32 offset)
 	}
 }
 
+/**
+ * mono_mb_emit_i4:
+ */
 void
 mono_mb_emit_i4 (MonoMethodBuilder *mb, gint32 data)
 {
@@ -364,6 +389,9 @@ mono_mb_emit_i8 (MonoMethodBuilder *mb, gint64 data)
 	mb->pos += 8;
 }
 
+/**
+ * mono_mb_emit_i2:
+ */
 void
 mono_mb_emit_i2 (MonoMethodBuilder *mb, gint16 data)
 {
@@ -384,12 +412,18 @@ mono_mb_emit_op (MonoMethodBuilder *mb, guint8 op, gpointer data)
 	mono_mb_emit_i4 (mb, mono_mb_add_data (mb, data));
 }
 
+/**
+ * mono_mb_emit_ldstr:
+ */
 void
 mono_mb_emit_ldstr (MonoMethodBuilder *mb, char *str)
 {
 	mono_mb_emit_op (mb, CEE_LDSTR, str);
 }
 
+/**
+ * mono_mb_emit_ldarg:
+ */
 void
 mono_mb_emit_ldarg (MonoMethodBuilder *mb, guint argnum)
 {
@@ -405,6 +439,9 @@ mono_mb_emit_ldarg (MonoMethodBuilder *mb, guint argnum)
 	}
 }
 
+/**
+ * mono_mb_emit_ldarg_addr:
+ */
 void
 mono_mb_emit_ldarg_addr (MonoMethodBuilder *mb, guint argnum)
 {
@@ -418,6 +455,9 @@ mono_mb_emit_ldarg_addr (MonoMethodBuilder *mb, guint argnum)
 	}
 }
 
+/**
+ * mono_mb_emit_ldloc_addr:
+ */
 void
 mono_mb_emit_ldloc_addr (MonoMethodBuilder *mb, guint locnum)
 {
@@ -431,6 +471,9 @@ mono_mb_emit_ldloc_addr (MonoMethodBuilder *mb, guint locnum)
 	}
 }
 
+/**
+ * mono_mb_emit_ldloc:
+ */
 void
 mono_mb_emit_ldloc (MonoMethodBuilder *mb, guint num)
 {
@@ -446,6 +489,9 @@ mono_mb_emit_ldloc (MonoMethodBuilder *mb, guint num)
 	}
 }
 
+/**
+ * mono_mb_emit_stloc:
+ */
 void
 mono_mb_emit_stloc (MonoMethodBuilder *mb, guint num)
 {
@@ -461,6 +507,9 @@ mono_mb_emit_stloc (MonoMethodBuilder *mb, guint num)
 	}
 }
 
+/**
+ * mono_mb_emit_icon:
+ */
 void
 mono_mb_emit_icon (MonoMethodBuilder *mb, gint32 value)
 {
@@ -494,6 +543,9 @@ mono_mb_get_pos (MonoMethodBuilder *mb)
 	return mb->pos;
 }
 
+/**
+ * mono_mb_emit_branch:
+ */
 guint32
 mono_mb_emit_branch (MonoMethodBuilder *mb, guint8 op)
 {
@@ -547,12 +599,18 @@ mono_mb_emit_calli (MonoMethodBuilder *mb, MonoMethodSignature *sig)
 	mono_mb_emit_op (mb, CEE_CALLI, sig);
 }
 
+/**
+ * mono_mb_emit_managed_call:
+ */
 void
 mono_mb_emit_managed_call (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *opt_sig)
 {
 	mono_mb_emit_op (mb, CEE_CALL, method);
 }
 
+/**
+ * mono_mb_emit_native_call:
+ */
 void
 mono_mb_emit_native_call (MonoMethodBuilder *mb, MonoMethodSignature *sig, gpointer func)
 {
@@ -586,12 +644,18 @@ mono_mb_emit_exception_full (MonoMethodBuilder *mb, const char *exc_nspace, cons
 	mono_mb_emit_byte (mb, CEE_THROW);
 }
 
+/**
+ * mono_mb_emit_exception:
+ */
 void
 mono_mb_emit_exception (MonoMethodBuilder *mb, const char *exc_name, const char *msg)
 {
 	mono_mb_emit_exception_full (mb, "System", exc_name, msg);
 }
 
+/**
+ * mono_mb_emit_add_to_local:
+ */
 void
 mono_mb_emit_add_to_local (MonoMethodBuilder *mb, guint16 local, gint32 incr)
 {
