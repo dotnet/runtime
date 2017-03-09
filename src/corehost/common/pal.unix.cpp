@@ -296,7 +296,7 @@ pal::string_t pal::get_current_os_rid_platform()
                 minorVersion = 10;
             }
 
-            ridOS.append(_X("10."));
+            ridOS.append(_X("osx.10."));
             ridOS.append(std::to_string(minorVersion));
         }
     }
