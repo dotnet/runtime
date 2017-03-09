@@ -734,7 +734,7 @@ void LinearScan::associateRefPosWithInterval(RefPosition* rp)
                 rp->lastUse = (rp->refType != RefTypeExpUse) && (rp->refType != RefTypeParamDef) &&
                               (rp->refType != RefTypeZeroInit) && !extendLifetimes();
             }
-            else if (RefTypeIsUse(rp->refType))
+            else if (rp->refType == RefTypeUse)
             {
                 // Ensure that we have consistent def/use on SDSU temps.
                 // However, in the case of a non-commutative rmw def, we must avoid over-constraining
