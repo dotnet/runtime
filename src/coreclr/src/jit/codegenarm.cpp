@@ -363,6 +363,60 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 }
 
 //------------------------------------------------------------------------
+// genCodeForBinary: Generate code for many binary arithmetic operators
+// This method is expected to have called genConsumeOperands() before calling it.
+//
+// Arguments:
+//    treeNode - The binary operation for which we are generating code.
+//
+// Return Value:
+//    None.
+//
+// Notes:
+//    Mul and div are not handled here.
+//    See the assert below for the operators that are handled.
+
+void CodeGen::genCodeForBinary(GenTree* treeNode)
+{
+    const genTreeOps oper       = treeNode->OperGet();
+    regNumber        targetReg  = treeNode->gtRegNum;
+    var_types        targetType = treeNode->TypeGet();
+    emitter*         emit       = getEmitter();
+
+    assert(oper == GT_ADD || oper == GT_SUB || oper == GT_ADD_LO || oper == GT_ADD_HI || oper == GT_SUB_LO ||
+           oper == GT_SUB_HI || oper == GT_OR || oper == GT_XOR || oper == GT_AND);
+
+    if ((oper == GT_ADD || oper == GT_SUB || GT_ADD_HI || GT_SUB_HI) && treeNode->gtOverflow())
+    {
+        // This is also checked in the importer.
+        NYI("Overflow not yet implemented");
+    }
+
+    GenTreePtr op1 = treeNode->gtGetOp1();
+    GenTreePtr op2 = treeNode->gtGetOp2();
+
+    instruction ins = genGetInsForOper(oper, targetType);
+
+    // The arithmetic node must be sitting in a register (since it's not contained)
+    noway_assert(targetReg != REG_NA);
+
+    if ((oper == GT_ADD_LO || oper == GT_SUB_LO))
+    {
+        // During decomposition, all operands become reg
+        assert(!op1->isContained() && !op2->isContained());
+        emit->emitIns_R_R_R(ins, emitTypeSize(treeNode), treeNode->gtRegNum, op1->gtRegNum, op2->gtRegNum,
+                            INS_FLAGS_SET);
+    }
+    else
+    {
+        regNumber r = emit->emitInsTernary(ins, emitTypeSize(treeNode), treeNode, op1, op2);
+        assert(r == targetReg);
+    }
+
+    genProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
 // genReturn: Generates code for return statement.
 //            In case of struct return, delegates to the genStructReturn method.
 //
@@ -504,14 +558,22 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             assert(varTypeIsIntegralOrI(treeNode));
             __fallthrough;
 
+        case GT_ADD_LO:
+        case GT_ADD_HI:
+        case GT_SUB_LO:
+        case GT_SUB_HI:
         case GT_ADD:
         case GT_SUB:
+            genConsumeOperands(treeNode->AsOp());
+            genCodeForBinary(treeNode);
+            break;
+
         case GT_MUL:
         {
             genConsumeOperands(treeNode->AsOp());
 
             const genTreeOps oper = treeNode->OperGet();
-            if ((oper == GT_ADD || oper == GT_SUB || oper == GT_MUL) && treeNode->gtOverflow())
+            if (treeNode->gtOverflow())
             {
                 // This is also checked in the importer.
                 NYI("Overflow not yet implemented");
@@ -1413,6 +1475,18 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
             break;
         case GT_ROR:
             ins = INS_ror;
+            break;
+        case GT_ADD_LO:
+            ins = INS_add;
+            break;
+        case GT_ADD_HI:
+            ins = INS_adc;
+            break;
+        case GT_SUB_LO:
+            ins = INS_sub;
+            break;
+        case GT_SUB_HI:
+            ins = INS_sbc;
             break;
         default:
             unreached();
