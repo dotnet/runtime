@@ -144,13 +144,7 @@ pal::string_t get_current_rid()
 bool deps_json_t::perform_rid_fallback(rid_specific_assets_t* portable_assets, const rid_fallback_graph_t& rid_fallback_graph)
 {
     pal::string_t host_rid = get_current_rid();
-    if (host_rid.empty())
-    {
-        // We didnt get a valid host RID, so we cannot attempt RID fallback.
-        trace::info(_X("Skipping RID fallback processing since Host RID cannot be computed for the current platform!"));
-        return false;
-    }
-
+    
     for (auto& package : portable_assets->libs)
     {
         pal::string_t matched_rid = package.second.rid_assets.count(host_rid) ? host_rid : _X("");
