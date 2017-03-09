@@ -3,11 +3,19 @@
     public partial class Activity
     {
         #region private
-        private string GenerateInstancePrefix()
+
+        static Activity()
         {
+            Random random = new Random();
+
+            //Randomized on different process instances
+            s_currentRootId = random.Next();
+
+            //generate unique instance prefix 
             int uniqNum = unchecked((int)Stopwatch.GetTimestamp());
-            return $"{s_rootIdPrefix}{Environment.MachineName}-{uniqNum:x}";
+            s_uniqPrefix = $"{s_rootIdPrefix}{Environment.MachineName}-{uniqNum:x}";
         }
+
         #endregion
     }
 }

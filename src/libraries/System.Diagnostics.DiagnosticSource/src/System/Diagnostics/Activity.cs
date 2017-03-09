@@ -367,23 +367,13 @@ namespace System.Diagnostics
             if (trimPosition == 0)
                 return GenerateRootId();
 
-            byte[] bytes = new byte[4];
-            s_random.NextBytes(bytes);
-
             //generate overflow suffix
-            return parentId.Substring(0, trimPosition) + BitConverter.ToUInt32(bytes, 0).ToString("x8") + s_overflowDelimiter;
+            byte[] bytes = Guid.NewGuid().ToByteArray();
+            return parentId.Substring(0, trimPosition) + BitConverter.ToUInt32(bytes, 12).ToString("x8") + s_overflowDelimiter;
         }
 
         private string GenerateRootId()
         {
-            if (s_uniqPrefix == null)
-            {
-                // Here we make an ID to represent the Process/AppDomain.   Ideally we use process ID but 
-                // it is unclear if we have that ID handy.   Currently we use low bits of high freq tick 
-                // as a unique random number (which is not bad, but loses randomness for startup scenarios).  
-                Interlocked.CompareExchange(ref s_uniqPrefix, GenerateInstancePrefix(), null);
-            }
-
 #if DEBUG
             string ret = s_uniqPrefix + "-" + OperationName + "-" + Interlocked.Increment(ref s_currentRootId).ToString("x") + s_internalIdDelimiter;
 #else           // To keep things short, we drop the operation name 
@@ -395,16 +385,6 @@ namespace System.Diagnostics
         private string _rootId;
 
         // Used to generate an ID 
-        static Activity()
-        {
-            s_random = new Random();
-            
-            //Randomized on different process instances
-            s_currentRootId = s_random.Next();
-        }
-
-        private static readonly Random s_random;
-
         // A unique number for all children of this activity.  
         private int _currentChildId;
 
