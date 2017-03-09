@@ -40,6 +40,8 @@
     #include "comcache.h"
 #endif // FEATURE_COMINTEROP
 
+#include "arraynative.inl"
+
 #define STACK_OVERFLOW_MESSAGE   W("StackOverflowException")
 
 //These are defined in System.ParseNumbers and should be kept in sync.
@@ -1494,12 +1496,22 @@ FCIMPL5(VOID, Buffer::InternalBlockCopy, ArrayBase *src, int srcOffset, ArrayBas
 }
 FCIMPLEND
 
-void QCALLTYPE SpanNative::SpanClear(void *dst, size_t length)
+void QCALLTYPE MemoryNative::Clear(void *dst, size_t length)
 {
     QCALL_CONTRACT;
 
     memset(dst, 0, length);
 }
+
+FCIMPL3(VOID, MemoryNative::BulkMoveWithWriteBarrier, void *dst, void *src, size_t byteCount)
+{
+    FCALL_CONTRACT;
+
+    InlinedMemmoveGCRefsHelper(dst, src, byteCount);
+
+    FC_GC_POLL();
+}
+FCIMPLEND
 
 void QCALLTYPE Buffer::MemMove(void *dst, void *src, size_t length)
 {

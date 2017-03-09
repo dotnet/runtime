@@ -211,11 +211,11 @@ namespace System
         {
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
-                SpanHelper.ClearWithReferences(ref Unsafe.As<T, IntPtr>(ref _pointer.Value), (nuint)(_length * (Unsafe.SizeOf<T>() / sizeof(nuint))));
+                SpanHelper.ClearWithReferences(ref Unsafe.As<T, IntPtr>(ref _pointer.Value), (nuint)_length * (nuint)(Unsafe.SizeOf<T>() / sizeof(nuint)));
             }
             else
             {
-                SpanHelper.ClearWithoutReferences(ref Unsafe.As<T, byte>(ref _pointer.Value), (nuint)(_length * Unsafe.SizeOf<T>()));
+                SpanHelper.ClearWithoutReferences(ref Unsafe.As<T, byte>(ref _pointer.Value), (nuint)_length * (nuint)Unsafe.SizeOf<T>());
             }
         }
 
@@ -573,38 +573,35 @@ namespace System
     {
         internal static unsafe void CopyTo<T>(ref T destination, ref T source, int elementsCount)
         {
-            if (elementsCount == 0)
-                return;
-
             if (Unsafe.AreSame(ref destination, ref source))
                 return;
 
+            if (elementsCount <= 1)
+            {
+                if (elementsCount == 1)
+                {
+                    destination = source;
+                }
+                return;
+            }
+
+            nuint byteCount = (nuint)elementsCount * (nuint)Unsafe.SizeOf<T>();
             if (!RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
                 fixed (byte* pDestination = &Unsafe.As<T, byte>(ref destination))
                 {
                     fixed (byte* pSource = &Unsafe.As<T, byte>(ref source))
                     {
-#if BIT64
-                        Buffer.Memmove(pDestination, pSource, (ulong)elementsCount * (ulong)Unsafe.SizeOf<T>());
-#else
-                        Buffer.Memmove(pDestination, pSource, (uint)elementsCount * (uint)Unsafe.SizeOf<T>());
-#endif
+                        Buffer.Memmove(pDestination, pSource, byteCount);
                     }
                 }
             }
             else
             {
-                if (JitHelpers.ByRefLessThan(ref destination, ref source)) // copy forward
-                {
-                    for (int i = 0; i < elementsCount; i++)
-                        Unsafe.Add(ref destination, i) = Unsafe.Add(ref source, i);
-                }
-                else // copy backward to avoid overlapping issues
-                {
-                    for (int i = elementsCount - 1; i >= 0; i--)
-                        Unsafe.Add(ref destination, i) = Unsafe.Add(ref source, i);
-                }
+                RuntimeImports.RhBulkMoveWithWriteBarrier(
+                    ref Unsafe.As<T, byte>(ref destination),
+                    ref Unsafe.As<T, byte>(ref source),
+                    byteCount);
             }
         }
 
