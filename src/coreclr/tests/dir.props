@@ -15,7 +15,7 @@
 
   <!--   
     Switching to the .NET Core version of the BuildTools tasks seems to break numerous scenarios, such as VS intellisense and resource designer   
-    as well as runnning the build on mono. Until we can get these sorted out we will continue using the .NET 4.5 version of the tasks.   
+    as well as runnning the build on mono. Until we can get these sorted out we will continue using the .NET 4.6 version of the tasks.   
    -->   
   <PropertyGroup>  
     <BuildToolsTargets45>true</BuildToolsTargets45>   
@@ -29,7 +29,7 @@
     <PackagesDir>$(ProjectDir)..\packages\</PackagesDir>
     <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)..\Tools\</ToolsDir>
     <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ToolsDir)dotnetcli/</DotnetCliPath>
-    <BuildToolsTaskDir Condition="'$(BuildToolsTargets45)' == 'true'">$(ToolsDir)net45/</BuildToolsTaskDir>
+    <BuildToolsTaskDir Condition="'$(BuildToolsTargets45)' == 'true'">$(ToolsDir)net46/</BuildToolsTaskDir>
     <SkipImportILTargets>true</SkipImportILTargets>
   </PropertyGroup>
 

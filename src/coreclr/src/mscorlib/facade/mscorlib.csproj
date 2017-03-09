@@ -31,6 +31,11 @@
     <!-- We want to exclude the transitive closure of the packages pulled in via project.json as that introduces ambiguity -->
     <OmitTransitiveCompileReferences>true</OmitTransitiveCompileReferences>
     <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
+
+    <!-- We don't use any of MSBuild's resolution logic for resolving the framework, so just set these two properties to any folder that exists to skip
+         the GenerateReferenceAssemblyPaths task (not target) and to prevent it from outputting a warning (MSB3644). -->
+    <_TargetFrameworkDirectories>$(MSBuildThisFileDirectory)/Documentation</_TargetFrameworkDirectories>
+    <_FullFrameworkReferenceAssemblyPaths>$(MSBuildThisFileDirectory)/Documentation</_FullFrameworkReferenceAssemblyPaths>
   </PropertyGroup>
 
   <!-- Default configurations to help VS understand the options -->

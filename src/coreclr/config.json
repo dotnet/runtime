@@ -40,7 +40,7 @@
       "description": "MsBuild logging options.",
       "valueType": "passThrough",
       "values": [],
-      "defaultValue": "/l:BinClashLogger,Tools/net45/Microsoft.DotNet.Build.Tasks.dll;LogFile=binclash.log"
+      "defaultValue": "/l:BinClashLogger,Tools/net46/Microsoft.DotNet.Build.Tasks.dll;LogFile=binclash.log"
     },
     "FilterToOSGroup": {
       "description": "Specifies the OSGroup.",
