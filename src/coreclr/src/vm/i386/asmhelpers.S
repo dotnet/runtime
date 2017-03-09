@@ -546,7 +546,11 @@ NESTED_ENTRY UM2MThunk_WrapperHelper, _TEXT, NoHandler
     mov     eax, [esp + 20] // pEntryThunk
     mov     ecx, [esp + 24] // pThread
     mov     ebx, [esp + 8]  // pThunkArgs
-    call    [esp + 16]      // pAddr
+
+    sub     esp, 8
+    CHECK_STACK_ALIGNMENT
+    call    [esp + 16 + 8]      // pAddr
+    add     esp, 8
 
     pop     ebx
 
@@ -557,9 +561,12 @@ NESTED_ENTRY UMThunkStubRareDisable, _TEXT, NoHandler
     push    eax
     push    ecx
 
+    sub     esp, 12
     push    eax          // Push the UMEntryThunk
     push    ecx          // Push thread
+    CHECK_STACK_ALIGNMENT
     call    C_FUNC(UMThunkStubRareDisableWorker)
+    add     esp, 12
 
     pop     ecx
     pop     eax
