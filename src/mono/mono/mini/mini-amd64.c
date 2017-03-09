@@ -6561,8 +6561,8 @@ get_max_epilog_size (MonoCompile *cfg)
 } while (0)
 
 #ifdef TARGET_WIN32
-guint8 *
-mono_arch_emit_prolog_setup_sp_win64 (MonoCompile *cfg, guint8 *code, int alloc_size, int *cfa_offset_input)
+static guint8 *
+emit_prolog_setup_sp_win64 (MonoCompile *cfg, guint8 *code, int alloc_size, int *cfa_offset_input)
 {
 	int cfa_offset = *cfa_offset_input;
 
@@ -6696,7 +6696,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	/* Allocate stack frame */
 #ifdef TARGET_WIN32
-	code = mono_arch_emit_prolog_setup_sp_win64 (cfg, code, alloc_size, &cfa_offset);
+	code = emit_prolog_setup_sp_win64 (cfg, code, alloc_size, &cfa_offset);
 #else
 	if (alloc_size) {
 		/* See mono_emit_stack_alloc */

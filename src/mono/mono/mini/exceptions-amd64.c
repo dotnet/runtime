@@ -1050,7 +1050,7 @@ static RtlDeleteGrowableFunctionTablePtr g_rtl_delete_growable_function_table;
 #define MONO_DAC_MODULE_MAX_PATH 1024
 
 static void
-mono_arch_unwindinfo_init_table_no_lock (void)
+init_table_no_lock (void)
 {
 	if (g_dyn_func_table_inited == FALSE) {
 		g_assert_checked (g_dynamic_function_table_begin == NULL);
@@ -1079,14 +1079,14 @@ mono_arch_unwindinfo_init_table (void)
 
 		AcquireSRWLockExclusive (&g_dynamic_function_table_lock);
 
-		mono_arch_unwindinfo_init_table_no_lock ();
+		init_table_no_lock ();
 
 		ReleaseSRWLockExclusive (&g_dynamic_function_table_lock);
 	}
 }
 
 static void
-mono_arch_unwindinfo_terminate_table_no_lock (void)
+terminate_table_no_lock (void)
 {
 	if (g_dyn_func_table_inited == TRUE) {
 		if (g_dynamic_function_table_begin != NULL) {
@@ -1124,14 +1124,14 @@ mono_arch_unwindinfo_terminate_table (void)
 
 		AcquireSRWLockExclusive (&g_dynamic_function_table_lock);
 
-		mono_arch_unwindinfo_terminate_table_no_lock ();
+		terminate_table_no_lock ();
 
 		ReleaseSRWLockExclusive (&g_dynamic_function_table_lock);
 	}
 }
 
 static GList *
-mono_arch_unwindinfo_fast_find_range_in_table_no_lock_ex (gsize begin_range, gsize end_range, gboolean *continue_search)
+fast_find_range_in_table_no_lock_ex (gsize begin_range, gsize end_range, gboolean *continue_search)
 {
 	GList *found_entry = NULL;
 
@@ -1159,14 +1159,14 @@ mono_arch_unwindinfo_fast_find_range_in_table_no_lock_ex (gsize begin_range, gsi
 }
 
 static inline DynamicFunctionTableEntry *
-mono_arch_unwindinfo_fast_find_range_in_table_no_lock (gsize begin_range, gsize end_range, gboolean *continue_search)
+fast_find_range_in_table_no_lock (gsize begin_range, gsize end_range, gboolean *continue_search)
 {
-	GList *found_entry = mono_arch_unwindinfo_fast_find_range_in_table_no_lock_ex (begin_range, end_range, continue_search);
+	GList *found_entry = fast_find_range_in_table_no_lock_ex (begin_range, end_range, continue_search);
 	return (found_entry != NULL) ? (DynamicFunctionTableEntry *)found_entry->data : NULL;
 }
 
 static GList *
-mono_arch_unwindinfo_find_range_in_table_no_lock_ex (const gpointer code_block, gsize block_size)
+find_range_in_table_no_lock_ex (const gpointer code_block, gsize block_size)
 {
 	GList *found_entry = NULL;
 	gboolean continue_search = FALSE;
@@ -1175,7 +1175,7 @@ mono_arch_unwindinfo_find_range_in_table_no_lock_ex (const gpointer code_block, 
 	gsize end_range = begin_range + block_size;
 
 	// Fast path, check table boundaries.
-	found_entry = mono_arch_unwindinfo_fast_find_range_in_table_no_lock_ex (begin_range, end_range, &continue_search);
+	found_entry = fast_find_range_in_table_no_lock_ex (begin_range, end_range, &continue_search);
 	if (found_entry || continue_search == FALSE)
 		return found_entry;
 
@@ -1195,14 +1195,14 @@ mono_arch_unwindinfo_find_range_in_table_no_lock_ex (const gpointer code_block, 
 }
 
 static inline DynamicFunctionTableEntry *
-mono_arch_unwindinfo_find_range_in_table_no_lock (const gpointer code_block, gsize block_size)
+find_range_in_table_no_lock (const gpointer code_block, gsize block_size)
 {
-	GList *found_entry = mono_arch_unwindinfo_find_range_in_table_no_lock_ex (code_block, block_size);
+	GList *found_entry = find_range_in_table_no_lock_ex (code_block, block_size);
 	return (found_entry != NULL) ? (DynamicFunctionTableEntry *)found_entry->data : NULL;
 }
 
 static GList *
-mono_arch_unwindinfo_find_pc_in_table_no_lock_ex (const gpointer pc)
+find_pc_in_table_no_lock_ex (const gpointer pc)
 {
 	GList *found_entry = NULL;
 	gboolean continue_search = FALSE;
@@ -1211,7 +1211,7 @@ mono_arch_unwindinfo_find_pc_in_table_no_lock_ex (const gpointer pc)
 	gsize end_range = begin_range;
 
 	// Fast path, check table boundaries.
-	found_entry = mono_arch_unwindinfo_fast_find_range_in_table_no_lock_ex (begin_range, begin_range, &continue_search);
+	found_entry = fast_find_range_in_table_no_lock_ex (begin_range, begin_range, &continue_search);
 	if (found_entry || continue_search == FALSE)
 		return found_entry;
 
@@ -1231,15 +1231,15 @@ mono_arch_unwindinfo_find_pc_in_table_no_lock_ex (const gpointer pc)
 }
 
 static inline DynamicFunctionTableEntry *
-mono_arch_unwindinfo_find_pc_in_table_no_lock (const gpointer pc)
+find_pc_in_table_no_lock (const gpointer pc)
 {
-	GList *found_entry = mono_arch_unwindinfo_find_pc_in_table_no_lock_ex (pc);
+	GList *found_entry = find_pc_in_table_no_lock_ex (pc);
 	return (found_entry != NULL) ? (DynamicFunctionTableEntry *)found_entry->data : NULL;
 }
 
 #ifdef ENABLE_CHECKED_BUILD_UNWINDINFO
 static void
-mono_arch_unwindinfo_validate_table_no_lock (void)
+validate_table_no_lock (void)
 {
 	// Validation method checking that table is sorted as expected and don't include overlapped regions.
 	// Method will assert on failure to explicitly indicate what check failed.
@@ -1270,7 +1270,7 @@ mono_arch_unwindinfo_validate_table_no_lock (void)
 #else
 
 static inline void
-mono_arch_unwindinfo_validate_table_no_lock (void)
+validate_table_no_lock (void)
 {
 	;
 }
@@ -1288,8 +1288,8 @@ mono_arch_unwindinfo_insert_range_in_table (const gpointer code_block, gsize blo
 	gsize end_range = begin_range + block_size;
 
 	AcquireSRWLockExclusive (&g_dynamic_function_table_lock);
-	mono_arch_unwindinfo_init_table_no_lock ();
-	new_entry = mono_arch_unwindinfo_find_range_in_table_no_lock (code_block, block_size);
+	init_table_no_lock ();
+	new_entry = find_range_in_table_no_lock (code_block, block_size);
 	if (new_entry == NULL) {
 		// Allocate new entry.
 		new_entry = g_new0 (DynamicFunctionTableEntry, 1);
@@ -1363,7 +1363,7 @@ mono_arch_unwindinfo_insert_range_in_table (const gpointer code_block, gsize blo
 				}
 
 				// Only included in checked builds. Validates the structure of table after insert.
-				mono_arch_unwindinfo_validate_table_no_lock ();
+				validate_table_no_lock ();
 
 			} else {
 				g_free (new_entry);
@@ -1377,7 +1377,7 @@ mono_arch_unwindinfo_insert_range_in_table (const gpointer code_block, gsize blo
 }
 
 static void
-mono_arch_unwindinfo_remove_range_in_table_no_lock (GList *entry)
+remove_range_in_table_no_lock (GList *entry)
 {
 	if (entry != NULL) {
 		if (entry == g_dynamic_function_table_end)
@@ -1405,7 +1405,7 @@ mono_arch_unwindinfo_remove_range_in_table_no_lock (GList *entry)
 	}
 
 	// Only included in checked builds. Validates the structure of table after remove.
-	mono_arch_unwindinfo_validate_table_no_lock ();
+	validate_table_no_lock ();
 }
 
 void
@@ -1413,10 +1413,10 @@ mono_arch_unwindinfo_remove_pc_range_in_table (const gpointer code)
 {
 	AcquireSRWLockExclusive (&g_dynamic_function_table_lock);
 
-	GList *found_entry = mono_arch_unwindinfo_find_pc_in_table_no_lock_ex (code);
+	GList *found_entry = find_pc_in_table_no_lock_ex (code);
 
 	g_assert_checked (found_entry != NULL || ((DynamicFunctionTableEntry *)found_entry->data)->begin_range == (gsize)code);
-	mono_arch_unwindinfo_remove_range_in_table_no_lock (found_entry);
+	remove_range_in_table_no_lock (found_entry);
 
 	ReleaseSRWLockExclusive (&g_dynamic_function_table_lock);
 }
@@ -1426,10 +1426,10 @@ mono_arch_unwindinfo_remove_range_in_table (const gpointer code_block, gsize blo
 {
 	AcquireSRWLockExclusive (&g_dynamic_function_table_lock);
 
-	GList *found_entry = mono_arch_unwindinfo_find_range_in_table_no_lock_ex (code_block, block_size);
+	GList *found_entry = find_range_in_table_no_lock_ex (code_block, block_size);
 
 	g_assert_checked (found_entry != NULL || ((DynamicFunctionTableEntry *)found_entry->data)->begin_range == (gsize)code_block);
-	mono_arch_unwindinfo_remove_range_in_table_no_lock (found_entry);
+	remove_range_in_table_no_lock (found_entry);
 
 	ReleaseSRWLockExclusive (&g_dynamic_function_table_lock);
 }
@@ -1444,7 +1444,7 @@ mono_arch_unwindinfo_find_rt_func_in_table (const gpointer code, gsize code_size
 
 	AcquireSRWLockShared (&g_dynamic_function_table_lock);
 
-	DynamicFunctionTableEntry *found_entry = mono_arch_unwindinfo_find_pc_in_table_no_lock (code);
+	DynamicFunctionTableEntry *found_entry = find_pc_in_table_no_lock (code);
 
 	if (found_entry != NULL) {
 
@@ -1481,7 +1481,7 @@ mono_arch_unwindinfo_find_pc_rt_func_in_table (const gpointer pc)
 
 #ifdef ENABLE_CHECKED_BUILD_UNWINDINFO
 static void
-mono_arch_unwindinfo_validate_rt_funcs_in_table_no_lock (DynamicFunctionTableEntry *entry)
+validate_rt_funcs_in_table_no_lock (DynamicFunctionTableEntry *entry)
 {
 	// Validation method checking that runtime function table is sorted as expected and don't include overlapped regions.
 	// Method will assert on failure to explicitly indicate what check failed.
@@ -1512,7 +1512,7 @@ mono_arch_unwindinfo_validate_rt_funcs_in_table_no_lock (DynamicFunctionTableEnt
 #else
 
 static inline void
-mono_arch_unwindinfo_validate_rt_funcs_in_table_no_lock (DynamicFunctionTableEntry *entry)
+validate_rt_funcs_in_table_no_lock (DynamicFunctionTableEntry *entry)
 {
 	;
 }
@@ -1528,7 +1528,7 @@ mono_arch_unwindinfo_insert_rt_func_in_table (const gpointer code, gsize code_si
 
 	AcquireSRWLockShared (&g_dynamic_function_table_lock);
 
-	DynamicFunctionTableEntry *found_entry = mono_arch_unwindinfo_find_pc_in_table_no_lock (code);
+	DynamicFunctionTableEntry *found_entry = find_pc_in_table_no_lock (code);
 
 	if (found_entry != NULL) {
 
@@ -1622,7 +1622,7 @@ mono_arch_unwindinfo_insert_rt_func_in_table (const gpointer code, gsize code_si
 		}
 
 		// Only included in checked builds. Validates the structure of table after insert.
-		mono_arch_unwindinfo_validate_rt_funcs_in_table_no_lock (found_entry);
+		validate_rt_funcs_in_table_no_lock (found_entry);
 
 		ReleaseSRWLockExclusive (&found_entry->lock);
 	}
@@ -1639,7 +1639,7 @@ MONO_GET_RUNTIME_FUNCTION_CALLBACK ( DWORD64 ControlPc, IN PVOID Context )
 }
 
 static void
-mono_arch_unwindinfo_initialize_unwind_info_internal_ex (GSList *unwind_ops, PUNWIND_INFO unwindinfo)
+initialize_unwind_info_internal_ex (GSList *unwind_ops, PUNWIND_INFO unwindinfo)
 {
 	if (unwind_ops != NULL && unwindinfo != NULL) {
 		MonoUnwindOp *unwind_op_data;
@@ -1675,12 +1675,12 @@ mono_arch_unwindinfo_initialize_unwind_info_internal_ex (GSList *unwind_ops, PUN
 }
 
 static PUNWIND_INFO
-mono_arch_unwindinfo_initialize_unwind_info_internal (GSList *unwind_ops)
+initialize_unwind_info_internal (GSList *unwind_ops)
 {
 	PUNWIND_INFO unwindinfo;
 
 	mono_arch_unwindinfo_create (&unwindinfo);
-	mono_arch_unwindinfo_initialize_unwind_info_internal_ex (unwind_ops, unwindinfo);
+	initialize_unwind_info_internal_ex (unwind_ops, unwindinfo);
 
 	return unwindinfo;
 }
@@ -1689,7 +1689,7 @@ guchar
 mono_arch_unwindinfo_get_code_count (GSList *unwind_ops)
 {
 	UNWIND_INFO unwindinfo = {0};
-	mono_arch_unwindinfo_initialize_unwind_info_internal_ex (unwind_ops, &unwindinfo);
+	initialize_unwind_info_internal_ex (unwind_ops, &unwindinfo);
 	return unwindinfo.CountOfCodes;
 }
 
@@ -1698,7 +1698,7 @@ mono_arch_unwindinfo_init_method_unwind_info (gpointer cfg)
 {
 	MonoCompile * current_cfg = (MonoCompile *)cfg;
 	g_assert (current_cfg->arch.unwindinfo == NULL);
-	current_cfg->arch.unwindinfo = mono_arch_unwindinfo_initialize_unwind_info_internal (current_cfg->unwind_ops);
+	current_cfg->arch.unwindinfo = initialize_unwind_info_internal (current_cfg->unwind_ops);
 	return mono_arch_unwindinfo_get_size (((PUNWIND_INFO)(current_cfg->arch.unwindinfo))->CountOfCodes);
 }
 
@@ -1752,7 +1752,7 @@ mono_arch_unwindinfo_install_method_unwind_info (gpointer *monoui, gpointer code
 void
 mono_arch_unwindinfo_install_tramp_unwind_info (GSList *unwind_ops, gpointer code, guint code_size)
 {
-	PUNWIND_INFO unwindinfo = mono_arch_unwindinfo_initialize_unwind_info_internal (unwind_ops);
+	PUNWIND_INFO unwindinfo = initialize_unwind_info_internal (unwind_ops);
 	if (unwindinfo != NULL) {
 		mono_arch_unwindinfo_install_method_unwind_info (&unwindinfo, code, code_size);
 	}
