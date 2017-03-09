@@ -32,11 +32,17 @@ namespace System.Diagnostics
         /// <summary>
         /// This is an ID that is specific to a particular request.   Filtering
         /// to a particular ID insures that you get only one request that matches.  
-        /// Id has a hierarchical structure: /root-id.id1.id2.id3.  Id is generated when 
+        /// Id has a hierarchical structure: '|root-id.id1_id2.id3_' Id is generated when 
         /// <see cref="Start"/> is called by appending suffix (preceeded with '.') to Parent.Id
         /// or ParentId; Activity has no Id until it started
-        /// See <see href="https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#activity-id"/> for nore details
+        /// <para/>
+        /// See <see href="https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#id-format"/> for more details
         /// </summary>
+        /// <example>Id looks like |RD0003FF21406D-5d183ab6-a000b421.1.8e2d4c28_1.:<para />
+        ///  - 'RD0003FF21406D-5d183ab6-a000b421' - Id of the first, top-most, Activity created; It is a RootId for this and all child Activities<para />
+        ///  - 'RD0003FF21406D-5d183ab6-a000b421.1.' - Id of a child activity. It was started in the same process and ends with '.'<para />
+        ///  - '|RD0003FF21406D-5d183ab6-a000b421.1.8e2d4c28_' - Id of the grand child activity. It was started in another process and ends with '_'<para />
+        /// </example>
         public string Id { get; private set; }
 
         /// <summary>
@@ -58,6 +64,8 @@ namespace System.Diagnostics
         /// does not have a Parent Activity but MAY have a ParentId (which was deserialized from
         /// from the parent) .   This accessor fetches the parent ID if it exists at all.  
         /// Note this can be null if this is a root Activity (it has no parent)
+        /// <para/>
+        /// See <see href="https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#id-format"/> for more details
         /// </summary>
         public string ParentId { get; private set; }
 
@@ -66,7 +74,7 @@ namespace System.Diagnostics
         /// Root Id is substring from Activity.Id (or ParentId) between '/' (or beginning) and first '.'.
         /// Filtering by root Id allows to find all Activities involved in operation processing.
         /// RootId may be null if Activity has neither ParentId nor Id.
-        /// See <see href="https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#activity-id"/> for more details
+        /// See <see href="https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#id-format"/> for more details
         /// </summary>
         public string RootId
         {
@@ -368,8 +376,8 @@ namespace System.Diagnostics
                 return GenerateRootId();
 
             //generate overflow suffix
-            byte[] bytes = Guid.NewGuid().ToByteArray();
-            return parentId.Substring(0, trimPosition) + BitConverter.ToUInt32(bytes, 12).ToString("x8") + '#';
+            string overflowSuffix = ((int) GetRandomNumber()).ToString("x8");
+            return parentId.Substring(0, trimPosition) + overflowSuffix + '#';
         }
 
         private string GenerateRootId()
@@ -389,15 +397,21 @@ namespace System.Diagnostics
             return ret;
         }
 
+        private static unsafe long GetRandomNumber()
+        {
+            Guid g = Guid.NewGuid();
+            return (long)&g;
+        }
+
         private string _rootId;
 
         // Used to generate an ID 
         private static string s_uniqPrefix;  //instance unique prefix
-
         private int _currentChildId;  // A unique number for all children of this activity.  
 
         //A unique number inside the appdomain, randomized between appdomains. 
-        private static long s_currentRootId = BitConverter.ToUInt32(Guid.NewGuid().ToByteArray(), 12);  
+        //Int gives enough randomization and keeps hex-encoded s_currentRootId 8 chars long for most applications
+        private static long s_currentRootId = (int)GetRandomNumber();  
 
         private const int RequestIdMaxLength = 1024;
         private const char RootIdPrefix = '|';
