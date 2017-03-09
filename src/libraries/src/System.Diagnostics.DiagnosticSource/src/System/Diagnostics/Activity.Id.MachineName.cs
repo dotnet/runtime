@@ -4,16 +4,10 @@
     {
         #region private
 
-        static Activity()
+        private string GenerateInstancePrefix()
         {
-            Random random = new Random();
-
-            //Randomized on different process instances
-            s_currentRootId = random.Next();
-
-            //generate unique instance prefix 
             int uniqNum = unchecked((int)Stopwatch.GetTimestamp());
-            s_uniqPrefix = $"{s_rootIdPrefix}{Environment.MachineName}-{uniqNum:x}";
+            return $"{RootIdPrefix}{Environment.MachineName}-{uniqNum:x}";
         }
 
         #endregion

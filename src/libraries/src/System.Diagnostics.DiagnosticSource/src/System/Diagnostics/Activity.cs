@@ -307,7 +307,7 @@ namespace System.Diagnostics
             {
                 // Normal start within the process
                 Debug.Assert(!string.IsNullOrEmpty(Parent.Id));
-                ret = AppendSuffix(Parent.Id, Interlocked.Increment(ref Parent._currentChildId).ToString(), s_internalIdDelimiter);
+                ret = AppendSuffix(Parent.Id, Interlocked.Increment(ref Parent._currentChildId).ToString(), '.');
             }
             else if (ParentId != null)
             {
@@ -316,13 +316,13 @@ namespace System.Diagnostics
 
                 //sanitize external RequestId as it may not be hierarchical. 
                 //we cannot update ParentId, we must let it be logged exactly as it was passed.
-                string parentId = ParentId[0] == s_rootIdPrefix ? ParentId : s_rootIdPrefix + ParentId;
-                if (parentId[parentId.Length - 1] != s_internalIdDelimiter)
+                string parentId = ParentId[0] == RootIdPrefix ? ParentId : RootIdPrefix + ParentId;
+                if (parentId[parentId.Length - 1] != '.')
                 {
-                    parentId += s_internalIdDelimiter;
+                    parentId += '.';
                 }
                 
-                ret = AppendSuffix(parentId, Interlocked.Increment(ref s_currentRootId).ToString("x"), s_externalIdDelimiter);
+                ret = AppendSuffix(parentId, Interlocked.Increment(ref s_currentRootId).ToString("x"), '_');
             }
             else
             {
@@ -338,10 +338,10 @@ namespace System.Diagnostics
             //id MAY start with '|' and contain '.'. We return substring between them
             //ParentId MAY NOT have hierarchical structure and we don't know if initially rootId was started with '|',
             //so we must NOT include first '|' to allow mixed hierarchical and non-hierarchical request id scenarios
-            int rootEnd = id.IndexOf(s_internalIdDelimiter);
+            int rootEnd = id.IndexOf('.');
             if (rootEnd < 0)
                 rootEnd = id.Length;
-            int rootStart = id[0] == s_rootIdPrefix ? 1 : 0;
+            int rootStart = id[0] == RootIdPrefix ? 1 : 0;
             return id.Substring(rootStart, rootEnd - rootStart);
         }
 
@@ -350,15 +350,15 @@ namespace System.Diagnostics
 #if DEBUG
             suffix = OperationName + "-" + suffix;
 #endif
-            if (parentId.Length + suffix.Length < s_requestIdMaxLength)
+            if (parentId.Length + suffix.Length < RequestIdMaxLength)
                 return parentId + suffix + delimiter;
 
             //Id overflow:
             //find position in RequestId to trim
-            int trimPosition = s_requestIdMaxLength - 9; // overflow suffix + delimiter length is 9
+            int trimPosition = RequestIdMaxLength - 9; // overflow suffix + delimiter length is 9
             while (trimPosition > 1)
             {
-                if (parentId[trimPosition - 1] == s_internalIdDelimiter || parentId[trimPosition - 1] == s_externalIdDelimiter)
+                if (parentId[trimPosition - 1] == '.' || parentId[trimPosition - 1] == '_')
                     break;
                 trimPosition--;
             }
@@ -369,15 +369,22 @@ namespace System.Diagnostics
 
             //generate overflow suffix
             byte[] bytes = Guid.NewGuid().ToByteArray();
-            return parentId.Substring(0, trimPosition) + BitConverter.ToUInt32(bytes, 12).ToString("x8") + s_overflowDelimiter;
+            return parentId.Substring(0, trimPosition) + BitConverter.ToUInt32(bytes, 12).ToString("x8") + '#';
         }
 
         private string GenerateRootId()
         {
+            if (s_uniqPrefix == null)
+            {
+                // Here we make an ID to represent the Process/AppDomain.   Ideally we use process ID but 
+                // it is unclear if we have that ID handy.   Currently we use low bits of high freq tick 
+                // as a unique random number (which is not bad, but loses randomness for startup scenarios).  
+                Interlocked.CompareExchange(ref s_uniqPrefix, GenerateInstancePrefix(), null);
+            }
 #if DEBUG
-            string ret = s_uniqPrefix + "-" + OperationName + "-" + Interlocked.Increment(ref s_currentRootId).ToString("x") + s_internalIdDelimiter;
-#else           // To keep things short, we drop the operation name 
-            string ret = s_uniqPrefix + "-" + Interlocked.Increment(ref s_currentRootId).ToString("x") + s_internalIdDelimiter;
+            string ret = s_uniqPrefix + "-" + OperationName + "-" + Interlocked.Increment(ref s_currentRootId).ToString("x") + '.';
+#else       // To keep things short, we drop the operation name 
+            string ret = s_uniqPrefix + "-" + Interlocked.Increment(ref s_currentRootId).ToString("x") + '.';
 #endif
             return ret;
         }
@@ -385,19 +392,15 @@ namespace System.Diagnostics
         private string _rootId;
 
         // Used to generate an ID 
-        // A unique number for all children of this activity.  
-        private int _currentChildId;
+        private static string s_uniqPrefix;  //instance unique prefix
 
-        // A unique number inside the appdomain. 
-        private static long s_currentRootId;
+        private int _currentChildId;  // A unique number for all children of this activity.  
 
-        private static string s_uniqPrefix;
-        private static char s_internalIdDelimiter = '.';
-        private static char s_externalIdDelimiter = '_';
-        private static char s_overflowDelimiter = '#';
-        private static char s_rootIdPrefix = '|';
-        private static int s_requestIdMaxLength = 1024;
+        //A unique number inside the appdomain, randomized between appdomains. 
+        private static long s_currentRootId = BitConverter.ToUInt32(Guid.NewGuid().ToByteArray(), 12);  
 
+        private const int RequestIdMaxLength = 1024;
+        private const char RootIdPrefix = '|';
         /// <summary>
         /// Having our own key-value linked list allows us to be more efficient  
         /// </summary>
