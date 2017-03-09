@@ -1856,12 +1856,10 @@ mono_get_method_constrained_with_method (MonoImage *image, MonoMethod *method, M
 
 /**
  * mono_get_method_constrained:
- *
- * This is used when JITing the `constrained.' opcode.
- *
- * This returns two values: the contrained method, which has been inflated
- * as the function return value;   And the original CIL-stream method as
- * declared in cil_method.  The later is used for verification.
+ * This is used when JITing the <code>constrained.</code> opcode.
+ * \returns The contrained method, which has been inflated
+ * as the function return value; and the original CIL-stream method as
+ * declared in \p cil_method. The latter is used for verification.
  */
 MonoMethod *
 mono_get_method_constrained (MonoImage *image, guint32 token, MonoClass *constrained_class,

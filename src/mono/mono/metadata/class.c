@@ -7458,6 +7458,9 @@ mono_image_init_name_cache (MonoImage *image)
 }
 
 /*FIXME Only dynamic assemblies should allow this operation.*/
+/**
+ * mono_image_add_to_name_cache:
+ */
 void
 mono_image_add_to_name_cache (MonoImage *image, const char *nspace, 
 							  const char *name, guint32 index)
