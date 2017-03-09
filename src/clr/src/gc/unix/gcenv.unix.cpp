@@ -78,6 +78,11 @@ static uint8_t g_helperPage[OS_PAGE_SIZE] __attribute__((aligned(OS_PAGE_SIZE)))
 // Mutex to make the FlushProcessWriteBuffersMutex thread safe
 static pthread_mutex_t g_flushProcessWriteBuffersMutex;
 
+size_t GetRestrictedPhysicalMemoryLimit();
+bool GetWorkingSetSize(size_t* val);
+
+static size_t g_RestrictedPhysicalMemoryLimit = 0;
+
 // Initialize the interface implementation
 // Return:
 //  true if it has succeeded, false if it has failed
@@ -442,6 +447,18 @@ size_t GCToOSInterface::GetVirtualMemoryLimit()
 //  specified, it returns amount of actual physical memory.
 uint64_t GCToOSInterface::GetPhysicalMemoryLimit()
 {
+    size_t restricted_limit;
+    // The limit was not cached
+    if (g_RestrictedPhysicalMemoryLimit == 0)
+    {
+        restricted_limit = GetRestrictedPhysicalMemoryLimit();
+        VolatileStore(&g_RestrictedPhysicalMemoryLimit, restricted_limit);
+    }
+    restricted_limit = g_RestrictedPhysicalMemoryLimit;
+
+    if (restricted_limit != 0 && restricted_limit != SIZE_T_MAX)
+        return restricted_limit;
+
     long pages = sysconf(_SC_PHYS_PAGES);
     if (pages == -1) 
     {
@@ -471,14 +488,14 @@ void GCToOSInterface::GetMemoryStatus(uint32_t* memory_load, uint64_t* available
 
         uint64_t available = 0;
         uint32_t load = 0;
+        size_t used;
 
         // Get the physical memory in use - from it, we can get the physical memory available.
         // We do this only when we have the total physical memory available.
-        if (total > 0)
+        if (total > 0 && GetWorkingSetSize(&used))
         {
-            available = sysconf(_SC_PHYS_PAGES) * sysconf(_SC_PAGE_SIZE);
-            uint64_t used = total - available;
-            load = (uint32_t)((used * 100) / total);
+            available = total > used ? total-used : 0; 
+            load = (uint32_t)(((float)used * 100) / (float)total);
         }
 
         if (memory_load != nullptr)
