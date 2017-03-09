@@ -83,6 +83,7 @@ private:
 
     pal::string_t get_optional_path(const json_object& properties, const pal::string_t& key) const;
 
+    pal::string_t get_current_rid(const rid_fallback_graph_t& rid_fallback_graph);
     bool perform_rid_fallback(rid_specific_assets_t* portable_assets, const rid_fallback_graph_t& rid_fallback_graph);
 
     std::vector<deps_entry_t> m_deps_entries[deps_entry_t::asset_types::count];

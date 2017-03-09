@@ -50,16 +50,26 @@
 
 #endif
 
-
+// When running on a platform that is not supported in RID fallback graph (because it was unknown
+// at the time the SharedFX in question was built), we need to use a reasonable fallback RID to allow
+// consuming the native assets.
+//
+// For Windows and OSX, we will maintain the last highest RID-Platform we are known to support for them as the 
+// degree of compat across their respective releases is usually high.
+//
+// We cannot maintain the same (compat) invariant for linux and thus, we will fallback to using lowest RID-Plaform.
 #if defined(_WIN32)
 #define LIB_PREFIX
 #define MAKE_LIBNAME(NAME) (_X(NAME) _X(".dll"))
+#define FALLBACK_HOST_RID _X("win10")
 #elif defined(__APPLE__)
 #define LIB_PREFIX _X("lib")
 #define MAKE_LIBNAME(NAME) (LIB_PREFIX _X(NAME) _X(".dylib"))
+#define FALLBACK_HOST_RID _X("osx.10.12")
 #else
 #define LIB_PREFIX _X("lib")
 #define MAKE_LIBNAME(NAME) (LIB_PREFIX _X(NAME) _X(".so"))
+#define FALLBACK_HOST_RID _X("linux")
 #endif
 
 #define LIBCLRJIT_NAME MAKE_LIBNAME("clrjit")
@@ -180,21 +190,17 @@ namespace pal
 
 #endif
 
-#if defined(__APPLE__)
-    enum os_moniker_t
-    {
-        sierra = 16,
-        el_capitan = 15,
-    };
-
-    bool get_os_moniker(os_moniker_t* moniker);
-#endif
-
     inline void err_flush() { std::fflush(stderr); }
     inline void out_flush() { std::fflush(stdout); }
 
     // Based upon https://github.com/dotnet/core-setup/blob/master/src/Microsoft.DotNet.PlatformAbstractions/Native/PlatformApis.cs
     pal::string_t get_current_os_rid_platform();
+    inline pal::string_t get_current_os_fallback_rid()
+    {
+        pal::string_t fallbackRid(FALLBACK_HOST_RID);
+
+        return fallbackRid;
+    }
         
     bool touch_file(const pal::string_t& path);
     bool realpath(string_t* path);
