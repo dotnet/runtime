@@ -242,6 +242,9 @@ mono_profiler_install_method_invoke (MonoProfileMethodFunc start, MonoProfileMet
 	prof_list->method_end_invoke = end;
 }
 
+/**
+ * mono_profiler_install_thread:
+ */
 void 
 mono_profiler_install_thread (MonoProfileThreadFunc start, MonoProfileThreadFunc end)
 {
@@ -259,6 +262,9 @@ mono_profiler_install_thread_name (MonoProfileThreadNameFunc thread_name_cb)
 	prof_list->thread_name = thread_name_cb;
 }
 
+/**
+ * mono_profiler_install_transition:
+ */
 void 
 mono_profiler_install_transition (MonoProfileMethodResult callback)
 {
@@ -267,6 +273,9 @@ mono_profiler_install_transition (MonoProfileMethodResult callback)
 	prof_list->man_unman_transition = callback;
 }
 
+/**
+ * mono_profiler_install_allocation:
+ */
 void 
 mono_profiler_install_allocation (MonoProfileAllocFunc callback)
 {
@@ -305,6 +314,9 @@ mono_profiler_set_statistical_mode (MonoProfileSamplingMode mode, int64_t sampli
 	sampling_frequency = sampling_frequency_hz;
 }
 
+/**
+ * mono_profiler_install_statistical:
+ */
 void 
 mono_profiler_install_statistical (MonoProfileStatFunc callback)
 {
@@ -367,6 +379,9 @@ void mono_profiler_install_exception (MonoProfileExceptionFunc throw_callback, M
 	prof_list->exception_clause_cb = clause_callback;
 }
 
+/**
+ * mono_profiler_install_coverage_filter:
+ */
 void 
 mono_profiler_install_coverage_filter (MonoProfileCoverageFilterFunc callback)
 {
@@ -375,6 +390,9 @@ mono_profiler_install_coverage_filter (MonoProfileCoverageFilterFunc callback)
 	prof_list->coverage_filter_cb = callback;
 }
 
+/**
+ * mono_profiler_install_appdomain:
+ */
 void 
 mono_profiler_install_appdomain   (MonoProfileAppDomainFunc start_load, MonoProfileAppDomainResult end_load,
                                    MonoProfileAppDomainFunc start_unload, MonoProfileAppDomainFunc end_unload)
@@ -407,6 +425,9 @@ mono_profiler_install_context (MonoProfileContextFunc load, MonoProfileContextFu
 	prof_list->context_unload = unload;
 }
 
+/**
+ * mono_profiler_install_assembly:
+ */
 void 
 mono_profiler_install_assembly    (MonoProfileAssemblyFunc start_load, MonoProfileAssemblyResult end_load,
                                    MonoProfileAssemblyFunc start_unload, MonoProfileAssemblyFunc end_unload)
@@ -419,6 +440,9 @@ mono_profiler_install_assembly    (MonoProfileAssemblyFunc start_load, MonoProfi
 	prof_list->assembly_end_unload = end_unload;
 }
 
+/**
+ * mono_profiler_install_module:
+ */
 void 
 mono_profiler_install_module      (MonoProfileModuleFunc start_load, MonoProfileModuleResult end_load,
                                    MonoProfileModuleFunc start_unload, MonoProfileModuleFunc end_unload)
@@ -431,6 +455,9 @@ mono_profiler_install_module      (MonoProfileModuleFunc start_load, MonoProfile
 	prof_list->module_end_unload = end_unload;
 }
 
+/**
+ * mono_profiler_install_class:
+ */
 void
 mono_profiler_install_class       (MonoProfileClassFunc start_load, MonoProfileClassResult end_load,
                                    MonoProfileClassFunc start_unload, MonoProfileClassFunc end_unload)
@@ -929,6 +956,9 @@ mono_profiler_gc_roots (int num, void **objects, int *root_types, uintptr_t *ext
 	}
 }
 
+/**
+ * mono_profiler_install_gc:
+ */
 void
 mono_profiler_install_gc (MonoProfileGCFunc callback, MonoProfileGCResizeFunc heap_resize_callback)
 {
