@@ -2587,14 +2587,13 @@ mono_declsec_get_flags (MonoImage *image, guint32 token)
 	return result;
 }
 
-/*
+/**
+ * mono_declsec_flags_from_method:
+ * \param method The method for which we want the declarative security flags.
  * Get the security actions (in the form of flags) associated with the specified method.
- *
- * @method: The method for which we want the declarative security flags.
- * Return the declarative security flags for the method (only).
- *
- * Note: To keep MonoMethod size down we do not cache the declarative security flags
- *       (except for the stack modifiers which are kept in the MonoJitInfo structure)
+ * To keep \c MonoMethod size down we do not cache the declarative security flags
+ * (except for the stack modifiers which are kept in the MonoJitInfo structure)
+ * \returns the declarative security flags for the method (only).
  */
 guint32
 mono_declsec_flags_from_method (MonoMethod *method)
@@ -2609,14 +2608,13 @@ mono_declsec_flags_from_method (MonoMethod *method)
 	return 0;
 }
 
-/*
+/**
+ * mono_declsec_flags_from_class:
+ * \param klass The class for which we want the declarative security flags.
  * Get the security actions (in the form of flags) associated with the specified class.
- *
- * @klass: The class for which we want the declarative security flags.
- * Return the declarative security flags for the class.
- *
- * Note: We cache the flags inside the MonoClass structure as this will get 
- *       called very often (at least for each method).
+ * We cache the flags inside the \c MonoClass structure as this will get 
+ * called very often (at least for each method).
+ * \returns the declarative security flags for the class.
  */
 guint32
 mono_declsec_flags_from_class (MonoClass *klass)
@@ -2639,11 +2637,11 @@ mono_declsec_flags_from_class (MonoClass *klass)
 	return 0;
 }
 
-/*
+/**
+ * mono_declsec_flags_from_assembly:
+ * \param assembly The assembly for which we want the declarative security flags.
  * Get the security actions (in the form of flags) associated with the specified assembly.
- *
- * @assembly: The assembly for which we want the declarative security flags.
- * Return the declarative security flags for the assembly.
+ * \returns the declarative security flags for the assembly.
  */
 guint32
 mono_declsec_flags_from_assembly (MonoAssembly *assembly)
@@ -2729,10 +2727,11 @@ mono_declsec_get_method_demands_params (MonoMethod *method, MonoDeclSecurityActi
 	return fill_actions_from_index (method->klass->image, idx, demands, id_std, id_noncas, id_choice);
 }
 
-/*
+/**
+ * mono_declsec_get_demands:
  * Collect all actions (that requires to generate code in mini) assigned for
  * the specified method.
- * Note: Don't use the content of actions if the function return FALSE.
+ * Don't use the content of actions if the function return FALSE.
  */
 MonoBoolean
 mono_declsec_get_demands (MonoMethod *method, MonoDeclSecurityActions* demands)
@@ -2779,10 +2778,10 @@ mono_declsec_get_demands (MonoMethod *method, MonoDeclSecurityActions* demands)
 }
 
 
-/*
- * Collect all Link actions: LinkDemand, NonCasLinkDemand and LinkDemandChoice (2.0).
- *
- * Note: Don't use the content of actions if the function return FALSE.
+/**
+ * mono_declsec_get_linkdemands:
+ * Collect all Link actions: \c LinkDemand, \c NonCasLinkDemand and \c LinkDemandChoice (2.0).
+ * Don't use the content of actions if the function return FALSE.
  */
 MonoBoolean
 mono_declsec_get_linkdemands (MonoMethod *method, MonoDeclSecurityActions* klass, MonoDeclSecurityActions *cmethod)
@@ -2825,14 +2824,13 @@ mono_declsec_get_linkdemands (MonoMethod *method, MonoDeclSecurityActions* klass
 	return result;
 }
 
-/*
- * Collect all Inherit actions: InheritanceDemand, NonCasInheritanceDemand and InheritanceDemandChoice (2.0).
- *
- * @klass	The inherited class - this is the class that provides the security check (attributes)
- * @demans	
- * return TRUE if inheritance demands (any kind) are present, FALSE otherwise.
- * 
- * Note: Don't use the content of actions if the function return FALSE.
+/**
+ * mono_declsec_get_inheritdemands_class:
+ * \param klass	The inherited class - this is the class that provides the security check (attributes)
+ * \param demands
+ * Collect all Inherit actions - \c InheritanceDemand, \c NonCasInheritanceDemand and \c InheritanceDemandChoice (2.0).
+ * Don't use the content of actions if the function return FALSE.
+ * \returns TRUE if inheritance demands (any kind) are present, FALSE otherwise.
  */
 MonoBoolean
 mono_declsec_get_inheritdemands_class (MonoClass *klass, MonoDeclSecurityActions* demands)
@@ -2857,10 +2855,10 @@ mono_declsec_get_inheritdemands_class (MonoClass *klass, MonoDeclSecurityActions
 	return result;
 }
 
-/*
- * Collect all Inherit actions: InheritanceDemand, NonCasInheritanceDemand and InheritanceDemandChoice (2.0).
- *
- * Note: Don't use the content of actions if the function return FALSE.
+/**
+ * mono_declsec_get_inheritdemands_method:
+ * Collect all Inherit actions: \c InheritanceDemand, \c NonCasInheritanceDemand and \c InheritanceDemandChoice (2.0).
+ * Don't use the content of actions if the function return FALSE.
  */
 MonoBoolean
 mono_declsec_get_inheritdemands_method (MonoMethod *method, MonoDeclSecurityActions* demands)
@@ -2929,6 +2927,9 @@ mono_declsec_get_method_action (MonoMethod *method, guint32 action, MonoDeclSecu
 	return FALSE;
 }
 
+/**
+ * mono_declsec_get_class_action:
+ */
 MonoBoolean
 mono_declsec_get_class_action (MonoClass *klass, guint32 action, MonoDeclSecurityEntry *entry)
 {
@@ -2943,6 +2944,9 @@ mono_declsec_get_class_action (MonoClass *klass, guint32 action, MonoDeclSecurit
 	return FALSE;
 }
 
+/**
+ * mono_declsec_get_assembly_action:
+ */
 MonoBoolean
 mono_declsec_get_assembly_action (MonoAssembly *assembly, guint32 action, MonoDeclSecurityEntry *entry)
 {
