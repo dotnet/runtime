@@ -123,7 +123,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 	labels [0] = code;
 	arm_cbzx (code, ARMREG_IP0, 0);
 	for (i = 0; i < num_fregs; ++i)
-		arm_ldrfpx (code, ARMREG_D8 + i, ARMREG_R0, MONO_STRUCT_OFFSET (MonoContext, fregs) + (i * 8));
+		arm_ldrfpx (code, ARMREG_D8 + i, ARMREG_R0, MONO_STRUCT_OFFSET (MonoContext, fregs) + ((i + 8) * 8));
 	mono_arm_patch (labels [0], code, MONO_R_ARM64_CBZ);
 	/* Load fp */
 	arm_ldrx (code, ARMREG_FP, ARMREG_R0, MONO_STRUCT_OFFSET (MonoContext, regs) + (ARMREG_FP * 8));
