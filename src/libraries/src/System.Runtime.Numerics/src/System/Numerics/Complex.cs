@@ -27,7 +27,7 @@ namespace System.Numerics
         // This is the largest x for which 2 x^2 will not overflow. It is used for branching inside Asin and Acos.
         private static readonly double s_asinOverflowThreshold = Math.Sqrt(double.MaxValue) / 2.0;
 
-        // This constant is used inside Asin and Acos.
+        // This value is used inside Asin and Acos.
         private static readonly double s_log2 = Math.Log(2.0);
 
         private double _real;
@@ -168,7 +168,7 @@ namespace System.Numerics
             // Compute log(1 + x) without loss of accuracy when x is small.
 
             // Our only use case so far is for positive values, so this isn't coded to handle negative values.
-            Debug.Assert(!(x < 0.0));
+            Debug.Assert((x >= 0.0) || double.IsNaN(x));
 
             double xp1 = 1.0 + x;
             if (xp1 == 1.0)
@@ -418,8 +418,8 @@ namespace System.Numerics
             // to determine u. Compute u = arcsin(beta) or u = arctan(beta') for arcsin, u = arccos(beta)
             // or arctan(1/beta') for arccos.
 
-            Debug.Assert(!(x < 0.0));
-            Debug.Assert(!(y < 0.0));
+            Debug.Assert((x >= 0.0) || double.IsNaN(x));
+            Debug.Assert((y >= 0.0) || double.IsNaN(y));
 
             // For x or y large enough to overflow alpha^2, we can simplify our formulas and avoid overflow.
             if ((x > s_asinOverflowThreshold) || (y > s_asinOverflowThreshold))
