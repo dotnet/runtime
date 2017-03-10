@@ -341,9 +341,11 @@ namespace System.Numerics.Tests
             yield return new object[] { double.MinValue, 0, double.NaN, double.NaN };
 
             // Invalid values
-            foreach (double invalidReal in s_invalidDoubleValues) {
+            foreach (double invalidReal in s_invalidDoubleValues)
+            {
                 yield return new object[] { invalidReal, 1, double.NaN, double.NaN }; // Invalid real
-                foreach (double invalidImaginary in s_invalidDoubleValues) {
+                foreach (double invalidImaginary in s_invalidDoubleValues)
+                {
                     yield return new object[] { 1, invalidImaginary, double.NaN, double.NaN }; // Invalid imaginary
                     yield return new object[] { invalidReal, invalidImaginary, double.NaN, double.NaN }; // Invalid real, invalid imaginary
                 }
@@ -352,7 +354,7 @@ namespace System.Numerics.Tests
 
         [Theory, MemberData("ACos_Legacy_TestData")]
         [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
-        public static void ACos_Legacy (double real, double imaginary, double expectedReal, double expectedImaginary)
+        public static void ACos_Legacy(double real, double imaginary, double expectedReal, double expectedImaginary)
         {
             var complex = new Complex(real, imaginary);
             Complex result = Complex.Acos(complex);
@@ -441,7 +443,8 @@ namespace System.Numerics.Tests
         [ActiveIssue(15455)]
         [Theory, MemberData(nameof(ASin_Advanced_TestData))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
-        public static void ASin_Advanced (double real, double imaginary, double expectedReal, double expectedImaginary) {
+        public static void ASin_Advanced(double real, double imaginary, double expectedReal, double expectedImaginary)
+        {
             var complex = new Complex(real, imaginary);
             Complex result = Complex.Asin(complex);
             VerifyRealImaginaryProperties(result, expectedReal, expectedImaginary);
@@ -467,7 +470,8 @@ namespace System.Numerics.Tests
 
         [Theory, MemberData("ASin_Legacy_TestData")]
         [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
-        public static void ASin_Legacy (double real, double imaginary, double expectedReal, double expectedImaginary) {
+        public static void ASin_Legacy(double real, double imaginary, double expectedReal, double expectedImaginary)
+        {
             var complex = new Complex(real, imaginary);
             Complex result = Complex.Asin(complex);
             VerifyRealImaginaryProperties(result, expectedReal, expectedImaginary);
@@ -1470,7 +1474,8 @@ namespace System.Numerics.Tests
 
         [Theory, MemberData(nameof(Tan_Legacy_TestData))]
         [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
-        public static void Tan_Legacy (double real, double imaginary, double expectedReal, double expectedImaginary) {
+        public static void Tan_Legacy(double real, double imaginary, double expectedReal, double expectedImaginary)
+        {
             var complex = new Complex(real, imaginary);
             Complex result = Complex.Tan(complex);
             VerifyRealImaginaryProperties(result, expectedReal, expectedImaginary);
@@ -1542,7 +1547,8 @@ namespace System.Numerics.Tests
 
         [Theory, MemberData(nameof(Tanh_Legacy_TestData))]
         [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
-        public static void Tanh_Legacy (double real, double imaginary, double expectedReal, double expectedImaginary) {
+        public static void Tanh_Legacy(double real, double imaginary, double expectedReal, double expectedImaginary)
+        {
             var complex = new Complex(real, imaginary);
             Complex result = Complex.Tanh(complex);
             VerifyRealImaginaryProperties(result, expectedReal, expectedImaginary);
