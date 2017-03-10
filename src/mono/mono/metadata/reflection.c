@@ -144,6 +144,9 @@ mono_class_free_ref_info (MonoClass *klass)
 }
 
 
+/**
+ * mono_custom_attrs_free:
+ */
 void
 mono_custom_attrs_free (MonoCustomAttrInfo *ainfo)
 {
@@ -1824,6 +1827,9 @@ mono_identifier_unescape_info (MonoTypeNameParse *info)
 		g_list_foreach(info->nested, &unescape_each_nested_name, NULL);
 }
 
+/**
+ * mono_reflection_parse_type:
+ */
 int
 mono_reflection_parse_type (char *name, MonoTypeNameParse *info)
 {
@@ -2008,17 +2014,16 @@ mono_reflection_get_type_internal (MonoImage *rootimage, MonoImage* image, MonoT
 	return &klass->byval_arg;
 }
 
-/*
+/**
  * mono_reflection_get_type:
- * @image: a metadata context
- * @info: type description structure
- * @ignorecase: flag for case-insensitive string compares
- * @type_resolve: whenever type resolve was already tried
+ * \param image a metadata context
+ * \param info type description structure
+ * \param ignorecase flag for case-insensitive string compares
+ * \param type_resolve whenever type resolve was already tried
  *
- * Build a MonoType from the type description in @info.
+ * Build a MonoType from the type description in \p info.
  * 
  */
-
 MonoType*
 mono_reflection_get_type (MonoImage* image, MonoTypeNameParse *info, gboolean ignorecase, gboolean *type_resolve) {
 	MonoError error;
@@ -2172,6 +2177,9 @@ mono_reflection_get_type_with_rootimage (MonoImage *rootimage, MonoImage* image,
 	return type;
 }
 
+/**
+ * mono_reflection_free_type_info:
+ */
 void
 mono_reflection_free_type_info (MonoTypeNameParse *info)
 {
@@ -2193,13 +2201,13 @@ mono_reflection_free_type_info (MonoTypeNameParse *info)
 	}
 }
 
-/*
+/**
  * mono_reflection_type_from_name:
- * @name: type name.
- * @image: a metadata context (can be NULL).
+ * \param name type name.
+ * \param image a metadata context (can be NULL).
  *
- * Retrieves a MonoType from its @name. If the name is not fully qualified,
- * it defaults to get the type from @image or, if @image is NULL or loading
+ * Retrieves a \c MonoType from its \p name. If the name is not fully qualified,
+ * it defaults to get the type from \p image or, if \p image is NULL or loading
  * from it fails, uses corlib.
  * 
  */
@@ -2247,10 +2255,9 @@ mono_reflection_type_from_name_checked (char *name, MonoImage *image, MonoError 
 	return type;
 }
 
-/*
+/**
  * mono_reflection_get_token:
- *
- *   Return the metadata token of OBJ which should be an object
+ * \returns the metadata token of \p obj which should be an object
  * representing a metadata element.
  */
 guint32

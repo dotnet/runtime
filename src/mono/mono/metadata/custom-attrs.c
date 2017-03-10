@@ -1056,6 +1056,9 @@ mono_custom_attrs_construct_by_type (MonoCustomAttrInfo *cinfo, MonoClass *attr_
 	return result;
 }
 
+/**
+ * mono_custom_attrs_construct:
+ */
 MonoArray*
 mono_custom_attrs_construct (MonoCustomAttrInfo *cinfo)
 {
@@ -1176,6 +1179,9 @@ mono_custom_attrs_from_index_checked (MonoImage *image, guint32 idx, gboolean ig
 	return ainfo;
 }
 
+/**
+ * mono_custom_attrs_from_method:
+ */
 MonoCustomAttrInfo*
 mono_custom_attrs_from_method (MonoMethod *method)
 {
@@ -1214,6 +1220,9 @@ mono_custom_attrs_from_method_checked (MonoMethod *method, MonoError *error)
 	return mono_custom_attrs_from_index_checked (method->klass->image, idx, FALSE, error);
 }
 
+/**
+ * mono_custom_attrs_from_class:
+ */
 MonoCustomAttrInfo*
 mono_custom_attrs_from_class (MonoClass *klass)
 {
@@ -1248,6 +1257,9 @@ mono_custom_attrs_from_class_checked (MonoClass *klass, MonoError *error)
 	return mono_custom_attrs_from_index_checked (klass->image, idx, FALSE, error);
 }
 
+/**
+ * mono_custom_attrs_from_assembly:
+ */
 MonoCustomAttrInfo*
 mono_custom_attrs_from_assembly (MonoAssembly *assembly)
 {
@@ -1285,6 +1297,9 @@ mono_custom_attrs_from_module (MonoImage *image, MonoError *error)
 	return mono_custom_attrs_from_index_checked (image, idx, FALSE, error);
 }
 
+/**
+ * mono_custom_attrs_from_property:
+ */
 MonoCustomAttrInfo*
 mono_custom_attrs_from_property (MonoClass *klass, MonoProperty *property)
 {
@@ -1309,6 +1324,9 @@ mono_custom_attrs_from_property_checked (MonoClass *klass, MonoProperty *propert
 	return mono_custom_attrs_from_index_checked (klass->image, idx, FALSE, error);
 }
 
+/**
+ * mono_custom_attrs_from_event:
+ */
 MonoCustomAttrInfo*
 mono_custom_attrs_from_event (MonoClass *klass, MonoEvent *event)
 {
@@ -1333,6 +1351,9 @@ mono_custom_attrs_from_event_checked (MonoClass *klass, MonoEvent *event, MonoEr
 	return mono_custom_attrs_from_index_checked (klass->image, idx, FALSE, error);
 }
 
+/**
+ * mono_custom_attrs_from_field:
+ */
 MonoCustomAttrInfo*
 mono_custom_attrs_from_field (MonoClass *klass, MonoClassField *field)
 {
@@ -1454,6 +1475,9 @@ mono_custom_attrs_from_param_checked (MonoMethod *method, guint32 param, MonoErr
 	return mono_custom_attrs_from_index_checked (image, idx, FALSE, error);
 }
 
+/**
+ * mono_custom_attrs_has_attr:
+ */
 gboolean
 mono_custom_attrs_has_attr (MonoCustomAttrInfo *ainfo, MonoClass *attr_klass)
 {
@@ -1469,6 +1493,9 @@ mono_custom_attrs_has_attr (MonoCustomAttrInfo *ainfo, MonoClass *attr_klass)
 	return FALSE;
 }
 
+/**
+ * mono_custom_attrs_get_attr:
+ */
 MonoObject*
 mono_custom_attrs_get_attr (MonoCustomAttrInfo *ainfo, MonoClass *attr_klass)
 {
@@ -1502,12 +1529,12 @@ mono_custom_attrs_get_attr_checked (MonoCustomAttrInfo *ainfo, MonoClass *attr_k
 	return create_custom_attr (ainfo->image, centry->ctor, centry->data, centry->data_size, error);
 }
 
-/*
+/**
  * mono_reflection_get_custom_attrs_info:
- * @obj: a reflection object handle
+ * \param obj a reflection object handle
  *
- * Return the custom attribute info for attributes defined for the
- * reflection handle @obj. The objects.
+ * \returns the custom attribute info for attributes defined for the
+ * reflection handle \p obj. The objects.
  *
  * FIXME this function leaks like a sieve for SRE objects.
  */
@@ -1633,12 +1660,11 @@ mono_reflection_get_custom_attrs_info_checked (MonoObject *obj, MonoError *error
 	return cinfo;
 }
 
-/*
+/**
  * mono_reflection_get_custom_attrs_by_type:
- * @obj: a reflection object handle
- *
- * Return an array with all the custom attributes defined of the
- * reflection handle @obj. If @attr_klass is non-NULL, only custom attributes 
+ * \param obj a reflection object handle
+ * \returns an array with all the custom attributes defined of the
+ * reflection handle \p obj. If \p attr_klass is non-NULL, only custom attributes 
  * of that type are returned. The objects are fully build. Return NULL if a loading error
  * occurs.
  */
@@ -1665,12 +1691,11 @@ mono_reflection_get_custom_attrs_by_type (MonoObject *obj, MonoClass *attr_klass
 	return result;
 }
 
-/*
+/**
  * mono_reflection_get_custom_attrs:
- * @obj: a reflection object handle
- *
- * Return an array with all the custom attributes defined of the
- * reflection handle @obj. The objects are fully build. Return NULL if a loading error
+ * \param obj a reflection object handle
+ * \return an array with all the custom attributes defined of the
+ * reflection handle \p obj. The objects are fully build. Return NULL if a loading error
  * occurs.
  */
 MonoArray*
@@ -1681,11 +1706,10 @@ mono_reflection_get_custom_attrs (MonoObject *obj)
 	return mono_reflection_get_custom_attrs_by_type (obj, NULL, &error);
 }
 
-/*
+/**
  * mono_reflection_get_custom_attrs_data:
- * @obj: a reflection obj handle
- *
- * Returns an array of System.Reflection.CustomAttributeData,
+ * \param obj a reflection obj handle
+ * \returns an array of \c System.Reflection.CustomAttributeData,
  * which include information about attributes reflected on
  * types loaded using the Reflection Only methods
  */
