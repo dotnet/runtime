@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Net.Mime;
+using System.Runtime.ExceptionServices;
 using System.Text;
 
 namespace System.Net.Mail
@@ -372,9 +373,9 @@ namespace System.Net.Mail
 
                 castedAsyncResult.InternalWaitForCompletion();
                 castedAsyncResult.EndCalled = true;
-                if (castedAsyncResult.Result is Exception)
+                if (castedAsyncResult.Result is Exception e)
                 {
-                    throw (Exception)castedAsyncResult.Result;
+                    ExceptionDispatchInfo.Capture(e).Throw();
                 }
             }
         }

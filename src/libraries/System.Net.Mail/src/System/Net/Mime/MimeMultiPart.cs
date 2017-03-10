@@ -6,6 +6,7 @@ using System.IO;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 
 namespace System.Net.Mime
@@ -62,7 +63,7 @@ namespace System.Net.Mime
 
             if (context._completed)
             {
-                throw e;
+                ExceptionDispatchInfo.Capture(e).Throw();
             }
 
             try
