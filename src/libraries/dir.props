@@ -70,16 +70,6 @@
   <!-- Provides package dependency version properties and verification/auto-upgrade configuration -->
   <Import Project="$(MSBuildThisFileDirectory)dependencies.props" />
 
-  <!-- Explicitly setting
-       - SupportsUWP to true when TargetGroup is uap101*. This will enable the correct pinvoke checker to be picked
-       - BlockReflectionAttribute to true. This will enable injecting BlockReflectionAttribute.cs into the compile target.
-       TODO: Both of these properties are being set in buildtools targets, however they need to be updated to reflect uap101 changes.
-  -->
-  <PropertyGroup Condition="'$(TargetGroup)' == 'uap101' or '$(TargetGroup)' == 'uap101aot'">
-    <SupportsUWP>true</SupportsUWP>
-    <BlockReflectionAttribute>true</BlockReflectionAttribute>
-  </PropertyGroup>
-
   <!-- list of nuget package sources passed to dnu -->
   <ItemGroup Condition="'$(ExcludeInternetFeeds)' != 'true'">
     <!-- Example to consume local CoreCLR package:

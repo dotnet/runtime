@@ -1680,7 +1680,7 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual<TypeWithCommonTypeProperties>(value, deserializedValue);
     }
 
-#if NET_NATIVE
+#if uapaot
     [Fact]
     public static void DCS_TypeWithTypeProperty()
     {

@@ -1,0 +1,12 @@
+kernel32.dll!ExpandEnvironmentStringsW
+kernel32.dll!FreeEnvironmentStringsW
+kernel32.dll!GetComputerNameW
+kernel32.dll!GetEnvironmentStringsW
+kernel32.dll!GetEnvironmentVariableW
+kernel32.dll!GetLogicalDrives
+kernel32.dll!GetSystemDirectoryW
+kernel32.dll!GetVersionExW
+kernel32.dll!IsWow64Process
+kernel32.dll!SetEnvironmentVariableW
+secur32.dll!GetUserNameExW
+shell32.dll!SHGetKnownFolderPath

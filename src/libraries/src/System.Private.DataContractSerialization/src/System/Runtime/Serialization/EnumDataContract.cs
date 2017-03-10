@@ -16,7 +16,7 @@ using System.Linq;
 
 namespace System.Runtime.Serialization
 {
-#if NET_NATIVE
+#if uapaot
     public sealed class EnumDataContract : DataContract
 #else
     internal sealed class EnumDataContract : DataContract

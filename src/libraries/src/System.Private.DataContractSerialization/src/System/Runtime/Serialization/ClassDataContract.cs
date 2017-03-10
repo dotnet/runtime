@@ -18,7 +18,7 @@ namespace System.Runtime.Serialization
     using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.XmlQualifiedName, DataContract>;
     using System.Linq;
 
-#if USE_REFEMIT || NET_NATIVE
+#if USE_REFEMIT || uapaot
     public sealed class ClassDataContract : DataContract
 #else
     internal sealed class ClassDataContract : DataContract
@@ -36,7 +36,7 @@ namespace System.Runtime.Serialization
 
         private bool _isScriptObject;
 
-#if NET_NATIVE
+#if uapaot
         public ClassDataContract() : base(new ClassDataContractCriticalHelper())
         {
             InitClassDataContract();
@@ -129,7 +129,7 @@ namespace System.Runtime.Serialization
             get { return _helper.ExtensionDataSetMethod; }
         }
 
-#if !NET_NATIVE
+#if !uapaot
         public override DataContractDictionary KnownDataContracts
         {
             get
@@ -149,7 +149,7 @@ namespace System.Runtime.Serialization
             { return _helper.IsNonAttributedType; }
         }
 
-#if NET_NATIVE
+#if uapaot
         public bool HasDataContract
         {
             get
@@ -242,7 +242,7 @@ namespace System.Runtime.Serialization
             return true;
         }
 
-#if NET_NATIVE
+#if uapaot
         private XmlFormatClassWriterDelegate _xmlFormatWriterDelegate;
         public XmlFormatClassWriterDelegate XmlFormatWriterDelegate
 #else
@@ -251,7 +251,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-#if NET_NATIVE
+#if uapaot
                 if (DataContractSerializer.Option == SerializationOption.CodeGenOnly
                 || (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup && _xmlFormatWriterDelegate != null))
                 {
@@ -274,13 +274,13 @@ namespace System.Runtime.Serialization
             }
             set
             {
-#if NET_NATIVE
+#if uapaot
                 _xmlFormatWriterDelegate = value;
 #endif
             }
         }
 
-#if NET_NATIVE
+#if uapaot
         private XmlFormatClassReaderDelegate _xmlFormatReaderDelegate;
         public XmlFormatClassReaderDelegate XmlFormatReaderDelegate
 #else
@@ -289,7 +289,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-#if NET_NATIVE
+#if uapaot
                 if (DataContractSerializer.Option == SerializationOption.CodeGenOnly
                 || (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup && _xmlFormatReaderDelegate != null))
                 {
@@ -312,7 +312,7 @@ namespace System.Runtime.Serialization
             }
             set
             {
-#if NET_NATIVE
+#if uapaot
                 _xmlFormatReaderDelegate = value;
 #endif
             }
@@ -1361,7 +1361,7 @@ namespace System.Runtime.Serialization
             internal bool HasDataContract
             {
                 get { return _hasDataContract; }
-#if NET_NATIVE
+#if uapaot
                 set { _hasDataContract = value; }
 #endif
             }
@@ -1551,7 +1551,7 @@ namespace System.Runtime.Serialization
             internal static DataMemberComparer Singleton = new DataMemberComparer();
         }
 
-#if !NET_NATIVE
+#if !uapaot
         /// <summary>
         ///  Get object type for Xml/JsonFormmatReaderGenerator
         /// </summary>

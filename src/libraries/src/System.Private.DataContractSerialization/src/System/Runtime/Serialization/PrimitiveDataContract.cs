@@ -11,7 +11,7 @@ using System.Xml;
 
 namespace System.Runtime.Serialization
 {
-#if NET_NATIVE
+#if uapaot
     public abstract class PrimitiveDataContract : DataContract
 #else
     internal abstract class PrimitiveDataContract : DataContract
@@ -152,7 +152,7 @@ namespace System.Runtime.Serialization
         }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class CharDataContract : PrimitiveDataContract
 #else
     internal class CharDataContract : PrimitiveDataContract
@@ -186,7 +186,7 @@ namespace System.Runtime.Serialization
         }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class AsmxCharDataContract : CharDataContract
 #else
     internal class AsmxCharDataContract : CharDataContract
@@ -195,7 +195,7 @@ namespace System.Runtime.Serialization
         internal AsmxCharDataContract() : base(DictionaryGlobals.CharLocalName, DictionaryGlobals.AsmxTypesNamespace) { }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class BooleanDataContract : PrimitiveDataContract
 #else
     internal class BooleanDataContract : PrimitiveDataContract
@@ -225,7 +225,7 @@ namespace System.Runtime.Serialization
         }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class SignedByteDataContract : PrimitiveDataContract
 #else
     internal class SignedByteDataContract : PrimitiveDataContract
@@ -255,7 +255,7 @@ namespace System.Runtime.Serialization
         }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class UnsignedByteDataContract : PrimitiveDataContract
 #else
     internal class UnsignedByteDataContract : PrimitiveDataContract
@@ -285,7 +285,7 @@ namespace System.Runtime.Serialization
         }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class ShortDataContract : PrimitiveDataContract
 #else
     internal class ShortDataContract : PrimitiveDataContract
@@ -315,7 +315,7 @@ namespace System.Runtime.Serialization
         }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class UnsignedShortDataContract : PrimitiveDataContract
 #else
     internal class UnsignedShortDataContract : PrimitiveDataContract
@@ -384,7 +384,7 @@ namespace System.Runtime.Serialization
         }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class IntDataContract : PrimitiveDataContract
 #else
     internal class IntDataContract : PrimitiveDataContract
@@ -414,7 +414,7 @@ namespace System.Runtime.Serialization
         }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class UnsignedIntDataContract : PrimitiveDataContract
 #else
     internal class UnsignedIntDataContract : PrimitiveDataContract
@@ -444,7 +444,7 @@ namespace System.Runtime.Serialization
         }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class LongDataContract : PrimitiveDataContract
 #else
     internal class LongDataContract : PrimitiveDataContract
@@ -478,7 +478,7 @@ namespace System.Runtime.Serialization
         }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class IntegerDataContract : LongDataContract
 #else
     internal class IntegerDataContract : LongDataContract
@@ -487,7 +487,7 @@ namespace System.Runtime.Serialization
         internal IntegerDataContract() : base(DictionaryGlobals.integerLocalName, DictionaryGlobals.SchemaNamespace) { }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class PositiveIntegerDataContract : LongDataContract
 #else
     internal class PositiveIntegerDataContract : LongDataContract
@@ -496,7 +496,7 @@ namespace System.Runtime.Serialization
         internal PositiveIntegerDataContract() : base(DictionaryGlobals.positiveIntegerLocalName, DictionaryGlobals.SchemaNamespace) { }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class NegativeIntegerDataContract : LongDataContract
 #else
     internal class NegativeIntegerDataContract : LongDataContract
@@ -505,7 +505,7 @@ namespace System.Runtime.Serialization
         internal NegativeIntegerDataContract() : base(DictionaryGlobals.negativeIntegerLocalName, DictionaryGlobals.SchemaNamespace) { }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class NonPositiveIntegerDataContract : LongDataContract
 #else
     internal class NonPositiveIntegerDataContract : LongDataContract
@@ -514,7 +514,7 @@ namespace System.Runtime.Serialization
         internal NonPositiveIntegerDataContract() : base(DictionaryGlobals.nonPositiveIntegerLocalName, DictionaryGlobals.SchemaNamespace) { }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class NonNegativeIntegerDataContract : LongDataContract
 #else
     internal class NonNegativeIntegerDataContract : LongDataContract
@@ -523,7 +523,7 @@ namespace System.Runtime.Serialization
         internal NonNegativeIntegerDataContract() : base(DictionaryGlobals.nonNegativeIntegerLocalName, DictionaryGlobals.SchemaNamespace) { }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class UnsignedLongDataContract : PrimitiveDataContract
 #else
     internal class UnsignedLongDataContract : PrimitiveDataContract
@@ -553,7 +553,7 @@ namespace System.Runtime.Serialization
         }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class FloatDataContract : PrimitiveDataContract
 #else
     internal class FloatDataContract : PrimitiveDataContract
@@ -583,7 +583,7 @@ namespace System.Runtime.Serialization
         }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class DoubleDataContract : PrimitiveDataContract
 #else
     internal class DoubleDataContract : PrimitiveDataContract
@@ -613,7 +613,7 @@ namespace System.Runtime.Serialization
         }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class DecimalDataContract : PrimitiveDataContract
 #else
     internal class DecimalDataContract : PrimitiveDataContract
@@ -643,7 +643,7 @@ namespace System.Runtime.Serialization
         }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class DateTimeDataContract : PrimitiveDataContract
 #else
     internal class DateTimeDataContract : PrimitiveDataContract
@@ -673,7 +673,7 @@ namespace System.Runtime.Serialization
         }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class StringDataContract : PrimitiveDataContract
 #else
     internal class StringDataContract : PrimitiveDataContract
@@ -713,7 +713,7 @@ namespace System.Runtime.Serialization
         }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class TimeDataContract : StringDataContract
 #else
     internal class TimeDataContract : StringDataContract
@@ -722,7 +722,7 @@ namespace System.Runtime.Serialization
         internal TimeDataContract() : base(DictionaryGlobals.timeLocalName, DictionaryGlobals.SchemaNamespace) { }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class DateDataContract : StringDataContract
 #else
     internal class DateDataContract : StringDataContract
@@ -736,7 +736,7 @@ namespace System.Runtime.Serialization
         internal HexBinaryDataContract() : base(DictionaryGlobals.hexBinaryLocalName, DictionaryGlobals.SchemaNamespace) { }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class GYearMonthDataContract : StringDataContract
 #else
     internal class GYearMonthDataContract : StringDataContract
@@ -745,7 +745,7 @@ namespace System.Runtime.Serialization
         internal GYearMonthDataContract() : base(DictionaryGlobals.gYearMonthLocalName, DictionaryGlobals.SchemaNamespace) { }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class GYearDataContract : StringDataContract
 #else
     internal class GYearDataContract : StringDataContract
@@ -754,7 +754,7 @@ namespace System.Runtime.Serialization
         internal GYearDataContract() : base(DictionaryGlobals.gYearLocalName, DictionaryGlobals.SchemaNamespace) { }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class GMonthDayDataContract : StringDataContract
 #else
     internal class GMonthDayDataContract : StringDataContract
@@ -763,7 +763,7 @@ namespace System.Runtime.Serialization
         internal GMonthDayDataContract() : base(DictionaryGlobals.gMonthDayLocalName, DictionaryGlobals.SchemaNamespace) { }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class GDayDataContract : StringDataContract
 #else
     internal class GDayDataContract : StringDataContract
@@ -772,7 +772,7 @@ namespace System.Runtime.Serialization
         internal GDayDataContract() : base(DictionaryGlobals.gDayLocalName, DictionaryGlobals.SchemaNamespace) { }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class GMonthDataContract : StringDataContract
 #else
     internal class GMonthDataContract : StringDataContract
@@ -781,7 +781,7 @@ namespace System.Runtime.Serialization
         internal GMonthDataContract() : base(DictionaryGlobals.gMonthLocalName, DictionaryGlobals.SchemaNamespace) { }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class NormalizedStringDataContract : StringDataContract
 #else
     internal class NormalizedStringDataContract : StringDataContract
@@ -790,7 +790,7 @@ namespace System.Runtime.Serialization
         internal NormalizedStringDataContract() : base(DictionaryGlobals.normalizedStringLocalName, DictionaryGlobals.SchemaNamespace) { }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class TokenDataContract : StringDataContract
 #else
     internal class TokenDataContract : StringDataContract
@@ -799,7 +799,7 @@ namespace System.Runtime.Serialization
         internal TokenDataContract() : base(DictionaryGlobals.tokenLocalName, DictionaryGlobals.SchemaNamespace) { }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class LanguageDataContract : StringDataContract
 #else
     internal class LanguageDataContract : StringDataContract
@@ -808,7 +808,7 @@ namespace System.Runtime.Serialization
         internal LanguageDataContract() : base(DictionaryGlobals.languageLocalName, DictionaryGlobals.SchemaNamespace) { }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class NameDataContract : StringDataContract
 #else
     internal class NameDataContract : StringDataContract
@@ -817,7 +817,7 @@ namespace System.Runtime.Serialization
         internal NameDataContract() : base(DictionaryGlobals.NameLocalName, DictionaryGlobals.SchemaNamespace) { }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class NCNameDataContract : StringDataContract
 #else
     internal class NCNameDataContract : StringDataContract
@@ -826,7 +826,7 @@ namespace System.Runtime.Serialization
         internal NCNameDataContract() : base(DictionaryGlobals.NCNameLocalName, DictionaryGlobals.SchemaNamespace) { }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class IDDataContract : StringDataContract
 #else
     internal class IDDataContract : StringDataContract
@@ -835,7 +835,7 @@ namespace System.Runtime.Serialization
         internal IDDataContract() : base(DictionaryGlobals.XSDIDLocalName, DictionaryGlobals.SchemaNamespace) { }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class IDREFDataContract : StringDataContract
 #else
     internal class IDREFDataContract : StringDataContract
@@ -844,7 +844,7 @@ namespace System.Runtime.Serialization
         internal IDREFDataContract() : base(DictionaryGlobals.IDREFLocalName, DictionaryGlobals.SchemaNamespace) { }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class IDREFSDataContract : StringDataContract
 #else
     internal class IDREFSDataContract : StringDataContract
@@ -853,7 +853,7 @@ namespace System.Runtime.Serialization
         internal IDREFSDataContract() : base(DictionaryGlobals.IDREFSLocalName, DictionaryGlobals.SchemaNamespace) { }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class ENTITYDataContract : StringDataContract
 #else
     internal class ENTITYDataContract : StringDataContract
@@ -862,7 +862,7 @@ namespace System.Runtime.Serialization
         internal ENTITYDataContract() : base(DictionaryGlobals.ENTITYLocalName, DictionaryGlobals.SchemaNamespace) { }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class ENTITIESDataContract : StringDataContract
 #else
     internal class ENTITIESDataContract : StringDataContract
@@ -871,7 +871,7 @@ namespace System.Runtime.Serialization
         internal ENTITIESDataContract() : base(DictionaryGlobals.ENTITIESLocalName, DictionaryGlobals.SchemaNamespace) { }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class NMTOKENDataContract : StringDataContract
 #else
     internal class NMTOKENDataContract : StringDataContract
@@ -880,7 +880,7 @@ namespace System.Runtime.Serialization
         internal NMTOKENDataContract() : base(DictionaryGlobals.NMTOKENLocalName, DictionaryGlobals.SchemaNamespace) { }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class NMTOKENSDataContract : StringDataContract
 #else
     internal class NMTOKENSDataContract : StringDataContract
@@ -889,7 +889,7 @@ namespace System.Runtime.Serialization
         internal NMTOKENSDataContract() : base(DictionaryGlobals.NMTOKENSLocalName, DictionaryGlobals.SchemaNamespace) { }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class ByteArrayDataContract : PrimitiveDataContract
 #else
     internal class ByteArrayDataContract : PrimitiveDataContract
@@ -927,7 +927,7 @@ namespace System.Runtime.Serialization
         }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class ObjectDataContract : PrimitiveDataContract
 #else
     internal class ObjectDataContract : PrimitiveDataContract
@@ -982,7 +982,7 @@ namespace System.Runtime.Serialization
         }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class TimeSpanDataContract : PrimitiveDataContract
 #else
     internal class TimeSpanDataContract : PrimitiveDataContract
@@ -1016,7 +1016,7 @@ namespace System.Runtime.Serialization
         }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class XsDurationDataContract : TimeSpanDataContract
 #else
     internal class XsDurationDataContract : TimeSpanDataContract
@@ -1025,7 +1025,7 @@ namespace System.Runtime.Serialization
         public XsDurationDataContract() : base(DictionaryGlobals.TimeSpanLocalName, DictionaryGlobals.SchemaNamespace) { }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class GuidDataContract : PrimitiveDataContract
 #else
     internal class GuidDataContract : PrimitiveDataContract
@@ -1059,7 +1059,7 @@ namespace System.Runtime.Serialization
         }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class AsmxGuidDataContract : GuidDataContract
 #else
     internal class AsmxGuidDataContract : GuidDataContract
@@ -1068,7 +1068,7 @@ namespace System.Runtime.Serialization
         internal AsmxGuidDataContract() : base(DictionaryGlobals.GuidLocalName, DictionaryGlobals.AsmxTypesNamespace) { }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class UriDataContract : PrimitiveDataContract
 #else
     internal class UriDataContract : PrimitiveDataContract
@@ -1104,7 +1104,7 @@ namespace System.Runtime.Serialization
         }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class QNameDataContract : PrimitiveDataContract
 #else
     internal class QNameDataContract : PrimitiveDataContract

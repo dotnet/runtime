@@ -16,7 +16,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime.Serialization
 {
-#if USE_REFEMIT || NET_NATIVE
+#if USE_REFEMIT || uapaot
     public class XmlObjectSerializerWriteContextComplex : XmlObjectSerializerWriteContext
 #else
     internal class XmlObjectSerializerWriteContextComplex : XmlObjectSerializerWriteContext
@@ -53,7 +53,7 @@ namespace System.Runtime.Serialization
             return false;
         }
 
-#if NET_NATIVE
+#if uapaot
         public override void WriteAnyType(XmlWriterDelegator xmlWriter, object value)
 #else
         internal override void WriteAnyType(XmlWriterDelegator xmlWriter, object value)
@@ -63,7 +63,7 @@ namespace System.Runtime.Serialization
                 xmlWriter.WriteAnyType(value);
         }
 
-#if NET_NATIVE
+#if uapaot
         public override void WriteString(XmlWriterDelegator xmlWriter, string value)
 #else
         internal override void WriteString(XmlWriterDelegator xmlWriter, string value)
@@ -73,7 +73,7 @@ namespace System.Runtime.Serialization
                 xmlWriter.WriteString(value);
         }
 
-#if NET_NATIVE
+#if uapaot
         public override void WriteString(XmlWriterDelegator xmlWriter, string value, XmlDictionaryString name, XmlDictionaryString ns)
 #else
         internal override void WriteString(XmlWriterDelegator xmlWriter, string value, XmlDictionaryString name, XmlDictionaryString ns)
@@ -90,7 +90,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-#if NET_NATIVE
+#if uapaot
         public override void WriteBase64(XmlWriterDelegator xmlWriter, byte[] value)
 #else
         internal override void WriteBase64(XmlWriterDelegator xmlWriter, byte[] value)
@@ -100,7 +100,7 @@ namespace System.Runtime.Serialization
                 xmlWriter.WriteBase64(value);
         }
 
-#if NET_NATIVE
+#if uapaot
         public override void WriteBase64(XmlWriterDelegator xmlWriter, byte[] value, XmlDictionaryString name, XmlDictionaryString ns)
 #else
         internal override void WriteBase64(XmlWriterDelegator xmlWriter, byte[] value, XmlDictionaryString name, XmlDictionaryString ns)
@@ -117,7 +117,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-#if NET_NATIVE
+#if uapaot
         public override void WriteUri(XmlWriterDelegator xmlWriter, Uri value)
 #else
         internal override void WriteUri(XmlWriterDelegator xmlWriter, Uri value)
@@ -127,7 +127,7 @@ namespace System.Runtime.Serialization
                 xmlWriter.WriteUri(value);
         }
 
-#if NET_NATIVE
+#if uapaot
         public override void WriteUri(XmlWriterDelegator xmlWriter, Uri value, XmlDictionaryString name, XmlDictionaryString ns)
 #else
         internal override void WriteUri(XmlWriterDelegator xmlWriter, Uri value, XmlDictionaryString name, XmlDictionaryString ns)
@@ -144,7 +144,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-#if NET_NATIVE
+#if uapaot
         public override void WriteQName(XmlWriterDelegator xmlWriter, XmlQualifiedName value)
 #else
         internal override void WriteQName(XmlWriterDelegator xmlWriter, XmlQualifiedName value)
@@ -154,7 +154,7 @@ namespace System.Runtime.Serialization
                 xmlWriter.WriteQName(value);
         }
 
-#if NET_NATIVE
+#if uapaot
         public override void WriteQName(XmlWriterDelegator xmlWriter, XmlQualifiedName value, XmlDictionaryString name, XmlDictionaryString ns)
 #else
         internal override void WriteQName(XmlWriterDelegator xmlWriter, XmlQualifiedName value, XmlDictionaryString name, XmlDictionaryString ns)

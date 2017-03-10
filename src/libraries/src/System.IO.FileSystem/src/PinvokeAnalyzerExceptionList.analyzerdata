@@ -1,0 +1,7 @@
+kernel32.dll!CopyFileExW
+kernel32.dll!CreateFileW
+kernel32.dll!DeleteVolumeMountPointW
+kernel32.dll!GetLogicalDrives
+kernel32.dll!LockFile
+kernel32.dll!SetErrorMode
+kernel32.dll!UnlockFile

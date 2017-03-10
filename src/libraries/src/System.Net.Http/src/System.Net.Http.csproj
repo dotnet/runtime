@@ -25,7 +25,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(TargetGroup)' == 'uap'">
-    <DefineConstants>$(DefineConstants);NETNative;NETNative_SystemNetHttp</DefineConstants>
+    <DefineConstants>$(DefineConstants);uap</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <!-- Shims -->
@@ -342,7 +342,7 @@
       <Link>Common\Microsoft\Win32\SafeHandles\Asn1SafeHandles.Unix.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'uap'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'uap'" >
     <Reference Include="Windows" />
     <Reference Include="mscorlib" />
     <Reference Include="System.Runtime.WindowsRuntime" />
