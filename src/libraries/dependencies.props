@@ -20,7 +20,7 @@
     <CoreFxCurrentRef>06dfe36bf68cb6275cbcb17128e5b4d07dd6781d</CoreFxCurrentRef>
     <CoreClrCurrentRef>546541cc58ee5728d69d6760527bbd335b482dfa</CoreClrCurrentRef>
     <ExternalCurrentRef>3b8a99621d89ad9877f053ba8af25e0f25dcd9d8</ExternalCurrentRef>
-    <ProjectNTfsCurrentRef>b8333c7dbe5128bb42db4ee143675b7ddca23f74</ProjectNTfsCurrentRef>
+    <ProjectNTfsCurrentRef>3cff9b98a29b8ba097927ad16c6adb3e7db0f419</ProjectNTfsCurrentRef>
     <SniCurrentRef>05650e53f2aa4497f74cd6e9b053d3f69f64b0bd</SniCurrentRef>
     <StandardCurrentRef>d7811ef3b568bceafcc74fa6aa801ef0b8421649</StandardCurrentRef>
   </PropertyGroup>
@@ -30,7 +30,7 @@
     <CoreFxExpectedPrerelease>beta-25109-09</CoreFxExpectedPrerelease>
     <CoreClrExpectedPrerelease>beta-25109-03</CoreClrExpectedPrerelease>
     <ExternalExpectedPrerelease>beta-25016-01</ExternalExpectedPrerelease>
-    <ProjectNTfsExpectedPrerelease>beta-25109-00</ProjectNTfsExpectedPrerelease>
+    <ProjectNTfsExpectedPrerelease>beta-25110-00</ProjectNTfsExpectedPrerelease>
     <NETStandardPackageVersion>2.0.0-beta-25109-01</NETStandardPackageVersion>
     <NETStandardPackageId>NETStandard.Library</NETStandardPackageId>
     <!-- Use the SNI runtime package -->
