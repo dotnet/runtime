@@ -608,7 +608,7 @@ mono_arch_unwindinfo_validate_size (GSList *unwind_ops, guint max_size)
 #define MONO_MAX_TRAMPOLINE_UNWINDINFO_SIZE 0
 
 inline gboolean
-mono_arch_unwindinfo_validate_unwindinfo_size (GSList *unwind_ops, guint max_size)
+mono_arch_unwindinfo_validate_size (GSList *unwind_ops, guint max_size)
 {
 	return TRUE;
 }
