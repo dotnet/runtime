@@ -7035,7 +7035,7 @@ mono_string_to_utf8_mp_ignore (MonoMemPool *mp, MonoString *s)
  * mono_string_to_utf16:
  * \param s a \c MonoString
  * \returns a null-terminated array of the UTF-16 chars
- * contained in \param s. The result must be freed with \c g_free().
+ * contained in \p s. The result must be freed with \c g_free().
  * This is a temporary helper until our string implementation
  * is reworked to always include the null-terminating char.
  */
