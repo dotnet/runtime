@@ -197,10 +197,28 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 ThrowIfInvalid();
 
+                if (!HasPrivateKey)
+                    return null;
+
                 if (_lazyPrivateKey == null)
                 {
-                    _lazyPrivateKey = Pal.GetPrivateKey();
+                    switch (GetKeyAlgorithm())
+                    {
+                        case Oids.RsaRsa:
+                            _lazyPrivateKey = Pal.GetRSAPrivateKey();
+                            break;
+                        case Oids.DsaDsa:
+                            _lazyPrivateKey = Pal.GetDSAPrivateKey();
+                            break;
+                        default:
+                            // This includes ECDSA, because an Oids.Ecc key can be
+                            // many different algorithm kinds, not necessarily with mutual exclusion.
+                            //
+                            // Plus, .NET Framework only supports RSA and DSA in this property.
+                            throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
+                    }
                 }
+
                 return _lazyPrivateKey;
             }
             set
