@@ -4648,11 +4648,10 @@ mono_type_set_alignment (MonoTypeEnum type, int align)
 	}
 }
 
-/*
+/**
  * mono_type_size:
- * @t: the type to return the size of
- *
- * Returns: the number of bytes required to hold an instance of this
+ * \param t the type to return the size of
+ * \returns The number of bytes required to hold an instance of this
  * type in memory
  */
 int
@@ -4754,11 +4753,10 @@ mono_type_size (MonoType *t, int *align)
 	return 0;
 }
 
-/*
+/**
  * mono_type_stack_size:
- * @t: the type to return the size it uses on the stack
- *
- * Returns: the number of bytes required to hold an instance of this
+ * \param t the type to return the size it uses on the stack
+ * \returns The number of bytes required to hold an instance of this
  * type on the runtime stack
  */
 int
@@ -5660,11 +5658,12 @@ mono_metadata_implmap_from_method (MonoImage *meta, guint32 method_idx)
 }
 
 /**
- * @image: context where the image is created
- * @type_spec:  typespec token
- * @deprecated use mono_type_create_from_typespec_checked that has proper error handling
+ * mono_type_create_from_typespec:
+ * \param image context where the image is created
+ * \param type_spec  typespec token
+ * \deprecated use \c mono_type_create_from_typespec_checked that has proper error handling
  *
- * Creates a MonoType representing the TypeSpec indexed by the @type_spec
+ * Creates a \c MonoType representing the \c TypeSpec indexed by the \p type_spec
  * token.
  */
 MonoType *
@@ -5847,13 +5846,10 @@ mono_metadata_free_marshal_spec (MonoMarshalSpec *spec)
 
 /**
  * mono_type_to_unmanaged:
- *
- * Returns: A MonoMarshalNative enumeration value (MONO_NATIVE_) value
+ * The value pointed to by \p conv will contain the kind of marshalling required for this
+ * particular type one of the \c MONO_MARSHAL_CONV_ enumeration values.
+ * \returns A \c MonoMarshalNative enumeration value (<code>MONO_NATIVE_</code>) value
  * describing the underlying native reprensetation of the type.
- * 
- * In addition the value pointed by
- * "conv" will contain the kind of marshalling required for this
- * particular type one of the MONO_MARSHAL_CONV_ enumeration values.
  */
 guint32
 mono_type_to_unmanaged (MonoType *type, MonoMarshalSpec *mspec, gboolean as_field,
@@ -6425,7 +6421,6 @@ mono_get_shared_generic_inst (MonoGenericContainer *container)
 /**
  * mono_type_is_byref:
  * \param type the \c MonoType operated on
- *
  * \returns TRUE if \p type represents a type passed by reference,
  * FALSE otherwise.
  */
@@ -6438,8 +6433,8 @@ mono_type_is_byref (MonoType *type)
 /**
  * mono_type_get_type:
  * \param type the \c MonoType operated on
- * \returns the IL type value for \p type. This is one of the MonoTypeEnum
- * enum members like MONO_TYPE_I4 or MONO_TYPE_STRING.
+ * \returns the IL type value for \p type. This is one of the \c MonoTypeEnum
+ * enum members like \c MONO_TYPE_I4 or \c MONO_TYPE_STRING.
  */
 int
 mono_type_get_type (MonoType *type)
@@ -6465,7 +6460,7 @@ mono_type_get_signature (MonoType *type)
  * mono_type_get_class:
  * \param type the \c MonoType operated on
  * It is only valid to call this function if \p type is a \c MONO_TYPE_CLASS or a
- * \c MONO_TYPE_VALUETYPE . For more general functionality, use mono_class_from_mono_type(),
+ * \c MONO_TYPE_VALUETYPE . For more general functionality, use \c mono_class_from_mono_type,
  * instead.
  * \returns the \c MonoClass pointer that describes the class that \p type represents.
  */
@@ -6504,6 +6499,9 @@ mono_type_get_ptr_type (MonoType *type)
 	return type->data.type;
 }
 
+/**
+ * mono_type_get_modifiers:
+ */
 MonoClass*
 mono_type_get_modifiers (MonoType *type, gboolean *is_required, gpointer *iter)
 {

@@ -433,12 +433,12 @@ mono_type_normalize (MonoType *type)
 
 	return type;
 }
-/*
+
+/**
  * mono_type_get_object:
- * @domain: an app domain
- * @type: a type
- *
- * Return an System.MonoType object representing the type @type.
+ * \param domain an app domain
+ * \param type a type
+ * \returns A \c System.MonoType object representing the type \p type.
  */
 MonoReflectionType*
 mono_type_get_object (MonoDomain *domain, MonoType *type)

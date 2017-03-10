@@ -614,7 +614,6 @@ mono_type_get_full_name (MonoClass *klass)
 /**
  * mono_type_get_name:
  * \param type a type
- *
  * \returns The string representation for type as it would be represented in IL code.
  */
 char*
@@ -623,11 +622,10 @@ mono_type_get_name (MonoType *type)
 	return mono_type_get_name_full (type, MONO_TYPE_NAME_FORMAT_IL);
 }
 
-/*
+/**
  * mono_type_get_underlying_type:
- * @type: a type
- *
- * Returns: The MonoType for the underlying integer type if @type
+ * \param type a type
+ * \returns The \c MonoType for the underlying integer type if \p type
  * is an enum and byref is false, otherwise the type itself.
  */
 MonoType*

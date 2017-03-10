@@ -223,6 +223,9 @@ mono_type_get_desc (GString *res, MonoType *type, gboolean include_namespace)
 		g_string_append_c (res, '&');
 }
 
+/**
+ * mono_type_full_name:
+ */
 char*
 mono_type_full_name (MonoType *type)
 {
