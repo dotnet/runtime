@@ -272,15 +272,9 @@ pal::string_t pal::get_current_os_rid_platform()
                 }
                 else if (majorVer >= 10)
                 {
-                    switch(minorVer)
-                    {
-                        case 0:
-                        default: 
-                            // Use Win10-* RID even for newer platforms we do not know for so that existing Win10 assets can be used
-                            // to keep apps working.
-                            ridOS.append(_X("win10"));
-                            break;
-                    }
+                    // Return the major version for use in RID computation without applying any cap.
+                    ridOS.append(_X("win"));
+                    ridOS.append(pal::to_string(majorVer));
                 }
             }
         }

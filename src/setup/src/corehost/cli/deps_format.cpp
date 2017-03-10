@@ -122,8 +122,8 @@ void deps_json_t::reconcile_libraries_with_targets(
     }
 }
 
-// Returns the RID for the platform the host is running on.
-pal::string_t get_current_rid()
+// Returns the RID determined (computed or fallback) for the platform the host is running on.
+pal::string_t deps_json_t::get_current_rid(const rid_fallback_graph_t& rid_fallback_graph)
 {
     
     pal::string_t currentRid;
@@ -136,14 +136,26 @@ pal::string_t get_current_rid()
         }
     }
     
-    trace::info(_X("Host RID is %s"), currentRid.empty()? _X("not available"): currentRid.c_str());
+    trace::info(_X("HostRID is %s"), currentRid.empty()? _X("not available"): currentRid.c_str());
+
+    // If the current RID is not present in the RID fallback graph, then the platform
+    // is unknown to us. At this point, we will fallback to using the base RIDs and attempt
+    // asset lookup using them.
+    //
+    // We do the same even when the RID is empty.
+    if (currentRid.empty() || (rid_fallback_graph.count(currentRid) == 0))
+    {
+        currentRid = pal::get_current_os_fallback_rid() + pal::string_t(_X("-")) + get_arch();
+
+        trace::info(_X("Falling back to base HostRID: %s"), currentRid.c_str());
+    }
 
     return currentRid;
 }
 
 bool deps_json_t::perform_rid_fallback(rid_specific_assets_t* portable_assets, const rid_fallback_graph_t& rid_fallback_graph)
 {
-    pal::string_t host_rid = get_current_rid();
+    pal::string_t host_rid = get_current_rid(rid_fallback_graph);
     
     for (auto& package : portable_assets->libs)
     {
