@@ -164,41 +164,12 @@ namespace System.Transactions
 
         // Object for synchronizing access to the entire class( avoiding lock( typeof( ... )) )
         private static object s_classSyncObject;
-        internal static object ClassSyncObject
-        {
-            get
-            {
-                if (s_classSyncObject == null)
-                {
-                    object o = new object();
-                    Interlocked.CompareExchange(ref s_classSyncObject, o, null);
-                }
-                return s_classSyncObject;
-            }
-        }
 
         internal Guid DistributedTxId => State.get_Identifier(this);
 
-        // Double-checked locking pattern requires volatile for read/write synchronization
-        private static volatile string s_instanceIdentifier;
-        internal static string InstanceIdentifier
-        {
-            get
-            {
-                if (s_instanceIdentifier == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_instanceIdentifier == null)
-                        {
-                            string temp = Guid.NewGuid().ToString() + ":";
-                            s_instanceIdentifier = temp;
-                        }
-                    }
-                }
-                return s_instanceIdentifier;
-            }
-        }
+        private static string s_instanceIdentifier;
+        internal static string InstanceIdentifier =>
+            LazyInitializer.EnsureInitialized(ref s_instanceIdentifier, ref s_classSyncObject, () => Guid.NewGuid().ToString() + ":");
 
         // Double-checked locking pattern requires volatile for read/write synchronization
         private volatile bool _traceIdentifierInited = false;

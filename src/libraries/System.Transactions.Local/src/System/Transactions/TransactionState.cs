@@ -20,720 +20,144 @@ namespace System.Transactions
         // The state machines themselves are designed to be internally consistent.  So the only externally visable
         // state transition is to active.  All other state transitions must happen within the state machines 
         // themselves.
-        // Double-checked locking pattern requires volatile for read/write synchronization
-        private static volatile TransactionStateActive s_transactionStateActive;
-        private static volatile TransactionStateSubordinateActive s_transactionStateSubordinateActive;
-        private static volatile TransactionStatePhase0 s_transactionStatePhase0;
-        private static volatile TransactionStateVolatilePhase1 s_transactionStateVolatilePhase1;
-        private static volatile TransactionStateVolatileSPC s_transactionStateVolatileSPC;
-        private static volatile TransactionStateSPC s_transactionStateSPC;
-        private static volatile TransactionStateAborted s_transactionStateAborted;
-        private static volatile TransactionStateCommitted s_transactionStateCommitted;
-        private static volatile TransactionStateInDoubt s_transactionStateInDoubt;
+        private static TransactionStateActive s_transactionStateActive;
+        private static TransactionStateSubordinateActive s_transactionStateSubordinateActive;
+        private static TransactionStatePhase0 s_transactionStatePhase0;
+        private static TransactionStateVolatilePhase1 s_transactionStateVolatilePhase1;
+        private static TransactionStateVolatileSPC s_transactionStateVolatileSPC;
+        private static TransactionStateSPC s_transactionStateSPC;
+        private static TransactionStateAborted s_transactionStateAborted;
+        private static TransactionStateCommitted s_transactionStateCommitted;
+        private static TransactionStateInDoubt s_transactionStateInDoubt;
 
-        private static volatile TransactionStatePromoted s_transactionStatePromoted;
-        private static volatile TransactionStateNonCommittablePromoted s_transactionStateNonCommittablePromoted;
-        private static volatile TransactionStatePromotedP0Wave s_transactionStatePromotedP0Wave;
-        private static volatile TransactionStatePromotedCommitting s_transactionStatePromotedCommitting;
-        private static volatile TransactionStatePromotedPhase0 s_transactionStatePromotedPhase0;
-        private static volatile TransactionStatePromotedPhase1 s_transactionStatePromotedPhase1;
-        private static volatile TransactionStatePromotedP0Aborting s_transactionStatePromotedP0Aborting;
-        private static volatile TransactionStatePromotedP1Aborting s_transactionStatePromotedP1Aborting;
-        private static volatile TransactionStatePromotedAborted s_transactionStatePromotedAborted;
-        private static volatile TransactionStatePromotedCommitted s_transactionStatePromotedCommitted;
-        private static volatile TransactionStatePromotedIndoubt s_transactionStatePromotedIndoubt;
+        private static TransactionStatePromoted s_transactionStatePromoted;
+        private static TransactionStateNonCommittablePromoted s_transactionStateNonCommittablePromoted;
+        private static TransactionStatePromotedP0Wave s_transactionStatePromotedP0Wave;
+        private static TransactionStatePromotedCommitting s_transactionStatePromotedCommitting;
+        private static TransactionStatePromotedPhase0 s_transactionStatePromotedPhase0;
+        private static TransactionStatePromotedPhase1 s_transactionStatePromotedPhase1;
+        private static TransactionStatePromotedP0Aborting s_transactionStatePromotedP0Aborting;
+        private static TransactionStatePromotedP1Aborting s_transactionStatePromotedP1Aborting;
+        private static TransactionStatePromotedAborted s_transactionStatePromotedAborted;
+        private static TransactionStatePromotedCommitted s_transactionStatePromotedCommitted;
+        private static TransactionStatePromotedIndoubt s_transactionStatePromotedIndoubt;
 
-        private static volatile TransactionStateDelegated s_transactionStateDelegated;
-        private static volatile TransactionStateDelegatedSubordinate s_transactionStateDelegatedSubordinate;
-        private static volatile TransactionStateDelegatedP0Wave s_transactionStateDelegatedP0Wave;
-        private static volatile TransactionStateDelegatedCommitting s_transactionStateDelegatedCommitting;
-        private static volatile TransactionStateDelegatedAborting s_transactionStateDelegatedAborting;
-        private static volatile TransactionStatePSPEOperation s_transactionStatePSPEOperation;
+        private static TransactionStateDelegated s_transactionStateDelegated;
+        private static TransactionStateDelegatedSubordinate s_transactionStateDelegatedSubordinate;
+        private static TransactionStateDelegatedP0Wave s_transactionStateDelegatedP0Wave;
+        private static TransactionStateDelegatedCommitting s_transactionStateDelegatedCommitting;
+        private static TransactionStateDelegatedAborting s_transactionStateDelegatedAborting;
+        private static TransactionStatePSPEOperation s_transactionStatePSPEOperation;
 
-        private static volatile TransactionStateDelegatedNonMSDTC s_transactionStateDelegatedNonMSDTC;
-        private static volatile TransactionStatePromotedNonMSDTCPhase0 s_transactionStatePromotedNonMSDTCPhase0;
-        private static volatile TransactionStatePromotedNonMSDTCVolatilePhase1 s_transactionStatePromotedNonMSDTCVolatilePhase1;
-        private static volatile TransactionStatePromotedNonMSDTCSinglePhaseCommit s_transactionStatePromotedNonMSDTCSinglePhaseCommit;
-        private static volatile TransactionStatePromotedNonMSDTCAborted s_transactionStatePromotedNonMSDTCAborted;
-        private static volatile TransactionStatePromotedNonMSDTCCommitted s_transactionStatePromotedNonMSDTCCommitted;
-        private static volatile TransactionStatePromotedNonMSDTCIndoubt s_transactionStatePromotedNonMSDTCIndoubt;
+        private static TransactionStateDelegatedNonMSDTC s_transactionStateDelegatedNonMSDTC;
+        private static TransactionStatePromotedNonMSDTCPhase0 s_transactionStatePromotedNonMSDTCPhase0;
+        private static TransactionStatePromotedNonMSDTCVolatilePhase1 s_transactionStatePromotedNonMSDTCVolatilePhase1;
+        private static TransactionStatePromotedNonMSDTCSinglePhaseCommit s_transactionStatePromotedNonMSDTCSinglePhaseCommit;
+        private static TransactionStatePromotedNonMSDTCAborted s_transactionStatePromotedNonMSDTCAborted;
+        private static TransactionStatePromotedNonMSDTCCommitted s_transactionStatePromotedNonMSDTCCommitted;
+        private static TransactionStatePromotedNonMSDTCIndoubt s_transactionStatePromotedNonMSDTCIndoubt;
 
         // Object for synchronizing access to the entire class( avoiding lock( typeof( ... )) )
-        private static object s_classSyncObject;
-
-        internal static TransactionStateActive TransactionStateActive
-        {
-            get
-            {
-                if (s_transactionStateActive == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_transactionStateActive == null)
-                        {
-                            TransactionStateActive temp = new TransactionStateActive();
-                            s_transactionStateActive = temp;
-                        }
-                    }
-                }
-
-                return s_transactionStateActive;
-            }
-        }
-
-        internal static TransactionStateSubordinateActive TransactionStateSubordinateActive
-        {
-            get
-            {
-                if (s_transactionStateSubordinateActive == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_transactionStateSubordinateActive == null)
-                        {
-                            TransactionStateSubordinateActive temp = new TransactionStateSubordinateActive();
-                            s_transactionStateSubordinateActive = temp;
-                        }
-                    }
-                }
-
-                return s_transactionStateSubordinateActive;
-            }
-        }
-
-        internal static TransactionStatePSPEOperation TransactionStatePSPEOperation
-        {
-            get
-            {
-                if (s_transactionStatePSPEOperation == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_transactionStatePSPEOperation == null)
-                        {
-                            TransactionStatePSPEOperation temp = new TransactionStatePSPEOperation();
-                            s_transactionStatePSPEOperation = temp;
-                        }
-                    }
-                }
-
-                return s_transactionStatePSPEOperation;
-            }
-        }
-
-        protected static TransactionStatePhase0 TransactionStatePhase0
-        {
-            get
-            {
-                if (s_transactionStatePhase0 == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_transactionStatePhase0 == null)
-                        {
-                            TransactionStatePhase0 temp = new TransactionStatePhase0();
-                            s_transactionStatePhase0 = temp;
-                        }
-                    }
-                }
-
-                return s_transactionStatePhase0;
-            }
-        }
-
-        protected static TransactionStateVolatilePhase1 TransactionStateVolatilePhase1
-        {
-            get
-            {
-                if (s_transactionStateVolatilePhase1 == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_transactionStateVolatilePhase1 == null)
-                        {
-                            TransactionStateVolatilePhase1 temp = new TransactionStateVolatilePhase1();
-                            s_transactionStateVolatilePhase1 = temp;
-                        }
-                    }
-                }
-
-                return s_transactionStateVolatilePhase1;
-            }
-        }
-
-        protected static TransactionStateVolatileSPC TransactionStateVolatileSPC
-        {
-            get
-            {
-                if (s_transactionStateVolatileSPC == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_transactionStateVolatileSPC == null)
-                        {
-                            TransactionStateVolatileSPC temp = new TransactionStateVolatileSPC();
-                            s_transactionStateVolatileSPC = temp;
-                        }
-                    }
-                }
-
-                return s_transactionStateVolatileSPC;
-            }
-        }
-
-        protected static TransactionStateSPC TransactionStateSPC
-        {
-            get
-            {
-                if (s_transactionStateSPC == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_transactionStateSPC == null)
-                        {
-                            TransactionStateSPC temp = new TransactionStateSPC();
-                            s_transactionStateSPC = temp;
-                        }
-                    }
-                }
-
-                return s_transactionStateSPC;
-            }
-        }
-
-        protected static TransactionStateAborted TransactionStateAborted
-        {
-            get
-            {
-                if (s_transactionStateAborted == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_transactionStateAborted == null)
-                        {
-                            TransactionStateAborted temp = new TransactionStateAborted();
-                            s_transactionStateAborted = temp;
-                        }
-                    }
-                }
-
-                return s_transactionStateAborted;
-            }
-        }
-
-        protected static TransactionStateCommitted TransactionStateCommitted
-        {
-            get
-            {
-                if (s_transactionStateCommitted == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_transactionStateCommitted == null)
-                        {
-                            TransactionStateCommitted temp = new TransactionStateCommitted();
-                            s_transactionStateCommitted = temp;
-                        }
-                    }
-                }
-
-                return s_transactionStateCommitted;
-            }
-        }
-
-        protected static TransactionStateInDoubt TransactionStateInDoubt
-        {
-            get
-            {
-                if (s_transactionStateInDoubt == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_transactionStateInDoubt == null)
-                        {
-                            TransactionStateInDoubt temp = new TransactionStateInDoubt();
-                            s_transactionStateInDoubt = temp;
-                        }
-                    }
-                }
-
-                return s_transactionStateInDoubt;
-            }
-        }
-
-        internal static TransactionStatePromoted TransactionStatePromoted
-        {
-            get
-            {
-                if (s_transactionStatePromoted == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_transactionStatePromoted == null)
-                        {
-                            TransactionStatePromoted temp = new TransactionStatePromoted();
-                            s_transactionStatePromoted = temp;
-                        }
-                    }
-                }
-
-                return s_transactionStatePromoted;
-            }
-        }
-
-        internal static TransactionStateNonCommittablePromoted TransactionStateNonCommittablePromoted
-        {
-            get
-            {
-                if (s_transactionStateNonCommittablePromoted == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_transactionStateNonCommittablePromoted == null)
-                        {
-                            TransactionStateNonCommittablePromoted temp = new TransactionStateNonCommittablePromoted();
-                            s_transactionStateNonCommittablePromoted = temp;
-                        }
-                    }
-                }
-
-                return s_transactionStateNonCommittablePromoted;
-            }
-        }
-
-        protected static TransactionStatePromotedP0Wave TransactionStatePromotedP0Wave
-        {
-            get
-            {
-                if (s_transactionStatePromotedP0Wave == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_transactionStatePromotedP0Wave == null)
-                        {
-                            TransactionStatePromotedP0Wave temp = new TransactionStatePromotedP0Wave();
-                            s_transactionStatePromotedP0Wave = temp;
-                        }
-                    }
-                }
-
-                return s_transactionStatePromotedP0Wave;
-            }
-        }
-
-        protected static TransactionStatePromotedCommitting TransactionStatePromotedCommitting
-        {
-            get
-            {
-                if (s_transactionStatePromotedCommitting == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_transactionStatePromotedCommitting == null)
-                        {
-                            TransactionStatePromotedCommitting temp = new TransactionStatePromotedCommitting();
-                            s_transactionStatePromotedCommitting = temp;
-                        }
-                    }
-                }
-
-                return s_transactionStatePromotedCommitting;
-            }
-        }
-
-        protected static TransactionStatePromotedPhase0 TransactionStatePromotedPhase0
-        {
-            get
-            {
-                if (s_transactionStatePromotedPhase0 == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_transactionStatePromotedPhase0 == null)
-                        {
-                            TransactionStatePromotedPhase0 temp = new TransactionStatePromotedPhase0();
-                            s_transactionStatePromotedPhase0 = temp;
-                        }
-                    }
-                }
-
-                return s_transactionStatePromotedPhase0;
-            }
-        }
-
-        protected static TransactionStatePromotedPhase1 TransactionStatePromotedPhase1
-        {
-            get
-            {
-                if (s_transactionStatePromotedPhase1 == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_transactionStatePromotedPhase1 == null)
-                        {
-                            TransactionStatePromotedPhase1 temp = new TransactionStatePromotedPhase1();
-                            s_transactionStatePromotedPhase1 = temp;
-                        }
-                    }
-                }
-
-                return s_transactionStatePromotedPhase1;
-            }
-        }
-
-        protected static TransactionStatePromotedP0Aborting TransactionStatePromotedP0Aborting
-        {
-            get
-            {
-                if (s_transactionStatePromotedP0Aborting == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_transactionStatePromotedP0Aborting == null)
-                        {
-                            TransactionStatePromotedP0Aborting temp = new TransactionStatePromotedP0Aborting();
-                            s_transactionStatePromotedP0Aborting = temp;
-                        }
-                    }
-                }
-
-                return s_transactionStatePromotedP0Aborting;
-            }
-        }
-
-        protected static TransactionStatePromotedP1Aborting TransactionStatePromotedP1Aborting
-        {
-            get
-            {
-                if (s_transactionStatePromotedP1Aborting == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_transactionStatePromotedP1Aborting == null)
-                        {
-                            TransactionStatePromotedP1Aborting temp = new TransactionStatePromotedP1Aborting();
-                            s_transactionStatePromotedP1Aborting = temp;
-                        }
-                    }
-                }
-
-                return s_transactionStatePromotedP1Aborting;
-            }
-        }
-
-        protected static TransactionStatePromotedAborted TransactionStatePromotedAborted
-        {
-            get
-            {
-                if (s_transactionStatePromotedAborted == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_transactionStatePromotedAborted == null)
-                        {
-                            TransactionStatePromotedAborted temp = new TransactionStatePromotedAborted();
-                            s_transactionStatePromotedAborted = temp;
-                        }
-                    }
-                }
-
-                return s_transactionStatePromotedAborted;
-            }
-        }
-
-        protected static TransactionStatePromotedCommitted TransactionStatePromotedCommitted
-        {
-            get
-            {
-                if (s_transactionStatePromotedCommitted == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_transactionStatePromotedCommitted == null)
-                        {
-                            TransactionStatePromotedCommitted temp = new TransactionStatePromotedCommitted();
-                            s_transactionStatePromotedCommitted = temp;
-                        }
-                    }
-                }
-
-                return s_transactionStatePromotedCommitted;
-            }
-        }
-
-        protected static TransactionStatePromotedIndoubt TransactionStatePromotedIndoubt
-        {
-            get
-            {
-                if (s_transactionStatePromotedIndoubt == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_transactionStatePromotedIndoubt == null)
-                        {
-                            TransactionStatePromotedIndoubt temp = new TransactionStatePromotedIndoubt();
-                            s_transactionStatePromotedIndoubt = temp;
-                        }
-                    }
-                }
-
-                return s_transactionStatePromotedIndoubt;
-            }
-        }
-
-        protected static TransactionStateDelegated TransactionStateDelegated
-        {
-            get
-            {
-                if (s_transactionStateDelegated == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_transactionStateDelegated == null)
-                        {
-                            TransactionStateDelegated temp = new TransactionStateDelegated();
-                            s_transactionStateDelegated = temp;
-                        }
-                    }
-                }
-
-                return s_transactionStateDelegated;
-            }
-        }
-
-        internal static TransactionStateDelegatedSubordinate TransactionStateDelegatedSubordinate
-        {
-            get
-            {
-                if (s_transactionStateDelegatedSubordinate == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_transactionStateDelegatedSubordinate == null)
-                        {
-                            TransactionStateDelegatedSubordinate temp = new TransactionStateDelegatedSubordinate();
-                            s_transactionStateDelegatedSubordinate = temp;
-                        }
-                    }
-                }
-
-                return s_transactionStateDelegatedSubordinate;
-            }
-        }
-
-        protected static TransactionStateDelegatedP0Wave TransactionStateDelegatedP0Wave
-        {
-            get
-            {
-                if (s_transactionStateDelegatedP0Wave == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_transactionStateDelegatedP0Wave == null)
-                        {
-                            TransactionStateDelegatedP0Wave temp = new TransactionStateDelegatedP0Wave();
-                            s_transactionStateDelegatedP0Wave = temp;
-                        }
-                    }
-                }
-
-                return s_transactionStateDelegatedP0Wave;
-            }
-        }
-
-        protected static TransactionStateDelegatedCommitting TransactionStateDelegatedCommitting
-        {
-            get
-            {
-                if (s_transactionStateDelegatedCommitting == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_transactionStateDelegatedCommitting == null)
-                        {
-                            TransactionStateDelegatedCommitting temp = new TransactionStateDelegatedCommitting();
-                            s_transactionStateDelegatedCommitting = temp;
-                        }
-                    }
-                }
-
-                return s_transactionStateDelegatedCommitting;
-            }
-        }
-
-        protected static TransactionStateDelegatedAborting TransactionStateDelegatedAborting
-        {
-            get
-            {
-                if (s_transactionStateDelegatedAborting == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_transactionStateDelegatedAborting == null)
-                        {
-                            TransactionStateDelegatedAborting temp = new TransactionStateDelegatedAborting();
-                            s_transactionStateDelegatedAborting = temp;
-                        }
-                    }
-                }
-
-                return s_transactionStateDelegatedAborting;
-            }
-        }
-
-        protected static TransactionStateDelegatedNonMSDTC TransactionStateDelegatedNonMSDTC
-        {
-            get
-            {
-                if (s_transactionStateDelegatedNonMSDTC == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_transactionStateDelegatedNonMSDTC == null)
-                        {
-                            TransactionStateDelegatedNonMSDTC temp = new TransactionStateDelegatedNonMSDTC();
-                            s_transactionStateDelegatedNonMSDTC = temp;
-                        }
-                    }
-                }
-
-                return s_transactionStateDelegatedNonMSDTC;
-            }
-        }
-
-        protected static TransactionStatePromotedNonMSDTCPhase0 TransactionStatePromotedNonMSDTCPhase0
-        {
-            get
-            {
-                if (s_transactionStatePromotedNonMSDTCPhase0 == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_transactionStatePromotedNonMSDTCPhase0 == null)
-                        {
-                            TransactionStatePromotedNonMSDTCPhase0 temp = new TransactionStatePromotedNonMSDTCPhase0();
-                            s_transactionStatePromotedNonMSDTCPhase0 = temp;
-                        }
-                    }
-                }
-
-                return s_transactionStatePromotedNonMSDTCPhase0;
-            }
-        }
-
-        protected static TransactionStatePromotedNonMSDTCVolatilePhase1 TransactionStatePromotedNonMSDTCVolatilePhase1
-        {
-            get
-            {
-                if (s_transactionStatePromotedNonMSDTCVolatilePhase1 == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_transactionStatePromotedNonMSDTCVolatilePhase1 == null)
-                        {
-                            TransactionStatePromotedNonMSDTCVolatilePhase1 temp = new TransactionStatePromotedNonMSDTCVolatilePhase1();
-                            s_transactionStatePromotedNonMSDTCVolatilePhase1 = temp;
-                        }
-                    }
-                }
-
-                return s_transactionStatePromotedNonMSDTCVolatilePhase1;
-            }
-        }
-
-        protected static TransactionStatePromotedNonMSDTCSinglePhaseCommit TransactionStatePromotedNonMSDTCSinglePhaseCommit
-        {
-            get
-            {
-                if (s_transactionStatePromotedNonMSDTCSinglePhaseCommit == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_transactionStatePromotedNonMSDTCSinglePhaseCommit == null)
-                        {
-                            TransactionStatePromotedNonMSDTCSinglePhaseCommit temp = new TransactionStatePromotedNonMSDTCSinglePhaseCommit();
-                            s_transactionStatePromotedNonMSDTCSinglePhaseCommit = temp;
-                        }
-                    }
-                }
-
-                return s_transactionStatePromotedNonMSDTCSinglePhaseCommit;
-            }
-        }
-
-        protected static TransactionStatePromotedNonMSDTCAborted TransactionStatePromotedNonMSDTCAborted
-        {
-            get
-            {
-                if (s_transactionStatePromotedNonMSDTCAborted == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_transactionStatePromotedNonMSDTCAborted == null)
-                        {
-                            TransactionStatePromotedNonMSDTCAborted temp = new TransactionStatePromotedNonMSDTCAborted();
-                            s_transactionStatePromotedNonMSDTCAborted = temp;
-                        }
-                    }
-                }
-
-                return s_transactionStatePromotedNonMSDTCAborted;
-            }
-        }
-
-        protected static TransactionStatePromotedNonMSDTCCommitted TransactionStatePromotedNonMSDTCCommitted
-        {
-            get
-            {
-                if (s_transactionStatePromotedNonMSDTCCommitted == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_transactionStatePromotedNonMSDTCCommitted == null)
-                        {
-                            TransactionStatePromotedNonMSDTCCommitted temp = new TransactionStatePromotedNonMSDTCCommitted();
-                            s_transactionStatePromotedNonMSDTCCommitted = temp;
-                        }
-                    }
-                }
-
-                return s_transactionStatePromotedNonMSDTCCommitted;
-            }
-        }
-
-        protected static TransactionStatePromotedNonMSDTCIndoubt TransactionStatePromotedNonMSDTCIndoubt
-        {
-            get
-            {
-                if (s_transactionStatePromotedNonMSDTCIndoubt == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_transactionStatePromotedNonMSDTCIndoubt == null)
-                        {
-                            TransactionStatePromotedNonMSDTCIndoubt temp = new TransactionStatePromotedNonMSDTCIndoubt();
-                            s_transactionStatePromotedNonMSDTCIndoubt = temp;
-                        }
-                    }
-                }
-
-                return s_transactionStatePromotedNonMSDTCIndoubt;
-            }
-        }
-
-        // Helper object for static synchronization
-        internal static object ClassSyncObject
-        {
-            get
-            {
-                if (s_classSyncObject == null)
-                {
-                    object o = new object();
-                    Interlocked.CompareExchange(ref s_classSyncObject, o, null);
-                }
-                return s_classSyncObject;
-            }
-        }
+        internal static object s_classSyncObject;
+
+        internal static TransactionStateActive TransactionStateActive =>
+            LazyInitializer.EnsureInitialized(ref s_transactionStateActive, ref s_classSyncObject, () => new TransactionStateActive());
+
+        internal static TransactionStateSubordinateActive TransactionStateSubordinateActive =>
+            LazyInitializer.EnsureInitialized(ref s_transactionStateSubordinateActive, ref s_classSyncObject, () => new TransactionStateSubordinateActive());
+
+        internal static TransactionStatePSPEOperation TransactionStatePSPEOperation =>
+            LazyInitializer.EnsureInitialized(ref s_transactionStatePSPEOperation, ref s_classSyncObject, () => new TransactionStatePSPEOperation());
+
+        protected static TransactionStatePhase0 TransactionStatePhase0 =>
+            LazyInitializer.EnsureInitialized(ref s_transactionStatePhase0, ref s_classSyncObject, () => new TransactionStatePhase0());
+
+        protected static TransactionStateVolatilePhase1 TransactionStateVolatilePhase1 =>
+            LazyInitializer.EnsureInitialized(ref s_transactionStateVolatilePhase1, ref s_classSyncObject, () => new TransactionStateVolatilePhase1());
+
+        protected static TransactionStateVolatileSPC TransactionStateVolatileSPC =>
+            LazyInitializer.EnsureInitialized(ref s_transactionStateVolatileSPC, ref s_classSyncObject, () => new TransactionStateVolatileSPC());
+
+        protected static TransactionStateSPC TransactionStateSPC =>
+            LazyInitializer.EnsureInitialized(ref s_transactionStateSPC, ref s_classSyncObject, () => new TransactionStateSPC());
+
+        protected static TransactionStateAborted TransactionStateAborted =>
+            LazyInitializer.EnsureInitialized(ref s_transactionStateAborted, ref s_classSyncObject, () => new TransactionStateAborted());
+
+        protected static TransactionStateCommitted TransactionStateCommitted =>
+            LazyInitializer.EnsureInitialized(ref s_transactionStateCommitted, ref s_classSyncObject, () =>  new TransactionStateCommitted());
+
+        protected static TransactionStateInDoubt TransactionStateInDoubt =>
+            LazyInitializer.EnsureInitialized(ref s_transactionStateInDoubt, ref s_classSyncObject, () => new TransactionStateInDoubt());
+
+        internal static TransactionStatePromoted TransactionStatePromoted =>
+            LazyInitializer.EnsureInitialized(ref s_transactionStatePromoted, ref s_classSyncObject, () => new TransactionStatePromoted());
+
+        internal static TransactionStateNonCommittablePromoted TransactionStateNonCommittablePromoted =>
+            LazyInitializer.EnsureInitialized(ref s_transactionStateNonCommittablePromoted, ref s_classSyncObject, () => new TransactionStateNonCommittablePromoted());
+
+        protected static TransactionStatePromotedP0Wave TransactionStatePromotedP0Wave =>
+            LazyInitializer.EnsureInitialized(ref s_transactionStatePromotedP0Wave, ref s_classSyncObject, () => new TransactionStatePromotedP0Wave());
+
+        protected static TransactionStatePromotedCommitting TransactionStatePromotedCommitting =>
+            LazyInitializer.EnsureInitialized(ref s_transactionStatePromotedCommitting, ref s_classSyncObject, () => new TransactionStatePromotedCommitting());
+
+        protected static TransactionStatePromotedPhase0 TransactionStatePromotedPhase0 =>
+            LazyInitializer.EnsureInitialized(ref s_transactionStatePromotedPhase0, ref s_classSyncObject, () => new TransactionStatePromotedPhase0());
+
+        protected static TransactionStatePromotedPhase1 TransactionStatePromotedPhase1 =>
+            LazyInitializer.EnsureInitialized(ref s_transactionStatePromotedPhase1, ref s_classSyncObject, () => new TransactionStatePromotedPhase1());
+
+        protected static TransactionStatePromotedP0Aborting TransactionStatePromotedP0Aborting =>
+            LazyInitializer.EnsureInitialized(ref s_transactionStatePromotedP0Aborting, ref s_classSyncObject, () => new TransactionStatePromotedP0Aborting());
+
+        protected static TransactionStatePromotedP1Aborting TransactionStatePromotedP1Aborting =>
+            LazyInitializer.EnsureInitialized(ref s_transactionStatePromotedP1Aborting, ref s_classSyncObject, () => new TransactionStatePromotedP1Aborting());
+
+        protected static TransactionStatePromotedAborted TransactionStatePromotedAborted =>
+            LazyInitializer.EnsureInitialized(ref s_transactionStatePromotedAborted, ref s_classSyncObject, () => new TransactionStatePromotedAborted());
+
+        protected static TransactionStatePromotedCommitted TransactionStatePromotedCommitted =>
+            LazyInitializer.EnsureInitialized(ref s_transactionStatePromotedCommitted, ref s_classSyncObject, () => new TransactionStatePromotedCommitted());
+
+        protected static TransactionStatePromotedIndoubt TransactionStatePromotedIndoubt =>
+            LazyInitializer.EnsureInitialized(ref s_transactionStatePromotedIndoubt, ref s_classSyncObject, () => new TransactionStatePromotedIndoubt());
+
+        protected static TransactionStateDelegated TransactionStateDelegated =>
+            LazyInitializer.EnsureInitialized(ref s_transactionStateDelegated, ref s_classSyncObject, () => new TransactionStateDelegated());
+
+        internal static TransactionStateDelegatedSubordinate TransactionStateDelegatedSubordinate =>
+            LazyInitializer.EnsureInitialized(ref s_transactionStateDelegatedSubordinate, ref s_classSyncObject, () => new TransactionStateDelegatedSubordinate());
+
+        protected static TransactionStateDelegatedP0Wave TransactionStateDelegatedP0Wave =>
+            LazyInitializer.EnsureInitialized(ref s_transactionStateDelegatedP0Wave, ref s_classSyncObject, () => new TransactionStateDelegatedP0Wave());
+
+        protected static TransactionStateDelegatedCommitting TransactionStateDelegatedCommitting =>
+            LazyInitializer.EnsureInitialized(ref s_transactionStateDelegatedCommitting, ref s_classSyncObject, () => new TransactionStateDelegatedCommitting());
+
+        protected static TransactionStateDelegatedAborting TransactionStateDelegatedAborting =>
+            LazyInitializer.EnsureInitialized(ref s_transactionStateDelegatedAborting, ref s_classSyncObject, () => new TransactionStateDelegatedAborting());
+
+        protected static TransactionStateDelegatedNonMSDTC TransactionStateDelegatedNonMSDTC =>
+            LazyInitializer.EnsureInitialized(ref s_transactionStateDelegatedNonMSDTC, ref s_classSyncObject, () => new TransactionStateDelegatedNonMSDTC());
+
+        protected static TransactionStatePromotedNonMSDTCPhase0 TransactionStatePromotedNonMSDTCPhase0 =>
+            LazyInitializer.EnsureInitialized(ref s_transactionStatePromotedNonMSDTCPhase0, ref s_classSyncObject, () => new TransactionStatePromotedNonMSDTCPhase0());
+
+        protected static TransactionStatePromotedNonMSDTCVolatilePhase1 TransactionStatePromotedNonMSDTCVolatilePhase1 =>
+            LazyInitializer.EnsureInitialized(ref s_transactionStatePromotedNonMSDTCVolatilePhase1, ref s_classSyncObject, () => new TransactionStatePromotedNonMSDTCVolatilePhase1());
+
+        protected static TransactionStatePromotedNonMSDTCSinglePhaseCommit TransactionStatePromotedNonMSDTCSinglePhaseCommit =>
+            LazyInitializer.EnsureInitialized(ref s_transactionStatePromotedNonMSDTCSinglePhaseCommit, ref s_classSyncObject, () => new TransactionStatePromotedNonMSDTCSinglePhaseCommit());
+
+        protected static TransactionStatePromotedNonMSDTCAborted TransactionStatePromotedNonMSDTCAborted =>
+            LazyInitializer.EnsureInitialized(ref s_transactionStatePromotedNonMSDTCAborted, ref s_classSyncObject, () => new TransactionStatePromotedNonMSDTCAborted());
+
+        protected static TransactionStatePromotedNonMSDTCCommitted TransactionStatePromotedNonMSDTCCommitted =>
+            LazyInitializer.EnsureInitialized(ref s_transactionStatePromotedNonMSDTCCommitted, ref s_classSyncObject, () => new TransactionStatePromotedNonMSDTCCommitted());
+
+        protected static TransactionStatePromotedNonMSDTCIndoubt TransactionStatePromotedNonMSDTCIndoubt =>
+            LazyInitializer.EnsureInitialized(ref s_transactionStatePromotedNonMSDTCIndoubt, ref s_classSyncObject, () => new TransactionStatePromotedNonMSDTCIndoubt());
 
         internal void CommonEnterState(InternalTransaction tx)
         {
@@ -3534,26 +2958,8 @@ namespace System.Transactions
 
         protected abstract void PromotedTransactionOutcome(InternalTransaction tx);
 
-        // Double-checked locking pattern requires volatile for read/write synchronization
-        private static volatile WaitCallback s_signalMethod;
-        private static WaitCallback SignalMethod
-        {
-            get
-            {
-                if (s_signalMethod == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_signalMethod == null)
-                        {
-                            s_signalMethod = new WaitCallback(SignalCallback);
-                        }
-                    }
-                }
-
-                return s_signalMethod;
-            }
-        }
+        private static WaitCallback s_signalMethod;
+        private static WaitCallback SignalMethod => LazyInitializer.EnsureInitialized(ref s_signalMethod, ref s_classSyncObject, () => new WaitCallback(SignalCallback));
 
 
         private static void SignalCallback(object state)
@@ -4665,27 +4071,8 @@ namespace System.Transactions
 
         protected abstract void PromotedTransactionOutcome(InternalTransaction tx);
 
-        // Double-checked locking pattern requires volatile for read/write synchronization
-        private static volatile WaitCallback s_signalMethod;
-        private static WaitCallback SignalMethod
-        {
-            get
-            {
-                if (s_signalMethod == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_signalMethod == null)
-                        {
-                            s_signalMethod = new WaitCallback(SignalCallback);
-                        }
-                    }
-                }
-
-                return s_signalMethod;
-            }
-        }
-
+        private static WaitCallback s_signalMethod;
+        private static WaitCallback SignalMethod => LazyInitializer.EnsureInitialized(ref s_signalMethod, ref s_classSyncObject, () => new WaitCallback(SignalCallback));
 
         private static void SignalCallback(object state)
         {

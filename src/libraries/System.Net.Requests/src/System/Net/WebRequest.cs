@@ -9,6 +9,7 @@ using System.Net.Cache;
 using System.Net.Security;
 using System.Runtime.Serialization;
 using System.Security.Principal;
+using System.Threading;
 using System.Threading.Tasks;
 namespace System.Net
 {
@@ -27,8 +28,8 @@ namespace System.Net
             }
         }
 
-        private static volatile List<WebRequestPrefixElement> s_prefixList;
-        private static readonly object s_internalSyncObject = new object();
+        private static List<WebRequestPrefixElement> s_prefixList;
+        private static object s_internalSyncObject = new object();
 
         internal const int DefaultTimeoutMilliseconds = 100 * 1000;
 
@@ -353,36 +354,28 @@ namespace System.Net
                 // GetConfig() might use us, so we have a circular dependency issue
                 // that causes us to nest here. We grab the lock only if we haven't
                 // initialized.
-                if (s_prefixList == null)
+                return LazyInitializer.EnsureInitialized(ref s_prefixList, ref s_internalSyncObject, () =>
                 {
-                    lock (s_internalSyncObject)
+                    var httpRequestCreator = new HttpRequestCreator();
+                    var ftpRequestCreator = new FtpWebRequestCreator();
+                    var fileRequestCreator = new FileWebRequestCreator();
+
+                    const int Count = 4;
+                    var prefixList = new List<WebRequestPrefixElement>(Count)
                     {
-                        if (s_prefixList == null)
-                        {
-                            var httpRequestCreator = new HttpRequestCreator();
-                            var ftpRequestCreator = new FtpWebRequestCreator();
-                            var fileRequestCreator = new FileWebRequestCreator();
+                        new WebRequestPrefixElement("http:", httpRequestCreator),
+                        new WebRequestPrefixElement("https:", httpRequestCreator),
+                        new WebRequestPrefixElement("ftp:", ftpRequestCreator),
+                        new WebRequestPrefixElement("file:", fileRequestCreator),
+                    };
+                    Debug.Assert(prefixList.Count == Count, $"Expected {Count}, got {prefixList.Count}");
 
-                            const int Count = 4;
-                            var prefixList = new List<WebRequestPrefixElement>(Count)
-                            {
-                                new WebRequestPrefixElement("http:", httpRequestCreator),
-                                new WebRequestPrefixElement("https:", httpRequestCreator),
-                                new WebRequestPrefixElement("ftp:", ftpRequestCreator),
-                                new WebRequestPrefixElement("file:", fileRequestCreator),
-                            };
-                            Debug.Assert(prefixList.Count == Count, $"Expected {Count}, got {prefixList.Count}");
-
-                            s_prefixList = prefixList;
-                        }
-                    }
-                }
-
-                return s_prefixList;
+                    return prefixList;
+                });
             }
             set
             {
-                s_prefixList = value;
+                Volatile.Write(ref s_prefixList, value);
             }
         }
 
@@ -568,24 +561,13 @@ namespace System.Net
         {
             get
             {
-                lock (s_internalSyncObject)
-                {
-                    if (!s_DefaultWebProxyInitialized)
-                    {
-                        s_DefaultWebProxy = SystemWebProxy.Get();
-                        s_DefaultWebProxyInitialized = true;
-                    }
-
-                    return s_DefaultWebProxy;
-                }
+                return LazyInitializer.EnsureInitialized(ref s_DefaultWebProxy, ref s_DefaultWebProxyInitialized, ref s_internalSyncObject, () => SystemWebProxy.Get());
             }
-
             set
             {
                 lock (s_internalSyncObject)
                 {
                     s_DefaultWebProxy = value;
-                    s_DefaultWebProxyInitialized = true;
                 }
             }
         }

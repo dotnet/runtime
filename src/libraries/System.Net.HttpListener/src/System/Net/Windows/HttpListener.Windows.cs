@@ -116,24 +116,8 @@ namespace System.Net
             }
         }
 
-        private Dictionary<ulong, DisconnectAsyncResult> DisconnectResults
-        {
-            get
-            {
-                if (_disconnectResults == null)
-                {
-                    lock (_internalLock)
-                    {
-                        if (_disconnectResults == null)
-                        {
-                            _disconnectResults = new Dictionary<ulong, DisconnectAsyncResult>();
-                        }
-                    }
-                }
-                return _disconnectResults;
-            }
-        }
-
+        private Dictionary<ulong, DisconnectAsyncResult> DisconnectResults =>
+            LazyInitializer.EnsureInitialized(ref _disconnectResults, () => new Dictionary<ulong, DisconnectAsyncResult>());
 
         private void SetUrlGroupProperty(Interop.HttpApi.HTTP_SERVER_PROPERTY property, IntPtr info, uint infosize)
         {
