@@ -1068,7 +1068,13 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
             break
         // editor brace matching: }
         case 'x86': // editor brace matching: {
-            assert (os == 'Windows_NT')
+            assert ((os == 'Windows_NT') || ((os == 'Ubuntu') && (scenario == 'default')))
+            if (os == 'Ubuntu') {
+                // on-demand only for ubuntu x86
+                Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Build",
+                    "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}.*")
+                break
+            }
             switch (scenario) {
                 case 'default':
                     if (configuration == 'Checked') {
@@ -1616,6 +1622,12 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         arch = 'x86'
                     }
 
+                    if (architecture == 'x86' && os == 'Ubuntu') {
+                        // build only, not test yet
+                        buildCommands += "./tests/scripts/x86_ci_script.sh --buildConfig=${lowerConfiguration}"
+                        break;
+                    }
+
                     if (scenario == 'formatting') {
                         buildCommands += "python tests/scripts/format.py -c \${WORKSPACE} -o Linux -a ${arch}"
                         Utilities.addArchival(newJob, "format.patch", "", true, false)
@@ -1798,6 +1810,10 @@ combinedScenarios.each { scenario ->
                             }
                             break
                         case 'x86':
+                            if ((os != 'Ubuntu') && (os != 'Windows_NT')) {
+                                return
+                            }
+                            break
                         case 'x86compatjit':
                             // Skip non-windows
                             if (os != 'Windows_NT') {
@@ -1838,7 +1854,11 @@ combinedScenarios.each { scenario ->
                                 break
                             case 'x64':
                             case 'x86':
-                                // Everything implemented
+                                // x86 ubuntu: default only
+                                if ((os == 'Ubuntu') && (architecture == 'x86')) {
+                                    return
+                                }
+                                // Windows: Everything implemented
                                 break
                             case 'x86compatjit':
                                 // No stress modes for compatjit.dll.
