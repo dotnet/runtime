@@ -35,7 +35,6 @@
 #include <cstdlib>
 #include <libgen.h>
 
-#define HOST_EXE_NAME "corehost"
 #define xerr std::cerr
 #define xout std::cout
 #define DIR_SEPARATOR '/'

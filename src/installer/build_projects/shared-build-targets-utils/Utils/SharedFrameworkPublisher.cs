@@ -191,9 +191,6 @@ namespace Microsoft.DotNet.Cli.Build
                 Path.Combine(_corehostLockedDirectory, HostArtifactNames.DotnetHostBaseName),
                 Path.Combine(sharedFrameworkNameAndVersionRoot, HostArtifactNames.DotnetHostBaseName), true);
             File.Copy(
-               Path.Combine(_corehostLockedDirectory, HostArtifactNames.DotnetHostBaseName),
-               Path.Combine(sharedFrameworkNameAndVersionRoot, $"corehost{Constants.ExeSuffix}"), true);
-            File.Copy(
                Path.Combine(_corehostLockedDirectory, HostArtifactNames.DotnetHostFxrBaseName),
                Path.Combine(sharedFrameworkNameAndVersionRoot, HostArtifactNames.DotnetHostFxrBaseName), true);
 
