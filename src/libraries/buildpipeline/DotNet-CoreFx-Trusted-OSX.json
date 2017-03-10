@@ -291,7 +291,7 @@
     }
   },
   "demands": [
-    "VSTS_OS -equals Mac_Sierra_10.12"
+    "Configuration -equals VSTS_Agent_v3.0.0"
   ],
   "retentionRules": [
     {
@@ -331,11 +331,11 @@
   "quality": "definition",
   "queue": {
     "pool": {
-      "id": 83,
-      "name": "DotNetCore-Test"
+      "id": 97,
+      "name": "DotNetCore-Build"
     },
-    "id": 159,
-    "name": "DotNetCore-Test"
+    "id": 330,
+    "name": "DotNetCore-Build"
   },
   "path": "\\",
   "type": "build",
