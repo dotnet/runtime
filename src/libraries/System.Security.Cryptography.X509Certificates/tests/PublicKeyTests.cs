@@ -29,6 +29,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        private static PublicKey GetTestECDsaKey()
+        {
+            using (var cert = new X509Certificate2(TestData.ECDsa256Certificate))
+            {
+                return cert.PublicKey;
+            }
+        }
+
         /// <summary>
         /// First parameter is the cert, the second is a hash of "Hello"
         /// </summary>
@@ -65,30 +73,49 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        public static void TestPublicKey_Key_RSA()
+        public static void TestOid_ECDSA()
         {
-            PublicKey pk = GetTestRsaKey();
-            AsymmetricAlgorithm alg = pk.Key;
-            Assert.NotNull(alg);
-            Assert.Same(alg, pk.Key);
-            Assert.Equal(2048, alg.KeySize);
-
-            Assert.IsAssignableFrom(typeof(RSA), alg);
-            VerifyKey_RSA(/* cert */ null, (RSA)alg);
+            PublicKey pk = GetTestECDsaKey();
+            Assert.Equal("1.2.840.10045.2.1", pk.Oid.Value);
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // Until DSA interop support added
+        public static void TestPublicKey_Key_RSA()
+        {
+            PublicKey pk = GetTestRsaKey();
+            using (AsymmetricAlgorithm alg = pk.Key)
+            {
+                Assert.NotNull(alg);
+                Assert.Same(alg, pk.Key);
+                Assert.Equal(2048, alg.KeySize);
+
+                Assert.IsAssignableFrom(typeof(RSA), alg);
+                VerifyKey_RSA( /* cert */ null, (RSA)alg);
+            }
+        }
+
+        [Fact]
+        [ActiveIssue(16946, TestPlatforms.AnyUnix)]
         public static void TestPublicKey_Key_DSA()
         {
             PublicKey pk = GetTestDsaKey();
-            AsymmetricAlgorithm alg = pk.Key;
-            Assert.NotNull(alg);
-            Assert.Same(alg, pk.Key);
-            Assert.Equal(1024, alg.KeySize);
+            using (AsymmetricAlgorithm alg = pk.Key)
+            {
+                Assert.NotNull(alg);
+                Assert.Same(alg, pk.Key);
+                Assert.Equal(1024, alg.KeySize);
 
-            Assert.IsAssignableFrom(typeof(DSA), alg);
-            VerifyKey_DSA((DSA)alg);
+                Assert.IsAssignableFrom(typeof(DSA), alg);
+                VerifyKey_DSA((DSA)alg);
+            }
+        }
+
+        [Fact]
+        public static void TestPublicKey_Key_ECDSA()
+        {
+            PublicKey pk = GetTestECDsaKey();
+
+            Assert.Throws<NotSupportedException>(() => pk.Key);
         }
 
         private static void VerifyKey_DSA(DSA dsa)
@@ -153,6 +180,20 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        public static void TestEncodedKeyValue_ECDSA()
+        {
+            // Uncompressed key (04), then the X coord, then the Y coord.
+            string expectedPublicKeyHex =
+                "04" +
+                "448D98EE08AEBA0D8B40F3C6DBD500E8B69F07C70C661771655228EA5A178A91" +
+                "0EF5CB1759F6F2E062021D4F973F5BB62031BE87AE915CFF121586809E3219AF";
+
+            PublicKey pk = GetTestECDsaKey();
+
+            Assert.Equal(expectedPublicKeyHex, pk.EncodedKeyValue.RawData.ByteArrayToHex());
+        }
+
+        [Fact]
         public static void TestEncodedParameters_RSA()
         {
             PublicKey pk = GetTestRsaKey();
@@ -179,6 +220,16 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             PublicKey pk = GetTestDsaKey();
             Assert.Equal(expectedParameters, pk.EncodedParameters.RawData);
+        }
+
+        [Fact]
+        public static void TestEncodedParameters_ECDSA()
+        {
+            // OID: 1.2.840.10045.3.1.7
+            string expectedParametersHex = "06082A8648CE3D030107";
+
+            PublicKey pk = GetTestECDsaKey();
+            Assert.Equal(expectedParametersHex, pk.EncodedParameters.RawData.ByteArrayToHex());
         }
 
         [Fact]
@@ -305,16 +356,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 // The public key should be unable to sign.
                 Assert.ThrowsAny<CryptographicException>(() => publicKey.SignData(helloBytes, HashAlgorithmName.SHA256));
-            }
-        }
-
-        [Fact]
-        public static void TestPublicKey_Key_ECDsa()
-        {
-            using (var cert = new X509Certificate2(TestData.ECDsa384Certificate))
-            {
-                // Currently unable to support PublicKey.Key on ECC
-                Assert.Throws<NotSupportedException>(() => cert.PublicKey.Key);
             }
         }
 
