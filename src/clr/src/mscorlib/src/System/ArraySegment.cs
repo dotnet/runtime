@@ -56,55 +56,11 @@ namespace System
             _count = count;
         }
 
-        public T[] Array
-        {
-            get
-            {
-                Debug.Assert((null == _array && 0 == _offset && 0 == _count)
-                                 || (null != _array && _offset >= 0 && _count >= 0 && _offset + _count <= _array.Length),
-                                "ArraySegment is invalid");
+        public T[] Array => _array;
 
-                return _array;
-            }
-        }
+        public int Offset => _offset;
 
-        public int Offset
-        {
-            get
-            {
-                // Since copying value types is not atomic & callers cannot atomically 
-                // read all three fields, we cannot guarantee that Offset is within 
-                // the bounds of Array.  That is our intent, but let's not specify 
-                // it as a postcondition - force callers to re-verify this themselves
-                // after reading each field out of an ArraySegment into their stack.
-                Contract.Ensures(Contract.Result<int>() >= 0);
-
-                Debug.Assert((null == _array && 0 == _offset && 0 == _count)
-                                 || (null != _array && _offset >= 0 && _count >= 0 && _offset + _count <= _array.Length),
-                                "ArraySegment is invalid");
-
-                return _offset;
-            }
-        }
-
-        public int Count
-        {
-            get
-            {
-                // Since copying value types is not atomic & callers cannot atomically 
-                // read all three fields, we cannot guarantee that Count is within 
-                // the bounds of Array.  That's our intent, but let's not specify 
-                // it as a postcondition - force callers to re-verify this themselves
-                // after reading each field out of an ArraySegment into their stack.
-                Contract.Ensures(Contract.Result<int>() >= 0);
-
-                Debug.Assert((null == _array && 0 == _offset && 0 == _count)
-                                  || (null != _array && _offset >= 0 && _count >= 0 && _offset + _count <= _array.Length),
-                                "ArraySegment is invalid");
-
-                return _count;
-            }
-        }
+        public int Count => _count;
 
         public Enumerator GetEnumerator()
         {
