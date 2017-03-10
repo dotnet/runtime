@@ -12,6 +12,7 @@
          (which is netstandard1.1).  Again we duplicate in a portable-* folder
          to work with older NuGet clients -->
     <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard1.1'">netstandard1.1;portable-net45+win8+wpa81</PackageTargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>    
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetGroup)' == 'netstandard1.1' Or '$(TargetGroup)' == 'net45'">
     <DefineConstants>;NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT</DefineConstants>

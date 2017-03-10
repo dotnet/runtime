@@ -85,10 +85,10 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void ActivityIdOverflow()
         {
-            //check parentId /abc.1.1...1.1.1.1.1 (126 bytes) and check last .1.1.1.1 is replaced with #overflow_suffix 8 bytes long
-            var parentId = new StringBuilder("/abc");
-            while (parentId.Length < 126)
-                parentId.Append(".1");
+            //check parentId |abc.1.1...1.1.1.1.1. (1023 bytes) and check last .1.1.1.1 is replaced with #overflow_suffix 8 bytes long
+            var parentId = new StringBuilder("|abc.");
+            while (parentId.Length < 1022)
+                parentId.Append("1.");
 
             var activity = new Activity("activity")
                 .SetParentId(parentId.ToString())
@@ -97,13 +97,13 @@ namespace System.Diagnostics.Tests
             Assert.Equal(
                 parentId.ToString().Substring(0, parentId.Length - 8),
                 activity.Id.Substring(0, activity.Id.Length - 9));
-            Assert.Equal('#', activity.Id[activity.Id.Length - 9]);
+            Assert.Equal('#', activity.Id[activity.Id.Length - 1]);
 
-            //check parentId /abc.1.1...1.012345678 (128 bytes) and check last .012345678 is replaced with #overflow_suffix 8 bytes long
-            parentId = new StringBuilder("/abc");
-            while (parentId.Length < 118)
-                parentId.Append(".1");
-            parentId.Append(".012345678");
+            //check parentId |abc.1.1...1.012345678 (128 bytes) and check last .012345678 is replaced with #overflow_suffix 8 bytes long
+            parentId = new StringBuilder("|abc.");
+            while (parentId.Length < 1013)
+                parentId.Append("1.");
+            parentId.Append("012345678.");
 
             activity = new Activity("activity")
                 .SetParentId(parentId.ToString())
@@ -113,7 +113,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(
                 parentId.ToString().Substring(0, parentId.Length - 10),
                 activity.Id.Substring(0, activity.Id.Length - 9));
-            Assert.Equal('#', activity.Id[activity.Id.Length - 9]);
+            Assert.Equal('#', activity.Id[activity.Id.Length - 1]);
         }
 
         /// <summary>
@@ -140,6 +140,22 @@ namespace System.Diagnostics.Tests
         /// Tests Id generation
         /// </summary>
         [Fact]
+        public void IdGenerationNoParent()
+        {
+            var orphan1 = new Activity("orphan1");
+            var orphan2 = new Activity("orphan2");
+
+            Task.Run(() => orphan1.Start()).Wait();
+            Task.Run(() => orphan2.Start()).Wait();
+
+            Assert.NotEqual(orphan2.Id, orphan1.Id);
+            Assert.NotEqual(orphan2.RootId, orphan1.RootId);
+        }
+
+        /// <summary>
+        /// Tests Id generation
+        /// </summary>
+        [Fact]
         public void IdGenerationInternalParent()
         {
             var parent = new Activity("parent");
@@ -150,11 +166,11 @@ namespace System.Diagnostics.Tests
             Task.Run(() => child1.Start()).Wait();
             Task.Run(() => child2.Start()).Wait();
 #if DEBUG
-            Assert.Equal($"{parent.Id}.{child1.OperationName}-1", child1.Id);
-            Assert.Equal($"{parent.Id}.{child2.OperationName}-2", child2.Id);
+            Assert.Equal($"|{parent.RootId}.{child1.OperationName}-1.", child1.Id);
+            Assert.Equal($"|{parent.RootId}.{child2.OperationName}-2.", child2.Id);
 #else
-            Assert.Equal(parent.Id + ".1", child1.Id);
-            Assert.Equal(parent.Id + ".2", child2.Id);
+            Assert.Equal($"|{parent.RootId}.1.", child1.Id);
+            Assert.Equal($"|{parent.RootId}.2.", child2.Id);
 #endif
             Assert.Equal(parent.RootId, child1.RootId);
             Assert.Equal(parent.RootId, child2.RootId);
@@ -163,10 +179,19 @@ namespace System.Diagnostics.Tests
             var child3 = new Activity("child3");
             child3.Start();
 #if DEBUG
-            Assert.Equal($"{parent.Id}.{child3.OperationName}-3", child3.Id);
+            Assert.Equal($"|{parent.RootId}.{child3.OperationName}-3.", child3.Id);
 #else
-            Assert.Equal(parent.Id + ".3", child3.Id);
+            Assert.Equal($"|{parent.RootId}.3.", child3.Id);
 #endif
+
+            var grandChild = new Activity("grandChild");
+            grandChild.Start();
+#if DEBUG
+            Assert.Equal($"{child3.Id}{grandChild.OperationName}-1.", grandChild.Id);
+#else
+            Assert.Equal($"{child3.Id}1.", grandChild.Id);
+#endif
+
         }
 
         /// <summary>
@@ -179,7 +204,8 @@ namespace System.Diagnostics.Tests
             child1.SetParentId("123");
             child1.Start();
             Assert.Equal("123", child1.RootId);
-            Assert.True(child1.Id[0] == '/');
+            Assert.True(child1.Id[0] == '|');
+            Assert.True(child1.Id[child1.Id.Length - 1] == '_');
             child1.Stop();
 
             var child2 = new Activity("child2");
@@ -197,10 +223,10 @@ namespace System.Diagnostics.Tests
         {
 
             var parentIds = new []{
-                "123",   //Parent does not start with '/' and does not contain '.'
-                "123.1", //Parent does not start with '/' but contains '.'
-                "/123",  //Parent starts with '/' and does not contain '.'
-                "/123.1.1" //Parent starts with '/' and contains '.'
+                "123",   //Parent does not start with '|' and does not contain '.'
+                "123.1", //Parent does not start with '|' but contains '.'
+                "|123",  //Parent starts with '|' and does not contain '.'
+                "|123.1.1", //Parent starts with '|' and contains '.'
             };
             foreach (var parentId in parentIds)
             {

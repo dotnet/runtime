@@ -32,11 +32,17 @@ namespace System.Diagnostics
         /// <summary>
         /// This is an ID that is specific to a particular request.   Filtering
         /// to a particular ID insures that you get only one request that matches.  
-        /// Id has a hierarchical structure: /root-id.id1.id2.id3.  Id is generated when 
+        /// Id has a hierarchical structure: '|root-id.id1_id2.id3_' Id is generated when 
         /// <see cref="Start"/> is called by appending suffix (preceeded with '.') to Parent.Id
         /// or ParentId; Activity has no Id until it started
-        /// See <see href="https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#activity-id"/> for nore details
+        /// <para/>
+        /// See <see href="https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#id-format"/> for more details
         /// </summary>
+        /// <example>Id looks like |RD0003FF21406D-5d183ab6-a000b421.1.8e2d4c28_1.:<para />
+        ///  - 'RD0003FF21406D-5d183ab6-a000b421' - Id of the first, top-most, Activity created; It is a RootId for this and all child Activities<para />
+        ///  - 'RD0003FF21406D-5d183ab6-a000b421.1.' - Id of a child activity. It was started in the same process and ends with '.'<para />
+        ///  - '|RD0003FF21406D-5d183ab6-a000b421.1.8e2d4c28_' - Id of the grand child activity. It was started in another process and ends with '_'<para />
+        /// </example>
         public string Id { get; private set; }
 
         /// <summary>
@@ -58,6 +64,8 @@ namespace System.Diagnostics
         /// does not have a Parent Activity but MAY have a ParentId (which was deserialized from
         /// from the parent) .   This accessor fetches the parent ID if it exists at all.  
         /// Note this can be null if this is a root Activity (it has no parent)
+        /// <para/>
+        /// See <see href="https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#id-format"/> for more details
         /// </summary>
         public string ParentId { get; private set; }
 
@@ -66,7 +74,7 @@ namespace System.Diagnostics
         /// Root Id is substring from Activity.Id (or ParentId) between '/' (or beginning) and first '.'.
         /// Filtering by root Id allows to find all Activities involved in operation processing.
         /// RootId may be null if Activity has neither ParentId nor Id.
-        /// See <see href="https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#activity-id"/> for more details
+        /// See <see href="https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#id-format"/> for more details
         /// </summary>
         public string RootId
         {
@@ -79,11 +87,11 @@ namespace System.Diagnostics
                 {
                     if (Id != null)
                     {
-                        _rootId = getRootId(Id);
+                        _rootId = GetRootId(Id);
                     }
                     else if (ParentId != null)
                     {
-                        _rootId = getRootId(ParentId);
+                        _rootId = GetRootId(ParentId);
                     }
                 }
                 return _rootId;
@@ -297,6 +305,7 @@ namespace System.Diagnostics
                 Current = Parent;
             }
         }
+
         #region private 
 
         private string GenerateId()
@@ -306,7 +315,7 @@ namespace System.Diagnostics
             {
                 // Normal start within the process
                 Debug.Assert(!string.IsNullOrEmpty(Parent.Id));
-                ret = appendSuffix(Parent.Id, Interlocked.Increment(ref Parent._currentChildId).ToString());
+                ret = AppendSuffix(Parent.Id, Interlocked.Increment(ref Parent._currentChildId).ToString(), '.');
             }
             else if (ParentId != null)
             {
@@ -315,91 +324,97 @@ namespace System.Diagnostics
 
                 //sanitize external RequestId as it may not be hierarchical. 
                 //we cannot update ParentId, we must let it be logged exactly as it was passed.
-                string parentId = ParentId[0] == s_rootIdPrefix ? ParentId : s_rootIdPrefix + ParentId;
-                ret = appendSuffix(parentId, "I-" + Interlocked.Increment(ref s_currentRootId));
+                string parentId = ParentId[0] == RootIdPrefix ? ParentId : RootIdPrefix + ParentId;
+                if (parentId[parentId.Length - 1] != '.')
+                {
+                    parentId += '.';
+                }
+                
+                ret = AppendSuffix(parentId, Interlocked.Increment(ref s_currentRootId).ToString("x"), '_');
             }
             else
             {
                 // A Root Activity (no parent).  
-                ret = generateRootId();
+                ret = GenerateRootId();
             }
             // Useful place to place a conditional breakpoint.  
             return ret;
         }
 
-        private string getRootId(string id)
+        private string GetRootId(string id)
         {
-            //id MAY start with '/' and contain '.'. We return substring between them
-            //ParentId MAY NOT have hierarchical structure and we don't know if initially rootId was started with '/',
-            //so we must NOT include first '/' to allow mixed hierarchical and non-hierarchical request id scenarios
-            int rootEnd = id.IndexOf(s_idDelimiter);
+            //id MAY start with '|' and contain '.'. We return substring between them
+            //ParentId MAY NOT have hierarchical structure and we don't know if initially rootId was started with '|',
+            //so we must NOT include first '|' to allow mixed hierarchical and non-hierarchical request id scenarios
+            int rootEnd = id.IndexOf('.');
             if (rootEnd < 0)
                 rootEnd = id.Length;
-            int rootStart = id[0] == s_rootIdPrefix ? 1 : 0;
+            int rootStart = id[0] == RootIdPrefix ? 1 : 0;
             return id.Substring(rootStart, rootEnd - rootStart);
         }
 
-        private string appendSuffix(string parentId, string suffix)
+        private string AppendSuffix(string parentId, string suffix, char delimiter)
         {
 #if DEBUG
             suffix = OperationName + "-" + suffix;
 #endif
-            if (parentId.Length + suffix.Length <= 127)
-                return parentId + s_idDelimiter + suffix;
+            if (parentId.Length + suffix.Length < RequestIdMaxLength)
+                return parentId + suffix + delimiter;
 
             //Id overflow:
             //find position in RequestId to trim
-            int trimPosition = parentId.Length - 1;
-            while (trimPosition > 0)
+            int trimPosition = RequestIdMaxLength - 9; // overflow suffix + delimiter length is 9
+            while (trimPosition > 1)
             {
-                if ((parentId[trimPosition] == s_idDelimiter || parentId[trimPosition] == s_overflowDelimiter)
-                    && trimPosition <= 119) //overflow suffix length is 8 + 1 for #.
+                if (parentId[trimPosition - 1] == '.' || parentId[trimPosition - 1] == '_')
                     break;
                 trimPosition--;
             }
 
             //ParentId is not valid Request-Id, let's generate proper one.
             if (trimPosition == 0)
-                return generateRootId();
+                return GenerateRootId();
 
             //generate overflow suffix
-            byte[] bytes = new byte[4];
-            s_random.Value.NextBytes(bytes);
-
-            return parentId.Substring(0, trimPosition) + 
-                s_overflowDelimiter +
-                BitConverter.ToUInt32(bytes, 0).ToString("x8");
+            string overflowSuffix = ((int) GetRandomNumber()).ToString("x8");
+            return parentId.Substring(0, trimPosition) + overflowSuffix + '#';
         }
 
-        private string generateRootId()
+        private string GenerateRootId()
         {
             if (s_uniqPrefix == null)
             {
                 // Here we make an ID to represent the Process/AppDomain.   Ideally we use process ID but 
                 // it is unclear if we have that ID handy.   Currently we use low bits of high freq tick 
                 // as a unique random number (which is not bad, but loses randomness for startup scenarios).  
-                Interlocked.CompareExchange(ref s_uniqPrefix, generateUniquePrefix(), null);
+                Interlocked.CompareExchange(ref s_uniqPrefix, GenerateInstancePrefix(), null);
             }
-
 #if DEBUG
-            string ret = s_uniqPrefix + OperationName + s_idDelimiter + Interlocked.Increment(ref s_currentRootId);
-#else           // To keep things short, we drop the operation name 
-            string ret = s_uniqPrefix + s_idDelimiter + Interlocked.Increment(ref s_currentRootId);
+            string ret = s_uniqPrefix + "-" + OperationName + "-" + Interlocked.Increment(ref s_currentRootId).ToString("x") + '.';
+#else       // To keep things short, we drop the operation name 
+            string ret = s_uniqPrefix + "-" + Interlocked.Increment(ref s_currentRootId).ToString("x") + '.';
 #endif
             return ret;
         }
 
-        // Used to generate an ID 
-        private int _currentChildId;            // A unique number for all children of this activity.  
-        private static int s_currentRootId;      // A unique number inside the appdomain.
-        private static string s_uniqPrefix;
+        private static unsafe long GetRandomNumber()
+        {
+            Guid g = Guid.NewGuid();
+            return (long)&g;
+        }
 
         private string _rootId;
-        private static char s_idDelimiter = '.';
-        private static char s_overflowDelimiter = '#';
-        private static char s_rootIdPrefix = '/';
 
-        private static readonly Lazy<Random> s_random = new Lazy<Random>();
+        // Used to generate an ID 
+        private static string s_uniqPrefix;  //instance unique prefix
+        private int _currentChildId;  // A unique number for all children of this activity.  
+
+        //A unique number inside the appdomain, randomized between appdomains. 
+        //Int gives enough randomization and keeps hex-encoded s_currentRootId 8 chars long for most applications
+        private static long s_currentRootId = (int)GetRandomNumber();  
+
+        private const int RequestIdMaxLength = 1024;
+        private const char RootIdPrefix = '|';
         /// <summary>
         /// Having our own key-value linked list allows us to be more efficient  
         /// </summary>
