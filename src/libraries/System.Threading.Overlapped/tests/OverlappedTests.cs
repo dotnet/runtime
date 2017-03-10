@@ -32,13 +32,15 @@ public static partial class OverlappedTests
         obj.EventHandleIntPtr = _handle.DangerousGetHandle();
         Assert.Equal(_handle.DangerousGetHandle(), obj.EventHandleIntPtr);
 
-        Assert.Equal(0, obj.OffsetHigh);
         obj.OffsetHigh = 3;
         Assert.Equal(3, obj.OffsetHigh);
+        obj.OffsetHigh = 0;
+        Assert.Equal(0, obj.OffsetHigh);
 
-        Assert.Equal(0, obj.OffsetLow);
         obj.OffsetLow = 1;
         Assert.Equal(1, obj.OffsetLow);
+        obj.OffsetLow = 0;
+        Assert.Equal(0, obj.OffsetLow);
     }
 
     [Fact]
