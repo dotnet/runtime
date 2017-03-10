@@ -1395,6 +1395,9 @@ protected:
     void thread_no_gc_loh_segments();
 
     PER_HEAP
+    void check_and_set_no_gc_oom();
+
+    PER_HEAP
     void allocate_for_no_gc_after_gc();
 
     PER_HEAP
@@ -3350,6 +3353,9 @@ protected:
 
     PER_HEAP
     size_t loh_allocation_no_gc;
+
+    PER_HEAP
+    bool no_gc_oom_p;
 
     PER_HEAP
     heap_segment* saved_loh_segment_no_gc;
