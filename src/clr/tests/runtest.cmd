@@ -120,7 +120,7 @@ if /i "%__VSVersion%" == "vs2017" (
   set "__VCToolsRoot=%VS140COMNTOOLS%\..\..\VC"
 
   set _msbuildexe="%ProgramFiles(x86)%\MSBuild\14.0\Bin\MSBuild.exe"
-  if not exist %_msbuildexe% set _msbuildexe="%ProgramFiles%\MSBuild\14.0\Bin\MSBuild.exe"
+  if not exist !_msbuildexe! set _msbuildexe="%ProgramFiles%\MSBuild\14.0\Bin\MSBuild.exe"
 )
 
 :: Does VS really exist?
