@@ -13,7 +13,7 @@ namespace System.Data.SqlClient
 
         internal void PostReadAsyncForMars()
         {
-            if (TdsParserStateObjectFactory.useManagedSni)
+            if (TdsParserStateObjectFactory.UseManagedSNI)
                 return;
 
             // HACK HACK HACK - for Async only
@@ -44,7 +44,7 @@ namespace System.Data.SqlClient
 
         private void LoadSSPILibrary()
         {
-            if (TdsParserStateObjectFactory.useManagedSni)
+            if (TdsParserStateObjectFactory.UseManagedSNI)
                 return;
             // Outer check so we don't acquire lock once it's loaded.
             if (!s_fSSPILoaded)
@@ -74,7 +74,7 @@ namespace System.Data.SqlClient
 
         private void WaitForSSLHandShakeToComplete(ref uint error)
         {
-            if (TdsParserStateObjectFactory.useManagedSni)
+            if (TdsParserStateObjectFactory.UseManagedSNI)
                 return;
             // in the case where an async connection is made, encryption is used and Windows Authentication is used, 
             // wait for SSL handshake to complete, so that the SSL context is fully negotiated before we try to use its 
@@ -92,7 +92,7 @@ namespace System.Data.SqlClient
         {
             SNIErrorDetails details = new SNIErrorDetails();
 
-            if (TdsParserStateObjectFactory.useManagedSni)
+            if (TdsParserStateObjectFactory.UseManagedSNI)
             {
                 SNIError sniError = SNIProxy.Singleton.GetLastError();
                 details.sniErrorNumber = sniError.sniError;
