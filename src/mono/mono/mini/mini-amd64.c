@@ -18,6 +18,7 @@
 #include "mini.h"
 #include <string.h>
 #include <math.h>
+#include <assert.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -4540,10 +4541,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				/* Copy arguments on the stack to our argument area */
 				for (i = 0; i < call->stack_usage; i += sizeof(mgreg_t)) {
 					amd64_mov_reg_membase (code, AMD64_RAX, AMD64_RSP, i, sizeof(mgreg_t));
-					amd64_mov_membase_reg (code, AMD64_RBP, 16 + i, AMD64_RAX, sizeof(mgreg_t));
+					amd64_mov_membase_reg (code, AMD64_RBP, ARGS_OFFSET + i, AMD64_RAX, sizeof(mgreg_t));
 				}
 
+#ifdef TARGET_WIN32
+				amd64_lea_membase (code, AMD64_RSP, AMD64_RBP, 0);
+				amd64_pop_reg (code, AMD64_RBP);
+				mono_emit_unwind_op_same_value (cfg, code, AMD64_RBP);
+#else
 				amd64_leave (code);
+#endif
 			}
 
 			offset = code - cfg->native_code;
@@ -6476,6 +6483,16 @@ mono_arch_register_lowlevel_calls (void)
 {
 	/* The signature doesn't matter */
 	mono_register_jit_icall (mono_amd64_throw_exception, "mono_amd64_throw_exception", mono_create_icall_signature ("void"), TRUE);
+
+#if defined(TARGET_WIN32) || defined(HOST_WIN32)
+#if _MSC_VER
+	extern void __chkstk (void);
+	mono_register_jit_icall_full (__chkstk, "mono_chkstk_win64", NULL, TRUE, FALSE, "__chkstk");
+#else
+	extern void ___chkstk_ms (void);
+	mono_register_jit_icall_full (___chkstk_ms, "mono_chkstk_win64", NULL, TRUE, FALSE, "___chkstk_ms");
+#endif
+#endif
 }
 
 void
@@ -6543,6 +6560,41 @@ get_max_epilog_size (MonoCompile *cfg)
     } \
 } while (0)
 
+#ifdef TARGET_WIN32
+static guint8 *
+emit_prolog_setup_sp_win64 (MonoCompile *cfg, guint8 *code, int alloc_size, int *cfa_offset_input)
+{
+	int cfa_offset = *cfa_offset_input;
+
+	/* Allocate windows stack frame using stack probing method */
+	if (alloc_size) {
+
+		if (alloc_size >= 0x1000) {
+			amd64_mov_reg_imm (code, AMD64_RAX, alloc_size);
+			code = emit_call_body (cfg, code, MONO_PATCH_INFO_INTERNAL_METHOD, "mono_chkstk_win64");
+		}
+
+		amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, alloc_size);
+		if (cfg->arch.omit_fp) {
+			cfa_offset += alloc_size;
+			mono_emit_unwind_op_def_cfa_offset (cfg, code, cfa_offset);
+			async_exc_point (code);
+		}
+
+		// NOTE, in a standard win64 prolog the alloc unwind info is always emitted, but since mono
+		// uses a frame pointer with negative offsets and a standard win64 prolog assumes positive offsets, we can't
+		// emit sp alloc unwind metadata since the native OS unwinder will incorrectly restore sp. Excluding the alloc
+		// metadata on the other hand won't give the OS the information so it can just restore the frame pointer to sp and
+		// that will retrieve the expected results.
+		if (cfg->arch.omit_fp)
+			mono_emit_unwind_op_sp_alloc (cfg, code, alloc_size);
+	}
+
+	*cfa_offset_input = cfa_offset;
+	return code;
+}
+#endif /* TARGET_WIN32 */
+
 guint8 *
 mono_arch_emit_prolog (MonoCompile *cfg)
 {
@@ -6573,8 +6625,9 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	/* 
 	 * The prolog consists of the following parts:
 	 * FP present:
-	 * - push rbp, mov rbp, rsp
-	 * - save callee saved regs using pushes
+	 * - push rbp
+	 * - mov rbp, rsp
+	 * - save callee saved regs using moves
 	 * - allocate frame
 	 * - save rgctx if needed
 	 * - save lmf if needed
@@ -6599,18 +6652,13 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		mono_emit_unwind_op_def_cfa_offset (cfg, code, cfa_offset);
 		mono_emit_unwind_op_offset (cfg, code, AMD64_RBP, - cfa_offset);
 		async_exc_point (code);
-#ifdef TARGET_WIN32
-		mono_arch_unwindinfo_add_push_nonvol (&cfg->arch.unwindinfo, cfg->native_code, code, AMD64_RBP);
-#endif
 		/* These are handled automatically by the stack marking code */
 		mini_gc_set_slot_type_from_cfa (cfg, -cfa_offset, SLOT_NOREF);
-		
+
 		amd64_mov_reg_reg (code, AMD64_RBP, AMD64_RSP, sizeof(mgreg_t));
 		mono_emit_unwind_op_def_cfa_reg (cfg, code, AMD64_RBP);
+		mono_emit_unwind_op_fp_alloc (cfg, code, AMD64_RBP, 0);
 		async_exc_point (code);
-#ifdef TARGET_WIN32
-		mono_arch_unwindinfo_add_set_fpreg (&cfg->arch.unwindinfo, cfg->native_code, code, AMD64_RBP);
-#endif
 	}
 
 	/* The param area is always at offset 0 from sp */
@@ -6647,9 +6695,12 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	cfg->arch.stack_alloc_size = alloc_size;
 
 	/* Allocate stack frame */
+#ifdef TARGET_WIN32
+	code = emit_prolog_setup_sp_win64 (cfg, code, alloc_size, &cfa_offset);
+#else
 	if (alloc_size) {
 		/* See mono_emit_stack_alloc */
-#if defined(TARGET_WIN32) || defined(MONO_ARCH_SIGSEGV_ON_ALTSTACK)
+#if defined(MONO_ARCH_SIGSEGV_ON_ALTSTACK)
 		guint32 remaining_size = alloc_size;
 		/*FIXME handle unbounded code expansion, we should use a loop in case of more than X interactions*/
 		guint32 required_code_size = ((remaining_size / 0x1000) + 1) * 11; /*11 is the max size of amd64_alu_reg_imm + amd64_test_membase_reg*/
@@ -6669,10 +6720,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
  				mono_emit_unwind_op_def_cfa_offset (cfg, code, cfa_offset);
 			}
 			async_exc_point (code);
-#ifdef TARGET_WIN32
-			if (cfg->arch.omit_fp) 
-				mono_arch_unwindinfo_add_alloc_stack (&cfg->arch.unwindinfo, cfg->native_code, code, 0x1000);
-#endif
 
 			amd64_test_membase_reg (code, AMD64_RSP, 0, AMD64_RSP);
 			remaining_size -= 0x1000;
@@ -6684,10 +6731,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
  				mono_emit_unwind_op_def_cfa_offset (cfg, code, cfa_offset);
 				async_exc_point (code);
 			}
-#ifdef TARGET_WIN32
-			if (cfg->arch.omit_fp) 
-				mono_arch_unwindinfo_add_alloc_stack (&cfg->arch.unwindinfo, cfg->native_code, code, remaining_size);
-#endif
 		}
 #else
 		amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, alloc_size);
@@ -6698,6 +6741,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		}
 #endif
 	}
+#endif
 
 	/* Stack alignment check */
 #if 0
@@ -7138,8 +7182,14 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 			amd64_alu_reg_imm (code, X86_ADD, AMD64_RSP, cfg->arch.stack_alloc_size);
 		}
 	} else {
+#ifdef TARGET_WIN32
+		amd64_lea_membase (code, AMD64_RSP, AMD64_RBP, 0);
+		amd64_pop_reg (code, AMD64_RBP);
+		mono_emit_unwind_op_same_value (cfg, code, AMD64_RBP);
+#else
 		amd64_leave (code);
 		mono_emit_unwind_op_same_value (cfg, code, AMD64_RBP);
+#endif
 	}
 	mono_emit_unwind_op_def_cfa (cfg, code, AMD64_RSP, 8);
 	async_exc_point (code);
@@ -7600,7 +7650,7 @@ get_delegate_invoke_impl (MonoTrampInfo **info, gboolean has_target, guint32 par
 	unwind_ops = mono_arch_get_cie_program ();
 
 	if (has_target) {
-		start = code = (guint8 *)mono_global_codeman_reserve (64);
+		start = code = (guint8 *)mono_global_codeman_reserve (64 + MONO_TRAMPOLINE_UNWINDINFO_SIZE(0));
 
 		/* Replace the this argument with the target */
 		amd64_mov_reg_reg (code, AMD64_RAX, AMD64_ARG_REG1, 8);
@@ -7608,8 +7658,9 @@ get_delegate_invoke_impl (MonoTrampInfo **info, gboolean has_target, guint32 par
 		amd64_jump_membase (code, AMD64_RAX, MONO_STRUCT_OFFSET (MonoDelegate, method_ptr));
 
 		g_assert ((code - start) < 64);
+		g_assert_checked (mono_arch_unwindinfo_validate_size (unwind_ops, MONO_TRAMPOLINE_UNWINDINFO_SIZE(0)));
 	} else {
-		start = code = (guint8 *)mono_global_codeman_reserve (64);
+		start = code = (guint8 *)mono_global_codeman_reserve (64 + MONO_TRAMPOLINE_UNWINDINFO_SIZE(0));
 
 		if (param_count == 0) {
 			amd64_jump_membase (code, AMD64_ARG_REG1, MONO_STRUCT_OFFSET (MonoDelegate, method_ptr));
@@ -7630,6 +7681,7 @@ get_delegate_invoke_impl (MonoTrampInfo **info, gboolean has_target, guint32 par
 			amd64_jump_membase (code, AMD64_RAX, MONO_STRUCT_OFFSET (MonoDelegate, method_ptr));
 		}
 		g_assert ((code - start) < 64);
+		g_assert_checked (mono_arch_unwindinfo_validate_size (unwind_ops, MONO_TRAMPOLINE_UNWINDINFO_SIZE(0)));
 	}
 
 	mono_arch_flush_icache (start, code - start);
@@ -7670,7 +7722,7 @@ get_delegate_virtual_invoke_impl (MonoTrampInfo **info, gboolean load_imt_reg, i
 	if (offset / (int)sizeof (gpointer) > MAX_VIRTUAL_DELEGATE_OFFSET)
 		return NULL;
 
-	start = code = (guint8 *)mono_global_codeman_reserve (size);
+	start = code = (guint8 *)mono_global_codeman_reserve (size + MONO_TRAMPOLINE_UNWINDINFO_SIZE(0));
 
 	unwind_ops = mono_arch_get_cie_program ();
 
@@ -7891,9 +7943,9 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTC
 		size += item->chunk_size;
 	}
 	if (fail_tramp)
-		code = (guint8 *)mono_method_alloc_generic_virtual_trampoline (domain, size);
+		code = (guint8 *)mono_method_alloc_generic_virtual_trampoline (domain, size + MONO_TRAMPOLINE_UNWINDINFO_SIZE(0));
 	else
-		code = (guint8 *)mono_domain_code_reserve (domain, size);
+		code = (guint8 *)mono_domain_code_reserve (domain, size + MONO_TRAMPOLINE_UNWINDINFO_SIZE(0));
 	start = code;
 
 	unwind_ops = mono_arch_get_cie_program ();
@@ -7984,6 +8036,7 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain, MonoIMTC
 	if (!fail_tramp)
 		mono_stats.imt_trampolines_size += code - start;
 	g_assert (code - start <= size);
+	g_assert_checked (mono_arch_unwindinfo_validate_size (unwind_ops, MONO_TRAMPOLINE_UNWINDINFO_SIZE(0)));
 
 	mono_profiler_code_buffer_new (start, code - start, MONO_PROFILER_CODE_BUFFER_IMT_TRAMPOLINE, NULL);
 

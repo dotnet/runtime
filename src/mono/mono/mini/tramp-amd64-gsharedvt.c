@@ -161,7 +161,7 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	int reg_area_size;
 
 	buf_len = 2048;
-	buf = code = mono_global_codeman_reserve (buf_len);
+	buf = code = mono_global_codeman_reserve (buf_len + MONO_MAX_TRAMPOLINE_UNWINDINFO_SIZE);
 
 	/*
 	 * We are being called by an gsharedvt arg trampoline, the info argument is in AMD64_RAX.
@@ -207,6 +207,7 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 
 	/* unwind markers 3/3 */
 	mono_add_unwind_op_def_cfa_reg (unwind_ops, code, buf, AMD64_RBP);
+	mono_add_unwind_op_fp_alloc (unwind_ops, code, buf, AMD64_RBP, 0);
 
 	/* setup the frame */
 	amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, framesize);
@@ -443,10 +444,17 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 		mono_amd64_patch (br_ret [i], code);
 
 	/* Exit code path */
+#if TARGET_WIN32
+	amd64_lea_membase (code, AMD64_RSP, AMD64_RBP, 0);
+	amd64_pop_reg (code, AMD64_RBP);
+	mono_add_unwind_op_same_value (unwind_ops, code, buf, AMD64_RBP);
+#else
 	amd64_leave (code);
+#endif
 	amd64_ret (code);
 
 	g_assert ((code - buf) < buf_len);
+	g_assert_checked (mono_arch_unwindinfo_validate_size (unwind_ops, MONO_MAX_TRAMPOLINE_UNWINDINFO_SIZE));
 
 	if (info)
 		*info = mono_tramp_info_create ("gsharedvt_trampoline", buf, code - buf, ji, unwind_ops);

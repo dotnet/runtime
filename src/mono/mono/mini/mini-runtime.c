@@ -505,6 +505,10 @@ mono_tramp_info_register (MonoTrampInfo *info, MonoDomain *domain)
 	mono_save_trampoline_xdebug_info (info);
 	mono_lldb_save_trampoline_info (info);
 
+#ifdef MONO_ARCH_HAVE_UNWIND_TABLE
+	mono_arch_unwindinfo_install_tramp_unwind_info (info->unwind_ops, info->code, info->code_size);
+#endif
+
 	/* Only register trampolines that have unwind infos */
 	if (mono_get_root_domain () && copy->uw_info)
 		register_trampoline_jit_info (domain, copy);
