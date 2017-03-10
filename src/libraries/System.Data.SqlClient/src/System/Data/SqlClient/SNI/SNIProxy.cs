@@ -266,7 +266,7 @@ namespace System.Data.SqlClient.SNI
         private static string GetServerNameWithOutProtocol(string fullServerName, string protocolHeader)
         {
             string serverNameWithOutProtocol = null;
-            if (fullServerName.Length > protocolHeader.Length &&
+            if (fullServerName.Length >= protocolHeader.Length &&
                 String.Compare(fullServerName, 0, protocolHeader, 0, protocolHeader.Length, true) == 0)
             {
                 serverNameWithOutProtocol = fullServerName.Substring(protocolHeader.Length, fullServerName.Length - protocolHeader.Length);
@@ -318,8 +318,7 @@ namespace System.Data.SqlClient.SNI
                     sniHandle = CreateTcpHandle(serverNameWithOutProtocol, timerExpire, callbackObject, parallel, ref spnBuffer, isIntegratedSecurity);
                 }
                 // when np protocol is specified
-                else if ((serverNameWithOutProtocol = GetServerNameWithOutProtocol(fullServerName, TdsEnums.NP + ":\\\\")) != null ||
-                         (serverNameWithOutProtocol = GetServerNameWithOutProtocol(fullServerName, "\\\\")) != null)
+                else if ((serverNameWithOutProtocol = GetServerNameWithOutProtocol(fullServerName, TdsEnums.NP + ":")) != null)
                 {
                     sniHandle = CreateNpHandle(serverNameWithOutProtocol, timerExpire, callbackObject, parallel);
                 }
