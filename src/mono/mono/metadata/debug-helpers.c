@@ -771,6 +771,9 @@ default_dh = {
 	NULL  /* user data */
 };
 
+/**
+ * mono_disasm_code_one:
+ */
 char*
 mono_disasm_code_one (MonoDisHelper *dh, MonoMethod *method, const guchar *ip, const guchar **endp)
 {
@@ -789,6 +792,9 @@ mono_disasm_code_one (MonoDisHelper *dh, MonoMethod *method, const guchar *ip, c
 	return result;
 }
 
+/**
+ * mono_disasm_code:
+ */
 char*
 mono_disasm_code (MonoDisHelper *dh, MonoMethod *method, const guchar *ip, const guchar* end)
 {

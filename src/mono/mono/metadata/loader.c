@@ -2211,6 +2211,9 @@ mono_stack_walk (MonoStackWalk func, gpointer user_data)
 	mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (stack_walk_adapter, NULL, MONO_UNWIND_LOOKUP_ALL, &ud);
 }
 
+/**
+ * mono_stack_walk_no_il:
+ */
 void
 mono_stack_walk_no_il (MonoStackWalk func, gpointer user_data)
 {
@@ -2250,10 +2253,9 @@ async_stack_walk_adapter (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer 
 }
 
 
-/*
+/**
  * mono_stack_walk_async_safe:
- *
- *   Async safe version callable from signal handlers.
+ * Async safe version callable from signal handlers.
  */
 void
 mono_stack_walk_async_safe (MonoStackWalkAsyncSafe func, void *initial_sig_context, void *user_data)
