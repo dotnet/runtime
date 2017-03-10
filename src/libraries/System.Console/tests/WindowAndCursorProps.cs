@@ -31,19 +31,10 @@ public class WindowAndCursorProps : RemoteExecutorTestBase
     }
 
     [Fact]
-    [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp | TargetFrameworkMonikers.Uap)]
-    public static void WindowWidth_WindowHeight_InvalidSize_net46()
-    {
-        Assert.Throws<IOException>(() => Console.WindowWidth = 0);
-        Assert.Throws<IOException>(() => Console.WindowHeight = 0);
-    }
-
-    [Fact]
-    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
     public static void WindowWidth_WindowHeight_InvalidSize()
     {
-        Assert.Throws<ArgumentOutOfRangeException>("value", () => Console.WindowWidth = 0);
-        Assert.Throws<ArgumentOutOfRangeException>("value", () => Console.WindowHeight = 0);
+        Assert.Throws<ArgumentOutOfRangeException>("width", () => Console.WindowWidth = 0);
+        Assert.Throws<ArgumentOutOfRangeException>("height", () => Console.WindowHeight = 0);
     }
 
     [Fact]

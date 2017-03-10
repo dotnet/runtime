@@ -225,7 +225,7 @@ namespace System
             {
                 if (value <= 0)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.ArgumentOutOfRange_NeedPosNum);
+                    throw new ArgumentOutOfRangeException("width", value, SR.ArgumentOutOfRange_NeedPosNum);
                 }
                 ConsolePal.WindowWidth = value;
             }
@@ -241,7 +241,7 @@ namespace System
             {
                 if (value <= 0)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.ArgumentOutOfRange_NeedPosNum);
+                    throw new ArgumentOutOfRangeException("height", value, SR.ArgumentOutOfRange_NeedPosNum);
                 }
                 ConsolePal.WindowHeight = value;
             }
