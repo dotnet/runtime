@@ -31,6 +31,7 @@ public class TestRunner
 	const string TEST_TIME_FORMAT = "mm\\:ss\\.fff";
 	const string ENV_TIMEOUT = "TEST_DRIVER_TIMEOUT_SEC";
 	const string MONO_PATH = "MONO_PATH";
+	const string MONO_GAC_PREFIX = "MONO_GAC_PREFIX";
 
 	class ProcessData {
 		public string test;
@@ -57,6 +58,7 @@ public class TestRunner
 		string config = null;
 		string mono_path = null;
 		string runtime_args = null;
+		string mono_gac_prefix = null;
 		var opt_sets = new List<string> ();
 
 		string aot_run_flags = null;
@@ -147,6 +149,13 @@ public class TestRunner
 					}
 					mono_path = args [i + 1].Substring(0, args [i + 1].Length);
 
+					i += 2;
+				} else if (args [i] == "--mono-gac-prefix") {
+					if (i + 1 >= args.Length) {
+						Console.WriteLine ("Missing argument to --mono-gac-prefix command line option.");
+						return 1;
+					}
+					mono_gac_prefix = args[i + 1];
 					i += 2;
 				} else if (args [i] == "--aot-run-flags") {
 					if (i + 1 >= args.Length) {
@@ -251,7 +260,10 @@ public class TestRunner
 						ProcessStartInfo job = new ProcessStartInfo (runtime, aot_args);
 						job.UseShellExecute = false;
 						job.EnvironmentVariables[ENV_TIMEOUT] = timeout.ToString();
-						job.EnvironmentVariables[MONO_PATH] = mono_path;
+						if (mono_path != null)
+							job.EnvironmentVariables[MONO_PATH] = mono_path;
+						if (mono_gac_prefix != null)
+							job.EnvironmentVariables[MONO_GAC_PREFIX] = mono_gac_prefix;
 						Process compiler = new Process ();
 						compiler.StartInfo = job;
 
@@ -331,6 +343,8 @@ public class TestRunner
 						info.EnvironmentVariables["MONO_CONFIG"] = config;
 					if (mono_path != null)
 						info.EnvironmentVariables[MONO_PATH] = mono_path;
+					if (mono_gac_prefix != null)
+						info.EnvironmentVariables[MONO_GAC_PREFIX] = mono_gac_prefix;
 					Process p = new Process ();
 					p.StartInfo = info;
 
