@@ -2666,6 +2666,12 @@ CreateProcessModules(
     // VM_ALLOCATE            0000000105bac000-0000000105bad000 [    4K] r--/rw- SM=SHM
     // MALLOC (admin)         0000000105bad000-0000000105bae000 [    4K] r--/rwx SM=ZER
     // MALLOC                 0000000105bae000-0000000105baf000 [    4K] rw-/rwx SM=ZER
+
+    // OS X Sierra (10.12.4 Beta)
+    // REGION TYPE                      START - END             [ VSIZE  RSDNT  DIRTY   SWAP] PRT/MAX SHRMOD PURGE    REGION DETAIL
+    // Stack                  00007fff5a930000-00007fff5b130000 [ 8192K    32K    32K     0K] rw-/rwx SM=PRV          thread 0
+    // __TEXT                 00007fffa4a0b000-00007fffa4a0d000 [    8K     8K     0K     0K] r-x/r-x SM=COW          /usr/lib/libSystem.B.dylib
+    // __TEXT                 00007fffa4bbe000-00007fffa4c15000 [  348K   348K     0K     0K] r-x/r-x SM=COW          /usr/lib/libc++.1.dylib
     char *line = NULL;
     size_t lineLen = 0;
     int count = 0;
@@ -2686,9 +2692,8 @@ CreateProcessModules(
     {
         void *startAddress, *endAddress;
         char moduleName[PATH_MAX];
-        int size;
 
-        if (sscanf_s(line, "__TEXT %p-%p [ %dK] %*[-/rwxsp] SM=%*[A-Z] %s\n", &startAddress, &endAddress, &size, moduleName, _countof(moduleName)) == 4)
+        if (sscanf_s(line, "__TEXT %p-%p [ %*[0-9K ]] %*[-/rwxsp] SM=%*[A-Z] %s\n", &startAddress, &endAddress, moduleName, _countof(moduleName)) == 3)
         {
             bool dup = false;
             for (ProcessModules *entry = listHead; entry != NULL; entry = entry->Next)
