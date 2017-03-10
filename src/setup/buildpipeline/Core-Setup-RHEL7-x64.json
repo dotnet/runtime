@@ -63,13 +63,14 @@
       "timeoutInMinutes": 0,
       "task": {
         "id": "6c731c3c-3c68-459a-a5c9-bde6e6595b5b",
-        "versionSpec": "1.*",
+        "versionSpec": "2.*",
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "pkg/init-tools.sh",
-        "arguments": "",
-        "workingFolder": "",
+        "scriptPath": "pkg/init-tools.sh",
+        "args": "",
+        "disableAutoCwd": "false",
+        "cwd": "",
         "failOnStandardError": "false"
       }
     },
