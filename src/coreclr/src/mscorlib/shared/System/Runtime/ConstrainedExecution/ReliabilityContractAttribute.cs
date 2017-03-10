@@ -16,48 +16,18 @@
 **
 ===========================================================*/
 
-using System.Runtime.InteropServices;
-using System;
-
 namespace System.Runtime.ConstrainedExecution
 {
-    [Serializable]
-    public enum Consistency : int
-    {
-        MayCorruptProcess = 0,
-        MayCorruptAppDomain = 1,
-        MayCorruptInstance = 2,
-        WillNotCorruptState = 3,
-    }
-
-    [Serializable]
-    public enum Cer : int
-    {
-        None = 0,
-        MayFail = 1,  // Might fail, but the method will say it failed
-        Success = 2,
-    }
-
     [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Constructor | AttributeTargets.Method | AttributeTargets.Interface /* | AttributeTargets.Delegate*/, Inherited = false)]
     public sealed class ReliabilityContractAttribute : Attribute
     {
-        private Consistency _consistency;
-        private Cer _cer;
-
         public ReliabilityContractAttribute(Consistency consistencyGuarantee, Cer cer)
         {
-            _consistency = consistencyGuarantee;
-            _cer = cer;
+            ConsistencyGuarantee = consistencyGuarantee;
+            Cer = cer;
         }
 
-        public Consistency ConsistencyGuarantee
-        {
-            get { return _consistency; }
-        }
-
-        public Cer Cer
-        {
-            get { return _cer; }
-        }
+        public Consistency ConsistencyGuarantee { get; }
+        public Cer Cer { get; }
     }
 }
