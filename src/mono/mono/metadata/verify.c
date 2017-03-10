@@ -1170,6 +1170,10 @@ stack_slot_full_name (ILStackDesc *value)
 }
 
 //////////////////////////////////////////////////////////////////
+
+/**
+ * mono_free_verify_list:
+ */
 void
 mono_free_verify_list (GSList *list)
 {

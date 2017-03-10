@@ -301,11 +301,10 @@ get_type_init_exception_for_vtable (MonoVTable *vtable)
 	return ex;
 }
 
-/*
+/**
  * mono_runtime_class_init:
- * @vtable: vtable that needs to be initialized
- *
- * This routine calls the class constructor for @vtable.
+ * \param vtable vtable that needs to be initialized
+ * This routine calls the class constructor for \p vtable.
  */
 void
 mono_runtime_class_init (MonoVTable *vtable)
@@ -3950,8 +3949,7 @@ static int num_main_args = 0;
 
 /**
  * mono_runtime_get_main_args:
- *
- * Returns: a MonoArray with the arguments passed to the main program
+ * \returns A \c MonoArray with the arguments passed to the main program
  */
 MonoArray*
 mono_runtime_get_main_args (void)
@@ -4138,7 +4136,7 @@ prepare_run_main (MonoMethod *method, int argc, char *argv[])
 
 /**
  * mono_runtime_run_main:
- * \param method the method to start the application with (usually \c Main)
+ * \param method the method to start the application with (usually <code>Main</code>)
  * \param argc number of arguments from the command line
  * \param argv array of strings from the command line
  * \param exc excetption results

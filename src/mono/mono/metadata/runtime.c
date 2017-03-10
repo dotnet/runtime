@@ -41,12 +41,8 @@ mono_runtime_set_shutting_down (void)
 
 /**
  * mono_runtime_is_shutting_down:
- *
- * Returns whether the runtime has been flagged for shutdown.
- *
- * This is consumed by the P:System.Environment.HasShutdownStarted
- * property.
- *
+ * This is consumed by the \c P:System.Environment.HasShutdownStarted property.
+ * \returns whether the runtime has been flagged for shutdown.
  */
 gboolean
 mono_runtime_is_shutting_down (void)

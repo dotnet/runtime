@@ -3825,6 +3825,9 @@ mono_assembly_get_name (MonoAssembly *assembly)
 	return &assembly->aname;
 }
 
+/**
+ * mono_register_bundled_assemblies:
+ */
 void
 mono_register_bundled_assemblies (const MonoBundledAssembly **assemblies)
 {

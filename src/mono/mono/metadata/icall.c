@@ -8412,6 +8412,9 @@ mono_lookup_internal_call_full (MonoMethod *method, mono_bool *uses_handles)
 #endif
 }
 
+/**
+ * mono_lookup_internal_call:
+ */
 gpointer
 mono_lookup_internal_call (MonoMethod *method)
 {

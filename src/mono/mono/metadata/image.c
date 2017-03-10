@@ -2641,6 +2641,9 @@ mono_image_get_table_rows (MonoImage *image, int table_id)
 	return image->tables [table_id].rows;
 }
 
+/**
+ * mono_table_info_get_rows:
+ */
 int
 mono_table_info_get_rows (const MonoTableInfo *table)
 {

@@ -230,14 +230,14 @@ create_domain_objects (MonoDomain *domain)
 
 /**
  * mono_runtime_init:
- * \param domain: domain returned by mono_init ()
+ * \param domain domain returned by \c mono_init
  *
  * Initialize the core AppDomain: this function will run also some
  * IL initialization code, so it needs the execution engine to be fully 
  * operational.
  *
- * AppDomain.SetupInformation is set up in mono_runtime_exec_main, where
- * we know the entry_assembly.
+ * \c AppDomain.SetupInformation is set up in \c mono_runtime_exec_main, where
+ * we know the \c entry_assembly.
  *
  */
 void
@@ -337,11 +337,9 @@ mono_get_corlib_version (void)
 }
 
 /**
- * mono_check_corlib_version
- *
+ * mono_check_corlib_version:
  * Checks that the corlib that is loaded matches the version of this runtime.
- *
- * Returns: NULL if the runtime will work with the corlib, or a g_malloc
+ * \returns NULL if the runtime will work with the corlib, or a \c g_malloc
  * allocated string with the error otherwise.
  */
 const char*
@@ -431,6 +429,9 @@ mono_install_runtime_cleanup (MonoDomainFunc func)
 	quit_function = func;
 }
 
+/**
+ * mono_runtime_quit:
+ */
 void
 mono_runtime_quit ()
 {

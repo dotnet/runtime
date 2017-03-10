@@ -6189,6 +6189,9 @@ mono_class_from_generic_parameter (MonoGenericParam *param, MonoImage *arg2 G_GN
 	return mono_class_from_generic_parameter_internal (param);
 }
 
+/**
+ * mono_ptr_class_get:
+ */
 MonoClass *
 mono_ptr_class_get (MonoType *type)
 {
@@ -6439,7 +6442,6 @@ mono_class_create_from_typespec (MonoImage *image, guint32 type_spec, MonoGeneri
  * \param element_class element class 
  * \param rank the dimension of the array class
  * \param bounded whenever the array has non-zero bounds
- *
  * \returns A class object describing the array with element type \p element_type and 
  * dimension \p rank.
  */
