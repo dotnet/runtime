@@ -38,7 +38,7 @@ namespace System.Runtime.Serialization.Json
             // with the restructuring for multi-file, this is no longer true - instead
             // this has become a normal method
             JsonReadWriteDelegates result;
-#if NET_NATIVE
+#if uapaot
             // The c passed in could be a clone which is different from the original key,
             // We'll need to get the original key data contract from generated assembly.
             DataContract keyDc = (c?.UnderlyingType != null) ?
@@ -318,7 +318,7 @@ namespace System.Runtime.Serialization.Json
         }
     }
 
-#if NET_NATIVE
+#if uapaot
     public class JsonReadWriteDelegates
 #else
     internal class JsonReadWriteDelegates

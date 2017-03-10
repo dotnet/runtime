@@ -12,9 +12,6 @@ using System.Text;
 using System.Threading;
 using System.Xml;
 using System.Xml.Linq;
-#if !NET_NATIVE
-using System.Xml.Schema;
-#endif
 using System.Xml.Serialization;
 using Xunit;
 
@@ -1524,8 +1521,6 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.Equal(0, serializers.Length);
     }
 
-#if NET_NATIVE
-#endif
     [Fact]
     public static void Xml_ConstructorWithXmlRootAttr()
     {
@@ -1541,8 +1536,6 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.True(expected.SequenceEqual(actual));
     }
 
-#if NET_NATIVE
-#endif
     [Fact]
     public static void Xml_ConstructorWithXmlAttributeOverrides()
     {

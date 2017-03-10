@@ -6,6 +6,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Security.Cryptography.X509Certificates</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants Condition="'$(TargetGroup)' == 'uap'">$(DefineConstants);uap</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />

@@ -13,7 +13,7 @@ using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.
 
 namespace System.Runtime.Serialization.Json
 {
-#if NET_NATIVE
+#if uapaot
     public class XmlObjectSerializerWriteContextComplexJson : XmlObjectSerializerWriteContextComplex
 #else
     internal class XmlObjectSerializerWriteContextComplexJson : XmlObjectSerializerWriteContextComplex

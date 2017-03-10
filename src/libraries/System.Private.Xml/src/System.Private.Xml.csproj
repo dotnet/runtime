@@ -7,7 +7,7 @@
     <RootNamespace>System.Xml</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn),649</NoWarn>
-    <!--<DefineConstants Condition="'$(TargetGroup)' == 'uap101aot'">$(DefineConstants);NET_NATIVE</DefineConstants> TODO: Bring this back when uap101aot support is added -->
+    <DefineConstants Condition="'$(TargetGroup)' == 'uap'">$(DefineConstants);uap</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />

@@ -1885,7 +1885,7 @@ namespace SerializationTypes
         public ICollection<int> Member1;
     }
 
-#if NET_NATIVE
+#if uapaot
     public class TypeWithTypeProperty
     {
         public int Id { get; set; }

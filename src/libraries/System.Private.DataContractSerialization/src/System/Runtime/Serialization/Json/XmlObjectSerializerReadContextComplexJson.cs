@@ -14,7 +14,7 @@ using System.Diagnostics;
 
 namespace System.Runtime.Serialization.Json
 {
-#if NET_NATIVE
+#if uapaot
     public class XmlObjectSerializerReadContextComplexJson : XmlObjectSerializerReadContextComplex
 #else
     internal class XmlObjectSerializerReadContextComplexJson : XmlObjectSerializerReadContextComplex
@@ -355,7 +355,7 @@ namespace System.Runtime.Serialization.Json
             return name;
         }
 
-#if !NET_NATIVE
+#if !uapaot
         public static void ThrowDuplicateMemberException(object obj, XmlDictionaryString[] memberNames, int memberIndex)
         {
             throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new SerializationException(

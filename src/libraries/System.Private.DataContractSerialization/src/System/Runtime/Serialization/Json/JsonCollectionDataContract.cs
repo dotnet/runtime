@@ -33,7 +33,7 @@ namespace System.Runtime.Serialization.Json
                             {
                                 tempDelegate = new ReflectionJsonCollectionReader().ReflectionReadCollection;
                             }
-#if NET_NATIVE
+#if uapaot
                             else if (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup)
                             {
                                 tempDelegate = JsonDataContract.TryGetReadWriteDelegatesFromGeneratedAssembly(TraditionalCollectionDataContract)?.CollectionReaderDelegate;
@@ -45,7 +45,7 @@ namespace System.Runtime.Serialization.Json
 #endif
                             else 
                             {
-#if NET_NATIVE
+#if uapaot
                                 tempDelegate = JsonDataContract.GetReadWriteDelegatesFromGeneratedAssembly(TraditionalCollectionDataContract).CollectionReaderDelegate;
 #else   
                                 tempDelegate = new JsonFormatReaderGenerator().GenerateCollectionReader(TraditionalCollectionDataContract);
@@ -82,7 +82,7 @@ namespace System.Runtime.Serialization.Json
                             {
                                 tempDelegate = new ReflectionJsonCollectionReader().ReflectionReadGetOnlyCollection;
                             }
-#if NET_NATIVE
+#if uapaot
                             else if (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup)
                             {
                                 tempDelegate = JsonDataContract.TryGetReadWriteDelegatesFromGeneratedAssembly(TraditionalCollectionDataContract)?.GetOnlyCollectionReaderDelegate;
@@ -94,7 +94,7 @@ namespace System.Runtime.Serialization.Json
 #endif
                             else
                             {
-#if NET_NATIVE
+#if uapaot
                                 tempDelegate = JsonDataContract.GetReadWriteDelegatesFromGeneratedAssembly(TraditionalCollectionDataContract).GetOnlyCollectionReaderDelegate;
 #else   
                                 tempDelegate = new JsonFormatReaderGenerator().GenerateGetOnlyCollectionReader(TraditionalCollectionDataContract);
@@ -125,7 +125,7 @@ namespace System.Runtime.Serialization.Json
                             {
                                 tempDelegate = new ReflectionJsonFormatWriter().ReflectionWriteCollection;
                             }
-#if NET_NATIVE
+#if uapaot
                             else if (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup)
                             {
                                 tempDelegate = JsonDataContract.TryGetReadWriteDelegatesFromGeneratedAssembly(TraditionalCollectionDataContract)?.CollectionWriterDelegate;
@@ -137,7 +137,7 @@ namespace System.Runtime.Serialization.Json
 #endif
                             else
                             {
-#if NET_NATIVE
+#if uapaot
                                 tempDelegate = JsonDataContract.GetReadWriteDelegatesFromGeneratedAssembly(TraditionalCollectionDataContract).CollectionWriterDelegate;
 #else   
                                 tempDelegate = new JsonFormatWriterGenerator().GenerateCollectionWriter(TraditionalCollectionDataContract);

@@ -6,6 +6,8 @@
     <AssemblyName>System.DirectoryServices</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);0649</NoWarn>
+    <!-- Although we have a netstandard configuration, we know we are not currently UAP compatible-->
+    <UWPCompatible>false</UWPCompatible>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />

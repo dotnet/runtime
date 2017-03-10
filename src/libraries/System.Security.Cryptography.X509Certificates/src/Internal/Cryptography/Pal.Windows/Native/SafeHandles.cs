@@ -183,7 +183,7 @@ namespace Internal.Cryptography.Pal.Native
                     }
                     else
                     {
-#if !NETNATIVE // For UWP, CryptAcquireContext() is a disallowed api, even when being used for cleanup. CAPI keys should not exist on that platform, however...
+#if !uap // For UWP, CryptAcquireContext() is a disallowed api, even when being used for cleanup. CAPI keys should not exist on that platform, however...
                         CryptAcquireContextFlags flags = (pProvInfo->dwFlags & CryptAcquireContextFlags.CRYPT_MACHINE_KEYSET) | CryptAcquireContextFlags.CRYPT_DELETEKEYSET;
                         IntPtr hProv;
                         bool success = Interop.cryptoapi.CryptAcquireContext(out hProv, pProvInfo->pwszContainerName, pProvInfo->pwszProvName, pProvInfo->dwProvType, flags);

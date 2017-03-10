@@ -83,7 +83,7 @@ namespace System.Runtime.Serialization
             Initialize(type, rootName, rootNamespace, knownTypes, int.MaxValue, false, false, null, false);
         }
 
-#if NET_NATIVE
+#if uapaot
         public DataContractSerializer(Type type, IEnumerable<Type> knownTypes, int maxItemsInObjectGraph, bool ignoreExtensionDataObject, bool preserveObjectReferences)
 #else
         internal DataContractSerializer(Type type, IEnumerable<Type> knownTypes, int maxItemsInObjectGraph, bool ignoreExtensionDataObject, bool preserveObjectReferences)
@@ -425,7 +425,7 @@ namespace System.Runtime.Serialization
             if (dataContractResolver == null)
                 dataContractResolver = this.DataContractResolver;
 
-#if NET_NATIVE
+#if uapaot
             // Give the root contract a chance to initialize or pre-verify the read
             RootContract.PrepareToRead(xmlReader);
 #endif

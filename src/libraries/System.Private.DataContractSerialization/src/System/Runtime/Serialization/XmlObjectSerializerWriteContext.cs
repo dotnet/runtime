@@ -14,13 +14,13 @@ using System.Collections.Generic;
 using System.Xml.Serialization;
 using System.Security;
 using System.Runtime.CompilerServices;
-#if !NET_NATIVE
+#if !uapaot
 using ExtensionDataObject = System.Object;
 #endif
 
 namespace System.Runtime.Serialization
 {
-#if USE_REFEMIT || NET_NATIVE
+#if USE_REFEMIT || uapaot
     public class XmlObjectSerializerWriteContext : XmlObjectSerializerContext
 #else
     internal class XmlObjectSerializerWriteContext : XmlObjectSerializerContext
@@ -57,7 +57,7 @@ namespace System.Runtime.Serialization
             _unsafeTypeForwardingEnabled = true;
         }
 
-#if USE_REFEMIT || NET_NATIVE
+#if USE_REFEMIT || uapaot
         internal ObjectToIdCache SerializedObjects
 #else
         protected ObjectToIdCache SerializedObjects
@@ -178,7 +178,7 @@ namespace System.Runtime.Serialization
         protected virtual void SerializeWithXsiType(XmlWriterDelegator xmlWriter, object obj, RuntimeTypeHandle objectTypeHandle, Type objectType, int declaredTypeID, RuntimeTypeHandle declaredTypeHandle, Type declaredType)
         {
             bool verifyKnownType = false;
-#if !NET_NATIVE
+#if !uapaot
             DataContract dataContract;
             if (declaredType.IsInterface && CollectionDataContract.IsCollectionInterface(declaredType))
             {
@@ -263,7 +263,7 @@ namespace System.Runtime.Serialization
                 knownTypesAddedInCurrentScope = true;
             }
 
-#if !NET_NATIVE
+#if !uapaot
             if (verifyKnownType)
             {
                 if (!IsKnownType(dataContract, declaredType))
@@ -304,7 +304,7 @@ namespace System.Runtime.Serialization
             return false;
         }
 
-#if USE_REFEMIT || NET_NATIVE
+#if USE_REFEMIT || uapaot
         public virtual void WriteAnyType(XmlWriterDelegator xmlWriter, object value)
 #else
         internal virtual void WriteAnyType(XmlWriterDelegator xmlWriter, object value)
@@ -313,7 +313,7 @@ namespace System.Runtime.Serialization
             xmlWriter.WriteAnyType(value);
         }
 
-#if USE_REFEMIT || NET_NATIVE
+#if USE_REFEMIT || uapaot
         public virtual void WriteString(XmlWriterDelegator xmlWriter, string value)
 #else
         internal virtual void WriteString(XmlWriterDelegator xmlWriter, string value)
@@ -321,7 +321,7 @@ namespace System.Runtime.Serialization
         {
             xmlWriter.WriteString(value);
         }
-#if USE_REFEMIT || NET_NATIVE
+#if USE_REFEMIT || uapaot
         public virtual void WriteString(XmlWriterDelegator xmlWriter, string value, XmlDictionaryString name, XmlDictionaryString ns)
 #else
         internal virtual void WriteString(XmlWriterDelegator xmlWriter, string value, XmlDictionaryString name, XmlDictionaryString ns)
@@ -337,7 +337,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-#if USE_REFEMIT || NET_NATIVE
+#if USE_REFEMIT || uapaot
         public virtual void WriteBase64(XmlWriterDelegator xmlWriter, byte[] value)
 #else
         internal virtual void WriteBase64(XmlWriterDelegator xmlWriter, byte[] value)
@@ -345,7 +345,7 @@ namespace System.Runtime.Serialization
         {
             xmlWriter.WriteBase64(value);
         }
-#if USE_REFEMIT || NET_NATIVE
+#if USE_REFEMIT || uapaot
         public virtual void WriteBase64(XmlWriterDelegator xmlWriter, byte[] value, XmlDictionaryString name, XmlDictionaryString ns)
 #else
         internal virtual void WriteBase64(XmlWriterDelegator xmlWriter, byte[] value, XmlDictionaryString name, XmlDictionaryString ns)
@@ -361,7 +361,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-#if USE_REFEMIT || NET_NATIVE
+#if USE_REFEMIT || uapaot
         public virtual void WriteUri(XmlWriterDelegator xmlWriter, Uri value)
 #else
         internal virtual void WriteUri(XmlWriterDelegator xmlWriter, Uri value)
@@ -369,7 +369,7 @@ namespace System.Runtime.Serialization
         {
             xmlWriter.WriteUri(value);
         }
-#if USE_REFEMIT || NET_NATIVE
+#if USE_REFEMIT || uapaot
         public virtual void WriteUri(XmlWriterDelegator xmlWriter, Uri value, XmlDictionaryString name, XmlDictionaryString ns)
 #else
         internal virtual void WriteUri(XmlWriterDelegator xmlWriter, Uri value, XmlDictionaryString name, XmlDictionaryString ns)
@@ -385,7 +385,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-#if USE_REFEMIT || NET_NATIVE
+#if USE_REFEMIT || uapaot
         public virtual void WriteQName(XmlWriterDelegator xmlWriter, XmlQualifiedName value)
 #else
         internal virtual void WriteQName(XmlWriterDelegator xmlWriter, XmlQualifiedName value)
@@ -393,7 +393,7 @@ namespace System.Runtime.Serialization
         {
             xmlWriter.WriteQName(value);
         }
-#if USE_REFEMIT || NET_NATIVE
+#if USE_REFEMIT || uapaot
         public virtual void WriteQName(XmlWriterDelegator xmlWriter, XmlQualifiedName value, XmlDictionaryString name, XmlDictionaryString ns)
 #else
         internal virtual void WriteQName(XmlWriterDelegator xmlWriter, XmlQualifiedName value, XmlDictionaryString name, XmlDictionaryString ns)

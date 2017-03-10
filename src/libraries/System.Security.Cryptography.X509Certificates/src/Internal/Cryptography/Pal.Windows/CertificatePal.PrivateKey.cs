@@ -27,7 +27,7 @@ namespace Internal.Cryptography.Pal
             return GetPrivateKey<RSA>(
                 delegate (CspParameters csp)
                 {
-#if NETNATIVE
+#if uap
                     // In .NET Native (UWP) we don't have access to CAPI, so it's CNG-or-nothing.
                     // But we don't expect to get here, so it shouldn't be a problem.
     
@@ -49,7 +49,7 @@ namespace Internal.Cryptography.Pal
             return GetPrivateKey<DSA>(
                 delegate (CspParameters csp)
                 {
-#if NETNATIVE
+#if uap
                     // In .NET Native (UWP) we don't have access to CAPI, so it's CNG-or-nothing.
                     // But we don't expect to get here, so it shouldn't be a problem.
     
@@ -107,7 +107,7 @@ namespace Internal.Cryptography.Pal
             else
             {
                 // ProviderType being non-zero signifies that this is a CAPI key.
-#if NETNATIVE
+#if uap
                 // In .NET Native (UWP) we don't have access to CAPI, so it's CNG-or-nothing.
                 // But we don't expect to get here, so it shouldn't be a problem.
     

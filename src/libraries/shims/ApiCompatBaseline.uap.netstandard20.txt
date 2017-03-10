@@ -18,6 +18,14 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Security.AccessControl.RegistryAu
 CannotRemoveBaseTypeOrInterface : Type 'System.Security.AccessControl.RegistrySecurity' does not inherit from base type 'System.Security.AccessControl.NativeObjectSecurity' in the implementation but it does in the contract.
 Compat issues with assembly netstandard:
 TypesMustExist : Type 'System.Net.AuthenticationSchemeSelector' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Cookie' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.CookieCollection.Add(System.Net.Cookie)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.CookieCollection.CopyTo(System.Net.Cookie[], System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.CookieCollection.Item.get(System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.CookieCollection.Item.get(System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.CookieContainer.Add(System.Net.Cookie)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.CookieContainer.Add(System.Uri, System.Net.Cookie)' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.CookieException' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Net.HttpListener' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Net.HttpListenerBasicIdentity' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Net.HttpListenerContext' does not exist in the implementation but it does exist in the contract.
@@ -53,8 +61,18 @@ TypesMustExist : Type 'System.Net.Mime.DispositionTypeNames' does not exist in t
 TypesMustExist : Type 'System.Net.Mime.MediaTypeNames' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Net.Mime.TransferEncoding' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Net.WebSockets.HttpListenerWebSocketContext' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Cryptography.ECDsa.Create(System.Security.Cryptography.ECCurve)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Cryptography.ECDsaCng..ctor(System.Security.Cryptography.ECCurve)' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System:
 TypesMustExist : Type 'System.Net.AuthenticationSchemeSelector' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Cookie' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.CookieCollection.Add(System.Net.Cookie)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.CookieCollection.CopyTo(System.Net.Cookie[], System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.CookieCollection.Item.get(System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.CookieCollection.Item.get(System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.CookieContainer.Add(System.Net.Cookie)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.CookieContainer.Add(System.Uri, System.Net.Cookie)' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.CookieException' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Net.HttpListener' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Net.HttpListenerBasicIdentity' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Net.HttpListenerContext' does not exist in the implementation but it does exist in the contract.
@@ -90,6 +108,8 @@ TypesMustExist : Type 'System.Net.Mime.DispositionTypeNames' does not exist in t
 TypesMustExist : Type 'System.Net.Mime.MediaTypeNames' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Net.Mime.TransferEncoding' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Net.WebSockets.HttpListenerWebSocketContext' does not exist in the implementation but it does exist in the contract.
+Compat issues with assembly System.Core:
+MembersMustExist : Member 'System.Security.Cryptography.ECDsa.Create(System.Security.Cryptography.ECCurve)' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.IO.FileSystem.AccessControl:
 TypesMustExist : Type 'System.IO.FileSystemAclExtensions' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.AccessControl.DirectoryObjectSecurity' does not exist in the implementation but it does exist in the contract.
@@ -103,6 +123,15 @@ Compat issues with assembly System.IO.Pipes.AccessControl:
 CannotRemoveBaseTypeOrInterface : Type 'System.IO.Pipes.PipeAccessRule' does not inherit from base type 'System.Security.AccessControl.AccessRule' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.IO.Pipes.PipeAuditRule' does not inherit from base type 'System.Security.AccessControl.AuditRule' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.IO.Pipes.PipeSecurity' does not inherit from base type 'System.Security.AccessControl.NativeObjectSecurity' in the implementation but it does in the contract.
+Compat issues with assembly System.Net.Primitives:
+TypesMustExist : Type 'System.Net.Cookie' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.CookieCollection.Add(System.Net.Cookie)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.CookieCollection.CopyTo(System.Net.Cookie[], System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.CookieCollection.Item.get(System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.CookieCollection.Item.get(System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.CookieContainer.Add(System.Net.Cookie)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.CookieContainer.Add(System.Uri, System.Net.Cookie)' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.CookieException' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Security.AccessControl:
 TypesMustExist : Type 'System.Security.AccessControl.AccessControlActions' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.AccessControl.AccessControlModification' does not exist in the implementation but it does exist in the contract.
@@ -148,6 +177,10 @@ TypesMustExist : Type 'System.Security.AccessControl.RawSecurityDescriptor' does
 TypesMustExist : Type 'System.Security.AccessControl.ResourceType' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.AccessControl.SecurityInfos' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.AccessControl.SystemAcl' does not exist in the implementation but it does exist in the contract.
+Compat issues with assembly System.Security.Cryptography.Algorithms:
+MembersMustExist : Member 'System.Security.Cryptography.ECDsa.Create(System.Security.Cryptography.ECCurve)' does not exist in the implementation but it does exist in the contract.
+Compat issues with assembly System.Security.Cryptography.Cng:
+MembersMustExist : Member 'System.Security.Cryptography.ECDsaCng..ctor(System.Security.Cryptography.ECCurve)' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Security.Permissions:
 TypesMustExist : Type 'System.Net.NetworkInformation.NetworkInformationAccess' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Net.NetworkInformation.NetworkInformationPermission' does not exist in the implementation but it does exist in the contract.
@@ -265,4 +298,4 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Security.AccessControl.MutexSecur
 CannotRemoveBaseTypeOrInterface : Type 'System.Security.AccessControl.SemaphoreAccessRule' does not inherit from base type 'System.Security.AccessControl.AccessRule' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Security.AccessControl.SemaphoreAuditRule' does not inherit from base type 'System.Security.AccessControl.AuditRule' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Security.AccessControl.SemaphoreSecurity' does not inherit from base type 'System.Security.AccessControl.NativeObjectSecurity' in the implementation but it does in the contract.
-Total Issues: 248
+Total Issues: 277

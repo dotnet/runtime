@@ -44,7 +44,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             get
             {
-#if NETNATIVE
+#if uap
                 yield break;
 #else
                 yield return new object[] {
@@ -521,7 +521,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         private static void TestKey_ECDsaCng(byte[] certBytes, TestData.ECDsaCngKeyValues expected)
         {
-#if !NETNATIVE
+#if !uap
             using (X509Certificate2 cert = new X509Certificate2(certBytes))
             {
                 ECDsaCng e = (ECDsaCng)(cert.GetECDsaPublicKey());
@@ -539,7 +539,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     Assert.Equal<byte>(expected.QY, qy);
                 }
             }
-#endif //!NETNATIVE
+#endif // !uap
         }
     }
 }

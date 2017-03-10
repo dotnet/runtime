@@ -15,7 +15,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             get
             {
-#if NETNATIVE
+#if uap
                 yield break;
 #else
                 yield return new object[] { TestData.ECDsabrainpoolP160r1_Pfx };

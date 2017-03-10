@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#if !NETNATIVE
+#if !uapaot
 extern alias System_Runtime_Extensions;
 extern alias System_Security_Principal;
 #endif
@@ -15,7 +15,7 @@ using Internal.Runtime.Augments;
 
 namespace System.Threading
 {
-#if !NETNATIVE
+#if !uapaot
     using AppDomain = System_Runtime_Extensions::System.AppDomain;
     using IPrincipal = System_Security_Principal::System.Security.Principal.IPrincipal;
 #endif
@@ -27,7 +27,7 @@ namespace System.Threading
 
         private readonly RuntimeThread _runtimeThread;
         private Delegate _start;
-#if !NETNATIVE
+#if !uapaot
         private IPrincipal _principal;
 #endif
 
@@ -162,7 +162,7 @@ namespace System.Threading
             }
         }
 
-#if !NETNATIVE
+#if !uapaot
         public static IPrincipal CurrentPrincipal
         {
             get
@@ -285,7 +285,7 @@ namespace System.Threading
             throw new InvalidOperationException(SR.Thread_GetSetCompressedStack_NotSupported);
         }
 
-#if !NETNATIVE
+#if !uapaot
         public static AppDomain GetDomain() => AppDomain.CurrentDomain;
         public static int GetDomainID() => GetDomain().Id;
 #endif

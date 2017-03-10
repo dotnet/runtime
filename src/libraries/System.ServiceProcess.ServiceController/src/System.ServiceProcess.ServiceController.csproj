@@ -9,6 +9,8 @@
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netfx'">true</IsPartialFacadeAssembly>
     <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'netfx'">None</ResourcesSourceOutputDirectory>
     <GeneratePlatformNotSupportedAssembly Condition="'$(TargetsUnix)' == 'true'">true</GeneratePlatformNotSupportedAssembly>
+    <!-- Although we have a netstandard configuration, we know we are not currently UAP compatible-->
+    <UWPCompatible>false</UWPCompatible>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Windows_NT-Debug|AnyCPU'" />

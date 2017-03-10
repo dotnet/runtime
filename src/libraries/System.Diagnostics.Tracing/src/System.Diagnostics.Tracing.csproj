@@ -8,7 +8,7 @@
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <NoWarn>CA2002</NoWarn>
     <GenFacadesIgnoreMissingTypes Condition="'$(TargetGroup)'=='uapaot'">true</GenFacadesIgnoreMissingTypes>
-    <!-- Disable binplacing for now since we need to use the netcore50aot version of this assembly -->
+    <!-- Disable binplacing for now since we need to use the uapaot version of this assembly -->
     <BinPlaceILCInputFolder>false</BinPlaceILCInputFolder>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
