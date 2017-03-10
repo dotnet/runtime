@@ -15,12 +15,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Release|AnyCPU'" />
-
-  <!-- TODO: Remove once https://github.com/dotnet/corert/pull/2924 is available -->
-  <ItemGroup Condition="'$(TargetGroup)' == 'uapaot'">
-    <Compile Include="System\Threading\Tasks\TaskExtensions.CoreRT.cs" />
-  </ItemGroup>
-
   <ItemGroup>
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
   </ItemGroup>
