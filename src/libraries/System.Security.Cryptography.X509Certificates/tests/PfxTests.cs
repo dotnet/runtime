@@ -185,16 +185,22 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         public static void ECDsaPrivateKeyProperty_WindowsPfx()
         {
             using (var cert = new X509Certificate2(TestData.ECDsaP256_DigitalSignature_Pfx_Windows, "Test", X509KeyStorageFlags.EphemeralKeySet))
+            using (var pubOnly = new X509Certificate2(cert.RawData))
             {
-                AsymmetricAlgorithm alg = cert.PrivateKey;
-                Assert.NotNull(alg);
-                Assert.Same(alg, cert.PrivateKey);
-                Assert.IsAssignableFrom(typeof(ECDsa), alg);
-                Verify_ECDsaPrivateKey_WindowsPfx((ECDsa)alg);
+                Assert.True(cert.HasPrivateKey, "cert.HasPrivateKey");
+                Assert.Throws<NotSupportedException>(() => cert.PrivateKey);
+
+                Assert.False(pubOnly.HasPrivateKey, "pubOnly.HasPrivateKey");
+                Assert.Null(pubOnly.PrivateKey);
 
                 // Currently unable to set PrivateKey
                 Assert.Throws<PlatformNotSupportedException>(() => cert.PrivateKey = null);
-                Assert.Throws<PlatformNotSupportedException>(() => cert.PrivateKey = alg);
+
+                using (var privKey = cert.GetECDsaPrivateKey())
+                {
+                    Assert.Throws<PlatformNotSupportedException>(() => cert.PrivateKey = privKey);
+                    Assert.Throws<PlatformNotSupportedException>(() => pubOnly.PrivateKey = privKey);
+                }
             }
         }
 #endif

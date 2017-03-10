@@ -31,7 +31,6 @@ namespace Internal.Cryptography
         X500DistinguishedName SubjectName { get; }
         X500DistinguishedName IssuerName { get; }
         IEnumerable<X509Extension> Extensions { get; }
-        AsymmetricAlgorithm GetPrivateKey();
         RSA GetRSAPrivateKey();
         DSA GetDSAPrivateKey();
         ECDsa GetECDsaPrivateKey();
