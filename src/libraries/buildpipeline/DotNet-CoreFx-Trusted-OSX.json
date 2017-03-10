@@ -291,7 +291,7 @@
     }
   },
   "demands": [
-    "Configuration -equals VSTS_Agent_v3.0.0"
+    "Configuration -equals VSTSAgent_Mac_v3.0.0"
   ],
   "retentionRules": [
     {
