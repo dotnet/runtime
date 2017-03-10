@@ -20,6 +20,7 @@ namespace System.Linq.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #16916")] //This test hangs forever in query.GetEnumerator()
         public void NullEnumerableConstantNullExpression()
         {
             IQueryable<int> query = new EnumerableQuery<int>((IEnumerable<int>)null);

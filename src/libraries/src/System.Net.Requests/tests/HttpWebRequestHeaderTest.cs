@@ -193,6 +193,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #16928")] //Test hangs in desktop.
         public void HttpWebRequest_PreAuthenticateGetSet_Ok()
         {
             HttpWebRequest request = WebRequest.CreateHttp(Configuration.Http.RemoteEchoServer);
