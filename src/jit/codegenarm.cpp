@@ -1220,6 +1220,14 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             genTableBasedSwitch(treeNode);
             break;
 
+        case GT_ARR_INDEX:
+            genCodeForArrIndex(treeNode->AsArrIndex());
+            break;
+
+        case GT_ARR_OFFSET:
+            genCodeForArrOffset(treeNode->AsArrOffs());
+            break;
+
         case GT_IL_OFFSET:
             // Do nothing; these nodes are simply markers for debug info.
             break;
@@ -1395,6 +1403,157 @@ void CodeGen::genRangeCheck(GenTreePtr oper)
 
     getEmitter()->emitInsBinary(INS_cmp, emitAttr(TYP_INT), src1, src2);
     genJumpToThrowHlpBlk(jmpKind, SCK_RNGCHK_FAIL, bndsChk->gtIndRngFailBB);
+}
+
+//------------------------------------------------------------------------
+// genOffsetOfMDArrayLowerBound: Returns the offset from the Array object to the
+//   lower bound for the given dimension.
+//
+// Arguments:
+//    elemType  - the element type of the array
+//    rank      - the rank of the array
+//    dimension - the dimension for which the lower bound offset will be returned.
+//
+// Return Value:
+//    The offset.
+// TODO-Cleanup: move to CodeGenCommon.cpp
+
+// static
+unsigned CodeGen::genOffsetOfMDArrayLowerBound(var_types elemType, unsigned rank, unsigned dimension)
+{
+    // Note that the lower bound and length fields of the Array object are always TYP_INT
+    return compiler->eeGetArrayDataOffset(elemType) + genTypeSize(TYP_INT) * (dimension + rank);
+}
+
+//------------------------------------------------------------------------
+// genOffsetOfMDArrayLength: Returns the offset from the Array object to the
+//   size for the given dimension.
+//
+// Arguments:
+//    elemType  - the element type of the array
+//    rank      - the rank of the array
+//    dimension - the dimension for which the lower bound offset will be returned.
+//
+// Return Value:
+//    The offset.
+// TODO-Cleanup: move to CodeGenCommon.cpp
+
+// static
+unsigned CodeGen::genOffsetOfMDArrayDimensionSize(var_types elemType, unsigned rank, unsigned dimension)
+{
+    // Note that the lower bound and length fields of the Array object are always TYP_INT
+    return compiler->eeGetArrayDataOffset(elemType) + genTypeSize(TYP_INT) * dimension;
+}
+
+//------------------------------------------------------------------------
+// genCodeForArrIndex: Generates code to bounds check the index for one dimension of an array reference,
+//                     producing the effective index by subtracting the lower bound.
+//
+// Arguments:
+//    arrIndex - the node for which we're generating code
+//
+// Return Value:
+//    None.
+//
+
+void CodeGen::genCodeForArrIndex(GenTreeArrIndex* arrIndex)
+{
+    emitter*   emit      = getEmitter();
+    GenTreePtr arrObj    = arrIndex->ArrObj();
+    GenTreePtr indexNode = arrIndex->IndexExpr();
+    regNumber  arrReg    = genConsumeReg(arrObj);
+    regNumber  indexReg  = genConsumeReg(indexNode);
+    regNumber  tgtReg    = arrIndex->gtRegNum;
+    noway_assert(tgtReg != REG_NA);
+
+    // We will use a temp register to load the lower bound and dimension size values
+    //
+    regMaskTP tmpRegsMask = arrIndex->gtRsvdRegs; // there will be two bits set
+    tmpRegsMask &= ~genRegMask(tgtReg);           // remove the bit for 'tgtReg' from 'tmpRegsMask'
+
+    regMaskTP tmpRegMask = genFindLowestBit(tmpRegsMask); // set tmpRegMsk to a one-bit mask
+    regNumber tmpReg     = genRegNumFromMask(tmpRegMask); // set tmpReg from that mask
+    noway_assert(tmpReg != REG_NA);
+
+    assert(tgtReg != tmpReg);
+
+    unsigned  dim      = arrIndex->gtCurrDim;
+    unsigned  rank     = arrIndex->gtArrRank;
+    var_types elemType = arrIndex->gtArrElemType;
+    unsigned  offset;
+
+    offset = genOffsetOfMDArrayLowerBound(elemType, rank, dim);
+    emit->emitIns_R_R_I(ins_Load(TYP_INT), EA_4BYTE, tmpReg, arrReg, offset); // a 4 BYTE sign extending load
+    emit->emitIns_R_R_R(INS_sub, EA_4BYTE, tgtReg, indexReg, tmpReg);
+
+    offset = genOffsetOfMDArrayDimensionSize(elemType, rank, dim);
+    emit->emitIns_R_R_I(ins_Load(TYP_INT), EA_4BYTE, tmpReg, arrReg, offset); // a 4 BYTE sign extending load
+    emit->emitIns_R_R(INS_cmp, EA_4BYTE, tgtReg, tmpReg);
+
+    emitJumpKind jmpGEU = genJumpKindForOper(GT_GE, CK_UNSIGNED);
+    genJumpToThrowHlpBlk(jmpGEU, SCK_RNGCHK_FAIL);
+
+    genProduceReg(arrIndex);
+}
+
+//------------------------------------------------------------------------
+// genCodeForArrOffset: Generates code to compute the flattened array offset for
+//    one dimension of an array reference:
+//        result = (prevDimOffset * dimSize) + effectiveIndex
+//    where dimSize is obtained from the arrObj operand
+//
+// Arguments:
+//    arrOffset - the node for which we're generating code
+//
+// Return Value:
+//    None.
+//
+// Notes:
+//    dimSize and effectiveIndex are always non-negative, the former by design,
+//    and the latter because it has been normalized to be zero-based.
+
+void CodeGen::genCodeForArrOffset(GenTreeArrOffs* arrOffset)
+{
+    GenTreePtr offsetNode = arrOffset->gtOffset;
+    GenTreePtr indexNode  = arrOffset->gtIndex;
+    regNumber  tgtReg     = arrOffset->gtRegNum;
+
+    noway_assert(tgtReg != REG_NA);
+
+    if (!offsetNode->IsIntegralConst(0))
+    {
+        emitter*  emit      = getEmitter();
+        regNumber offsetReg = genConsumeReg(offsetNode);
+        noway_assert(offsetReg != REG_NA);
+        regNumber indexReg = genConsumeReg(indexNode);
+        noway_assert(indexReg != REG_NA);
+        GenTreePtr arrObj = arrOffset->gtArrObj;
+        regNumber  arrReg = genConsumeReg(arrObj);
+        noway_assert(arrReg != REG_NA);
+        regMaskTP tmpRegMask = arrOffset->gtRsvdRegs;
+        regNumber tmpReg     = genRegNumFromMask(tmpRegMask);
+        noway_assert(tmpReg != REG_NA);
+        unsigned  dim      = arrOffset->gtCurrDim;
+        unsigned  rank     = arrOffset->gtArrRank;
+        var_types elemType = arrOffset->gtArrElemType;
+        unsigned  offset   = genOffsetOfMDArrayDimensionSize(elemType, rank, dim);
+
+        // Load tmpReg with the dimension size
+        emit->emitIns_R_R_I(ins_Load(TYP_INT), EA_4BYTE, tmpReg, arrReg, offset); // a 4 BYTE sign extending load
+
+        // Evaluate tgtReg = offsetReg*dim_size + indexReg.
+        emit->emitIns_R_R_R(INS_MUL, EA_4BYTE, tgtReg, tmpReg, offsetReg);
+        emit->emitIns_R_R_R(INS_add, EA_4BYTE, tgtReg, tgtReg, indexReg);
+    }
+    else
+    {
+        regNumber indexReg = genConsumeReg(indexNode);
+        if (indexReg != tgtReg)
+        {
+            inst_RV_RV(INS_mov, tgtReg, indexReg, TYP_INT);
+        }
+    }
+    genProduceReg(arrOffset);
 }
 
 //------------------------------------------------------------------------
