@@ -871,4 +871,9 @@ internal static class SR
     {
         get { return Environment.GetResourceString("Lazy_ToString_ValueNotCreated"); }
     }
+
+    internal static string Serialization_NonSerType
+    {
+        get { return Environment.GetResourceString("Serialization_NonSerType"); }
+    }
 }

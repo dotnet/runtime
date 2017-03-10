@@ -2,13 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Diagnostics.Contracts;
-using System.Reflection;
-using System.Security;
-
 namespace System.Runtime.Serialization
 {
     //
@@ -202,33 +195,6 @@ namespace System.Runtime.Serialization
     //       }
     //   }
     // 
-
-    // SafeSerializationEventArgs are provided to the delegates which do safe serialization.  Each delegate
-    // serializes its own state into an IDeserializationCallback instance which must, itself, be serializable.
-    // These indivdiual states are then added to the SafeSerializationEventArgs in order to be saved away when
-    // the original ISerializable type is serialized.
-    public sealed class SafeSerializationEventArgs : EventArgs
-    {
-        private StreamingContext m_streamingContext;
-        private List<object> m_serializedStates = new List<object>();
-
-        internal SafeSerializationEventArgs() { }
-
-        public void AddSerializedState(ISafeSerializationData serializedState)
-        {
-            if (serializedState == null)
-                throw new ArgumentNullException(nameof(serializedState));
-            if (!serializedState.GetType().IsSerializable)
-                throw new ArgumentException(Environment.GetResourceString("Serialization_NonSerType", serializedState.GetType(), serializedState.GetType().Assembly.FullName));
-
-            m_serializedStates.Add(serializedState);
-        }
-
-        public StreamingContext StreamingContext
-        {
-            get { return m_streamingContext; }
-        }
-    }
 
     // Interface to be supported by objects which are stored in safe serialization stores
     public interface ISafeSerializationData

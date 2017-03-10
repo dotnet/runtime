@@ -1963,3 +1963,7 @@ Globalization.cp_28591 = Western European (ISO)
 ; ValueTuple
 ArgumentException_ValueTupleIncorrectType=Argument must be of type {0}.
 ArgumentException_ValueTupleLastArgumentNotAValueTuple=The last element of an eight element ValueTuple must be a ValueTuple.
+
+; SafeSerializationEventArgs
+Serialization_NonSerType=Type '{0}' in Assembly '{1}' is not marked as serializable.
+
