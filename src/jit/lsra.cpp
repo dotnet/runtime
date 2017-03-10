@@ -39,9 +39,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
   Overview (doLinearScan):
     - Walk all blocks, building intervals and RefPositions (buildIntervals)
-    - Traverse the RefPositions, marking last uses (setLastUses)
-      - Note that this is necessary because the execution order doesn't accurately reflect use order.
-        There is a "TODO-Throughput" to eliminate this.
     - Allocate registers (allocateRegisters)
     - Annotate nodes with register assignments (resolveRegisters)
     - Add move nodes as needed to resolve conflicting register
@@ -723,12 +720,25 @@ void LinearScan::associateRefPosWithInterval(RefPosition* rp)
 
             applyCalleeSaveHeuristics(rp);
 
-            // Ensure that we have consistent def/use on SDSU temps.
-            // However, in the case of a non-commutative rmw def, we must avoid over-constraining
-            // the def, so don't propagate a single-register restriction from the consumer to the producer
-
-            if (RefTypeIsUse(rp->refType) && !theInterval->isLocalVar)
+            if (theInterval->isLocalVar)
             {
+                if (RefTypeIsUse(rp->refType))
+                {
+                    RefPosition* const prevRP = theInterval->recentRefPosition;
+                    if ((prevRP != nullptr) && (prevRP->bbNum == rp->bbNum))
+                    {
+                        prevRP->lastUse = false;
+                    }
+                }
+
+                rp->lastUse = (rp->refType != RefTypeExpUse) && (rp->refType != RefTypeParamDef) &&
+                              (rp->refType != RefTypeZeroInit) && !extendLifetimes();
+            }
+            else if (rp->refType == RefTypeUse)
+            {
+                // Ensure that we have consistent def/use on SDSU temps.
+                // However, in the case of a non-commutative rmw def, we must avoid over-constraining
+                // the def, so don't propagate a single-register restriction from the consumer to the producer
                 RefPosition* prevRefPosition = theInterval->recentRefPosition;
                 assert(prevRefPosition != nullptr && theInterval->firstRefPosition == prevRefPosition);
                 regMaskTP prevAssignment = prevRefPosition->registerAssignment;
@@ -744,6 +754,8 @@ void LinearScan::associateRefPosWithInterval(RefPosition* rp)
                 {
                     theInterval->hasConflictingDefUse = true;
                 }
+
+                rp->lastUse = true;
             }
         }
 
@@ -2486,16 +2498,15 @@ RefType refTypeForLocalRefNode(GenTree* node)
 // being set by dataflow analysis.  It is necessary to do it this way only because the execution
 // order wasn't strictly correct.
 
-void LinearScan::setLastUses(BasicBlock* block)
-{
 #ifdef DEBUG
+void LinearScan::checkLastUses(BasicBlock* block)
+{
     if (VERBOSE)
     {
-        JITDUMP("\n\nCALCULATING LAST USES for block %u, liveout=", block->bbNum);
+        JITDUMP("\n\nCHECKING LAST USES for block %u, liveout=", block->bbNum);
         dumpConvertedVarSet(compiler, block->bbLiveOut);
         JITDUMP("\n==============================\n");
     }
-#endif // DEBUG
 
     unsigned keepAliveVarNum = BAD_VAR_NUM;
     if (compiler->lvaKeepAliveAndReportThis())
@@ -2513,8 +2524,8 @@ void LinearScan::setLastUses(BasicBlock* block)
 
     VARSET_TP VARSET_INIT(compiler, temp, block->bbLiveOut);
 
+    bool foundDiff          = false;
     auto currentRefPosition = refPositions.rbegin();
-
     while (currentRefPosition->refType != RefTypeBB)
     {
         // We should never see ParamDefs or ZeroInits within a basic block.
@@ -2523,42 +2534,46 @@ void LinearScan::setLastUses(BasicBlock* block)
         {
             unsigned varNum   = currentRefPosition->getInterval()->varNum;
             unsigned varIndex = currentRefPosition->getInterval()->getVarIndex(compiler);
+
+            LsraLocation loc = currentRefPosition->nodeLocation;
+
             // We should always have a tree node for a localVar, except for the "special" RefPositions.
             GenTreePtr tree = currentRefPosition->treeNode;
             assert(tree != nullptr || currentRefPosition->refType == RefTypeExpUse ||
                    currentRefPosition->refType == RefTypeDummyDef);
+
             if (!VarSetOps::IsMember(compiler, temp, varIndex) && varNum != keepAliveVarNum)
             {
-                // There was no exposed use, so this is a
-                // "last use" (and we mark it thus even if it's a def)
+                // There was no exposed use, so this is a "last use" (and we mark it thus even if it's a def)
 
-                if (tree != nullptr)
+                if (extendLifetimes())
                 {
-                    tree->gtFlags |= GTF_VAR_DEATH;
+                    // NOTE: this is a bit of a hack. When extending lifetimes, the "last use" bit will be clear.
+                    // This bit, however, would normally be used during resolveLocalRef to set the value of
+                    // GTF_VAR_DEATH on the node for a ref position. If this bit is not set correctly even when
+                    // extending lifetimes, the code generator will assert as it expects to have accurate last
+                    // use information. To avoid these asserts, set the GTF_VAR_DEATH bit here.
+                    if (tree != nullptr)
+                    {
+                        tree->gtFlags |= GTF_VAR_DEATH;
+                    }
                 }
-                LsraLocation loc = currentRefPosition->nodeLocation;
-#ifdef DEBUG
-                if (getLsraExtendLifeTimes())
+                else if (!currentRefPosition->lastUse)
                 {
-                    JITDUMP("last use of V%02u @%u (not marked as last use for LSRA due to extendLifetimes stress "
-                            "option)\n",
-                            compiler->lvaTrackedToVarNum[varIndex], loc);
-                }
-                else
-#endif // DEBUG
-                {
-                    JITDUMP("last use of V%02u @%u\n", compiler->lvaTrackedToVarNum[varIndex], loc);
-                    currentRefPosition->lastUse = true;
+                    JITDUMP("missing expected last use of V%02u @%u\n", compiler->lvaTrackedToVarNum[varIndex], loc);
+                    foundDiff = true;
                 }
                 VarSetOps::AddElemD(compiler, temp, varIndex);
             }
-            else
+            else if (currentRefPosition->lastUse)
             {
-                currentRefPosition->lastUse = false;
-                if (tree != nullptr)
-                {
-                    tree->gtFlags &= ~GTF_VAR_DEATH;
-                }
+                JITDUMP("unexpected last use of V%02u @%u\n", compiler->lvaTrackedToVarNum[varIndex], loc);
+                foundDiff = true;
+            }
+            else if (extendLifetimes() && tree != nullptr)
+            {
+                // NOTE: see the comment above re: the extendLifetimes hack.
+                tree->gtFlags &= ~GTF_VAR_DEATH;
             }
 
             if (currentRefPosition->refType == RefTypeDef || currentRefPosition->refType == RefTypeDummyDef)
@@ -2566,15 +2581,14 @@ void LinearScan::setLastUses(BasicBlock* block)
                 VarSetOps::RemoveElemD(compiler, temp, varIndex);
             }
         }
+
         assert(currentRefPosition != refPositions.rend());
         ++currentRefPosition;
     }
 
-#ifdef DEBUG
     VARSET_TP VARSET_INIT(compiler, temp2, block->bbLiveIn);
     VarSetOps::DiffD(compiler, temp2, temp);
     VarSetOps::DiffD(compiler, temp, block->bbLiveIn);
-    bool foundDiff = false;
 
     {
         VARSET_ITER_INIT(compiler, iter, temp, varIndex);
@@ -2603,8 +2617,8 @@ void LinearScan::setLastUses(BasicBlock* block)
     }
 
     assert(!foundDiff);
-#endif // DEBUG
 }
+#endif // DEBUG
 
 void LinearScan::addRefsForPhysRegMask(regMaskTP mask, LsraLocation currentLoc, RefType refType, bool isLastUse)
 {
@@ -3029,7 +3043,6 @@ void LinearScan::buildInternalRegisterUsesForNode(GenTree*     tree,
         {
             RefPosition* newest = newRefPosition(defs[i]->getInterval(), currentLoc, RefTypeUse, tree, mask,
                                                  0 DEBUG_ARG(minRegCandidateCount));
-            newest->lastUse = true;
 
             if (tree->gtLsraInfo.isInternalRegDelayFree)
             {
@@ -3548,8 +3561,6 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
             }
             RefPosition* pos   = newRefPosition(interval, currentLoc, RefTypeUse, tree, candidates);
             pos->isLocalDefUse = true;
-            bool isLastUse     = ((tree->gtFlags & GTF_VAR_DEATH) != 0);
-            pos->lastUse       = isLastUse;
             pos->setAllocateIfProfitable(tree->IsRegOptional());
             DBEXEC(VERBOSE, pos->dump());
             return;
@@ -3883,29 +3894,26 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
         }
 #endif // FEATURE_SIMD
 
-        bool delayRegFree = (hasDelayFreeSrc && useNode->gtLsraInfo.isDelayFree);
         if (useNode->gtLsraInfo.isTgtPref)
         {
             prefSrcInterval = i;
-        }
-
-        bool regOptionalAtUse = useNode->IsRegOptional();
-        bool isLastUse        = true;
-        if (isCandidateLocalRef(useNode))
-        {
-            isLastUse = ((useNode->gtFlags & GTF_VAR_DEATH) != 0);
-        }
-        else
-        {
-            // For non-localVar uses we record nothing,
-            // as nothing needs to be written back to the tree.
-            useNode = nullptr;
         }
 
         regMaskTP fixedAssignment = fixedCandidateMask(type, candidates);
         if (fixedAssignment != RBM_NONE)
         {
             candidates = fixedAssignment;
+        }
+
+        const bool regOptionalAtUse = useNode->IsRegOptional();
+        const bool delayRegFree     = (hasDelayFreeSrc && useNode->gtLsraInfo.isDelayFree);
+
+        assert(isCandidateLocalRef(useNode) == i->isLocalVar);
+        if (!i->isLocalVar)
+        {
+            // For non-localVar uses we record nothing,
+            // as nothing needs to be written back to the tree.
+            useNode = nullptr;
         }
 
 #ifdef DEBUG
@@ -3966,11 +3974,6 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
         {
             hasDelayFreeSrc   = true;
             pos->delayRegFree = true;
-        }
-
-        if (isLastUse)
-        {
-            pos->lastUse = true;
         }
 
         if (regOptionalAtUse)
@@ -4725,15 +4728,27 @@ void LinearScan::buildIntervals()
             JITDUMP("\n");
         }
 
-        // Identify the last uses of each variable, except in the case of MinOpts, where all vars
-        // are kept live everywhere.
-
-        if (!compiler->opts.MinOpts())
+        // Clear the "last use" flag on any vars that are live-out from this block.
         {
-            setLastUses(block);
+            VARSET_ITER_INIT(compiler, iter, block->bbLiveOut, varIndex);
+            while (iter.NextElem(compiler, &varIndex))
+            {
+                unsigned         varNum = compiler->lvaTrackedToVarNum[varIndex];
+                LclVarDsc* const varDsc = &compiler->lvaTable[varNum];
+                if (isCandidateVar(varDsc))
+                {
+                    RefPosition* const lastRP = getIntervalForLocalVar(varNum)->lastRefPosition;
+                    if ((lastRP != nullptr) && (lastRP->bbNum == block->bbNum))
+                    {
+                        lastRP->lastUse = false;
+                    }
+                }
+            }
         }
 
 #ifdef DEBUG
+        checkLastUses(block);
+
         if (VERBOSE)
         {
             printf("use: ");
@@ -7677,6 +7692,22 @@ void LinearScan::resolveLocalRef(BasicBlock* block, GenTreePtr treeNode, RefPosi
     }
     interval->recentRefPosition = currentRefPosition;
     LclVarDsc* varDsc           = interval->getLocalVar(compiler);
+
+    // NOTE: we set the GTF_VAR_DEATH flag here unless we are extending lifetimes, in which case we write
+    // this bit in checkLastUses. This is a bit of a hack, but is necessary because codegen requires
+    // accurate last use info that is not reflected in the lastUse bit on ref positions when we are extending
+    // lifetimes. See also the comments in checkLastUses.
+    if ((treeNode != nullptr) && !extendLifetimes())
+    {
+        if (currentRefPosition->lastUse)
+        {
+            treeNode->gtFlags |= GTF_VAR_DEATH;
+        }
+        else
+        {
+            treeNode->gtFlags &= ~GTF_VAR_DEATH;
+        }
+    }
 
     if (currentRefPosition->registerAssignment == RBM_NONE)
     {
