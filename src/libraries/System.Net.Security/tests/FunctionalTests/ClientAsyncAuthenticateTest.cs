@@ -57,6 +57,7 @@ namespace System.Net.Security.Tests
 
         [Theory]
         [MemberData(nameof(ProtocolMismatchData))]
+        [ActiveIssue(16534, TestPlatforms.Windows)]
         public async Task ClientAsyncAuthenticate_MismatchProtocols_Fails(
             SslProtocols serverProtocol,
             SslProtocols clientProtocol,
