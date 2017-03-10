@@ -171,7 +171,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Reliability\CriticalFinalizerObject.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Reliability\ReliabilityContractAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Reliability\PrePrepareMethodAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -489,8 +488,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Missing.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Module.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\ObfuscateAssemblyAttribute.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\ObfuscationAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodBody.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\ParameterAttributes.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\ParameterInfo.cs" />
@@ -506,7 +503,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\TargetInvocationException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\TargetParameterCountException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\TypeAttributes.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\TypeDelegator.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\TypeFilter.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\TypeInfo.cs" />
   </ItemGroup>
@@ -850,7 +846,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Serialization\SerializationInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Serialization\SerializationInfoEnumerator.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Serialization\StreamingContext.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\Serialization\SafeSerializationManager.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Versioning\TargetFrameworkAttribute.cs" />
