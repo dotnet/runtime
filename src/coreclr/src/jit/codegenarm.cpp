@@ -386,7 +386,7 @@ void CodeGen::genCodeForBinary(GenTree* treeNode)
     assert(oper == GT_ADD || oper == GT_SUB || oper == GT_ADD_LO || oper == GT_ADD_HI || oper == GT_SUB_LO ||
            oper == GT_SUB_HI || oper == GT_OR || oper == GT_XOR || oper == GT_AND);
 
-    if ((oper == GT_ADD || oper == GT_SUB || GT_ADD_HI || GT_SUB_HI) && treeNode->gtOverflow())
+    if ((oper == GT_ADD || oper == GT_SUB || oper == GT_ADD_HI || oper == GT_SUB_HI) && treeNode->gtOverflow())
     {
         // This is also checked in the importer.
         NYI("Overflow not yet implemented");
