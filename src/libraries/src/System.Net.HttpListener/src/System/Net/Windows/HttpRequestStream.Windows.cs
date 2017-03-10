@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -357,7 +358,7 @@ namespace System.Net
                     NetEventSource.Info(this, "Rethrowing exception:" + exception);
                     NetEventSource.Error(this, exception.ToString());
                 }
-                throw exception;
+                ExceptionDispatchInfo.Capture(exception).Throw();
             }
 
             uint dataRead = (uint)returnValue;
