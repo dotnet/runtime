@@ -682,14 +682,13 @@ mono_method_clear_object (MonoDomain *domain, MonoMethod *method)
 	}
 }
 
-/*
+/**
  * mono_field_get_object:
- * @domain: an app domain
- * @klass: a type
- * @field: a field
- *
- * Return an System.Reflection.MonoField object representing the field @field
- * in class @klass.
+ * \param domain an app domain
+ * \param klass a type
+ * \param field a field
+ * \returns A \c System.Reflection.MonoField object representing the field \p field
+ * in class \p klass.
  */
 MonoReflectionField*
 mono_field_get_object (MonoDomain *domain, MonoClass *klass, MonoClassField *field)
@@ -832,14 +831,13 @@ mono_property_get_object_checked (MonoDomain *domain, MonoClass *klass, MonoProp
 	HANDLE_FUNCTION_RETURN_OBJ (res);
 }
 
-/*
+/**
  * mono_event_get_object:
- * @domain: an app domain
- * @klass: a type
- * @event: a event
- *
- * Return an System.Reflection.MonoEvent object representing the event @event
- * in class @klass.
+ * \param domain an app domain
+ * \param klass a type
+ * \param event a event
+ * \returns A \c System.Reflection.MonoEvent object representing the event \p event
+ * in class \p klass.
  */
 MonoReflectionEvent*
 mono_event_get_object (MonoDomain *domain, MonoClass *klass, MonoEvent *event)

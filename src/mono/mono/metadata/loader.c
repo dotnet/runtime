@@ -254,11 +254,11 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 	return field;
 }
 
-/*
+/**
  * mono_field_from_token:
- * @deprecated use the _checked variant
+ * \deprecated use the \c _checked variant
  * Notes: runtime code MUST not use this function
-*/
+ */
 MonoClassField*
 mono_field_from_token (MonoImage *image, guint32 token, MonoClass **retklass, MonoGenericContext *context)
 {
@@ -571,10 +571,10 @@ fail:
 	return NULL;
 }
 
-/*
+/**
  * mono_inflate_generic_signature:
  *
- *   Inflate SIG with CONTEXT, and return a canonical copy. On error, set ERROR, and return NULL.
+ * Inflate \p sig with \p context, and return a canonical copy. On error, set \p error, and return NULL.
  */
 MonoMethodSignature*
 mono_inflate_generic_signature (MonoMethodSignature *sig, MonoGenericContext *context, MonoError *error)

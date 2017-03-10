@@ -3161,7 +3161,7 @@ handle_enum:
  *
  * Sets the value of the field described by \p field in the object instance \p obj
  * to the value passed in \p value.   This method should only be used for instance
- * fields.   For static fields, use mono_field_static_set_value().
+ * fields.   For static fields, use \c mono_field_static_set_value.
  *
  * The value must be in the native format of the field type. 
  */
@@ -3267,8 +3267,12 @@ mono_field_get_addr (MonoObject *obj, MonoVTable *vt, MonoClassField *field)
  * the value type.
  *
  * For example:
- *     int i;
- *     mono_field_get_value (obj, int_field, &i);
+ *
+ * <pre>
+ * int i;
+ *
+ * mono_field_get_value (obj, int_field, &i);
+ * </pre>
  */
 void
 mono_field_get_value (MonoObject *obj, MonoClassField *field, void *value)
@@ -3556,8 +3560,12 @@ mono_field_static_get_value_for_thread (MonoInternalThread *thread, MonoVTable *
  * the value type.
  *
  * For example:
+ *
+ * <pre>
  *     int i;
+ *
  *     mono_field_static_get_value (vt, int_field, &i);
+ * </pre>
  */
 void
 mono_field_static_get_value (MonoVTable *vt, MonoClassField *field, void *value)
@@ -6480,6 +6488,9 @@ mono_object_handle_isinst (MonoObjectHandle obj, MonoClass *klass, MonoError *er
 	return result;
 }
 
+/**
+ * mono_object_isinst_mbyref:
+ */
 MonoObject *
 mono_object_isinst_mbyref (MonoObject *obj_raw, MonoClass *klass)
 {
@@ -7617,8 +7628,8 @@ prepare_to_string_method (MonoObject *obj, void **target)
 /**
  * mono_object_to_string:
  * \param obj The object
- * \param exc Any exception thrown by \c ToString(). May be NULL.
- * \returns the result of calling \c ToString() on an object.
+ * \param exc Any exception thrown by \c ToString. May be NULL.
+ * \returns the result of calling \c ToString on an object.
  */
 MonoString *
 mono_object_to_string (MonoObject *obj, MonoObject **exc)
@@ -8386,7 +8397,7 @@ void mono_array_set(MonoArray *array, Type element_type, uintptr_t index, Value 
  * \param array array to alter
  * \param index index into the array
  * \param value value to set
- * Reference Type version: This sets the \p index's element of the
+ * Reference Type version. This sets the \p index's element of the
  * \p array with elements of size sizeof(type) to the provided \p value.
  *
  * This macro does not attempt to perform type checking or bounds checking.

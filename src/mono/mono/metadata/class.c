@@ -6655,7 +6655,6 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
  * mono_array_class_get:
  * \param element_class element class 
  * \param rank the dimension of the array class
- *
  * \returns A class object describing the array with element type \p element_type and 
  * dimension \p rank.
  */
@@ -9377,7 +9376,6 @@ mono_field_get_name (MonoClassField *field)
 /**
  * mono_field_get_type:
  * \param field the \c MonoClassField to act on
- *
  * \returns \c MonoType of the field.
  */
 MonoType*
@@ -9423,12 +9421,12 @@ mono_field_get_parent (MonoClassField *field)
 
 /**
  * mono_field_get_flags;
- * @field: the MonoClassField to act on
+ * \param field the \c MonoClassField to act on
  *
  * The metadata flags for a field are encoded using the
- * FIELD_ATTRIBUTE_* constants.  See the tabledefs.h file for details.
+ * \c FIELD_ATTRIBUTE_* constants.  See the \c tabledefs.h file for details.
  *
- * Returns: The flags for the field.
+ * \returns The flags for the field.
  */
 guint32
 mono_field_get_flags (MonoClassField *field)
@@ -9503,9 +9501,8 @@ mono_field_get_data (MonoClassField *field)
 
 /**
  * mono_property_get_name: 
- * @prop: the MonoProperty to act on
- *
- * Returns: The name of the property
+ * \param prop the \c MonoProperty to act on
+ * \returns The name of the property
  */
 const char*
 mono_property_get_name (MonoProperty *prop)
@@ -9516,8 +9513,7 @@ mono_property_get_name (MonoProperty *prop)
 /**
  * mono_property_get_set_method
  * \param prop the \c MonoProperty to act on.
- *
- * \returns The setter method of the property (A MonoMethod)
+ * \returns The setter method of the property, a \c MonoMethod.
  */
 MonoMethod*
 mono_property_get_set_method (MonoProperty *prop)
@@ -9528,8 +9524,7 @@ mono_property_get_set_method (MonoProperty *prop)
 /**
  * mono_property_get_get_method
  * \param prop the MonoProperty to act on.
- *
- * \returns The setter method of the property (A \c MonoMethod)
+ * \returns The getter method of the property (A \c MonoMethod)
  */
 MonoMethod*
 mono_property_get_get_method (MonoProperty *prop)
@@ -9539,8 +9534,7 @@ mono_property_get_get_method (MonoProperty *prop)
 
 /**
  * mono_property_get_parent:
- * \param prop the MonoProperty to act on.
- *
+ * \param prop the \c MonoProperty to act on.
  * \returns The \c MonoClass where the property was defined.
  */
 MonoClass*
@@ -9554,7 +9548,7 @@ mono_property_get_parent (MonoProperty *prop)
  * \param prop the \c MonoProperty to act on.
  *
  * The metadata flags for a property are encoded using the
- * \c PROPERTY_ATTRIBUTE_* constants.  See the tabledefs.h file for details.
+ * \c PROPERTY_ATTRIBUTE_* constants.  See the \c tabledefs.h file for details.
  *
  * \returns The flags for the property.
  */
@@ -9567,7 +9561,6 @@ mono_property_get_flags (MonoProperty *prop)
 /**
  * mono_event_get_name:
  * \param event the MonoEvent to act on
- *
  * \returns The name of the event.
  */
 const char*
@@ -9579,8 +9572,7 @@ mono_event_get_name (MonoEvent *event)
 /**
  * mono_event_get_add_method:
  * \param event The \c MonoEvent to act on.
- *
- * \returns The \c add method for the event (a \c MonoMethod).
+ * \returns The \c add method for the event, a \c MonoMethod.
  */
 MonoMethod*
 mono_event_get_add_method (MonoEvent *event)
@@ -9591,8 +9583,7 @@ mono_event_get_add_method (MonoEvent *event)
 /**
  * mono_event_get_remove_method:
  * \param event The \c MonoEvent to act on.
- *
- * \returns The \c remove method for the event (a \c MonoMethod).
+ * \returns The \c remove method for the event, a \c MonoMethod.
  */
 MonoMethod*
 mono_event_get_remove_method (MonoEvent *event)
@@ -9603,8 +9594,7 @@ mono_event_get_remove_method (MonoEvent *event)
 /**
  * mono_event_get_raise_method:
  * \param event The \c MonoEvent to act on.
- *
- * \returns The \c raise method for the event (a \c MonoMethod).
+ * \returns The \c raise method for the event, a \c MonoMethod.
  */
 MonoMethod*
 mono_event_get_raise_method (MonoEvent *event)
@@ -9628,7 +9618,7 @@ mono_event_get_parent (MonoEvent *event)
  * \param event the \c MonoEvent to act on.
  *
  * The metadata flags for an event are encoded using the
- * \c EVENT_* constants.  See the tabledefs.h file for details.
+ * \c EVENT_* constants.  See the \c tabledefs.h file for details.
  *
  * \returns The flags for the event.
  */
