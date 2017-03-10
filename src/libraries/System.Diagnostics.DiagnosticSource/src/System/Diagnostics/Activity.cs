@@ -33,15 +33,17 @@ namespace System.Diagnostics
         /// This is an ID that is specific to a particular request.   Filtering
         /// to a particular ID insures that you get only one request that matches.  
         /// Id has a hierarchical structure: '|root-id.id1_id2.id3_' Id is generated when 
-        /// <see cref="Start"/> is called by appending suffix (preceeded with '.') to Parent.Id
+        /// <see cref="Start"/> is called by appending suffix to Parent.Id
         /// or ParentId; Activity has no Id until it started
         /// <para/>
         /// See <see href="https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#id-format"/> for more details
         /// </summary>
-        /// <example>Id looks like |RD0003FF21406D-5d183ab6-a000b421.1.8e2d4c28_1.:<para />
-        ///  - 'RD0003FF21406D-5d183ab6-a000b421' - Id of the first, top-most, Activity created; It is a RootId for this and all child Activities<para />
-        ///  - 'RD0003FF21406D-5d183ab6-a000b421.1.' - Id of a child activity. It was started in the same process and ends with '.'<para />
-        ///  - '|RD0003FF21406D-5d183ab6-a000b421.1.8e2d4c28_' - Id of the grand child activity. It was started in another process and ends with '_'<para />
+        /// <example>
+        /// Id looks like '|Server1-5d183ab6-a000b421.1.8e2d4c28_1.':<para />
+        ///  - '|Server1-5d183ab6-a000b421.' - Id of the first, top-most, Activity created<para />
+        ///  - '|Server1-5d183ab6-a000b421.1.' - Id of a child activity. It was started in the same process as the first activity and ends with '.'<para />
+        ///  - '|Server1-5d183ab6-a000b421.1.8e2d4c28_' - Id of the grand child activity. It was started in another process and ends with '_'<para />
+        /// 'Server1-5d183ab6-a000b421' is a <see cref="RootId"/> for the first Activity and all its children
         /// </example>
         public string Id { get; private set; }
 
@@ -71,7 +73,7 @@ namespace System.Diagnostics
 
 
         /// <summary>
-        /// Root Id is substring from Activity.Id (or ParentId) between '/' (or beginning) and first '.'.
+        /// Root Id is substring from Activity.Id (or ParentId) between '|' (or beginning) and first '.'.
         /// Filtering by root Id allows to find all Activities involved in operation processing.
         /// RootId may be null if Activity has neither ParentId nor Id.
         /// See <see href="https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#id-format"/> for more details
