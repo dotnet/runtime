@@ -1049,6 +1049,9 @@ mono_monitor_enter_internal (MonoObject *obj)
 	return TRUE;
 }
 
+/**
+ * mono_monitor_enter:
+ */
 gboolean
 mono_monitor_enter (MonoObject *obj)
 {
@@ -1067,6 +1070,9 @@ mono_monitor_enter_fast (MonoObject *obj)
 	return mono_monitor_try_enter_internal (obj, 0, FALSE) == 1;
 }
 
+/**
+ * mono_monitor_try_enter:
+ */
 gboolean
 mono_monitor_try_enter (MonoObject *obj, guint32 ms)
 {
@@ -1077,6 +1083,9 @@ mono_monitor_try_enter (MonoObject *obj, guint32 ms)
 	return mono_monitor_try_enter_internal (obj, ms, FALSE) == 1;
 }
 
+/**
+ * mono_monitor_exit:
+ */
 void
 mono_monitor_exit (MonoObject *obj)
 {
@@ -1160,6 +1169,9 @@ ves_icall_System_Threading_Monitor_Monitor_try_enter_with_atomic_var (MonoObject
 	*lockTaken = res == 1;
 }
 
+/**
+ * mono_monitor_enter_v4:
+ */
 void
 mono_monitor_enter_v4 (MonoObject *obj, char *lock_taken)
 {

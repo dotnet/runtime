@@ -1003,19 +1003,31 @@ done:
 	return ret;
 }
 
-void mono_thread_new_init (intptr_t tid, gpointer stack_start, gpointer func)
+/**
+ * mono_thread_new_init:
+ */
+void
+mono_thread_new_init (intptr_t tid, gpointer stack_start, gpointer func)
 {
 	if (mono_thread_start_cb) {
 		mono_thread_start_cb (tid, stack_start, func);
 	}
 }
 
-void mono_threads_set_default_stacksize (guint32 stacksize)
+/**
+ * mono_threads_set_default_stacksize:
+ */
+void
+mono_threads_set_default_stacksize (guint32 stacksize)
 {
 	default_stacksize = stacksize;
 }
 
-guint32 mono_threads_get_default_stacksize (void)
+/**
+ * mono_threads_get_default_stacksize:
+ */
+guint32
+mono_threads_get_default_stacksize (void)
 {
 	return default_stacksize;
 }
@@ -1048,6 +1060,9 @@ mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer arg, Mo
 	return internal;
 }
 
+/**
+ * mono_thread_create:
+ */
 void
 mono_thread_create (MonoDomain *domain, gpointer func, gpointer arg)
 {
@@ -1062,6 +1077,9 @@ mono_thread_create_checked (MonoDomain *domain, gpointer func, gpointer arg, Mon
 	return (NULL != mono_thread_create_internal (domain, func, arg, MONO_THREAD_CREATE_FLAGS_NONE, error));
 }
 
+/**
+ * mono_thread_attach:
+ */
 MonoThread *
 mono_thread_attach (MonoDomain *domain)
 {
@@ -1263,6 +1281,9 @@ done:
 	 */
 }
 
+/**
+ * mono_thread_detach:
+ */
 void
 mono_thread_detach (MonoThread *thread)
 {
@@ -1270,12 +1291,12 @@ mono_thread_detach (MonoThread *thread)
 		mono_thread_detach_internal (thread->internal_thread);
 }
 
-/*
+/**
  * mono_thread_detach_if_exiting:
  *
- *   Detach the current thread from the runtime if it is exiting, i.e. it is running pthread dtors.
+ * Detach the current thread from the runtime if it is exiting, i.e. it is running pthread dtors.
  * This should be used at the end of embedding code which calls into managed code, and which
- * can be called from pthread dtors, like dealloc: implementations in objective-c.
+ * can be called from pthread dtors, like <code>dealloc:</code> implementations in Objective-C.
  */
 mono_bool
 mono_thread_detach_if_exiting (void)
@@ -1305,6 +1326,9 @@ mono_thread_internal_current_is_attached (void)
 	return TRUE;
 }
 
+/**
+ * mono_thread_exit:
+ */
 void
 mono_thread_exit (void)
 {
@@ -1497,10 +1521,9 @@ mono_thread_get_name (MonoInternalThread *this_obj, guint32 *name_len)
 	return res;
 }
 
-/*
+/**
  * mono_thread_get_name_utf8:
- *
- * Return the name of the thread in UTF-8.
+ * \returns the name of the thread in UTF-8.
  * Return NULL if the thread has no name.
  * The returned memory is owned by the caller.
  */
@@ -1523,11 +1546,10 @@ mono_thread_get_name_utf8 (MonoThread *thread)
 	return tname;
 }
 
-/*
+/**
  * mono_thread_get_managed_id:
- *
- * Return the Thread.ManagedThreadId value of `thread`.
- * Returns -1 if `thread` is NULL.
+ * \returns the \c Thread.ManagedThreadId value of \p thread.
+ * Returns \c -1 if \p thread is NULL.
  */
 int32_t
 mono_thread_get_managed_id (MonoThread *thread)
@@ -1692,6 +1714,9 @@ ves_icall_System_Threading_Thread_ByteArrayToCurrentDomain (MonoArray *arr)
 	return result;
 }
 
+/**
+ * mono_thread_current:
+ */
 MonoThread *
 mono_thread_current (void)
 {
@@ -2620,6 +2645,9 @@ is_running_protected_wrapper (void)
 	return found;
 }
 
+/**
+ * mono_thread_stop:
+ */
 void
 mono_thread_stop (MonoThread *thread)
 {
@@ -2999,7 +3027,11 @@ void mono_thread_init (MonoThreadStartCB start_cb,
 	mono_thread_attach_cb = attach_cb;
 }
 
-void mono_thread_cleanup (void)
+/**
+ * mono_thread_cleanup:
+ */
+void
+mono_thread_cleanup (void)
 {
 #if !defined(RUN_IN_SUBTHREAD) && !defined(HOST_WIN32)
 	/* The main thread must abandon any held mutexes (particularly
@@ -3030,6 +3062,9 @@ mono_threads_install_cleanup (MonoThreadCleanupFunc func)
 	mono_thread_cleanup_fn = func;
 }
 
+/**
+ * mono_thread_set_manage_callback:
+ */
 void
 mono_thread_set_manage_callback (MonoThread *thread, MonoThreadManageCallback func)
 {
@@ -3223,7 +3258,11 @@ mono_threads_set_shutting_down (void)
 	}
 }
 
-void mono_thread_manage (void)
+/**
+ * mono_thread_manage:
+ */
+void
+mono_thread_manage (void)
 {
 	struct wait_data wait_data;
 	struct wait_data *wait = &wait_data;
@@ -4913,14 +4952,14 @@ mono_thread_internal_suspend_for_shutdown (MonoInternalThread *thread)
 	mono_thread_info_safe_suspend_and_run (thread_get_tid (thread), FALSE, suspend_for_shutdown_critical, NULL);
 }
 
-/*
+/**
  * mono_thread_is_foreign:
- * @thread: the thread to query
+ * \param thread the thread to query
  *
  * This function allows one to determine if a thread was created by the mono runtime and has
- * a well defined lifecycle or it's a foreigh one, created by the native environment.
+ * a well defined lifecycle or it's a foreign one, created by the native environment.
  *
- * Returns: TRUE if @thread was not created by the runtime.
+ * \returns TRUE if \p thread was not created by the runtime.
  */
 mono_bool
 mono_thread_is_foreign (MonoThread *thread)

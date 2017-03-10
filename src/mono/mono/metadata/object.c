@@ -202,7 +202,7 @@ static MonoRuntimeCallbacks callbacks;
  * mono_thread_set_main:
  * \param thread thread to set as the main thread
  * This function can be used to instruct the runtime to treat \p thread
- * as the main thread, ie, the thread that would normally execute the Main()
+ * as the main thread, ie, the thread that would normally execute the \c Main
  * method. This basically means that at the end of \p thread, the runtime will
  * wait for the existing foreground threads to quit and other such details.
  */
@@ -221,6 +221,9 @@ mono_thread_set_main (MonoThread *thread)
 	main_thread = thread;
 }
 
+/**
+ * mono_thread_get_main:
+ */
 MonoThread*
 mono_thread_get_main (void)
 {
