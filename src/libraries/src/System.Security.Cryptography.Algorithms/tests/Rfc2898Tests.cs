@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
+using System.Text;
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.DeriveBytesTests
@@ -78,6 +81,35 @@ namespace System.Security.Cryptography.DeriveBytesTests
             Assert.Throws<ArgumentOutOfRangeException>(() => new Rfc2898DeriveBytes(TestPassword, s_testSalt, int.MinValue));
             Assert.Throws<ArgumentOutOfRangeException>(() => new Rfc2898DeriveBytes(TestPassword, s_testSalt, int.MinValue / 2));
         }
+
+#if netcoreapp
+        [Fact]
+        public static void Ctor_EmptyAlgorithm()
+        {
+            HashAlgorithmName alg = default(HashAlgorithmName);
+
+            // (byte[], byte[], int, HashAlgorithmName)
+            Assert.Throws<CryptographicException>(() => new Rfc2898DeriveBytes(s_testSalt, s_testSalt, DefaultIterationCount, alg));
+            // (string, byte[], int, HashAlgorithmName)
+            Assert.Throws<CryptographicException>(() => new Rfc2898DeriveBytes(TestPassword, s_testSalt, DefaultIterationCount, alg));
+            // (string, int, int, HashAlgorithmName)
+            Assert.Throws<CryptographicException>(() => new Rfc2898DeriveBytes(TestPassword, 8, DefaultIterationCount, alg));
+        }
+
+        [Fact]
+        public static void Ctor_MD5NotSupported()
+        {
+            Assert.Throws<CryptographicException>(
+                () => new Rfc2898DeriveBytes(TestPassword, s_testSalt, DefaultIterationCount, HashAlgorithmName.MD5));
+        }
+
+        [Fact]
+        public static void Ctor_UnknownAlgorithm()
+        {
+            Assert.Throws<CryptographicException>(
+                () => new Rfc2898DeriveBytes(TestPassword, s_testSalt, DefaultIterationCount, new HashAlgorithmName("PotatoLemming")));
+        }
+#endif
 
         [Fact]
         public static void Ctor_SaltCopied()
@@ -271,6 +303,43 @@ namespace System.Security.Cryptography.DeriveBytesTests
                 });
         }
 
+#if netcoreapp
+        [Theory]
+        [MemberData(nameof(KnownValuesTestCases))]
+        public static void GetBytes_KnownValues_WithAlgorithm(KnownValuesTestCase testCase)
+        {
+            byte[] output;
+
+            var pbkdf2 = new Rfc2898DeriveBytes(
+                testCase.Password,
+                testCase.Salt,
+                testCase.IterationCount,
+                new HashAlgorithmName(testCase.HashAlgorithmName));
+
+            using (pbkdf2)
+            {
+                output = pbkdf2.GetBytes(testCase.AnswerHex.Length / 2);
+            }
+
+            Assert.Equal(testCase.AnswerHex, output.ByteArrayToHex());
+        }
+
+        [Theory]
+        [InlineData("SHA1")]
+        [InlineData("SHA256")]
+        [InlineData("SHA384")]
+        [InlineData("SHA512")]
+        public static void CheckHashAlgorithmValue(string hashAlgorithmName)
+        {
+            HashAlgorithmName hashAlgorithm = new HashAlgorithmName(hashAlgorithmName);
+
+            using (var pbkdf2 = new Rfc2898DeriveBytes(TestPassword, s_testSalt, DefaultIterationCount, hashAlgorithm))
+            {
+                Assert.Equal(hashAlgorithm, pbkdf2.HashAlgorithm);
+            }
+        }
+#endif
+
         public static void CryptDeriveKey_NotSupported()
         {
             using (var deriveBytes = new Rfc2898DeriveBytes(TestPassword, s_testSalt))
@@ -289,6 +358,160 @@ namespace System.Security.Cryptography.DeriveBytesTests
             }
 
             Assert.Equal(expected, output);
+        }
+
+        public static IEnumerable<object[]> KnownValuesTestCases()
+        {
+            HashSet<string> testCaseNames = new HashSet<string>();
+
+            // Wrap the class in the MemberData-required-object[].
+            foreach (KnownValuesTestCase testCase in GetKnownValuesTestCases())
+            {
+                if (!testCaseNames.Add(testCase.CaseName))
+                {
+                    throw new InvalidOperationException($"Duplicate test case name: {testCase.CaseName}");
+                }
+
+                yield return new object[] { testCase };
+            }
+        }
+
+        private static IEnumerable<KnownValuesTestCase> GetKnownValuesTestCases()
+        {
+            Encoding ascii = Encoding.ASCII;
+
+            yield return new KnownValuesTestCase
+            {
+                CaseName = "RFC 3211 Section 3 #1",
+                HashAlgorithmName = "SHA1",
+                Password = "password",
+                Salt = "1234567878563412".HexToByteArray(),
+                IterationCount = 5,
+                AnswerHex = "D1DAA78615F287E6",
+            };
+
+            yield return new KnownValuesTestCase
+            {
+                CaseName = "RFC 3211 Section 3 #2",
+                HashAlgorithmName = "SHA1",
+                Password = "All n-entities must communicate with other n-entities via n-1 entiteeheehees",
+                Salt = "1234567878563412".HexToByteArray(),
+                IterationCount = 500,
+                AnswerHex = "6A8970BF68C92CAEA84A8DF28510858607126380CC47AB2D",
+            };
+
+            yield return new KnownValuesTestCase
+            {
+                CaseName = "RFC 6070 Case 5",
+                HashAlgorithmName = "SHA1",
+                Password = "passwordPASSWORDpassword",
+                Salt = ascii.GetBytes("saltSALTsaltSALTsaltSALTsaltSALTsalt"),
+                IterationCount = 4096,
+                AnswerHex = "3D2EEC4FE41C849B80C8D83662C0E44A8B291A964CF2F07038",
+            };
+
+            // From OpenSSL.
+            // https://github.com/openssl/openssl/blob/6f0ac0e2f27d9240516edb9a23b7863e7ad02898/test/evptests.txt
+            // Corroborated on http://stackoverflow.com/questions/5130513/pbkdf2-hmac-sha2-test-vectors,
+            // though the SO answer stopped at 25 bytes.
+            yield return new KnownValuesTestCase
+            {
+                CaseName = "RFC 6070#5 SHA256",
+                HashAlgorithmName = "SHA256",
+                Password = "passwordPASSWORDpassword",
+                Salt = ascii.GetBytes("saltSALTsaltSALTsaltSALTsaltSALTsalt"),
+                IterationCount = 4096,
+                AnswerHex =
+                    "348C89DBCBD32B2F32D814B8116E84CF2B17347EBC1800181C4E2A1FB8DD53E1C635518C7DAC47E9",
+            };
+
+            // From OpenSSL.
+            yield return new KnownValuesTestCase
+            {
+                CaseName = "RFC 6070#5 SHA512",
+                HashAlgorithmName = "SHA512",
+                Password = "passwordPASSWORDpassword",
+                Salt = ascii.GetBytes("saltSALTsaltSALTsaltSALTsaltSALTsalt"),
+                IterationCount = 4096,
+                AnswerHex = (
+                    "8C0511F4C6E597C6AC6315D8F0362E225F3C501495BA23B868C005174DC4EE71" +
+                    "115B59F9E60CD9532FA33E0F75AEFE30225C583A186CD82BD4DAEA9724A3D3B8"),
+            };
+
+            // Verified against BCryptDeriveKeyPBKDF2, as an independent implementation.
+            yield return new KnownValuesTestCase
+            {
+                CaseName = "RFC 3962 Appendix B#1 SHA384-24000",
+                HashAlgorithmName = "SHA384",
+                Password = "password",
+                Salt = ascii.GetBytes("ATHENA.MIT.EDUraeburn"),
+                IterationCount = 24000,
+                AnswerHex = (
+                    "4B138897F289129C6E80965F96B940F76BBC0363CD22190E0BD94ADBA79BE33E" +
+                    "02C9D8E0AF0D19B295B02828770587F672E0ED182A9A59BA5E07120CA936E6BF" +
+                    "F5D425688253C2A8336ED30DA898C67FD9DDFD8EF3F8C708392E2E2458716DF8" +
+                    "6799372DEF27AB36AF239D7D654A56A51395086A322B9322977F62A98662B57E"),
+            };
+
+            // These "alternate" tests are made up, due to a lack of test corpus diversity
+            yield return new KnownValuesTestCase
+            {
+                CaseName = "SHA256 alternate",
+                HashAlgorithmName = "SHA256",
+                Password = "abcdefghij",
+                Salt = ascii.GetBytes("abcdefghij"),
+                IterationCount = 1,
+                AnswerHex = (
+                    // T-Block 1
+                    "9545B9CCBF915299F09BC4E8922B34B042F32689C072539FAEA739FCA4E782" +
+                    // T-Block 2
+                    "27B792394D6C13DB121CD16683CD738CB1717C69B34EF2B29E32306D24FCDF"),
+            };
+
+            yield return new KnownValuesTestCase
+            {
+                CaseName = "SHA384 alternate",
+                HashAlgorithmName = "SHA384",
+                Password = "abcdefghij",
+                Salt = ascii.GetBytes("abcdefghij"),
+                IterationCount = 1,
+                AnswerHex = (
+                    // T-Block 1
+                    "BB8CCC844224775A66E038E59B74B232232AE27C4BF9625BBF3E50317EDD9217BE7B7E07AA5697AF7D2617" +
+                    // T-Block 2
+                    "AC02F63AA2B0EC9697B1801E70BD10A6B58CE5DE83DD18F4FFD2E8D9289716510AA0A170EF1D145F4B3247"),
+            };
+
+            yield return new KnownValuesTestCase
+            {
+                CaseName = "SHA512 alternate",
+                HashAlgorithmName = "SHA512",
+                Password = "abcdefghij",
+                Salt = ascii.GetBytes("abcdefghij"),
+                IterationCount = 1,
+                AnswerHex = (
+                    // T-Block 1
+                    "9D6E96B14A53207C759DBB456B2F038170AF03389096E6EEB2161B3868D3E5" +
+                    "1265A25EF7D7433BF8718DB14F934B6054ACCEA283528AD11A669C7C85196F" +
+                    // T-Block 2
+                    "B5DFAA2185446D6218EBC2D4030A83A4353B302E698C8521B6B69F7D5612EF" +
+                    "AF060798DF40183FE6B71F2D35C60FBE27DFE963EFEE52A5756323BA1A41F6"),
+            };
+        }
+
+        public class KnownValuesTestCase
+        {
+            public string CaseName { get; set; }
+            public string HashAlgorithmName { get; set; }
+            public string Password { get; set; }
+            public byte[] Salt { get; set; }
+            public int IterationCount { get; set; }
+            public string AnswerHex { get; set; }
+
+            public override string ToString()
+            {
+                return CaseName;
+            }
         }
     }
 }
