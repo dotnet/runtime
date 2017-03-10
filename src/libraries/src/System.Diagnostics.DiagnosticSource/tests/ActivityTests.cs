@@ -380,7 +380,7 @@ namespace System.Diagnostics.Tests
                     // Confirm that duration is set. 
                     Assert.NotNull(observer.Activity);
                     Assert.True(TimeSpan.Zero < observer.Activity.Duration);
-                    Assert.True(observer.Activity.StartTimeUtc + observer.Activity.Duration < DateTime.UtcNow);
+                    Assert.True(observer.Activity.StartTimeUtc + observer.Activity.Duration <= DateTime.UtcNow.AddTicks(1));
                 } 
             }
         }
