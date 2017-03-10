@@ -7,7 +7,7 @@ FEATUREFUL_RUNTIME_TEST = test-appdomain-unload
 endif
 
 check-local: assemblyresolve/test/asm.dll testjit test-generic-sharing test-type-load test-multi-netmodule test-cattr-type-load test-reflection-load-with-context test_platform	\
-		 test-console-output test-messages test-env-options test-unhandled-exception-2 $(FEATUREFUL_RUNTIME_TEST) test-process-stress rm-empty-logs
+		 test-console-output test-messages test-env-options test-unhandled-exception-2 $(FEATUREFUL_RUNTIME_TEST) test-process-stress test-pedump rm-empty-logs
 check-full: test-sgen check-local
 check-parallel: compile-tests check-full
 
@@ -1843,6 +1843,9 @@ test-console-output: console-output.exe
 	@$(RUNTIME) console-output.exe 2>console-output.exe.stderr
 	@diff -w console-output.exe.stdout $(srcdir)/console-output.exe.stdout.expected \
 		&& diff -w console-output.exe.stderr $(srcdir)/console-output.exe.stderr.expected
+
+test-pedump: test-runner.exe
+	$(with_mono_path) $(mono_build_root)/tools/pedump/pedump --verify error test-runner.exe
 
 PROCESS_STRESS_TESTS=	\
 		process-stress-1.exe	\
