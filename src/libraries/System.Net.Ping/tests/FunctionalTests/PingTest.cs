@@ -399,7 +399,10 @@ namespace System.Net.NetworkInformation.Tests
                     p.SendAsyncCancel(); // will block until operation can be started again
                 }
                 await tcs.Task;
-                Assert.True(ea.Cancelled ^ (ea.Error != null) ^ (ea.Reply != null));
+                Assert.True(ea.Cancelled ^ (ea.Error != null) ^ (ea.Reply != null),
+                    "Cancelled: " + ea.Cancelled +
+                    (ea.Error == null ? "" : (Environment.NewLine + "Error Message: " + ea.Error.Message + Environment.NewLine + "Error Inner Exception: " + ea.Error.InnerException)) +
+                    (ea.Reply == null ? "" : (Environment.NewLine + "Reply Address: " + ea.Reply.Address + Environment.NewLine + "Reply Status: " + ea.Reply.Status)));
             }
         }
 
