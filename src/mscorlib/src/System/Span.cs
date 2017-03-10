@@ -224,47 +224,50 @@ namespace System
         /// </summary>
         public void Fill(T value)
         {
-            int length = _length;
-
-            if (length == 0)
-                return;
-
             if (Unsafe.SizeOf<T>() == 1)
             {
-                byte fill = Unsafe.As<T, byte>(ref value);
-                ref byte r = ref Unsafe.As<T, byte>(ref _pointer.Value);
-                Unsafe.InitBlockUnaligned(ref r, fill, (uint)length);
+                uint length = (uint)_length;
+                if (length == 0)
+                    return;
+
+                T tmp = value; // Avoid taking address of the "value" argument. It would regress performance of the loop below.
+                Unsafe.InitBlockUnaligned(ref Unsafe.As<T, byte>(ref _pointer.Value), Unsafe.As<T, byte>(ref tmp), length);
             }
             else
             {
+                // Do all math as nuint to avoid unnecessary 64->32->64 bit integer truncations
+                nuint length = (uint)_length;
+                if (length == 0)
+                    return;
+
                 ref T r = ref DangerousGetPinnableReference();
 
                 // TODO: Create block fill for value types of power of two sizes e.g. 2,4,8,16
 
-                // Simple loop unrolling
-                int i = 0;
-                for (; i < (length & ~7); i += 8)
+                nuint elementSize = (uint)Unsafe.SizeOf<T>();
+                nuint i = 0;
+                for (; i < (length & ~(nuint)7); i += 8)
                 {
-                    Unsafe.Add<T>(ref r, i + 0) = value;
-                    Unsafe.Add<T>(ref r, i + 1) = value;
-                    Unsafe.Add<T>(ref r, i + 2) = value;
-                    Unsafe.Add<T>(ref r, i + 3) = value;
-                    Unsafe.Add<T>(ref r, i + 4) = value;
-                    Unsafe.Add<T>(ref r, i + 5) = value;
-                    Unsafe.Add<T>(ref r, i + 6) = value;
-                    Unsafe.Add<T>(ref r, i + 7) = value;
+                    Unsafe.AddByteOffset<T>(ref r, (i + 0) * elementSize) = value;
+                    Unsafe.AddByteOffset<T>(ref r, (i + 1) * elementSize) = value;
+                    Unsafe.AddByteOffset<T>(ref r, (i + 2) * elementSize) = value;
+                    Unsafe.AddByteOffset<T>(ref r, (i + 3) * elementSize) = value;
+                    Unsafe.AddByteOffset<T>(ref r, (i + 4) * elementSize) = value;
+                    Unsafe.AddByteOffset<T>(ref r, (i + 5) * elementSize) = value;
+                    Unsafe.AddByteOffset<T>(ref r, (i + 6) * elementSize) = value;
+                    Unsafe.AddByteOffset<T>(ref r, (i + 7) * elementSize) = value;
                 }
-                if (i < (length & ~3))
+                if (i < (length & ~(nuint)3))
                 {
-                    Unsafe.Add<T>(ref r, i + 0) = value;
-                    Unsafe.Add<T>(ref r, i + 1) = value;
-                    Unsafe.Add<T>(ref r, i + 2) = value;
-                    Unsafe.Add<T>(ref r, i + 3) = value;
+                    Unsafe.AddByteOffset<T>(ref r, (i + 0) * elementSize) = value;
+                    Unsafe.AddByteOffset<T>(ref r, (i + 1) * elementSize) = value;
+                    Unsafe.AddByteOffset<T>(ref r, (i + 2) * elementSize) = value;
+                    Unsafe.AddByteOffset<T>(ref r, (i + 3) * elementSize) = value;
                     i += 4;
                 }
                 for (; i < length; i++)
                 {
-                    Unsafe.Add<T>(ref r, i) = value;
+                    Unsafe.AddByteOffset<T>(ref r, i * elementSize) = value;
                 }
             }
         }
