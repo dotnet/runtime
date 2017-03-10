@@ -11,6 +11,8 @@ function print_usage {
     echo ''
     echo 'Required arguments:'
     echo '  --branch=<path>             : branch where coreclr/corefx/test bits are copied from (e.g. dotnet_coreclr).'
+    echo 'Optional arguments:'
+    echo '  --throughput                : if we are running setup for a throughput run.'
 }
 
 # Exit code constants
@@ -20,6 +22,7 @@ readonly EXIT_CODE_SUCCESS=0       # Script ran normally.
 perfArch="x64"
 perfConfig="Release"
 perfBranch=
+throughput=0
 
 for i in "$@"
 do
@@ -30,6 +33,9 @@ do
             ;;
         --branch=*)
             perfBranch=${i#*=}
+            ;;
+        -t|--throughput)
+            throughput=1
             ;;
         *)
             echo "Unknown switch: $i"
@@ -57,22 +63,38 @@ unzip -q -o benchview.zip -d ./tests/scripts/Microsoft.BenchView.JSONFormat
 python3.5 --version
 python3.5 ./tests/scripts/Microsoft.BenchView.JSONFormat/tools/machinedata.py
 
-# Set up the copies
-# Coreclr build containing the tests and mscorlib
-curl https://ci.dot.net/job/$perfBranch/job/master/job/release_windows_nt/lastSuccessfulBuild/artifact/bin/tests/tests.zip -o tests.zip
+if [ $throughput -eq 1 ]; then
+    # Clone corefx
+    if [ -d "_" ]; then
+        rm -r -f _
+    fi
+    mkdir _
+    git clone https://github.com/dotnet/corefx.git _/fx
+    cd _/fx
 
-# Corefx components.  We now have full stack builds on all distros we test here, so we can copy straight from CoreFX jobs.
-mkdir corefx
-curl https://ci.dot.net/job/dotnet_corefx/job/master/job/ubuntu14.04_release/lastSuccessfulBuild/artifact/bin/build.tar.gz -o ./corefx/build.tar.gz
+    # Checkout the specific commit we want
+    git checkout f0b9e238c08f62a1db90ef0378980ac771204d35
 
-# Unpack the corefx binaries
-pushd corefx > /dev/null
-tar -xf build.tar.gz
-rm build.tar.gz
-popd > /dev/null
+    # Build
+    ./build.sh -release
+else
+    # Set up the copies
+    # Coreclr build containing the tests and mscorlib
+    curl https://ci.dot.net/job/$perfBranch/job/master/job/release_windows_nt/lastSuccessfulBuild/artifact/bin/tests/tests.zip -o tests.zip
 
-# Unzip the tests first.  Exit with 0
-mkdir bin
-mkdir bin/tests
-unzip -q -o tests.zip -d ./bin/tests/Windows_NT.$perfArch.$perfConfig || exit 0
-echo "unzip tests to ./bin/tests/Windows_NT.$perfArch.$perfConfig"
+    # Corefx components.  We now have full stack builds on all distros we test here, so we can copy straight from CoreFX jobs.
+    mkdir corefx
+    curl https://ci.dot.net/job/dotnet_corefx/job/master/job/ubuntu14.04_release/lastSuccessfulBuild/artifact/bin/build.tar.gz -o ./corefx/build.tar.gz
+
+    # Unpack the corefx binaries
+    pushd corefx > /dev/null
+    tar -xf build.tar.gz
+    rm build.tar.gz
+    popd > /dev/null
+
+    # Unzip the tests first.  Exit with 0
+    mkdir bin
+    mkdir bin/tests
+    unzip -q -o tests.zip -d ./bin/tests/Windows_NT.$perfArch.$perfConfig || exit 0
+    echo "unzip tests to ./bin/tests/Windows_NT.$perfArch.$perfConfig"
+fi
