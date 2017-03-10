@@ -632,9 +632,10 @@ fail:
 	return NULL;
 }
 
-/*
- * token is the method_ref/def/spec token used in a call IL instruction.
- * @deprecated use the _checked variant
+/**
+ * mono_method_get_signature_full:
+ * \p token is the method ref/def/spec token used in a \c call IL instruction.
+ * \deprecated use the \c _checked variant
  * Notes: runtime code MUST not use this function
  */
 MonoMethodSignature*
@@ -733,9 +734,10 @@ mono_method_get_signature_checked (MonoMethod *method, MonoImage *image, guint32
 	return sig;
 }
 
-/*
- * token is the method_ref/def/spec token used in a call IL instruction.
- * @deprecated use the _checked variant
+/**
+ * mono_method_get_signature:
+ * \p token is the method_ref/def/spec token used in a call IL instruction.
+ * \deprecated use the \c _checked variant
  * Notes: runtime code MUST not use this function
  */
 MonoMethodSignature*
@@ -1711,6 +1713,9 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	return result;
 }
 
+/**
+ * mono_get_method:
+ */
 MonoMethod *
 mono_get_method (MonoImage *image, guint32 token, MonoClass *klass)
 {
@@ -1720,6 +1725,9 @@ mono_get_method (MonoImage *image, guint32 token, MonoClass *klass)
 	return result;
 }
 
+/**
+ * mono_get_method_full:
+ */
 MonoMethod *
 mono_get_method_full (MonoImage *image, guint32 token, MonoClass *klass,
 		      MonoGenericContext *context)
@@ -1924,6 +1932,9 @@ mono_free_method  (MonoMethod *method)
 	}
 }
 
+/**
+ * mono_method_get_param_names:
+ */
 void
 mono_method_get_param_names (MonoMethod *method, const char **names)
 {
@@ -2003,6 +2014,9 @@ mono_method_get_param_names (MonoMethod *method, const char **names)
 	}
 }
 
+/**
+ * mono_method_get_param_token:
+ */
 guint32
 mono_method_get_param_token (MonoMethod *method, int index)
 {
@@ -2030,6 +2044,9 @@ mono_method_get_param_token (MonoMethod *method, int index)
 	return 0;
 }
 
+/**
+ * mono_method_get_marshal_info:
+ */
 void
 mono_method_get_marshal_info (MonoMethod *method, MonoMarshalSpec **mspecs)
 {
@@ -2092,6 +2109,9 @@ mono_method_get_marshal_info (MonoMethod *method, MonoMarshalSpec **mspecs)
 	}
 }
 
+/**
+ * mono_method_has_marshal_info:
+ */
 gboolean
 mono_method_has_marshal_info (MonoMethod *method)
 {
@@ -2248,6 +2268,9 @@ last_managed (MonoMethod *m, gint no, gint ilo, gboolean managed, gpointer data)
 	return managed;
 }
 
+/**
+ * mono_method_get_last_managed:
+ */
 MonoMethod*
 mono_method_get_last_managed (void)
 {
@@ -2491,8 +2514,7 @@ mono_method_signature_checked (MonoMethod *m, MonoError *error)
 
 /**
  * mono_method_signature:
- *
- * Return the signature of the method M. On failure, returns NULL.
+ * \returns the signature of the method \p m. On failure, returns NULL.
  */
 MonoMethodSignature*
 mono_method_signature (MonoMethod *m)
@@ -2511,18 +2533,27 @@ mono_method_signature (MonoMethod *m)
 	return sig;
 }
 
+/**
+ * mono_method_get_name:
+ */
 const char*
 mono_method_get_name (MonoMethod *method)
 {
 	return method->name;
 }
 
+/**
+ * mono_method_get_class:
+ */
 MonoClass*
 mono_method_get_class (MonoMethod *method)
 {
 	return method->klass;
 }
 
+/**
+ * mono_method_get_token:
+ */
 guint32
 mono_method_get_token (MonoMethod *method)
 {
@@ -2598,6 +2629,9 @@ mono_method_get_header_checked (MonoMethod *method, MonoError *error)
 	return mono_metadata_parse_mh_full (img, container, (const char *)loc, error);
 }
 
+/**
+ * mono_method_get_header:
+ */
 MonoMethodHeader*
 mono_method_get_header (MonoMethod *method)
 {
@@ -2608,6 +2642,9 @@ mono_method_get_header (MonoMethod *method)
 }
 
 
+/**
+ * mono_method_get_flags:
+ */
 guint32
 mono_method_get_flags (MonoMethod *method, guint32 *iflags)
 {
@@ -2616,8 +2653,9 @@ mono_method_get_flags (MonoMethod *method, guint32 *iflags)
 	return method->flags;
 }
 
-/*
- * Find the method index in the metadata methodDef table.
+/**
+ * mono_method_get_index:
+ * Find the method index in the metadata \c MethodDef table.
  */
 guint32
 mono_method_get_index (MonoMethod *method)

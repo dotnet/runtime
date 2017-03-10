@@ -233,6 +233,9 @@ mono_type_full_name (MonoType *type)
 	return g_string_free (str, FALSE);
 }
 
+/**
+ * mono_signature_get_desc:
+ */
 char*
 mono_signature_get_desc (MonoMethodSignature *sig, gboolean include_namespace)
 {
@@ -323,11 +326,11 @@ mono_context_get_desc (MonoGenericContext *context)
  * Creates a method description for \p name, which conforms to the following
  * specification:
  *
- * [namespace.]classname:methodname[(args...)]
+ * <code>[namespace.]classname:methodname[(args...)]</code>
  *
  * in all the loaded assemblies.
  *
- * Both classname and methodname can contain '*' which matches anything.
+ * Both classname and methodname can contain <code>*</code> which matches anything.
  *
  * \returns a parsed representation of the method description.
  */
@@ -400,6 +403,9 @@ mono_method_desc_new (const char *name, gboolean include_namespace)
 	return result;
 }
 
+/**
+ * mono_method_desc_from_method:
+ */
 MonoMethodDesc*
 mono_method_desc_from_method (MonoMethod *method)
 {
@@ -417,7 +423,7 @@ mono_method_desc_from_method (MonoMethod *method)
 /**
  * mono_method_desc_free:
  * \param desc method description to be released
- * Releases the MonoMethodDesc object \p desc.
+ * Releases the \c MonoMethodDesc object \p desc.
  */
 void
 mono_method_desc_free (MonoMethodDesc *desc)
@@ -430,7 +436,7 @@ mono_method_desc_free (MonoMethodDesc *desc)
 }
 
 /**
- * mono_method_descr_match:
+ * mono_method_desc_match:
  * \param desc \c MonoMethoDescription
  * \param method \c MonoMethod to test
  *
@@ -505,6 +511,9 @@ match_class (MonoMethodDesc *desc, int pos, MonoClass *klass)
 	return match_class (desc, pos, klass->nested_in);
 }
 
+/**
+ * mono_method_desc_full_match:
+ */
 gboolean
 mono_method_desc_full_match (MonoMethodDesc *desc, MonoMethod *method)
 {
@@ -516,6 +525,9 @@ mono_method_desc_full_match (MonoMethodDesc *desc, MonoMethod *method)
 	return mono_method_desc_match (desc, method);
 }
 
+/**
+ * mono_method_desc_search_in_class:
+ */
 MonoMethod*
 mono_method_desc_search_in_class (MonoMethodDesc *desc, MonoClass *klass)
 {
@@ -528,6 +540,9 @@ mono_method_desc_search_in_class (MonoMethodDesc *desc, MonoClass *klass)
 	return NULL;
 }
 
+/**
+ * mono_method_desc_search_in_image:
+ */
 MonoMethod*
 mono_method_desc_search_in_image (MonoMethodDesc *desc, MonoImage *image)
 {
@@ -892,6 +907,9 @@ mono_method_get_name_full (MonoMethod *method, gboolean signature, gboolean ret,
 	return res;
 }
 
+/**
+ * mono_method_full_name:
+ */
 char *
 mono_method_full_name (MonoMethod *method, gboolean signature)
 {

@@ -567,13 +567,12 @@ mono_type_get_object_handle (MonoDomain *domain, MonoType *type, MonoError *erro
 	return MONO_HANDLE_NEW (MonoReflectionType, mono_type_get_object_checked (domain, type, error));
 }
 
-/*
+/**
  * mono_method_get_object:
- * @domain: an app domain
- * @method: a method
- * @refclass: the reflected type (can be NULL)
- *
- * Return an System.Reflection.MonoMethod object representing the method @method.
+ * \param domain an app domain
+ * \param method a method
+ * \param refclass the reflected type (can be NULL)
+ * \returns A \c System.Reflection.MonoMethod object representing the method \p method.
  */
 MonoReflectionMethod*
 mono_method_get_object (MonoDomain *domain, MonoMethod *method, MonoClass *refclass)
@@ -1126,6 +1125,9 @@ fail:
 	return MONO_HANDLE_NEW (MonoArray, NULL_HANDLE);
 }
 
+/**
+ * mono_param_get_objects:
+ */
 MonoArray*
 mono_param_get_objects (MonoDomain *domain, MonoMethod *method)
 {
@@ -1190,12 +1192,11 @@ leave:
 	HANDLE_FUNCTION_RETURN_VAL (is_ok (error));
 }
 
-/*
+/**
  * mono_method_body_get_object:
- * @domain: an app domain
- * @method: a method
- *
- * Return an System.Reflection.MethodBody object representing the method @method.
+ * \param domain an app domain
+ * \param method a method
+ * \return A \c System.Reflection.MethodBody object representing the method \p method.
  */
 MonoReflectionMethodBody*
 mono_method_body_get_object (MonoDomain *domain, MonoMethod *method)

@@ -2851,7 +2851,7 @@ do_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **ex
  * pointers to the value type otherwise. 
  * 
  * From unmanaged code you'll usually use the
- * mono_runtime_invoke() variant.
+ * \c mono_runtime_invoke variant.
  *
  * Note that this function doesn't handle virtual methods for
  * you, it will exec the exact method you pass: we still need to
@@ -2985,48 +2985,55 @@ mono_runtime_invoke_checked (MonoMethod *method, void *obj, void **params, MonoE
  * mono_method_get_unmanaged_thunk:
  * \param method method to generate a thunk for.
  *
- * Returns an unmanaged->managed thunk that can be used to call
+ * Returns an \c unmanaged->managed thunk that can be used to call
  * a managed method directly from C.
  *
  * The thunk's C signature closely matches the managed signature:
  *
- * C#: public bool Equals (object obj);
- * C:  typedef MonoBoolean (*Equals)(MonoObject*,
- *             MonoObject*, MonoException**);
+ * C#: <code>public bool Equals (object obj);</code>
  *
- * The 1st ("this") parameter must not be used with static methods:
+ * C:  <code>typedef MonoBoolean (*Equals)(MonoObject*, MonoObject*, MonoException**);</code>
  *
- * C#: public static bool ReferenceEquals (object a, object b);
- * C:  typedef MonoBoolean (*ReferenceEquals)(MonoObject*, MonoObject*,
- *             MonoException**);
+ * The 1st (<code>this</code>) parameter must not be used with static methods:
  *
- * The last argument must be a non-null pointer of a MonoException* pointer.
- * It has "out" semantics. After invoking the thunk, *ex will be NULL if no
+ * C#: <code>public static bool ReferenceEquals (object a, object b);</code>
+ *
+ * C:  <code>typedef MonoBoolean (*ReferenceEquals)(MonoObject*, MonoObject*, MonoException**);</code>
+ *
+ * The last argument must be a non-null \c MonoException* pointer.
+ * It has "out" semantics. After invoking the thunk, \c *ex will be NULL if no
  * exception has been thrown in managed code. Otherwise it will point
- * to the MonoException* caught by the thunk. In this case, the result of
+ * to the \c MonoException* caught by the thunk. In this case, the result of
  * the thunk is undefined:
  *
+ * <pre>
  * MonoMethod *method = ... // MonoMethod* of System.Object.Equals
+ *
  * MonoException *ex = NULL;
+ *
  * Equals func = mono_method_get_unmanaged_thunk (method);
+ *
  * MonoBoolean res = func (thisObj, objToCompare, &ex);
+ *
  * if (ex) {
+ *
  *    // handle exception
+ *
  * }
+ * </pre>
  *
  * The calling convention of the thunk matches the platform's default
  * convention. This means that under Windows, C declarations must
- * contain the __stdcall attribute:
+ * contain the \c __stdcall attribute:
  *
- * C:  typedef MonoBoolean (__stdcall *Equals)(MonoObject*,
- *             MonoObject*, MonoException**);
+ * C: <code>typedef MonoBoolean (__stdcall *Equals)(MonoObject*, MonoObject*, MonoException**);</code>
  *
  * LIMITATIONS
  *
  * Value type arguments and return values are treated as they were objects:
  *
- * C#: public static Rectangle Intersect (Rectangle a, Rectangle b);
- * C:  typedef MonoObject* (*Intersect)(MonoObject*, MonoObject*, MonoException**);
+ * C#: <code>public static Rectangle Intersect (Rectangle a, Rectangle b);</code>
+ * C:  <code>typedef MonoObject* (*Intersect)(MonoObject*, MonoObject*, MonoException**);</code>
  *
  * Arguments must be properly boxed upon trunk's invocation, while return
  * values must be unboxed.

@@ -4813,6 +4813,10 @@ mono_opcode_is_prefix (int op)
 /*
  * FIXME: need to distinguish between valid and verifiable.
  * Need to keep track of types on the stack.
+ */
+
+/**
+ * mono_method_verify:
  * Verify types for opcodes.
  */
 GSList*

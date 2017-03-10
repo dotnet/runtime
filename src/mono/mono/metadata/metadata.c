@@ -3942,17 +3942,17 @@ mono_metadata_free_mh (MonoMethodHeader *mh)
 	}
 }
 
-/*
+/**
  * mono_method_header_get_code:
- * @header: a MonoMethodHeader pointer
- * @code_size: memory location for returning the code size
- * @max_stack: memory location for returning the max stack
+ * \param header a \c MonoMethodHeader pointer
+ * \param code_size memory location for returning the code size
+ * \param max_stack memory location for returning the max stack
  *
  * Method header accessor to retreive info about the IL code properties:
  * a pointer to the IL code itself, the size of the code and the max number
  * of stack slots used by the code.
  *
- * Returns: pointer to the IL code represented by the method header.
+ * \returns pointer to the IL code represented by the method header.
  */
 const unsigned char*
 mono_method_header_get_code (MonoMethodHeader *header, guint32* code_size, guint32* max_stack)
@@ -3964,17 +3964,17 @@ mono_method_header_get_code (MonoMethodHeader *header, guint32* code_size, guint
 	return header->code;
 }
 
-/*
+/**
  * mono_method_header_get_locals:
- * @header: a MonoMethodHeader pointer
- * @num_locals: memory location for returning the number of local variables
- * @init_locals: memory location for returning the init_locals flag
+ * \param header a \c MonoMethodHeader pointer
+ * \param num_locals memory location for returning the number of local variables
+ * \param init_locals memory location for returning the init_locals flag
  *
  * Method header accessor to retreive info about the local variables:
  * an array of local types, the number of locals and whether the locals
  * are supposed to be initialized to 0 on method entry
  *
- * Returns: pointer to an array of types of the local variables
+ * \returns pointer to an array of types of the local variables
  */
 MonoType**
 mono_method_header_get_locals (MonoMethodHeader *header, guint32* num_locals, gboolean *init_locals)
@@ -4000,19 +4000,19 @@ mono_method_header_get_num_clauses (MonoMethodHeader *header)
 	return header->num_clauses;
 }
 
-/*
+/**
  * mono_method_header_get_clauses:
- * @header: a MonoMethodHeader pointer
- * @method: MonoMethod the header belongs to
- * @iter: pointer to a iterator
- * @clause: pointer to a MonoExceptionClause structure which will be filled with the info
+ * \param header a \c MonoMethodHeader pointer
+ * \param method \c MonoMethod the header belongs to
+ * \param iter pointer to a iterator
+ * \param clause pointer to a \c MonoExceptionClause structure which will be filled with the info
  *
- * Get the info about the exception clauses in the method. Set *iter to NULL to
+ * Get the info about the exception clauses in the method. Set \c *iter to NULL to
  * initiate the iteration, then call the method repeatedly until it returns FALSE.
  * At each iteration, the structure pointed to by clause if filled with the
  * exception clause information.
  *
- * Returns: TRUE if clause was filled with info, FALSE if there are no more exception
+ * \returns TRUE if clause was filled with info, FALSE if there are no more exception
  * clauses.
  */
 int
@@ -5288,6 +5288,9 @@ mono_metadata_type_dup (MonoImage *image, const MonoType *o)
 	return r;
 }
 
+/**
+ * mono_signature_hash:
+ */
 guint
 mono_signature_hash (MonoMethodSignature *sig)
 {
@@ -6590,7 +6593,7 @@ mono_signature_get_return_type (MonoMethodSignature *sig)
  * A \c void* pointer must be initialized to NULL to start the iteration
  * and its address is passed to this function repeteadly until it returns
  * NULL.
- * \returns: the next parameter type of the method signature \p sig,
+ * \returns the next parameter type of the method signature \p sig,
  * NULL when finished.
  */
 MonoType*
