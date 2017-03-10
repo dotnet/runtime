@@ -26,12 +26,10 @@ namespace System.Transactions
         // Hashtable of promoted transactions, keyed by identifier guid.  This is used by
         // FindPromotedTransaction to support transaction equivalence when a transaction is
         // serialized and then deserialized back in this app-domain.
-        // Double-checked locking pattern requires volatile for read/write synchronization
-        private static volatile Hashtable s_promotedTransactionTable;
+        private static Hashtable s_promotedTransactionTable;
 
         // Sorted Table of transaction timeouts
-        // Double-checked locking pattern requires volatile for read/write synchronization
-        private static volatile TransactionTable s_transactionTable;
+        private static TransactionTable s_transactionTable;
 
         private static TransactionStartedEventHandler s_distributedTransactionStartedDelegate;
         public static event TransactionStartedEventHandler DistributedTransactionStarted
@@ -269,18 +267,7 @@ namespace System.Transactions
         private static object s_classSyncObject;
 
         // Helper object for static synchronization
-        private static object ClassSyncObject
-        {
-            get
-            {
-                if (s_classSyncObject == null)
-                {
-                    object o = new object();
-                    Interlocked.CompareExchange(ref s_classSyncObject, o, null);
-                }
-                return s_classSyncObject;
-            }
-        }
+        private static object ClassSyncObject => LazyInitializer.EnsureInitialized(ref s_classSyncObject);
 
         internal static IsolationLevel DefaultIsolationLevel
         {
@@ -362,8 +349,7 @@ namespace System.Transactions
         }
 
 
-        // Double-checked locking pattern requires volatile for read/write synchronization
-        private static volatile bool s_cachedMaxTimeout;
+        private static bool s_cachedMaxTimeout;
         private static TimeSpan s_maximumTimeout;
         public static TimeSpan MaximumTimeout
         {
@@ -375,18 +361,7 @@ namespace System.Transactions
                     etwLog.MethodEnter(TraceSourceType.TraceSourceBase, "TransactionManager.get_DefaultMaximumTimeout");
                 }
 
-                if (!s_cachedMaxTimeout)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (!s_cachedMaxTimeout)
-                        {
-                            TimeSpan temp = MachineSettings.MaxTimeout;
-                            s_maximumTimeout = temp;
-                            s_cachedMaxTimeout = true;
-                        }
-                    }
-                }
+                LazyInitializer.EnsureInitialized(ref s_maximumTimeout, ref s_cachedMaxTimeout, ref s_classSyncObject, () => MachineSettings.MaxTimeout);
 
                 if (etwLog.IsEnabled())
                 {
@@ -583,69 +558,17 @@ namespace System.Transactions
         }
 
         // Table for promoted transactions
-        internal static Hashtable PromotedTransactionTable
-        {
-            get
-            {
-                if (s_promotedTransactionTable == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_promotedTransactionTable == null)
-                        {
-                            Hashtable temp = new Hashtable(100);
-                            s_promotedTransactionTable = temp;
-                        }
-                    }
-                }
-
-                return s_promotedTransactionTable;
-            }
-        }
+        internal static Hashtable PromotedTransactionTable =>
+            LazyInitializer.EnsureInitialized(ref s_promotedTransactionTable, ref s_classSyncObject, () => new Hashtable(100));
 
         // Table for transaction timeouts
-        internal static TransactionTable TransactionTable
-        {
-            get
-            {
-                if (s_transactionTable == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_transactionTable == null)
-                        {
-                            TransactionTable temp = new TransactionTable();
-                            s_transactionTable = temp;
-                        }
-                    }
-                }
-
-                return s_transactionTable;
-            }
-        }
-
+        internal static TransactionTable TransactionTable =>
+            LazyInitializer.EnsureInitialized(ref s_transactionTable, ref s_classSyncObject, () => new TransactionTable());
 
         // Fault in a DistributedTransactionManager if one has not already been created.
-        // Double-checked locking pattern requires volatile for read/write synchronization
-        internal static volatile DistributedTransactionManager distributedTransactionManager;
-        internal static DistributedTransactionManager DistributedTransactionManager
-        {
-            get
-            {
-                // If the distributed transaction manager is not configured, throw an exception
-                if (distributedTransactionManager == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (distributedTransactionManager == null)
-                        {
-                            distributedTransactionManager = new DistributedTransactionManager();
-                        }
-                    }
-                }
-
-                return distributedTransactionManager;
-            }
-        }
+        internal static DistributedTransactionManager distributedTransactionManager;
+        internal static DistributedTransactionManager DistributedTransactionManager =>
+            // If the distributed transaction manager is not configured, throw an exception
+            LazyInitializer.EnsureInitialized(ref distributedTransactionManager, ref s_classSyncObject, () => new DistributedTransactionManager());
     }
 }

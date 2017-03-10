@@ -11,242 +11,59 @@ namespace System.Transactions
     // Base class for all volatile enlistment states
     internal abstract class VolatileEnlistmentState : EnlistmentState
     {
-        // Double-checked locking pattern requires volatile for read/write synchronization
-        private static volatile VolatileEnlistmentActive s_volatileEnlistmentActive;
-        private static volatile VolatileEnlistmentPreparing s_volatileEnlistmentPreparing;
-        private static volatile VolatileEnlistmentPrepared s_volatileEnlistmentPrepared;
-        private static volatile VolatileEnlistmentSPC s_volatileEnlistmentSPC;
-        private static volatile VolatileEnlistmentPreparingAborting s_volatileEnlistmentPreparingAborting;
-        private static volatile VolatileEnlistmentAborting s_volatileEnlistmentAborting;
-        private static volatile VolatileEnlistmentCommitting s_volatileEnlistmentCommitting;
-        private static volatile VolatileEnlistmentInDoubt s_volatileEnlistmentInDoubt;
-        private static volatile VolatileEnlistmentEnded s_volatileEnlistmentEnded;
-        private static volatile VolatileEnlistmentDone s_volatileEnlistmentDone;
+        private static VolatileEnlistmentActive s_volatileEnlistmentActive;
+        private static VolatileEnlistmentPreparing s_volatileEnlistmentPreparing;
+        private static VolatileEnlistmentPrepared s_volatileEnlistmentPrepared;
+        private static VolatileEnlistmentSPC s_volatileEnlistmentSPC;
+        private static VolatileEnlistmentPreparingAborting s_volatileEnlistmentPreparingAborting;
+        private static VolatileEnlistmentAborting s_volatileEnlistmentAborting;
+        private static VolatileEnlistmentCommitting s_volatileEnlistmentCommitting;
+        private static VolatileEnlistmentInDoubt s_volatileEnlistmentInDoubt;
+        private static VolatileEnlistmentEnded s_volatileEnlistmentEnded;
+        private static VolatileEnlistmentDone s_volatileEnlistmentDone;
 
         // Object for synchronizing access to the entire class( avoiding lock( typeof( ... )) )
         private static object s_classSyncObject;
 
-        internal static VolatileEnlistmentActive VolatileEnlistmentActive
-        {
-            get
-            {
-                if (s_volatileEnlistmentActive == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_volatileEnlistmentActive == null)
-                        {
-                            VolatileEnlistmentActive temp = new VolatileEnlistmentActive();
-                            s_volatileEnlistmentActive = temp;
-                        }
-                    }
-                }
-
-                return s_volatileEnlistmentActive;
-            }
-        }
+        internal static VolatileEnlistmentActive VolatileEnlistmentActive =>
+            LazyInitializer.EnsureInitialized(ref s_volatileEnlistmentActive, ref s_classSyncObject, () => new VolatileEnlistmentActive());
 
 
-        protected static VolatileEnlistmentPreparing VolatileEnlistmentPreparing
-        {
-            get
-            {
-                if (s_volatileEnlistmentPreparing == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_volatileEnlistmentPreparing == null)
-                        {
-                            VolatileEnlistmentPreparing temp = new VolatileEnlistmentPreparing();
-                            s_volatileEnlistmentPreparing = temp;
-                        }
-                    }
-                }
-
-                return s_volatileEnlistmentPreparing;
-            }
-        }
+        protected static VolatileEnlistmentPreparing VolatileEnlistmentPreparing =>
+            LazyInitializer.EnsureInitialized(ref s_volatileEnlistmentPreparing, ref s_classSyncObject, () => new VolatileEnlistmentPreparing());
 
 
-        protected static VolatileEnlistmentPrepared VolatileEnlistmentPrepared
-        {
-            get
-            {
-                if (s_volatileEnlistmentPrepared == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_volatileEnlistmentPrepared == null)
-                        {
-                            VolatileEnlistmentPrepared temp = new VolatileEnlistmentPrepared();
-                            s_volatileEnlistmentPrepared = temp;
-                        }
-                    }
-                }
-
-                return s_volatileEnlistmentPrepared;
-            }
-        }
+        protected static VolatileEnlistmentPrepared VolatileEnlistmentPrepared =>
+            LazyInitializer.EnsureInitialized(ref s_volatileEnlistmentPrepared, ref s_classSyncObject, () => new VolatileEnlistmentPrepared());
 
 
-        protected static VolatileEnlistmentSPC VolatileEnlistmentSPC
-        {
-            get
-            {
-                if (s_volatileEnlistmentSPC == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_volatileEnlistmentSPC == null)
-                        {
-                            VolatileEnlistmentSPC temp = new VolatileEnlistmentSPC();
-                            s_volatileEnlistmentSPC = temp;
-                        }
-                    }
-                }
-
-                return s_volatileEnlistmentSPC;
-            }
-        }
+        protected static VolatileEnlistmentSPC VolatileEnlistmentSPC =>
+            LazyInitializer.EnsureInitialized(ref s_volatileEnlistmentSPC, ref s_classSyncObject, () => new VolatileEnlistmentSPC());
 
 
-        protected static VolatileEnlistmentPreparingAborting VolatileEnlistmentPreparingAborting
-        {
-            get
-            {
-                if (s_volatileEnlistmentPreparingAborting == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_volatileEnlistmentPreparingAborting == null)
-                        {
-                            VolatileEnlistmentPreparingAborting temp = new VolatileEnlistmentPreparingAborting();
-                            s_volatileEnlistmentPreparingAborting = temp;
-                        }
-                    }
-                }
-
-                return s_volatileEnlistmentPreparingAborting;
-            }
-        }
+        protected static VolatileEnlistmentPreparingAborting VolatileEnlistmentPreparingAborting =>
+            LazyInitializer.EnsureInitialized(ref s_volatileEnlistmentPreparingAborting, ref s_classSyncObject, () => new VolatileEnlistmentPreparingAborting());
 
 
-        protected static VolatileEnlistmentAborting VolatileEnlistmentAborting
-        {
-            get
-            {
-                if (s_volatileEnlistmentAborting == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_volatileEnlistmentAborting == null)
-                        {
-                            VolatileEnlistmentAborting temp = new VolatileEnlistmentAborting();
-                            s_volatileEnlistmentAborting = temp;
-                        }
-                    }
-                }
-
-                return s_volatileEnlistmentAborting;
-            }
-        }
+        protected static VolatileEnlistmentAborting VolatileEnlistmentAborting =>
+            LazyInitializer.EnsureInitialized(ref s_volatileEnlistmentAborting, ref s_classSyncObject, () => new VolatileEnlistmentAborting());
 
 
-        protected static VolatileEnlistmentCommitting VolatileEnlistmentCommitting
-        {
-            get
-            {
-                if (s_volatileEnlistmentCommitting == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_volatileEnlistmentCommitting == null)
-                        {
-                            VolatileEnlistmentCommitting temp = new VolatileEnlistmentCommitting();
-                            s_volatileEnlistmentCommitting = temp;
-                        }
-                    }
-                }
-
-                return s_volatileEnlistmentCommitting;
-            }
-        }
-
-        protected static VolatileEnlistmentInDoubt VolatileEnlistmentInDoubt
-        {
-            get
-            {
-                if (s_volatileEnlistmentInDoubt == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_volatileEnlistmentInDoubt == null)
-                        {
-                            VolatileEnlistmentInDoubt temp = new VolatileEnlistmentInDoubt();
-                            s_volatileEnlistmentInDoubt = temp;
-                        }
-                    }
-                }
-
-                return s_volatileEnlistmentInDoubt;
-            }
-        }
+        protected static VolatileEnlistmentCommitting VolatileEnlistmentCommitting =>
+            LazyInitializer.EnsureInitialized(ref s_volatileEnlistmentCommitting, ref s_classSyncObject, () => new VolatileEnlistmentCommitting());
 
 
-        protected static VolatileEnlistmentEnded VolatileEnlistmentEnded
-        {
-            get
-            {
-                if (s_volatileEnlistmentEnded == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_volatileEnlistmentEnded == null)
-                        {
-                            VolatileEnlistmentEnded temp = new VolatileEnlistmentEnded();
-                            s_volatileEnlistmentEnded = temp;
-                        }
-                    }
-                }
-
-                return s_volatileEnlistmentEnded;
-            }
-        }
+        protected static VolatileEnlistmentInDoubt VolatileEnlistmentInDoubt =>
+            LazyInitializer.EnsureInitialized(ref s_volatileEnlistmentInDoubt, ref s_classSyncObject, () => new VolatileEnlistmentInDoubt());
 
 
-        protected static VolatileEnlistmentDone VolatileEnlistmentDone
-        {
-            get
-            {
-                if (s_volatileEnlistmentDone == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_volatileEnlistmentDone == null)
-                        {
-                            VolatileEnlistmentDone temp = new VolatileEnlistmentDone();
-                            s_volatileEnlistmentDone = temp;
-                        }
-                    }
-                }
+        protected static VolatileEnlistmentEnded VolatileEnlistmentEnded =>
+            LazyInitializer.EnsureInitialized(ref s_volatileEnlistmentEnded, ref s_classSyncObject, () => new VolatileEnlistmentEnded());
 
-                return s_volatileEnlistmentDone;
-            }
-        }
 
-        // Helper object for static synchronization
-        private static object ClassSyncObject
-        {
-            get
-            {
-                if (s_classSyncObject == null)
-                {
-                    object o = new object();
-                    Interlocked.CompareExchange(ref s_classSyncObject, o, null);
-                }
-                return s_classSyncObject;
-            }
-        }
+        protected static VolatileEnlistmentDone VolatileEnlistmentDone =>
+            LazyInitializer.EnsureInitialized(ref s_volatileEnlistmentDone, ref s_classSyncObject, () => new VolatileEnlistmentDone());
+
 
         // Override of get_RecoveryInformation to be more specific with the exception string.
         internal override byte[] RecoveryInformation(InternalEnlistment enlistment)
