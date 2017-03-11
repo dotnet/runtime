@@ -6,6 +6,7 @@ using Internal.Runtime.Augments;
 using System.Collections;
 using System.IO;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace System
@@ -154,7 +155,14 @@ namespace System
 
         public static OperatingSystem OSVersion => s_osVersion.Value;
 
-        public static string StackTrace => EnvironmentAugments.StackTrace;
+        public static string StackTrace
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)] // Prevent inlining from affecting where the stacktrace starts
+            get
+            {
+                return EnvironmentAugments.StackTrace;
+            }
+        }
 
         public static int TickCount => EnvironmentAugments.TickCount;
 
