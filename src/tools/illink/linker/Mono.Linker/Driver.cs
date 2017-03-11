@@ -38,7 +38,11 @@ namespace Mono.Linker {
 
 	public class Driver {
 
+#if NET_CORE
+		static readonly string _linker = "IL Linker";
+#else
 		static readonly string _linker = "Mono CIL Linker";
+#endif
 
 		public static int Main (string [] args)
 		{
@@ -269,7 +273,11 @@ namespace Mono.Linker {
 			Console.WriteLine (_linker);
 			if (msg != null)
 				Console.WriteLine ("Error: " + msg);
+#if NET_CORE
+			Console.WriteLine ("illink [options] -x|-a|-i file");
+#else
 			Console.WriteLine ("monolinker [options] -x|-a|-i file");
+#endif
 
 			Console.WriteLine ("   --about     About the {0}", _linker);
 			Console.WriteLine ("   --version   Print the version number of the {0}", _linker);
