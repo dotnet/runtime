@@ -126,6 +126,24 @@
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   
+  <Target Name="PreserveSymbols"
+          AfterTargets="CreatePackage">
+    <PropertyGroup>
+      <_PackageSymbolsProjectDir>$(PackageSymbolsBinDir)$(MSBuildProjectName)/</_PackageSymbolsProjectDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <_SymbolsFiles Include="%(File.Identity)" Condition="'%(File.Extension)' == '.pdb' OR '%(File.Extension)' == '$(SymbolFileExtension)'">
+        <DestinationFolder>$(_PackageSymbolsProjectDir)%(File.TargetPath)</DestinationFolder>
+      </_SymbolsFiles>
+      <_PackageSymbolsTargetFrameworkDir Include="@(_SymbolsFiles->'DestinationFolder')" />
+    </ItemGroup>
+    <MakeDir Directories="@(_PackageSymbolsTargetFrameworkDir)" />
+    <Message Importance="High" Text="Copy %(_SymbolsFiles.Identity) -> %(_SymbolsFiles.DestinationFolder)" />
+    <Copy SourceFiles="%(_SymbolsFiles.Identity)"
+          DestinationFolder="%(_SymbolsFiles.DestinationFolder)" />
+
+  </Target>
+
   <!-- override GetPackageIdentity so that it doesn't attempt to gather 
        files from runtime depdencies,  this prevents folks from needing
        packages that don't apply to their local OS.
