@@ -4,6 +4,8 @@
 
 using System;
 using System.Collections;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace Internal.Runtime.Augments
 {
@@ -16,7 +18,6 @@ namespace Internal.Runtime.Augments
         public static void FailFast(string message, Exception error) => Environment.FailFast(message, error);
         public static string[] GetCommandLineArgs() => Environment.GetCommandLineArgs();
         public static bool HasShutdownStarted => Environment.HasShutdownStarted;
-        public static string StackTrace => Environment.StackTrace;
         public static int TickCount => Environment.TickCount;
         public static string GetEnvironmentVariable(string variable) => Environment.GetEnvironmentVariable(variable);
         public static string GetEnvironmentVariable(string variable, EnvironmentVariableTarget target) => Environment.GetEnvironmentVariable(variable, target);
@@ -24,5 +25,14 @@ namespace Internal.Runtime.Augments
         public static IDictionary GetEnvironmentVariables(EnvironmentVariableTarget target) => Environment.GetEnvironmentVariables(target);
         public static void SetEnvironmentVariable(string variable, string value) => Environment.SetEnvironmentVariable(variable, value);
         public static void SetEnvironmentVariable(string variable, string value, EnvironmentVariableTarget target) => Environment.SetEnvironmentVariable(variable, value, target);
+
+        public static string StackTrace
+        {
+            [MethodImpl(MethodImplOptions.NoInlining)] // Prevent inlining from affecting where the stacktrace starts
+            get
+            {
+                return new StackTrace(1 /* skip this one frame */, true).ToString(System.Diagnostics.StackTrace.TraceFormat.Normal);
+            }
+        }
     }
 }
