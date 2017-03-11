@@ -6,8 +6,6 @@ using Xunit;
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.strcts.strct001.strct001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.strcts.strct001.strct001;
-
     // <Title>Structs</Title>
     // <Description>
     //  is by design because of "d.s.Field = 4;" equals as "dynamic d2 = d.s; d2.Field = 4;" and
@@ -70,8 +68,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.strcts.strc
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.strcts.strct002.strct002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.strcts.strct002.strct002;
-
     // <Title>Structs</Title>
     // <Description>
     //  is by design because of "d.s.Field = 4;" equals as "dynamic d2 = d.s; d2.Field = 4;" and
@@ -130,8 +126,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.strcts.strc
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.strcts.strct003.strct003
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.strcts.strct003.strct003;
-
     // <Title>Structs</Title>
     // <Description>
     //  is by design because of "d.s.Field = 4;" equals as "dynamic d2 = d.s; d2.Field = 4;" and
@@ -179,14 +173,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.strcts.strc
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.strcts.strct004.strct004
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.strcts.strct004.strct004;
     // <Title>Structs</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public struct S
     {
@@ -222,8 +214,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.strcts.strc
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.strcts.strct005.strct005
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.strcts.strct005.strct005;
-
     public class DynamicTest
     {
         public struct MyStruct

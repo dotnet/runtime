@@ -117,7 +117,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Net46, "dotnet/corefx#7019")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx#7019")]
         public void CantAcceptDuplicateKeysFromSourceDictionary()
         {
             Dictionary<string, int> source = new Dictionary<string, int> { { "a", 1 }, { "A", 1 } };

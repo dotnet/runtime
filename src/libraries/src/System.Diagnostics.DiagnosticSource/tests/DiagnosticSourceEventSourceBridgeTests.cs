@@ -15,7 +15,6 @@ using System.Text;
 namespace System.Diagnostics.Tests
 {
     //Complex types are not supported on EventSource for .NET 4.5
-    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework45)]
     public class DiagnosticSourceEventSourceBridgeTests
     {
         /// <summary>
@@ -441,7 +440,7 @@ namespace System.Diagnostics.Tests
         }
 
         /// <summary>
-        /// Tests the feature to send the messsages as EventSource Activities.  
+        /// Tests the feature to send the messages as EventSource Activities.  
         /// </summary>
         [Fact]
         public void TestActivities()
@@ -593,7 +592,7 @@ namespace System.Diagnostics.Tests
                 Assert.Equal("Microsoft.EntityFrameworkCore.AfterExecuteCommand", eventSourceListener.LastEvent.EventName);
                 eventSourceListener.ResetEventCountAndLastEvent();
 
-                // Stop the ASP.NET reqeust.  
+                // Stop the ASP.NET request.  
                 aspNetCoreSource.Write("Microsoft.AspNetCore.Hosting.EndRequest", 
                     new
                     {

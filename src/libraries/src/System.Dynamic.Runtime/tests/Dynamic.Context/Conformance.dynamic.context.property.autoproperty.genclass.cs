@@ -2,18 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autoproperty.genclass.genclassautoprop.genclassautoprop;
 using Xunit;
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autoproperty.genclass.genclassautoprop.genclassautoprop
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autoproperty.genclass.genclassautoprop.genclassautoprop;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autoproperty.genclass.genclass001.genclass001;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Text;
-    using System.Linq.Expressions;
-    using System.Reflection;
-
     public class MyClass
     {
         public int Field = 0;
@@ -64,8 +57,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autopr
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autoproperty.genclass.genclass001.genclass001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autoproperty.genclass.genclassautoprop.genclassautoprop;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autoproperty.genclass.genclass001.genclass001;
     // <Title> Tests generic class auto property used in anonymous method.</Title>
     // <Description>
     // </Description>
@@ -106,15 +97,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autopr
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autoproperty.genclass.genclass002.genclass002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autoproperty.genclass.genclassautoprop.genclassautoprop;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autoproperty.genclass.genclass002.genclass002;
     // <Title> Tests generic class auto property used in query expression.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    using System;
     using System.Linq;
     using System.Collections.Generic;
 
@@ -150,15 +138,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autopr
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autoproperty.genclass.genclass003.genclass003
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autoproperty.genclass.genclassautoprop.genclassautoprop;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autoproperty.genclass.genclass003.genclass003;
     // <Title> Tests generic class auto property used in collection initializer.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    using System;
     using System.Collections.Generic;
 
     public class Test
@@ -197,8 +182,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autopr
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autoproperty.genclass.genclass005.genclass005
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autoproperty.genclass.genclassautoprop.genclassautoprop;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autoproperty.genclass.genclass005.genclass005;
     // <Title> Tests generic class auto property used in lambda.</Title>
     // <Description>
     // </Description>
@@ -241,17 +224,13 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autopr
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autoproperty.genclass.genclass006.genclass006
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autoproperty.genclass.genclassautoprop.genclassautoprop;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autoproperty.genclass.genclass006.genclass006;
     // <Title> Tests generic class auto property used in using block.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    using System;
     using System.IO;
-    using System.Text;
 
     public class Test
     {
@@ -294,15 +273,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autopr
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autoproperty.genclass.genclass007.genclass007
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autoproperty.genclass.genclassautoprop.genclassautoprop;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autoproperty.genclass.genclass007.genclass007;
     // <Title> Tests generic class auto property used inside #if, #else block.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -339,15 +315,12 @@ return dy.Property_T;
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autoproperty.genclass.genclass008.genclass008
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autoproperty.genclass.genclassautoprop.genclassautoprop;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autoproperty.genclass.genclass008.genclass008;
     // <Title> Tests generic class auto property used in arguments to method invocation.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -403,15 +376,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autopr
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autoproperty.genclass.genclass009.genclass009
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autoproperty.genclass.genclassautoprop.genclassautoprop;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autoproperty.genclass.genclass009.genclass009;
     // <Title> Tests generic class auto property used in implicitly-typed variable initializer.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -447,15 +417,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autopr
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autoproperty.genclass.genclass010.genclass010
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autoproperty.genclass.genclassautoprop.genclassautoprop;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autoproperty.genclass.genclass010.genclass010;
     // <Title> Tests generic class auto property used in implicit operator.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -507,15 +474,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autopr
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autoproperty.genclass.genclass012.genclass012
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autoproperty.genclass.genclassautoprop.genclassautoprop;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autoproperty.genclass.genclass012.genclass012;
     // <Title> Tests generic class auto property used in extension method body.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {

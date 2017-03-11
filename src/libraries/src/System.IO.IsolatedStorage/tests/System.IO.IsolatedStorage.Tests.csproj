@@ -14,6 +14,10 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Unix-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+      <Compile Include="System\IO\IsolatedStorage\IdentityTests.cs" />
+      <Compile Include="System\IO\IsolatedStorage\IsolatedStorageBaseClassTests.cs" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)\System\IO\TempDirectory.cs">
       <Link>Common\System\IO\TempDirectory.cs</Link>
@@ -46,8 +50,6 @@
     <Compile Include="System\IO\IsolatedStorage\GetLastWriteTimeTests.cs" />
     <Compile Include="System\IO\IsolatedStorage\HelperTests.cs" />
     <Compile Include="System\IO\IsolatedStorage\GetStoreTests.cs" />
-    <Compile Include="System\IO\IsolatedStorage\IdentityTests.cs" />
-    <Compile Include="System\IO\IsolatedStorage\IsolatedStorageBaseClassTests.cs" />
     <Compile Include="System\IO\IsolatedStorage\IsoStorageTest.cs" />
     <Compile Include="System\IO\IsolatedStorage\MoveDirectoryTests.cs" />
     <Compile Include="System\IO\IsolatedStorage\MoveFileTests.cs" />

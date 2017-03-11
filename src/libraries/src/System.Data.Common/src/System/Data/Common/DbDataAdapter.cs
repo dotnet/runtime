@@ -1142,7 +1142,7 @@ namespace System.Data.Common
                                     }
                                     else
                                     {
-                                        // null Command will force RowUpdatedEvent with ErrorsOccured without completing batch
+                                        // null Command will force RowUpdatedEvent with ErrorsOccurred without completing batch
                                         errors = ADP.UpdateRequiresCommand(statementType, isCommandFromRowUpdating);
                                     }
                                 }
@@ -1195,7 +1195,7 @@ namespace System.Data.Common
                                     }
                                     else
                                     {
-                                        // null Connection will force RowUpdatedEvent with ErrorsOccured without completing batch
+                                        // null Connection will force RowUpdatedEvent with ErrorsOccurred without completing batch
                                         rowUpdatedEvent.Errors = ADP.UpdateOpenConnectionRequired(StatementType.Batch, false, state);
                                         rowUpdatedEvent.Status = UpdateStatus.ErrorsOccurred;
                                     }
@@ -1212,14 +1212,14 @@ namespace System.Data.Common
                                     }
                                     else
                                     {
-                                        // null Connection will force RowUpdatedEvent with ErrorsOccured without completing batch
+                                        // null Connection will force RowUpdatedEvent with ErrorsOccurred without completing batch
                                         rowUpdatedEvent.Errors = ADP.UpdateOpenConnectionRequired(statementType, isCommandFromRowUpdating, state);
                                         rowUpdatedEvent.Status = UpdateStatus.ErrorsOccurred;
                                     }
                                 }
                                 else
                                 {
-                                    // null Command will force RowUpdatedEvent with ErrorsOccured without completing batch
+                                    // null Command will force RowUpdatedEvent with ErrorsOccurred without completing batch
                                     rowUpdatedEvent.Errors = ADP.UpdateRequiresCommand(statementType, isCommandFromRowUpdating);
                                     rowUpdatedEvent.Status = UpdateStatus.ErrorsOccurred;
                                 }
@@ -1297,7 +1297,7 @@ namespace System.Data.Common
                                 }
                                 else
                                 {
-                                    // null Connection will force RowUpdatedEvent with ErrorsOccured without completing batch
+                                    // null Connection will force RowUpdatedEvent with ErrorsOccurred without completing batch
                                     rowUpdatedEvent.Errors = ADP.UpdateOpenConnectionRequired(StatementType.Batch, false, state);
                                     rowUpdatedEvent.Status = UpdateStatus.ErrorsOccurred;
                                 }
@@ -1586,7 +1586,7 @@ namespace System.Data.Common
                     break; // return to foreach DataRow
                 case UpdateStatus.ErrorsOccurred:
                     cumulativeDataRowsAffected = UpdatedRowStatusErrors(rowUpdatedEvent, batchCommands, commandCount);
-                    break; // no datarow affected if ErrorsOccured
+                    break; // no datarow affected if ErrorsOccurred
                 case UpdateStatus.SkipCurrentRow:
                 case UpdateStatus.SkipAllRemainingRows: // cancel the Update method
                     cumulativeDataRowsAffected = UpdatedRowStatusSkip(batchCommands, commandCount);
@@ -1637,7 +1637,7 @@ namespace System.Data.Common
             Exception errors = rowUpdatedEvent.Errors;
             if (null == errors)
             {
-                // user changed status to ErrorsOccured without supplying an exception message
+                // user changed status to ErrorsOccurred without supplying an exception message
                 errors = ADP.RowUpdatedErrors();
                 rowUpdatedEvent.Errors = errors;
             }
@@ -1708,7 +1708,7 @@ namespace System.Data.Common
 
             if (null == errors)
             {
-                // user changed status to ErrorsOccured without supplying an exception message
+                // user changed status to ErrorsOccurred without supplying an exception message
                 errors = ADP.RowUpdatingErrors();
                 rowUpdatedEvent.Errors = errors;
             }

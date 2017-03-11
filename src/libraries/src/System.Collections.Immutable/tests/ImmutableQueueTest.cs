@@ -220,6 +220,10 @@ namespace System.Collections.Immutable.Tests
             Assert.False(queue.IsEmpty);
             Assert.Equal(new[] { 1, 2 }, queue);
 
+            queue = ImmutableQueue.CreateRange(new List<int> { 1, 2 });
+            Assert.False(queue.IsEmpty);
+            Assert.Equal(new[] { 1, 2 }, queue);
+
             Assert.Throws<ArgumentNullException>("items", () => ImmutableQueue.CreateRange((IEnumerable<int>)null));
             Assert.Throws<ArgumentNullException>("items", () => ImmutableQueue.Create((int[])null));
         }

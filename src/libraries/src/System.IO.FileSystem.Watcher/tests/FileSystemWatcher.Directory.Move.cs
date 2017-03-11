@@ -9,7 +9,7 @@ namespace System.IO.Tests
     public class Directory_Move_Tests : FileSystemWatcherTest
     {
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Expected WatcherChangeTypes are different based on OS
         public void Directory_Move_To_Same_Directory()
         {
             DirectoryMove_SameDirectory(WatcherChangeTypes.Renamed);
@@ -22,14 +22,14 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Expected WatcherChangeTypes are different based on OS
         public void Windows_Directory_Move_To_Different_Watched_Directory()
         {
             DirectoryMove_DifferentWatchedDirectory(WatcherChangeTypes.Changed);
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Expected WatcherChangeTypes are different based on OS
         public void Unix_Directory_Move_To_Different_Watched_Directory()
         {
             DirectoryMove_DifferentWatchedDirectory(0);

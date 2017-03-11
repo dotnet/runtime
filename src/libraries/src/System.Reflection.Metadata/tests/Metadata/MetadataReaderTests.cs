@@ -5,13 +5,14 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection.Internal;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
+
+using StreamMemoryBlockProvider = System.Reflection.Internal.StreamMemoryBlockProvider;
 
 namespace System.Reflection.Metadata.Tests
 {

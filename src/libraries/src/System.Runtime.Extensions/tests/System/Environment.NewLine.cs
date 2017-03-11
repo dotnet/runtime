@@ -8,14 +8,14 @@ namespace System.Tests
 {
     public class EnvironmentNewLine
     {
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // NewLine character on Windows
         [Fact]
         public void Windows_NewLineTest()
         {
             Assert.Equal("\r\n", Environment.NewLine);
         }
 
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // NewLine character on Unix
         [Fact]
         public void Unix_NewLineTest()
         {

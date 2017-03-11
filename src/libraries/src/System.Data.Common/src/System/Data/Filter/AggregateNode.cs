@@ -23,7 +23,7 @@ namespace System.Data
     {
         private readonly AggregateType _type;
         private readonly Aggregate _aggregate;
-        private readonly bool _local;     // set to true if the aggregate calculated localy (for the current table)
+        private readonly bool _local;     // set to true if the aggregate calculated locally (for the current table)
 
         private readonly string _relationName;
         private readonly string _columnName;

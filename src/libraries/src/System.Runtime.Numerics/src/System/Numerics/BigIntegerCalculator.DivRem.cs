@@ -255,7 +255,7 @@ namespace System.Numerics
             for (int i = 0; i < rightLength; i++)
             {
                 ulong digit = (left[i] + carry) + right[i];
-                left[i] = (uint)digit;
+                left[i] = unchecked((uint)digit);
                 carry = digit >> 32;
             }
 
@@ -280,11 +280,11 @@ namespace System.Numerics
             for (int i = 0; i < rightLength; i++)
             {
                 carry += right[i] * q;
-                uint digit = (uint)carry;
+                uint digit = unchecked((uint)carry);
                 carry = carry >> 32;
                 if (left[i] < digit)
                     ++carry;
-                left[i] -= digit;
+                left[i] = unchecked(left[i] - digit);
             }
 
             return (uint)carry;

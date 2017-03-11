@@ -5,7 +5,7 @@
     <ProjectReference Include="..\ref\System.Data.SqlClient.csproj">
       <SupportedFramework>net463;netcoreapp2.0;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\System.Data.SqlClient.builds" />
+    <ProjectReference Include="..\src\System.Data.SqlClient.csproj" />
   </ItemGroup>
   <ItemGroup>
     <InboxOnTargetFramework Include="MonoAndroid10" />

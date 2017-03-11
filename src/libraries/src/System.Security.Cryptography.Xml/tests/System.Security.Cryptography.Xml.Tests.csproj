@@ -5,12 +5,53 @@
     <OutputType>Library</OutputType>
     <ProjectGuid>{4A85232C-E914-4E06-8542-26DAF4B22D60}</ProjectGuid>
   </PropertyGroup>
+  <PropertyGroup>
+    <RootNamespace>System.Security.Cryptography.Xml.Tests</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="AssertCrypto.cs" />
+    <Compile Include="CipherDataTests.cs" />
+    <Compile Include="DataObjectTest.cs" />
+    <Compile Include="DataObjectTests.cs" />
+    <Compile Include="DataReferenceTest.cs" />
+    <Compile Include="DSAKeyValueTest.cs" />
+    <Compile Include="EncryptedXmlEqualityComparer.cs" />
+    <Compile Include="EncryptedXmlTest.cs" />
+    <Compile Include="KeyInfoNameTest.cs" />
+    <Compile Include="KeyInfoNodeTest.cs" />
+    <Compile Include="KeyInfoRetrievalMethodTest.cs" />
+    <Compile Include="KeyInfoTest.cs" />
+    <Compile Include="KeyInfoTests.cs" />
+    <Compile Include="KeyInfoX509DataTest.cs" />
+    <Compile Include="ReferenceTest.cs" />
+    <Compile Include="RSAKeyValueTest.cs" />
+    <Compile Include="Samples\EncryptingDecryptingAsymmetric.cs" />
+    <Compile Include="Samples\SigningVerifying.cs" />
+    <Compile Include="Samples\EncryptingDecryptingSymmetric.cs" />
+    <Compile Include="SignatureTest.cs" />
+    <Compile Include="SignedInfoTest.cs" />
+    <Compile Include="SignedXmlTest.cs" />
+    <Compile Include="SignedXmlTests.cs" />
+    <Compile Include="TestHelpers.cs" />
+    <Compile Include="TransformChainTest.cs" />
+    <Compile Include="TransformTest.cs" />
+    <Compile Include="XmlDecryptionTransformTest.cs" />
+    <Compile Include="XmlDsigBase64TransformTest.cs" />
+    <Compile Include="XmlDsigC14NTransformTest.cs" />
+    <Compile Include="XmlDsigC14NWithCommentsTransformTest.cs" />
+    <Compile Include="XmlDsigEnvelopedSignatureTransformTest.cs" />
+    <Compile Include="XmlDsigExcC14NTransformTest.cs" />
+    <Compile Include="XmlDsigExcC14NWithCommentsTransformTest.cs" />
+    <Compile Include="XmlDsigXPathTransformTest.cs" />
+    <Compile Include="XmlDsigXsltTransformTest.cs" />
+    <Compile Include="XmlLicenseTransformTest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="EncryptedXmlSample3.xml" />
+    <EmbeddedResource Include="EncryptedXmlSample2.xml" />
+    <EmbeddedResource Include="EncryptedXmlSample1.xml" />
+  </ItemGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
-  <ItemGroup>
-    <!--
-    <Compile Include="(addyourtest).cs" />
-    -->
-  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

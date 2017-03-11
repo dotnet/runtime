@@ -22,6 +22,7 @@
     <Compile Include="UriIsWellFormedUriStringTest.cs" />
     <Compile Include="UriMailToTest.cs" />
     <Compile Include="UriParameterValidationTest.cs" />
+    <Compile Include="UriParserTest.cs" />
     <Compile Include="UriRelativeResolutionTest.cs" />
     <Compile Include="UriTests.cs" />
     <Compile Include="WebSocketsUriParserTest.cs" />
@@ -29,9 +30,9 @@
     <Compile Include="$(CommonTestPath)\System\ThreadCultureChange.cs">
       <Link>Common\System\ThreadCultureChange.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netstandard'">
-    <Compile Include="UriParserTest.cs" />
+    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
+      <Link>Common\System\PlatformDetection.cs</Link>
+    </Compile>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

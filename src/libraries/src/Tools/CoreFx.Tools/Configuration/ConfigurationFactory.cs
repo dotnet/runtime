@@ -216,7 +216,7 @@ namespace Microsoft.DotNet.Build.Tasks
                         if (property.DefaultValue == null)
                         {
                             // we can't use this property at this index
-                            throw new ArgumentException($"Property '{propertyValue.Property.Name}' value '{propertyValue.Value}' occured at unexpected position in configuration '{configurationString}'");
+                            throw new ArgumentException($"Property '{propertyValue.Property.Name}' value '{propertyValue.Value}' occurred at unexpected position in configuration '{configurationString}'");
                         }
 
                         // give this property its default value and advance to the next property
@@ -225,7 +225,7 @@ namespace Microsoft.DotNet.Build.Tasks
                         if (propertyIndex > PropertiesByOrder.Length)
                         {
                             // we ran out of possible properties.
-                            throw new ArgumentException($"Property '{propertyValue.Property.Name}' value '{propertyValue.Value}' occured at unexpected position in configuration '{configurationString}'");
+                            throw new ArgumentException($"Property '{propertyValue.Property.Name}' value '{propertyValue.Value}' occurred at unexpected position in configuration '{configurationString}'");
                         }
 
                         property = PropertiesByOrder[propertyIndex];

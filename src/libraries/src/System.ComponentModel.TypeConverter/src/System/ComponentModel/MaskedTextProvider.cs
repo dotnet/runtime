@@ -765,7 +765,7 @@ namespace System.ComponentModel
         ///     Specifies whether to reset and skip the current position if editable, when the input is the space character.
         ///
         ///     This is useful when assigning text that was saved excluding the prompt (prompt replaced with spaces); 
-        ///     in this case we don't want to take the space but instead, reset the postion (or just skip it) so the 
+        ///     in this case we don't want to take the space but instead, reset the position (or just skip it) so the 
         ///     next input character gets positioned correctly.
         /// </summary>
         public bool ResetOnSpace
@@ -2683,7 +2683,7 @@ namespace System.ComponentModel
 
             if (!includePrompt)
             {
-                // If prompt is not to be included we need to replace it with a space, but only for unassigned postions below
+                // If prompt is not to be included we need to replace it with a space, but only for unassigned positions below
                 // the last assigned position or last literal position if including literals, whichever is higher; upper unassigned
                 // positions are not included in the resulting string.
 

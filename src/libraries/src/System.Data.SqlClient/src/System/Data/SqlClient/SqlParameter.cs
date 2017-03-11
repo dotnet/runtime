@@ -20,8 +20,6 @@ using Microsoft.SqlServer.Server;
 
 namespace System.Data.SqlClient
 {
-    using Res = System.SR;
-
     internal abstract class DataFeed
     {
     }
@@ -324,7 +322,7 @@ namespace System.Data.SqlClient
                 }
                 else
                 {
-                    localeId = Locale.GetCurrentCultureLcid();
+                    localeId = CultureInfo.CurrentCulture.LCID;
                 }
             }
 
@@ -1625,7 +1623,7 @@ namespace System.Data.SqlClient
             {
                 string errorMsg;
                 {
-                    errorMsg = Res.SQL_TypeName;
+                    errorMsg = SR.SQL_TypeName;
                 }
                 return MultipartIdentifier.ParseMultipartIdentifier(typeName, "[\"", "]\"", '.', 3, true, errorMsg, true);
             }

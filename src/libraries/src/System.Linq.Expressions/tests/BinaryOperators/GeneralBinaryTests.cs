@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Reflection;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
@@ -50,6 +51,56 @@ namespace System.Linq.Expressions.Tests
                 yield return new object[] {ExpressionType.ArrayIndex, new int[1], 0};
                 yield return new object[] {ExpressionType.RightShift, 0, 0};
                 yield return new object[] {ExpressionType.LeftShift, 0, 0};
+            }
+        }
+
+        public static IEnumerable<object[]> NumericMethodAllowedBinaryTypesAndValues
+        {
+            get
+            {
+                yield return new object[] {ExpressionType.Add};
+                yield return new object[] {ExpressionType.AddChecked};
+                yield return new object[] {ExpressionType.AddAssign};
+                yield return new object[] {ExpressionType.AddAssignChecked};
+                yield return new object[] {ExpressionType.Subtract};
+                yield return new object[] {ExpressionType.SubtractChecked};
+                yield return new object[] {ExpressionType.SubtractAssign};
+                yield return new object[] {ExpressionType.SubtractAssignChecked};
+                yield return new object[] {ExpressionType.Multiply};
+                yield return new object[] {ExpressionType.MultiplyChecked};
+                yield return new object[] {ExpressionType.MultiplyAssign};
+                yield return new object[] {ExpressionType.MultiplyAssignChecked};
+                yield return new object[] {ExpressionType.Divide};
+                yield return new object[] {ExpressionType.DivideAssign};
+                yield return new object[] {ExpressionType.Modulo};
+                yield return new object[] {ExpressionType.ModuloAssign};
+                yield return new object[] {ExpressionType.Power};
+                yield return new object[] {ExpressionType.PowerAssign};
+                yield return new object[] {ExpressionType.And};
+                yield return new object[] {ExpressionType.AndAssign};
+                yield return new object[] {ExpressionType.Or};
+                yield return new object[] {ExpressionType.OrAssign};
+                yield return new object[] {ExpressionType.LessThan};
+                yield return new object[] {ExpressionType.LessThanOrEqual};
+                yield return new object[] {ExpressionType.GreaterThan};
+                yield return new object[] {ExpressionType.GreaterThanOrEqual};
+                yield return new object[] {ExpressionType.Equal};
+                yield return new object[] {ExpressionType.NotEqual};
+                yield return new object[] {ExpressionType.ExclusiveOr};
+                yield return new object[] {ExpressionType.ExclusiveOrAssign};
+                yield return new object[] {ExpressionType.RightShift};
+                yield return new object[] {ExpressionType.RightShiftAssign};
+                yield return new object[] {ExpressionType.LeftShift};
+                yield return new object[] {ExpressionType.LeftShiftAssign};
+            }
+        }
+
+        public static IEnumerable<object[]> BooleanMethodAllowedBinaryTypesAndValues
+        {
+            get
+            {
+                yield return new object[] {ExpressionType.AndAlso};
+                yield return new object[] {ExpressionType.OrElse};
             }
         }
 
@@ -204,6 +255,56 @@ namespace System.Linq.Expressions.Tests
             BinaryExpression op = Expression.MakeBinary(
                 type, Expression.Constant(lhs), Expression.Constant(rhs), false, null, sillyLambda);
             Expression.Lambda(op).Compile(useInterpreter).DynamicInvoke();
+        }
+
+        private class GenericClassWithNonGenericMethod<TClassType>
+        {
+            public static int DoIntStuff(int x, int y) => unchecked(x + y);
+
+            public static GenericClassWithNonGenericMethod<TClassType> DoBooleanStuff(GenericClassWithNonGenericMethod<TClassType> x, GenericClassWithNonGenericMethod<TClassType> y) => x;
+
+            public static bool operator true(GenericClassWithNonGenericMethod<TClassType> obj) => true;
+
+            public static bool operator false(GenericClassWithNonGenericMethod<TClassType> obj) => false;
+        }
+
+        [Theory, PerCompilationType(nameof(NumericMethodAllowedBinaryTypesAndValues))]
+        public static void MethodOfOpenGeneric(ExpressionType type, bool useInterpreter)
+        {
+            ParameterExpression left = Expression.Parameter(typeof(int));
+            ConstantExpression right = Expression.Constant(2);
+            var genType = typeof(GenericClassWithNonGenericMethod<>);
+            MethodInfo method = genType.GetMethod(nameof(GenericClassWithNonGenericMethod<int>.DoIntStuff));
+            Assert.Throws<ArgumentException>("method", () => Expression.MakeBinary(type, left, right, false, method));
+            method = genType.MakeGenericType(genType).GetMethod(nameof(GenericClassWithNonGenericMethod<int>.DoIntStuff));
+            Assert.Throws<ArgumentException>("method", () => Expression.MakeBinary(type, left, right, false, method));
+
+            // Confirm does work when closed.
+            var validType = typeof(GenericClassWithNonGenericMethod<int>);
+            method = validType.GetMethod(nameof(GenericClassWithNonGenericMethod<int>.DoIntStuff));
+            Expression exp = Expression.MakeBinary(type, left, right, false, method);
+            Func<int, int> f = Expression.Lambda<Func<int, int>>(exp, left).Compile(useInterpreter);
+            Assert.Equal(5, f(3));
+        }
+
+        [Theory, PerCompilationType(nameof(BooleanMethodAllowedBinaryTypesAndValues))]
+        public static void MethodOfOpenGenericBoolean(ExpressionType type, bool useInterpreter)
+        {
+            GenericClassWithNonGenericMethod<bool> value = new GenericClassWithNonGenericMethod<bool>();
+            ConstantExpression left = Expression.Constant(value);
+            ConstantExpression right = Expression.Constant(new GenericClassWithNonGenericMethod<bool>());
+            var genType = typeof(GenericClassWithNonGenericMethod<>);
+            MethodInfo method = genType.GetMethod(nameof(GenericClassWithNonGenericMethod<bool>.DoBooleanStuff));
+            Assert.Throws<ArgumentException>("method", () => Expression.MakeBinary(type, left, right, false, method));
+            method = genType.MakeGenericType(genType).GetMethod(nameof(GenericClassWithNonGenericMethod<int>.DoIntStuff));
+            Assert.Throws<ArgumentException>("method", () => Expression.MakeBinary(type, left, right, false, method));
+
+            // Confirm does work when closed.
+            var validType = typeof(GenericClassWithNonGenericMethod<bool>);
+            method = validType.GetMethod(nameof(GenericClassWithNonGenericMethod<bool>.DoBooleanStuff));
+            Expression exp = Expression.MakeBinary(type, left, right, false, method);
+            Func<GenericClassWithNonGenericMethod<bool>> f = Expression.Lambda<Func<GenericClassWithNonGenericMethod<bool>>>(exp).Compile(useInterpreter);
+            Assert.Same(value, f());
         }
     }
 }

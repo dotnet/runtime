@@ -43,14 +43,14 @@ namespace System.Linq.Expressions.Compiler
                 _ilg.Emit(OpCodes.Ldsfld, fb);
                 _ilg.Emit(OpCodes.Ldnull);
                 _ilg.Emit(OpCodes.Bne_Un, l);
-                _ilg.EmitArray(array);
+                _ilg.EmitArray(array, this);
                 _ilg.Emit(OpCodes.Stsfld, fb);
                 _ilg.MarkLabel(l);
                 _ilg.Emit(OpCodes.Ldsfld, fb);
             }
             else
             {
-                _ilg.EmitArray(array);
+                _ilg.EmitArray(array, this);
             }
 #endif
         }

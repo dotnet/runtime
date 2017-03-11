@@ -59,7 +59,7 @@ namespace System.Security.Cryptography.Xml
             int count = 0;
             foreach (XmlNode node in nodeList)
             {
-                // ignore white spaces, but make sure only one child element is present
+                // ignore whitespace, but make sure only one child element is present
                 if (node is XmlWhitespace) continue;
                 if (node is XmlElement)
                 {
@@ -69,7 +69,7 @@ namespace System.Security.Cryptography.Xml
                     count++;
                     continue;
                 }
-                // Only allow white spaces
+                // Only allow whitespace
                 count++;
             }
             if (count != 1 || firstDataElement == null)

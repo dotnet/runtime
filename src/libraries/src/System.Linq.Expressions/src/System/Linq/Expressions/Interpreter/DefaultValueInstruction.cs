@@ -21,7 +21,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int Run(InterpretedFrame frame)
         {
-            object value = _type.GetTypeInfo().IsValueType ? Activator.CreateInstance(_type) : null;
+            object value = _type.IsValueType ? Activator.CreateInstance(_type) : null;
             frame.Push(value);
             return 1;
         }

@@ -6,7 +6,6 @@ using Xunit;
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.invoke.invoke001.invoke001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.invoke.invoke001.invoke001;
     // <Title> Fields and properties of dynamic type are invokeable</Title>
     // <Description>
     // </Description>
@@ -81,7 +80,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.invoke.invo
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.invoke.invoke002.invoke002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.invoke.invoke002.invoke002;
     // <Title> Fields and properties of dynamic type are invokeable</Title>
     // <Description>
     // </Description>
@@ -137,7 +135,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.invoke.invo
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.invoke.invoke003.invoke003
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.invoke.invoke003.invoke003;
     // <Title> Fields and properties of dynamic type are invokeable</Title>
     // <Description>
     // </Description>
@@ -196,7 +193,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.invoke.invo
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.invoke.invoke004.invoke004
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.invoke.invoke004.invoke004;
     // <Title> Fields and properties of dynamic type are invokeable</Title>
     // <Description>
     // </Description>
@@ -274,7 +270,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.invoke.invo
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.invoke.invoke005.invoke005
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.invoke.invoke005.invoke005;
     // <Title> Fields and properties of dynamic type are invokeable</Title>
     // <Description>
     // </Description>
@@ -352,7 +347,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.invoke.invo
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.invoke.invoke006.invoke006
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.invoke.invoke006.invoke006;
     // <Title> Fields and properties of dynamic type are invokeable</Title>
     // <Description>
     // </Description>
@@ -437,7 +431,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.invoke.invo
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.invoke.invoke007.invoke007
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.invoke.invoke007.invoke007;
     // <Title> Make sure that the right member is picked </Title>
     // <Description>
     // </Description>
@@ -445,7 +438,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.invoke.invo
     // <Expects Status=success></Expects>
     // <Code>
     //<Expects Status=warning>\(25,20\).*CS0649</Expects>
-    using System;
 
     public class A
     {
@@ -491,13 +483,11 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.invoke.invo
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.invoke.invoke008.invoke008
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.invoke.invoke008.invoke008;
     // <Title>Calling Invoke method</Title>
     // <Description></Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects status=success></Expects>
     // <Code>
-    using System;
 
     public class C
     {

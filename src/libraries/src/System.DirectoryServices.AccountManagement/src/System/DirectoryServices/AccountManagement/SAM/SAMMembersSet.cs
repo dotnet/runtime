@@ -17,7 +17,6 @@ namespace System.DirectoryServices.AccountManagement
 #pragma warning disable 618    // Have not migrated to v4 transparency yet
     [System.Security.SecurityCritical(System.Security.SecurityCriticalScope.Everything)]
 #pragma warning restore 618
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted = true)]
     internal class SAMMembersSet : BookmarkableResultSet
     {
         internal SAMMembersSet(string groupPath, UnsafeNativeMethods.IADsGroup group, bool recursive, SAMStoreCtx storeCtx, DirectoryEntry ctxBase)

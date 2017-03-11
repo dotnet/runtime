@@ -729,7 +729,7 @@ namespace System.Data.Odbc
                 {
                     //Handle Parameters
                     //Note: We use the internal variable as to not instante a new object collection,
-                    //for the the common case of using no parameters.
+                    //for the common case of using no parameters.
                     if ((null != _parameterCollection) && (0 < _parameterCollection.Count))
                     {
                         int parameterBufferSize = _parameterCollection.CalcParameterBufferSize(this);

@@ -35,6 +35,19 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
+        private class AnyTypeList : IEnumerable<object>
+        {
+            private readonly List<object> _inner = new List<object>();
+
+            public void Add<T>(T item) => _inner.Add(item);
+
+            public void AddIntRegardless<T>(int item) => _inner.Add(item);
+
+            public IEnumerator<object> GetEnumerator() => _inner.GetEnumerator();
+
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        }
+
         [Fact]
         public void NullNewMethod()
         {
@@ -125,6 +138,42 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<ArgumentException>("addMethod", () => Expression.ListInit(newExp, adder, Expression.Constant("")));
             Assert.Throws<ArgumentException>("addMethod", () => Expression.ElementInit(adder, Expression.Constant("")));
             Assert.Throws<ArgumentException>("addMethod", () => Expression.ElementInit(adder, Enumerable.Repeat(Expression.Constant(""), 1)));
+        }
+
+        [Fact]
+        public void AdderOnWrongType()
+        {
+            // This logically includes cases of methods of open generic types, since the NewExpression cannot be of such a type.
+            NewExpression newExp = Expression.New(typeof(List<int>));
+            MethodInfo adder = typeof(HashSet<int>).GetMethod(nameof(HashSet<int>.Add));
+            Assert.Throws<ArgumentException>(null, () => Expression.ListInit(newExp, adder, Expression.Constant(0)));
+        }
+
+        [Fact]
+        public void OpenGenericAddMethod()
+        {
+            NewExpression newExp = Expression.New(typeof(AnyTypeList));
+            MethodInfo adder = typeof(AnyTypeList).GetMethod(nameof(AnyTypeList.Add));
+            Assert.Throws<ArgumentException>(() => Expression.ListInit(newExp, adder, Expression.Constant(0)));
+            adder = typeof(AnyTypeList).GetMethod(nameof(AnyTypeList.Add)).MakeGenericMethod(typeof(List<int>));
+            Assert.Throws<ArgumentException>(() => Expression.ListInit(newExp, adder, Expression.Constant(0)));
+            adder = typeof(AnyTypeList).GetMethod(nameof(AnyTypeList.AddIntRegardless));
+            Assert.Throws<ArgumentException>("addMethod", () => Expression.ListInit(newExp, adder, Expression.Constant(0)));
+            adder = typeof(AnyTypeList).GetMethod(nameof(AnyTypeList.AddIntRegardless)).MakeGenericMethod(typeof(List<>));
+            Assert.Throws<ArgumentException>("addMethod", () => Expression.ListInit(newExp, adder, Expression.Constant(0)));
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void GenericAddMethod(bool useInterpreter)
+        {
+            NewExpression newExp = Expression.New(typeof(AnyTypeList));
+            MethodInfo adder = typeof(AnyTypeList).GetMethod(nameof(AnyTypeList.Add)).MakeGenericMethod(typeof(int));
+            Expression<Func<AnyTypeList>> lambda =
+                Expression.Lambda<Func<AnyTypeList>>(
+                    Expression.ListInit(
+                        newExp, adder, Expression.Constant(3), Expression.Constant(2), Expression.Constant(1)));
+            Func<AnyTypeList> func = lambda.Compile(useInterpreter);
+            Assert.Equal(new object[] {3, 2, 1}, func());
         }
 
         [Fact]

@@ -177,9 +177,9 @@ namespace System.Xml.Tests
             ReloadSource(new StringReader(mnw.GetNodes()));
             DataReader.PositionOnElement("ELEMENT_1");
 
-            CError.Compare(DataReader.ReadToDescendant("a"), true, "Couldnt go to Descendant");
+            CError.Compare(DataReader.ReadToDescendant("a"), true, "Couldn't go to Descendant");
             int depth = DataReader.Depth;
-            CError.Compare(DataReader.ReadToNextSibling("b"), true, "Couldnt go to NextSibling");
+            CError.Compare(DataReader.ReadToNextSibling("b"), true, "Couldn't go to NextSibling");
 
             CError.Compare(DataReader.Depth, depth, "Depth is not correct");
             CError.Compare(DataReader.NodeType, XmlNodeType.Element, "Nodetype is not correct");
@@ -210,10 +210,10 @@ namespace System.Xml.Tests
             ReloadSource(new StringReader(mnw.GetNodes()));
             DataReader.PositionOnElement("ELEMENT_0");
 
-            CError.Compare(DataReader.ReadToDescendant("a"), "Couldnt go to Descendant");
+            CError.Compare(DataReader.ReadToDescendant("a"), "Couldn't go to Descendant");
             int depth = DataReader.Depth;
 
-            CError.Compare(DataReader.ReadToNextSibling("b"), "Couldnt go to NextSibling");
+            CError.Compare(DataReader.ReadToNextSibling("b"), "Couldn't go to NextSibling");
 
 
             CError.Compare(DataReader.Depth, depth, "Depth is not correct");

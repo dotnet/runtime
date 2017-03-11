@@ -24,28 +24,30 @@
     <TargetingPackExclusions Include="System.Net.NetworkInformation" />
     <TargetingPackExclusions Include="Windows" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp'">
     <!-- Production code references -->
     <Compile Include="..\..\src\System\Net\NetworkInformation\NetworkInterface.cs">
       <Link>ProductionCode\System\Net\NetworkInformation\NetworkInterface.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\System\Net\NetworkInformation\OperationalStatus.cs">
-      <Link>ProductionCode\System\Net\NetworkInformation\OperationalStatus.cs</Link>
-    </Compile>
     <Compile Include="..\..\src\System\Net\NetworkInformation\PhysicalAddress.cs">
       <Link>ProductionCode\System\Net\NetworkInformation\PhysicalAddress.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\NetworkInformation\NetNativeNetworkInterface.cs">
+      <Link>ProductionCode\System\Net\NetworkInformation\NetNativeNetworkInterface.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\NetworkInformation\NetworkInterfacePal.Uap.cs">
+      <Link>ProductionCode\System\Net\NetworkInformation\NetworkInterfacePal.Uap.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\..\src\System\Net\NetworkInformation\OperationalStatus.cs">
+      <Link>ProductionCode\System\Net\NetworkInformation\OperationalStatus.cs</Link>
     </Compile>
     <Compile Include="..\..\src\System\Net\NetworkInformation\NetworkInterfaceType.cs">
       <Link>ProductionCode\System\Net\NetworkInformation\NetworkInterfaceType.cs</Link>
     </Compile>
     <Compile Include="..\..\src\System\Net\NetworkInformation\NetworkInterfaceComponent.cs">
       <Link>ProductionCode\System\Net\NetworkInformation\NetworkInterfaceComponent.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\NetworkInformation\NetworkInterfacePal.Uap.cs">
-      <Link>ProductionCode\System\Net\NetworkInformation\NetworkInterfacePal.Uap.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\NetworkInformation\NetNativeNetworkInterface.cs">
-      <Link>ProductionCode\System\Net\NetworkInformation\NetNativeNetworkInterface.cs</Link>
     </Compile>
     <!-- Common -->
     <Compile Include="$(CommonPath)\System\NotImplemented.cs">

@@ -17,11 +17,11 @@
 
   <ItemGroup>
     <!-- for all configurations this project provides refs for that configuration -->
-    <BinplaceConfiguration Include="$(Configuration)">
+    <BinPlaceConfiguration Include="$(Configuration)">
       <RefPath>$(RefPath)</RefPath>
       <!-- only for netfx verticals will this project provide runtime assets -->
       <RuntimePath>$(RuntimePath)</RuntimePath>
-    </BinplaceConfiguration>
+    </BinPlaceConfiguration>
   </ItemGroup>
 
   <Target Name="AddNETStandardRefs" AfterTargets="ResolveReferences"

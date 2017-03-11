@@ -155,7 +155,7 @@ namespace System.Data.Common
                 return false;
             else
             {
-                string tmp = stringValue.Trim();  // Remove leading & trailing white space.
+                string tmp = stringValue.Trim();  // Remove leading & trailing whitespace.
                 if (CompareInsensitiveInvariant(tmp, "true") || CompareInsensitiveInvariant(tmp, "yes"))
                     return true;
                 else if (CompareInsensitiveInvariant(tmp, "false") || CompareInsensitiveInvariant(tmp, "no"))
@@ -184,7 +184,7 @@ namespace System.Data.Common
                 return false;
             else
             {
-                string tmp = stringValue.Trim();  // Remove leading & trailing white space.
+                string tmp = stringValue.Trim();  // Remove leading & trailing whitespace.
                 if (CompareInsensitiveInvariant(tmp, "sspi") || CompareInsensitiveInvariant(tmp, "true") || CompareInsensitiveInvariant(tmp, "yes"))
                     return true;
                 else if (CompareInsensitiveInvariant(tmp, "false") || CompareInsensitiveInvariant(tmp, "no"))

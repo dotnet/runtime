@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 
 using Microsoft.Win32.SafeHandles;
 
@@ -26,7 +27,11 @@ internal static partial class Interop
         /// <summary>
         /// Starts the current thread's RunLoop. If the RunLoop is already running, creates a new, nested, RunLoop in the same stack.
         /// </summary>
+#if MONO
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+#else
         [DllImport(Interop.Libraries.CoreFoundationLibrary)]
+#endif
         internal extern static void CFRunLoopRun();
 
         /// <summary>

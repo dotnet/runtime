@@ -26,21 +26,20 @@
       Lines="$([System.IO.File]::ReadAllText('$(ProjectJsonTemplate)').Replace('{RID}', $(NuGetRuntimeIdentifier)).Replace('{TFM}', $(NuGetTargetMoniker)).Replace('{PackageId}', $(TargetingPackNugetPackageId)))"
       Overwrite="true"
                       />
-    <ItemGroup>
-      <FileWrites Include="$(ProjectJson);$(ProjectLockJson)" />
-    </ItemGroup>
 
+    <!-- if lock file exists be sure to update timestamp otherwise we could get in a state of aways calling restore but the lock file not being updated -->
+    <Touch Condition="Exists('$(ProjectLockJson)')" Files="$(ProjectLockJson)" />
   </Target>
 
   <!-- Override build and GetTargetPath to return all items deployed -->
   <Target Name="Build"
           Condition=" '$(_InvalidConfigurationWarning)' != 'true' "
           DependsOnTargets="$(BuildDependsOn)"
-          Returns="@(BinplaceItem)" />
+          Returns="@(BinPlaceItem)" />
 
   <!-- Depprojs need to run Compile in order to populate items that will be copied to output -->
-  <Target Name="GetTargetPath" 
-          DependsOnTargets="Compile;GetBinplaceItems" 
-          Returns="@(BinplaceItem)" />
+  <Target Name="GetTargetPath"
+          DependsOnTargets="Compile;GetBinPlaceItems"
+          Returns="@(BinPlaceItem)" />
 
 </Project>

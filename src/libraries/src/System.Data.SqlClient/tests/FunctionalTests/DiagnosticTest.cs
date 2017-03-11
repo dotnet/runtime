@@ -2,402 +2,497 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Xunit;
-using System.Reflection;
-using System.Diagnostics;
 using System.Collections;
-using System.Xml;
+using System.Diagnostics;
+using System.Reflection;
 using System.Threading.Tasks;
-using Microsoft.SqlServer.TDS.Servers;
+using System.Xml;
 using Microsoft.SqlServer.TDS;
+using Microsoft.SqlServer.TDS.Done;
 using Microsoft.SqlServer.TDS.EndPoint;
-using Microsoft.SqlServer.TDS.SQLBatch;
 using Microsoft.SqlServer.TDS.Error;
+using Microsoft.SqlServer.TDS.Servers;
+using Microsoft.SqlServer.TDS.SQLBatch;
+using Xunit;
+using System.Runtime.CompilerServices;
 
 namespace System.Data.SqlClient.Tests
 {
-    public class DiagnosticTest : IDisposable
+    public class DiagnosticTest : RemoteExecutorTestBase
     {
-        private string _connectionString;
-        private string _badConnectionString = "data source = bad; initial catalog = bad; uid = bad; password = bad; connection timeout = 1;";
+        private const string BadConnectionString = "data source = bad; initial catalog = bad; uid = bad; password = bad; connection timeout = 1;";
+        private static readonly string s_tcpConnStr = $"\"{Environment.GetEnvironmentVariable("TEST_TCP_CONN_STR")}\"";
         
-        private TestTdsServer _server;
-        private static readonly string s_tcpConnStr = Environment.GetEnvironmentVariable("TEST_TCP_CONN_STR");
-
-        public static bool IsConnectionStringConfigured() => !string.IsNullOrEmpty(s_tcpConnStr);
-
-        public DiagnosticTest()
-        {
-            QueryEngine engine = new DiagnosticsQueryEngine();
-            _server = TestTdsServer.StartServerWithQueryEngine(engine);
-            _connectionString = _server.ConnectionString;
-        }
+        public static bool IsConnectionStringConfigured() => s_tcpConnStr != "\"\"";
 
         [Fact]
         public void ExecuteScalarTest()
         {
-            CollectStatisticsDiagnostics(() =>
+            RemoteInvoke(() =>
             {
-                using (SqlConnection conn = new SqlConnection(_connectionString))
-                using (SqlCommand cmd = new SqlCommand())
+                CollectStatisticsDiagnostics(connectionString =>
                 {
-                    cmd.Connection = conn;
-                    cmd.CommandText = "SELECT [name], [state] FROM [sys].[databases] WHERE [name] = db_name();";
+                    using (SqlConnection conn = new SqlConnection(connectionString))
+                    using (SqlCommand cmd = new SqlCommand())
+                    {
+                        cmd.Connection = conn;
+                        cmd.CommandText = "SELECT [name], [state] FROM [sys].[databases] WHERE [name] = db_name();";
 
-                    conn.Open();
-                    var output = cmd.ExecuteScalar();
-                }
-            });
+                        conn.Open();
+                        var output = cmd.ExecuteScalar();
+                    }
+                });
+                return SuccessExitCode;
+            }).Dispose();
         }
 
         [Fact]
         public void ExecuteScalarErrorTest()
         {
-            CollectStatisticsDiagnostics(() =>
+            RemoteInvoke(() =>
             {
-                using (SqlConnection conn = new SqlConnection(_connectionString))
-                using (SqlCommand cmd = new SqlCommand())
+                CollectStatisticsDiagnostics(connectionString =>
                 {
-                    cmd.Connection = conn;
-                    cmd.CommandText = "select 1 / 0;";
+                    using (SqlConnection conn = new SqlConnection(connectionString))
+                    using (SqlCommand cmd = new SqlCommand())
+                    {
+                        cmd.Connection = conn;
+                        cmd.CommandText = "select 1 / 0;";
 
-                    conn.Open();
+                        conn.Open();
 
-                    try { var output = cmd.ExecuteScalar(); }
-                    catch { }
-                }
-            });
+                        try { var output = cmd.ExecuteScalar(); }
+                        catch { }
+                    }
+                });
+                return SuccessExitCode;
+            }).Dispose();
         }
 
         [Fact]
         public void ExecuteNonQueryTest()
         {
-            CollectStatisticsDiagnostics(() =>
+            RemoteInvoke(() =>
             {
-                using (SqlConnection conn = new SqlConnection(_connectionString))
-                using (SqlCommand cmd = new SqlCommand())
+                CollectStatisticsDiagnostics(connectionString =>
                 {
-                    cmd.Connection = conn;
-                    cmd.CommandText = "SELECT [name], [state] FROM [sys].[databases] WHERE [name] = db_name();";
+                    using (SqlConnection conn = new SqlConnection(connectionString))
+                    using (SqlCommand cmd = new SqlCommand())
+                    {
+                        cmd.Connection = conn;
+                        cmd.CommandText = "SELECT [name], [state] FROM [sys].[databases] WHERE [name] = db_name();";
 
-                    conn.Open();
-                    var output = cmd.ExecuteNonQuery();
-                }
-            });
+                        conn.Open();
+                        var output = cmd.ExecuteNonQuery();
+                    }
+                });
+                return SuccessExitCode;
+            }).Dispose();
         }
 
         [Fact]
         public void ExecuteNonQueryErrorTest()
         {
-            CollectStatisticsDiagnostics(() =>
+            RemoteInvoke(() =>
             {
-                using (SqlConnection conn = new SqlConnection(_connectionString))
-                using (SqlCommand cmd = new SqlCommand())
+                CollectStatisticsDiagnostics(connectionString =>
                 {
-                    cmd.Connection = conn;
-                    cmd.CommandText = "select 1 / 0;";
+                    using (SqlConnection conn = new SqlConnection(connectionString))
+                    {
+                        using (SqlCommand cmd = new SqlCommand())
+                        {
+                            cmd.Connection = conn;
+                            cmd.CommandText = "select 1 / 0;";
+                            
+                            // Limiting the command timeout to 3 seconds. This should be lower than the Process timeout.
+                            cmd.CommandTimeout = 3;
+                            conn.Open();
+                            Console.WriteLine("SqlClient.DiagnosticTest.ExecuteNonQueryErrorTest Connection Open Successful");
 
-                    conn.Open();
-                    try { var output = cmd.ExecuteNonQuery(); }
-                    catch { }
-                }
-            });
+                            try
+                            {
+                                var output = cmd.ExecuteNonQuery();
+                            }
+                            catch (Exception e)
+                            {
+                                Console.WriteLine("SqlClient.DiagnosticTest.ExecuteNonQueryErrorTest " + e.Message);
+                            }
+                            Console.WriteLine("SqlClient.DiagnosticTest.ExecuteNonQueryErrorTest Command Executed");
+                        }
+                        Console.WriteLine("SqlClient.DiagnosticTest.ExecuteNonQueryErrorTest Command Disposed");
+                    }
+                    Console.WriteLine("SqlClient.DiagnosticTest.ExecuteNonQueryErrorTest Connection Disposed");
+                });
+                return SuccessExitCode;
+            }).Dispose();
         }
 
         [Fact]
         public void ExecuteReaderTest()
         {
-            CollectStatisticsDiagnostics(() =>
+            RemoteInvoke(() =>
             {
-                using (SqlConnection conn = new SqlConnection(_connectionString))
-                using (SqlCommand cmd = new SqlCommand())
+                CollectStatisticsDiagnostics(connectionString =>
                 {
-                    cmd.Connection = conn;
-                    cmd.CommandText = "SELECT [name], [state] FROM [sys].[databases] WHERE [name] = db_name();";
+                    using (SqlConnection conn = new SqlConnection(connectionString))
+                    using (SqlCommand cmd = new SqlCommand())
+                    {
+                        cmd.Connection = conn;
+                        cmd.CommandText = "SELECT [name], [state] FROM [sys].[databases] WHERE [name] = db_name();";
 
-                    conn.Open();
-                    SqlDataReader reader = cmd.ExecuteReader();
-                    while (reader.Read()) { }
-                }
-            });
+                        conn.Open();
+                        SqlDataReader reader = cmd.ExecuteReader();
+                        while (reader.Read()) { }
+                    }
+                });
+                return SuccessExitCode;
+            }).Dispose();
         }
 
         [Fact]
         public void ExecuteReaderErrorTest()
         {
-            CollectStatisticsDiagnostics(() =>
+            RemoteInvoke(() =>
             {
-                using (SqlConnection conn = new SqlConnection(_connectionString))
-                using (SqlCommand cmd = new SqlCommand())
+                CollectStatisticsDiagnostics(connectionString =>
                 {
-                    cmd.Connection = conn;
-                    cmd.CommandText = "select 1 / 0;";
-
-                    try
+                    using (SqlConnection conn = new SqlConnection(connectionString))
+                    using (SqlCommand cmd = new SqlCommand())
                     {
-                        SqlDataReader reader = cmd.ExecuteReader();
-                        while (reader.Read()) { }
+                        cmd.Connection = conn;
+                        cmd.CommandText = "select 1 / 0;";
+
+                        try
+                        {
+                            SqlDataReader reader = cmd.ExecuteReader();
+                            while (reader.Read()) { }
+                        }
+                        catch { }
                     }
-                    catch { }
-                }
-            });
+                });
+                return SuccessExitCode;
+            }).Dispose();
         }
 
         [Fact]
         public void ExecuteReaderWithCommandBehaviorTest()
         {
-            CollectStatisticsDiagnostics(() =>
+            RemoteInvoke(() =>
             {
-                using (SqlConnection conn = new SqlConnection(_connectionString))
-                using (SqlCommand cmd = new SqlCommand())
+                CollectStatisticsDiagnostics(connectionString =>
                 {
-                    cmd.Connection = conn;
-                    cmd.CommandText = "SELECT [name], [state] FROM [sys].[databases] WHERE [name] = db_name();";
+                    using (SqlConnection conn = new SqlConnection(connectionString))
+                    using (SqlCommand cmd = new SqlCommand())
+                    {
+                        cmd.Connection = conn;
+                        cmd.CommandText = "SELECT [name], [state] FROM [sys].[databases] WHERE [name] = db_name();";
 
-                    conn.Open();
-                    SqlDataReader reader = cmd.ExecuteReader(CommandBehavior.Default);
-                    while (reader.Read()) { }
-                }
-            });
+                        conn.Open();
+                        SqlDataReader reader = cmd.ExecuteReader(CommandBehavior.Default);
+                        while (reader.Read()) { }
+                    }
+                });
+                return SuccessExitCode;
+            }).Dispose();
         }
 
         [ConditionalFact(nameof(IsConnectionStringConfigured))]
         public void ExecuteXmlReaderTest()
         {
-            CollectStatisticsDiagnostics(() =>
+            RemoteInvoke(cs =>
             {
-                using (SqlConnection conn = new SqlConnection(s_tcpConnStr))
-                using (SqlCommand cmd = new SqlCommand())
+                CollectStatisticsDiagnostics(_ =>
                 {
-                    cmd.Connection = conn;
-                    cmd.CommandText = "select * from sys.objects for xml auto, xmldata;";
+                    using (SqlConnection conn = new SqlConnection(cs))
+                    using (SqlCommand cmd = new SqlCommand())
+                    {
+                        cmd.Connection = conn;
+                        cmd.CommandText = "select * from sys.objects for xml auto, xmldata;";
 
-                    conn.Open();
-                    XmlReader reader = cmd.ExecuteXmlReader();
-                    while (reader.Read()) { }
-                }
-            });
+                        conn.Open();
+                        XmlReader reader = cmd.ExecuteXmlReader();
+                        while (reader.Read()) { }
+                    }
+                });
+                return SuccessExitCode;
+            }, s_tcpConnStr).Dispose();
         }
 
         [Fact]
         public void ExecuteXmlReaderErrorTest()
         {
-            CollectStatisticsDiagnostics(() =>
+            RemoteInvoke(() =>
             {
-                using (SqlConnection conn = new SqlConnection(_connectionString))
-                using (SqlCommand cmd = new SqlCommand())
+                CollectStatisticsDiagnostics(connectionString =>
                 {
-                    cmd.Connection = conn;
-                    cmd.CommandText = "select *, baddata = 1 / 0 from sys.objects for xml auto, xmldata;";
-
-                    try
+                    using (SqlConnection conn = new SqlConnection(connectionString))
+                    using (SqlCommand cmd = new SqlCommand())
                     {
-                        XmlReader reader = cmd.ExecuteXmlReader();
-                        while (reader.Read()) { }
+                        cmd.Connection = conn;
+                        cmd.CommandText = "select *, baddata = 1 / 0 from sys.objects for xml auto, xmldata;";
+
+                        try
+                        {
+                            XmlReader reader = cmd.ExecuteXmlReader();
+                            while (reader.Read()) { }
+                        }
+                        catch { }
                     }
-                    catch { }
-                }
-            });
+                });
+                return SuccessExitCode;
+            }).Dispose();
         }
 
         [Fact]
         public void ExecuteScalarAsyncTest()
         {
-            CollectStatisticsDiagnosticsAsync(async () =>
+            RemoteInvoke(() =>
             {
-                using (SqlConnection conn = new SqlConnection(_connectionString))
-                using (SqlCommand cmd = new SqlCommand())
+                CollectStatisticsDiagnosticsAsync(async connectionString =>
                 {
-                    cmd.Connection = conn;
-                    cmd.CommandText = "SELECT [name], [state] FROM [sys].[databases] WHERE [name] = db_name();";
+                    using (SqlConnection conn = new SqlConnection(connectionString))
+                    using (SqlCommand cmd = new SqlCommand())
+                    {
+                        cmd.Connection = conn;
+                        cmd.CommandText = "SELECT [name], [state] FROM [sys].[databases] WHERE [name] = db_name();";
 
-                    conn.Open();
-                    var output = await cmd.ExecuteScalarAsync();
-                }
-            });
+                        conn.Open();
+                        var output = await cmd.ExecuteScalarAsync();
+                    }
+                }).GetAwaiter().GetResult();
+                return SuccessExitCode;
+            }).Dispose();
         }
 
         [Fact]
         public void ExecuteScalarAsyncErrorTest()
         {
-            CollectStatisticsDiagnosticsAsync(async () =>
+            RemoteInvoke(() =>
             {
-                using (SqlConnection conn = new SqlConnection(_connectionString))
-                using (SqlCommand cmd = new SqlCommand())
+                CollectStatisticsDiagnosticsAsync(async connectionString =>
                 {
-                    cmd.Connection = conn;
-                    cmd.CommandText = "select 1 / 0;";
+                    using (SqlConnection conn = new SqlConnection(connectionString))
+                    using (SqlCommand cmd = new SqlCommand())
+                    {
+                        cmd.Connection = conn;
+                        cmd.CommandText = "select 1 / 0;";
 
-                    conn.Open();
+                        conn.Open();
 
-                    try { var output = await cmd.ExecuteScalarAsync(); }
-                    catch { }
-                }
-            });
+                        try { var output = await cmd.ExecuteScalarAsync(); }
+                        catch { }
+                    }
+                }).GetAwaiter().GetResult();
+                return SuccessExitCode;
+            }).Dispose();
         }
 
         [Fact]
         public void ExecuteNonQueryAsyncTest()
         {
-            CollectStatisticsDiagnosticsAsync(async () =>
+            RemoteInvoke(() =>
             {
-                using (SqlConnection conn = new SqlConnection(_connectionString))
-                using (SqlCommand cmd = new SqlCommand())
+                CollectStatisticsDiagnosticsAsync(async connectionString =>
                 {
-                    cmd.Connection = conn;
-                    cmd.CommandText = "SELECT [name], [state] FROM [sys].[databases] WHERE [name] = db_name();";
+                    using (SqlConnection conn = new SqlConnection(connectionString))
+                    using (SqlCommand cmd = new SqlCommand())
+                    {
+                        cmd.Connection = conn;
+                        cmd.CommandText = "SELECT [name], [state] FROM [sys].[databases] WHERE [name] = db_name();";
 
-                    conn.Open();
-                    var output = await cmd.ExecuteNonQueryAsync();
-                }
-            });
+                        conn.Open();
+                        var output = await cmd.ExecuteNonQueryAsync();
+                    }
+                }).GetAwaiter().GetResult();
+                return SuccessExitCode;
+            }).Dispose();
         }
 
         [Fact]
         public void ExecuteNonQueryAsyncErrorTest()
         {
-            CollectStatisticsDiagnosticsAsync(async () =>
+            RemoteInvoke(() =>
             {
-                using (SqlConnection conn = new SqlConnection(_connectionString))
-                using (SqlCommand cmd = new SqlCommand())
+                CollectStatisticsDiagnosticsAsync(async connectionString =>
                 {
-                    cmd.Connection = conn;
-                    cmd.CommandText = "select 1 / 0;";
+                    using (SqlConnection conn = new SqlConnection(connectionString))
+                    using (SqlCommand cmd = new SqlCommand())
+                    {
+                        cmd.Connection = conn;
+                        cmd.CommandText = "select 1 / 0;";
 
-                    conn.Open();
-                    try { var output = await cmd.ExecuteNonQueryAsync(); }
-                    catch { }
-                }
-            });
+                        conn.Open();
+                        try { var output = await cmd.ExecuteNonQueryAsync(); }
+                        catch { }
+                    }
+                }).GetAwaiter().GetResult();
+                return SuccessExitCode;
+            }).Dispose();
         }
 
         [Fact]
         public void ExecuteReaderAsyncTest()
         {
-            CollectStatisticsDiagnosticsAsync(async () =>
+            RemoteInvoke(() =>
             {
-                using (SqlConnection conn = new SqlConnection(_connectionString))
-                using (SqlCommand cmd = new SqlCommand())
+                CollectStatisticsDiagnosticsAsync(async connectionString =>
                 {
-                    cmd.Connection = conn;
-                    cmd.CommandText = "SELECT [name], [state] FROM [sys].[databases] WHERE [name] = db_name();";
+                    using (SqlConnection conn = new SqlConnection(connectionString))
+                    using (SqlCommand cmd = new SqlCommand())
+                    {
+                        cmd.Connection = conn;
+                        cmd.CommandText = "SELECT [name], [state] FROM [sys].[databases] WHERE [name] = db_name();";
 
-                    conn.Open();
-                    SqlDataReader reader = await cmd.ExecuteReaderAsync();
-                    while (reader.Read()) { }
-                }
-            });
+                        conn.Open();
+                        SqlDataReader reader = await cmd.ExecuteReaderAsync();
+                        while (reader.Read()) { }
+                    }
+                }).GetAwaiter().GetResult();
+                return SuccessExitCode;
+            }).Dispose();
         }
 
         [Fact]
         public void ExecuteReaderAsyncErrorTest()
         {
-            CollectStatisticsDiagnosticsAsync(async () =>
+            RemoteInvoke(() =>
             {
-                using (SqlConnection conn = new SqlConnection(_connectionString))
-                using (SqlCommand cmd = new SqlCommand())
+                CollectStatisticsDiagnosticsAsync(async connectionString =>
                 {
-                    cmd.Connection = conn;
-                    cmd.CommandText = "select 1 / 0;";
-
-                    try
+                    using (SqlConnection conn = new SqlConnection(connectionString))
+                    using (SqlCommand cmd = new SqlCommand())
                     {
-                        SqlDataReader reader = await cmd.ExecuteReaderAsync();
-                        while (reader.Read()) { }
+                        cmd.Connection = conn;
+                        cmd.CommandText = "select 1 / 0;";
+
+                        try
+                        {
+                            SqlDataReader reader = await cmd.ExecuteReaderAsync();
+                            while (reader.Read()) { }
+                        }
+                        catch { }
                     }
-                    catch { }
-                }
-            });
+                }).GetAwaiter().GetResult();
+                return SuccessExitCode;
+            }).Dispose();
         }
 
         [ConditionalFact(nameof(IsConnectionStringConfigured))]
         public void ExecuteXmlReaderAsyncTest()
         {
-            CollectStatisticsDiagnosticsAsync(async () =>
+            RemoteInvoke(cs =>
             {
-                using (SqlConnection conn = new SqlConnection(s_tcpConnStr))
-                using (SqlCommand cmd = new SqlCommand())
+                CollectStatisticsDiagnosticsAsync(async _ =>
                 {
-                    cmd.Connection = conn;
-                    cmd.CommandText = "select * from sys.objects for xml auto, xmldata;";
-
-                    conn.Open();
-                    XmlReader reader = await cmd.ExecuteXmlReaderAsync();
-                    while (reader.Read()) { }
-                }
-            });
-        }
-
-        [Fact]
-        public void ExecuteXmlReaderAsyncErrorTest()
-        {
-            CollectStatisticsDiagnosticsAsync(async () =>
-            {
-                using (SqlConnection conn = new SqlConnection(_connectionString))
-                using (SqlCommand cmd = new SqlCommand())
-                {
-                    cmd.Connection = conn;
-                    cmd.CommandText = "select *, baddata = 1 / 0 from sys.objects for xml auto, xmldata;";
-
-                    try
+                    using (SqlConnection conn = new SqlConnection(cs))
+                    using (SqlCommand cmd = new SqlCommand())
                     {
+                        cmd.Connection = conn;
+                        cmd.CommandText = "select * from sys.objects for xml auto, xmldata;";
+
+                        conn.Open();
                         XmlReader reader = await cmd.ExecuteXmlReaderAsync();
                         while (reader.Read()) { }
                     }
-                    catch { }
-                }
-            });
+                }).GetAwaiter().GetResult();
+                return SuccessExitCode;
+            }, s_tcpConnStr).Dispose();
+        }
+
+        [ConditionalFact(nameof(IsConnectionStringConfigured))]
+        public void ExecuteXmlReaderAsyncErrorTest()
+        {
+            RemoteInvoke(cs =>
+            {
+                CollectStatisticsDiagnosticsAsync(async _ =>
+                {
+                    using (SqlConnection conn = new SqlConnection(cs))
+                    using (SqlCommand cmd = new SqlCommand())
+                    {
+                        cmd.Connection = conn;
+                        cmd.CommandText = "select *, baddata = 1 / 0 from sys.objects for xml auto, xmldata;";
+
+                        try
+                        {
+                            XmlReader reader = await cmd.ExecuteXmlReaderAsync();
+                            while (reader.Read()) { }
+                        }
+                        catch { }
+                    }
+                }).GetAwaiter().GetResult();
+                return SuccessExitCode;
+            }, s_tcpConnStr).Dispose();
         }
 
         [Fact]
         public void ConnectionOpenTest()
         {
-            CollectStatisticsDiagnostics(() =>
+            RemoteInvoke(() =>
             {
-                using (SqlConnection sqlConnection = new SqlConnection(_connectionString))
+                CollectStatisticsDiagnostics(connectionString =>
                 {
-                    sqlConnection.Open();
-                }
-            });
+                    using (SqlConnection sqlConnection = new SqlConnection(connectionString))
+                    {
+                        sqlConnection.Open();
+                        Console.WriteLine("SqlClient.DiagnosticsTest.ConnectionOpenTest:: Connection Opened ");
+                    }
+                    Console.WriteLine("SqlClient.DiagnosticsTest.ConnectionOpenTest:: Connection Should Be Disposed");
+                }, true);
+
+                Console.WriteLine("SqlClient.DiagnosticsTest.ConnectionOpenTest:: Done with Diagnostics collection");
+                return SuccessExitCode;
+            }).Dispose();
         }
 
         [Fact]
         public void ConnectionOpenErrorTest()
         {
-            CollectStatisticsDiagnostics(() =>
+            RemoteInvoke(() =>
             {
-                using (SqlConnection sqlConnection = new SqlConnection(_badConnectionString))
+                CollectStatisticsDiagnostics(_ =>
                 {
-                    try { sqlConnection.Open(); } catch { }
-                }
-            });
+                    using (SqlConnection sqlConnection = new SqlConnection(BadConnectionString))
+                    {
+                        try { sqlConnection.Open(); } catch { }
+                    }
+                });
+                return SuccessExitCode;
+            }).Dispose();
         }
 
         [Fact]
         public void ConnectionOpenAsyncTest()
         {
-            CollectStatisticsDiagnosticsAsync(async () =>
+            RemoteInvoke(() =>
             {
-                using (SqlConnection sqlConnection = new SqlConnection(_connectionString))
+                CollectStatisticsDiagnosticsAsync(async connectionString =>
                 {
-                    await sqlConnection.OpenAsync();
-                }
-            });
+                    using (SqlConnection sqlConnection = new SqlConnection(connectionString))
+                    {
+                        await sqlConnection.OpenAsync();
+                    }
+                }).GetAwaiter().GetResult();
+                return SuccessExitCode;
+            }).Dispose();
         }
 
         [Fact]
         public void ConnectionOpenAsyncErrorTest()
         {
-            CollectStatisticsDiagnosticsAsync(async () =>
+            RemoteInvoke(() =>
             {
-                using (SqlConnection sqlConnection = new SqlConnection(_badConnectionString))
+                CollectStatisticsDiagnosticsAsync(async _ =>
                 {
-                    try { await sqlConnection.OpenAsync(); } catch { }
-                }
-            });
+                    using (SqlConnection sqlConnection = new SqlConnection(BadConnectionString))
+                    {
+                        try { await sqlConnection.OpenAsync(); } catch { }
+                    }
+                }).GetAwaiter().GetResult();
+                return SuccessExitCode;
+            }).Dispose();
         }
-        
-        private void CollectStatisticsDiagnostics(Action sqlOperation)
+
+        private static void CollectStatisticsDiagnostics(Action<string> sqlOperation, bool enableServerLogging = false, [CallerMemberName] string methodName = "")
         {
             bool statsLogged = false;
             bool operationHasError = false;
@@ -581,15 +676,28 @@ namespace System.Data.SqlClient.Tests
 
             diagnosticListenerObserver.Enable();
             using (DiagnosticListener.AllListeners.Subscribe(diagnosticListenerObserver))
-            { 
-                sqlOperation();
+            {
 
-                Assert.True(statsLogged);
+                Console.WriteLine(string.Format("Test: {0} Enabled Listeners", methodName));
+                using (var server = TestTdsServer.StartServerWithQueryEngine(new DiagnosticsQueryEngine(), enableLog:enableServerLogging))
+                {
+                    Console.WriteLine(string.Format("Test: {0} Started Server", methodName));
+                    sqlOperation(server.ConnectionString);
 
-                diagnosticListenerObserver.Disable();
+                    Console.WriteLine(string.Format("Test: {0} SqlOperation Successful", methodName));
+                    
+                    Assert.True(statsLogged);
+
+                    diagnosticListenerObserver.Disable();
+
+                    Console.WriteLine(string.Format("Test: {0} Listeners Disabled", methodName));
+                }
+                Console.WriteLine(string.Format("Test: {0} Server Disposed", methodName));
             }
+            Console.WriteLine(string.Format("Test: {0} Listeners Disposed Successfully", methodName));
         }
-        private async void CollectStatisticsDiagnosticsAsync(Func<Task> sqlOperation)
+
+        private static async Task CollectStatisticsDiagnosticsAsync(Func<string, Task> sqlOperation, [CallerMemberName] string methodName = "")
         {
             bool statsLogged = false;
             bool operationHasError = false;
@@ -758,16 +866,28 @@ namespace System.Data.SqlClient.Tests
 
             diagnosticListenerObserver.Enable();
             using (DiagnosticListener.AllListeners.Subscribe(diagnosticListenerObserver))
-            { 
-                await sqlOperation();
+            {
+                Console.WriteLine(string.Format("Test: {0} Enabled Listeners", methodName));
+                using (var server = TestTdsServer.StartServerWithQueryEngine(new DiagnosticsQueryEngine()))
+                {
+                    Console.WriteLine(string.Format("Test: {0} Started Server", methodName));
 
-                Assert.True(statsLogged);
+                    await sqlOperation(server.ConnectionString);
 
-                diagnosticListenerObserver.Disable();
+                    Console.WriteLine(string.Format("Test: {0} SqlOperation Successful", methodName));
+
+                    Assert.True(statsLogged);
+
+                    diagnosticListenerObserver.Disable();
+
+                    Console.WriteLine(string.Format("Test: {0} Listeners Disabled", methodName));
+                }
+                Console.WriteLine(string.Format("Test: {0} Server Disposed", methodName));
             }
+            Console.WriteLine(string.Format("Test: {0} Listeners Disposed Successfully", methodName));
         }
         
-        private T GetPropertyValueFromType<T>(object obj, string propName)
+        private static T GetPropertyValueFromType<T>(object obj, string propName)
         {
             Type type = obj.GetType();
             PropertyInfo pi = type.GetRuntimeProperty(propName);
@@ -775,9 +895,6 @@ namespace System.Data.SqlClient.Tests
             var propertyValue = pi.GetValue(obj);
             return (T)propertyValue;
         }
-
-        public void Dispose() => _server?.Dispose();
-
     }
 
     public class DiagnosticsQueryEngine : QueryEngine
@@ -792,8 +909,9 @@ namespace System.Data.SqlClient.Tests
             
             if (lowerBatchText.Contains("1 / 0")) // SELECT 1/0 
             {
-                TDSErrorToken errorToken = new TDSErrorToken(8134, 1, 11, "Divide by zero error encountered.");
-                TDSMessage responseMessage = new TDSMessage(TDSMessageType.Response, errorToken);
+                TDSErrorToken errorToken = new TDSErrorToken(8134, 1, 16, "Divide by zero error encountered.");
+                TDSDoneToken doneToken = new TDSDoneToken(TDSDoneTokenStatusType.Final | TDSDoneTokenStatusType.Count, TDSDoneTokenCommandType.Select, 1);
+                TDSMessage responseMessage = new TDSMessage(TDSMessageType.Response, errorToken, doneToken);
                 return new TDSMessageCollection(responseMessage);
             }
             else

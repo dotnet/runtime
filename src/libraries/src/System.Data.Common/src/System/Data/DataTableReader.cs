@@ -894,7 +894,7 @@ namespace System.Data
                 throw ExceptionBuilder.EmptyDataTableReader(_currentDataTable.TableName);
             }
 
-            // see if without any event raising, if our curent row has some changes!if so reader is invalid.
+            // see if without any event raising, if our current row has some changes!if so reader is invalid.
             if ((_currentDataRow == null) || (_currentDataTable == null))
             {
                 ReaderIsInvalid = true;

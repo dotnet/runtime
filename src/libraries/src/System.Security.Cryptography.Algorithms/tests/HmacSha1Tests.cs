@@ -47,7 +47,6 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
             using (HMACSHA1 h1 = new HMACSHA1(key))
             {
                 VerifyHmac_KeyAlreadySet(h1, 1, digest);
-#if netstandard17
                 using (HMACSHA1 h2 = new HMACSHA1(key, true))
                 {
                     VerifyHmac_KeyAlreadySet(h2, 1, digest);
@@ -58,7 +57,6 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
                     VerifyHmac_KeyAlreadySet(h1, 1, digest);
                     Assert.Equal(h1.Key, h2.Key);
                 }
-#endif
             }
         }
 

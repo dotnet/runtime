@@ -228,7 +228,6 @@ namespace System.Linq.Parallel
 
         class ConcatQueryOperatorResults : BinaryQueryOperatorResults
         {
-            private ConcatQueryOperator<TSource> _concatOp; // Operator that generated the results
             private int _leftChildCount; // The number of elements in the left child result set
             private int _rightChildCount; // The number of elements in the right child result set
 
@@ -255,7 +254,6 @@ namespace System.Linq.Parallel
                 bool preferStriping)
                 : base(leftChildQueryResults, rightChildQueryResults, concatOp, settings, preferStriping)
             {
-                _concatOp = concatOp;
                 Debug.Assert(leftChildQueryResults.IsIndexible && rightChildQueryResults.IsIndexible);
 
                 _leftChildCount = leftChildQueryResults.ElementsCount;

@@ -222,7 +222,7 @@ namespace System.ComponentModel
             }
             else if (tabClassNames != null)
             {
-                if (tabScopes != null && tabClasses.Length != tabScopes.Length)
+                if (tabScopes != null && tabClassNames.Length != tabScopes.Length)
                 {
                     throw new ArgumentException(SR.PropertyTabAttributeArrayLengthMismatch);
                 }

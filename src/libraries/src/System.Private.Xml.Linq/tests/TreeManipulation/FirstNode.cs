@@ -115,7 +115,7 @@ namespace XLinqTests
             XNode ret = ((bool)Param) ? e.FirstNode : e.LastNode;
 
             TestLog.Compare(ret is XText, "Node is XText");
-            TestLog.Compare((ret as XText).Value, expValue, "Node expeted value");
+            TestLog.Compare((ret as XText).Value, expValue, "Node expected value");
             TestLog.Compare(ret.Parent.Equals(e), "Node.Parent");
 
             TestLog.Compare(ret.NextNode == null, "nextnode == null");

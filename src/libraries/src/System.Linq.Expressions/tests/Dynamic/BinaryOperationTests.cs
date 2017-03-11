@@ -134,7 +134,7 @@ namespace System.Dynamic.Tests
         {
             dynamic dX = x;
             dynamic dY = y;
-            Assert.Equal(x + y, dX + dY);
+            Assert.Equal(unchecked(x + y), unchecked(dX + dY));
         }
 
         [Theory, MemberData(nameof(CrossJoinInt32))]
@@ -251,7 +251,7 @@ namespace System.Dynamic.Tests
         {
             dynamic dX = x;
             dynamic dY = y;
-            Assert.Equal(x * y, dX * dY);
+            Assert.Equal(unchecked(x * y), unchecked(dX * dY));
         }
 
         [Theory, MemberData(nameof(CrossJoinInt32))]
@@ -302,7 +302,7 @@ namespace System.Dynamic.Tests
         {
             dynamic dX = x;
             dynamic dY = y;
-            Assert.Equal(x - y, dX - dY);
+            Assert.Equal(unchecked(x - y), unchecked(dX - dY));
         }
 
         [Theory, MemberData(nameof(CrossJoinInt32))]
@@ -329,8 +329,12 @@ namespace System.Dynamic.Tests
         {
             dynamic dX = x;
             dynamic dY = y;
-            dX += dY;
-            Assert.Equal(x + y, dX);
+
+            unchecked
+            {
+                dX += dY;
+                Assert.Equal(x + y, dX);
+            }
         }
 
         [Theory, MemberData(nameof(CrossJoinInt32))]
@@ -420,8 +424,12 @@ namespace System.Dynamic.Tests
         {
             dynamic dX = x;
             dynamic dY = y;
-            dX *= dY;
-            Assert.Equal(x * y, dX);
+
+            unchecked
+            {
+                dX *= dY;
+                Assert.Equal(x * y, dX);
+            }
         }
 
         [Theory, MemberData(nameof(CrossJoinInt32))]
@@ -468,8 +476,12 @@ namespace System.Dynamic.Tests
         {
             dynamic dX = x;
             dynamic dY = y;
-            dX -= dY;
-            Assert.Equal(x - y, dX);
+
+            unchecked
+            {
+                dX -= dY;
+                Assert.Equal(x - y, dX);
+            }
         }
 
         [Theory, MemberData(nameof(CrossJoinInt32))]
@@ -698,6 +710,26 @@ namespace System.Dynamic.Tests
             dX = 23;
             dY = 49;
             Assert.Throws<RuntimeBinderException>(() => dX && dY);
+        }
+
+        [Fact]
+        public void LiteralDoubleNaN()
+        {
+            dynamic d = double.NaN;
+            Assert.False(d == double.NaN);
+            Assert.True(d != double.NaN);
+            d = 3.0;
+            Assert.True(double.IsNaN(d + double.NaN));
+        }
+
+        [Fact]
+        public void LiteralSingleNaN()
+        {
+            dynamic d = float.NaN;
+            Assert.False(d == float.NaN);
+            Assert.True(d != float.NaN);
+            d = 3.0F;
+            Assert.True(float.IsNaN(d + float.NaN));
         }
 
         [Theory]

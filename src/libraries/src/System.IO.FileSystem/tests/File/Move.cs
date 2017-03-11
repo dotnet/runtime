@@ -148,8 +148,8 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(AreAllLongPathsAvailable))]
-        [SkipOnTargetFramework(Tfm.BelowNet462 | Tfm.Core50, "long path support added in 4.6.2")]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap | TargetFrameworkMonikers.UapAot)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Path longer than max path limit
         public void OverMaxPathWorks_Windows()
         {
             // Create a destination path longer than the traditional Windows limit of 256 characters,
@@ -178,7 +178,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Path longer than max Windows path limit throws
         public void LongPath()
         {
             //Create a destination path longer than the traditional Windows limit of 256 characters
@@ -200,7 +200,7 @@ namespace System.IO.Tests
         // This is updated to be correct, need to update CoreCLR path code so this will pass on all platforms
         [ActiveIssue(15098)]
         [Theory MemberData(nameof(PathsWithInvalidColons))]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Illegal colons throws ArgumentException
         public void WindowsPathWithIllegalColons(string invalidPath)
         {
             FileInfo testFile = new FileInfo(GetTestFilePath());
@@ -209,7 +209,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Wild characters in path throw ArgumentException
         public void WindowsWildCharacterPath()
         {
             Assert.Throws<ArgumentException>(() => Move("*", GetTestFilePath()));
@@ -219,7 +219,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Wild characters in path are allowed
         public void UnixWildCharacterPath()
         {
             string testDir = GetTestFilePath();
@@ -243,7 +243,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Whitespace in path throws ArgumentException
         public void WindowsWhitespacePath()
         {
             FileInfo testFile = new FileInfo(GetTestFilePath());
@@ -254,7 +254,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Whitespace in path allowed
         public void UnixWhitespacePath()
         {
             FileInfo testFileSource = new FileInfo(GetTestFilePath());

@@ -71,7 +71,7 @@ set(__LinkArgs "${__LinkArgs} /guard:cf")
 # linking in VCRUNTIME140.DLL for a simplified xcopy experience by reducing the dependency on VC REDIST.
 #
 # For Release builds, we shall dynamically link into uCRT [ucrtbase.dll] (which is pushed down as a Windows Update on downlevel OS) but
-# wont do the same for debug/checked builds since ucrtbased.dll is not redistributable and Debug/Checked builds are not
+# won't do the same for debug/checked builds since ucrtbased.dll is not redistributable and Debug/Checked builds are not
 # production-time scenarios.
 if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL "RELEASE")
     add_compile_options(/MT)

@@ -682,7 +682,7 @@ namespace System.Threading.Tasks.Tests
             Debug.WriteLine("RunUnwrapTests:  Waiting on Unwrap() products... If we hang, something is wrong.");
             Task.WaitAll(new Task[] { c1, c2, c3, c4, c5, c6, c7, c8 });
 
-            //Debug.WriteLine("    Testing that Unwrap() producs have consistent completion state...");
+            //Debug.WriteLine("    Testing that Unwrap() products have consistent completion state...");
             checkCompletionState(c1, true, "Task ==> Task<T>, Unwrapped task complete");
             checkCompletionState(c2, true, "Task<T> ==> Task<T>, Unwrapped task complete");
             checkCompletionState(c3, true, "StartNew ==> Task<T>, Unwrapped task complete");
@@ -865,7 +865,7 @@ namespace System.Threading.Tasks.Tests
             {
                 if (ae.InnerExceptions.Count != 4)
                 {
-                    Assert.True(false, string.Format("RunUnwrapTests: > FAILED.  Monadic continuation w/ faulted childred had {0} inner exceptions, expected 4", ae.InnerExceptions.Count));
+                    Assert.True(false, string.Format("RunUnwrapTests: > FAILED.  Monadic continuation w/ faulted children had {0} inner exceptions, expected 4", ae.InnerExceptions.Count));
                     Assert.True(false, string.Format("RunUnwrapTests: > Exception = {0}", ae));
                 }
             }
@@ -1030,7 +1030,7 @@ namespace System.Threading.Tasks.Tests
             bool t3Ran = false;
 
             Task t1 = new Task(delegate { t1Ran = true; });
-            string stateParam = "test"; //used as a state parametr for the continuation if the useStateParam is true
+            string stateParam = "test"; //used as a state parameter for the continuation if the useStateParam is true
             CancellationTokenSource ctsForT2 = new CancellationTokenSource();
             Task t2 = t1.ContinueWith((ContinuedTask, obj) =>
             {
@@ -1336,7 +1336,7 @@ namespace System.Threading.Tasks.Tests
                         TaskContinuationOptions tco = ((i % 2) == 0) ? TaskContinuationOptions.None : TaskContinuationOptions.ExecuteSynchronously;
                         normalContinuations[i] = antecedent.ContinueWith(normalAction, tco);
 
-                        // If you've hit completeAfter or cancelAfter, take the approriate action
+                        // If you've hit completeAfter or cancelAfter, take the appropriate action
                         if ((i + 1) == completeAfter) completionTcs.TrySetResult(true); // Asynchronously completes the antecedent
                         if ((i + 1) == cancelAfter) cancellationTcs.TrySetResult(true); // Asynchronously initiates cancellation of "to be canceled" tasks
                     }
@@ -1424,7 +1424,7 @@ namespace System.Threading.Tasks.Tests
             TaskCompletionSource<int> result, TaskScheduler scheduler)
         {
             // If the cancellation token is already canceled, there is no need to create and link a target.
-            // Insted, directly return a canceled task
+            // Instead, directly return a canceled task
             if (cts.IsCancellationRequested)
             {
                 var canceledTaskSource = new TaskCompletionSource<object>();

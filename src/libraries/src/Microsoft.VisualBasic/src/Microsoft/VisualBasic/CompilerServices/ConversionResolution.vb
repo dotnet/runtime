@@ -389,9 +389,9 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Dim sourceElementType As Type = sourceArrayType.GetElementType
             Dim conversion As ConversionClass = ConversionClass.None
 
-            If (targetInterface.GetTypeInfo().IsGenericType AndAlso Not targetInterface.GetTypeInfo().IsGenericTypeDefinition) Then
+            If (targetInterface.IsGenericType AndAlso Not targetInterface.IsGenericTypeDefinition) Then
 
-                Dim rawTargetInterface As Type = targetInterface.GetTypeInfo().GetGenericTypeDefinition()
+                Dim rawTargetInterface As Type = targetInterface.GetGenericTypeDefinition()
 
                 If (rawTargetInterface Is GetType(System.Collections.Generic.IList(Of )) OrElse
                     rawTargetInterface Is GetType(System.Collections.Generic.ICollection(Of )) OrElse

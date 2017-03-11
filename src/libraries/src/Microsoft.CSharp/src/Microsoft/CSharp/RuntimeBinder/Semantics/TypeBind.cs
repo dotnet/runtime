@@ -50,7 +50,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             AggregateType ats = type.AsAggregateType();
 
-            if (ats.GetTypeArgsAll().size == 0)
+            if (ats.GetTypeArgsAll().Count == 0)
             {
                 // Common case: there are no type vars, so there are no constraints.
                 ats.fConstraintsChecked = true;
@@ -72,7 +72,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             TypeArray typeArgsThis = ats.GetTypeArgsThis();
             TypeArray typeArgsAll = ats.GetTypeArgsAll();
 
-            Debug.Assert(typeVars.size == typeArgsThis.size);
+            Debug.Assert(typeVars.Count == typeArgsThis.Count);
 
             if (!ats.fConstraintsChecked)
             {
@@ -88,13 +88,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 ats.fConstraintError |= ats.outerType.fConstraintError;
             }
 
-            if (typeVars.size > 0)
+            if (typeVars.Count > 0)
                 ats.fConstraintError |= !CheckConstraintsCore(checker, errHandling, ats.getAggregate(), typeVars, typeArgsThis, typeArgsAll, null, (flags & CheckConstraintsFlags.NoErrors));
 
             // Now check type args themselves.
-            for (int i = 0; i < typeArgsThis.size; i++)
+            for (int i = 0; i < typeArgsThis.Count; i++)
             {
-                CType arg = typeArgsThis.Item(i).GetNakedType(true);
+                CType arg = typeArgsThis[i].GetNakedType(true);
                 if (arg.IsAggregateType() && !arg.AsAggregateType().fConstraintsChecked)
                 {
                     CheckConstraints(checker, errHandling, arg.AsAggregateType(), flags | CheckConstraintsFlags.Outer);
@@ -110,10 +110,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public static void CheckMethConstraints(CSemanticChecker checker, ErrorHandling errCtx, MethWithInst mwi)
         {
             Debug.Assert(mwi.Meth() != null && mwi.GetType() != null && mwi.TypeArgs != null);
-            Debug.Assert(mwi.Meth().typeVars.size == mwi.TypeArgs.size);
+            Debug.Assert(mwi.Meth().typeVars.Count == mwi.TypeArgs.Count);
             Debug.Assert(mwi.GetType().getAggregate() == mwi.Meth().getClass());
 
-            if (mwi.TypeArgs.size > 0)
+            if (mwi.TypeArgs.Count > 0)
             {
                 CheckConstraintsCore(checker, errCtx, mwi.Meth(), mwi.Meth().typeVars, mwi.TypeArgs, mwi.GetType().GetTypeArgsAll(), mwi.TypeArgs, CheckConstraintsFlags.None);
             }
@@ -125,17 +125,17 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private static bool CheckConstraintsCore(CSemanticChecker checker, ErrorHandling errHandling, Symbol symErr, TypeArray typeVars, TypeArray typeArgs, TypeArray typeArgsCls, TypeArray typeArgsMeth, CheckConstraintsFlags flags)
         {
-            Debug.Assert(typeVars.size == typeArgs.size);
-            Debug.Assert(typeVars.size > 0);
+            Debug.Assert(typeVars.Count == typeArgs.Count);
+            Debug.Assert(typeVars.Count > 0);
             Debug.Assert(flags == CheckConstraintsFlags.None || flags == CheckConstraintsFlags.NoErrors);
 
             bool fError = false;
 
-            for (int i = 0; i < typeVars.size; i++)
+            for (int i = 0; i < typeVars.Count; i++)
             {
                 // Empty bounds should be set to object.
                 TypeParameterType var = typeVars.ItemAsTypeParameterType(i);
-                CType arg = typeArgs.Item(i);
+                CType arg = typeArgs[i];
 
                 bool fOK = CheckSingleConstraint(checker, errHandling, symErr, var, arg, typeArgsCls, typeArgsMeth, flags);
                 fError |= !fOK;
@@ -218,9 +218,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 if (bIsValueType && arg.IsTypeParameterType())
                 {
                     TypeArray pArgBnds = arg.AsTypeParameterType().GetBounds();
-                    if (pArgBnds.size > 0)
+                    if (pArgBnds.Count > 0)
                     {
-                        bIsNullable = pArgBnds.Item(0).IsNullableType();
+                        bIsNullable = pArgBnds[0].IsNullableType();
                     }
                 }
 
@@ -235,15 +235,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
 
                 // Since FValCon() is set it is redundant to check System.ValueType as well.
-                if (bnds.size != 0 && bnds.Item(0).isPredefType(PredefinedType.PT_VALUE))
+                if (bnds.Count != 0 && bnds[0].isPredefType(PredefinedType.PT_VALUE))
                 {
                     itypeMin = 1;
                 }
             }
 
-            for (int j = itypeMin; j < bnds.size; j++)
+            for (int j = itypeMin; j < bnds.Count; j++)
             {
-                CType typeBnd = bnds.Item(j);
+                CType typeBnd = bnds[j];
                 if (!SatisfiesBound(checker, arg, typeBnd))
                 {
                     if (fReportErrors)

@@ -48,7 +48,7 @@ namespace System.Xml.Serialization
             if (types[type] != null)
                 return;
             types[type] = type;
-            Type baseType = type.GetTypeInfo().BaseType;
+            Type baseType = type.BaseType;
             if (baseType != null)
                 AddImport(baseType, types);
 
@@ -69,7 +69,7 @@ namespace System.Xml.Serialization
                 }
             }
 
-            if (type.GetTypeInfo().IsGenericType)
+            if (type.IsGenericType)
             {
                 Type[] arguments = type.GetGenericArguments();
                 for (int i = 0; i < arguments.Length; i++)
@@ -78,7 +78,7 @@ namespace System.Xml.Serialization
                 }
             }
 
-            Module module = type.GetTypeInfo().Module;
+            Module module = type.Module;
             Assembly assembly = module.Assembly;
             if (DynamicAssemblies.IsTypeDynamic(type))
             {

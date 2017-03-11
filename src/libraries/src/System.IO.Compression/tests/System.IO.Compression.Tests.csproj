@@ -9,8 +9,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
+    <Compile Include="AsyncStreamTests.cs" />
+    <Compile Include="AsyncStreamTests.netstandard.cs" />
     <Compile Include="DeflateStreamTests.cs" />
-    <Compile Include="DeflateStreamTests.netstandard.cs" Condition="'$(TargetGroup)'=='netstandard'" />
     <Compile Include="GZipStreamTests.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
     <Compile Include="ZipArchive\zip_CreateTests.cs" />

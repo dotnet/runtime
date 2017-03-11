@@ -27,7 +27,7 @@ namespace System.Linq
             Type enumType = TypeHelper.FindGenericType(typeof(IEnumerable<>), source.GetType());
             if (enumType == null)
                 throw Error.ArgumentNotIEnumerableGeneric(nameof(source));
-            return EnumerableQuery.Create(enumType.GetTypeInfo().GenericTypeArguments[0], source);
+            return EnumerableQuery.Create(enumType.GenericTypeArguments[0], source);
         }
 
         public static IQueryable<TSource> Where<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)

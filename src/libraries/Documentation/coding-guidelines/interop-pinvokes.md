@@ -21,7 +21,7 @@ Attributes
 |---------|----------------|---------|
 | [`PreserveSig`][2]   | keep default       | When this is explicitly set to false (the default is true), failed HRESULT return values will be turned into Exceptions (and the return value in the definition becomes null as a result).|
 | [`SetLastError`][3]  | as per API         | Set this to true (default is false) if the API uses GetLastError and use Marshal.GetLastWin32Error to get the value. If the API sets a condition that says it has an error, get the error before making other calls to avoid inadvertently having it overwritten.|
-| [`ExactSpelling`][4] | `true`             | Set this to true (deafult is false) and gain a slight perf benefit as the framework will avoid looking for an "A" or "W" version. (See NDirectMethodDesc::FindEntryPoint).|
+| [`ExactSpelling`][4] | `true`             | Set this to true (default is false) and gain a slight perf benefit as the framework will avoid looking for an "A" or "W" version. (See NDirectMethodDesc::FindEntryPoint).|
 | [`CharSet`][5]       | Explicitly  use `CharSet.Unicode` or `CharSet.Ansi` when strings are present in the definition | This specifies marshalling behavior of strings and what `ExactSpelling` does when `false`. Be explicit with this one as the documented default is `CharSet.Ansi`. Note that `CharSet.Ansi` is actually UTF8 on Unix (`CharSet.Utf8` is coming). _Most_ of the time Windows uses Unicode while Unix uses UTF8. |
 
 [1]: https://msdn.microsoft.com/en-us/library/system.runtime.interopservices.dllimportattribute.aspx "MSDN"

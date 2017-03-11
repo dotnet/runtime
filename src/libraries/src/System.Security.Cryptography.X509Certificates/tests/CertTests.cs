@@ -76,10 +76,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 Assert.Equal(notAfter, cert2.NotAfter);
                 Assert.Equal(notBefore, cert2.NotBefore);
-#if netstandard17
+
                 Assert.Equal(notAfter.ToString(), cert2.GetExpirationDateString());
                 Assert.Equal(notBefore.ToString(), cert2.GetEffectiveDateString());
-#endif
 
                 Assert.Equal("00D01E4090000046520000000100000004", cert2.SerialNumber);
                 Assert.Equal("1.2.840.113549.1.1.5", cert2.SignatureAlgorithm.Value);
@@ -88,7 +87,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-#if netstandard17
         [Fact]
         [OuterLoop("May require using the network, to download CRLs and intermediates")]
         public void TestVerify()
@@ -149,7 +147,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 _log.WriteLine($"X509Certificate2.Verify exception: {testName}, {e}");
             }
         }
-#endif
 
         [Fact]
         public static void X509CertEmptyToString()
@@ -278,9 +275,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.ThrowsAny<CryptographicException>(() => c.IssuerName);
                 Assert.ThrowsAny<CryptographicException>(() => c.PublicKey);
                 Assert.ThrowsAny<CryptographicException>(() => c.Extensions);
-#if netstandard17
                 Assert.ThrowsAny<CryptographicException>(() => c.PrivateKey);
-#endif
             }
         }
 

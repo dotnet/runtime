@@ -197,6 +197,7 @@ namespace System.Linq.Expressions
 
             if (comparison != null)
             {
+                ValidateMethodInfo(comparison, nameof(comparison));
                 ParameterInfo[] pms = comparison.GetParametersCached();
                 if (pms.Length != 2)
                 {

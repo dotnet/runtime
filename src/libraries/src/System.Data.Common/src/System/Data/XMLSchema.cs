@@ -1487,7 +1487,7 @@ namespace System.Data
             }
 
             if (!FromInference || _ds.Tables.GetTable(typeName, _TableUri) == null)
-            { // for inference; special case: add table if doesnot exists in collection
+            { // for inference; special case: add table if does not exists in collection
                 _ds.Tables.Add(table);
                 if (FromInference)
                 {
@@ -2563,7 +2563,7 @@ namespace System.Data
                 }
                 else
                 {
-                    // everett behavior before <... msdata:UseCurrentLocale="true"/>
+                    // Everett behavior before <... msdata:UseCurrentLocale="true"/>
                     _ds.SetLocaleValue(new CultureInfo(0x409), false);
                 }
             }

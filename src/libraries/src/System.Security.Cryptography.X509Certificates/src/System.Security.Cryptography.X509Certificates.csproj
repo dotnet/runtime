@@ -6,6 +6,7 @@
     <OutputType>Library</OutputType>
     <AssemblyName>System.Security.Cryptography.X509Certificates</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants Condition="'$(TargetGroup)' == 'uap'">$(DefineConstants);uap</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
@@ -31,6 +32,7 @@
     <Compile Include="Internal\Cryptography\Oids.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafePasswordHandle.cs" />
     <Compile Include="Microsoft\Win32\SafeHandles\SafeX509ChainHandle.cs" />
+    <Compile Include="System\Security\Cryptography\X509Certificates\DSACertificateExtensions.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\ECDsaCertificateExtensions.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\OpenFlags.cs" />
     <Compile Include="System\Security\Cryptography\X509Certificates\PublicKey.cs" />

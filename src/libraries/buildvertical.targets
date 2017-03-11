@@ -38,6 +38,32 @@
     </ItemGroup>
   </Target>
 
+  <Target Name="ExpandAllBuildConfigurationsForPkgProj"
+          BeforeTargets="ExpandProjectReferences"
+          Condition="'$(MSBuildProjectExtension)' == '.pkgproj'">
+    <MSBuild Targets="GetPackageConfigurations"
+             Projects="@(_NonPkgProjProjectReference)">
+      <Output TaskParameter="TargetOutputs"
+              ItemName="_NonPkgProjProjectReferenceBuildConfigurations" />
+    </MSBuild>
+
+    <ItemGroup>
+      <!-- assign configuration as a seperate step to prevent batching during the transform which can reorder the list.
+           order or projects matters here since this applies to traversal projects which build projects serially. -->
+      <_NonPkgProjProjectReferenceBuildConfigurations>
+        <AdditionalProperties>Configuration=%(Identity);%(_NonPkgProjProjectReferenceBuildConfigurations.AdditionalProperties)</AdditionalProperties>
+      </_NonPkgProjProjectReferenceBuildConfigurations>
+      
+      <!-- transform back to project -->
+      <_NonPkgProjProjectReferenceWitnConfiguration Include="@(_NonPkgProjProjectReferenceBuildConfigurations->'%(OriginalItemSpec)')" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <_NonPkgProjProjectReference Remove="@(_NonPkgProjProjectReference)" />
+      <_NonPkgProjProjectReference Include="@(_NonPkgProjProjectReferenceWitnConfiguration)" />
+    </ItemGroup>
+  </Target>
+
   <!-- Runs during traversal to select which projects and configurations of those projects to build
        Batches over the projects because we need to treat BuildConfigurations as a Property
        as well as copy the Project based on results of FindBestConfigurations. -->
@@ -78,6 +104,20 @@
      <PropertyGroup>
        <_AllBuildConfigurations>$(BuildConfigurations)</_AllBuildConfigurations>
        <_AllBuildConfigurations Condition="'$(BuildConfigurations)' == ''">$(_traversalBuildConfigurations)</_AllBuildConfigurations>
+     </PropertyGroup>
+  </Target>
+
+  <!-- Runs in a leaf project (eg: csproj) to determine configurations to package -->
+  <Target Name="GetPackageConfigurations"
+          Returns="$(PackageConfigurations)">
+     <ItemGroup Condition="'$(PackageConfigurations)' == ''">
+       <_buildConfigurations Include="$(BuildConfigurations)" />
+       <_excludeBuildConfigurations Include="@(_buildConfigurations)" Condition="'$(IsReferenceAssembly)' == 'true' AND ('%(Identity)' == 'netfx' OR $([System.String]::new('%(Identity)').StartsWith('net4')))"/>
+       <_packageConfigurations Include="@(_buildConfigurations)" Exclude="@(_excludeBuildConfigurations)" />
+     </ItemGroup>
+
+     <PropertyGroup Condition="'$(PackageConfigurations)' == ''">
+       <PackageConfigurations>@(_packageConfigurations)</PackageConfigurations>
      </PropertyGroup>
   </Target>
 

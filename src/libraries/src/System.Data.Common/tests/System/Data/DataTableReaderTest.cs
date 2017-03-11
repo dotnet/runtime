@@ -321,7 +321,7 @@ namespace System.Data.Tests
                     reader.Read();
                     reader.Close();
                     int i = (int)reader[0];
-                    i++; // to supress warning
+                    i++; // to suppress warning
                 }
                 finally
                 {
@@ -340,7 +340,7 @@ namespace System.Data.Tests
                 try
                 {
                     int i = (int)reader[0];
-                    i++; // to supress warning
+                    i++; // to suppress warning
                 }
                 finally
                 {
@@ -360,7 +360,7 @@ namespace System.Data.Tests
                 {
                     reader.Read();
                     int i = (int)reader[90]; // kidding, ;-)
-                    i++; // to supress warning
+                    i++; // to suppress warning
                 }
                 finally
                 {
@@ -530,7 +530,7 @@ namespace System.Data.Tests
                 try
                 {
                     int i = (int)reader[0];
-                    i++; // supress warning
+                    i++; // suppress warning
                     Assert.False(true);
                 }
                 catch (RowNotInTableException) { }

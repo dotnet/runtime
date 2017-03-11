@@ -86,15 +86,27 @@ namespace System.Net.NameResolution.Tests
             yield return new object[] { IPAddress.None };
         }
 
-        [ActiveIssue(10345, TestPlatforms.AnyUnix)]
+        [PlatformSpecific(~TestPlatforms.OSX)] // macOS will resolve IPAddress.None to broadcasthost and produce a valid listing
         [Theory]
         [MemberData(nameof(GetNoneAddresses))]
         public async Task Dns_GetHostEntryAsync_NoneIPAddress_Fail(IPAddress address)
         {
             string addressString = address.ToString();
 
-            await Assert.ThrowsAsync<SocketException>(() => Dns.GetHostEntryAsync(address));
-            await Assert.ThrowsAsync<SocketException>(() => Dns.GetHostEntryAsync(addressString));
+            await Assert.ThrowsAnyAsync<SocketException>(() => Dns.GetHostEntryAsync(address));
+            await Assert.ThrowsAnyAsync<SocketException>(() => Dns.GetHostEntryAsync(addressString));
+        }
+
+        [PlatformSpecific(TestPlatforms.OSX)] // macOS will resolve IPAddress.None to broadcasthost and produce a valid listing
+        [Theory]
+        [MemberData(nameof(GetNoneAddresses))]
+        public async Task Dns_GetHostEntryAsync_NoneIPAddress_Success(IPAddress address)
+        {
+            IPHostEntry result = await Dns.GetHostEntryAsync(address);
+            Assert.NotNull(result);
+            Assert.NotNull(result.AddressList);
+            Assert.Equal(1, result.AddressList.Length);
+            Assert.Equal(address, result.AddressList[0]);
         }
 
         [Fact]

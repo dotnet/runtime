@@ -2,12 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics;
-using System.Net;
-using System.Runtime.InteropServices;
 using System.Threading;
-using Microsoft.Win32;
 
 namespace System.Net.Sockets
 {
@@ -137,15 +133,15 @@ namespace System.Net.Sockets
         // Called either synchronously from SocketPal async routines or asynchronously via CompletionPortCallback above. 
         private void CompletionCallback(int numBytes, SocketError socketError)
         {
-            ReleaseUnmanagedStructures();
-
             ErrorCode = (int)socketError;
-            InvokeCallback(PostCompletion(numBytes));
+            object result = PostCompletion(numBytes);
+            ReleaseUnmanagedStructures(); // must come after PostCompletion, as overrides may use these resources
+            InvokeCallback(result);
         }
 
         // The following property returns the Win32 unsafe pointer to
         // whichever Overlapped structure we're using for IO.
-        internal SafeHandle OverlappedHandle
+        internal SafeNativeOverlapped OverlappedHandle
         {
             get
             {

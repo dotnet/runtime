@@ -58,7 +58,7 @@ namespace System.Threading.Tests
             }
         }
 
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // named semaphores aren't supported on Unix
         [Fact]
         public void Ctor_NameUsedByOtherSynchronizationPrimitive_Windows()
         {
@@ -113,7 +113,7 @@ namespace System.Threading.Tests
             Assert.False(Mutex.TryOpenExisting(name, out ignored));
         }
 
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // named semaphores aren't supported on Unix
         [Fact]
         public void OpenExisting_NameUsedByOtherSynchronizationPrimitive_Windows()
         {

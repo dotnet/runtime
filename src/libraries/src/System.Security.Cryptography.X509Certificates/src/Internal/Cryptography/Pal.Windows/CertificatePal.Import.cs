@@ -104,41 +104,37 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        private static SafeCertContextHandle GetSignerInPKCS7Store(SafeCertStoreHandle hCertStore, SafeCryptMsgHandle hCryptMsg)
+        private static unsafe SafeCertContextHandle GetSignerInPKCS7Store(SafeCertStoreHandle hCertStore, SafeCryptMsgHandle hCryptMsg)
         {
             // make sure that there is at least one signer of the certificate store
             int dwSigners;
             int cbSigners = sizeof(int);
             if (!Interop.crypt32.CryptMsgGetParam(hCryptMsg, CryptMessageParameterType.CMSG_SIGNER_COUNT_PARAM, 0, out dwSigners, ref cbSigners))
-                throw Marshal.GetHRForLastWin32Error().ToCryptographicException();;
+                throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
             if (dwSigners == 0)
                 throw ErrorCode.CRYPT_E_SIGNER_NOT_FOUND.ToCryptographicException();
 
             // get the first signer from the store, and use that as the loaded certificate
             int cbData = 0;
             if (!Interop.crypt32.CryptMsgGetParam(hCryptMsg, CryptMessageParameterType.CMSG_SIGNER_INFO_PARAM, 0, null, ref cbData))
-                throw Marshal.GetHRForLastWin32Error().ToCryptographicException();;
+                throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
 
-            byte[] cmsgSignerBytes = new byte[cbData];
-            if (!Interop.crypt32.CryptMsgGetParam(hCryptMsg, CryptMessageParameterType.CMSG_SIGNER_INFO_PARAM, 0, cmsgSignerBytes, ref cbData))
-                throw Marshal.GetHRForLastWin32Error().ToCryptographicException();;
-
-            CERT_INFO certInfo = default(CERT_INFO);
-            unsafe
+            fixed (byte* pCmsgSignerBytes = new byte[cbData])
             {
-                fixed (byte* pCmsgSignerBytes = cmsgSignerBytes)
-                {
-                    CMSG_SIGNER_INFO_Partial* pCmsgSignerInfo = (CMSG_SIGNER_INFO_Partial*)pCmsgSignerBytes;
-                    certInfo.Issuer.cbData = pCmsgSignerInfo->Issuer.cbData;
-                    certInfo.Issuer.pbData = pCmsgSignerInfo->Issuer.pbData;
-                    certInfo.SerialNumber.cbData = pCmsgSignerInfo->SerialNumber.cbData;
-                    certInfo.SerialNumber.pbData = pCmsgSignerInfo->SerialNumber.pbData;
-                }
+                if (!Interop.crypt32.CryptMsgGetParam(hCryptMsg, CryptMessageParameterType.CMSG_SIGNER_INFO_PARAM, 0, pCmsgSignerBytes, ref cbData))
+                    throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
+
+                CMSG_SIGNER_INFO_Partial* pCmsgSignerInfo = (CMSG_SIGNER_INFO_Partial*)pCmsgSignerBytes;
+
+                CERT_INFO certInfo = default(CERT_INFO);
+                certInfo.Issuer.cbData = pCmsgSignerInfo->Issuer.cbData;
+                certInfo.Issuer.pbData = pCmsgSignerInfo->Issuer.pbData;
+                certInfo.SerialNumber.cbData = pCmsgSignerInfo->SerialNumber.cbData;
+                certInfo.SerialNumber.pbData = pCmsgSignerInfo->SerialNumber.pbData;
 
                 SafeCertContextHandle pCertContext = null;
                 if (!Interop.crypt32.CertFindCertificateInStore(hCertStore, CertFindType.CERT_FIND_SUBJECT_CERT, &certInfo, ref pCertContext))
-                    throw Marshal.GetHRForLastWin32Error().ToCryptographicException();;
-
+                    throw Marshal.GetHRForLastWin32Error().ToCryptographicException();
                 return pCertContext;
             }
         }
@@ -238,7 +234,7 @@ namespace Internal.Cryptography.Pal
             // For .NET Native (UWP) the API used to delete the private key (if it wasn't added to a store) is not
             // allowed to be called if the key is stored in CAPI.  So for UWP force the key to be stored in the
             // CNG Key Storage Provider, then deleting the key with CngKey.Delete will clean up the file on disk, too.
-#if NETNATIVE
+#if uap
             pfxCertStoreFlags |= PfxCertStoreFlags.PKCS12_ALWAYS_CNG_KSP;
 #endif
 

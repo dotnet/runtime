@@ -4,7 +4,6 @@
   <PropertyGroup>
     <ProjectGuid>{E520B5FD-C6FF-46CF-8079-6C8098013EA3}</ProjectGuid>
     <StringResourcesPath>../src/Resources/Strings.resx</StringResourcesPath>
-    <DefineConstants Condition="'$(TargetGroup)'=='netstandard'">$(DefineConstants);netstandard17</DefineConstants>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
@@ -14,6 +13,9 @@
     <Compile Include="HttpWebResponseTest.cs" />
     <Compile Include="RequestStreamTest.cs" />
     <Compile Include="WebRequestTest.cs" />
+    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
+      <Link>Common\System\PlatformDetection.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\Configuration.cs">
       <Link>Common\System\Net\Configuration.cs</Link>
     </Compile>
@@ -37,7 +39,7 @@
       <Name>RemoteExecutorConsoleApp</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netstandard'">
+  <ItemGroup>
     <Compile Include="AuthorizationTest.cs" />
     <Compile Include="AuthenticationManagerTest.cs" />
     <Compile Include="GlobalProxySelectionTest.cs" />
@@ -48,10 +50,6 @@
     <Compile Include="HttpWebRequestHeaderTest.cs" />
     <Compile Include="HttpWebRequestTest.netstandard.cs" />
     <Compile Include="HttpWebResponseHeaderTest.cs" />
-    <Compile Include="HttpRequestResponseSerializationTest.cs" />
-    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
-      <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
-    </Compile>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

@@ -17,21 +17,21 @@
        These ref versions are pulled from https://github.com/dotnet/versions.
   -->
   <PropertyGroup>
-    <CoreFxCurrentRef>8c02c8b91856b5b8f6e5d7f1707f6b2f0de67644</CoreFxCurrentRef>
-    <CoreClrCurrentRef>d7b3774e789985c90bbdba7cbfd8de421e2ec4fc</CoreClrCurrentRef>
-    <ExternalCurrentRef>6ebb1923d44306ebc37fe819f95f54e547a38c46</ExternalCurrentRef>
-    <ProjectNTfsCurrentRef>d7b3774e789985c90bbdba7cbfd8de421e2ec4fc</ProjectNTfsCurrentRef>
+    <CoreFxCurrentRef>c71b7f12c4a5ff1b24d1e784bb74c3853f0dee10</CoreFxCurrentRef>
+    <CoreClrCurrentRef>475ad1deaae6b2f4be053ead4c3a93576171e7f4</CoreClrCurrentRef>
+    <ExternalCurrentRef>3b8a99621d89ad9877f053ba8af25e0f25dcd9d8</ExternalCurrentRef>
+    <ProjectNTfsCurrentRef>3cff9b98a29b8ba097927ad16c6adb3e7db0f419</ProjectNTfsCurrentRef>
     <SniCurrentRef>05650e53f2aa4497f74cd6e9b053d3f69f64b0bd</SniCurrentRef>
-    <StandardCurrentRef>05650e53f2aa4497f74cd6e9b053d3f69f64b0bd</StandardCurrentRef>
+    <StandardCurrentRef>c71b7f12c4a5ff1b24d1e784bb74c3853f0dee10</StandardCurrentRef>
   </PropertyGroup>
 
   <!-- Auto-upgraded properties for each build info dependency. -->
   <PropertyGroup>
-    <CoreFxExpectedPrerelease>beta-25007-02</CoreFxExpectedPrerelease>
-    <CoreClrExpectedPrerelease>beta-25007-01</CoreClrExpectedPrerelease>
-    <ExternalExpectedPrerelease>beta-25005-00</ExternalExpectedPrerelease>
-    <ProjectNTfsExpectedPrerelease>beta-25007-00</ProjectNTfsExpectedPrerelease>
-    <NETStandardPackageVersion>2.0.0-beta-25008-01</NETStandardPackageVersion>
+    <CoreFxExpectedPrerelease>beta-25110-02</CoreFxExpectedPrerelease>
+    <CoreClrExpectedPrerelease>beta-25110-03</CoreClrExpectedPrerelease>
+    <ExternalExpectedPrerelease>beta-25016-01</ExternalExpectedPrerelease>
+    <ProjectNTfsExpectedPrerelease>beta-25110-00</ProjectNTfsExpectedPrerelease>
+    <NETStandardPackageVersion>2.0.0-beta-25110-01</NETStandardPackageVersion>
     <NETStandardPackageId>NETStandard.Library</NETStandardPackageId>
     <!-- Use the SNI runtime package -->
     <SniPackageVersion>4.4.0-beta-25007-02</SniPackageVersion>
@@ -40,7 +40,8 @@
   <!-- Full package version strings that are used in other parts of the build. -->
   <PropertyGroup>
     <AppXRunnerVersion>1.0.3-prerelease-00921-01</AppXRunnerVersion>
-    <XunitPerfAnalysisPackageVersion>1.0.0-alpha-build0040</XunitPerfAnalysisPackageVersion>
+    <XunitPerfAnalysisPackageVersion>1.0.0-alpha-build0049</XunitPerfAnalysisPackageVersion>
+    <TraceEventPackageVersion>1.0.0-alpha-experimental</TraceEventPackageVersion>
   </PropertyGroup>
 
   <!-- Package dependency verification/auto-upgrade configuration. -->
@@ -141,14 +142,13 @@
     </StaticDependency>
 
     <StaticDependency Include="Microsoft.xunit.netcore.extensions;Microsoft.DotNet.BuildTools.TestSuite">
-      <Version>1.0.1-prerelease-01001-04</Version>
+      <Version>1.0.1-prerelease-01401-04</Version>
     </StaticDependency>
 
-    <PerformancePackDependency Include="Microsoft.DotNet.xunit.performance" />
-    <PerformancePackDependency Include="Microsoft.DotNet.xunit.performance.analysis" />
-    <PerformancePackDependency Include="Microsoft.DotNet.xunit.performance.analysis.cli" />
-    <PerformancePackDependency Include="Microsoft.DotNet.xunit.performance.runner.cli" />
-    <PerformancePackDependency Include="Microsoft.DotNet.xunit.performance.runner.Windows" />
+    <PerformancePackDependency Include="xunit.performance.core" />
+    <PerformancePackDependency Include="xunit.performance.api" />
+    <PerformancePackDependency Include="xunit.performance.execution" />
+    <PerformancePackDependency Include="xunit.performance.metrics" />
     <StaticDependency Include="@(PerformancePackDependency)">
       <Version>$(XunitPerfAnalysisPackageVersion)</Version>
     </StaticDependency>

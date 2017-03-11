@@ -696,7 +696,7 @@ namespace Microsoft.Xml.Query.Xslt {
             }
         }
         
-        // --------------- GetAtributes(...) -------------------------
+        // --------------- GetAttributes(...) -------------------------
         // All Xslt Instructions allows fixed set of attributes in null-ns, no in XSLT-ns and any in other ns.
         // In ForwardCompatibility mode we should ignore any of this problems.
         // We not use these functions for parseing LiteralResultElement and xsl:stylesheet

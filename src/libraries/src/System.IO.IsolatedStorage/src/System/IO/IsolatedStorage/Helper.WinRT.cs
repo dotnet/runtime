@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Security;
 using Windows.ApplicationModel;
 using Windows.Storage;
 
@@ -44,7 +45,7 @@ namespace System.IO.IsolatedStorage
             Directory.CreateDirectory(path);
         }
 
-        internal static void GetDefaultIdentityAndHash(ref object identity, ref string hash, char separator)
+        internal static void GetDefaultIdentityAndHash(out object identity, out string hash, char separator)
         {
             // WinRT creates an ApplicationSecurityInfo off of the AppDomain.CurrentDomain.ActivationContext.
             // Evidence is built as follows:
@@ -59,7 +60,7 @@ namespace System.IO.IsolatedStorage
             // Codebase to unify the logic. For now we'll use installed location from the package.
             Uri codeBase = new Uri(Package.Current.InstalledLocation.Path);
 
-            hash = GetNormalizedUriHash(codeBase);
+            hash = IdentityHelper.GetNormalizedUriHash(codeBase);
             hash = "Url" + separator + hash;
             identity = codeBase;
         }

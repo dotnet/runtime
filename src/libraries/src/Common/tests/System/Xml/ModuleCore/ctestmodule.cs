@@ -235,9 +235,9 @@ namespace OLEDB.Test.ModuleCore
 
         public CTestCase CurTestCase
         {
-            //Return the current testcase:
+            //Return the current test case:
             //Note: We do this so that within global functions (i.e.: at the module level) the user can 
-            //have know which testcase/variation were in, without having to pass this state from
+            //have know which test case/variation were in, without having to pass this state from
             //execute around
             get { return _curtestcase; }
             set { _curtestcase = value; }

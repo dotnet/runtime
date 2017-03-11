@@ -10,7 +10,7 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
     public class DescriptionNameTests
     {
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework | TargetFrameworkMonikers.NetcoreUwp)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework | TargetFrameworkMonikers.Uap)]
         public void VerifyRuntimeDebugNameOnNetCoreApp()
         {
             AssemblyFileVersionAttribute attr = (AssemblyFileVersionAttribute)(typeof(object).GetTypeInfo().Assembly.GetCustomAttribute(typeof(AssemblyFileVersionAttribute)));
@@ -20,7 +20,7 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp | TargetFrameworkMonikers.NetcoreUwp)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp | TargetFrameworkMonikers.Uap)]
         public void VerifyRuntimeDebugNameOnNetFramework()
         {
             AssemblyFileVersionAttribute attr = (AssemblyFileVersionAttribute)(typeof(object).GetTypeInfo().Assembly.GetCustomAttribute(typeof(AssemblyFileVersionAttribute)));
@@ -46,25 +46,25 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             Assert.Same(RuntimeInformation.OSDescription, RuntimeInformation.OSDescription);
         }
 
-        [Fact, PlatformSpecific(TestPlatforms.Windows)]
+        [Fact, PlatformSpecific(TestPlatforms.Windows)]  // Checks Windows debug name in RuntimeInformation
         public void VerifyWindowsDebugName()
         {
             Assert.Contains("windows", RuntimeInformation.OSDescription, StringComparison.OrdinalIgnoreCase);
         }
 
-        [Fact, PlatformSpecific(TestPlatforms.Linux)]
+        [Fact, PlatformSpecific(TestPlatforms.Linux)]  // Checks Linux debug name in RuntimeInformation
         public void VerifyLinuxDebugName()
         {
             Assert.Contains("linux", RuntimeInformation.OSDescription, StringComparison.OrdinalIgnoreCase);
         }
 
-        [Fact, PlatformSpecific(TestPlatforms.NetBSD)]
+        [Fact, PlatformSpecific(TestPlatforms.NetBSD)]  // Checks NetBSD debug name in RuntimeInformation
         public void VerifyNetBSDDebugName()
         {
             Assert.Contains("netbsd", RuntimeInformation.OSDescription, StringComparison.OrdinalIgnoreCase);
         }
 
-        [Fact, PlatformSpecific(TestPlatforms.OSX)]
+        [Fact, PlatformSpecific(TestPlatforms.OSX)]  // Checks OSX debug name in RuntimeInformation
         public void VerifyOSXDebugName()
         {
             Assert.Contains("darwin", RuntimeInformation.OSDescription, StringComparison.OrdinalIgnoreCase);

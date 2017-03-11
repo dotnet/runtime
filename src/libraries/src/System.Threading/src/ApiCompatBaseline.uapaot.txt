@@ -12,6 +12,7 @@ MembersMustExist : Member 'System.Threading.ExecutionContext.GetObjectData(Syste
 MembersMustExist : Member 'System.Threading.ExecutionContext.IsFlowSuppressed()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.ExecutionContext.RestoreFlow()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.ExecutionContext.SuppressFlow()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Threading.LazyInitializer.EnsureInitialized<T>(T, System.Object, System.Func<T>)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Threading.LockCookie' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.ManualResetEvent' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Threading.Monitor.Wait(System.Object, System.Int32, System.Boolean)' does not exist in the implementation but it does exist in the contract.
@@ -25,4 +26,4 @@ MembersMustExist : Member 'System.Threading.SynchronizationContext.Wait(System.I
 MembersMustExist : Member 'System.Threading.SynchronizationContext.WaitHelper(System.IntPtr[], System.Boolean, System.Int32)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.SynchronizationLockException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Threading.WaitHandleCannotBeOpenedException' does not inherit from base type 'System.ApplicationException' in the implementation but it does in the contract.
-Total Issues: 26
+Total Issues: 27

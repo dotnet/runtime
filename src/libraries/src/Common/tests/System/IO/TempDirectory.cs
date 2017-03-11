@@ -35,6 +35,8 @@ namespace System.IO
             DeleteDirectory();
         }
 
+        public string GenerateRandomFilePath() => IO.Path.Combine(Path, IO.Path.GetRandomFileName());
+
         private void DeleteDirectory()
         {
             try { Directory.Delete(Path, recursive: true); }

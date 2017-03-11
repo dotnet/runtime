@@ -127,7 +127,7 @@ namespace System.DirectoryServices.ActiveDirectory
             NativeMethods.DsCrackNames dsCrackNames = (NativeMethods.DsCrackNames)Marshal.GetDelegateForFunctionPointer(functionPtr, typeof(NativeMethods.DsCrackNames));
 
             IntPtr name = Marshal.StringToHGlobalUni(distinguishedName);
-            IntPtr ptr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(IntPtr)));
+            IntPtr ptr = Marshal.AllocHGlobal(IntPtr.Size);
             Marshal.WriteIntPtr(ptr, name);
             result = dsCrackNames(IntPtr.Zero, NativeMethods.DS_NAME_FLAG_SYNTACTICAL_ONLY,
                    NativeMethods.DS_FQDN_1779_NAME, NativeMethods.DS_CANONICAL_NAME, 1, ptr, out results);
@@ -214,7 +214,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             NativeMethods.DsCrackNames dsCrackNames = (NativeMethods.DsCrackNames)Marshal.GetDelegateForFunctionPointer(functionPtr, typeof(NativeMethods.DsCrackNames));
             IntPtr name = Marshal.StringToHGlobalUni(dnsName + "/");
-            IntPtr ptr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(IntPtr)));
+            IntPtr ptr = Marshal.AllocHGlobal(IntPtr.Size);
             Marshal.WriteIntPtr(ptr, name);
             result = dsCrackNames(IntPtr.Zero, NativeMethods.DS_NAME_FLAG_SYNTACTICAL_ONLY,
                          NativeMethods.DS_CANONICAL_NAME, NativeMethods.DS_FQDN_1779_NAME, 1, ptr, out results);

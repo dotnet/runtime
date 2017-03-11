@@ -115,7 +115,7 @@ namespace System.Linq.Expressions
                     return new ConstantExpression(null);
                 }
 
-                if (!type.GetTypeInfo().IsValueType || type.IsNullableType())
+                if (!type.IsValueType || type.IsNullableType())
                 {
                     return new TypedConstantExpression(null, type);
                 }

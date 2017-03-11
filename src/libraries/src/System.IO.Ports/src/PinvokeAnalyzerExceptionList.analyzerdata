@@ -1,0 +1,14 @@
+kernel32.dll!ClearCommBreak
+kernel32.dll!ClearCommError
+kernel32.dll!CreateFileW
+kernel32.dll!EscapeCommFunction
+kernel32.dll!GetCommModemStatus
+kernel32.dll!GetCommProperties
+kernel32.dll!GetCommState
+kernel32.dll!PurgeComm
+kernel32.dll!SetCommBreak
+kernel32.dll!SetCommMask
+kernel32.dll!SetCommState
+kernel32.dll!SetCommTimeouts
+kernel32.dll!SetupComm
+kernel32.dll!WaitCommEvent

@@ -206,12 +206,12 @@ namespace System.ComponentModel
                 throw new ArgumentNullException(nameof(reflectionType));
             }
 
-            if (reflectionType.GetType().GetTypeInfo().Assembly == typeof(object).GetTypeInfo().Assembly)
+            if (reflectionType.GetType().Assembly == typeof(object).Assembly)
             {
                 return reflectionType;
             }
 
-            return reflectionType.GetTypeInfo().UnderlyingSystemType;
+            return reflectionType.UnderlyingSystemType;
         }
 
         /// <summary>

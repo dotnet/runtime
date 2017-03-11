@@ -160,14 +160,14 @@ namespace Microsoft.CSharp.RuntimeBinder
                 if (t2.IsGenericParameter)
                 {
                     // If member's declaring type is not type parameter's declaring type, we assume that it is used as a type argument
-                    if (t1.GetTypeInfo().DeclaringMethod == null && member1.DeclaringType.Equals(t1.GetTypeInfo().DeclaringType))
+                    if (t1.DeclaringMethod == null && member1.DeclaringType.Equals(t1.DeclaringType))
                     {
-                        if (!(t2.GetTypeInfo().DeclaringMethod == null && member2.DeclaringType.Equals(t2.GetTypeInfo().DeclaringType)))
+                        if (!(t2.DeclaringMethod == null && member2.DeclaringType.Equals(t2.DeclaringType)))
                         {
                             return t1.IsTypeParameterEquivalentToTypeInst(t2, member2);
                         }
                     }
-                    else if (t2.GetTypeInfo().DeclaringMethod == null && member2.DeclaringType.Equals(t2.GetTypeInfo().DeclaringType))
+                    else if (t2.DeclaringMethod == null && member2.DeclaringType.Equals(t2.DeclaringType))
                     {
                         return t2.IsTypeParameterEquivalentToTypeInst(t1, member1);
                     }
@@ -185,7 +185,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             }
 
             // Recurse in for generic types arrays, byref and pointer types.
-            if (t1.GetTypeInfo().IsGenericType && t2.GetTypeInfo().IsGenericType)
+            if (t1.IsGenericType && t2.IsGenericType)
             {
                 var args1 = t1.GetGenericArguments();
                 var args2 = t2.GetGenericArguments();
@@ -216,7 +216,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         {
             Debug.Assert(typeParam.IsGenericParameter);
 
-            if (typeParam.GetTypeInfo().DeclaringMethod != null)
+            if (typeParam.DeclaringMethod != null)
             {
                 // The type param is from a generic method. Since only methods can be generic, anything else
                 // here means they are not equivalent.
@@ -226,7 +226,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 }
 
                 MethodBase method = (MethodBase)member;
-                int position = typeParam.GetTypeInfo().GenericParameterPosition;
+                int position = typeParam.GenericParameterPosition;
                 Type[] args = method.IsGenericMethod ? method.GetGenericArguments() : null;
 
                 return args != null &&
@@ -235,7 +235,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             }
             else
             {
-                return member.DeclaringType.GetGenericArguments()[typeParam.GetTypeInfo().GenericParameterPosition].Equals(typeInst);
+                return member.DeclaringType.GetGenericArguments()[typeParam.GenericParameterPosition].Equals(typeInst);
             }
         }
 

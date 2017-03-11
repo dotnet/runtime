@@ -73,7 +73,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         internal void WriteInt64(long value) => _dataWriter.Write(value);
 
-        internal void WriteSByte(sbyte value) => WriteByte((byte)value);
+        internal void WriteSByte(sbyte value) => WriteByte(unchecked((byte)value));
 
         internal void WriteString(string value) => _dataWriter.Write(value);
 

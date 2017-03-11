@@ -859,7 +859,7 @@ namespace System.Threading.Tasks.Tests
         /// <summary>
         /// Class that verifies that all the public constructors of Task, future, promise and futureT are working correctly
         /// The test creates the test object (Task, Future, promise) using various ctor and ensures that they were 
-        /// created and can be started. All the negative cases (expectional cases are also covered in this test set).
+        /// created and can be started. All the negative cases (exceptional cases are also covered in this test set).
         /// </summary>
         internal sealed class TaskCreateTest
         {
@@ -871,7 +871,7 @@ namespace System.Threading.Tasks.Tests
             private const int ZETA_SEED = 1000000;
 
             /// <summary>
-            /// Used to save the results that is returned by the Task upon completion (used to verify that task ran successsfully)
+            /// Used to save the results that is returned by the Task upon completion (used to verify that task ran successfully)
             /// </summary>
             private double _result;
 

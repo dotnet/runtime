@@ -33,13 +33,12 @@
       <Link>Common\System\Text\ConsoleEncoding.cs</Link>
     </Compile>
   </ItemGroup>
-  <!-- Windows : UAP 
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' == 'uap101aot' ">
+  <!-- Windows : UAP -->
+  <ItemGroup Condition="'$(TargetGroup)' == 'uap'">
     <Compile Include="System\ConsolePal.Uap.cs" />
   </ItemGroup> 
-  -->
   <!-- Windows : Win32 -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetGroup)' != 'uap'">
     <Compile Include="System\ConsolePal.Windows.cs" />
     <Compile Include="$(CommonPath)\System\Text\OSEncoding.Windows.cs">
       <Link>Common\System\Text\OSEncoding.Windows.cs</Link>
@@ -51,13 +50,16 @@
       <Link>Common\System\Text\DBCSDecoder.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.Encoding.Constants.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.Encoding.Constants.cs</Link>
+      <Link>Common\Interop\Windows\Interop.Encoding.Constants.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetCPInfoEx.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.GetCPInfoEx.cs</Link>
+      <Link>Common\Interop\Windows\Interop.GetCPInfoEx.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.BOOL.cs">
+      <Link>Common\Interop\Windows\Interop.BOOL.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.Beep.cs">
       <Link>Common\Interop\Windows\Interop.Beep.cs</Link>

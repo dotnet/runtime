@@ -13,10 +13,6 @@ namespace System.Net.Sockets
 {
     internal static partial class SocketPal
     {
-        // The API that uses this information is not supported on *nix, and will throw
-        // PlatformNotSupportedException instead.
-        public const int ProtocolInformationSize = 0;
-
         public const bool SupportsMultipleConnectAttempts = false;
         private static readonly bool SupportsDualModeIPv4PacketInfo = GetPlatformSupportsDualModeIPv4PacketInfo();
 
@@ -366,9 +362,8 @@ namespace System.Net.Sockets
                 errno = Interop.Sys.ReceiveMessage(socket, &messageHeader, flags, &received);
                 receivedFlags = messageHeader.Flags;
                 sockAddrLen = messageHeader.SocketAddressLen;
+                ipPacketInformation = GetIPPacketInformation(&messageHeader, isIPv4, isIPv6);
             }
-
-            ipPacketInformation = GetIPPacketInformation(&messageHeader, isIPv4, isIPv6);
 
             if (errno != Interop.Error.SUCCESS)
             {
@@ -377,6 +372,74 @@ namespace System.Net.Sockets
 
             socketAddressLen = sockAddrLen;
             return checked((int)received);
+        }
+
+        private static unsafe int ReceiveMessageFrom(
+            SafeCloseSocket socket, SocketFlags flags, IList<ArraySegment<byte>> buffers,
+            byte[] socketAddress, ref int socketAddressLen, bool isIPv4, bool isIPv6,
+            out SocketFlags receivedFlags, out IPPacketInformation ipPacketInformation, out Interop.Error errno)
+        {
+            Debug.Assert(socketAddress != null, "Expected non-null socketAddress");
+
+            int buffersCount = buffers.Count;
+            var handles = new GCHandle[buffersCount];
+            var iovecs = new Interop.Sys.IOVector[buffersCount];
+            try
+            {
+                // Pin buffers and set up iovecs.
+                for (int i = 0; i < buffersCount; i++)
+                {
+                    ArraySegment<byte> buffer = buffers[i];
+                    handles[i] = GCHandle.Alloc(buffer.Array, GCHandleType.Pinned);
+                    iovecs[i].Base = &((byte*)handles[i].AddrOfPinnedObject())[buffer.Offset];
+                    iovecs[i].Count = (UIntPtr)buffer.Count;
+                }
+
+                // Make the call.
+                fixed (byte* sockAddr = socketAddress)
+                fixed (Interop.Sys.IOVector* iov = iovecs)
+                {
+                    int cmsgBufferLen = Interop.Sys.GetControlMessageBufferSize(isIPv4, isIPv6);
+                    var cmsgBuffer = stackalloc byte[cmsgBufferLen];
+
+                    var messageHeader = new Interop.Sys.MessageHeader
+                    {
+                        SocketAddress = sockAddr,
+                        SocketAddressLen = socketAddressLen,
+                        IOVectors = iov,
+                        IOVectorCount = buffersCount,
+                        ControlBuffer = cmsgBuffer,
+                        ControlBufferLen = cmsgBufferLen
+                    };
+
+                    long received;
+                    errno = Interop.Sys.ReceiveMessage(socket, &messageHeader, flags, &received);
+                    receivedFlags = messageHeader.Flags;
+                    int sockAddrLen = messageHeader.SocketAddressLen;
+                    ipPacketInformation = GetIPPacketInformation(&messageHeader, isIPv4, isIPv6);
+
+                    if (errno == Interop.Error.SUCCESS)
+                    {
+                        socketAddressLen = sockAddrLen;
+                        return checked((int)received);
+                    }
+                    else
+                    {
+                        return -1;
+                    }
+                }
+            }
+            finally
+            {
+                // Free GC handles.
+                for (int i = 0; i < buffersCount; i++)
+                {
+                    if (handles[i].IsAllocated)
+                    {
+                        handles[i].Free();
+                    }
+                }
+            }
         }
 
         public static unsafe bool TryCompleteAccept(SafeCloseSocket socket, byte[] socketAddress, ref int socketAddressLen, out IntPtr acceptedFd, out SocketError errorCode)
@@ -539,13 +602,19 @@ namespace System.Net.Sockets
             }
         }
 
-        public static unsafe bool TryCompleteReceiveMessageFrom(SafeCloseSocket socket, byte[] buffer, int offset, int count, SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, bool isIPv4, bool isIPv6, out int bytesReceived, out SocketFlags receivedFlags, out IPPacketInformation ipPacketInformation, out SocketError errorCode)
+        public static unsafe bool TryCompleteReceiveMessageFrom(SafeCloseSocket socket, byte[] buffer, IList<ArraySegment<byte>> buffers, int offset, int count, SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, bool isIPv4, bool isIPv6, out int bytesReceived, out SocketFlags receivedFlags, out IPPacketInformation ipPacketInformation, out SocketError errorCode)
         {
+            Debug.Assert(
+                (buffer == null) ^ (buffers == null),
+                "One and only one of buffer and buffers must be null");
+
             try
             {
                 Interop.Error errno;
 
-                int received = ReceiveMessageFrom(socket, flags, buffer, offset, count, socketAddress, ref socketAddressLen, isIPv4, isIPv6, out receivedFlags, out ipPacketInformation, out errno);
+                int received = buffer != null ?
+                    ReceiveMessageFrom(socket, flags, buffer, offset, count, socketAddress, ref socketAddressLen, isIPv4, isIPv6, out receivedFlags, out ipPacketInformation, out errno) :
+                    ReceiveMessageFrom(socket, flags, buffers, socketAddress, ref socketAddressLen, isIPv4, isIPv6, out receivedFlags, out ipPacketInformation, out errno);
 
                 if (received != -1)
                 {
@@ -747,13 +816,11 @@ namespace System.Net.Sockets
                 return handle.AsyncContext.Connect(socketAddress, socketAddressLen, -1);
             }
 
-            handle.AsyncContext.CheckForPriorConnectFailure();
-
             SocketError errorCode;
             bool completed = TryStartConnect(handle, socketAddress, socketAddressLen, out errorCode);
             if (completed)
             {
-                handle.AsyncContext.RegisterConnectResult(errorCode);
+                handle.RegisterConnectResult(errorCode);
                 return errorCode;
             }
             else
@@ -866,11 +933,11 @@ namespace System.Net.Sockets
             SocketError errorCode;
             if (!handle.IsNonBlocking)
             {
-                errorCode = handle.AsyncContext.ReceiveMessageFrom(buffer, offset, count, ref socketFlags, socketAddressBuffer, ref socketAddressLen, isIPv4, isIPv6, handle.ReceiveTimeout, out ipPacketInformation, out bytesTransferred);
+                errorCode = handle.AsyncContext.ReceiveMessageFrom(buffer, null, offset, count, ref socketFlags, socketAddressBuffer, ref socketAddressLen, isIPv4, isIPv6, handle.ReceiveTimeout, out ipPacketInformation, out bytesTransferred);
             }
             else
             {
-                if (!TryCompleteReceiveMessageFrom(handle, buffer, offset, count, socketFlags, socketAddressBuffer, ref socketAddressLen, isIPv4, isIPv6, out bytesTransferred, out socketFlags, out ipPacketInformation, out errorCode))
+                if (!TryCompleteReceiveMessageFrom(handle, buffer, null, offset, count, socketFlags, socketAddressBuffer, ref socketAddressLen, isIPv4, isIPv6, out bytesTransferred, out socketFlags, out ipPacketInformation, out errorCode))
                 {
                     errorCode = SocketError.WouldBlock;
                 }
@@ -898,6 +965,16 @@ namespace System.Net.Sockets
             throw new PlatformNotSupportedException();
         }
 
+        private static SocketError GetErrorAndTrackSetting(SafeCloseSocket handle, SocketOptionLevel optionLevel, SocketOptionName optionName, Interop.Error err)
+        {
+            if (err == Interop.Error.SUCCESS)
+            {
+                handle.TrackOption(optionLevel, optionName);
+                return SocketError.Success;
+            }
+            return GetSocketErrorForErrorCode(err);
+        }
+
         public static unsafe SocketError SetSockOpt(SafeCloseSocket handle, SocketOptionLevel optionLevel, SocketOptionName optionName, int optionValue)
         {
             Interop.Error err;
@@ -908,13 +985,13 @@ namespace System.Net.Sockets
                 {
                     handle.ReceiveTimeout = optionValue == 0 ? -1 : optionValue;
                     err = Interop.Sys.SetReceiveTimeout(handle, optionValue);
-                    return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
+                    return GetErrorAndTrackSetting(handle, optionLevel, optionName, err);
                 }
                 else if (optionName == SocketOptionName.SendTimeout)
                 {
                     handle.SendTimeout = optionValue == 0 ? -1 : optionValue;
                     err = Interop.Sys.SetSendTimeout(handle, optionValue);
-                    return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
+                    return GetErrorAndTrackSetting(handle, optionLevel, optionName, err);
                 }
             }
             else if (optionLevel == SocketOptionLevel.IP)
@@ -926,38 +1003,44 @@ namespace System.Net.Sockets
                     int interfaceIndex = IPAddress.NetworkToHostOrder(optionValue);
                     if ((interfaceIndex & 0xff000000) == 0)
                     {
-                        var opt = new Interop.Sys.IPv4MulticastOption {
+                        var opt = new Interop.Sys.IPv4MulticastOption
+                        {
                             MulticastAddress = 0,
                             LocalAddress = 0,
                             InterfaceIndex = interfaceIndex
                         };
 
                         err = Interop.Sys.SetIPv4MulticastOption(handle, Interop.Sys.MulticastOption.MULTICAST_IF, &opt);
-                        return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
+                        return GetErrorAndTrackSetting(handle, optionLevel, optionName, err);
                     }
                 }
             }
 
             err = Interop.Sys.SetSockOpt(handle, optionLevel, optionName, (byte*)&optionValue, sizeof(int));
-            return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
+
+            if (err == Interop.Error.SUCCESS)
+            {
+                if (optionLevel == SocketOptionLevel.IPv6 && optionName == SocketOptionName.IPv6Only)
+                {
+                    // Unix stacks may set IPv6Only to true once bound to an address.  This causes problems
+                    // for Socket.DualMode, and anything that depends on it, like CanTryAddressFamily.
+                    // To aid in connecting to multiple addresses (e.g. a DNS endpoint), we need to remember
+                    // whether DualMode / !IPv6Only was set, so that we can restore that value to a subsequent
+                    // handle after a failed connect.
+                    handle.DualMode = optionValue == 0;
+                }
+            }
+
+            return GetErrorAndTrackSetting(handle, optionLevel, optionName, err);
         }
 
         public static unsafe SocketError SetSockOpt(SafeCloseSocket handle, SocketOptionLevel optionLevel, SocketOptionName optionName, byte[] optionValue)
         {
-            Interop.Error err;
-            if (optionValue == null || optionValue.Length == 0)
+            fixed (byte* pinnedValue = optionValue)
             {
-                err = Interop.Sys.SetSockOpt(handle, optionLevel, optionName, null, 0);
+                Interop.Error err = Interop.Sys.SetSockOpt(handle, optionLevel, optionName, pinnedValue, optionValue.Length);
+                return GetErrorAndTrackSetting(handle, optionLevel, optionName, err);
             }
-            else
-            {
-                fixed (byte* pinnedValue = &optionValue[0])
-                {
-                    err = Interop.Sys.SetSockOpt(handle, optionLevel, optionName, pinnedValue, optionValue.Length);
-                }
-            }
-
-            return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
         }
 
         public static unsafe SocketError SetMulticastOption(SafeCloseSocket handle, SocketOptionName optionName, MulticastOption optionValue)
@@ -977,7 +1060,7 @@ namespace System.Net.Sockets
             };
 
             Interop.Error err = Interop.Sys.SetIPv4MulticastOption(handle, optName, &opt);
-            return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
+            return GetErrorAndTrackSetting(handle, SocketOptionLevel.IP, optionName, err);
         }
 
         public static unsafe SocketError SetIPv6MulticastOption(SafeCloseSocket handle, SocketOptionName optionName, IPv6MulticastOption optionValue)
@@ -994,7 +1077,7 @@ namespace System.Net.Sockets
             };
 
             Interop.Error err = Interop.Sys.SetIPv6MulticastOption(handle, optName, &opt);
-            return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
+            return GetErrorAndTrackSetting(handle, SocketOptionLevel.IPv6, optionName, err);
         }
 
         public static unsafe SocketError SetLingerOption(SafeCloseSocket handle, LingerOption optionValue)
@@ -1005,7 +1088,7 @@ namespace System.Net.Sockets
             };
 
             Interop.Error err = Interop.Sys.SetLingerOption(handle, &opt);
-            return err == Interop.Error.SUCCESS ? SocketError.Success : GetSocketErrorForErrorCode(err);
+            return GetErrorAndTrackSetting(handle, SocketOptionLevel.Socket, SocketOptionName.Linger, err);
         }
 
         public static void SetReceivingDualModeIPv4PacketInformation(Socket socket)
@@ -1446,7 +1529,7 @@ namespace System.Net.Sockets
             int bytesReceived;
             SocketFlags receivedFlags;
             IPPacketInformation ipPacketInformation;
-            SocketError socketError = handle.AsyncContext.ReceiveMessageFromAsync(buffer, offset, count, socketFlags, socketAddress.Buffer, ref socketAddressSize, isIPv4, isIPv6, out bytesReceived, out receivedFlags, out ipPacketInformation, asyncResult.CompletionCallback);
+            SocketError socketError = handle.AsyncContext.ReceiveMessageFromAsync(buffer, null, offset, count, socketFlags, socketAddress.Buffer, ref socketAddressSize, isIPv4, isIPv6, out bytesReceived, out receivedFlags, out ipPacketInformation, asyncResult.CompletionCallback);
             if (socketError == SocketError.Success)
             {
                 asyncResult.CompletionCallback(bytesReceived, socketAddress.Buffer, socketAddressSize, receivedFlags, ipPacketInformation, SocketError.Success);

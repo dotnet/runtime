@@ -169,7 +169,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [ActiveIssue("Cancellation token not shared")]
+        [ActiveIssue(16751)] //Cancellation token not shared
         [MemberData("SequenceEqualData", new int[] { /* Sources.OuterLoopCount */ })]
         public static void SequenceEqual_SharedLeft_Cancellation(Labeled<ParallelQuery<int>> left, Labeled<ParallelQuery<int>> right, int count)
         {
@@ -183,7 +183,7 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Theory]
-        [ActiveIssue("Cancellation token not shared")]
+        [ActiveIssue(16751)] //Cancellation token not shared
         [MemberData("SequenceEqualData", new int[] { /* Sources.OuterLoopCount */ })]
         public static void SequenceEqual_SharedRight_Cancellation(Labeled<ParallelQuery<int>> left, Labeled<ParallelQuery<int>> right, int count)
         {

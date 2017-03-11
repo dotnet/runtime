@@ -200,7 +200,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ushort> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ushort)(a - b), f());
+            Assert.Equal(unchecked((ushort)(a - b)), f());
         }
 
         private static void VerifyUShortSubtractOvf(ushort a, ushort b, bool useInterpreter)
@@ -237,7 +237,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<short> f = e.Compile(useInterpreter);
 
-            Assert.Equal((short)(a - b), f());
+            Assert.Equal(unchecked((short)(a - b)), f());
         }
 
         private static void VerifyShortSubtractOvf(short a, short b, bool useInterpreter)
@@ -274,7 +274,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<uint> f = e.Compile(useInterpreter);
 
-            Assert.Equal(a - b, f());
+            Assert.Equal(unchecked(a - b), f());
         }
 
         private static void VerifyUIntSubtractOvf(uint a, uint b, bool useInterpreter)
@@ -312,7 +312,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<int> f = e.Compile(useInterpreter);
 
-            Assert.Equal(a - b, f());
+            Assert.Equal(unchecked(a - b), f());
         }
 
         private static void VerifyIntSubtractOvf(int a, int b, bool useInterpreter)
@@ -349,7 +349,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<ulong> f = e.Compile(useInterpreter);
 
-            Assert.Equal(a - b, f());
+            Assert.Equal(unchecked(a - b), f());
         }
 
         private static void VerifyULongSubtractOvf(ulong a, ulong b, bool useInterpreter)
@@ -387,7 +387,7 @@ namespace System.Linq.Expressions.Tests
                     Enumerable.Empty<ParameterExpression>());
             Func<long> f = e.Compile(useInterpreter);
 
-            Assert.Equal(a - b, f());
+            Assert.Equal(unchecked(a - b), f());
         }
 
         private static void VerifyLongSubtractOvf(long a, long b, bool useInterpreter)

@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
+
 using Xunit;
 
 namespace System.Runtime.CompilerServices.Tests
@@ -46,6 +48,7 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.Throws<MemberAccessException>(() => RuntimeHelpers.GetUninitializedObject(typeof(System.IO.Stream))); // abstract type
             Assert.Throws<MemberAccessException>(() => RuntimeHelpers.GetUninitializedObject(typeof(System.Collections.IEnumerable))); // interface
             Assert.Throws<MemberAccessException>(() => RuntimeHelpers.GetUninitializedObject(typeof(System.Collections.Generic.List<>))); // generic definition
+            Assert.Throws<NotSupportedException>(() => RuntimeHelpers.GetUninitializedObject(typeof(TypedReference))); // byref-like type
         }
 
         [Fact]
@@ -65,6 +68,29 @@ namespace System.Runtime.CompilerServices.Tests
         private class ObjectWithDefaultCtor
         {
             public int Value = 42;
+        }
+
+        [Fact]
+        public static void IsReferenceOrContainsReferences()
+        {
+            Assert.False(RuntimeHelpers.IsReferenceOrContainsReferences<int>());
+            Assert.True(RuntimeHelpers.IsReferenceOrContainsReferences<string>());
+            Assert.False(RuntimeHelpers.IsReferenceOrContainsReferences<Guid>());
+            Assert.False(RuntimeHelpers.IsReferenceOrContainsReferences<StructWithoutReferences>());
+            Assert.True(RuntimeHelpers.IsReferenceOrContainsReferences<StructWithReferences>());
+        }
+
+        [StructLayoutAttribute(LayoutKind.Sequential)]
+        private struct StructWithoutReferences
+        {
+            public int a, b, c;
+        }
+
+        [StructLayoutAttribute(LayoutKind.Sequential)]
+        private struct StructWithReferences
+        {
+            public int a, b, c;
+            public object d;
         }
     }
 }

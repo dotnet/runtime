@@ -7,8 +7,7 @@
     <RootNamespace>System.Xml</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn),649</NoWarn>
-    <DefineConstants>$(DefineConstants);ASYNC;ASTORIA_LIGHT</DefineConstants>
-    <!--<DefineConstants Condition="'$(TargetGroup)' == 'uap101aot'">$(DefineConstants);NET_NATIVE</DefineConstants> TODO: Bring this back when uap101aot support is added -->
+    <DefineConstants Condition="'$(TargetGroup)' == 'uap'">$(DefineConstants);uap</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
@@ -119,7 +118,6 @@
     <Compile Include="System\Xml\Core\XmlSubtreeReader.cs" />
     <Compile Include="System\Xml\Core\XmlSubtreeReaderAsync.cs" />
     <Compile Include="System\Xml\Core\XmlTextEncoder.cs" />
-    <Compile Include="System\Xml\Core\BinaryCompatibility.cs" />
     <Compile Include="System\Xml\Core\XmlTextReader.cs" />
     <Compile Include="System\Xml\Core\XmlTextReaderImpl.cs" />
     <Compile Include="System\Xml\Core\XmlTextReaderImplAsync.cs" />
@@ -504,7 +502,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Threading.Tasks.Extensions\src\System.Threading.Tasks.Extensions.csproj" />
-    <Reference Include="Microsoft.Win32.Registry" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Collections.Specialized" />
@@ -673,7 +670,6 @@
     <Compile Include="System\Xml\Xsl\XsltOld\IfAction.cs" />
     <Compile Include="System\Xml\Xsl\XsltOld\InputScope.cs" />
     <Compile Include="System\Xml\Xsl\XsltOld\InputScopeManager.cs" />
-    <Compile Include="System\Xml\Xsl\XsltOld\Keywords.cs" />
     <Compile Include="System\Xml\Xsl\XsltOld\MessageAction.cs" />
     <Compile Include="System\Xml\Xsl\XsltOld\NamespaceDecl.cs" />
     <Compile Include="System\Xml\Xsl\XsltOld\NameSpaceEvent.cs" />
@@ -741,7 +737,6 @@
     <Compile Include="$(CommonPath)\System\LocalAppContext.cs" />
     <Compile Include="System\Xml\Core\LocalAppContextSwitches.cs" />
     <Compile Include="$(CommonPath)\System\CSharpHelpers.cs" />
-    <Compile Include="Misc\ThisAssembly.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
     <Compile Include="System\Xml\Xsl\Runtime\XmlCollation.Windows.cs" />

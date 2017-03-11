@@ -9,7 +9,13 @@
     <ProjectGuid>{AEF718E9-D4FC-418F-A7AE-ED6B2C7B3787}</ProjectGuid>
     <AssemblyName>System.Linq.Expressions</AssemblyName>
     <RootNamespace>System.Linq.Expressions</RootNamespace>
-    <IsInterpreting Condition="'$(TargetGroup)' == 'netcore50'">true</IsInterpreting>
+    <IsInterpreting Condition="'$(TargetGroup)' == 'uap'">true</IsInterpreting>
+
+    <!-- Temporarily disable IsInterpreting build as it's broken and needs investigation 
+         https://github.com/dotnet/corefx/issues/16910
+    -->
+    <IsInterpreting>false</IsInterpreting>
+
     <DefineConstants Condition=" '$(IsInterpreting)' != 'true' ">$(DefineConstants);FEATURE_COMPILE</DefineConstants>
     <DefineConstants Condition=" '$(FeatureInterpret)' == 'true' ">$(DefineConstants);FEATURE_INTERPRET</DefineConstants>
   </PropertyGroup>
@@ -18,10 +24,10 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(TargetGroup)' == 'netcore50aot'">
+  <PropertyGroup Condition="'$(TargetGroup)' == 'uapaot'">
     <DefineConstants>$(DefineConstants);FEATURE_DYNAMIC_DELEGATE</DefineConstants>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcore50aot'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'uapaot'"> 
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
     <ReferenceFromRuntime Include="System.Private.CoreLib.DynamicDelegate" />
   </ItemGroup>
@@ -207,7 +213,7 @@
     <Compile Include="System\Linq\Expressions\Compiler\CompilerScope.Storage.cs" />
     <Compile Include="System\Linq\Expressions\Compiler\HoistedLocals.cs" />
     <Compile Include="System\Linq\Expressions\Compiler\ILGen.cs" />
-    <Compile Include="System\Linq\Expressions\Compiler\KeyedQueue.cs" />
+    <Compile Include="System\Linq\Expressions\Compiler\KeyedStack.cs" />
     <Compile Include="System\Linq\Expressions\Compiler\LabelInfo.cs" />
     <Compile Include="System\Linq\Expressions\Compiler\LambdaCompiler.Address.cs" />
     <Compile Include="System\Linq\Expressions\Compiler\LambdaCompiler.Binary.cs" />
@@ -273,7 +279,6 @@
     <Compile Include="System\Linq\Expressions\Interpreter\NumericConvertInstruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\NullCheckInstruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\OrInstruction.cs" />
-    <Compile Include="System\Linq\Expressions\Interpreter\OnesComplementInstruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\RightShiftInstruction.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\RuntimeVariables.cs" />
     <Compile Include="System\Linq\Expressions\Interpreter\StackOperations.cs" />

@@ -1,64 +1,5 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!-- 
-    Microsoft ResX Schema 
-    
-    Version 2.0
-    
-    The primary goals of this format is to allow a simple XML format 
-    that is mostly human readable. The generation and parsing of the 
-    various data types are done through the TypeConverter classes 
-    associated with the data types.
-    
-    Example:
-    
-    ... ado.net/XML headers & schema ...
-    <resheader name="resmimetype">text/microsoft-resx</resheader>
-    <resheader name="version">2.0</resheader>
-    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
-    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
-    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
-    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
-    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
-        <value>[base64 mime encoded serialized .NET Framework object]</value>
-    </data>
-    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
-        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
-        <comment>This is a comment</comment>
-    </data>
-                
-    There are any number of "resheader" rows that contain simple 
-    name/value pairs.
-    
-    Each data row contains a name, and value. The row also contains a 
-    type or mimetype. Type corresponds to a .NET class that support 
-    text/value conversion through the TypeConverter architecture. 
-    Classes that don't support this are serialized and stored with the 
-    mimetype set.
-    
-    The mimetype is used for serialized objects, and tells the 
-    ResXResourceReader how to depersist the object. This is currently not 
-    extensible. For a given mimetype the value must be set accordingly:
-    
-    Note - application/x-microsoft.net.object.binary.base64 is the format 
-    that the ResXResourceWriter will generate, however the reader can 
-    read any of the formats listed below.
-    
-    mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
-            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
-            : and then encoded with base64 encoding.
-    
-    mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with 
-            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
-            : and then encoded with base64 encoding.
-
-    mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array 
-            : using a System.ComponentModel.TypeConverter
-            : and then encoded with base64 encoding.
-    -->
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -132,20 +73,11 @@
     <data name="DSCannotDelete" xml:space="preserve">
         <value>The object cannot be deleted.</value>
     </data>
-    <data name="DSNotInCollection" xml:space="preserve">
-        <value>The given child object cannot be found in the collection.</value>
-    </data>
     <data name="DSNoCurrentChild" xml:space="preserve">
         <value>There is no current child object.</value>
     </data>
-    <data name="DSCannotBeIndexed" xml:space="preserve">
-        <value>The entry properties cannot be indexed by number.</value>
-    </data>
     <data name="DSCannotCount" xml:space="preserve">
         <value>The directory cannot report the number of properties.</value>
-    </data>
-    <data name="DSCannotGetKeys" xml:space="preserve">
-        <value>The directory cannot report the names of available properties.</value>
     </data>
     <data name="DSCannotEmunerate" xml:space="preserve">
         <value>The entry properties cannot be enumerated. Consider using the entry schema to determine what properties are available.</value>
@@ -171,9 +103,6 @@
     <data name="DSInvalidSearchFilter" xml:space="preserve">
         <value>The {0} search filter is invalid.</value>
     </data>
-    <data name="DSPropertyNotFound" xml:space="preserve">
-        <value>The property {0} cannot be found in the search results. The property might not exist on the found object, or it might not have been requested in the search query through</value>
-    </data> DirectorySearcher.PropertiesToLoad.
     <data name="DSConvertFailed" xml:space="preserve">
         <value>The ADSVALUE with the union value {0} cannot be converted to the ADSTYPEENUM type {1}.</value>
     </data>
@@ -192,9 +121,6 @@
     <data name="DSEnumerator" xml:space="preserve">
         <value>Enumerator is positioned before the first item or after the last item.</value>
     </data>
-    <data name="DSPathIsNotSet" xml:space="preserve">
-        <value>Path property is not set.</value>
-    </data>
     <data name="DSPropertySetSupported" xml:space="preserve">
         <value>New PropertyValueCollection cannot be set into a DirectoryEntry PropertyCollection.</value>
     </data>
@@ -210,44 +136,20 @@
     <data name="DSSearchPreferencesNotAccepted" xml:space="preserve">
         <value>The value for the property {0} cannot be set.</value>
     </data>
-    <data name="DSBeforeCount" xml:space="preserve">
-        <value>Indicates the number of entries, before the target entry, that the client is requesting from the server. </value>
-    </data>
     <data name="DSBadBeforeCount" xml:space="preserve">
         <value>BeforeCount must be greater than or equal to 0.</value>
-    </data>
-    <data name="DSAfterCount" xml:space="preserve">
-        <value>Indicates the number of entries, after the target entry, that the client is requesting from the server. </value>
     </data>
     <data name="DSBadAfterCount" xml:space="preserve">
         <value>AfterCount must be greater than or equal to 0.</value>
     </data>
-    <data name="DSOffset" xml:space="preserve">
-        <value>On input, indicates the target entry requested offset within the list. On output, indicates the server's best estimate as to the actual offset of the returned target</value>
-    </data> entry position in the list.
     <data name="DSBadOffset" xml:space="preserve">
         <value>Offset must be greater than or equal to 0.</value>
-    </data>
-    <data name="DSTargetPercentage" xml:space="preserve">
-        <value>Approximate target percentage in the total returned records.</value>
     </data>
     <data name="DSBadTargetPercentage" xml:space="preserve">
         <value>Target percentage should be in the range of 0 to 100 inclusively.</value>
     </data>
-    <data name="DSTarget" xml:space="preserve">
-        <value>Indicates the desired target entry requested by the client.</value>
-    </data>
-    <data name="DSApproximateTotal" xml:space="preserve">
-        <value>The input value represents the client's estimated value for the content count. The output value is the server estimate of the content count.</value>
-    </data>
     <data name="DSBadApproximateTotal" xml:space="preserve">
         <value>ApproximateTotal must be greater or equal to 0.</value>
-    </data>
-    <data name="DSDirectoryVirtualListViewContext" xml:space="preserve">
-        <value>Indicates the server-generated context identifier.</value>
-    </data>
-    <data name="DSVirtualListView" xml:space="preserve">
-        <value>Specifies that the search should use the LDAP virtual list view (VLV) control.</value>
     </data>
     <data name="DSBadPageSizeDirsync" xml:space="preserve">
         <value>DirectorySynchronization cannot be combined with PageSize.</value>
@@ -255,23 +157,14 @@
     <data name="DSBadCacheResultsVLV" xml:space="preserve">
         <value>VirtualListView cannot be combined with CacheResults.</value>
     </data>
-    <data name="DSBadDirectorySynchronizationFlag" xml:space="preserve">
-        <value>DirectorySynchronization flag must be the value defined in the DirectorySynchronizationFlag class.</value>
-    </data>
     <data name="DSBadASQSearchScope" xml:space="preserve">
         <value>When AttributeScopeQuery is specified, only SearchScope.Base is supported.</value>
-    </data>
-    <data name="DSDoesNotImplementIADsObjectOptions" xml:space="preserve">
-        <value>This DirectoryEntry object does not support the Options property.</value>
     </data>
     <data name="DSPropertyValueSupportOneOperation" xml:space="preserve">
         <value>Only one type of operation can be performed in a sequence.</value>
     </data>
     <data name="ConfigSectionsUnique" xml:space="preserve">
         <value>The '{0}' section can only appear once in a configuration file.</value>
-    </data>
-    <data name="Invalid_boolean_attribute" xml:space="preserve">
-        <value>The '{0}' attribute must be set to 'true' or 'false'.</value>
     </data>
     <data name="DSUnknownFailure" xml:space="preserve">
         <value>An unknown error occurred.</value>
@@ -302,9 +195,6 @@
     </data>
     <data name="DSNotFound" xml:space="preserve">
         <value>The Specified directory object cannot be found.</value>
-    </data>
-    <data name="InvalidContextTarget" xml:space="preserve">
-        <value>The target of the directory context is invalid.</value>
     </data>
     <data name="TransportNotFound" xml:space="preserve">
         <value>The transport "{0}" cannot be found.</value>
@@ -453,17 +343,11 @@
     <data name="PropertyNotFound" xml:space="preserve">
         <value>Property "{0}" not found.</value>
     </data>
-    <data name="PropertyNotSet" xml:space="preserve">
-        <value>Property "{0}" not set.</value>
-    </data>
     <data name="ADAMInstanceNotFound" xml:space="preserve">
         <value>An ADAM instance could not be found.</value>
     </data>
     <data name="CannotPerformOperationOnUncommittedObject" xml:space="preserve">
         <value>Operation valid only for objects that exist on the backend store.</value>
-    </data>
-    <data name="LinkIdNotEvenNumber" xml:space="preserve">
-        <value>Forward linkID must be an even number.</value>
     </data>
     <data name="InvalidServerNameFormat" xml:space="preserve">
         <value>The server object name has an invalid format.</value>
@@ -473,9 +357,6 @@
     </data>
     <data name="InvalidDNFormat" xml:space="preserve">
         <value>The specified distinguished name has an invalid format.</value>
-    </data>
-    <data name="InvalidDnsName" xml:space="preserve">
-        <value>The specified DNS name has an invalid format.</value>
     </data>
     <data name="ApplicationPartitionTypeUnknown" xml:space="preserve">
         <value>Application partition is neither an Active Directory, nor ADAM application partition.</value>
@@ -503,9 +384,6 @@
     </data>
     <data name="CannotPerformOnGCObject" xml:space="preserve">
         <value>Cannot perform this operation on a global catalog object.</value>
-    </data>
-    <data name="CannotPerformOnGC" xml:space="preserve">
-        <value>Cannot perform this operation on the GlobalCatalog class.</value>
     </data>
     <data name="ValueCannotBeModified" xml:space="preserve">
         <value>The specified value cannot be removed or overwritten. It is inherited from a super class.</value>
@@ -539,9 +417,6 @@
     </data>
     <data name="NoHostNameOrPortNumber" xml:space="preserve">
         <value>Unable to obtain DNS hostname or port number of ADAM instance with ntdsa object name "{0}".</value>
-    </data>
-    <data name="NTAuthority" xml:space="preserve">
-        <value>NT AUTHORITY</value>
     </data>
     <data name="Name" xml:space="preserve">
         <value>Name: "{0}"</value>
@@ -627,134 +502,8 @@
     <data name="TrustVerificationNotSupport" xml:space="preserve">
         <value>Trust verification not supported.</value>
     </data>
-    <data name="DSChildren" xml:space="preserve">
-        <value>The child entries of this node.</value>
-    </data>
-    <data name="DSGuid" xml:space="preserve">
-        <value>The globally unique identifier of this entry.</value>
-    </data>
-    <data name="DSName" xml:space="preserve">
-        <value>The name of the object as named with the service.</value>
-    </data>
-    <data name="DSNativeObject" xml:space="preserve">
-        <value>The native ADSI object.</value>
-    </data>
-    <data name="DSParent" xml:space="preserve">
-        <value>The parent entry of this node.</value>
-    </data>
-    <data name="DSPassword" xml:space="preserve">
-        <value>The password to use when authenticating the client.</value>
-    </data>
-    <data name="DSPath" xml:space="preserve">
-        <value>The path of this DirectoryEntry.</value>
-    </data>
-    <data name="DSProperties" xml:space="preserve">
-        <value>Indicates the properties of this entry.</value>
-    </data>
-    <data name="DSSchemaClassName" xml:space="preserve">
-        <value>The name of the schema for this entry.</value>
-    </data>
-    <data name="DSSchemaEntry" xml:space="preserve">
-        <value>The DirectoryEntry that holds this entry schema.</value>
-    </data>
-    <data name="DSUsePropertyCache" xml:space="preserve">
-        <value>Specifies whether to use the ADSI property cache.</value>
-    </data>
-    <data name="DSUsername" xml:space="preserve">
-        <value>The username to use when authenticating the client.</value>
-    </data>
-    <data name="DSAuthenticationType" xml:space="preserve">
-        <value>Specifies authentication options used in ADSI for binding to directory service objects.</value>
-    </data>
-    <data name="DSNativeGuid" xml:space="preserve">
-        <value>The GUID text returned by the provider for this directory entry.</value>
-    </data>
-    <data name="DSCacheResults" xml:space="preserve">
-        <value>Indicates whether the result should be cached on the client computer.</value>
-    </data>
-    <data name="DSClientTimeout" xml:space="preserve">
-        <value>The maximum time that the client waits for the server to return results.</value>
-    </data>
-    <data name="DSPropertyNamesOnly" xml:space="preserve">
-        <value>Indicates whether the search should retrieve only the names of requested properties or their names and values.</value>
-    </data>
-    <data name="DSFilter" xml:space="preserve">
-        <value>Specifies the search criteria for this search.</value>
-    </data>
-    <data name="DSPageSize" xml:space="preserve">
-        <value>Sets the page size in a paged search.</value>
-    </data>
-    <data name="DSPropertiesToLoad" xml:space="preserve">
-        <value>The set of properties retrieved during the search.</value>
-    </data>
-    <data name="DSReferralChasing" xml:space="preserve">
-        <value>Specifies how referrals are chased.</value>
-    </data>
-    <data name="DSSearchScope" xml:space="preserve">
-        <value>The scope of the search that should be observed by the server.</value>
-    </data>
-    <data name="DSServerPageTimeLimit" xml:space="preserve">
-        <value>The maximum amount of time that the server should observe for page results (as opposed to the time limit for the entire search).</value>
-    </data>
-    <data name="DSServerTimeLimit" xml:space="preserve">
-        <value>The maximum amount of time that the server should spend searching.</value>
-    </data>
-    <data name="DSSizeLimit" xml:space="preserve">
-        <value>The maximum number of objects that the server should return in a search.</value>
-    </data>
-    <data name="DSSearchRoot" xml:space="preserve">
-        <value>The node in the Active Directory hierarchy at which the search will start.</value>
-    </data>
-    <data name="DSSort" xml:space="preserve">
-        <value>The property on which the results should be sorted.</value>
-    </data>
-    <data name="DSSortName" xml:space="preserve">
-        <value>The property name on which the results should be sorted.</value>
-    </data>
-    <data name="DSSortDirection" xml:space="preserve">
-        <value>The direction in which the results should be sorted.</value>
-    </data>
-    <data name="DSAsynchronous" xml:space="preserve">
-        <value>Indicates if searches should be performed asynchronously.</value>
-    </data>
-    <data name="DSTombstone" xml:space="preserve">
-        <value>Indicates if the search should also return deleted objects that match the search filter.</value>
-    </data>
-    <data name="DSAttributeQuery" xml:space="preserve">
-        <value>Specifies that an attribute-scoped query search should be performed.</value>
-    </data>
-    <data name="DSDerefAlias" xml:space="preserve">
-        <value>Specifies that aliases of found objects are to be resolved.</value>
-    </data>
-    <data name="DSSecurityMasks" xml:space="preserve">
-        <value>Specifies that the search should return security access data for the specified attributes.</value>
-    </data>
-    <data name="DSExtendedDn" xml:space="preserve">
-        <value>Request an extended form of an Active Directory object distinguished name.</value>
-    </data>
-    <data name="DSDirectorySynchronizationFlag" xml:space="preserve">
-        <value>The flag that directory synchronization search will use.</value>
-    </data>
-    <data name="DSDirectorySynchronizationCookie" xml:space="preserve">
-        <value>The cookie returned from directory synchronization search.</value>
-    </data>
-    <data name="DSDirectorySynchronization" xml:space="preserve">
-        <value>Specifies a directory synchronization search, which returns all changes since a specified state.</value>
-    </data>
     <data name="DSUnknown" xml:space="preserve">
         <value>Unknown error (0x{0})</value>
-    </data>
-    <data name="DSOptions" xml:space="preserve">
-        <value>Gets and Sets the options of this entry.</value>
-    </data>
-    <data name="DSObjectSecurity" xml:space="preserve">
-        <value>The access control data for this directory entry. </value>
-    </data>
-    <data name="DirectoryEntryDesc" xml:space="preserve">
-        <value>Encapsulates a node or object in an Active Directory hierarchy.</value>
-    </data>
-    <data name="DirectorySearcherDesc" xml:space="preserve">
-        <value>Performs queries against Active Directory.</value>
     </data>
     <data name="OnlyAllowSingleDimension" xml:space="preserve">
         <value>Only single dimensional arrays are supported for the requested action.</value>

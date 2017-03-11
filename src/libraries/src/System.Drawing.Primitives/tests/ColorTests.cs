@@ -188,7 +188,7 @@ namespace System.Drawing.Primitives.Tests
         [InlineData(1, 2, 3, 4)]
         public void FromArgb_Roundtrips(int a, int r, int g, int b)
         {
-            Color c1 = Color.FromArgb((int)unchecked((uint)a << 24 | (uint)r << 16 | (uint)g << 8 | (uint)b));
+            Color c1 = Color.FromArgb(unchecked((int)((uint)a << 24 | (uint)r << 16 | (uint)g << 8 | (uint)b)));
             Assert.Equal(a, c1.A);
             Assert.Equal(r, c1.R);
             Assert.Equal(g, c1.G);

@@ -63,12 +63,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 // Should only be set once!
                 _Params = value;
-                _optionalParameterIndex = new bool[_Params.size];
-                _defaultParameterIndex = new bool[_Params.size];
-                _defaultParameters = new CONSTVAL[_Params.size];
-                _defaultParameterConstValTypes = new CType[_Params.size];
-                _marshalAsIndex = new bool[_Params.size];
-                _marshalAsBuffer = new UnmanagedType[_Params.size];
+                _optionalParameterIndex = new bool[_Params.Count];
+                _defaultParameterIndex = new bool[_Params.Count];
+                _defaultParameters = new CONSTVAL[_Params.Count];
+                _defaultParameterConstValTypes = new CType[_Params.Count];
+                _marshalAsIndex = new bool[_Params.Count];
+                _marshalAsBuffer = new UnmanagedType[_Params.Count];
             }
         }             // array of cParams parameter types.
         public AggregateDeclaration declaration;       // containing declaration
@@ -82,7 +82,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public bool IsParameterOptional(int index)
         {
-            Debug.Assert(index < Params.size);
+            Debug.Assert(index < Params.Count);
 
             if (_optionalParameterIndex == null)
             {
@@ -115,7 +115,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public bool HasDefaultParameterValue(int index)
         {
-            Debug.Assert(index < Params.size);
+            Debug.Assert(index < Params.Count);
             Debug.Assert(_defaultParameterIndex != null);
             return _defaultParameterIndex[index];
         }

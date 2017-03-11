@@ -65,13 +65,13 @@ namespace System.Collections.ObjectModel.Tests
             helper = new ReadOnlyCollectionAndPropertyChangedTester();
             helper.RemoveItemTest(readonlyCol, col, 1, "three", true, hasDuplicates: true);
             // want to ensure that there is one "three" left in collection and not both were removed.
-            int occurancesThree = 0;
+            int occurrencesThree = 0;
             foreach (var item in col)
             {
                 if (item.Equals("three"))
-                    occurancesThree++;
+                    occurrencesThree++;
             }
-            Assert.Equal(1, occurancesThree);
+            Assert.Equal(1, occurrencesThree);
         }
 
         /// <summary>

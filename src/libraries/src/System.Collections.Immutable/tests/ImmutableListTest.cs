@@ -780,6 +780,7 @@ namespace System.Collections.Immutable.Tests
             DebuggerAttributes.ValidateDebuggerDisplayReferences(rootNode);
         }
 
+#if netcoreapp
         [Fact]
         public void UsableWithCollectibleAssemblies()
         {
@@ -798,6 +799,7 @@ namespace System.Collections.Immutable.Tests
 
             list.GetEnumerator(); // ensure this doesn't throw
         }
+#endif // netcoreapp
 
         protected override IEnumerable<T> GetEnumerableOf<T>(params T[] contents)
         {

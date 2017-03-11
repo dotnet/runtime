@@ -453,9 +453,9 @@ namespace System
             /// <returns>The 16-bit value read.</returns>
             private static short ReadInt16(byte[] buffer, int pos)
             {
-                return (short)
+                return unchecked((short)
                     ((((int)buffer[pos + 1]) << 8) |
-                     ((int)buffer[pos] & 0xff));
+                     ((int)buffer[pos] & 0xff)));
             }
 
             /// <summary>Reads a string from the buffer starting at the specified position.</summary>

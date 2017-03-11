@@ -53,6 +53,33 @@ check_type_size(
 set(CMAKE_EXTRA_INCLUDE_FILES) # reset CMAKE_EXTRA_INCLUDE_FILES
 # /in_pktinfo
 
+check_c_source_compiles(
+    "
+    #include <fcntl.h>
+    int main()
+    {
+        struct flock64 l;
+        return 0;
+    }
+    "
+    HAVE_FLOCK64)
+
+check_function_exists(
+    lseek64
+    HAVE_LSEEK64)
+
+check_function_exists(
+    mmap64
+    HAVE_MMAP64)
+
+check_function_exists(
+    ftruncate64
+    HAVE_FTRUNCATE64)
+
+check_function_Exists(
+    posix_fadvise64
+    HAVE_POSIX_FADVISE64)
+
 check_function_exists(
     stat64
     HAVE_STAT64)
@@ -292,7 +319,10 @@ set(HAVE_SUPPORT_FOR_DUAL_MODE_IPV4_PACKET_INFO 0)
 set(HAVE_THREAD_SAFE_GETHOSTBYNAME_AND_GETHOSTBYADDR 0)
 
 if (CMAKE_SYSTEM_NAME STREQUAL Linux)
-    set(CMAKE_REQUIRED_LIBRARIES rt)
+    if (NOT CLR_CMAKE_PLATFORM_ANDROID)
+        set(CMAKE_REQUIRED_LIBRARIES rt)
+    endif ()
+
     set(HAVE_SUPPORT_FOR_DUAL_MODE_IPV4_PACKET_INFO 1)
 
     if (CLR_CMAKE_PLATFORM_ANDROID)
@@ -467,16 +497,28 @@ check_cxx_source_compiles(
     HAVE_TCP_VAR_H
 )
 
+check_include_files(
+    sys/cdefs.h
+    HAVE_SYS_CDEFS_H)
+
+if (HAVE_SYS_CDEFS_H)
+    set(CMAKE_REQUIRED_DEFINITIONS "-DHAVE_SYS_CDEFS_H")
+endif()
+
 # If sys/cdefs is not included on Android, this check will fail because
 # __BEGIN_DECLS is not defined
 check_cxx_source_compiles(
     "
+#ifdef HAVE_SYS_CDEFS_H
     #include <sys/cdefs.h>
+#endif
     #include <netinet/tcp.h>
     int main() { int x = TCP_ESTABLISHED; return x; }
     "
     HAVE_TCP_H_TCPSTATE_ENUM
 )
+
+set(CMAKE_REQUIRED_DEFINITIONS)
 
 check_symbol_exists(
     TCPS_ESTABLISHED

@@ -18,28 +18,11 @@ namespace Microsoft.CSharp.RuntimeBinder
     {
         #region Singleton Implementation
 
-        // The double checking lock, static lock initializer, and volatile instance
-        // field are all here to make the singleton thread-safe. Please see Richter,
-        // "CLR via C#" Ch. 24 for more information. This implementation was chosen
-        // because construction of the RuntimeBinder is expensive.
-
-        private static readonly object s_singletonLock = new object();
-        private static volatile RuntimeBinder s_instance;
+        private static readonly Lazy<RuntimeBinder> s_lazyInstance = new Lazy<RuntimeBinder>(() => new RuntimeBinder());
 
         public static RuntimeBinder GetInstance()
         {
-            if (s_instance == null)
-            {
-                lock (s_singletonLock)
-                {
-                    if (s_instance == null)
-                    {
-                        s_instance = new RuntimeBinder();
-                    }
-                }
-            }
-
-            return s_instance;
+            return s_lazyInstance.Value;
         }
 
         #endregion
@@ -269,7 +252,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             if (payload is CSharpInvokeMemberBinder)
             {
                 ICSharpInvokeOrInvokeMemberBinder callPayload = payload as ICSharpInvokeOrInvokeMemberBinder;
-                int arity = callPayload.TypeArguments != null ? callPayload.TypeArguments.Count : 0;
+                int arity = callPayload.TypeArguments?.Count ?? 0;
                 MemberLookup mem = new MemberLookup();
                 EXPR callingObject = CreateCallingObjectForCall(callPayload, arguments, dictionary);
 
@@ -532,12 +515,12 @@ namespace Microsoft.CSharp.RuntimeBinder
 
                 if (callOrInvoke.StaticCall)
                 {
-                    if (arguments[0].Value == null || !(arguments[0].Value is Type))
+                    type = arguments[0].Value as Type;
+                    if (type == null)
                     {
                         Debug.Assert(false, "Cannot make static call without specifying a type");
                         throw Error.InternalCompilerError();
                     }
-                    type = arguments[0].Value as Type;
                 }
                 else
                 {
@@ -994,9 +977,9 @@ namespace Microsoft.CSharp.RuntimeBinder
             {
                 TypeArray collectioniFaces = callingType.GetWinRTCollectionIfacesAll(SymbolLoader);
 
-                for (int i = 0; i < collectioniFaces.size; i++)
+                for (int i = 0; i < collectioniFaces.Count; i++)
                 {
-                    CType t = collectioniFaces.Item(i);
+                    CType t = collectioniFaces[i];
                     // Collection interfaces will be aggregates.
                     Debug.Assert(t.IsAggregateType());
 
@@ -1129,13 +1112,14 @@ namespace Microsoft.CSharp.RuntimeBinder
             EXPR callingObject;
             if (payload.StaticCall)
             {
-                if (arguments[0].Value == null || !(arguments[0].Value is Type))
+                Type t = arguments[0].Value as Type;
+                if (t == null)
                 {
                     Debug.Assert(false, "Cannot make static call without specifying a type");
                     throw Error.InternalCompilerError();
                 }
-                Type t = arguments[0].Value as Type;
-                callingObject = _exprFactory.CreateClass(_symbolTable.GetCTypeFromType(t), null, t.GetTypeInfo().ContainsGenericParameters ?
+
+                callingObject = _exprFactory.CreateClass(_symbolTable.GetCTypeFromType(t), null, t.ContainsGenericParameters ?
                         _exprFactory.CreateTypeArguments(SymbolLoader.getBSymmgr().AllocParams(_symbolTable.GetCTypeArrayFromTypes(t.GetGenericArguments())), null) : null);
             }
             else
@@ -1150,7 +1134,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                     CreateArgumentEXPR(arguments[0], dictionary[0]),
                     _symbolTable.GetCTypeFromType(arguments[0].Type));
 
-                if (arguments[0].Type.GetTypeInfo().IsValueType && callingObject.isCAST())
+                if (arguments[0].Type.IsValueType && callingObject.isCAST())
                 {
                     // If we have a struct type, unbox it.
                     callingObject.flags |= EXPRFLAG.EXF_UNBOXRUNTIME;
@@ -1173,7 +1157,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             }
 
             EXPR pResult = null;
-            int arity = payload.TypeArguments != null ? payload.TypeArguments.Count : 0;
+            int arity = payload.TypeArguments?.Count ?? 0;
             MemberLookup mem = new MemberLookup();
 
             Debug.Assert(_bindingContext.ContextForMemberLookup() != null);
@@ -1266,8 +1250,8 @@ namespace Microsoft.CSharp.RuntimeBinder
 
             // Check if we have a potential call to an indexed property accessor.
             // If so, we'll flag overload resolution to let us call non-callables.
-            if ((payload.Name.StartsWith("set_", StringComparison.Ordinal) && swt.Sym.AsMethodSymbol().Params.Size > 1) ||
-                (payload.Name.StartsWith("get_", StringComparison.Ordinal) && swt.Sym.AsMethodSymbol().Params.Size > 0))
+            if ((payload.Name.StartsWith("set_", StringComparison.Ordinal) && swt.Sym.AsMethodSymbol().Params.Count > 1) ||
+                (payload.Name.StartsWith("get_", StringComparison.Ordinal) && swt.Sym.AsMethodSymbol().Params.Count > 0))
             {
                 memGroup.flags &= ~EXPRFLAG.EXF_USERCALLABLE;
             }
@@ -1761,7 +1745,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             }
 
             // If our argument is a struct type, unbox it.
-            if (argument.Type.GetTypeInfo().IsValueType && callingObject.isCAST())
+            if (argument.Type.IsValueType && callingObject.isCAST())
             {
                 // If we have a struct type, unbox it.
                 callingObject.flags |= EXPRFLAG.EXF_UNBOXRUNTIME;

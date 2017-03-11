@@ -138,7 +138,7 @@ namespace System.Diagnostics.Tracing
         }
 
         //
-        // implement Dispose Pattern to early deregister from ETW insted of waiting for 
+        // implement Dispose Pattern to early deregister from ETW instead of waiting for 
         // the finalizer to call deregistration.
         // Once the user is done with the provider it needs to call Close() or Dispose()
         // If neither are called the finalizer will unregister the provider anyway
@@ -471,7 +471,7 @@ namespace System.Diagnostics.Tracing
 
             // Determine our session from what is in the registry.  
             string regKey = @"\Microsoft\Windows\CurrentVersion\Winevt\Publishers\{" + m_providerId + "}";
-            if (System.Runtime.InteropServices.Marshal.SizeOf(typeof(IntPtr)) == 8)
+            if (sizeof(IntPtr) == 8)
                 regKey = @"Software" + @"\Wow6432Node" + regKey;
             else
                 regKey = @"Software" + regKey;
@@ -547,7 +547,7 @@ namespace System.Diagnostics.Tracing
             {
 #if (!ES_BUILD_PCL && !PROJECTN && !FEATURE_PAL)
                 string regKey = @"\Microsoft\Windows\CurrentVersion\Winevt\Publishers\{" + m_providerId + "}";
-                if (System.Runtime.InteropServices.Marshal.SizeOf(typeof(IntPtr)) == 8)
+                if (sizeof(IntPtr) == 8)
                     regKey = @"HKEY_LOCAL_MACHINE\Software" + @"\Wow6432Node" + regKey;
                 else
                     regKey = @"HKEY_LOCAL_MACHINE\Software" + regKey;

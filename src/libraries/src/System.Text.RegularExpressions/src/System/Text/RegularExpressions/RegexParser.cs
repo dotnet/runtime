@@ -910,7 +910,9 @@ namespace System.Text.RegularExpressions
                         MoveLeft();
 
                         NodeType = RegexNode.Group;
-                        ScanOptions();
+                        // Disallow options in the children of a testgroup node
+                        if (_group._type != RegexNode.Testgroup)
+                            ScanOptions();
                         if (CharsRight() == 0)
                             goto BreakRecognize;
 
@@ -1335,7 +1337,7 @@ namespace System.Text.RegularExpressions
             if (c > CharsRight())
                 c = CharsRight();
 
-            for (i = 0; c > 0 && (uint)(d = RightChar() - '0') <= 7; c -= 1)
+            for (i = 0; c > 0 && unchecked((uint)(d = RightChar() - '0')) <= 7; c -= 1)
             {
                 MoveRight();
                 i *= 8;
@@ -1359,7 +1361,7 @@ namespace System.Text.RegularExpressions
             int i = 0;
             int d;
 
-            while (CharsRight() > 0 && (uint)(d = (char)(RightChar() - '0')) <= 9)
+            while (CharsRight() > 0 && unchecked((uint)(d = (char)(RightChar() - '0'))) <= 9)
             {
                 MoveRight();
 
@@ -1408,7 +1410,7 @@ namespace System.Text.RegularExpressions
             if ((uint)(d = ch - '0') <= 9)
                 return d;
 
-            if ((uint)(d = ch - 'a') <= 5)
+            if (unchecked((uint)(d = ch - 'a')) <= 5)
                 return d + 0xa;
 
             if ((uint)(d = ch - 'A') <= 5)
@@ -1434,7 +1436,7 @@ namespace System.Text.RegularExpressions
             if (ch >= 'a' && ch <= 'z')
                 ch = (char)(ch - ('a' - 'A'));
 
-            if ((ch = (char)(ch - '@')) < ' ')
+            if (unchecked(ch = (char)(ch - '@')) < ' ')
                 return ch;
 
             throw MakeException(SR.UnrecognizedControl);
