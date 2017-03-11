@@ -284,7 +284,8 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.True(v1.CheckSignature());
         }
 
-        [Fact(Skip = "https://github.com/dotnet/corefx/issues/16691")]
+        [Fact]
+        [ActiveIssue(17001, TestPlatforms.OSX)]
         public void AsymmetricDSASignature()
         {
             SignedXml signedXml = MSDNSample();
@@ -308,7 +309,7 @@ namespace System.Security.Cryptography.Xml.Tests
 
             Assert.Null(signedXml.SignatureLength);
             Assert.Equal(SignedXml.XmlDsigDSAUrl, signedXml.SignatureMethod);
-            Assert.Equal(40, signedXml.SignatureValue.Length);
+            Assert.InRange(signedXml.SignatureValue.Length, low: 40, high: Int32.MaxValue);
             Assert.Null(signedXml.SigningKeyName);
 
             // Get the XML representation of the signature.
