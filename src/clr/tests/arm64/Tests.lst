@@ -9,7 +9,7 @@ RelativePath=baseservices\compilerservices\dynamicobjectproperties\Dev10_535767\
 WorkingDir=baseservices\compilerservices\dynamicobjectproperties\Dev10_535767
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri1;RT;EXPECTED_PASS;UNWIND
+Categories=Pri1;RT;EXPECTED_PASS;UNWIND;10070;GCSTRESS_FAIL
 HostStyle=0
 
 [test448035.cmd_1]
@@ -3145,7 +3145,7 @@ RelativePath=baseservices\threading\mutex\misc\waitone1\waitone1.cmd
 WorkingDir=baseservices\threading\mutex\misc\waitone1
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;GCSTRESS_FAIL
 HostStyle=0
 
 [waitone2.cmd_393]
@@ -11361,7 +11361,7 @@ RelativePath=CoreMangLib\cti\system\gc\GCCollect\GCCollect.cmd
 WorkingDir=CoreMangLib\cti\system\gc\GCCollect
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri1;RT;EXPECTED_PASS
+Categories=Pri1;RT;EXPECTED_PASS;GCSTRESS_FAIL;10070
 HostStyle=0
 
 [GCGetTotalMemory.cmd_1420]
@@ -79457,7 +79457,7 @@ RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest978\Generate
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest978\Generated978
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;NEW
+Categories=EXPECTED_PASS;NEW;9457;R2R_FAIL
 HostStyle=0
 
 [Generated179.cmd_10054]
@@ -80689,7 +80689,7 @@ RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest612\Generate
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest612\Generated612
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;NEW
+Categories=EXPECTED_PASS;NEW;R2R_FAIL;9457
 HostStyle=0
 
 [Generated103.cmd_10208]
@@ -80777,7 +80777,7 @@ RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest681\Generate
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest681\Generated681
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;NEW
+Categories=EXPECTED_PASS;NEW;R2R_FAIL;9457
 HostStyle=0
 
 [Generated754.cmd_10219]
@@ -82649,7 +82649,7 @@ RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1212\Generat
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1212\Generated1212
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;NEW
+Categories=EXPECTED_PASS;NEW;R2R_FAIL;9457
 HostStyle=0
 
 [Generated660.cmd_10453]
@@ -84057,7 +84057,7 @@ RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest682\Generate
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest682\Generated682
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;NEW
+Categories=EXPECTED_PASS;NEW;R2R_FAIL;9457
 HostStyle=0
 
 [Generated614.cmd_10629]
@@ -84065,7 +84065,7 @@ RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest614\Generate
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest614\Generated614
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;NEW
+Categories=EXPECTED_PASS;NEW;R2R_FAIL;9457
 HostStyle=0
 
 [Generated1046.cmd_10630]
@@ -86441,7 +86441,7 @@ RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1239\Generat
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1239\Generated1239
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;NEW
+Categories=EXPECTED_PASS;NEW;R2R_FAIL;9457
 HostStyle=0
 
 [Generated374.cmd_10927]
@@ -88097,7 +88097,7 @@ RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest683\Generate
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest683\Generated683
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;NEW
+Categories=EXPECTED_PASS;NEW;R2R_FAIL;9457
 HostStyle=0
 
 [Generated449.cmd_11134]
@@ -88697,7 +88697,7 @@ RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1211\Generat
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1211\Generated1211
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;NEW
+Categories=EXPECTED_PASS;NEW;R2R_FAIL;9457
 HostStyle=0
 
 [Generated577.cmd_11209]
@@ -90353,7 +90353,7 @@ RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest613\Generate
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest613\Generated613
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;NEW
+Categories=EXPECTED_PASS;NEW;R2R_FAIL;9457
 HostStyle=0
 
 [Generated602.cmd_11416]
@@ -90857,7 +90857,7 @@ RelativePath=JIT\Directed\pinvoke\preemptive_cooperative\preemptive_cooperative.
 WorkingDir=JIT\Directed\pinvoke\preemptive_cooperative
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;NEW
+Categories=EXPECTED_PASS;NEW;R2R_FAIL;10069
 HostStyle=0
 
 [Generated1089.cmd_11479]
