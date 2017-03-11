@@ -641,7 +641,7 @@ namespace System.Data.Odbc
             //
             //  Would fail, unless we cache on the IsDBNull call, and return the cached
             //  item for GetInt32.  This actually improves perf anyway, (even if the driver could
-            //  support it), since we are not making a seperate interop call...
+            //  support it), since we are not making a separate interop call...
 
             // Bug SQLBUVSTS01:110664 - available cases:
             // 1. random access - always cache the value (as before the fix), to minimize regression risk 

@@ -352,7 +352,7 @@ namespace System.Security.Cryptography.Xml
                 if (key == null)
                     throw new CryptographicException(SR.Cryptography_Xml_MissingDecryptionKey);
 
-                SymmetricAlgorithm symAlg = (SymmetricAlgorithm)CryptoConfig.CreateFromName(symmetricAlgorithmUri);
+                SymmetricAlgorithm symAlg = (SymmetricAlgorithm)CryptoHelpers.CreateFromName(symmetricAlgorithmUri);
                 symAlg.Key = key;
                 return symAlg;
             }
@@ -447,7 +447,7 @@ namespace System.Security.Cryptography.Xml
                     if (encryptionKey != null)
                     {
                         // this is a symmetric algorithm for sure
-                        SymmetricAlgorithm symAlg = (SymmetricAlgorithm)CryptoConfig.CreateFromName(encryptedKey.EncryptionMethod.KeyAlgorithm);
+                        SymmetricAlgorithm symAlg = (SymmetricAlgorithm)CryptoHelpers.CreateFromName(encryptedKey.EncryptionMethod.KeyAlgorithm);
                         symAlg.Key = encryptionKey;
                         return EncryptedXml.DecryptKey(encryptedKey.CipherData.CipherValue, symAlg);
                     }

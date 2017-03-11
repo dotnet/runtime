@@ -385,7 +385,7 @@ namespace System.Data.Tests
             Assert.Equal(3, T.Select("id < '10'").Length);
             // FIXME: Somebody explain how this can be possible.
             // it seems that it is no matter between 10 - 30. The
-            // result is allways 25 :-P
+            // result is always 25 :-P
             //Assert.Equal (25, T.Select ("id < 10").Length);
 
         }

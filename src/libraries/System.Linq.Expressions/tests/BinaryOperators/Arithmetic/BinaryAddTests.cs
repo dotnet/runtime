@@ -201,7 +201,7 @@ namespace System.Linq.Expressions.Tests
 
             Func<ushort> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ushort)(a + b), f());
+            Assert.Equal(unchecked((ushort)(a + b)), f());
         }
 
         private static void VerifyUShortAddOvf(ushort a, ushort b, bool useInterpreter)
@@ -234,7 +234,7 @@ namespace System.Linq.Expressions.Tests
 
             Func<short> f = e.Compile(useInterpreter);
 
-            Assert.Equal((short)(a + b), f());
+            Assert.Equal(unchecked((short)(a + b)), f());
         }
 
         private static void VerifyShortAddOvf(short a, short b, bool useInterpreter)
@@ -266,7 +266,7 @@ namespace System.Linq.Expressions.Tests
 
             Func<uint> f = e.Compile(useInterpreter);
 
-            Assert.Equal(a + b, f());
+            Assert.Equal(unchecked(a + b), f());
         }
 
         private static void VerifyUIntAddOvf(uint a, uint b, bool useInterpreter)
@@ -298,7 +298,7 @@ namespace System.Linq.Expressions.Tests
 
             Func<int> f = e.Compile(useInterpreter);
 
-            Assert.Equal(a + b, f());
+            Assert.Equal(unchecked(a + b), f());
         }
 
         private static void VerifyIntAddOvf(int a, int b, bool useInterpreter)
@@ -330,7 +330,7 @@ namespace System.Linq.Expressions.Tests
 
             Func<ulong> f = e.Compile(useInterpreter);
 
-            Assert.Equal(a + b, f());
+            Assert.Equal(unchecked(a + b), f());
         }
 
         private static void VerifyULongAddOvf(ulong a, ulong b, bool useInterpreter)
@@ -369,7 +369,7 @@ namespace System.Linq.Expressions.Tests
 
             Func<long> f = e.Compile(useInterpreter);
 
-            Assert.Equal(a + b, f());
+            Assert.Equal(unchecked(a + b), f());
         }
 
         private static void VerifyLongAddOvf(long a, long b, bool useInterpreter)

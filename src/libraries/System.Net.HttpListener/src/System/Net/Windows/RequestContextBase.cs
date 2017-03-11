@@ -26,7 +26,7 @@ namespace System.Net
         }
 
         // ReleasePins() should be called exactly once.  It must be called before Dispose() is called, which means it must be called
-        // before an object (HttpListenerReqeust) which closes the RequestContext on demand is returned to the application.
+        // before an object (HttpListenerRequest) which closes the RequestContext on demand is returned to the application.
         internal void ReleasePins()
         {
             Debug.Assert(_memoryBlob != null || _backingBuffer == null, "RequestContextBase::ReleasePins()|ReleasePins() called twice.");

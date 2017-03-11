@@ -1709,7 +1709,7 @@ namespace System.Xml.Tests
             }
 
             if (IsXPathDataModelReader())
-                // allways sees default attributes
+                // always sees default attributes
                 return CompareReader("<Root a=\"b\" FIRST=\"KEVIN\" LAST=\"WHITE\" />") ? TEST_PASS : TEST_FAIL;
             else
                 return CompareReader("<Root a=\"b\" />") ? TEST_PASS : TEST_FAIL;
@@ -3519,7 +3519,7 @@ namespace System.Xml.Tests
                 return CompareReader("<x:Root x:attr=\"b\" xmlns:x=\"foo\" />") ? TEST_PASS : TEST_FAIL;
             }
 
-            //[Variation(id = 13, Desc = "Try to re-define NS prefix on attribute which is aleady defined on an element", Pri = 2)]
+            //[Variation(id = 13, Desc = "Try to re-define NS prefix on attribute which is already defined on an element", Pri = 2)]
             public int elemNamespace_13()
             {
                 using (XmlWriter w = CreateWriter())
@@ -5915,7 +5915,7 @@ namespace System.Xml.Tests
                 return CompareReader("<Root a1=\"x&#xA;y\" />") ? TEST_PASS : TEST_FAIL;
             }
 
-            //[Variation(id = 13, Desc = "Surrogate charaters in text nodes, range limits", Pri = 1)]
+            //[Variation(id = 13, Desc = "Surrogate characters in text nodes, range limits", Pri = 1)]
             public int writeString_13()
             {
                 char[] invalidXML = { '\uD800', '\uDC00', '\uD800', '\uDFFF', '\uDBFF', '\uDC00', '\uDBFF', '\uDFFF' };
@@ -6132,7 +6132,7 @@ namespace System.Xml.Tests
                 return (CompareReader("<Root attr=\"2true3.14\" />")) ? TEST_PASS : TEST_FAIL;
             }
 
-            //[Variation(Desc = "Write multiple atomic values inside element, seperate by WriteWhitespace(' ')", Pri = 1)]
+            //[Variation(Desc = "Write multiple atomic values inside element, separate by WriteWhitespace(' ')", Pri = 1)]
             public int writeValue_3()
             {
                 using (XmlWriter w = CreateWriter())
@@ -6149,7 +6149,7 @@ namespace System.Xml.Tests
                 return (CompareReader("<Root>2 true 3.14 </Root>")) ? TEST_PASS : TEST_FAIL;
             }
 
-            //[Variation(Desc = "Write multiple atomic values inside element, seperate by WriteString(' ')", Pri = 1)]
+            //[Variation(Desc = "Write multiple atomic values inside element, separate by WriteString(' ')", Pri = 1)]
             public int writeValue_4()
             {
                 using (XmlWriter w = CreateWriter())
@@ -6192,7 +6192,7 @@ namespace System.Xml.Tests
                 return (CompareReader("<Root attr=\"2 true 3.14 \" />")) ? TEST_PASS : TEST_FAIL;
             }
 
-            //[Variation(Desc = "Write multiple atomic values inside attribute, seperate by WriteString(' ')", Pri = 1)]
+            //[Variation(Desc = "Write multiple atomic values inside attribute, separate by WriteString(' ')", Pri = 1)]
             public int writeValue_6()
             {
                 using (XmlWriter w = CreateWriter())
@@ -7642,7 +7642,7 @@ namespace System.Xml.Tests
                     return TEST_FAIL;
                 }
 
-                //[Variation(id = 9, Desc = "Veify XmlSpace value when received through WriteString", Pri = 1)]
+                //[Variation(id = 9, Desc = "Verify XmlSpace value when received through WriteString", Pri = 1)]
                 public int xmlSpace_9()
                 {
                     using (XmlWriter w = CreateWriter())
@@ -7688,7 +7688,7 @@ namespace System.Xml.Tests
                         if (w.XmlLang != null)
                         {
                             w.Dispose();
-                            CError.WriteLine("Default value if no xml:lang attributes are currentlly on the stack should be null");
+                            CError.WriteLine("Default value if no xml:lang attributes are currently on the stack should be null");
                             CError.WriteLine("Actual value: {0}", w.XmlLang.ToString());
                             return TEST_FAIL;
                         }
@@ -7752,7 +7752,7 @@ namespace System.Xml.Tests
                     return TEST_FAIL;
                 }
 
-                //[Variation(id = 5, Desc = "Veify XmlLang value when received through WriteAttributes", Pri = 1)]
+                //[Variation(id = 5, Desc = "Verify XmlLang value when received through WriteAttributes", Pri = 1)]
                 public int XmlLang_5()
                 {
                     XmlReaderSettings xrs = new XmlReaderSettings();
@@ -7780,7 +7780,7 @@ namespace System.Xml.Tests
                     return TEST_PASS;
                 }
 
-                //[Variation(id = 6, Desc = "Veify XmlLang value when received through WriteString")]
+                //[Variation(id = 6, Desc = "Verify XmlLang value when received through WriteString")]
                 public int XmlLang_6()
                 {
                     using (XmlWriter w = CreateWriter())

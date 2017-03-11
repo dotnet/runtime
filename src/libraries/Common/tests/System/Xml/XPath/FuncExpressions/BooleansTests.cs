@@ -494,7 +494,7 @@ namespace XPathTests.FunctionalTests.Expressions
         }
 
         /// <summary>
-        /// = node set and number - true. = is true if a node in node set has a numeric value equal to the the number. (Not testing other operators since they work similarly)
+        /// = node set and number - true. = is true if a node in node set has a numeric value equal to the number. (Not testing other operators since they work similarly)
         /// /mydoc/numbers[1]/n = 1
         /// </summary>
         [Fact]
@@ -536,7 +536,7 @@ namespace XPathTests.FunctionalTests.Expressions
         }
 
         /// <summary>
-        /// Comparison of node set with string. = is true if a node in node set has a string value equal to the the string constant it is being compared with.
+        /// Comparison of node set with string. = is true if a node in node set has a string value equal to the string constant it is being compared with.
         /// /bookstore/book/title = 'Seven Years in Trenton'
         /// </summary>
         [Fact]

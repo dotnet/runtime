@@ -205,8 +205,7 @@ namespace System.ComponentModel
                     for (int i = 0; i < count; i++)
                     {
                         Attribute attribute = Attributes[i];
-                        Type aType = attribute.GetType();
-                        if (attributeType.GetTypeInfo().IsAssignableFrom(aType.GetTypeInfo()))
+                        if (attributeType.IsInstanceOfType(attribute))
                         {
                             _foundAttributeTypes[ind].index = i;
                             return attribute;
@@ -274,7 +273,7 @@ namespace System.ComponentModel
 
                 // Not in the table, so do the legwork to discover the default value.
                 Type reflect = TypeDescriptor.GetReflectionType(attributeType);
-                FieldInfo field = reflect.GetTypeInfo().GetField("Default", BindingFlags.Public | BindingFlags.Static | BindingFlags.GetField);
+                FieldInfo field = reflect.GetField("Default", BindingFlags.Public | BindingFlags.Static | BindingFlags.GetField);
 
                 if (field != null && field.IsStatic)
                 {
@@ -282,7 +281,7 @@ namespace System.ComponentModel
                 }
                 else
                 {
-                    ConstructorInfo ci = reflect.GetTypeInfo().UnderlyingSystemType.GetTypeInfo().GetConstructor(Array.Empty<Type>());
+                    ConstructorInfo ci = reflect.UnderlyingSystemType.GetConstructor(Array.Empty<Type>());
                     if (ci != null)
                     {
                         attr = (Attribute)ci.Invoke(Array.Empty<object>());

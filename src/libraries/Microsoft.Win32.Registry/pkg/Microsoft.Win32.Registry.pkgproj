@@ -5,7 +5,7 @@
     <ProjectReference Include="..\ref\Microsoft.Win32.Registry.csproj">
       <SupportedFramework>net463;netcoreapp2.0</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\Microsoft.Win32.Registry.builds" />
+    <ProjectReference Include="..\src\Microsoft.Win32.Registry.csproj" />
     <NotSupportedOnTargetFramework Include="netcore50">
       <PackageTargetRuntime>win</PackageTargetRuntime>
     </NotSupportedOnTargetFramework>

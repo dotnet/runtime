@@ -374,7 +374,7 @@ namespace System.Runtime.Serialization
             int end = typeName.Length - 1;
             string result = typeName;
 
-            // skip white space in the beginning
+            // skip whitespace in the beginning
             while (start < typeName.Length && char.IsWhiteSpace(typeName[start])) start++;
             while (end >= 0 && char.IsWhiteSpace(typeName[end])) end--;
 

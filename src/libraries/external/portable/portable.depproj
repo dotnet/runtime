@@ -8,9 +8,9 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- for all configurations this project provides refs for that configuration -->
-    <BinplaceConfiguration Include="$(Configuration)">
+    <BinPlaceConfiguration Include="$(Configuration)">
       <RefPath>$(RefPath)</RefPath>
-    </BinplaceConfiguration>
+    </BinPlaceConfiguration>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

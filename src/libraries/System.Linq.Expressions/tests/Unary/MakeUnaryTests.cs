@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
+using System.Reflection;
 using Xunit;
 
 namespace System.Linq.Expressions.Tests
@@ -79,10 +81,97 @@ namespace System.Linq.Expressions.Tests
             new object[] {(ExpressionType)int.MaxValue}
         };
 
+        public static IEnumerable<object[]> NumericMethodAllowedUnaryTypes
+        {
+            get
+            {
+                yield return new object[] {ExpressionType.Negate};
+                yield return new object[] {ExpressionType.NegateChecked};
+                yield return new object[] {ExpressionType.OnesComplement};
+                yield return new object[] {ExpressionType.UnaryPlus};
+                yield return new object[] {ExpressionType.Increment};
+                yield return new object[] {ExpressionType.Decrement};
+                yield return new object[] {ExpressionType.PreIncrementAssign};
+                yield return new object[] {ExpressionType.PostIncrementAssign};
+                yield return new object[] {ExpressionType.PreDecrementAssign};
+                yield return new object[] {ExpressionType.PostDecrementAssign};
+            }
+        }
+
+        public static IEnumerable<object[]> BooleanMethodAllowedUnaryTypes
+        {
+            get
+            {
+                yield return new object[] {ExpressionType.Not};
+                yield return new object[] {ExpressionType.IsFalse};
+                yield return new object[] {ExpressionType.IsTrue};
+            }
+        }
+
+        public static IEnumerable<object[]> ConversionUnaryTypes
+        {
+            get
+            {
+                yield return new object[] {ExpressionType.Convert};
+                yield return new object[] {ExpressionType.ConvertChecked};
+            }
+        }
+
+        private class GenericClassWithNonGenericMethod<TClassType>
+        {
+            public static int DoIntStuff(int x) => x;
+
+            public static bool DoBooleanStuff(bool b) => b;
+
+            public static int CastLongToInt(long l) => unchecked((int)l);
+        }
+
         [Theory, MemberData(nameof(NonUnaryExpressionTypes))]
         public void MakeUnaryExpressionNonUnary(ExpressionType type)
         {
             Assert.Throws<ArgumentException>("unaryType", () => Expression.MakeUnary(type, null, null));
+        }
+
+        [Theory, MemberData(nameof(NumericMethodAllowedUnaryTypes))]
+        public void MethodOfOpenGenericOnNumeric(ExpressionType type)
+        {
+            ParameterExpression variable = Expression.Variable(typeof(int));
+            Type genType = typeof(GenericClassWithNonGenericMethod<>);
+            MethodInfo method = genType.GetMethod(nameof(GenericClassWithNonGenericMethod<int>.DoIntStuff));
+            Assert.Throws<ArgumentException>("method", () => Expression.MakeUnary(type, variable, typeof(int), method));
+            method = genType.MakeGenericType(genType).GetMethod(nameof(GenericClassWithNonGenericMethod<int>.DoIntStuff));
+            Assert.Throws<ArgumentException>("method", () => Expression.MakeUnary(type, variable, typeof(int), method));
+            // Demonstrate does work when closed.
+            method = genType.MakeGenericType(typeof(int)).GetMethod(nameof(GenericClassWithNonGenericMethod<int>.DoIntStuff));
+            Expression.MakeUnary(type, variable, typeof(int), method);
+        }
+
+        [Theory, MemberData(nameof(BooleanMethodAllowedUnaryTypes))]
+        public void MethodOfOpenGenericOnBoolean(ExpressionType type)
+        {
+            ParameterExpression variable = Expression.Variable(typeof(bool));
+            Type genType = typeof(GenericClassWithNonGenericMethod<>);
+            MethodInfo method = genType.GetMethod(nameof(GenericClassWithNonGenericMethod<int>.DoBooleanStuff));
+            Assert.Throws<ArgumentException>("method", () => Expression.MakeUnary(type, variable, typeof(bool), method));
+            method = genType.MakeGenericType(genType).GetMethod(nameof(GenericClassWithNonGenericMethod<int>.DoBooleanStuff));
+            Assert.Throws<ArgumentException>("method", () => Expression.MakeUnary(type, variable, typeof(bool), method));
+            // Demonstrate does work when closed.
+            method = genType.MakeGenericType(typeof(int)).GetMethod(nameof(GenericClassWithNonGenericMethod<int>.DoBooleanStuff));
+            Expression.MakeUnary(type, variable, typeof(bool), method);
+        }
+
+        [Theory, MemberData(nameof(BooleanMethodAllowedUnaryTypes))]
+        public void MethodOfOpenGenericOnConversion(ExpressionType type)
+        {
+            ParameterExpression variable = Expression.Variable(typeof(long));
+            Type genType = typeof(GenericClassWithNonGenericMethod<>);
+            MethodInfo method = genType.GetMethod(nameof(GenericClassWithNonGenericMethod<int>.CastLongToInt));
+            Assert.Throws<ArgumentException>("method", () => Expression.MakeUnary(type, variable, typeof(int), method));
+            method = genType.MakeGenericType(genType).GetMethod(nameof(GenericClassWithNonGenericMethod<int>.CastLongToInt));
+            Assert.Throws<ArgumentException>("method", () => Expression.MakeUnary(type, variable, typeof(int), method));
+            // Demonstrate does work when closed.
+            method = genType.MakeGenericType(typeof(int)).GetMethod(nameof(GenericClassWithNonGenericMethod<int>.CastLongToInt));
+            Expression.MakeUnary(type, variable, typeof(int), method);
         }
     }
 }

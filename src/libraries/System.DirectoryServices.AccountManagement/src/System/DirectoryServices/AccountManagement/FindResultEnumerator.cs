@@ -9,7 +9,6 @@ using System.Diagnostics;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.LinkDemand, Unrestricted = true)]
     internal class FindResultEnumerator<T> : IEnumerator<T>, IEnumerator
     {
         //

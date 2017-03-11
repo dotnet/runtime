@@ -72,7 +72,7 @@ but the headers are no longer available since that library version is out of sup
 Some compilers get upset over new headers being in `/usr/local/include` with the old library being present at
 `/usr/lib/libcrypto.dylib` (the tools have no issue with the versioned files, e.g. `/usr/lib/libcrypto.0.9.8.dylib`),
 and so Homebrew does not allow the OpenSSL package to be installed into system default paths. A minimal installation
-is presented here to facilitiate simplifying runtime requirements and compile-time requirements (for build systems using
+is presented here to facilitate simplifying runtime requirements and compile-time requirements (for build systems using
 CMake's `find_package`, like ours):
 ```sh
 # We need to make the runtime libraries discoverable, as well as make

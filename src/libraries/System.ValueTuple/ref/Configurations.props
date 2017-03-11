@@ -6,7 +6,7 @@
       uap;
       netstandard;
       netstandard1.0;
-      <!-- portable_net40+sl4+win8+wp8-Windows_NT; Looks like our filtering mechanism doesn't understand this targetgroup. Do we even need it? -->
+      portable_net40+sl4+win8+wp8;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

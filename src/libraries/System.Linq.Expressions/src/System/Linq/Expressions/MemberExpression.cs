@@ -281,6 +281,8 @@ namespace System.Linq.Expressions
                 }
             }
 
+            ValidateMethodInfo(mi, nameof(property));
+
             return MemberExpression.Make(expression, property);
         }
 
@@ -331,7 +333,7 @@ namespace System.Linq.Expressions
             // same as that returned by reflection.
             // Check for this condition and try and get the method from reflection.
             Type type = method.DeclaringType;
-            if (type.GetTypeInfo().IsInterface && method.Name == propertyMethod.Name && type.GetMethod(method.Name) == propertyMethod)
+            if (type.IsInterface && method.Name == propertyMethod.Name && type.GetMethod(method.Name) == propertyMethod)
             {
                 return true;
             }

@@ -17,12 +17,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             _chain = new X509Chain();
         }
 
-#if netstandard17
         public ChainHolder(IntPtr chainContext)
         {
             _chain = new X509Chain(chainContext);
         }
-#endif
 
         public X509Chain Chain => _chain;
 

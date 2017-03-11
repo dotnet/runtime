@@ -1,2 +1,1 @@
-<!-- Not a bug, this API was recently added to the allowed list -->
 user32.dll!GetKeyState

@@ -4,6 +4,8 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
+using System.Runtime.ExceptionServices;
 using System.Security;
 using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
@@ -1099,7 +1101,7 @@ namespace System.Net.Security
 
                 if (status.Exception != null)
                 {
-                    throw status.Exception;
+                    ExceptionDispatchInfo.Capture(status.Exception).Throw();
                 }
 
                 return null;
@@ -1123,7 +1125,7 @@ namespace System.Net.Security
 
                 if (status.Exception != null)
                 {
-                    throw status.Exception;
+                    ExceptionDispatchInfo.Capture(status.Exception).Throw();
                 }
 
                 return null;

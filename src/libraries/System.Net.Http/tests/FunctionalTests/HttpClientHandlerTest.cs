@@ -34,6 +34,8 @@ namespace System.Net.Http.Functional.Tests
 
         private readonly NetworkCredential _credential = new NetworkCredential(Username, Password);
 
+        public static bool IsNotWindows7 => !PlatformDetection.IsWindows7;
+
         public static readonly object[][] EchoServers = Configuration.Http.EchoServers;
         public static readonly object[][] VerifyUploadServers = Configuration.Http.VerifyUploadServers;
         public static readonly object[][] CompressedServers = Configuration.Http.CompressedServers;
@@ -586,8 +588,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [Theory]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [ConditionalTheory(nameof(IsNotWindows7))] // TODO: Issue #16133
         [InlineData("#origFragment", "", "#origFragment", false)]
         [InlineData("#origFragment", "", "#origFragment", true)]
         [InlineData("", "#redirFragment", "#redirFragment", false)]

@@ -46,7 +46,7 @@ namespace System.Data.Odbc
     //
     //  Would fail, unless we cache on the IsDBNull call, and return the cached
     //  item for GetInt32.  This actually improves perf anyway, (even if the driver could
-    //  support it), since we are not making a seperate interop call...
+    //  support it), since we are not making a separate interop call...
 
     //  We do not cache all columns, so reading out of order is still not
     //

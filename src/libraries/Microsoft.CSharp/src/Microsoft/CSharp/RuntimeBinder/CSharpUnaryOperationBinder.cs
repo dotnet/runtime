@@ -53,7 +53,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <returns>The <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
         public sealed override DynamicMetaObject FallbackUnaryOperation(DynamicMetaObject target, DynamicMetaObject errorSuggestion)
         {
-            return BinderHelper.Bind(this, _binder, BinderHelper.Cons(target, null), _argumentInfo, errorSuggestion);
+            return BinderHelper.Bind(this, _binder, new[] {target}, _argumentInfo, errorSuggestion);
         }
     }
 }

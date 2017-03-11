@@ -13,7 +13,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Unix-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)'=='netstandard'">
+  <ItemGroup>
     <Compile Include="FileInfo\Serialization.cs" />
     <Compile Include="FileInfo\Replace.cs" />
     <Compile Include="FileStream\Handle.cs" />
@@ -30,6 +30,12 @@
     <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
       <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
     </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <Compile Include="File\AppendAsync.cs" />
+    <Compile Include="File\ReadWriteAllLinesAsync.cs" />
+    <Compile Include="File\ReadWriteAllBytesAsync.cs" />
+    <Compile Include="File\ReadWriteAllTextAsync.cs" />
   </ItemGroup>
   <ItemGroup>
     <!-- Rewritten -->
@@ -82,19 +88,14 @@
     <Compile Include="FileStream\ctor_str_fm_fa.cs" />
     <Compile Include="FileStream\ctor_str_fm.cs" />
     <Compile Include="File\Append.cs" />
-    <Compile Include="File\AppendAsync.cs" />
     <Compile Include="File\Create.cs" />
     <Compile Include="File\Delete.cs" />
     <Compile Include="File\GetSetAttributes.cs" />
     <Compile Include="File\Move.cs" />
-    <Compile Include="File\ReadWriteAllBytesAsync.cs" />
-    <Compile Include="File\ReadWriteAllLinesAsync.cs" />
     <Compile Include="File\ReadWriteAllText.cs" />
     <Compile Include="File\ReadWriteAllLines.cs" />
-    <Compile Include="File\ReadWriteAllTextAsync.cs" />
     <Compile Include="PathFeatures.cs" />
     <Compile Include="TestData.cs" />
-    <Compile Include="Tfm.cs" />
     <Compile Include="UnseekableFileStream.cs" />
     <Compile Include="FSAssert.cs" />
     <Compile Include="FileSystemTest.cs" />

@@ -1537,7 +1537,7 @@ namespace System.Xml.Tests
             return TEST_FAIL;
         }
 
-        [Variation("Parse xml with whitespaces nodes")]
+        [Variation("Parse xml with whitespace nodes")]
         public int Read57()
         {
             string xml = @"<?xml version   =   '1.0'" + "\r\n" + @" ?><!DOCTYPE" + "\r" + @"doc " + "\n" + @"[ <!ELEMENT " + "\r\n" + @"doc " + "\r\n" + @"ANY" + "\r\n" + @">
@@ -1561,7 +1561,7 @@ namespace System.Xml.Tests
             return TEST_PASS;
         }
 
-        [Variation("Parse xml with whitespaces nodes and invalid char")]
+        [Variation("Parse xml with whitespace nodes and invalid char")]
         public int Read58()
         {
             string xml = @"<?xml version   =   '1.0'" + "\r\n" + @" ?><!DOCTYPE'" + "\r" + @"doc '" + "\n" + @"[ <!ELEMENT '" + "\r\n" + @"doc '" + "\r\n" + @"ANY'" + "\r\n" + @">

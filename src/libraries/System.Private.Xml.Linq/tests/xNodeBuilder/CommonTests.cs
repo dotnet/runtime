@@ -2354,7 +2354,7 @@ namespace CoreXml.Test.XLinq
                     if (!CompareReader(doc, "<x:Root x:attr=\"b\" xmlns:x=\"foo\" />")) throw new TestException(TestResult.Failed, "");
                 }
 
-                //[Variation(Id = 13, Desc = "Try to re-define NS prefix on attribute which is aleady defined on an element", Priority = 2)]
+                //[Variation(Id = 13, Desc = "Try to re-define NS prefix on attribute which is already defined on an element", Priority = 2)]
                 public void elemNamespace_13()
                 {
                     XDocument doc = new XDocument();
@@ -4789,7 +4789,7 @@ namespace CoreXml.Test.XLinq
                     if (!CompareReader(doc, "<Root a1=\"x&#xA;y\" />")) throw new TestException(TestResult.Failed, "");
                 }
 
-                //[Variation(Id = 13, Desc = "Surrogate charaters in text nodes, range limits", Priority = 1)]
+                //[Variation(Id = 13, Desc = "Surrogate characters in text nodes, range limits", Priority = 1)]
                 public void writeString_13()
                 {
                     char[] invalidXML = { '\uD800', '\uDC00', '\uD800', '\uDFFF', '\uDBFF', '\uDC00', '\uDBFF', '\uDFFF' };
@@ -4898,7 +4898,7 @@ namespace CoreXml.Test.XLinq
                     if (!CompareBaseline(doc, "whitespace3.txt")) throw new TestException(TestResult.Failed, "");
                 }
 
-                // Factory writer behavior is incosistent with XmlTextWriter, but consistent with other Write(string) methods
+                // Factory writer behavior is inconsistent with XmlTextWriter, but consistent with other Write(string) methods
                 //[Variation(Id = 4, Desc = "WriteWhitespace with null ", Param = "null", Priority = 1)]
                 //[Variation(Id = 5, Desc = "WriteWhitespace with String.Empty ", Param = "String.Empty", Priority = 1)]
                 public void whitespace_4()
@@ -5100,7 +5100,7 @@ namespace CoreXml.Test.XLinq
                     if (!CompareReader(doc, "<Root attr=\"2true3.14\" />")) throw new TestException(TestResult.Failed, "");
                 }
 
-                //[Variation(Id = 13, Desc = "Write multiple atomic values inside element, seperate by WriteWhitespace(' ')", Priority = 1)]
+                //[Variation(Id = 13, Desc = "Write multiple atomic values inside element, separate by WriteWhitespace(' ')", Priority = 1)]
                 public void writeValue_13()
                 {
                     XDocument doc = new XDocument();
@@ -5119,7 +5119,7 @@ namespace CoreXml.Test.XLinq
                     if (!CompareReader(doc, "<Root>2 true 3.14 </Root>")) throw new TestException(TestResult.Failed, "");
                 }
 
-                //[Variation(Id = 14, Desc = "Write multiple atomic values inside element, seperate by WriteString(' ')", Priority = 1)]
+                //[Variation(Id = 14, Desc = "Write multiple atomic values inside element, separate by WriteString(' ')", Priority = 1)]
                 public void writeValue_14()
                 {
                     XDocument doc = new XDocument();
@@ -5138,7 +5138,7 @@ namespace CoreXml.Test.XLinq
                     if (!CompareReader(doc, "<Root>2 true 3.14 </Root>")) throw new TestException(TestResult.Failed, "");
                 }
 
-                //[Variation(Id = 15, Desc = "Write multiple atomic values inside attribute, seperate by WriteWhitespace(' ')", Priority = 1)]
+                //[Variation(Id = 15, Desc = "Write multiple atomic values inside attribute, separate by WriteWhitespace(' ')", Priority = 1)]
                 public void writeValue_15()
                 {
                     XDocument doc = new XDocument();
@@ -5158,7 +5158,7 @@ namespace CoreXml.Test.XLinq
                     if (!CompareReader(doc, "<Root attr=\"2 true 3.14 \" />")) throw new TestException(TestResult.Failed, "");
                 }
 
-                //[Variation(Id = 16, Desc = "Write multiple atomic values inside attribute, seperate by WriteString(' ')", Priority = 1)]
+                //[Variation(Id = 16, Desc = "Write multiple atomic values inside attribute, separate by WriteString(' ')", Priority = 1)]
                 public void writeValue_16()
                 {
                     XDocument doc = new XDocument();
@@ -5488,7 +5488,7 @@ namespace CoreXml.Test.XLinq
                     throw new TestException(TestResult.Failed, "");
                 }
 
-                //[Variation(Id = 9, Desc = "Veify XmlSpace value when received through WriteString", Priority = 1)]
+                //[Variation(Id = 9, Desc = "Verify XmlSpace value when received through WriteString", Priority = 1)]
                 public void xmlSpace_9()
                 {
                     XDocument doc = new XDocument();
@@ -5531,7 +5531,7 @@ namespace CoreXml.Test.XLinq
                     if (w.XmlLang != null)
                     {
                         w.Dispose();
-                        TestLog.WriteLine("Default value if no xml:lang attributes are currentlly on the stack should be null");
+                        TestLog.WriteLine("Default value if no xml:lang attributes are currently on the stack should be null");
                         TestLog.WriteLine("Actual value: {0}", w.XmlLang.ToString());
                         throw new TestException(TestResult.Failed, "");
                     }
@@ -5590,7 +5590,7 @@ namespace CoreXml.Test.XLinq
                     throw new TestException(TestResult.Failed, "");
                 }
 
-                //[Variation(Id = 5, Desc = "Veify XmlLang value when received through WriteAttributes", Priority = 1)]
+                //[Variation(Id = 5, Desc = "Verify XmlLang value when received through WriteAttributes", Priority = 1)]
                 public void XmlLang_5()
                 {
                     XmlReader tr = CreateReaderIgnoreWS(Path.Combine(FilePathUtil.GetTestDataPath(), Path.Combine("XmlWriter2", "XmlReader.xml")));
@@ -5614,7 +5614,7 @@ namespace CoreXml.Test.XLinq
                     w.Dispose();
                 }
 
-                //[Variation(Id = 6, Desc = "Veify XmlLang value when received through WriteString")]
+                //[Variation(Id = 6, Desc = "Verify XmlLang value when received through WriteString")]
                 public void XmlLang_6()
                 {
                     XDocument doc = new XDocument();

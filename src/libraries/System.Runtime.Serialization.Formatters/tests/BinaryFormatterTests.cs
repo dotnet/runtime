@@ -747,7 +747,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
             }
         }
 
-        [ActiveIssue("Fails on desktop and core: 'Unable to cast object of type 'System.UInt32[][*]' to type 'System.Object[]'")]
+        [ActiveIssue(16753)] //Fails on desktop and core: 'Unable to cast object of type 'System.UInt32[][*]' to type 'System.Object[]'
         [Fact]
         public void Roundtrip_ArrayContainingArrayAtNonZeroLowerBound()
         {

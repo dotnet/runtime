@@ -44,8 +44,8 @@ namespace System.Xml.Schema
         {
             if (_hashCode == 0)
             {
-                _hashCode = targetNS.GetHashCode() + chameleonLocation.GetHashCode() +
-                    (originalSchema == null ? 0 : originalSchema.GetHashCode());
+                _hashCode = unchecked(targetNS.GetHashCode() + chameleonLocation.GetHashCode() +
+                    (originalSchema == null ? 0 : originalSchema.GetHashCode()));
             }
             return _hashCode;
         }

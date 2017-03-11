@@ -9,7 +9,6 @@ using System.Diagnostics;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.LinkDemand, Unrestricted = true)]
     public class PrincipalSearchResult<T> : IEnumerable<T>, IEnumerable, IDisposable
     {
         //

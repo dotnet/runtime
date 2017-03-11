@@ -346,7 +346,7 @@ namespace System.Data.Odbc
             {
                 if (ODBC32.SQL_C.NUMERIC == _typemap._sql_c)
                 {
-                    cch = 62;  // (DecimalMaxPrecision+sign+terminator)*BytesPerUnicodeCharater
+                    cch = 62;  // (DecimalMaxPrecision+sign+terminator)*BytesPerUnicodeCharacter
                 }
                 else
                 {

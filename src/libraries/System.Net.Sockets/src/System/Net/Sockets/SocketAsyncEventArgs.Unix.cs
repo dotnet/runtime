@@ -45,6 +45,20 @@ namespace System.Net.Sockets
             // No-op for *nix.
         }
 
+        private void FinishOperationSync(SocketError socketError, int bytesTransferred, SocketFlags flags)
+        {
+            Debug.Assert(socketError != SocketError.IOPending);
+
+            if (socketError == SocketError.Success)
+            {
+                FinishOperationSyncSuccess(bytesTransferred, flags);
+            }
+            else
+            {
+                FinishOperationSyncFailure(socketError, bytesTransferred, flags);
+            }
+        }
+
         private void InnerStartOperationAccept(bool userSuppliedBuffer)
         {
             _acceptedFileDescriptor = (IntPtr)(-1);
@@ -149,7 +163,7 @@ namespace System.Net.Sockets
             }
             else
             {
-                errorCode = handle.AsyncContext.ReceiveAsync(_bufferList, _socketFlags, out bytesReceived, out flags, TransferCompletionCallback);
+                errorCode = handle.AsyncContext.ReceiveAsync(_bufferListInternal, _socketFlags, out bytesReceived, out flags, TransferCompletionCallback);
             }
 
             if (errorCode != SocketError.IOPending)
@@ -178,7 +192,7 @@ namespace System.Net.Sockets
             }
             else
             {
-                errorCode = handle.AsyncContext.ReceiveFromAsync(_bufferList, _socketFlags, _socketAddress.Buffer, ref socketAddressLen, out bytesReceived, out flags, TransferCompletionCallback);
+                errorCode = handle.AsyncContext.ReceiveFromAsync(_bufferListInternal, _socketFlags, _socketAddress.Buffer, ref socketAddressLen, out bytesReceived, out flags, TransferCompletionCallback);
             }
 
             if (errorCode != SocketError.IOPending)
@@ -223,7 +237,7 @@ namespace System.Net.Sockets
             int bytesReceived;
             SocketFlags receivedFlags;
             IPPacketInformation ipPacketInformation;
-            SocketError socketError = handle.AsyncContext.ReceiveMessageFromAsync(_buffer, _offset, _count, _socketFlags, _socketAddress.Buffer, ref socketAddressSize, isIPv4, isIPv6, out bytesReceived, out receivedFlags, out ipPacketInformation, ReceiveMessageFromCompletionCallback);
+            SocketError socketError = handle.AsyncContext.ReceiveMessageFromAsync(_buffer, _bufferListInternal, _offset, _count, _socketFlags, _socketAddress.Buffer, ref socketAddressSize, isIPv4, isIPv6, out bytesReceived, out receivedFlags, out ipPacketInformation, ReceiveMessageFromCompletionCallback);
             if (socketError != SocketError.IOPending)
             {
                 CompleteReceiveMessageFromOperation(bytesReceived, _socketAddress.Buffer, socketAddressSize, receivedFlags, ipPacketInformation, socketError);
@@ -248,7 +262,7 @@ namespace System.Net.Sockets
             }
             else
             {
-                errorCode = handle.AsyncContext.SendAsync(_bufferList, _socketFlags, out bytesSent, TransferCompletionCallback);
+                errorCode = handle.AsyncContext.SendAsync(_bufferListInternal, _socketFlags, out bytesSent, TransferCompletionCallback);
             }
 
             if (errorCode != SocketError.IOPending)
@@ -287,7 +301,7 @@ namespace System.Net.Sockets
             }
             else
             {
-                errorCode = handle.AsyncContext.SendToAsync(_bufferList, _socketFlags, _socketAddress.Buffer, ref socketAddressLen, out bytesSent, TransferCompletionCallback);
+                errorCode = handle.AsyncContext.SendToAsync(_bufferListInternal, _socketFlags, _socketAddress.Buffer, ref socketAddressLen, out bytesSent, TransferCompletionCallback);
             }
 
             if (errorCode != SocketError.IOPending)
@@ -301,7 +315,10 @@ namespace System.Net.Sockets
 
         internal void LogBuffer(int size)
         {
-            if (!NetEventSource.IsEnabled) return;
+            // This should only be called if tracing is enabled. However, there is the potential for a race
+            // condition where tracing is disabled between a calling check and here, in which case the assert
+            // may fire erroneously.
+            Debug.Assert(NetEventSource.IsEnabled);
 
             if (_buffer != null)
             {

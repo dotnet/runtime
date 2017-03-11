@@ -201,7 +201,7 @@ internal static partial class Interop
                 }
                 else
                 {
-                    int bufferSize = Marshal.SizeOf<int>();
+                    int bufferSize = sizeof(int);
                     IntPtr buffer = Marshal.AllocHGlobal(bufferSize);
                     Marshal.WriteInt32(buffer, TestServer.DataAvailable);
                     fakeHandle.InvokeCallback(Interop.WinHttp.WINHTTP_CALLBACK_STATUS_DATA_AVAILABLE, buffer, (uint)bufferSize);

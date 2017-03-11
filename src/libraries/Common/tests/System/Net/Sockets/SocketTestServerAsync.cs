@@ -5,9 +5,6 @@
 using System.Collections.Generic;
 using System.Net.Test.Common;
 using System.Threading;
-using System.Threading.Tasks;
-
-using Xunit;
 
 namespace System.Net.Sockets.Tests
 {
@@ -194,7 +191,7 @@ namespace System.Net.Sockets.Tests
                     throw new InvalidOperationException("accept retry limit exceeded.");
                 }
 
-                Task.Delay(500).Wait();
+                Thread.Sleep(500);
             }
             else
             {

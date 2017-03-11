@@ -9,7 +9,7 @@ using System.Diagnostics;
 namespace System.Data
 {
     // This is an internal helper class used during Xml load to DataSet/DataDocument.
-    // XmlToDatasetMap class provides functionality for binding elemants/atributes
+    // XmlToDatasetMap class provides functionality for binding elemants/attributes
     // to DataTable / DataColumn 
     internal sealed class XmlToDatasetMap
     {

@@ -2,19 +2,14 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <Project Include="$(MSBuildThisFileDirectory)*/src/*.csproj" Exclude="@(ProjectExclusions)">
-      <AdditionalMetadata>ConfigurationGroup=$(ConfigurationGroup)</AdditionalMetadata>
-    </Project>
-    <Project Include="$(MSBuildThisFileDirectory)*/src/*.ilproj" Exclude="@(ProjectExclusions)">
-      <AdditionalMetadata>ConfigurationGroup=$(ConfigurationGroup)</AdditionalMetadata>
-    </Project>
-    <Project Include="$(MSBuildThisFileDirectory)*/src/*.vbproj" Exclude="@(ProjectExclusions)">
-      <AdditionalMetadata>ConfigurationGroup=$(ConfigurationGroup)</AdditionalMetadata>
-    </Project>
+    <Project Include="$(MSBuildThisFileDirectory)*/src/*.csproj" Exclude="@(ProjectExclusions)" />
+    <Project Include="$(MSBuildThisFileDirectory)*/src/*.ilproj" Exclude="@(ProjectExclusions)" />
+    <Project Include="$(MSBuildThisFileDirectory)*/src/*.vbproj" Exclude="@(ProjectExclusions)" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
 
   <UsingTask TaskName="GenerateDepsJson" AssemblyFile="$(BuildToolsTaskDir)CoreFx.Tools.dll"/>
+  <UsingTask TaskName="GenerateBindingRedirect" AssemblyFile="$(BuildToolsTaskDir)CoreFx.Tools.dll"/>
 
   <PropertyGroup>
     <!-- TODO: We should see about generating this from scratch instead of relying on a previous deps file as a template -->
@@ -38,4 +33,18 @@
                       DepsExceptions="@(ExceptionForDepsJson)"
                       OutputPath="$(_OutputTestSharedFrameworkDepsPath)"/>
   </Target>
+
+  <Target Name="GenerateXUnitRunnerConfigFile" AfterTargets="BuildAllProjects" Condition="'$(TargetGroup)' == 'netfx'">
+
+    <ItemGroup>
+      <NetFXRuntimeAssemblies Include="$(RuntimePath)*.dll" />
+      <XUnitConsoleRunnerExecutable Include="$(RuntimePath)xunit.console.exe" />
+    </ItemGroup>
+
+    <GenerateBindingRedirect  Assemblies="@(NetFXRuntimeAssemblies)" 
+                              Executables="@(XUnitConsoleRunnerExecutable)"
+                              OutputPath="$(RuntimePath)"
+                              OutputCodeBase="True" />
+  </Target>
+
 </Project>

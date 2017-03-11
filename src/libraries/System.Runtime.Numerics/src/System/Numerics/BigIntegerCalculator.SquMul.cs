@@ -69,11 +69,11 @@ namespace System.Numerics
                     {
                         ulong digit1 = bits[i + j] + carry;
                         ulong digit2 = (ulong)value[j] * value[i];
-                        bits[i + j] = (uint)(digit1 + (digit2 << 1));
+                        bits[i + j] = unchecked((uint)(digit1 + (digit2 << 1)));
                         carry = (digit2 + (digit1 >> 1)) >> 31;
                     }
                     ulong digits = (ulong)value[i] * value[i] + carry;
-                    bits[i + i] = (uint)digits;
+                    bits[i + i] = unchecked((uint)digits);
                     bits[i + i + 1] = (uint)(digits >> 32);
                 }
             }
@@ -177,7 +177,7 @@ namespace System.Numerics
             for (; i < left.Length; i++)
             {
                 ulong digits = (ulong)left[i] * right + carry;
-                bits[i] = (uint)digits;
+                bits[i] = unchecked((uint)digits);
                 carry = digits >> 32;
             }
             bits[i] = (uint)carry;
@@ -245,7 +245,7 @@ namespace System.Numerics
                     {
                         ulong digits = bits[i + j] + carry
                             + (ulong)left[j] * right[i];
-                        bits[i + j] = (uint)digits;
+                        bits[i + j] = unchecked((uint)digits);
                         carry = digits >> 32;
                     }
                     bits[i + leftLength] = (uint)carry;
@@ -382,13 +382,13 @@ namespace System.Numerics
             for (; i < rightLength; i++)
             {
                 long digit = (core[i] + carry) - left[i] - right[i];
-                core[i] = (uint)digit;
+                core[i] = unchecked((uint)digit);
                 carry = digit >> 32;
             }
             for (; i < leftLength; i++)
             {
                 long digit = (core[i] + carry) - left[i];
-                core[i] = (uint)digit;
+                core[i] = unchecked((uint)digit);
                 carry = digit >> 32;
             }
             for (; carry != 0 && i < coreLength; i++)

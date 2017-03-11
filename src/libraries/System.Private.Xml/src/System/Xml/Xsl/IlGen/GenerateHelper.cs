@@ -931,13 +931,13 @@ namespace System.Xml.Xsl.IlGen
             if (clrTypeSrc == clrTypeDst)
                 return;
 
-            if (clrTypeSrc.GetTypeInfo().IsValueType)
+            if (clrTypeSrc.IsValueType)
             {
                 // If source is a value type, then destination may only be typeof(object), so box
                 Debug.Assert(clrTypeDst == typeof(object), "Invalid cast, since value types do not allow inheritance.");
                 Emit(OpCodes.Box, clrTypeSrc);
             }
-            else if (clrTypeDst.GetTypeInfo().IsValueType)
+            else if (clrTypeDst.IsValueType)
             {
                 // If destination type is value type, then source may only be typeof(object), so unbox
                 Debug.Assert(clrTypeSrc == typeof(object), "Invalid cast, since value types do not allow inheritance.");

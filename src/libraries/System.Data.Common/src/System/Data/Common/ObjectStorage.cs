@@ -446,7 +446,7 @@ namespace System.Data.Common
 
         public override string ConvertObjectToXml(object value)
         {
-            if ((value == null) || (value == _nullValue))// this case wont happen,  this is added in case if code in xml saver changes
+            if ((value == null) || (value == _nullValue))// this case won't happen,  this is added in case if code in xml saver changes
                 return string.Empty;
 
             Type type = _dataType;

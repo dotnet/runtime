@@ -11,7 +11,7 @@ namespace System.IO.Tests
     public class Directory_GetLogicalDrives
     {
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Valid drive strings on Unix
         public void GetsValidDriveStrings_Unix()
         {
             string[] drives = Directory.GetLogicalDrives();
@@ -21,7 +21,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Valid drive strings on Windows
         public void GetsValidDriveStrings_Windows()
         {
             string[] drives = Directory.GetLogicalDrives();

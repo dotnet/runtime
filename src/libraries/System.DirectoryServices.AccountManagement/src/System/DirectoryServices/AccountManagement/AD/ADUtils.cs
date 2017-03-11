@@ -23,14 +23,12 @@ namespace System.DirectoryServices.AccountManagement
         // Note that, since computer is a derived class of user in AD, if you don't want to confuse
         // computers with users, you must test an object for computer status before testing it for
         // user status.
-        [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted = true)]
         [System.Security.SecurityCritical]
         static internal bool IsOfObjectClass(DirectoryEntry de, string classToCompare)
         {
             return de.Properties["objectClass"].Contains(classToCompare);
         }
 
-        [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted = true)]
         [System.Security.SecurityCritical]
         static internal bool IsOfObjectClass(SearchResult sr, string classToCompare)
         {
@@ -38,7 +36,6 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         // Retrieves the name of the actual server that the DirectoryEntry is connected to
-        [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted = true)]
         [System.Security.SecurityCritical]
         static internal string GetServerName(DirectoryEntry de)
         {
@@ -398,7 +395,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted = true)]
         [System.Security.SecurityCritical]
         static internal Principal DirectoryEntryAsPrincipal(DirectoryEntry de, ADStoreCtx storeCtx)
         {
@@ -418,7 +414,6 @@ namespace System.DirectoryServices.AccountManagement
             }
         }
 
-        [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Assert, Unrestricted = true)]
         [System.Security.SecurityCritical]
         static internal Principal SearchResultAsPrincipal(SearchResult sr, ADStoreCtx storeCtx, object discriminant)
         {

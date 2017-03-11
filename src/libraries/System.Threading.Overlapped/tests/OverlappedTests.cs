@@ -19,26 +19,28 @@ public static partial class OverlappedTests
 
         Assert.Null(obj.AsyncResult);
         obj.AsyncResult = asyncResult;
-        Assert.Same(obj.AsyncResult, asyncResult);
+        Assert.Same(asyncResult, obj.AsyncResult);
 
 #pragma warning disable 618
-        Assert.Equal(obj.EventHandle, 0);
+        Assert.Equal(0, obj.EventHandle);
         obj.EventHandle = 3;
-        Assert.Equal(obj.EventHandle, 3);
+        Assert.Equal(3, obj.EventHandle);
 #pragma warning restore 618
 
         var _handle = new ManualResetEvent(false).SafeWaitHandle;
-        Assert.NotSame(obj.EventHandleIntPtr, IntPtr.Zero);
+        Assert.NotSame(IntPtr.Zero, obj.EventHandleIntPtr);
         obj.EventHandleIntPtr = _handle.DangerousGetHandle();
-        Assert.Equal(obj.EventHandleIntPtr, _handle.DangerousGetHandle());
+        Assert.Equal(_handle.DangerousGetHandle(), obj.EventHandleIntPtr);
 
-        Assert.Equal(obj.OffsetHigh, 0);
         obj.OffsetHigh = 3;
-        Assert.Equal(obj.OffsetHigh, 3);
+        Assert.Equal(3, obj.OffsetHigh);
+        obj.OffsetHigh = 0;
+        Assert.Equal(0, obj.OffsetHigh);
 
-        Assert.Equal(obj.OffsetLow, 0);
         obj.OffsetLow = 1;
-        Assert.Equal(obj.OffsetLow, 1);
+        Assert.Equal(1, obj.OffsetLow);
+        obj.OffsetLow = 0;
+        Assert.Equal(0, obj.OffsetLow);
     }
 
     [Fact]
@@ -50,13 +52,13 @@ public static partial class OverlappedTests
 
 #pragma warning disable 618
         var obj = new Overlapped(1, 3, _event.Handle.ToInt32(), asyncResult);
-        Assert.Equal(obj.EventHandle, _event.Handle.ToInt32());
+        Assert.Equal(_event.Handle.ToInt32(), obj.EventHandle);
 #pragma warning restore 618
 
-        Assert.Same(obj.AsyncResult, asyncResult);
-        Assert.Equal(obj.EventHandleIntPtr, _handle.DangerousGetHandle());
-        Assert.Equal(obj.OffsetHigh, 3);
-        Assert.Equal(obj.OffsetLow, 1);
+        Assert.Same(asyncResult, obj.AsyncResult);
+        Assert.Equal(_handle.DangerousGetHandle(), obj.EventHandleIntPtr);
+        Assert.Equal(3, obj.OffsetHigh);
+        Assert.Equal(1, obj.OffsetLow);
     }
 
     [Fact]
@@ -66,15 +68,15 @@ public static partial class OverlappedTests
         var _event = new ManualResetEvent(false);
         var _handle = _event.SafeWaitHandle;
         var obj = new Overlapped(1, 3, _handle.DangerousGetHandle(), asyncResult);
-        Assert.Same(obj.AsyncResult, asyncResult);
+        Assert.Same(asyncResult, obj.AsyncResult);
 
 #pragma warning disable 618
-        Assert.Equal(obj.EventHandle, _event.Handle.ToInt32());
+        Assert.Equal(_event.Handle.ToInt32(), obj.EventHandle);
 #pragma warning restore 618
 
-        Assert.Equal(obj.EventHandleIntPtr, _handle.DangerousGetHandle());
-        Assert.Equal(obj.OffsetHigh, 3);
-        Assert.Equal(obj.OffsetLow, 1);
+        Assert.Equal(_handle.DangerousGetHandle(), obj.EventHandleIntPtr);
+        Assert.Equal(3, obj.OffsetHigh);
+        Assert.Equal(1, obj.OffsetLow);
     }
     [Fact]
     public static unsafe void PackNegTest()
@@ -82,9 +84,8 @@ public static partial class OverlappedTests
         var helper = new AsyncHelper();
         IOCompletionCallback callback = MyCallback(helper);
 
-        NativeOverlapped* nativeOverlapped;
         Overlapped ov = new Overlapped();
-        nativeOverlapped = ov.Pack(new IOCompletionCallback(callback), null);
+        NativeOverlapped* nativeOverlapped = ov.Pack(new IOCompletionCallback(callback), null);
 
         try
         {
@@ -135,7 +136,7 @@ public static partial class OverlappedTests
             Assert.True(null != nativeOverlapped);
 
             Overlapped ov1 = Overlapped.Unpack(nativeOverlapped);
-            Assert.Same(ov1, ov);
+            Assert.Same(ov, ov1);
         }
         finally
         {

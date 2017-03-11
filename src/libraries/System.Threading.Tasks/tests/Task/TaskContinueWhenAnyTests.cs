@@ -50,7 +50,7 @@ namespace Test
                                 {
                                     bool useFutureFactory = (z == 0);
 
-                                    // This would be a non-sensical combination
+                                    // This would be a nonsensical combination
                                     if (useFutureFactory && !continuationIsFuture)
                                         continue;
 

@@ -5,7 +5,7 @@
     <ProjectReference Include="..\ref\System.Security.Cryptography.ProtectedData.csproj">
       <SupportedFramework>net46;netcore50;netcoreapp1.0;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\System.Security.Cryptography.ProtectedData.builds" />
+    <ProjectReference Include="..\src\System.Security.Cryptography.ProtectedData.csproj" />
   </ItemGroup>
   <ItemGroup>
     <InboxOnTargetFramework Include="MonoAndroid10" />

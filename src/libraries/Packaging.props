@@ -23,8 +23,11 @@
     <PackageVersion Condition="'$(PackageVersion)' == ''">4.4.0</PackageVersion>
     <SkipValidatePackageTargetFramework>true</SkipValidatePackageTargetFramework>
     <SkipGenerationCheck>true</SkipGenerationCheck>
-    <!-- disable layout creation in favor of binplacing -->
-    <ShouldCreateLayout>false</ShouldCreateLayout>
+    <!-- support check is broken until we reenable package harvesting -->
+    <SkipSupportCheck>true</SkipSupportCheck>
+
+    <!-- Include symbols in package by default-->
+    <IncludeSymbolsInPackage Condition="'$(IncludeSymbolsInPackage)' == ''">true</IncludeSymbolsInPackage>
   </PropertyGroup>
 
   <Import Condition="Exists('pkg/baseline/baseline.props') AND '$(MSBuildProjectExtension)' == '.pkgproj'" Project="pkg/baseline/baseline.props" />

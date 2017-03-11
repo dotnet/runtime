@@ -41,7 +41,7 @@ namespace System.IO.Tests
             }
         }
 
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Uses P/Invokes
         public async Task FifoReadWriteViaFileStream()
         {
             string fifoPath = GetTestFilePath();

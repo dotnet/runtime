@@ -546,10 +546,10 @@ namespace XmlCoreTest.Common
             Debug.Assert(objectToCompareTo != null);
             Debug.Assert(objectToCompareTo.ExceptionId != null, "ExceptionId must be initialized to a valid fully qualified type name");
             Debug.Assert(objectToCompareTo.ResourceId != null, "ResourceId must be initialized to String.Empty, in which case MessageFragment is used, or a legal resource Id");
-            Debug.Assert(objectToCompareTo.MessageFragment != null, "MessageFragment must be intialized to String.Empty, in which case ResourceId is used, or a string that represents a specific exception message.");
+            Debug.Assert(objectToCompareTo.MessageFragment != null, "MessageFragment must be initialized to String.Empty, in which case ResourceId is used, or a string that represents a specific exception message.");
             Debug.Assert(this.ExceptionId != null, "ExceptionId must be initialized to a valid fully qualified type name");
             Debug.Assert(this.ResourceId != null, "ResourceId must be initialized to String.Empty, in which case MessageFragment is used, or a legal resource Id");
-            Debug.Assert(this.MessageFragment != null, "MessageFragment must be intialized to String.Empty, in which case ResourceId is used, or a string that represents a specific exception message.");
+            Debug.Assert(this.MessageFragment != null, "MessageFragment must be initialized to String.Empty, in which case ResourceId is used, or a string that represents a specific exception message.");
 
             // Inside this block, we have two properly initialized XsltRuntimeExceptions to compare.
 

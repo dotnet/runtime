@@ -3,6 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -18,7 +21,6 @@ namespace System.Tests
             Assert.Throws<ArgumentException>("variable", () => Environment.SetEnvironmentVariable("", "test"));
             Assert.Throws<ArgumentException>("value", () => Environment.SetEnvironmentVariable("test", new string('s', 65 * 1024)));
 
-#if netstandard17
             Assert.Throws<ArgumentException>("variable", () => Environment.SetEnvironmentVariable("", "test", EnvironmentVariableTarget.Machine));
             Assert.Throws<ArgumentNullException>("variable", () => Environment.SetEnvironmentVariable(null, "test", EnvironmentVariableTarget.User));
             Assert.Throws<ArgumentNullException>("variable", () => Environment.GetEnvironmentVariable(null, EnvironmentVariableTarget.Process));
@@ -29,7 +31,6 @@ namespace System.Tests
             {
                 Assert.Throws<ArgumentException>("variable", () => Environment.SetEnvironmentVariable(new string('s', 256), "value", EnvironmentVariableTarget.User));
             }
-#endif
         }
 
         [Fact]
@@ -134,6 +135,7 @@ namespace System.Tests
             }
         }
 
+        [Fact]
         public void EnumerateYieldsDictionaryEntryFromIEnumerable()
         {
             // GetEnvironmentVariables has always yielded DictionaryEntry from IEnumerable
@@ -149,13 +151,48 @@ namespace System.Tests
             }
         }
 
-#if netstandard17
+        [Fact]
+        public void GetEnumerator_IDictionaryEnumerator_YieldsDictionaryEntries()
+        {
+            // GetEnvironmentVariables has always yielded DictionaryEntry from IDictionaryEnumerator
+            IDictionary vars = Environment.GetEnvironmentVariables();
+            IDictionaryEnumerator enumerator = vars.GetEnumerator();
+            if (enumerator.MoveNext())
+            {
+                Assert.IsType<DictionaryEntry>(enumerator.Current);
+            }
+            else
+            {
+                Assert.Throws<InvalidOperationException>(() => enumerator.Current);
+            }
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData(EnvironmentVariableTarget.User)]
+        [InlineData(EnvironmentVariableTarget.Process)]
+        [InlineData(EnvironmentVariableTarget.Machine)]
+        public void GetEnumerator_LinqOverDictionaryEntries_Success(EnvironmentVariableTarget? target)
+        {
+            IDictionary envVars = target != null ?
+                Environment.GetEnvironmentVariables(target.Value) :
+                Environment.GetEnvironmentVariables();
+
+            Assert.IsType<Hashtable>(envVars);
+
+            foreach (KeyValuePair<string, string> envVar in envVars.Cast<DictionaryEntry>().Select(de => new KeyValuePair<string, string>((string)de.Key, (string)de.Value)))
+            {
+                Assert.NotNull(envVar.Key);
+            }
+        }
+
         public void EnvironmentVariablesAreHashtable()
         {
             // On NetFX, the type returned was always Hashtable
             Assert.IsType<Hashtable>(Environment.GetEnvironmentVariables());
         }
 
+        [Theory]
         [InlineData(EnvironmentVariableTarget.Process)]
         [InlineData(EnvironmentVariableTarget.Machine)]
         [InlineData(EnvironmentVariableTarget.User)]
@@ -165,6 +202,7 @@ namespace System.Tests
             Assert.IsType<Hashtable>(Environment.GetEnvironmentVariables(target));
         }
 
+        [Theory]
         [InlineData(EnvironmentVariableTarget.Process)]
         [InlineData(EnvironmentVariableTarget.Machine)]
         [InlineData(EnvironmentVariableTarget.User)]
@@ -183,37 +221,49 @@ namespace System.Tests
             }
         }
 
-        [OuterLoop] // manipulating environment variables broader in scope than the process
         [Theory]
         [InlineData(EnvironmentVariableTarget.Process)]
         [InlineData(EnvironmentVariableTarget.Machine)]
         [InlineData(EnvironmentVariableTarget.User)]
         public void EnumerateEnvironmentVariables(EnvironmentVariableTarget target)
         {
-            IDictionary results = Environment.GetEnvironmentVariables(target);
-            foreach (DictionaryEntry result in results)
+            bool lookForSetValue = (target == EnvironmentVariableTarget.Process) || PlatformDetection.IsWindowsAndElevated;
+
+            const string key = "EnumerateEnvironmentVariables";
+            string value = Path.GetRandomFileName();
+
+            try
             {
-                string key = (string)result.Key;
-                string value = (string)result.Value ?? string.Empty;
-
-                // Make sure the iterated value we got matches the one we get explicitly
-                Assert.NotNull(result.Key as string);
-                Assert.Equal(value, Environment.GetEnvironmentVariable(key, target));
-
-                try
+                if (lookForSetValue)
                 {
-                    // Change it to something else.  Not all values can be changed and will silently
-                    // not change, so we don't re-check and assert for equality.
-                    Environment.SetEnvironmentVariable(key, value + "changed", target);
-                }
-                finally
-                {
-                    // Change it back
                     Environment.SetEnvironmentVariable(key, value, target);
+                    Assert.Equal(value, Environment.GetEnvironmentVariable(key, target));
+                }
+
+                IDictionary results = Environment.GetEnvironmentVariables(target);
+
+                // Ensure we can walk through the results
+                IDictionaryEnumerator enumerator = results.GetEnumerator();
+                while (enumerator.MoveNext())
+                {
+                    Assert.NotNull(enumerator.Entry);
+                }
+
+                if (lookForSetValue)
+                {
+                    // Ensure that we got our flagged value out
+                    Assert.Equal(value, results[key]);
+                }
+            }
+            finally
+            {
+                if (lookForSetValue)
+                {
+                    Environment.SetEnvironmentVariable(key, null, target);
+                    Assert.Null(Environment.GetEnvironmentVariable(key, target));
                 }
             }
         }
-#endif
 
         private static void SetEnvironmentVariableWithPInvoke(string name, string value)
         {

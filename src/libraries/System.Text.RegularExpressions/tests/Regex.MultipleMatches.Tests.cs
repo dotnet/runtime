@@ -119,6 +119,27 @@ namespace System.Text.RegularExpressions.Tests
                     new CaptureData("c", 3, 1)
                 }
             };
+
+            // Alternation construct
+            yield return new object[]
+            {
+                "(?(A)A123|C789)", "A123 B456 C789", RegexOptions.None,
+                new CaptureData[]
+                {
+                    new CaptureData("A123", 0, 4),
+                    new CaptureData("C789", 10, 4),
+                }
+            };
+
+            yield return new object[]
+            {
+                "(?(A)A123|C789)", "A123 B456 C789", RegexOptions.None,
+                new CaptureData[]
+                {
+                    new CaptureData("A123", 0, 4),
+                    new CaptureData("C789", 10, 4),
+                }
+            };
         }
 
         [Theory]

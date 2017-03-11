@@ -150,7 +150,7 @@ namespace System.Net.NetworkInformation
 
             _type = ipAdapterAddresses.type;
             _operStatus = ipAdapterAddresses.operStatus;
-            _speed = (long)ipAdapterAddresses.receiveLinkSpeed;
+            _speed = unchecked((long)ipAdapterAddresses.receiveLinkSpeed);
 
             // API specific info.
             _ipv6Index = ipAdapterAddresses.ipv6Index;

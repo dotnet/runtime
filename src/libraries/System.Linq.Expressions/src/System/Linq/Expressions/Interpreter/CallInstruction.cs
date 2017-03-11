@@ -52,7 +52,7 @@ namespace System.Linq.Expressions.Interpreter
 #if !FEATURE_DLG_INVOKE
             return new MethodInfoCallInstruction(info, argumentCount);
 #else
-            if (!info.IsStatic && info.DeclaringType.GetTypeInfo().IsValueType)
+            if (!info.IsStatic && info.DeclaringType.IsValueType)
             {
                 return new MethodInfoCallInstruction(info, argumentCount);
             }

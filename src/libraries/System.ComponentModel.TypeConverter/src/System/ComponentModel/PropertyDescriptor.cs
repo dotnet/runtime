@@ -81,7 +81,7 @@ namespace System.ComponentModel
                     if (attr.ConverterTypeName != null && attr.ConverterTypeName.Length > 0)
                     {
                         Type converterType = GetTypeFromName(attr.ConverterTypeName);
-                        if (converterType != null && typeof(TypeConverter).GetTypeInfo().IsAssignableFrom(converterType))
+                        if (converterType != null && typeof(TypeConverter).IsAssignableFrom(converterType))
                         {
                             _converter = (TypeConverter)CreateInstance(converterType);
                         }
@@ -210,7 +210,7 @@ namespace System.ComponentModel
         protected object CreateInstance(Type type)
         {
             Type[] typeArgs = new Type[] { typeof(Type) };
-            ConstructorInfo ctor = type.GetTypeInfo().GetConstructor(typeArgs);
+            ConstructorInfo ctor = type.GetConstructor(typeArgs);
             if (ctor != null)
             {
                 return TypeDescriptor.CreateInstance(null, type, typeArgs, new object[] { PropertyType });
@@ -408,14 +408,14 @@ namespace System.ComponentModel
             if (ComponentType != null)
             {
                 if ((typeFromGetType == null) ||
-                    (ComponentType.GetTypeInfo().Assembly.FullName.Equals(typeFromGetType.GetTypeInfo().Assembly.FullName)))
+                    (ComponentType.Assembly.FullName.Equals(typeFromGetType.Assembly.FullName)))
                 {
                     int comma = typeName.IndexOf(',');
 
                     if (comma != -1)
                         typeName = typeName.Substring(0, comma);
 
-                    typeFromComponent = ComponentType.GetTypeInfo().Assembly.GetType(typeName);
+                    typeFromComponent = ComponentType.Assembly.GetType(typeName);
                 }
             }
 

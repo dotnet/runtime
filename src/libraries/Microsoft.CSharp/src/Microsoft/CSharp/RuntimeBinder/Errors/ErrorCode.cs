@@ -4,7 +4,7 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Errors
 {
-    public enum ErrorCode
+    internal enum ErrorCode
     {
         ERR_BadBinaryOps = 19,
         ERR_IntDivByZero = 20,

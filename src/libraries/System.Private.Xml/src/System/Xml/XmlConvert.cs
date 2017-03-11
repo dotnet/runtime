@@ -636,7 +636,7 @@ namespace System.Xml
             return s_xmlCharType.IsPubidChar(ch);
         }
 
-        // Valid Xml white space – as defined in XML 1.0 spec (fifth edition) production [3] S
+        // Valid Xml whitespace – as defined in XML 1.0 spec (fifth edition) production [3] S
         public static unsafe bool IsWhitespaceChar(char ch)
         {
             return s_xmlCharType.IsWhiteSpace(ch);

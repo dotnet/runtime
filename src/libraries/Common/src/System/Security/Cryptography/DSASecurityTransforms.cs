@@ -35,6 +35,11 @@ namespace System.Security.Cryptography
                     KeySize = keySize;
                 }
 
+                internal DSASecurityTransforms(SafeSecKeyRefHandle publicKey)
+                {
+                    SetKey(SecKeyPair.PublicOnly(publicKey));
+                }
+
                 internal DSASecurityTransforms(SafeSecKeyRefHandle publicKey, SafeSecKeyRefHandle privateKey)
                 {
                     SetKey(SecKeyPair.PublicPrivatePair(publicKey, privateKey));
@@ -327,15 +332,29 @@ namespace System.Security.Cryptography
             // }
 
             DerSequenceReader algParameters = algorithm.ReadSequence();
+            byte[] publicKeyBlob = keyInfo.ReadBitString();
+            // We don't care about the rest of the blob here, but it's expected to not exist.
+
+            ReadSubjectPublicKeyInfo(algParameters, publicKeyBlob, ref parameters);
+        }
+
+        internal static void ReadSubjectPublicKeyInfo(
+            this DerSequenceReader algParameters,
+            byte[] publicKeyBlob,
+            ref DSAParameters parameters)
+        {
             parameters.P = algParameters.ReadIntegerBytes();
             parameters.Q = algParameters.ReadIntegerBytes();
             parameters.G = algParameters.ReadIntegerBytes();
 
-            byte[] publicKeyBlob = keyInfo.ReadBitString();
             DerSequenceReader privateKeyReader = DerSequenceReader.CreateForPayload(publicKeyBlob);
             parameters.Y = privateKeyReader.ReadIntegerBytes();
 
-            // We don't care about the rest of the blob here, but it's expected to not exist.
+            KeyBlobHelpers.TrimPaddingByte(ref parameters.P);
+            KeyBlobHelpers.TrimPaddingByte(ref parameters.Q);
+
+            KeyBlobHelpers.PadOrTrim(ref parameters.G, parameters.P.Length);
+            KeyBlobHelpers.PadOrTrim(ref parameters.Y, parameters.P.Length);
         }
 
         internal static byte[] ToSubjectPublicKeyInfo(this DSAParameters parameters)

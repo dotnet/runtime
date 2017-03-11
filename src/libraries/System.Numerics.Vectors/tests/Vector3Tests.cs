@@ -41,7 +41,6 @@ namespace System.Numerics.Tests
             Assert.Equal(3.3f, b[2]);
         }
 
-        [ActiveIssue(15713)]
         [Fact]
         public void Vector3GetHashCodeTest()
         {

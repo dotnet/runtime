@@ -90,7 +90,7 @@ namespace System.Text
         [System.Security.SecurityCritical]  // auto-generated
         internal unsafe void AdjustBytes(int count)
         {
-            _bytes += count;
+            _bytes = unchecked(_bytes + count);
         }
 
         internal unsafe bool MoreData
@@ -125,7 +125,7 @@ namespace System.Text
             [System.Security.SecurityCritical]  // auto-generated
             get
             {
-                return (int)(_bytes - _byteStart);
+                return unchecked((int)(_bytes - _byteStart));
             }
         }
 

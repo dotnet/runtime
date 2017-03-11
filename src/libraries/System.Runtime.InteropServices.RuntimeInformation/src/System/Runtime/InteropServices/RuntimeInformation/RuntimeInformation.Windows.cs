@@ -25,7 +25,7 @@ namespace System.Runtime.InteropServices
             {
                 if (null == s_osDescription)
                 {
-#if netcore50 || win8
+#if uap || win8
                     s_osDescription = "Microsoft Windows";
 #elif wpa81
                     s_osDescription = "Microsoft Windows Phone";

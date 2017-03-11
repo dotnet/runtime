@@ -1,0 +1,10 @@
+advapi32.dll!RevertToSelf
+kernel32.dll!ConnectNamedPipe
+kernel32.dll!CreateFileW
+kernel32.dll!CreateNamedPipeW
+kernel32.dll!CreatePipe
+kernel32.dll!DisconnectNamedPipe
+kernel32.dll!GetNamedPipeHandleStateW
+kernel32.dll!GetNamedPipeInfo
+kernel32.dll!SetNamedPipeHandleState
+kernel32.dll!WaitNamedPipeW

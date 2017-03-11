@@ -138,7 +138,7 @@ namespace System.Linq.Expressions.Compiler
         {
             if (node.Type != typeof(void) && (flags & CompilationFlags.EmitAsVoidType) == 0)
             {
-                _ilg.EmitDefault(node.Type);
+                _ilg.EmitDefault(node.Type, this);
             }
         }
 

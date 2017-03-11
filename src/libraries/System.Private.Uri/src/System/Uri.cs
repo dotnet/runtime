@@ -6,20 +6,13 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Globalization;
 using System.Collections.Generic;
-#if netstandard10
 using System.Runtime.Serialization;
-#endif //netstandard10
 using System.Diagnostics.CodeAnalysis;
 
 namespace System
 {
-#if netstandard10
     [Serializable]
-#endif //netstandard10
-    public partial class Uri 
-#if netstandard10
-    : ISerializable
-#endif
+    public partial class Uri : ISerializable
     {
         public static readonly string UriSchemeFile = UriParser.FileUri.SchemeName;
         public static readonly string UriSchemeFtp = UriParser.FtpUri.SchemeName;
@@ -118,6 +111,7 @@ namespace System
             QueryIriCanonical = 0x20000000000,
             FragmentIriCanonical = 0x40000000000,
             IriCanonical = 0x78000000000,
+            UnixPath = 0x100000000000,
         }
 
         private Flags _flags;
@@ -175,6 +169,11 @@ namespace System
         private bool IsUncPath
         {
             get { return (_flags & Flags.UncPath) != 0; }
+        }
+
+        private bool IsUnixPath
+        {
+            get { return (_flags & Flags.UnixPath) != 0; }
         }
 
         private Flags HostType
@@ -397,7 +396,7 @@ namespace System
 
             CreateUri(baseUri, relativeUri, false);
         }
-#if netstandard10
+
         //
         // Uri(SerializationInfo, StreamingContext)
         //
@@ -445,7 +444,6 @@ namespace System
                 serializationInfo.AddValue("RelativeUri", GetParts(UriComponents.SerializationInfoString, UriFormat.UriEscaped));
             }
         }
-#endif //netstandard10
 
         private void CreateUri(Uri baseUri, string relativeUri, bool dontEscape)
         {
@@ -2036,6 +2034,14 @@ namespace System
                     ++length;
                 }
 
+                // Unix Path
+                if (!IsWindowsSystem && InFact(Flags.UnixPath))
+                {
+                    _flags |= Flags.BasicHostType;
+                    _flags |= (Flags)idx;
+                    return ParsingError.None;
+                }
+
                 // Old Uri parser tries to figure out on a DosPath in all cases.
                 // Hence http://c:/ is treated as DosPath without the host while it should be a host "c", port 80
                 //
@@ -2094,6 +2100,7 @@ namespace System
                                 }
                             }
                         }
+                        // UNC share?
                         else if (_syntax.InFact(UriSyntaxFlags.FileLikeUri) && (i - idx >= 2 && i - idx != 3 &&
                             i < length && pUriString[i] != '?' && pUriString[i] != '#'))
                         {
@@ -2384,7 +2391,7 @@ namespace System
                         //Check on some non-canonical cases http://host:0324/, http://host:03, http://host:0, etc
                         if (++idx < info.Offset.End)
                         {
-                            port = (ushort)(userString[idx] - '0');
+                            port = unchecked((ushort)(userString[idx] - '0'));
                             if (!(port == unchecked((ushort)('/' - '0')) || port == (ushort)('?' - '0') ||
                                 port == unchecked((ushort)('#' - '0'))))
                             {
@@ -2395,7 +2402,7 @@ namespace System
                                 }
                                 for (++idx; idx < info.Offset.End; ++idx)
                                 {
-                                    ushort val = (ushort)((ushort)userString[idx] - (ushort)'0');
+                                    ushort val = unchecked((ushort)((ushort)userString[idx] - (ushort)'0'));
                                     if (val == unchecked((ushort)('/' - '0')) || val == (ushort)('?' - '0') ||
                                         val == unchecked((ushort)('#' - '0')))
                                     {
@@ -3626,6 +3633,14 @@ namespace System
                 ++idx;
             }
 
+            // Unix: Unix path?
+            if (!IsWindowsSystem && idx < length && uriString[idx] == '/')
+            {
+                flags |= (Flags.UnixPath | Flags.ImplicitFile | Flags.AuthorityFound);
+                syntax = UriParser.UnixFileUri;
+                return idx;
+            }
+
             // sets the recognizer for well known registered schemes
             // file, ftp, http, https, uuid, etc
             // Note that we don't support one-letter schemes that will be put into a DOS path bucket
@@ -3681,7 +3696,7 @@ namespace System
                 }
                 else if ((c = uriString[idx]) == '/' || c == '\\')
                 {
-                    //UNC share ?
+                    //UNC share?
                     if ((c = uriString[idx + 1]) == '\\' || c == '/')
                     {
                         flags |= (Flags.UncPath | Flags.ImplicitFile | Flags.AuthorityFound);
@@ -3764,7 +3779,7 @@ namespace System
             if (nChars == 2)
             {
                 // This is the only known scheme of length 2
-                if ((((int)*lptr) | _INT_LOWERCASE_Mask) == _WS_Mask)
+                if ((unchecked((int)*lptr) | _INT_LOWERCASE_Mask) == _WS_Mask)
                 {
                     syntax = UriParser.WsUri;
                     return true;
@@ -4008,12 +4023,6 @@ namespace System
             bool hostNotUnicodeNormalized = ((flags & Flags.HostUnicodeNormalized) == 0); // perf
             UriSyntaxFlags syntaxFlags = syntax.Flags;
 
-            // need to build new Iri'zed string
-            if (hasUnicode && iriParsing && hostNotUnicodeNormalized)
-            {
-                newHost = _originalUnicodeString.Substring(0, startInput);
-            }
-
             //Special case is an empty authority
             if (idx == length || ((ch = pString[idx]) == '/' || (ch == '\\' && StaticIsFile(syntax)) || ch == '#' || ch == '?'))
             {
@@ -4034,6 +4043,12 @@ namespace System
                 }
 
                 return idx;
+            }
+
+            // need to build new Iri'zed string
+            if (hasUnicode && iriParsing && hostNotUnicodeNormalized)
+            {
+                newHost = _originalUnicodeString.Substring(0, startInput);
             }
 
             string userInfoString = null;
@@ -4193,7 +4208,7 @@ namespace System
                     int startPort = end;
                     for (idx = (ushort)(end + 1); idx < length; ++idx)
                     {
-                        ushort val = (ushort)((ushort)pString[idx] - (ushort)'0');
+                        ushort val = unchecked((ushort)((ushort)pString[idx] - (ushort)'0'));
                         if ((val >= 0) && (val <= 9))
                         {
                             if ((port = (port * 10 + val)) > 0xFFFF)
@@ -5250,6 +5265,10 @@ namespace System
                         path = Compress(path, 3, ref length, basePart.Syntax);
                         return new string(path, 1, length - 1) + extra;
                     }
+                    else if (!IsWindowsSystem && basePart.IsUnixPath)
+                    {
+                        left = basePart.GetParts(UriComponents.Host, UriFormat.Unescaped);
+                    }
                     else
                     {
                         left = @"\\" + basePart.GetParts(UriComponents.Host, UriFormat.Unescaped);
@@ -5368,7 +5387,7 @@ namespace System
         protected virtual void Canonicalize()
         {
             // this method if suppressed by the derived class
-            // would lead to supressing of a path compression
+            // would lead to suppressing of a path compression
             // It does not make much sense and violates Fxcop on calling a virtual method in the ctor.
             // Should be deprecated and removed asap.
         }

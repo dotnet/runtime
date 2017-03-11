@@ -519,7 +519,7 @@ namespace System.Runtime.Serialization
         private static Type s_typeOfXmlDataNode;
         internal static Type TypeOfXmlDataNode => s_typeOfXmlDataNode ?? (s_typeOfXmlDataNode = typeof (XmlDataNode));
 
-#if NET_NATIVE
+#if uapaot
         private static Type s_typeOfSafeSerializationManager;
         private static bool s_typeOfSafeSerializationManagerSet;
         internal static Type TypeOfSafeSerializationManager
@@ -528,7 +528,7 @@ namespace System.Runtime.Serialization
             {
                 if (!s_typeOfSafeSerializationManagerSet)
                 {
-                    s_typeOfSafeSerializationManager = TypeOfInt.GetTypeInfo().Assembly.GetType("System.Runtime.Serialization.SafeSerializationManager");
+                    s_typeOfSafeSerializationManager = TypeOfInt.Assembly.GetType("System.Runtime.Serialization.SafeSerializationManager");
                     s_typeOfSafeSerializationManagerSet = true;
                 }
                 return s_typeOfSafeSerializationManager;

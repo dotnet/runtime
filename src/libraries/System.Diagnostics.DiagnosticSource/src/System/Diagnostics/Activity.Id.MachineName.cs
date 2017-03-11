@@ -3,11 +3,13 @@
     public partial class Activity
     {
         #region private
-        private string generateUniquePrefix()
+
+        private string GenerateInstancePrefix()
         {
-            int uniqNum = (int)Stopwatch.GetTimestamp();
-            return $"{s_rootIdPrefix}{Environment.MachineName}_{uniqNum:x}";
+            int uniqNum = unchecked((int)Stopwatch.GetTimestamp());
+            return $"{RootIdPrefix}{Environment.MachineName}-{uniqNum:x}";
         }
+
         #endregion
     }
 }

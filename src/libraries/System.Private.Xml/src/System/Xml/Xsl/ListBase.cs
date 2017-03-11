@@ -193,7 +193,7 @@ namespace System.Xml.Xsl
 
         private static bool IsCompatibleType(object value)
         {
-            if ((value == null && !typeof(T).GetTypeInfo().IsValueType) || (value is T))
+            if ((value == null && !typeof(T).IsValueType) || (value is T))
                 return true;
 
             return false;

@@ -8,7 +8,7 @@
            We have an implementation that will work on desktop, thus needs a unique assembly version -->
       <Preserve>true</Preserve>
     </ProjectReference>
-    <ProjectReference Include="..\src\System.Reflection.DispatchProxy.builds" />
+    <ProjectReference Include="..\src\System.Reflection.DispatchProxy.csproj" />
   </ItemGroup>
   <ItemGroup>
     <InboxOnTargetFramework Include="MonoAndroid10" />

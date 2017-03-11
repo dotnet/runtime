@@ -1,0 +1,5 @@
+kernel32.dll!GetDriveTypeW
+kernel32.dll!GetLogicalDrives
+kernel32.dll!GetVolumeInformationW
+kernel32.dll!SetErrorMode
+kernel32.dll!SetVolumeLabelW

@@ -8,6 +8,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <NugetTargetMoniker>.NETStandard,Version=v1.7</NugetTargetMoniker>
     <TestSourceFolder>$(MSBuildThisFileDirectory)\</TestSourceFolder>
+    <DefineConstants Condition="'$(TargetGroup)' == 'uapaot'">$(DefineConstants);uapaot</DefineConstants>  
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="$(TestSourceFolder)..\..\System.Private.DataContractSerialization\pkg\System.Private.DataContractSerialization.pkgproj">

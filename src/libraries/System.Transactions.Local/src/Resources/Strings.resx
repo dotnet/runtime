@@ -1,0 +1,99 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AsyncFlowAndESInteropNotSupported" xml:space="preserve"><value>TransactionScope with TransactionScopeAsyncFlowOption.Enabled option is not supported when the TransactionScope is used within Enterprise Service context with Automatic or Full EnterpriseServicesInteropOption enabled in parent scope.</value></data>
+  <data name="BadAsyncResult" xml:space="preserve"><value>The IAsyncResult parameter must be the same parameter returned by BeginCommit.</value></data>
+  <data name="BadResourceManagerId" xml:space="preserve"><value>Resource Manager Identifiers cannot be Guid.Empty.</value></data>
+  <data name="CannotPromoteSnapshot" xml:space="preserve"><value>Transactions with IsolationLevel Snapshot cannot be promoted.</value></data>
+  <data name="CannotSetCurrent" xml:space="preserve"><value>Current cannot be set directly when Com+ Interop is enabled.</value></data>
+  <data name="ConfigInvalidTimeSpanValue" xml:space="preserve"><value>Valid TimeSpan values are greater than TimeSpan.Zero.</value></data>
+  <data name="CurrentDelegateSet" xml:space="preserve"><value>The delegate for an external current can only be set once.</value></data>
+  <data name="DisposeScope" xml:space="preserve"><value>The current TransactionScope is already complete. You should dispose the TransactionScope.</value></data>
+  <data name="EnlistmentStateException" xml:space="preserve"><value>The operation is not valid for the current state of the enlistment.</value></data>
+  <data name="EsNotSupported" xml:space="preserve"><value>Com+ Interop features cannot be supported.</value></data>
+  <data name="InternalError" xml:space="preserve"><value>Internal Error</value></data>
+  <data name="InvalidArgument" xml:space="preserve"><value>The argument is invalid.</value></data>
+  <data name="InvalidIPromotableSinglePhaseNotificationSpecified" xml:space="preserve"><value>The specified IPromotableSinglePhaseNotification is not the same as the one provided to EnlistPromotableSinglePhase.</value></data>
+  <data name="InvalidRecoveryInformation" xml:space="preserve"><value>Transaction Manager in the Recovery Information does not match the configured transaction manager.</value></data>
+  <data name="InvalidScopeThread" xml:space="preserve"><value>A TransactionScope must be disposed on the same thread that it was created.</value></data>
+  <data name="PromotionFailed" xml:space="preserve"><value>There was an error promoting the transaction to a distributed transaction.</value></data>
+  <data name="PromotedReturnedInvalidValue" xml:space="preserve"><value>The Promote method returned an invalid value for the distributed transaction.</value></data>
+  <data name="PromotedTransactionExists" xml:space="preserve"><value>The transaction returned from Promote already exists as a distributed transaction.</value></data>
+  <data name="TooLate" xml:space="preserve"><value>It is too late to add enlistments to this transaction.</value></data>
+  <data name="TraceTransactionTimeout" xml:space="preserve"><value>Transaction Timeout</value></data>
+  <data name="TransactionAborted" xml:space="preserve"><value>The transaction has aborted.</value></data>
+  <data name="TransactionAlreadyCompleted" xml:space="preserve"><value>DependentTransaction.Complete or CommittableTransaction.Commit has already been called for this transaction.</value></data>
+  <data name="TransactionIndoubt" xml:space="preserve"><value>The transaction is in doubt.</value></data>
+  <data name="TransactionManagerCommunicationException" xml:space="preserve"><value>Communication with the underlying transaction manager has failed.</value></data>
+  <data name="TransactionScopeComplete" xml:space="preserve"><value>The current TransactionScope is already complete.</value></data>
+  <data name="TransactionScopeIncorrectCurrent" xml:space="preserve"><value>Transaction.Current has changed inside of the TransactionScope.</value></data>
+  <data name="TransactionScopeInvalidNesting" xml:space="preserve"><value>TransactionScope nested incorrectly.</value></data>
+  <data name="TransactionScopeIsolationLevelDifferentFromTransaction" xml:space="preserve"><value>The transaction specified for TransactionScope has a different IsolationLevel than the value requested for the scope.</value></data>
+  <data name="TransactionScopeTimerObjectInvalid" xml:space="preserve"><value>TransactionScope timer object is invalid.</value></data>
+  <data name="TransactionStateException" xml:space="preserve"><value>The operation is not valid for the state of the transaction.</value></data>
+  <data name="UnexpectedFailureOfThreadPool" xml:space="preserve"><value>There was an unexpected failure of QueueUserWorkItem.</value></data>
+  <data name="UnexpectedTimerFailure" xml:space="preserve"><value>There was an unexpected failure of a timer.</value></data>
+  <data name="UnrecognizedRecoveryInformation" xml:space="preserve"><value>The RecoveryInformation provided is not recognized by this version of System.Transactions.</value></data>
+  <data name="VolEnlistNoRecoveryInfo" xml:space="preserve"><value>Volatile enlistments do not generate recovery information.</value></data>
+  <data name="DistributedTxIDInTransactionException" xml:space="preserve"><value>{0} Distributed Transaction ID is {1}</value></data>
+  <data name="PromoterTypeInvalid" xml:space="preserve"><value>The specified PromoterType is invalid.</value></data>
+  <data name="PromoterTypeUnrecognized" xml:space="preserve"><value>There is a promotable enlistment for the transaction which has a PromoterType value that is not recognized by System.Transactions. {0}</value></data>
+  <data name="DistributedNotSupported" xml:space="preserve"><value>This platform does not support distributed transactions.</value></data>
+</root>

@@ -13,7 +13,7 @@ namespace System.Xml.Tests
         private const int k_getUniqueFileNameAttempts = 10;
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetcoreUwp)]  //[ActiveIssue(13121)]  // Access to path is denied in UWP
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]  //[ActiveIssue(13121)]  // Access to path is denied in UWP
         public static void TestResolveRelativePaths()
         {
             string path = Path.GetRandomFileName();
@@ -86,7 +86,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetcoreUwp |    //[ActiveIssue(13121)]  // Access to path is denied in UWP
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap |    //[ActiveIssue(13121)]  // Access to path is denied in UWP
         TargetFrameworkMonikers.NetFramework)]    // Full framework uses XmlUrlResolver instead of SystemPathResolver (which doesn't allow access to this path)
         public static void TestResolveInvalidPath()
         {

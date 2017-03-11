@@ -22,8 +22,6 @@
     <Compile Include="ThreadPoolBoundHandle_AllocateNativeOverlappedTests.cs" />
     <Compile Include="ThreadPoolBoundHandle_DisposeTests.cs" />
     <Compile Include="ThreadPoolBoundHandle_BindHandleTests.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netstandard'">
     <Compile Include="OverlappedTests.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

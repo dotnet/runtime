@@ -27,7 +27,6 @@ namespace System.IO.Tests
             ValidateDisposedExceptions(sw2);
         }
 
-#if netstandard17
         [Fact]
         public void AfterCloseThrows()
         {
@@ -39,7 +38,6 @@ namespace System.IO.Tests
             sw2.Close();
             ValidateDisposedExceptions(sw2);
         }
-#endif //netstandard17
 
         private void ValidateDisposedExceptions(StreamWriter sw)
         {
@@ -80,7 +78,6 @@ namespace System.IO.Tests
             Assert.Throws<ObjectDisposedException>(() => sw2.Flush());
         }
 
-#if netstandard17
         [Fact]
         public void CantFlushAfterClose()
         {
@@ -93,6 +90,5 @@ namespace System.IO.Tests
             sw2.Close();
             Assert.Throws<ObjectDisposedException>(() => sw2.Flush());
         }
-#endif //netstandard17
     }
 }

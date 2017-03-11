@@ -82,7 +82,7 @@ namespace System.DirectoryServices.AccountManagement
         internal const string AcctInfoHomeDirectory = "AuthenticablePrincipal.AccountInfo.HomeDirectory";
         internal const string AcctInfoHomeDrive = "AuthenticablePrincipal.AccountInfo.HomeDrive";
         internal const string AcctInfoScriptPath = "AuthenticablePrincipal.AccountInfo.ScriptPath";
-        // This property is not publically exposed but is used be a ReadOnlySearchFilter.
+        // This property is not publicly exposed but is used be a ReadOnlySearchFilter.
         internal const string AcctInfoExpiredAccount = "AuthenticablePrincipal.AccountInfoExpired";
 
         // PasswordInfo

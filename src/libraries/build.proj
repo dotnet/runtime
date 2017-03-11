@@ -16,6 +16,7 @@
   <ItemGroup>
     <Project Include="external\dir.proj" />
     <Project Include="src\dirs.proj" />
+    <Project Include="src\tests.builds" Condition="'$(BuildTests)'=='true'" />
     <!-- signing must happen before packaging -->
     <Project Include="src\sign.builds" />
     <Project Include="src\packages.builds" Condition="'$(BuildPackages)'=='true'" />

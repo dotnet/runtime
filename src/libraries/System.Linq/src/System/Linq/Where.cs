@@ -251,7 +251,7 @@ namespace System.Linq
                 int index = _state - 1;
                 TSource[] source = _source;
 
-                while ((uint)index < (uint)source.Length)
+                while (unchecked((uint)index < (uint)source.Length))
                 {
                     TSource item = source[index];
                     index = _state++;
@@ -481,7 +481,7 @@ namespace System.Linq
                 int index = _state - 1;
                 TSource[] source = _source;
 
-                while ((uint)index < (uint)source.Length)
+                while (unchecked((uint)index < (uint)source.Length))
                 {
                     TSource item = source[index];
                     index = _state++;

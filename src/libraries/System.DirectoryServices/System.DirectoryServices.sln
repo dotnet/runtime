@@ -19,14 +19,14 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{EC9B0FBC-C3A2-44E6-BFC6-51E565061C28}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{EC9B0FBC-C3A2-44E6-BFC6-51E565061C28}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{EC9B0FBC-C3A2-44E6-BFC6-51E565061C28}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{EC9B0FBC-C3A2-44E6-BFC6-51E565061C28}.Release|Any CPU.Build.0 = Release|Any CPU
-		{CBCDA53B-4C01-4267-B08C-413205FE4D8D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{CBCDA53B-4C01-4267-B08C-413205FE4D8D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{CBCDA53B-4C01-4267-B08C-413205FE4D8D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{CBCDA53B-4C01-4267-B08C-413205FE4D8D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EC9B0FBC-C3A2-44E6-BFC6-51E565061C28}.Debug|Any CPU.ActiveCfg = netstandard-Windows_NT-Debug|Any CPU
+		{EC9B0FBC-C3A2-44E6-BFC6-51E565061C28}.Debug|Any CPU.Build.0 = netstandard-Windows_NT-Debug|Any CPU
+		{EC9B0FBC-C3A2-44E6-BFC6-51E565061C28}.Release|Any CPU.ActiveCfg = netstandard-Windows_NT-Release|Any CPU
+		{EC9B0FBC-C3A2-44E6-BFC6-51E565061C28}.Release|Any CPU.Build.0 = netstandard-Windows_NT-Release|Any CPU
+		{CBCDA53B-4C01-4267-B08C-413205FE4D8D}.Debug|Any CPU.ActiveCfg = netstandard-Windows_NT-Debug|Any CPU
+		{CBCDA53B-4C01-4267-B08C-413205FE4D8D}.Debug|Any CPU.Build.0 = netstandard-Windows_NT-Debug|Any CPU
+		{CBCDA53B-4C01-4267-B08C-413205FE4D8D}.Release|Any CPU.ActiveCfg = netstandard-Windows_NT-Release|Any CPU
+		{CBCDA53B-4C01-4267-B08C-413205FE4D8D}.Release|Any CPU.Build.0 = netstandard-Windows_NT-Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

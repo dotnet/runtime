@@ -2,17 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
-using Xunit.Abstractions;
 
 namespace System.Net.Sockets.Tests
 {
-    public class SendFile
+    public class SendFileTest
     {
         public static readonly object[][] SendFile_MemberData = new object[][]
         {
@@ -55,6 +53,39 @@ namespace System.Net.Sockets.Tests
             }
 
             return path;
+        }
+
+        [Fact]
+        public void Disposed_ThrowsException()
+        {
+            using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                s.Dispose();
+                Assert.Throws<ObjectDisposedException>(() => s.SendFile(null));
+                Assert.Throws<ObjectDisposedException>(() => s.BeginSendFile(null, null, null));
+                Assert.Throws<ObjectDisposedException>(() => s.BeginSendFile(null, null, null, TransmitFileOptions.UseDefaultWorkerThread, null, null));
+                Assert.Throws<ObjectDisposedException>(() => s.EndSendFile(null));
+            }
+        }
+
+        [Fact]
+        public void EndSendFile_NullAsyncResult_Throws()
+        {
+            using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                Assert.Throws<ArgumentNullException>(() => s.EndSendFile(null));
+            }
+        }
+
+        [Fact]
+        public void NotConnected_ThrowsException()
+        {
+            using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                Assert.Throws<NotSupportedException>(() => s.SendFile(null));
+                Assert.Throws<NotSupportedException>(() => s.BeginSendFile(null, null, null));
+                Assert.Throws<NotSupportedException>(() => s.BeginSendFile(null, null, null, TransmitFileOptions.UseDefaultWorkerThread, null, null));
+            }
         }
 
         [OuterLoop] // TODO: Issue #11345

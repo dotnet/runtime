@@ -172,12 +172,12 @@ namespace System.Net
                             break;
                         case 1:
                             *dest++ = (byte)(ReadState.Val + (s >> 4));
-                            ReadState.Val = (byte)(s << 4);
+                            ReadState.Val = unchecked((byte)(s << 4));
                             ReadState.Pos++;
                             break;
                         case 2:
                             *dest++ = (byte)(ReadState.Val + (s >> 2));
-                            ReadState.Val = (byte)(s << 6);
+                            ReadState.Val = unchecked((byte)(s << 6));
                             ReadState.Pos++;
                             break;
                         case 3:

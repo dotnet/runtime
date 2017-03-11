@@ -44,12 +44,10 @@
     <ProjectReference Include="..\demos\Microsoft.Composition.Demos.ExtendedCollectionImports\Microsoft.Composition.Demos.ExtendedCollectionImports.csproj">
       <Project>{44c7e52c-3873-4c64-875c-8a23a8376d60}</Project>
       <Name>Microsoft.Composition.Demos.ExtendedCollectionImports</Name>
-      <KeepProjectReference>true</KeepProjectReference>
     </ProjectReference>
     <ProjectReference Include="..\scenarios\TestLibrary\TestLibrary.csproj">
       <Project>{da6841a5-0344-4cc7-98b0-89cbee18dee3}</Project>
       <Name>TestLibrary</Name>
-      <KeepProjectReference>true</KeepProjectReference>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

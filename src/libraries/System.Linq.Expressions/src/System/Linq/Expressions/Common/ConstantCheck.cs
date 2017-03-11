@@ -61,7 +61,7 @@ namespace System.Linq.Expressions
                 return testType == typeof(void) ? AnalyzeTypeIsResult.KnownTrue : AnalyzeTypeIsResult.KnownFalse;
             }
 
-            if (testType == typeof(void))
+            if (testType == typeof(void) || testType.IsPointer)
             {
                 return AnalyzeTypeIsResult.KnownFalse;
             }
@@ -85,7 +85,7 @@ namespace System.Linq.Expressions
             {
                 // If the operand is a value type (other than nullable), we
                 // know the result is always true.
-                if (operandType.GetTypeInfo().IsValueType && !operandType.IsNullableType())
+                if (operandType.IsValueType && !operandType.IsNullableType())
                 {
                     return AnalyzeTypeIsResult.KnownTrue;
                 }

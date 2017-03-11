@@ -88,11 +88,6 @@ namespace System.Reflection.Metadata
                 throw new ArgumentException(SR.MetadataStringDecoderEncodingMustBeUtf8, nameof(utf8Decoder));
             }
 
-            if (!BitConverter.IsLittleEndian)
-            {
-                Throw.LitteEndianArchitectureRequired();
-            }
-
             this.Block = new MemoryBlock(metadata, length);
 
             _options = options;

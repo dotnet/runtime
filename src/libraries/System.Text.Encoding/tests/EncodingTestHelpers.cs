@@ -6,12 +6,15 @@ using Xunit;
 
 namespace System.Text.Tests
 {
-    public static class EncodingHelpers
+    public static partial class EncodingHelpers
     {
         public static void Encode(Encoding encoding, string chars, int index, int count, byte[] expected)
         {
             GetByteCount(encoding, chars, index, count, expected.Length);
             GetBytes(encoding, chars, index, count, expected);
+
+            GetByteCount_NetCoreApp(encoding, chars, index, count, expected.Length);
+            GetBytes_NetCoreApp(encoding, chars, index, count, expected);
         }
 
         private static unsafe void GetByteCount(Encoding encoding, string chars, int index, int count, int expected)
@@ -23,6 +26,7 @@ namespace System.Text.Tests
                 Assert.Equal(expected, encoding.GetByteCount(chars));
                 Assert.Equal(expected, encoding.GetByteCount(charArray));
             }
+
             // Use GetByteCount(char[], int, int)
             Assert.Equal(expected, encoding.GetByteCount(charArray, index, count));
 
@@ -65,6 +69,7 @@ namespace System.Text.Tests
                 byte[] charArrayResultBasic = encoding.GetBytes(source.ToCharArray());
                 VerifyGetBytes(charArrayResultBasic, 0, charArrayResultBasic.Length, originalBytes, expectedBytes);
             }
+
             // Use GetBytes(char[], int, int)
             byte[] charArrayResultAdvanced = encoding.GetBytes(source.ToCharArray(), index, count);
             VerifyGetBytes(charArrayResultAdvanced, 0, charArrayResultAdvanced.Length, originalBytes, expectedBytes);
@@ -222,5 +227,13 @@ namespace System.Text.Tests
             // Use GetString(byte[], int, int)
             Assert.Equal(expected, encoding.GetString(bytes, index, count));
         }
+
+#if !netcoreapp
+        // Netcoreapp adds GetByteCount(string, int, int) and GetBytes(string, int, int) APIs.
+        // To use the common data from the Encode(...) entry point to these tests, we can define stubs that
+        // do nothing with netfx or netstandard. However, these are defined (they test the new APIs) with netcoreapp.
+        private static void GetByteCount_NetCoreApp(Encoding encoding, string chars, int index, int count, int expected) {}
+        private static void GetBytes_NetCoreApp(Encoding encoding, string chars, int index, int count, byte[] expected) {}
+#endif
     }
 }
