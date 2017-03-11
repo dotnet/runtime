@@ -849,7 +849,14 @@ namespace System.Net.Http
                     // ignore it and treat such failures as successes, to match the Windows behavior.
                     if (messageResult != CURLcode.CURLE_UNSUPPORTED_PROTOCOL)
                     {
-                        ThrowIfCURLEError(messageResult);
+                        // libcurl will return CURLE_RECV_ERROR (56) if proxy authentication failed when connecting to a https server,
+                        // whereas it returns CURLE_OK for a http server proxy authentication failure. We ignore this curl behavior error,
+                        // and let the user rely on response message status code to match the Windows behavior.
+                        if (messageResult != CURLcode.CURLE_RECV_ERROR ||
+                                completedOperation._responseMessage.StatusCode != HttpStatusCode.ProxyAuthenticationRequired)
+                        {
+                            ThrowIfCURLEError(messageResult);
+                        }
                     }
 
                     // Make sure the response message is published, in case it wasn't already, and since we're done processing

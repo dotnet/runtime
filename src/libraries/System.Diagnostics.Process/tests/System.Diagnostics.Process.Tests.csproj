@@ -32,8 +32,6 @@
     <Compile Include="ProcessThreadTests.cs" />
     <Compile Include="ProcessWaitingTests.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netstandard'">
     <Compile Include="ProcessTests.netstandard.cs" />
     <Compile Include="ProcessStartInfoTests.netstandard.cs" />
   </ItemGroup>

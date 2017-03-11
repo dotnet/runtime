@@ -1737,7 +1737,7 @@ namespace System.Configuration
             // By default we try to load (i.e. parse/validate ) all properties
             // If a property value is invalid ( cannot be parsed or is not valid ) we will keep the value
             // as string ( from the xml ) and will write it out unchanged if needed
-            // If the property value is needed by users the actuall exception will be thrown
+            // If the property value is needed by users the actual exception will be thrown
 
             string xmlValue = reader.Value;
             object propertyValue = null;

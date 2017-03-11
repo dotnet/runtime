@@ -24,7 +24,7 @@ namespace System.Threading.Tests
             new Semaphore(initialCount, maximumCount, null).Dispose();
         }
 
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // named semaphores aren't supported on Unix
         [Fact]
         public void Ctor_ValidName_Windows()
         {
@@ -37,7 +37,7 @@ namespace System.Threading.Tests
             Assert.True(createdNew);
         }
 
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // named semaphores aren't supported on Unix
         [Fact]
         public void Ctor_NamesArentSupported_Unix()
         {
@@ -73,7 +73,7 @@ namespace System.Threading.Tests
             Assert.Throws<ArgumentException>(() => new Semaphore(2, 1, "CtorSemaphoreTest", out createdNew));
         }
 
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // named semaphores aren't supported on Unix
         [Fact]
         public void Ctor_InvalidNames()
         {
@@ -196,7 +196,7 @@ namespace System.Threading.Tests
                 }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default));
         }
 
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // named semaphores aren't supported on Unix
         [Fact]
         public void OpenExisting_NotSupported_Unix()
         {
@@ -207,7 +207,7 @@ namespace System.Threading.Tests
             Assert.Throws<PlatformNotSupportedException>(() => Semaphore.TryOpenExisting("anything", out semaphore));
         }
 
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // named semaphores aren't supported on Unix
         [Fact]
         public void OpenExisting_InvalidNames_Windows()
         {
@@ -305,7 +305,7 @@ namespace System.Threading.Tests
             using (var inbound = Semaphore.OpenExisting(inboundName))
             using (var outbound = Semaphore.OpenExisting(outboundName))
             {
-                // Repeatedly wait for count in one sempahore and then release count into the other
+                // Repeatedly wait for count in one semaphore and then release count into the other
                 for (int i = 0; i < 10; i++)
                 {
                     Assert.True(inbound.WaitOne(FailWaitTimeoutMilliseconds));

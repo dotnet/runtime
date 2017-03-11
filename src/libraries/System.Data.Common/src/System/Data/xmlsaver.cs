@@ -269,7 +269,7 @@ namespace System.Data
 
             return string.Empty;
             // by default, if we dont map anything, we will map to String
-            // but I can not make Sql Types that will map to string be unmapped, because in schema , I will miss the second part and wont
+            // but I can not make Sql Types that will map to string be unmapped, because in schema , I will miss the second part and won't
             // be able to differenciate between string snd SqlString and others that map to String
         }
 

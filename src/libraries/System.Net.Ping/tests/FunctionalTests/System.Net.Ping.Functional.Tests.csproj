@@ -10,11 +10,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Unix-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)'=='netstandard'">
+  <ItemGroup>
     <Compile Include="PingTest.cs" />
     <Compile Include="LoggingTest.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="PingExceptionTest.cs" />
     <Compile Include="PingOptionsTest.cs" />
     <Compile Include="TestSettings.cs" />

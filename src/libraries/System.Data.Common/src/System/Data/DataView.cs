@@ -1599,7 +1599,7 @@ namespace System.Data
                         {
                             if (null != SortComparison)
                             {
-                                // because an Index with with a Comparison<DataRow is not sharable, directly create the index here
+                                // because an Index with a Comparison<DataRow is not sharable, directly create the index here
                                 newIndex = new Index(_table, SortComparison, ((DataViewRowState)_recordStates), GetFilter());
 
                                 // bump the addref from 0 to 1 to added to table index collection
@@ -1768,7 +1768,7 @@ namespace System.Data
         }
 
         /// <summary>
-        /// If <paramref name="view"/> is equivalent to the the current view with regards to all properties.
+        /// If <paramref name="view"/> is equivalent to the current view with regards to all properties.
         /// <see cref="RowFilter"/> and <see cref="Sort"/> may differ by <see cref="StringComparison.OrdinalIgnoreCase"/>.
         /// </summary>
         public virtual bool Equals(DataView view)

@@ -53,8 +53,7 @@ namespace System
             {
                 EnsureInitialized();
 
-                return Volatile.Read(ref s_stdInReader) ??
-                    Console.EnsureInitialized(
+                return Console.EnsureInitialized(
                         ref s_stdInReader,
                         () => SyncTextReader.GetSynchronizedTextReader(
                             new StdInReader(
@@ -351,7 +350,7 @@ namespace System
                     // Read the cursor position report reponse, of the form \ESC[row;colR. There's a race
                     // condition here if the user is typing, or if other threads are accessing the console;
                     // to try to avoid losing such data, we push unexpected inputs into the stdin buffer, but
-                    // even with that, there's a a potential that we could misinterpret data from the user as
+                    // even with that, there's a potential that we could misinterpret data from the user as
                     // being part of the cursor position response.  This is inherent to the nature of the protocol.
                     StdInReader r = StdInReader.Inner;
                     byte b;

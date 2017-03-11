@@ -958,7 +958,7 @@ namespace System.Collections.Concurrent
                             // Increment head to tentatively take an element: a full fence is used to ensure the read
                             // of _tailIndex doesn't move earlier, as otherwise we could potentially end up stealing
                             // the same element that's being popped locally.
-                            Interlocked.Exchange(ref _headIndex, head + 1);
+                            Interlocked.Exchange(ref _headIndex, unchecked(head + 1));
 
                             // If there's an element to steal, do it.
                             if (head < _tailIndex)

@@ -28,7 +28,7 @@ namespace System.IO.Compression
         /// (Currently, the underlying compression algorithm is provided by the <code>System.IO.Compression.DeflateStream</code> class.)</p>
         /// </summary>
         /// 
-        /// <exception cref="ArgumentException">sourceFileName is a zero-length string, contains only white space, or contains one or more
+        /// <exception cref="ArgumentException">sourceFileName is a zero-length string, contains only whitespace, or contains one or more
         /// invalid characters as defined by InvalidPathChars. -or- entryName is a zero-length string.</exception>
         /// <exception cref="ArgumentNullException">sourceFileName or entryName is null.</exception>
         /// <exception cref="PathTooLongException">In sourceFileName, the specified path, file name, or both exceed the system-defined maximum length.
@@ -63,7 +63,7 @@ namespace System.IO.Compression
         /// (midnight on January 1, 1980) will be used.</p>
         /// <p>If an entry with the specified name already exists in the archive, a second entry will be created that has an identical name.</p>
         /// </summary>
-        /// <exception cref="ArgumentException">sourceFileName is a zero-length string, contains only white space, or contains one or more
+        /// <exception cref="ArgumentException">sourceFileName is a zero-length string, contains only whitespace, or contains one or more
         /// invalid characters as defined by InvalidPathChars. -or- entryName is a zero-length string.</exception>
         /// <exception cref="ArgumentNullException">sourceFileName or entryName is null.</exception>
         /// <exception cref="PathTooLongException">In sourceFileName, the specified path, file name, or both exceed the system-defined maximum length.
@@ -103,13 +103,13 @@ namespace System.IO.Compression
         /// representable in the Zip timestamp format (midnight on January 1, 1980) will be used.
         /// </summary>
         /// 
-        /// <exception cref="ArgumentException">destinationDirectoryName is a zero-length string, contains only white space,
+        /// <exception cref="ArgumentException">destinationDirectoryName is a zero-length string, contains only whitespace,
         /// or contains one or more invalid characters as defined by InvalidPathChars.</exception>
         /// <exception cref="ArgumentNullException">destinationDirectoryName is null.</exception>
         /// <exception cref="PathTooLongException">The specified path, file name, or both exceed the system-defined maximum length.
         /// For example, on Windows-based platforms, paths must be less than 248 characters, and file names must be less than 260 characters.</exception>
         /// <exception cref="DirectoryNotFoundException">The specified path is invalid, (for example, it is on an unmapped drive).</exception>
-        /// <exception cref="IOException">An archive entry?s name is zero-length, contains only white space, or contains one or more invalid
+        /// <exception cref="IOException">An archive entry?s name is zero-length, contains only whitespace, or contains one or more invalid
         /// characters as defined by InvalidPathChars. -or- Extracting an archive entry would have resulted in a destination
         /// file that is outside destinationDirectoryName (for example, if the entry name contains parent directory accessors).
         /// -or- An archive entry has the same name as an already extracted entry from the same archive.</exception>
@@ -135,13 +135,13 @@ namespace System.IO.Compression
         /// representable in the Zip timestamp format (midnight on January 1, 1980) will be used.
         /// </summary>
         /// 
-        /// <exception cref="ArgumentException">destinationDirectoryName is a zero-length string, contains only white space,
+        /// <exception cref="ArgumentException">destinationDirectoryName is a zero-length string, contains only whitespace,
         /// or contains one or more invalid characters as defined by InvalidPathChars.</exception>
         /// <exception cref="ArgumentNullException">destinationDirectoryName is null.</exception>
         /// <exception cref="PathTooLongException">The specified path, file name, or both exceed the system-defined maximum length.
         /// For example, on Windows-based platforms, paths must be less than 248 characters, and file names must be less than 260 characters.</exception>
         /// <exception cref="DirectoryNotFoundException">The specified path is invalid, (for example, it is on an unmapped drive).</exception>
-        /// <exception cref="IOException">An archive entry?s name is zero-length, contains only white space, or contains one or more invalid
+        /// <exception cref="IOException">An archive entry?s name is zero-length, contains only whitespace, or contains one or more invalid
         /// characters as defined by InvalidPathChars. -or- Extracting an archive entry would have resulted in a destination
         /// file that is outside destinationDirectoryName (for example, if the entry name contains parent directory accessors).
         /// -or- An archive entry has the same name as an already extracted entry from the same archive.</exception>
@@ -249,7 +249,7 @@ namespace System.IO.Compression
         /// </summary>
         /// 
         /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission.</exception>
-        /// <exception cref="ArgumentException">destinationFileName is a zero-length string, contains only white space, or contains one or more
+        /// <exception cref="ArgumentException">destinationFileName is a zero-length string, contains only whitespace, or contains one or more
         /// invalid characters as defined by InvalidPathChars. -or- destinationFileName specifies a directory.</exception>
         /// <exception cref="ArgumentNullException">destinationFileName is null.</exception>
         /// <exception cref="PathTooLongException">The specified path, file name, or both exceed the system-defined maximum length.
@@ -281,7 +281,7 @@ namespace System.IO.Compression
         /// </summary>
         /// 
         /// <exception cref="UnauthorizedAccessException">The caller does not have the required permission.</exception>
-        /// <exception cref="ArgumentException">destinationFileName is a zero-length string, contains only white space,
+        /// <exception cref="ArgumentException">destinationFileName is a zero-length string, contains only whitespace,
         /// or contains one or more invalid characters as defined by InvalidPathChars. -or- destinationFileName specifies a directory.</exception>
         /// <exception cref="ArgumentNullException">destinationFileName is null.</exception>
         /// <exception cref="PathTooLongException">The specified path, file name, or both exceed the system-defined maximum length.

@@ -511,7 +511,7 @@ namespace System.Numerics.Tests
             Char result = '5';
             while (result == '5')
             {
-                result = (Char)random.Next();
+                result = unchecked((Char)random.Next());
                 for (int i = 0; i < digits.Length; i++)
                 {
                     if (result == (char)digits[i])

@@ -67,7 +67,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetcoreUwp |  //[ActiveIssue(13121)]  // Path cannot be resolved in UWP
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap |  //[ActiveIssue(13121)]  // Path cannot be resolved in UWP
         TargetFrameworkMonikers.NetFramework)]    // Full framework uses XmlUrlResolver instead of SystemPathResolver (which doesn't allow access to this path)
         public static void ReadAsyncAfterInitializationWithUriThrows()
         {
@@ -78,7 +78,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetcoreUwp |  //[ActiveIssue(13121)]  // Path cannot be resolved in UWP
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap |  //[ActiveIssue(13121)]  // Path cannot be resolved in UWP
         TargetFrameworkMonikers.NetFramework)]    // Full framework uses XmlUrlResolver instead of SystemPathResolver (which doesn't allow access to this path)
         public static void ReadAfterInitializationWithUriOnAsyncReaderTrows()
         {

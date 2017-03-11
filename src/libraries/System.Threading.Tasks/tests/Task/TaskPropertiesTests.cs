@@ -43,7 +43,7 @@ namespace System.Threading.Tasks.Tests
                 t2.Wait();
             }
 
-            // Verification -- Verify that task IDs are unqiue and equal to the number of tasks created
+            // Verification -- Verify that task IDs are unique and equal to the number of tasks created
             for (int i = 0; i < taskIDs.Length; i++)
             {
                 var id = taskIDs[i];

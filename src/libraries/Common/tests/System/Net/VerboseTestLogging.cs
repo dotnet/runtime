@@ -2,15 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics.Tracing;
-using System.Text;
 using Xunit.Abstractions;
 
 namespace System.Net.Test.Common
 {
     public class VerboseTestLogging : ITestOutputHelper
     {
-        private static VerboseTestLogging s_instance = new VerboseTestLogging();
+        private static readonly VerboseTestLogging s_instance = new VerboseTestLogging();
 
         private VerboseTestLogging()
         {

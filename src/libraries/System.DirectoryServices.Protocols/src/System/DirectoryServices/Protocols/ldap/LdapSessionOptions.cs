@@ -5,6 +5,7 @@
 namespace System.DirectoryServices.Protocols
 {
     using System;
+    using System.Globalization;
     using System.Net;
     using System.Security.Cryptography.X509Certificates;
     using System.ComponentModel;
@@ -148,7 +149,6 @@ namespace System.DirectoryServices.Protocols
 
         public ReferralCallback()
         {
-            Utility.CheckOSVersion();
         }
 
         public QueryForConnectionCallback QueryForConnection
@@ -267,7 +267,7 @@ namespace System.DirectoryServices.Protocols
             set
             {
                 if (value < 0)
-                    throw new ArgumentException(Res.GetString(Res.ValidValue), "value");
+                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.ValidValue), "value");
 
                 SetIntValueHelper(LdapOption.LDAP_OPT_REFERRAL_HOP_LIMIT, value);
             }
@@ -350,13 +350,13 @@ namespace System.DirectoryServices.Protocols
             {
                 if (value < TimeSpan.Zero)
                 {
-                    throw new ArgumentException(Res.GetString(Res.NoNegativeTime), "value");
+                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.NoNegativeTime), "value");
                 }
 
                 // prevent integer overflow
                 if (value.TotalSeconds > Int32.MaxValue)
                 {
-                    throw new ArgumentException(Res.GetString(Res.TimespanExceedMax), "value");
+                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.TimespanExceedMax), "value");
                 }
 
                 int seconds = (int)(value.Ticks / TimeSpan.TicksPerSecond);
@@ -374,7 +374,7 @@ namespace System.DirectoryServices.Protocols
             set
             {
                 if (value < 0)
-                    throw new ArgumentException(Res.GetString(Res.ValidValue), "value");
+                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.ValidValue), "value");
 
                 SetIntValueHelper(LdapOption.LDAP_OPT_PING_LIMIT, value);
             }
@@ -391,13 +391,13 @@ namespace System.DirectoryServices.Protocols
             {
                 if (value < TimeSpan.Zero)
                 {
-                    throw new ArgumentException(Res.GetString(Res.NoNegativeTime), "value");
+                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.NoNegativeTime), "value");
                 }
 
                 // prevent integer overflow
                 if (value.TotalMilliseconds > Int32.MaxValue)
                 {
-                    throw new ArgumentException(Res.GetString(Res.TimespanExceedMax), "value");
+                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.TimespanExceedMax), "value");
                 }
 
                 int milliseconds = (int)(value.Ticks / TimeSpan.TicksPerMillisecond);
@@ -587,13 +587,13 @@ namespace System.DirectoryServices.Protocols
             {
                 if (value < TimeSpan.Zero)
                 {
-                    throw new ArgumentException(Res.GetString(Res.NoNegativeTime), "value");
+                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.NoNegativeTime), "value");
                 }
 
                 // prevent integer overflow
                 if (value.TotalSeconds > Int32.MaxValue)
                 {
-                    throw new ArgumentException(Res.GetString(Res.TimespanExceedMax), "value");
+                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.TimespanExceedMax), "value");
                 }
 
                 int seconds = (int)(value.Ticks / TimeSpan.TicksPerSecond);
@@ -735,10 +735,7 @@ namespace System.DirectoryServices.Protocols
             // do the fast concurrent bind
             int error = Wldap32.ldap_set_option_int(_connection.ldapHandle, LdapOption.LDAP_OPT_FAST_CONCURRENT_BIND, ref inValue);
             //we only throw PlatformNotSupportedException when we get parameter error and os is win2k3 below which does not support fast concurrent bind
-            if (error == (int)LdapError.ParameterError && !Utility.IsWin2k3AboveOS)
-                throw new PlatformNotSupportedException(Res.GetString(Res.ConcurrentBindNotSupport));
-            else
-                ErrorChecking.CheckAndSetLdapError(error);
+            ErrorChecking.CheckAndSetLdapError(error);
         }
 
         public unsafe void StartTransportLayerSecurity(DirectoryControlCollection controls)
@@ -752,9 +749,6 @@ namespace System.DirectoryServices.Protocols
 
             int serverError = 0;
             Uri[] responseReferral = null;
-
-            if (Utility.IsWin2kOS)
-                throw new PlatformNotSupportedException(Res.GetString(Res.TLSNotSupported));
 
             if (_connection.disposed)
                 throw new ObjectDisposedException(GetType().Name);
@@ -774,11 +768,11 @@ namespace System.DirectoryServices.Protocols
                     {
                         controlPtr = Marshal.AllocHGlobal(structSize);
                         Marshal.StructureToPtr(managedServerControls[i], controlPtr, false);
-                        tempPtr = (IntPtr)((long)serverControlArray + Marshal.SizeOf(typeof(IntPtr)) * i);
+                        tempPtr = (IntPtr)((long)serverControlArray + IntPtr.Size * i);
                         Marshal.WriteIntPtr(tempPtr, controlPtr);
                     }
 
-                    tempPtr = (IntPtr)((long)serverControlArray + Marshal.SizeOf(typeof(IntPtr)) * managedServerControls.Length);
+                    tempPtr = (IntPtr)((long)serverControlArray + IntPtr.Size * managedServerControls.Length);
                     Marshal.WriteIntPtr(tempPtr, (IntPtr)0);
                 }
 
@@ -791,10 +785,10 @@ namespace System.DirectoryServices.Protocols
                     {
                         controlPtr = Marshal.AllocHGlobal(structSize);
                         Marshal.StructureToPtr(managedClientControls[i], controlPtr, false);
-                        tempPtr = (IntPtr)((long)clientControlArray + Marshal.SizeOf(typeof(IntPtr)) * i);
+                        tempPtr = (IntPtr)((long)clientControlArray + IntPtr.Size * i);
                         Marshal.WriteIntPtr(tempPtr, controlPtr);
                     }
-                    tempPtr = (IntPtr)((long)clientControlArray + Marshal.SizeOf(typeof(IntPtr)) * managedClientControls.Length);
+                    tempPtr = (IntPtr)((long)clientControlArray + IntPtr.Size * managedClientControls.Length);
                     Marshal.WriteIntPtr(tempPtr, (IntPtr)0);
                 }
 
@@ -840,7 +834,7 @@ namespace System.DirectoryServices.Protocols
 
                 if (error != (int)ResultCode.Success)
                 {
-                    string errorMessage = Res.GetString(Res.DefaultLdapError);
+                    string errorMessage = String.Format(CultureInfo.CurrentCulture, SR.DefaultLdapError);
                     if (Utility.IsResultCode((ResultCode)error))
                     {
                         //If the server failed request for whatever reason, the ldap_start_tls returns LDAP_OTHER
@@ -867,7 +861,7 @@ namespace System.DirectoryServices.Protocols
                     //release the memory from the heap
                     for (int i = 0; i < managedServerControls.Length; i++)
                     {
-                        IntPtr tempPtr = Marshal.ReadIntPtr(serverControlArray, Marshal.SizeOf(typeof(IntPtr)) * i);
+                        IntPtr tempPtr = Marshal.ReadIntPtr(serverControlArray, IntPtr.Size * i);
                         if (tempPtr != (IntPtr)0)
                             Marshal.FreeHGlobal(tempPtr);
                     }
@@ -894,7 +888,7 @@ namespace System.DirectoryServices.Protocols
                     // release the memor from the heap
                     for (int i = 0; i < managedClientControls.Length; i++)
                     {
-                        IntPtr tempPtr = Marshal.ReadIntPtr(clientControlArray, Marshal.SizeOf(typeof(IntPtr)) * i);
+                        IntPtr tempPtr = Marshal.ReadIntPtr(clientControlArray, IntPtr.Size * i);
                         if (tempPtr != (IntPtr)0)
                             Marshal.FreeHGlobal(tempPtr);
                     }
@@ -923,16 +917,13 @@ namespace System.DirectoryServices.Protocols
 
         public void StopTransportLayerSecurity()
         {
-            if (Utility.IsWin2kOS)
-                throw new PlatformNotSupportedException(Res.GetString(Res.TLSNotSupported));
-
             if (_connection.disposed)
                 throw new ObjectDisposedException(GetType().Name);
 
             byte result = Wldap32.ldap_stop_tls(_connection.ldapHandle);
             if (result == 0)
                 // caller needs to close this ldap connection
-                throw new TlsOperationException(null, Res.GetString(Res.TLSStopFailure));
+                throw new TlsOperationException(null, String.Format(CultureInfo.CurrentCulture, SR.TLSStopFailure));
         }
 
         private int GetIntValueHelper(LdapOption option)

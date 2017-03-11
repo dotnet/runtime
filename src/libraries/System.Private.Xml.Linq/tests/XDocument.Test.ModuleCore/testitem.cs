@@ -47,7 +47,7 @@ namespace Microsoft.Test.ModuleCore
 
         protected abstract TestAttribute CreateAttribute();
 
-        //Note: These are just a mere convience to access the attribute values
+        //Note: These are just a mere convenience to access the attribute values
         //for this particular object.  Also note that for non-attribute based
         //scenarios (dynamic), the attribute class will be created just to hold
         //the values

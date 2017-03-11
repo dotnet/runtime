@@ -207,7 +207,7 @@ namespace System.Data.Tests
 
             dv.Sort = "[id] DESC";
 
-            // for the new view, the index thats chosen, shud be different from the the one
+            // for the new view, the index thats chosen, shud be different from the one
             // created for the older view.
             dv = new DataView(table);
             IBindingList ib = dv;

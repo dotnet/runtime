@@ -1885,12 +1885,14 @@ namespace SerializationTypes
         public ICollection<int> Member1;
     }
 
+#if uapaot
     public class TypeWithTypeProperty
     {
         public int Id { get; set; }
         public Type Type { get; set; }
         public string Name { get; set; }
     }
+#endif
 
     [DataContract(Namespace = "SerializationTypes.GenericTypeWithPrivateSetter")]
     public class GenericTypeWithPrivateSetter<T>
@@ -4168,4 +4170,66 @@ public class SoapEncodedTestType3
 {
     [SoapElement(IsNullable = true)]
     public string StringValue;
+}
+
+public class SoapEncodedTestType5
+{
+    public string Name;
+
+    [SoapElement(DataType = "nonNegativeInteger", ElementName = "PosInt")]
+    public string PostitiveInt;
+
+    public DateTime Today;
+}
+
+public class MyCircularLink
+{
+    public MyCircularLink Link;
+    public int IntValue;
+
+    public MyCircularLink() { }
+    public MyCircularLink(bool init)
+    {
+        Link = new MyCircularLink() { IntValue = 1 };
+        Link.Link = new MyCircularLink() { IntValue = 2 };
+        Link.Link.Link = this;
+    }
+}
+public class MyGroup
+{
+    public string GroupName;
+    public MyItem[] MyItems;
+}
+
+public class MyGroup2
+{
+    public string GroupName;
+    public List<MyItem> MyItems;
+}
+
+public class MyGroup3
+{
+    public string GroupName;
+    public Dictionary<int, MyItem> MyItems;
+}
+
+public class MyItem
+{
+    public string ItemName;
+}
+
+public class MyOrder
+{
+    public int ID;
+    public string Name;
+}
+
+public class MySpecialOrder : MyOrder
+{
+    public int SecondaryID;
+}
+
+public class MySpecialOrder2 : MyOrder
+{
+    public int SecondaryID;
 }

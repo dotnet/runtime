@@ -9,6 +9,8 @@ namespace System.Tests
 {
     public class UriCreateUriTests
     {
+        private static readonly bool s_isWindowsSystem = PlatformDetection.IsWindows;
+
         public static IEnumerable<object[]> Create_Uri_TestData()
         {
             yield return new object[] { "http://host/?query#fragment", "path", UriKind.RelativeOrAbsolute, "http://host/path" };
@@ -58,7 +60,10 @@ namespace System.Tests
             yield return new object[] { "file:///", "path", UriKind.RelativeOrAbsolute, "file:///path" };
 
             // UNC
-            yield return new object[] { @"\\servernameold\path1", "//servername", UriKind.Relative, @"\\servername" };
+            if (s_isWindowsSystem) // Unc can only start with '/' on Windows
+            {
+                yield return new object[] { @"\\servernameold\path1", "//servername", UriKind.Relative, @"\\servername" };
+            }
             yield return new object[] { @"\\servernameold\path1", @"\\servername", UriKind.Relative, @"\\servername" };
             yield return new object[] { @"\\servername\path1", "/path", UriKind.RelativeOrAbsolute, @"\\servername\path1\path" };
             yield return new object[] { @"\\servername\path1", @"\path", UriKind.RelativeOrAbsolute, @"\\servername\path1\path" };
@@ -66,6 +71,15 @@ namespace System.Tests
             yield return new object[] { @"\\servername\pathold", "path", UriKind.RelativeOrAbsolute, @"\\servername\path" };
             yield return new object[] { @"file://\\servername/path1", "/path", UriKind.RelativeOrAbsolute, "file://servername/path1/path" };
             yield return new object[] { @"\\servername\path1", "?query", UriKind.RelativeOrAbsolute, @"\\servername/?query" };
+
+            // Unix path
+            if (!s_isWindowsSystem)
+            {
+                // Implicit file
+                yield return new object[] {"/path1", "/path", UriKind.RelativeOrAbsolute, "/path" };
+                yield return new object[] {"/path1/path2", "/path", UriKind.RelativeOrAbsolute, "/path" };
+                yield return new object[] {"/pathold", "path", UriKind.RelativeOrAbsolute, "/path" };
+            }
 
             // IPv6
             yield return new object[] { "http://[::1]", "/path", UriKind.RelativeOrAbsolute, "http://[::1]/path" };

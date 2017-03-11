@@ -97,7 +97,7 @@ namespace System.ComponentModel.Design
             //
             if (serviceType == null) throw new ArgumentNullException(nameof(serviceType));
             if (serviceInstance == null) throw new ArgumentNullException(nameof(serviceInstance));
-            if (!(serviceInstance is ServiceCreatorCallback) && !serviceInstance.GetType().IsCOMObject && !serviceType.IsAssignableFrom(serviceInstance.GetType()))
+            if (!(serviceInstance is ServiceCreatorCallback) && !serviceInstance.GetType().IsCOMObject && !serviceType.IsInstanceOfType(serviceInstance))
             {
                 throw new ArgumentException(SR.Format(SR.ErrorInvalidServiceInstance, serviceType.FullName));
             }
@@ -215,7 +215,7 @@ namespace System.ComponentModel.Design
                 Debug.WriteLineIf(s_TRACESERVICE.TraceVerbose, "Encountered a callback. Invoking it");
                 service = ((ServiceCreatorCallback)service)(this, serviceType);
                 Debug.WriteLineIf(s_TRACESERVICE.TraceVerbose, $"Callback return object: {(service == null ? "(null)" : service.ToString())}");
-                if (service != null && !service.GetType().IsCOMObject && !serviceType.IsAssignableFrom(service.GetType()))
+                if (service != null && !service.GetType().IsCOMObject && !serviceType.IsInstanceOfType(service))
                 {
                     // Callback passed us a bad service.  NULL it, rather than throwing an exception.
                     // Callers here do not need to be prepared to handle bad callback implemetations.

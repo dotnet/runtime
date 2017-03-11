@@ -32,6 +32,28 @@ namespace System.Collections.Tests
             var copied = new Dictionary<TKey, TValue>(collection, comparer);
             Assert.Equal(collection, copied);
         }
-    }
 
+        [Fact]
+        public void GetValueOrDefault_KeyExists_ReturnsValue()
+        {
+            int seed = 9600;
+            TKey key = CreateTKey(seed++);
+            TValue value = CreateTValue(seed++);
+            Dictionary<TKey, TValue> dictionary = new Dictionary<TKey, TValue>() { { key, value } };
+
+            Assert.Equal(value, dictionary.GetValueOrDefault(key));
+            Assert.Equal(value, dictionary.GetValueOrDefault(key, CreateTValue(seed++)));
+        }
+
+        [Fact]
+        public void GetValueOrDefault_KeyDoesntExist_ReturnsDefaultValue()
+        {
+            int seed = 9600;
+            TKey key = CreateTKey(seed++);
+            TValue defaultValue = CreateTValue(seed++);
+            Dictionary<TKey, TValue> dictionary = new Dictionary<TKey, TValue>() { { CreateTKey(seed++), CreateTValue(seed++) } };
+            Assert.Equal(default(TValue), dictionary.GetValueOrDefault(key));
+            Assert.Equal(defaultValue, dictionary.GetValueOrDefault(key, defaultValue));
+        }
+    }
 }

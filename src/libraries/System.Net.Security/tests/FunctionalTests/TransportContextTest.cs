@@ -24,7 +24,6 @@ namespace System.Net.Security.Tests
             return true;  // allow everything
         }
 
-        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async Task TransportContext_ConnectToServerWithSsl_GetExpectedChannelBindings()
         {

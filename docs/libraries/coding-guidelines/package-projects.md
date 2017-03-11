@@ -10,7 +10,7 @@ In either case the file name of the `.pkgproj` is just {assemblyName}.pkgproj an
 
 ## Package samples
 ### Simple portable library
-This is the simplest case.  The package project need only reference the single project that implements the portable libary.
+This is the simplest case.  The package project need only reference the single project that implements the portable library.
 
 Sample `System.Text.Encodings.Web.pkgproj`
 ```
@@ -147,7 +147,7 @@ Tests can be similarly filtered grouping the compilation directives under:
 (from `\tests\FunctionalTests\System.Net.Security.Tests.csproj`)
 
 ### Platform-specific library
-These packages need to provide a different platform specific implementation on each platform.  They do this by splitting the implementations into seperate packages and associating those platform specific packages with the primary reference package.  Each platform specific package sets `PackageTargetRuntime` to the specific platform RID that it applies.
+These packages need to provide a different platform specific implementation on each platform.  They do this by splitting the implementations into separate packages and associating those platform specific packages with the primary reference package.  Each platform specific package sets `PackageTargetRuntime` to the specific platform RID that it applies.
 
 Sample `System.IO.FileSystem.pkgproj`
 ```
@@ -222,7 +222,7 @@ Sample `System.IO.FileSystem.pkgproj`
 ```
 
 ## Asset selection
-The makeup of a package folder is primarily a grouping of project references to the projects that compose that package.  Settings within each referenced project determines where that asset will be placed in the package.  For example, reference assembly projects will be placed under the `ref/{targetMoniker}` folder in the package and implementations will be under either `lib/{targetMoniker}` or `runtimes/{rid}/lib/{targetMoniker}`.  Whenever NuGet evaulates a package in the context of a referencing project it will choose the best compile time asset (preferring `ref`, then falling back to `lib`) and runtime asset (preffering `runtimes/{rid}/lib` and falling back to `lib`) for every package that is referenced.  For more information see http://docs.nuget.org/.
+The makeup of a package folder is primarily a grouping of project references to the projects that compose that package.  Settings within each referenced project determines where that asset will be placed in the package.  For example, reference assembly projects will be placed under the `ref/{targetMoniker}` folder in the package and implementations will be under either `lib/{targetMoniker}` or `runtimes/{rid}/lib/{targetMoniker}`.  Whenever NuGet evaluates a package in the context of a referencing project it will choose the best compile time asset (preferring `ref`, then falling back to `lib`) and runtime asset (preferring `runtimes/{rid}/lib` and falling back to `lib`) for every package that is referenced.  For more information see http://docs.nuget.org/.
 
 Asset projects (`.csproj`, `.vbproj`, or `.depproj`) can control their `{targetMoniker}` using the `PackageTargetFramework` property in the project file.  Similarly `{rid}` is controlled using the `PackageTargetRuntime` property.  In the corefx repo we automatically select default values for these properties based on the [Build pivots](#build-pivots).  These can be overridden in the project reference using metadata of the same name, but this is rarely needed.
 
@@ -261,7 +261,7 @@ Part of package build is to ensure that a package is applicable on all platforms
     </ProjectReference>
     ```
 
-2. Through SupportedFramework items with Version metdata.
+2. Through SupportedFramework items with Version metadata.
     ```
     <!-- no version indicates latest is supported -->
     <SupportedFramework Include="net46;netcore50;netcoreapp1.0" />
@@ -293,7 +293,7 @@ If the library is also a "classic" reference assembly, not referenced by default
 Package validation will catch a case where we know a library is supported inbox but a package is using an asset from the package.  This data is driven by framework lists from previously-shipped targeting packs.  The error will appear as: *Framework net45 should support Microsoft.CSharp inbox but {explanation of problem}.  You may need to add <InboxOnTargetFramework Include="net45" /> to your project.*
 
 ###External assets
-Runtime specific packages are used to break apart implementations into seperate packages and enable "pay-for-play".  For example: don't download the Windows implementation if we're only building/deploying for linux.  In most cases we can completely seperate implementations into seperate packages such that they easily translate.  For example:
+Runtime specific packages are used to break apart implementations into separate packages and enable "pay-for-play".  For example: don't download the Windows implementation if we're only building/deploying for linux.  In most cases we can completely separate implementations into separate packages such that they easily translate.  For example:
 ```
 runtimes/win/lib/dotnet5.4/System.Banana.dll
 runtimes/unix/lib/dotnet5.4/System.Banana.dll
@@ -305,7 +305,7 @@ Consider the following:
 runtimes/win/lib/dotnet5.4/System.Banana.dll
 runtimes/win/lib/net46/System.Banana.dll
 ```
-Suppose we wanted to split the desktop (`net46`) implementation into a seperate package than the portable implementation.  Doing so would cause both the `dotnet5.4` asset and the `net46` asset to be applicable and result in a bin-clash.  This is because in a single package the `net46` asset is preferred over the `dotnet5.4` asset, but in seperate packages both are in view.  The packaging validation will catch this problem and display an error such as
+Suppose we wanted to split the desktop (`net46`) implementation into a separate package than the portable implementation.  Doing so would cause both the `dotnet5.4` asset and the `net46` asset to be applicable and result in a bin-clash.  This is because in a single package the `net46` asset is preferred over the `dotnet5.4` asset, but in separate packages both are in view.  The packaging validation will catch this problem and display an error such as
 
 *System.Banana includes both package1/runtimes/win/lib/net46/System.Banana.dll and package2/runtimes/win/lib/dotnet5.4/System.Banana.dll an on net46 which have the same name and will clash when both packages are used.*
 

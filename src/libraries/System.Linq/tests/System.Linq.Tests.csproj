@@ -9,6 +9,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp'">
+    <Compile Include="SkipLastTests.cs" />
+    <Compile Include="TakeLastTests.cs" />
+    <Compile Include="OrderByTests.cs" />
+    <Compile Include="ToHashSetTests.cs" />
+    <Compile Include="SelectManyTests.netcoreapp.cs" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="AggregateTests.cs" />
     <Compile Include="AllTests.cs" />
@@ -43,7 +50,6 @@
     <Compile Include="MinTests.cs" />
     <Compile Include="OfTypeTests.cs" />
     <Compile Include="OrderByDescendingTests.cs" />
-    <Compile Include="OrderByTests.cs" />
     <Compile Include="OrderedSubsetting.cs" />
     <Compile Include="RangeTests.cs" />
     <Compile Include="RepeatTests.cs" />
@@ -55,11 +61,9 @@
     <Compile Include="Shuffler.cs" />
     <Compile Include="SingleOrDefaultTests.cs" />
     <Compile Include="SingleTests.cs" />
-    <Compile Include="SkipLastTests.cs" />
     <Compile Include="SkipTests.cs" />
     <Compile Include="SkipWhileTests.cs" />
     <Compile Include="SumTests.cs" />
-    <Compile Include="TakeLastTests.cs" />
     <Compile Include="TakeTests.cs" />
     <Compile Include="TakeWhileTests.cs" />
     <Compile Include="TestExtensions.cs" />
@@ -67,12 +71,14 @@
     <Compile Include="ThenByTests.cs" />
     <Compile Include="ToArrayTests.cs" />
     <Compile Include="ToDictionaryTests.cs" />
-    <Compile Include="ToHashSetTests.cs" />
     <Compile Include="ToListTests.cs" />
     <Compile Include="ToLookupTests.cs" />
     <Compile Include="UnionTests.cs" />
     <Compile Include="WhereTests.cs" />
     <Compile Include="ZipTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\Diagnostics\DebuggerAttributes.cs">
+      <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
       <Link>Common\System\PlatformDetection.cs</Link>
     </Compile>

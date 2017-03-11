@@ -541,6 +541,154 @@ namespace System.Runtime.CompilerServices
             Assert.True(Unsafe.AreSame(ref a[0], ref a[0]));
             Assert.False(Unsafe.AreSame(ref a[0], ref a[1]));
         }
+
+        [Fact]
+        public static unsafe void ReadUnaligned_ByRef_Int32()
+        {
+            byte[] unaligned = Int32Double.Unaligned(123456789, 3.42);
+
+            int actual = Unsafe.ReadUnaligned<int>(ref unaligned[1]);
+
+            Assert.Equal(123456789, actual);
+        }
+
+        [Fact]
+        public static unsafe void ReadUnaligned_ByRef_Double()
+        {
+            byte[] unaligned = Int32Double.Unaligned(123456789, 3.42);
+
+            double actual = Unsafe.ReadUnaligned<double>(ref unaligned[9]);
+
+            Assert.Equal(3.42, actual);
+        }
+
+        [Fact]
+        public static unsafe void ReadUnaligned_ByRef_Struct()
+        {
+            byte[] unaligned = Int32Double.Unaligned(123456789, 3.42);
+
+            Int32Double actual = Unsafe.ReadUnaligned<Int32Double>(ref unaligned[1]);
+
+            Assert.Equal(123456789, actual.Int32);
+            Assert.Equal(3.42, actual.Double);
+        }
+
+        [Fact]
+        public static unsafe void ReadUnaligned_Ptr_Int32()
+        {
+            byte[] unaligned = Int32Double.Unaligned(123456789, 3.42);
+
+            fixed (byte* p = unaligned)
+            {
+                int actual = Unsafe.ReadUnaligned<int>(p + 1);
+
+                Assert.Equal(123456789, actual);
+            }
+        }
+
+        [Fact]
+        public static unsafe void ReadUnaligned_Ptr_Double()
+        {
+            byte[] unaligned = Int32Double.Unaligned(123456789, 3.42);
+
+            fixed (byte* p = unaligned)
+            {
+                double actual = Unsafe.ReadUnaligned<double>(p + 9);
+
+                Assert.Equal(3.42, actual);
+            }
+        }
+
+        [Fact]
+        public static unsafe void ReadUnaligned_Ptr_Struct()
+        {
+            byte[] unaligned = Int32Double.Unaligned(123456789, 3.42);
+
+            fixed (byte* p = unaligned)
+            {
+                Int32Double actual = Unsafe.ReadUnaligned<Int32Double>(p + 1);
+
+                Assert.Equal(123456789, actual.Int32);
+                Assert.Equal(3.42, actual.Double);
+            }
+        }
+
+        [Fact]
+        public static unsafe void WriteUnaligned_ByRef_Int32()
+        {
+            byte[] unaligned = new byte[sizeof(Int32Double) + 1];
+
+            Unsafe.WriteUnaligned(ref unaligned[1], 123456789);
+
+            int actual = Int32Double.Aligned(unaligned).Int32;
+            Assert.Equal(123456789, actual);
+        }
+
+        [Fact]
+        public static unsafe void WriteUnaligned_ByRef_Double()
+        {
+            byte[] unaligned = new byte[sizeof(Int32Double) + 1];
+
+            Unsafe.WriteUnaligned(ref unaligned[9], 3.42);
+
+            double actual = Int32Double.Aligned(unaligned).Double;
+            Assert.Equal(3.42, actual);
+        }
+
+        [Fact]
+        public static unsafe void WriteUnaligned_ByRef_Struct()
+        {
+            byte[] unaligned = new byte[sizeof(Int32Double) + 1];
+
+            Unsafe.WriteUnaligned(ref unaligned[1], new Int32Double { Int32 = 123456789, Double = 3.42 });
+
+            Int32Double actual = Int32Double.Aligned(unaligned);
+            Assert.Equal(123456789, actual.Int32);
+            Assert.Equal(3.42, actual.Double);
+        }
+
+        [Fact]
+        public static unsafe void WriteUnaligned_Ptr_Int32()
+        {
+            byte[] unaligned = new byte[sizeof(Int32Double) + 1];
+
+            fixed (byte* p = unaligned)
+            {
+                Unsafe.WriteUnaligned(p + 1, 123456789);
+            }
+
+            int actual = Int32Double.Aligned(unaligned).Int32;
+            Assert.Equal(123456789, actual);
+        }
+
+        [Fact]
+        public static unsafe void WriteUnaligned_Ptr_Double()
+        {
+            byte[] unaligned = new byte[sizeof(Int32Double) + 1];
+
+            fixed (byte* p = unaligned)
+            {
+                Unsafe.WriteUnaligned(p + 9, 3.42);
+            }
+
+            double actual = Int32Double.Aligned(unaligned).Double;
+            Assert.Equal(3.42, actual);
+        }
+
+        [Fact]
+        public static unsafe void WriteUnaligned_Ptr_Struct()
+        {
+            byte[] unaligned = new byte[sizeof(Int32Double) + 1];
+
+            fixed (byte* p = unaligned)
+            {
+                Unsafe.WriteUnaligned(p + 1, new Int32Double { Int32 = 123456789, Double = 3.42 });
+            }
+
+            Int32Double actual = Int32Double.Aligned(unaligned);
+            Assert.Equal(123456789, actual.Int32);
+            Assert.Equal(3.42, actual.Double);
+        }
     }
 
     [StructLayout(LayoutKind.Explicit)]
@@ -576,5 +724,36 @@ namespace System.Runtime.CompilerServices
     public unsafe struct Byte512
     {
         public fixed byte Bytes[512];
+    }
+
+    public unsafe struct Int32Double
+    {
+        public int Int32;
+        public double Double;
+
+        public static unsafe byte[] Unaligned(int i, double d)
+        {
+            var aligned = new Int32Double { Int32 = i, Double = d };
+            var unaligned = new byte[sizeof(Int32Double) + 1];
+
+            fixed (byte* p = unaligned)
+            {
+                Buffer.MemoryCopy(&aligned, p + 1, sizeof(Int32Double), sizeof(Int32Double));
+            }
+
+            return unaligned;
+        }
+
+        public static unsafe Int32Double Aligned(byte[] unaligned)
+        {
+            var aligned = new Int32Double();
+
+            fixed (byte* p = unaligned)
+            {
+                Buffer.MemoryCopy(p + 1, &aligned, sizeof(Int32Double), sizeof(Int32Double));
+            }
+
+            return aligned;
+        }
     }
 }

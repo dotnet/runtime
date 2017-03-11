@@ -38,7 +38,7 @@ public class CancelKeyPressTests : RemoteExecutorTestBase
         }).Dispose();
     }
 
-    [PlatformSpecific(TestPlatforms.AnyUnix)]
+    [PlatformSpecific(TestPlatforms.AnyUnix)]  // Uses P/Invokes
     public void HandlerInvokedForSigInt()
     {
         HandlerInvokedForSignal(SIGINT);

@@ -135,13 +135,13 @@ namespace System.Tests
             var sourceArray = new byte[sourceLength];
             for (int i = 0; i < sourceArray.Length; i++)
             {
-                sourceArray[i] = (byte)i;
+                sourceArray[i] = unchecked((byte)i);
             }
 
             var destinationArray = new byte[destinationLength];
             for (int i = 0; i < destinationArray.Length; i++)
             {
-                destinationArray[i] = (byte)(i * 2);
+                destinationArray[i] = unchecked((byte)(i * 2));
             }
             fixed (byte* sourceBase = sourceArray, destinationBase = destinationArray)
             {
@@ -150,7 +150,7 @@ namespace System.Tests
 
             for (int i = 0; i < destinationIndexOffset; i++)
             {
-                Assert.Equal((byte)(i * 2), destinationArray[i]);
+                Assert.Equal(unchecked((byte)(i * 2)), destinationArray[i]);
             }
             for (int i = 0; i < sourceBytesToCopy; i++)
             {
@@ -158,7 +158,7 @@ namespace System.Tests
             }
             for (long i = destinationIndexOffset + sourceBytesToCopy; i < destinationArray.Length; i++)
             {
-                Assert.Equal((byte)(i * 2), destinationArray[i]);
+                Assert.Equal(unchecked((byte)(i * 2)), destinationArray[i]);
             }
         }
 

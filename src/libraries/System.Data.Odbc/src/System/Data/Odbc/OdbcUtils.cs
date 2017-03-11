@@ -531,7 +531,7 @@ namespace System.Data.Odbc
             return -1;
         }
 
-        // Skips the white space found in the beginning of the string.
+        // Skips the whitespace found in the beginning of the string.
         internal bool StartsWith(String tokenString)
         {
             int tempidx = 0;

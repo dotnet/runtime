@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Net.Security;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Authentication.ExtendedProtection;
@@ -490,7 +491,7 @@ namespace System.Net
                     }
                     catch (HttpListenerException)
                     {
-                        // If an error occured while adding prefixes, free all resources allocated by previous steps.
+                        // If an error occurred while adding prefixes, free all resources allocated by previous steps.
                         DetachRequestQueueFromUrlGroup();
                         throw;
                     }
@@ -949,7 +950,7 @@ namespace System.Net
                 if (httpContext == null)
                 {
                     Debug.Assert(castedAsyncResult.Result is Exception, "EndGetContext|The result is neither a HttpListenerContext nor an Exception.");
-                    throw castedAsyncResult.Result as Exception;
+                    ExceptionDispatchInfo.Capture(castedAsyncResult.Result as Exception).Throw();
                 }
             }
             catch (Exception exception)

@@ -65,8 +65,6 @@
     </Compile>
     <Compile Include="EcDsaOpenSslProvider.cs" />
     <Compile Include="RsaOpenSslTests.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netstandard'">
     <Compile Include="DsaOpenSslProvider.cs" />
     <Compile Include="DsaOpenSslTests.cs" />
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AsymmetricSignatureFormatter.cs">

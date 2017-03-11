@@ -1,64 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!-- 
-    Microsoft ResX Schema 
-    
-    Version 2.0
-    
-    The primary goals of this format is to allow a simple XML format 
-    that is mostly human readable. The generation and parsing of the 
-    various data types are done through the TypeConverter classes 
-    associated with the data types.
-    
-    Example:
-    
-    ... ado.net/XML headers & schema ...
-    <resheader name="resmimetype">text/microsoft-resx</resheader>
-    <resheader name="version">2.0</resheader>
-    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
-    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
-    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
-    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
-    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
-        <value>[base64 mime encoded serialized .NET Framework object]</value>
-    </data>
-    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
-        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
-        <comment>This is a comment</comment>
-    </data>
-                
-    There are any number of "resheader" rows that contain simple 
-    name/value pairs.
-    
-    Each data row contains a name, and value. The row also contains a 
-    type or mimetype. Type corresponds to a .NET class that support 
-    text/value conversion through the TypeConverter architecture. 
-    Classes that don't support this are serialized and stored with the 
-    mimetype set.
-    
-    The mimetype is used for serialized objects, and tells the 
-    ResXResourceReader how to depersist the object. This is currently not 
-    extensible. For a given mimetype the value must be set accordingly:
-    
-    Note - application/x-microsoft.net.object.binary.base64 is the format 
-    that the ResXResourceWriter will generate, however the reader can 
-    read any of the formats listed below.
-    
-    mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
-            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
-            : and then encoded with base64 encoding.
-    
-    mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with 
-            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
-            : and then encoded with base64 encoding.
-
-    mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array 
-            : using a System.ComponentModel.TypeConverter
-            : and then encoded with base64 encoding.
-    -->
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -823,7 +764,7 @@
     <value>Only one root element is permitted per document.</value>
   </data>
   <data name="XmlOnlyWhitespace" xml:space="preserve">
-    <value>Only white space characters can be written with this method.</value>
+    <value>Only whitespace characters can be written with this method.</value>
   </data>
   <data name="XmlOnlySingleValue" xml:space="preserve">
     <value>Only a single typed value may be written inside an attribute or content.</value>
@@ -870,30 +811,6 @@
   <data name="XmlWriterClosed" xml:space="preserve">
     <value>The XmlWriter is closed.</value>
   </data>
-  <data name="ObjectSerializer_DictionaryNotSupported" xml:space="preserve">
-    <value>An internal error has occurred. JSON dictionary type {0} not supported.</value>
-  </data>
-  <data name="ObjectDeserializer_BadEscape" xml:space="preserve">
-    <value>Invalid escape code encountered in a JSON string.</value>
-  </data>
-  <data name="ObjectDeserializer_IllegalPrimitive" xml:space="preserve">
-    <value>'{0}' is not a valid JSON primitive. This error can also occur when extraneous data is present after the JSON data.</value>
-  </data>
-  <data name="ObjectDeserializer_InvalidArrayExtraComma" xml:space="preserve">
-    <value>JSON array ended with a trailing comma.</value>
-  </data>
-  <data name="ObjectDeserializer_InvalidMemberName" xml:space="preserve">
-    <value>Invalid member name encountered in a JSON object.</value>
-  </data>
-  <data name="ObjectDeserializer_StringNotQuoted" xml:space="preserve">
-    <value>An internal error has occurred. JSON string not properly quoted.</value>
-  </data>
-  <data name="ObjectDeserializer_UnexpectedToken" xml:space="preserve">
-    <value>Unexpected character encountered in JSON. Expected '{1}', got '{0}'.</value>
-  </data>
-  <data name="ObjectDeserializer_UnterminatedString" xml:space="preserve">
-    <value>Unterminated JSON string encountered. JSON strings must start with a single or double quote character and end with the same character.</value>
-  </data>
   <data name="XmlObjectAssignedToIncompatibleInterface" xml:space="preserve">
     <value>'{0}' is an XML type and cannot be serialized when assigned to an interface type that does not implement IXmlSerializable ('{1}'.)</value>
   </data>
@@ -909,19 +826,7 @@
   <data name="JsonUnsupportedForIsReference" xml:space="preserve">
     <value>The type '{0}' cannot be serialized to JSON because its IsReference setting is '{1}'. The JSON format does not support references because there is no standardized format for representing references. To enable serialization, disable the IsReference setting on the type or an appropriate parent class of the type.</value>
   </data>
-  <data name="JsonCircularReferenceDetected" xml:space="preserve">
-    <value>A circular reference has been detected when serializing an object of type {0} to JSON. Circular references are not supported in the JSON format.</value>
-  </data>
-  <data name="PartialTrustDataContractMemberGetNotPublic" xml:space="preserve">
-    <value>The data contract type '{0}' cannot be serialized because the member '{1}' is not public. Making the member public will fix this error. Alternatively, you can make it internal, and use the InternalsVisibleToAttribute attribute on your assembly in order to enable serialization of internal members - see documentation for more details. Be aware that doing so has certain security implications.</value>
-  </data>
-  <data name="PartialTrustDataContractMemberSetNotPublic" xml:space="preserve">
-    <value>The data contract type '{0}' cannot be deserialized because the member '{1}' is not public. Making the member public will fix this error. Alternatively, you can make it internal, and use the InternalsVisibleToAttribute attribute on your assembly in order to enable serialization of internal members - see documentation for more details. Be aware that doing so has certain security implications.</value>
-  </data>
-  <data name="UnknownDataContract" xml:space="preserve">
-    <value>Unknown data contract: '{0}'.</value>
-  </data>
-    <data name="SerializationCodeIsMissingForType" xml:space="preserve">
+  <data name="SerializationCodeIsMissingForType" xml:space="preserve">
     <value>Type '{0}' cannot be serialized, serialization code for the type is missing. Consult the SDK documentation for adding it as a root serialization type.</value>
   </data>
   <data name="InvalidXmlDeserializingExtensionData" xml:space="preserve">
@@ -929,9 +834,6 @@
   </data>
   <data name="InvalidStateInExtensionDataReader" xml:space="preserve">
     <value>An internal error has occurred. ExtensionDataReader is in an invalid state.</value>
-  </data>
-  <data name="InvalidDataNode" xml:space="preserve">
-    <value>'{0}' is an invalid data node when deserializing extension data.</value>
   </data>
   <data name="JsonTypeNotSupportedByDataContractJsonSerializer" xml:space="preserve">
     <value>DataContractJsonSerializer does not support objects of type '{0}'.</value>
@@ -1030,7 +932,7 @@
     <value>WriteStartElement can be called at only the start of a document or immediately after calling WriteEndElement.</value>
   </data>
   <data name="JsonOnlyWhitespace" xml:space="preserve">
-    <value>Unexpected character '{0}'. '{1}' can write only white space characters.</value>
+    <value>Unexpected character '{0}'. '{1}' can write only whitespace characters.</value>
   </data>
   <data name="JsonWriterClosed" xml:space="preserve">
     <value>The writer is closed.</value>
@@ -1098,9 +1000,6 @@
   <data name="UnknownXmlType" xml:space="preserve">
     <value>Type '{0}' is not a valid XML type.</value>
   </data>
-  <data name="TypeNotSerializableViaReflection" xml:space="preserve">
-    <value>Cannot serialize type {0} via reflection. Required type metadata was missing.</value>
-  </data> 
   <data name="DupContractInDataContractSet" xml:space="preserve">
     <value>DataContract with name '{0}' and namespace '{1}' cannot be added to DataContractSet since another contract with the same data contract name is already present and the contracts are not equivalent.</value>
   </data>
@@ -1160,9 +1059,6 @@
   </data>
   <data name="SerializationInfo_ConstructorNotFound" xml:space="preserve">
     <value>The constructor with parameters (SerializationInfo, StreamingContext) is not found in ISerializable type '{0}'.</value>
-  </data>
-  <data name="PartialTrustISerializableNoPublicConstructor" xml:space="preserve">
-    <value>The ISerializable type '{0}' cannot be deserialized in partial trust because it does not have a public constructor with parameters (SerializationInfo, StreamingContext).</value>
   </data>
   <data name="ChangingFullTypeNameNotSupported" xml:space="preserve">
     <value>DataContractJsonSerializer does not support the setting of the FullTypeName of the object to be serialized to a value other than the default FullTypeName. Attempted to serialize object with full type name '{0}' and default full type name '{1}'.</value>

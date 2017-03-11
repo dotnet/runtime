@@ -9,7 +9,6 @@ using System.Collections.Generic;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.LinkDemand, Unrestricted = true)]
     internal class ValueCollectionEnumerator<T> : IEnumerator<T>, IEnumerator
     // T must be a ValueType
     {

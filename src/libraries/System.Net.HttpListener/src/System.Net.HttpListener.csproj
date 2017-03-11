@@ -41,7 +41,7 @@
     <Reference Include="System.Threading.Tasks" />
     <Reference Include="System.Threading.Timer" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+  <ItemGroup>
     <Compile Include="System\Net\AuthenticationTypes.cs" />
     <Compile Include="System\Net\ServiceNameStore.cs" />
     <Compile Include="System\Net\HttpListenerRequestUriBuilder.cs" />
@@ -67,7 +67,7 @@
       <Link>Common\System\Net\WebSockets\WebSocketValidate.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(TargetGroup)' == 'netcoreapp'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="System\Net\Windows\HttpListenerPrefixCollection.Windows.cs" />
     <Compile Include="System\Net\Windows\HttpListener.Windows.cs" />
     <Compile Include="System\Net\Windows\HttpListenerContext.Windows.cs" />
@@ -313,7 +313,7 @@
       <Link>Common\Interop\Windows\sspicli\SSPIWrapper.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' AND '$(TargetGroup)' == 'netcoreapp'">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="System\Net\Managed\HttpEndPointListener.cs" />
     <Compile Include="System\Net\Managed\HttpEndPointManager.cs" />
     <Compile Include="System\Net\Managed\HttpConnection.cs" />

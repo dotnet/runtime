@@ -32,7 +32,6 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
             Assert.Equal(expected, actual);
         }
 
-#if netstandard17
         private void VerifyICryptoTransformStream(Stream input, string output)
         {
             byte[] expected = ByteUtils.HexToByteArray(output);
@@ -53,11 +52,9 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
 
             Assert.Equal(expected, actual);
         }
-#endif
 
         protected void VerifyMultiBlock(string block1, string block2, string expectedHash, string emptyHash)
         {
-#if netstandard17
             byte[] block1_bytes = ByteUtils.AsciiBytes(block1);
             byte[] block2_bytes = ByteUtils.AsciiBytes(block2);
             byte[] expected_bytes = ByteUtils.HexToByteArray(expectedHash);
@@ -66,10 +63,8 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
             VerifyTransformBlockOutput(block1_bytes, block2_bytes);
             VerifyTransformBlockHash(block1_bytes, block2_bytes, expected_bytes, emptyHash_bytes);
             VerifyTransformBlockComputeHashInteraction(block1_bytes, block2_bytes, expected_bytes, emptyHash_bytes);
-#endif
         }
 
-#if netstandard17
         private void VerifyTransformBlockOutput(byte[] block1, byte[] block2)
         {
             using (HashAlgorithm hash = Create())
@@ -195,7 +190,6 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
                 Assert.Throws<ArgumentException>(null, () => hash.TransformFinalBlock(Array.Empty<byte>(), 0, 1));
             }
         }
-#endif
 
         protected void Verify(byte[] input, string output)
         {
@@ -209,10 +203,8 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
 
                 Assert.Equal(expected, actual);
 
-#if netstandard17
                 actual = hash.Hash;
                 Assert.Equal(expected, actual);
-#endif
             }
         }
 
@@ -223,12 +215,10 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
                 VerifyComputeHashStream(stream, output);
             }
 
-#if netstandard17
             using (Stream stream = new DataRepeatingStream(input, repeatCount))
             {
                 VerifyICryptoTransformStream(stream, output);
             }
-#endif
         }
 
         [Fact]

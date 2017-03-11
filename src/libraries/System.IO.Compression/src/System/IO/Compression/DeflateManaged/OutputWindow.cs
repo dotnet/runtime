@@ -131,7 +131,7 @@ namespace System.IO.Compression
             int tailLen = length - copy_end;
             if (tailLen > 0)
             {
-                // this means we need to copy two parts seperately
+                // this means we need to copy two parts separately
                 // copy tailLen bytes from the end of output window
                 Array.Copy(_window, WindowSize - tailLen,
                                   output, offset, tailLen);

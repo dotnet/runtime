@@ -37,11 +37,17 @@ namespace System.Diagnostics.TraceSourceTests
             Assert.Equal("", item.Description);
         }
 
+        [System.Runtime.CompilerServices.MethodImplAttribute(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        static WeakReference PruneMakeRef()
+        {
+            return new WeakReference(new TestSwitch());
+        }
+
         [Fact]
         public void PruneTest()
         {
             var strongSwitch = new TestSwitch();
-            var weakSwitch = new WeakReference(new TestSwitch());
+            var weakSwitch = PruneMakeRef();
             Assert.True(weakSwitch.IsAlive);
             GC.Collect(2);
             Trace.Refresh();

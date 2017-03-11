@@ -5,8 +5,6 @@
     <ProjectGuid>{4AC5343E-6E31-4BA5-A795-0493AE7E9008}</ProjectGuid>
     <AssemblyName>System.Private.Uri</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <SkipCommonResourcesIncludes Condition="'$(TargetGroup)'=='uapaot' or '$(TargetGroup)' == 'netcoreapp1.2corert'">true</SkipCommonResourcesIncludes>
-    <DefineConstants Condition="'$(TargetGroup)'=='netcoreapp' OR '$(TargetGroup)'=='uap'">$(DefineConstants);netstandard10</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
@@ -18,7 +16,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="$(CommonPath)\System\Diagnostics\Debug.cs" Condition="'$(TargetGroup)'!='uapaot' and '$(TargetGroup)' != 'netcoreapp1.2corert'">
+    <Compile Include="$(CommonPath)\System\Diagnostics\Debug.cs" Condition="'$(TargetGroup)'!='uapaot'">
       <Link>Common\System\Diagnostics\Debug.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Collections\Generic\ArrayBuilder.cs">
@@ -60,6 +58,7 @@
     <Compile Include="$(CommonPath)\System\Diagnostics\Debug.Windows.cs">
       <Link>Common\System\Diagnostics\Debug.Windows.cs</Link>
     </Compile>
+    <Compile Include="System\Uri.Windows.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true' and ('$(TargetGroup)'=='netcoreapp' OR '$(TargetGroup)'=='uap')">
     <Compile Include="$(CommonPath)\System\Diagnostics\Debug.Unix.cs">
@@ -104,15 +103,11 @@
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeFileHandleHelper.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeFileHandleHelper.Unix.cs</Link>
     </Compile>
+    <Compile Include="System\Uri.Unix.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='uapaot' or '$(TargetGroup)' == 'netcoreapp1.2corert'">
+  <ItemGroup Condition="'$(TargetGroup)'=='uapaot'">
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
-    <Compile Include="$(CommonPath)\System\SR.Core.cs">
-      <Link>Common\System\SR.Core.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Resources\NeutralResourcesLanguageAttribute.cs">
-      <Link>Common\System\Resources\NeutralResourcesLanguageAttribute.cs</Link>
-    </Compile>
+    <Compile Include="System\Uri.Windows.cs" />
   </ItemGroup>
   <ItemGroup>
     <ReferenceFromRuntime Include="System.Private.CoreLib" />

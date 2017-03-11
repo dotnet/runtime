@@ -207,7 +207,7 @@ namespace System.Data.Common
                 }
                 else
                 {
-                    string tmp = svalue.Trim();  // Remove leading & trailing white space.
+                    string tmp = svalue.Trim();  // Remove leading & trailing whitespace.
                     if (StringComparer.OrdinalIgnoreCase.Equals(tmp, "true") || StringComparer.OrdinalIgnoreCase.Equals(tmp, "yes"))
                     {
                         return true;
@@ -246,7 +246,7 @@ namespace System.Data.Common
                 }
                 else
                 {
-                    string tmp = svalue.Trim();  // Remove leading & trailing white space.
+                    string tmp = svalue.Trim();  // Remove leading & trailing whitespace.
                     if (StringComparer.OrdinalIgnoreCase.Equals(tmp, "sspi") || StringComparer.OrdinalIgnoreCase.Equals(tmp, "true") || StringComparer.OrdinalIgnoreCase.Equals(tmp, "yes"))
                     {
                         return true;

@@ -249,10 +249,10 @@ namespace System.Text
                             pb[0] = (byte)((v1 << 2) | ((v2 >> 4) & 0x03));
                             if (byteCount > 1)
                             {
-                                pb[1] = (byte)((v2 << 4) | ((v3 >> 2) & 0x0F));
+                                pb[1] = unchecked((byte)((v2 << 4) | ((v3 >> 2) & 0x0F)));
                                 if (byteCount > 2)
                                 {
-                                    pb[2] = (byte)((v3 << 6) | ((v4 >> 0) & 0x3F));
+                                    pb[2] = unchecked((byte)((v3 << 6) | ((v4 >> 0) & 0x3F)));
                                 }
                             }
                             pb += byteCount;

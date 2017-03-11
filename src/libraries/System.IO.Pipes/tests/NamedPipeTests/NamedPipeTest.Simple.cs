@@ -366,7 +366,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/1011
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)] // Unix implemented on sockets, where disposal information doesn't propagate
         public async Task Unix_OperationsOnNamedServerWithDisposedClient()
         {
             using (NamedPipePair pair = CreateNamedPipePair())
@@ -523,6 +523,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #16934")] //Hangs forever in desktop as it doesn't have cancellation support
         public async Task Server_ReadWriteCancelledToken_Throws_OperationCanceledException()
         {
             using (NamedPipePair pair = CreateNamedPipePair())
@@ -621,6 +622,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #16934")] //Hangs forever in desktop as it doesn't have cancellation support
         public async Task Client_ReadWriteCancelledToken_Throws_OperationCanceledException()
         {
             using (NamedPipePair pair = CreateNamedPipePair())

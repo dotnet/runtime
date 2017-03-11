@@ -153,7 +153,7 @@ namespace System.ComponentModel
                 // Raise an argument exception if the value isn't defined and if
                 // the enum isn't a flags style.
                 //
-                if (!EnumType.GetTypeInfo().IsDefined(typeof(FlagsAttribute), false) && !Enum.IsDefined(EnumType, value))
+                if (!EnumType.IsDefined(typeof(FlagsAttribute), false) && !Enum.IsDefined(EnumType, value))
                 {
                     throw new ArgumentException(SR.Format(SR.EnumConverterInvalidValue, value.ToString(), EnumType.Name));
                 }
@@ -163,7 +163,7 @@ namespace System.ComponentModel
 
             if (destinationType == typeof(Enum[]) && value != null)
             {
-                if (EnumType.GetTypeInfo().IsDefined(typeof(FlagsAttribute), false))
+                if (EnumType.IsDefined(typeof(FlagsAttribute), false))
                 {
                     List<Enum> flagValues = new List<Enum>();
 
@@ -289,7 +289,7 @@ namespace System.ComponentModel
         /// </summary>
         public override bool GetStandardValuesExclusive(ITypeDescriptorContext context)
         {
-            return !EnumType.GetTypeInfo().IsDefined(typeof(FlagsAttribute), false);
+            return !EnumType.IsDefined(typeof(FlagsAttribute), false);
         }
 
         /// <internalonly/>

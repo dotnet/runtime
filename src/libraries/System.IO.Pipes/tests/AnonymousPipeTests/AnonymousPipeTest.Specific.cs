@@ -80,7 +80,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/1012
-        [PlatformSpecific(TestPlatforms.Linux)]
+        [PlatformSpecific(TestPlatforms.Linux)]  // On Linux, setting the buffer size of the server will also set the buffer size of the client
         public static void Linux_BufferSizeRoundtrips()
         {
             // On Linux, setting the buffer size of the server will also set the buffer size of the
@@ -109,7 +109,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.OSX)]
+        [PlatformSpecific(TestPlatforms.OSX)]  // Buffer size not supported on OSX
         public static void OSX_BufferSizeNotSupported()
         {
             int desiredBufferSize = 10;
@@ -122,7 +122,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)] // On Windows, setting the buffer size of the server will only set the buffer size of the client based on the direction of the flow
         public static void Windows_BufferSizeRoundtripping()
         {
             // On Windows, setting the buffer size of the server will only set

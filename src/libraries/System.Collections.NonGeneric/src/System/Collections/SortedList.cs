@@ -60,9 +60,6 @@ namespace System.Collections
     // 
     [DebuggerTypeProxy(typeof(System.Collections.SortedList.SortedListDebugView))]
     [DebuggerDisplay("Count = {Count}")]
-#if FEATURE_CORECLR
-    [Obsolete("Non-generic collections have been deprecated. Please use collections in System.Collections.Generic.")]
-#endif
     [Serializable]
     public class SortedList : IDictionary, ICloneable
     {
@@ -151,7 +148,7 @@ namespace System.Collections
         // Constructs a new sorted list containing a copy of the entries in the
         // given dictionary. The elements of the sorted list are ordered according
         // to the IComparable interface, which must be implemented by the
-        // keys of all entries in the the given dictionary as well as keys
+        // keys of all entries in the given dictionary as well as keys
         // subsequently added to the sorted list.
         // 
         public SortedList(IDictionary d)
@@ -164,7 +161,7 @@ namespace System.Collections
         // to the given IComparer implementation. If comparer is
         // null, the elements are compared to each other using the
         // IComparable interface, which in that case must be implemented
-        // by the keys of all entries in the the given dictionary as well as keys
+        // by the keys of all entries in the given dictionary as well as keys
         // subsequently added to the sorted list.
         // 
         public SortedList(IDictionary d, IComparer comparer)

@@ -34,7 +34,7 @@ namespace System {
         // Disables a fragment. A # char is considered as part of the path or query and is escaped
         NoFragment                 = 0x20,
 
-        // if false then converta \ to /, otheriwse does this conversion for the Path component.
+        // if false then converta \ to /, otherwise does this conversion for the Path component.
         DontConvertPathBackslashes = 0x40,
 
         // if false, then a/./b or a/.../b becomes a/b and /a/../b becomes /b

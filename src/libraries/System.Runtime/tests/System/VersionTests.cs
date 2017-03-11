@@ -285,7 +285,7 @@ namespace System.Tests
             Assert.Equal(build, version.Build);
             Assert.Equal(revision, version.Revision);
             Assert.Equal((short)(revision >> 16), version.MajorRevision);
-            Assert.Equal((short)(revision & 0xFFFF), version.MinorRevision);
+            Assert.Equal(unchecked((short)(revision & 0xFFFF)), version.MinorRevision);
         }
     }
 }

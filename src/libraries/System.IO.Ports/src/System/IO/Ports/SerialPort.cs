@@ -287,9 +287,9 @@ namespace System.IO.Ports
             set
             {
                 if (value == null)
-                    throw new ArgumentNullException();
+                    throw new ArgumentNullException(nameof(NewLine));
                 if (value.Length == 0)
-                    throw new ArgumentException(string.Format(SR.InvalidNullEmptyArgument, nameof(NewLine)));
+                    throw new ArgumentException(string.Format(SR.InvalidNullEmptyArgument, nameof(NewLine)), nameof(NewLine));
 
                 _newLine = value;
             }
@@ -558,43 +558,27 @@ namespace System.IO.Ports
         public static string[] GetPortNames()
         {
             // Hitting the registry for this isn't the only way to get the ports.
-            // 
+            //
             // WMI: https://msdn.microsoft.com/en-us/library/aa394413.aspx
             // QueryDosDevice: https://msdn.microsoft.com/en-us/library/windows/desktop/aa365461.aspx
             //
             // QueryDosDevice involves finding any ports that map to \Device\Serialx (call with null to get all, then iterate to get the actual device name)
 
-            RegistryKey baseKey = null;
-            RegistryKey serialKey = null;
-
-            String[] portNames = null;
-
-            try
+            using (RegistryKey serialKey = Registry.LocalMachine.OpenSubKey(@"HARDWARE\DEVICEMAP\SERIALCOMM"))
             {
-                baseKey = Registry.LocalMachine;
-                serialKey = baseKey.OpenSubKey(@"HARDWARE\DEVICEMAP\SERIALCOMM", false);
-
                 if (serialKey != null)
                 {
-
-                    string[] deviceNames = serialKey.GetValueNames();
-                    portNames = new String[deviceNames.Length];
-
-                    for (int i = 0; i < deviceNames.Length; i++)
-                        portNames[i] = (string)serialKey.GetValue(deviceNames[i]);
+                    string[] result = serialKey.GetValueNames();
+                    for (int i = 0; i < result.Length; i++)
+                    {
+                        // Replace the name in the array with its value.
+                        result[i] = (string)serialKey.GetValue(result[i]);
+                    }
+                    return result;
                 }
             }
-            finally
-            {
-                baseKey?.Dispose();
-                serialKey?.Dispose();
-            }
 
-            // If serialKey didn't exist for some reason
-            if (portNames == null)
-                portNames = new String[0];
-
-            return portNames;
+            return Array.Empty<string>();
         }
 
         // SerialPort is open <=> SerialPort has an associated SerialStream.
@@ -630,11 +614,11 @@ namespace System.IO.Ports
             if (!IsOpen)
                 throw new InvalidOperationException(SR.Port_not_open);
             if (buffer == null)
-                throw new ArgumentNullException("buffer", SR.ArgumentNull_Buffer);
+                throw new ArgumentNullException(nameof(buffer));
             if (offset < 0)
-                throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_NeedNonNegNumRequired);
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNumRequired);
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNumRequired);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNumRequired);
             if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
             int bytesReadToBuffer = 0;
@@ -771,11 +755,11 @@ namespace System.IO.Ports
             if (!IsOpen)
                 throw new InvalidOperationException(SR.Port_not_open);
             if (buffer == null)
-                throw new ArgumentNullException("buffer", SR.ArgumentNull_Buffer);
+                throw new ArgumentNullException(nameof(buffer));
             if (offset < 0)
-                throw new ArgumentOutOfRangeException("offset", SR.ArgumentOutOfRange_NeedNonNegNumRequired);
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNumRequired);
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count", SR.ArgumentOutOfRange_NeedNonNegNumRequired);
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNumRequired);
             if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
@@ -1016,7 +1000,7 @@ namespace System.IO.Ports
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
             if (value.Length == 0)
-                throw new ArgumentException(string.Format(SR.InvalidNullEmptyArgument, nameof(value)));
+                throw new ArgumentException(string.Format(SR.InvalidNullEmptyArgument, nameof(value)), nameof(value));
 
             int startTicks = Environment.TickCount;
             int numCharsRead;
@@ -1173,7 +1157,7 @@ namespace System.IO.Ports
             if (!IsOpen)
                 throw new InvalidOperationException(SR.Port_not_open);
             if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
+                throw new ArgumentNullException(nameof(buffer));
             if (offset < 0)
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNumRequired);
             if (count < 0)

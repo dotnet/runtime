@@ -14,63 +14,42 @@ namespace System.Net.Sockets.Tests
 {
     public class SocketOptionNameTest
     {
-        private static bool SocketsReuseUnicastPortSupport
-        {
-            get
-            {
-                return Capability.SocketsReuseUnicastPortSupport().HasValue &&
-                    Capability.SocketsReuseUnicastPortSupport().Value;
-            }
-        }
-
-        private static bool NoSocketsReuseUnicastPortSupport
-        {
-            get
-            {
-                return Capability.SocketsReuseUnicastPortSupport().HasValue &&
-                    !Capability.SocketsReuseUnicastPortSupport().Value;
-            }
-        }
+        private static bool SocketsReuseUnicastPortSupport => Capability.SocketsReuseUnicastPortSupport().HasValue;
 
         [OuterLoop] // TODO: Issue #11345
-        [ConditionalFact(nameof(NoSocketsReuseUnicastPortSupport))]
-        public void ReuseUnicastPort_CreateSocketGetOption_NoSocketsReuseUnicastPortSupport_Throws()
+        [ConditionalFact(nameof(SocketsReuseUnicastPortSupport))]
+        public void ReuseUnicastPort_CreateSocketGetOption()
         {
-            var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-
-            Assert.Throws<SocketException>(() =>
-                socket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseUnicastPort));
+            using (var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                if (Capability.SocketsReuseUnicastPortSupport().Value)
+                {
+                    Assert.Equal(0, (int)socket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseUnicastPort));
+                }
+                else
+                {
+                    Assert.Throws<SocketException>(() => socket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseUnicastPort));
+                }
+            }
         }
 
         [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(nameof(SocketsReuseUnicastPortSupport))]
-        public void ReuseUnicastPort_CreateSocketGetOption_SocketsReuseUnicastPortSupport_OptionIsZero()
+        public void ReuseUnicastPort_CreateSocketSetOption()
         {
-            var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-
-            var optionValue = (int)socket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseUnicastPort);
-            Assert.Equal(0, optionValue);
-        }
-
-        [OuterLoop] // TODO: Issue #11345
-        [ConditionalFact(nameof(NoSocketsReuseUnicastPortSupport))]
-        public void ReuseUnicastPort_CreateSocketSetOption_NoSocketsReuseUnicastPortSupport_Throws()
-        {
-            var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-
-            Assert.Throws<SocketException>(() =>
-                socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseUnicastPort, 1));
-        }
-
-        [OuterLoop] // TODO: Issue #11345
-        [ConditionalFact(nameof(SocketsReuseUnicastPortSupport))]
-        public void ReuseUnicastPort_CreateSocketSetOptionToZeroAndGetOption_SocketsReuseUnicastPortSupport_OptionIsZero()
-        {
-            var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-
-            socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseUnicastPort, 0);
-            int optionValue = (int)socket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseUnicastPort);
-            Assert.Equal(0, optionValue);
+            using (var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                if (Capability.SocketsReuseUnicastPortSupport().Value)
+                {
+                    socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseUnicastPort, 0);
+                    int optionValue = (int)socket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseUnicastPort);
+                    Assert.Equal(0, optionValue);
+                }
+                else
+                {
+                    Assert.Throws<SocketException>(() => socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseUnicastPort, 1));
+                }
+            }
         }
 
         // TODO: Issue #4887
@@ -104,7 +83,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [Fact]
         public async Task MulticastInterface_Set_AnyInterface_Succeeds()
         {
             // On all platforms, index 0 means "any interface"
@@ -281,7 +259,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Theory]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // ExclusiveAddressUse option is a Windows-specific option (when set to "true," tells Windows not to allow reuse of same local address)
         [InlineData(false, null, null, true)]
         [InlineData(false, null, false, true)]
         [InlineData(false, false, null, true)]
@@ -296,7 +274,7 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Theory]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // SetIPProtectionLevel not supported on Unix
         [InlineData(IPProtectionLevel.EdgeRestricted, AddressFamily.InterNetwork, SocketOptionLevel.IP)]
         [InlineData(IPProtectionLevel.Restricted, AddressFamily.InterNetwork, SocketOptionLevel.IP)]
         [InlineData(IPProtectionLevel.Unrestricted, AddressFamily.InterNetwork, SocketOptionLevel.IP)]
@@ -316,7 +294,7 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Theory]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // SetIPProtectionLevel not supported on Unix
         [InlineData(IPProtectionLevel.EdgeRestricted, AddressFamily.InterNetwork)]
         [InlineData(IPProtectionLevel.Restricted, AddressFamily.InterNetwork)]
         [InlineData(IPProtectionLevel.Unrestricted, AddressFamily.InterNetwork)]

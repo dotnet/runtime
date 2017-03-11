@@ -27,7 +27,7 @@ namespace System.Data.Common
                     return false;
                 else
                 {
-                    string tmp = svalue.Trim();  // Remove leading & trailing white space.
+                    string tmp = svalue.Trim();  // Remove leading & trailing whitespace.
                     if (StringComparer.OrdinalIgnoreCase.Equals(tmp, "true") || StringComparer.OrdinalIgnoreCase.Equals(tmp, "yes"))
                         return true;
                     else if (StringComparer.OrdinalIgnoreCase.Equals(tmp, "false") || StringComparer.OrdinalIgnoreCase.Equals(tmp, "no"))
@@ -57,7 +57,7 @@ namespace System.Data.Common
                     return false;
                 else
                 {
-                    string tmp = svalue.Trim();  // Remove leading & trailing white space.
+                    string tmp = svalue.Trim();  // Remove leading & trailing whitespace.
                     if (StringComparer.OrdinalIgnoreCase.Equals(tmp, "sspi") || StringComparer.OrdinalIgnoreCase.Equals(tmp, "true") || StringComparer.OrdinalIgnoreCase.Equals(tmp, "yes"))
                         return true;
                     else if (StringComparer.OrdinalIgnoreCase.Equals(tmp, "false") || StringComparer.OrdinalIgnoreCase.Equals(tmp, "no"))
@@ -169,7 +169,7 @@ namespace System.Data.Common
                     return result;
                 }
 
-                // try again after remove leading & trailing whitespaces.
+                // try again after remove leading & trailing whitespace.
                 sValue = sValue.Trim();
                 if (TryConvertToApplicationIntent(sValue, out result))
                 {
@@ -338,7 +338,7 @@ namespace System.Data.Common
         internal const string DATABASE = "database";
 
         //internal const string IntegratedSecurity     = TRUSTEDCONNECTION;
-        internal const string TRUSTEDCONNECTION = "trusted_connection"; // underscore introduced in everett
+        internal const string TRUSTEDCONNECTION = "trusted_connection"; // underscore introduced in Everett
 
         //internal const string LoadBalanceTimeout     = ConnectionLifetime;
         internal const string ConnectionLifetime = "connection lifetime";

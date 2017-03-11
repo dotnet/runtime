@@ -67,7 +67,7 @@ namespace System.Net.Http
                         return;
 
                     case Interop.WinHttp.WINHTTP_CALLBACK_STATUS_DATA_AVAILABLE:
-                        Debug.Assert(statusInformationLength == Marshal.SizeOf<int>());
+                        Debug.Assert(statusInformationLength == sizeof(int));
                         int bytesAvailable = Marshal.ReadInt32(statusInformation);
                         OnRequestDataAvailable(state, bytesAvailable);
                         return;

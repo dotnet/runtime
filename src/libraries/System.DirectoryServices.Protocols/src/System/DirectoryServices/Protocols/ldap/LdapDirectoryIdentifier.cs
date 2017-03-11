@@ -5,6 +5,7 @@
 namespace System.DirectoryServices.Protocols
 {
     using System;
+    using System.Globalization;
 
     public class LdapDirectoryIdentifier : DirectoryIdentifier
     {
@@ -42,7 +43,7 @@ namespace System.DirectoryServices.Protocols
                         string trimmedName = servers[i].Trim();
                         string[] result = trimmedName.Split(new char[] { ' ' });
                         if (result.Length > 1)
-                            throw new ArgumentException(Res.GetString(Res.WhiteSpaceServerName));
+                            throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.WhiteSpaceServerName));
                         _servers[i] = trimmedName;
                     }
                 }

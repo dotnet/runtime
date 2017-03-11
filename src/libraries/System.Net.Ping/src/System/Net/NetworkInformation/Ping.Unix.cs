@@ -262,7 +262,7 @@ namespace System.Net.NetworkInformation
                 sum = partialSum + carries;
             }
 
-            return (ushort)~sum;
+            return unchecked((ushort)~sum);
         }
     }
 }

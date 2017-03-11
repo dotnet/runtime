@@ -43,7 +43,7 @@ namespace System.Runtime.Serialization
         {
             xsdType = null;
             hasRoot = true;
-            object[] attrs = clrType.GetTypeInfo().GetCustomAttributes(Globals.TypeOfXmlSchemaProviderAttribute, false).ToArray();
+            object[] attrs = clrType.GetCustomAttributes(Globals.TypeOfXmlSchemaProviderAttribute, false).ToArray();
             if (attrs == null || attrs.Length == 0)
             {
                 stableName = DataContract.GetDefaultStableName(clrType);

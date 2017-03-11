@@ -691,7 +691,7 @@ namespace System.Net
             //Some apps may not want to demand the client cert at the beginning
             //perhaps server the default.htm. In this case the HTTP.SYS is configured
             //with a flag value other than 2, whcih means that the client certificate is
-            //optional.So intially when SSL is established HTTP.SYS won't ask for client
+            //optional.So initially when SSL is established HTTP.SYS won't ask for client
             //certificate. This works fine for the default.htm in the case above
             //However, if the app wants to demand a client certficate at a later time
             //perhaps showing "YOUR ORDERS" page, then the server wans to demand
@@ -791,7 +791,7 @@ namespace System.Net
             //Some apps may not want to demand the client cert at the beginning
             //perhaps server the default.htm. In this case the HTTP.SYS is configured
             //with a flag value other than 2, whcih means that the client certificate is
-            //optional.So intially when SSL is established HTTP.SYS won't ask for client
+            //optional.So initially when SSL is established HTTP.SYS won't ask for client
             //certificate. This works fine for the default.htm in the case above
             //However, if the app wants to demand a client certficate at a later time
             //perhaps showing "YOUR ORDERS" page, then the server wans to demand
@@ -961,7 +961,7 @@ namespace System.Net
                 if (i < 0 || i >= l)
                     return null;
 
-                // skip to '=' and the following whitespaces
+                // skip to '=' and the following whitespace
                 i += k;
                 while (i < l && char.IsWhiteSpace(headerValue[i]))
                     i++;

@@ -5,8 +5,10 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <ProjectGuid>{F6836E5C-BFA0-4E92-ADEE-87E797D7C90C}</ProjectGuid>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="..\..\..\System.Runtime.Serialization.Xml\tests\Utils.cs" />
     <Compile Include="..\..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.cs" />
@@ -17,6 +19,12 @@
   </ItemGroup>
   <ItemGroup>
     <ReferenceFromRuntime Include="Newtonsoft.Json" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(CommonPath)\..\perf\PerfRunner\PerfRunner.csproj">
+      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
+      <Name>PerfRunner</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

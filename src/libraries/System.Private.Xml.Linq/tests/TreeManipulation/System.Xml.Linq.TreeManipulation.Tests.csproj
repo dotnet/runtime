@@ -48,8 +48,6 @@
     <Compile Include="XNodeReplaceOnElement.cs" />
     <Compile Include="XNodeSequenceRemove.cs" />
     <Compile Include="XElementChangedNotificationTests.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Compile Include="SaveWithFileName.cs" />
   </ItemGroup>
   <ItemGroup>

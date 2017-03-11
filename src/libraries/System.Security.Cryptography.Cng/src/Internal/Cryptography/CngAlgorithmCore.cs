@@ -71,7 +71,7 @@ namespace Internal.Cryptography
             return _lazyKey;
         }
 
-#if !NETNATIVE
+#if !uap
         public CngKey GetOrGenerateKey(ECCurve? curve)
         {
             if (_lazyKey != null)
@@ -125,7 +125,7 @@ namespace Internal.Cryptography
 
             return _lazyKey;
         }
-#endif //!NETNATIVE
+#endif // !uap
 
         public void SetKey(CngKey key)
         {

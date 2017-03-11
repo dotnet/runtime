@@ -182,7 +182,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Windows-only Invalid chars in path
         public void WindowsInvalidCharsPath()
         {
             Assert.All(WindowsInvalidUnixValid, invalid =>
@@ -190,7 +190,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Unix-only valid chars in file path
         public void UnixValidCharsFilePath()
         {
             if (TestFiles)
@@ -206,7 +206,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Windows-only invalid chars in directory path
         public void UnixValidCharsDirectoryPath()
         {
             if (TestDirectories)

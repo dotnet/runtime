@@ -49,7 +49,7 @@ namespace System.Linq.Expressions.Compiler
             {
                 var property = _binding.Member as PropertyInfo;
 
-                if (property != null && property.PropertyType.GetTypeInfo().IsValueType)
+                if (property != null && property.PropertyType.IsValueType)
                 {
                     throw Error.CannotAutoInitializeValueTypeMemberThroughProperty(property);
                 }
@@ -113,7 +113,7 @@ namespace System.Linq.Expressions.Compiler
                 }
 
                 // We need to copy back value types.
-                if (memberTemp.Type.GetTypeInfo().IsValueType)
+                if (memberTemp.Type.IsValueType)
                 {
                     block[count + 1] = Expression.Block(
                         typeof(void),
@@ -199,7 +199,7 @@ namespace System.Linq.Expressions.Compiler
                 }
 
                 // We need to copy back value types
-                if (memberTemp.Type.GetTypeInfo().IsValueType)
+                if (memberTemp.Type.IsValueType)
                 {
                     block[count + 1] = Expression.Block(
                         typeof(void),

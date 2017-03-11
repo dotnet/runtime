@@ -157,7 +157,7 @@ namespace System.Linq.Expressions.Tests
                     Expression.Increment(Expression.Constant(value, typeof(short))),
                     Enumerable.Empty<ParameterExpression>());
             Func<short> f = e.Compile(useInterpreter);
-            Assert.Equal((short)(++value), f());
+            Assert.Equal(unchecked((short)(++value)), f());
         }
 
         private static void VerifyIncrementUShort(ushort value, bool useInterpreter)
@@ -167,7 +167,7 @@ namespace System.Linq.Expressions.Tests
                     Expression.Increment(Expression.Constant(value, typeof(ushort))),
                     Enumerable.Empty<ParameterExpression>());
             Func<ushort> f = e.Compile(useInterpreter);
-            Assert.Equal((ushort)(++value), f());
+            Assert.Equal(unchecked((ushort)(++value)), f());
         }
 
         private static void VerifyIncrementInt(int value, bool useInterpreter)
@@ -177,7 +177,7 @@ namespace System.Linq.Expressions.Tests
                     Expression.Increment(Expression.Constant(value, typeof(int))),
                     Enumerable.Empty<ParameterExpression>());
             Func<int> f = e.Compile(useInterpreter);
-            Assert.Equal((int)(++value), f());
+            Assert.Equal(unchecked((int)(++value)), f());
         }
 
         private static void VerifyIncrementIntMakeUnary(int value, bool useInterpreter)
@@ -187,7 +187,7 @@ namespace System.Linq.Expressions.Tests
                     Expression.MakeUnary(ExpressionType.Increment, Expression.Constant(value), null),
                     Enumerable.Empty<ParameterExpression>());
             Func<int> f = e.Compile(useInterpreter);
-            Assert.Equal(++value, f());
+            Assert.Equal(unchecked(++value), f());
         }
         private static void VerifyIncrementUInt(uint value, bool useInterpreter)
         {
@@ -196,7 +196,7 @@ namespace System.Linq.Expressions.Tests
                     Expression.Increment(Expression.Constant(value, typeof(uint))),
                     Enumerable.Empty<ParameterExpression>());
             Func<uint> f = e.Compile(useInterpreter);
-            Assert.Equal((uint)(++value), f());
+            Assert.Equal(unchecked((uint)(++value)), f());
         }
 
         private static void VerifyIncrementLong(long value, bool useInterpreter)
@@ -206,7 +206,7 @@ namespace System.Linq.Expressions.Tests
                     Expression.Increment(Expression.Constant(value, typeof(long))),
                     Enumerable.Empty<ParameterExpression>());
             Func<long> f = e.Compile(useInterpreter);
-            Assert.Equal((long)(++value), f());
+            Assert.Equal(unchecked((long)(++value)), f());
         }
 
         private static void VerifyIncrementULong(ulong value, bool useInterpreter)
@@ -216,7 +216,7 @@ namespace System.Linq.Expressions.Tests
                     Expression.Increment(Expression.Constant(value, typeof(ulong))),
                     Enumerable.Empty<ParameterExpression>());
             Func<ulong> f = e.Compile(useInterpreter);
-            Assert.Equal((ulong)(++value), f());
+            Assert.Equal(unchecked((ulong)(++value)), f());
         }
 
         private static void VerifyIncrementFloat(float value, bool useInterpreter)

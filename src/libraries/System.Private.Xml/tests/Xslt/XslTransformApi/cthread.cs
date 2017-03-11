@@ -135,7 +135,7 @@ namespace System.Xml.Tests
             //Wait for this thread to complete...
             Internal.Join();
 
-            //Now throw any exceptions that occured from within the thread to the caller
+            //Now throw any exceptions that occurred from within the thread to the caller
             if (_eReturn != null)
                 throw _eReturn;
         }

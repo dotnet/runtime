@@ -2,10 +2,14 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
-    <ProjectReference Include="..\ref\System.ValueTuple.builds">
+    <ProjectReference Include="..\ref\System.ValueTuple.csproj">
       <SupportedFramework>net45;netcore45;netcoreapp1.0;wp8;wpa81;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\System.ValueTuple.builds" />
+    <ProjectReference Include="..\src\System.ValueTuple.csproj" />
+
+    <!-- a bug in previous version of the package included these bogus files -->
+    <HarvestExcludePaths Include="lib/portable-net40+sl4+win8+wp8/.xml" />
+    <HarvestExcludePaths Include="lib/netstandard1.0/.xml" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

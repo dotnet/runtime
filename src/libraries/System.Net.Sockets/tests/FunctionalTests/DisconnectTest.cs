@@ -4,7 +4,7 @@
 
 using System.Net.Test.Common;
 using System.Threading;
-
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -26,8 +26,23 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        public void InvalidArguments_Throw()
+        {
+            using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                Assert.Throws<ArgumentNullException>("asyncResult", () => s.EndDisconnect(null));
+                Assert.Throws<ArgumentException>("asyncResult", () => s.EndDisconnect(Task.CompletedTask));
+                s.Dispose();
+                Assert.Throws<ObjectDisposedException>(() => s.Disconnect(true));
+                Assert.Throws<ObjectDisposedException>(() => s.BeginDisconnect(true, null, null));
+                Assert.Throws<ObjectDisposedException>(() => s.EndDisconnect(null));
+                Assert.Throws<ObjectDisposedException>(() => { s.DisconnectAsync(null); });
+            }
+        }
+
+        [Fact]
         [OuterLoop("Issue #11345")]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Disconnect only supported on Windows
         public void Disconnect_Success()
         {
             AutoResetEvent completed = new AutoResetEvent(false);
@@ -61,7 +76,7 @@ namespace System.Net.Sockets.Tests
 
         [Fact]
         [OuterLoop("Issue #11345")]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // DisconnectAsync only supported on Windows
         public void DisconnectAsync_Success()
         {
             AutoResetEvent completed = new AutoResetEvent(false);
@@ -97,7 +112,7 @@ namespace System.Net.Sockets.Tests
 
         [Fact]
         [OuterLoop("Issue #11345")]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // BeginDisconnect only supported on Windows
         public void BeginDisconnect_Success()
         {
             AutoResetEvent completed = new AutoResetEvent(false);
@@ -117,7 +132,9 @@ namespace System.Net.Sockets.Tests
                     completed.WaitOne();
                     Assert.Equal(SocketError.Success, args.SocketError);
 
-                    client.EndDisconnect(client.BeginDisconnect(true, null, null));
+                    IAsyncResult ar = client.BeginDisconnect(true, null, null);
+                    client.EndDisconnect(ar);
+                    Assert.Throws<InvalidOperationException>(() => client.EndDisconnect(ar));
 
                     args.RemoteEndPoint = server2.EndPoint;
 
@@ -129,7 +146,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Windows)]
+        [PlatformSpecific(~TestPlatforms.Windows)]  // Disconnect only supported on Windows
         public void Disconnect_NonWindows_NotSupported()
         {
             using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -139,7 +156,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Windows)]
+        [PlatformSpecific(~TestPlatforms.Windows)]  // DisconnectAsync only supported on Windows
         public void DisconnectAsync_NonWindows_NotSupported()
         {
             using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -151,7 +168,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Windows)]
+        [PlatformSpecific(~TestPlatforms.Windows)]  // BeginDisconnect only supported on Windows
         public void BeginDisconnect_NonWindows_NotSupported()
         {
             using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))

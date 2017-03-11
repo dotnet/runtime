@@ -4,7 +4,7 @@
   <PropertyGroup>
     <ProjectGuid>{F24D3391-2928-4E83-AADE-B34423498750}</ProjectGuid>
     <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
-    <UseOpenKey Condition="'$(UseOpenKey)'==''">true</UseOpenKey>
+    <UseOpenKey>true</UseOpenKey>
     <!-- duplicate in net46 folder so older nuget clients can consume -->
     <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard1.3'">netstandard1.3;net46</PackageTargetFramework>
     <!-- To allow this library to work on V4.5 runtimes and other old platforms
@@ -12,23 +12,20 @@
          (which is netstandard1.1).  Again we duplicate in a portable-* folder
          to work with older NuGet clients -->
     <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard1.1'">netstandard1.1;portable-net45+win8+wpa81</PackageTargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>    
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetGroup)' == 'netstandard1.1' Or '$(TargetGroup)' == 'net45'">
     <DefineConstants>;NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net45-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net45-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.1-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.1-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.3-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.3-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.5-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.5-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System\Diagnostics\DiagnosticSource.cs" />
     <Compile Include="System\Diagnostics\DiagnosticListener.cs" />
@@ -52,7 +49,7 @@
     <Compile Include="System\Diagnostics\Activity.Id.Random.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetGroup)' != 'netstandard1.3' And '$(TargetGroup)' != 'netstandard1.1'">
-    <Compile Include="System\Diagnostics\Activity.Id.MachineName.cs" />    
+    <Compile Include="System\Diagnostics\Activity.Id.MachineName.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />

@@ -26,11 +26,10 @@ namespace System.Collections.Tests
     {
         protected override string Min => 0.ToString().PadLeft(10);
         protected override string Max => int.MaxValue.ToString().PadLeft(10);
-        private int _current = 1;
 
         protected override string CreateT(int seed)
         {
-            return _current++.ToString().PadLeft(10);
+            return seed.ToString().PadLeft(10);
         }
 
         public override void ICollection_Generic_Remove_DefaultValueContainedInCollection(int count)

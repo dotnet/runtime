@@ -569,7 +569,7 @@ namespace System.Net.WebSockets
             {
                 sendBuffer[1] = 126;
                 sendBuffer[2] = (byte)(payload.Count / 256);
-                sendBuffer[3] = (byte)payload.Count;
+                sendBuffer[3] = unchecked((byte)payload.Count);
                 maskOffset = 2 + sizeof(ushort); // additional 2 bytes for 16-bit length
             }
             else
@@ -578,7 +578,7 @@ namespace System.Net.WebSockets
                 int length = payload.Count;
                 for (int i = 9; i >= 2; i--)
                 {
-                    sendBuffer[i] = (byte)length;
+                    sendBuffer[i] = unchecked((byte)length);
                     length = length / 256;
                 }
                 maskOffset = 2 + sizeof(ulong); // additional 8 bytes for 64-bit length

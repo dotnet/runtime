@@ -123,7 +123,7 @@ namespace System.Net
             return size;
         }
 
-        public override int Read([In, Out] byte[] buffer, int offset, int count)
+        public override int Read(byte[] buffer, int offset, int count)
         {
             if (_disposed)
                 throw new ObjectDisposedException(typeof(HttpRequestStream).ToString());

@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.Linq.Tests
 {
-    public class SelectManyTests : EnumerableTests
+    public partial class SelectManyTests : EnumerableTests
     {
         [Fact]
         public void EmptySource()
@@ -212,8 +212,7 @@ namespace System.Linq.Tests
             Assert.Equal(source.Last().total, source.SelectMany((e, i) => i == 4 ? e.total : Enumerable.Empty<int?>()));
         }
 
-        [Fact]
-        [ActiveIssue("Valid test but too intensive to enable even in OuterLoop")]
+        [Fact(Skip = "Valid test but too intensive to enable even in OuterLoop")]
         public void IndexOverflow()
         {
             var selected = new FastInfiniteEnumerator<int>().SelectMany((e, i) => Enumerable.Empty<int>());

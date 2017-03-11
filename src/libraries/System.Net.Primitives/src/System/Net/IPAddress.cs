@@ -280,10 +280,14 @@ namespace System.Net
             {
                 uint address = PrivateAddress;
                 bytes = new byte[IPAddressParserStatics.IPv4AddressBytes];
-                bytes[0] = (byte)(address);
-                bytes[1] = (byte)(address >> 8);
-                bytes[2] = (byte)(address >> 16);
-                bytes[3] = (byte)(address >> 24);
+
+                unchecked
+                {
+                    bytes[0] = (byte)(address);
+                    bytes[1] = (byte)(address >> 8);
+                    bytes[2] = (byte)(address >> 16);
+                    bytes[3] = (byte)(address >> 24);
+                }
             }
             return bytes;
         }
@@ -355,8 +359,8 @@ namespace System.Net
 #if BIGENDIAN
             return host;
 #else
-            return (((long)HostToNetworkOrder((int)host) & 0xFFFFFFFF) << 32)
-                    | ((long)HostToNetworkOrder((int)(host >> 32)) & 0xFFFFFFFF);
+            return (((long)HostToNetworkOrder(unchecked((int)host)) & 0xFFFFFFFF) << 32)
+                    | ((long)HostToNetworkOrder(unchecked((int)(host >> 32))) & 0xFFFFFFFF);
 #endif
         }
 
@@ -365,8 +369,8 @@ namespace System.Net
 #if BIGENDIAN
             return host;
 #else
-            return (((int)HostToNetworkOrder((short)host) & 0xFFFF) << 16)
-                    | ((int)HostToNetworkOrder((short)(host >> 16)) & 0xFFFF);
+            return (((int)HostToNetworkOrder(unchecked((short)host)) & 0xFFFF) << 16)
+                    | ((int)HostToNetworkOrder(unchecked((short)(host >> 16))) & 0xFFFF);
 #endif
         }
 
@@ -375,7 +379,7 @@ namespace System.Net
 #if BIGENDIAN
             return host;
 #else
-            return (short)((((int)host & 0xFF) << 8) | (int)((host >> 8) & 0xFF));
+            return unchecked((short)((((int)host & 0xFF) << 8) | (int)((host >> 8) & 0xFF)));
 #endif
         }
 
@@ -512,7 +516,7 @@ namespace System.Net
                     if (PrivateAddress != value)
                     {
                         _toString = null;
-                        PrivateAddress = (uint)value;
+                        PrivateAddress = unchecked((uint)value);
                     }
                 }
             }

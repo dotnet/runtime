@@ -248,8 +248,7 @@ namespace System.Net.Primitives.Functional.Tests
         }
 
         [Theory]
-        [PlatformSpecific(~TestPlatforms.AnyUnix)]
-        // Linux/OSX don't do the IPv6->IPv4 formatting for these addresses
+        [PlatformSpecific(~TestPlatforms.AnyUnix)]  // Linux/OSX don't do the IPv6->IPv4 formatting for these addresses
         [InlineData("::FFFF:0:192.168.0.1", "::ffff:0:192.168.0.1")] // SIIT
         [InlineData("::5EFE:192.168.0.1", "::5efe:192.168.0.1")] // ISATAP
         [InlineData("1::5EFE:192.168.0.1", "1::5efe:192.168.0.1")] // ISATAP
@@ -259,8 +258,7 @@ namespace System.Net.Primitives.Functional.Tests
         }
 
         [Theory]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
-        // Linux/OSX don't do the IPv6->IPv4 formatting for these addresses
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Linux/OSX don't do the IPv6->IPv4 formatting for these addresses
         [InlineData("::FFFF:0:192.168.0.1", "::ffff:0:c0a8:1")] // SIIT
         [InlineData("::5EFE:192.168.0.1", "::5efe:c0a8:1")] // ISATAP
         [InlineData("1::5EFE:192.168.0.1", "1::5efe:c0a8:1")] // ISATAP
@@ -362,7 +360,7 @@ namespace System.Net.Primitives.Functional.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)]
+        [PlatformSpecific(~TestPlatforms.OSX)] // There does't appear to be an OSX API that will fail for this
         public void ParseIPv6_AlphaNumericScope_Failure()
         {
             Assert.Throws<FormatException>(() => { IPAddress.Parse("::%1a"); });

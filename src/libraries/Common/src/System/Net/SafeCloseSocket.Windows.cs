@@ -20,6 +20,8 @@ namespace System.Net.Sockets
         private bool _skipCompletionPortOnSuccess;
         private object _iocpBindingLock = new object();
 
+        public void SetExposed() { /* nop */ }
+
         public ThreadPoolBoundHandle IOCPBoundHandle
         {
             get
@@ -88,11 +90,6 @@ namespace System.Net.Sockets
             }
         }
 
-        internal static unsafe SafeCloseSocket CreateWSASocket(byte* pinnedBuffer)
-        {
-            return CreateSocket(InnerSafeCloseSocket.CreateWSASocket(pinnedBuffer));
-        }
-
         internal static SafeCloseSocket CreateWSASocket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)
         {
             return CreateSocket(InnerSafeCloseSocket.CreateWSASocket(addressFamily, socketType, protocolType));
@@ -154,25 +151,6 @@ namespace System.Net.Sockets
 
                     if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{handle}, ioctlsocket()#1:{errorCode}");
 
-                    // This can fail if there's a pending WSAEventSelect.  Try canceling it.
-                    if (errorCode == SocketError.InvalidArgument)
-                    {
-                        errorCode = Interop.Winsock.WSAEventSelect(
-                            handle,
-                            IntPtr.Zero,
-                            Interop.Winsock.AsyncEventBits.FdNone);
-
-                        if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{handle}, WSAEventSelect()#1:{(errorCode == SocketError.SocketError ? (SocketError)Marshal.GetLastWin32Error() : errorCode)}");
-
-                        // Now retry the ioctl.
-                        errorCode = Interop.Winsock.ioctlsocket(
-                            handle,
-                            Interop.Winsock.IoctlSocketConstants.FIONBIO,
-                            ref nonBlockCmd);
-
-                        if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{handle}, ioctlsocket()#2:{(errorCode == SocketError.SocketError ? (SocketError)Marshal.GetLastWin32Error() : errorCode)}");
-                    }
-
                     // If that succeeded, try again.
                     if (errorCode == SocketError.Success)
                     {
@@ -225,17 +203,6 @@ namespace System.Net.Sockets
                 if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{handle}, closesocket#3():{(errorCode == SocketError.SocketError ? (SocketError)Marshal.GetLastWin32Error() : errorCode)}");
 
                 return errorCode;
-            }
-
-            internal static unsafe InnerSafeCloseSocket CreateWSASocket(byte* pinnedBuffer)
-            {
-                // NOTE: -1 is the value for FROM_PROTOCOL_INFO.
-                InnerSafeCloseSocket result = Interop.Winsock.WSASocketW((AddressFamily)(-1), (SocketType)(-1), (ProtocolType)(-1), pinnedBuffer, 0, Interop.Winsock.SocketConstructorFlags.WSA_FLAG_OVERLAPPED);
-                if (result.IsInvalid)
-                {
-                    result.SetHandleAsInvalid();
-                }
-                return result;
             }
 
             internal static InnerSafeCloseSocket CreateWSASocket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType)

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Properties.Twoclass2props.hide001.hide001;
 using Xunit;
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Properties.Twoclass2props.hide001.hide001

@@ -337,10 +337,13 @@ namespace System
                 // end includes ports, so changedEnd may be different from end
                 Debug.Assert(result != Invalid, "Failed to parse after already validated: " + name);
 
-                numbers[0] = (byte)(result >> 24);
-                numbers[1] = (byte)(result >> 16);
-                numbers[2] = (byte)(result >> 8);
-                numbers[3] = (byte)(result);
+                unchecked
+                {
+                    numbers[0] = (byte)(result >> 24);
+                    numbers[1] = (byte)(result >> 16);
+                    numbers[2] = (byte)(result >> 8);
+                    numbers[3] = (byte)(result);
+                }
             }
 
             return numbers[0] == 127;

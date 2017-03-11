@@ -52,11 +52,11 @@ namespace System.Linq.Expressions
         {
             Type cType = Expression.Type;
 
-            if (cType.GetTypeInfo().IsValueType)
+            if (cType.IsValueType || TypeOperand.IsPointer)
             {
                 if (cType.IsNullableType())
                 {
-                    // If the expression type is a a nullable type, it will match if
+                    // If the expression type is a nullable type, it will match if
                     // the value is not null and the type operand
                     // either matches or is its type argument (T to its T?).
                     if (cType.GetNonNullableType() != TypeOperand.GetNonNullableType())
@@ -113,7 +113,7 @@ namespace System.Linq.Expressions
             // causing it to always return false.
             // We workaround this optimization by generating different, less optimal IL
             // if TypeOperand is an interface.
-            if (TypeOperand.GetTypeInfo().IsInterface)
+            if (TypeOperand.IsInterface)
             {
                 ParameterExpression temp = Expression.Parameter(typeof(Type));
                 getType = Expression.Block(

@@ -7,6 +7,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Net.NetworkInformation;
 using System.Text;
+#if uap
+using System.Net.Internal;
+#endif
 
 // Relevant cookie specs:
 //

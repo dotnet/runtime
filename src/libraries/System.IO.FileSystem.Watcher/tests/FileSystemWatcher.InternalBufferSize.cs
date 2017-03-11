@@ -41,7 +41,7 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Uses P/Invokes
         public void FileSystemWatcher_InternalBufferSize(bool setToHigherCapacity)
         {
             using (var testDirectory = new TempDirectory(GetTestFilePath()))

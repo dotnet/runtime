@@ -189,7 +189,7 @@ namespace System.Xml.Tests
 
                 // for function elemNamespace_13
                 {
-                    this.AddChild(new CVariation(elemNamespace_13) { Attribute = new Variation("Try to re-define NS prefix on attribute which is aleady defined on an element") { id = 13, Pri = 2 } });
+                    this.AddChild(new CVariation(elemNamespace_13) { Attribute = new Variation("Try to re-define NS prefix on attribute which is already defined on an element") { id = 13, Pri = 2 } });
                 }
 
 
@@ -1148,7 +1148,7 @@ namespace System.Xml.Tests
 
                 // for function writeString_13
                 {
-                    this.AddChild(new CVariation(writeString_13) { Attribute = new Variation("Surrogate charaters in text nodes, range limits") { id = 13, Pri = 1 } });
+                    this.AddChild(new CVariation(writeString_13) { Attribute = new Variation("Surrogate characters in text nodes, range limits") { id = 13, Pri = 1 } });
                 }
 
 
@@ -1231,13 +1231,13 @@ namespace System.Xml.Tests
 
                 // for function writeValue_3
                 {
-                    this.AddChild(new CVariation(writeValue_3) { Attribute = new Variation("Write multiple atomic values inside element, seperate by WriteWhitespace(' ')") { Pri = 1 } });
+                    this.AddChild(new CVariation(writeValue_3) { Attribute = new Variation("Write multiple atomic values inside element, separate by WriteWhitespace(' ')") { Pri = 1 } });
                 }
 
 
                 // for function writeValue_4
                 {
-                    this.AddChild(new CVariation(writeValue_4) { Attribute = new Variation("Write multiple atomic values inside element, seperate by WriteString(' ')") { Pri = 1 } });
+                    this.AddChild(new CVariation(writeValue_4) { Attribute = new Variation("Write multiple atomic values inside element, separate by WriteString(' ')") { Pri = 1 } });
                 }
 
 
@@ -1249,7 +1249,7 @@ namespace System.Xml.Tests
 
                 // for function writeValue_6
                 {
-                    this.AddChild(new CVariation(writeValue_6) { Attribute = new Variation("Write multiple atomic values inside attribute, seperate by WriteString(' ')") { Pri = 1 } });
+                    this.AddChild(new CVariation(writeValue_6) { Attribute = new Variation("Write multiple atomic values inside attribute, separate by WriteString(' ')") { Pri = 1 } });
                 }
 
 
@@ -2144,7 +2144,7 @@ namespace System.Xml.Tests
 
                     // for function xmlSpace_9
                     {
-                        this.AddChild(new CVariation(xmlSpace_9) { Attribute = new Variation("Veify XmlSpace value when received through WriteString") { id = 9, Pri = 1 } });
+                        this.AddChild(new CVariation(xmlSpace_9) { Attribute = new Variation("Verify XmlSpace value when received through WriteString") { id = 9, Pri = 1 } });
                     }
                 }
             }
@@ -2180,13 +2180,13 @@ namespace System.Xml.Tests
 
                     // for function XmlLang_5
                     {
-                        this.AddChild(new CVariation(XmlLang_5) { Attribute = new Variation("Veify XmlLang value when received through WriteAttributes") { id = 5, Pri = 1 } });
+                        this.AddChild(new CVariation(XmlLang_5) { Attribute = new Variation("Verify XmlLang value when received through WriteAttributes") { id = 5, Pri = 1 } });
                     }
 
 
                     // for function XmlLang_6
                     {
-                        this.AddChild(new CVariation(XmlLang_6) { Attribute = new Variation("Veify XmlLang value when received through WriteString") { id = 6 } });
+                        this.AddChild(new CVariation(XmlLang_6) { Attribute = new Variation("Verify XmlLang value when received through WriteString") { id = 6 } });
                     }
 
 

@@ -26,7 +26,7 @@ namespace System.Xml.Xsl
 
         public static uint DblLo(double dbl)
         {
-            return (uint)BitConverter.DoubleToInt64Bits(dbl);
+            return unchecked((uint)BitConverter.DoubleToInt64Bits(dbl));
         }
 
         // Returns true if value is infinite or NaN (exponent bits are all ones)
@@ -98,7 +98,7 @@ namespace System.Xml.Xsl
         */
         public static uint AddU(ref uint u1, uint u2)
         {
-            u1 += u2;
+            u1 = unchecked(u1 + u2);
             return u1 < u2 ? 1u : 0u;
         }
 
@@ -112,7 +112,7 @@ namespace System.Xml.Xsl
         {
             ulong result = (ulong)u1 * u2;
             uHi = (uint)(result >> 32);
-            return (uint)result;
+            return unchecked((uint)result);
         }
 
         /*  ----------------------------------------------------------------------------
@@ -688,7 +688,7 @@ namespace System.Xml.Xsl
                 Debug.Assert(_error < 0xFFFFFFFF);
                 uint uT = (_error + 1) >> 1;
 
-                if (0 != uT && 0 == AddU(ref _u0, (uint)-(int)uT) && 0 == AddU(ref _u1, 0xFFFFFFFF))
+                if (0 != uT && 0 == AddU(ref _u0, unchecked((uint)-(int)uT)) && 0 == AddU(ref _u1, 0xFFFFFFFF))
                 {
                     AddU(ref _u2, 0xFFFFFFFF);
                     if (0 == (0x80000000 & _u2))
@@ -2977,7 +2977,7 @@ namespace System.Xml.Xsl
 
         private static bool IsAsciiDigit(char ch)
         {
-            return (uint)(ch - '0') <= 9;
+            return unchecked((uint)(ch - '0')) <= 9;
         }
 
         private static bool IsWhitespace(char ch)

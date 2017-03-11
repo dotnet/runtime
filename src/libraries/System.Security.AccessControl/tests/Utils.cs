@@ -200,7 +200,7 @@ namespace System.Security.AccessControl.Tests
             int verifierBinaryLength = 0;
             if (commonSecurityDescriptor != null)
             {
-                verifierBinaryLength = 20; //intialize the binary length to header length
+                verifierBinaryLength = 20; //initialize the binary length to header length
                 if (commonSecurityDescriptor.Owner != null)
                     verifierBinaryLength += commonSecurityDescriptor.Owner.BinaryLength;
                 if (commonSecurityDescriptor.Group != null)

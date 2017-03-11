@@ -14,7 +14,7 @@ namespace System.Net.Security.Tests
 {
     internal static class TestConfiguration
     {
-        public const int PassingTestTimeoutMilliseconds = 1 * 60 * 1000;
+        public const int PassingTestTimeoutMilliseconds = 4 * 60 * 1000;
         public const int FailingTestTimeoutMiliseconds = 250;
 
         public const string Realm = "TEST.COREFX.NET";

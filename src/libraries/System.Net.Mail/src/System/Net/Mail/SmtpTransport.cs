@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Mime;
+using System.Runtime.ExceptionServices;
 using System.Security.Cryptography.X509Certificates;
 
 namespace System.Net.Mail
@@ -318,11 +319,11 @@ namespace System.Net.Mail
 
             // Note the difference between the singular and plural FailedRecipient exceptions.
             // Only fail immediately if we couldn't send to any recipients.
-            if ((sendMailResult is Exception)
+            if ((sendMailResult is Exception e)
                 && (!(sendMailResult is SmtpFailedRecipientException)
                     || ((SmtpFailedRecipientException)sendMailResult).fatal))
             {
-                throw (Exception)sendMailResult;
+                ExceptionDispatchInfo.Capture(e).Throw();
             }
 
             return new MailWriter(thisPtr._stream);

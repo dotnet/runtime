@@ -89,8 +89,8 @@ namespace System.Xml.Xsl.IlGen
 
         // SxS note: AssemblyBuilder.DefineDynamicModule() below may be using name which is not SxS safe. 
         // This file is written only for internal tracing/debugging purposes. In retail builds persistAsm 
-        // will be always false and the file should never be written. As a result it's fine just to supress 
-        // the the SxS warning.
+        // will be always false and the file should never be written. As a result it's fine just to suppress 
+        // the SxS warning.
         public XmlILModule(bool useLRE, bool emitSymbols)
         {
             AssemblyName asmName;

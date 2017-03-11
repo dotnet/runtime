@@ -473,7 +473,7 @@ namespace System.Collections
 
         // Returns the index of the first occurrence of a given value in a range of
         // this list. The list is searched forwards, starting at index
-        // startIndex and upto count number of elements. The
+        // startIndex and up to count number of elements. The
         // elements of the list are compared to the given value using the
         // Object.Equals method.
         // 
@@ -576,7 +576,7 @@ namespace System.Collections
 
         // Returns the index of the last occurrence of a given value in a range of
         // this list. The list is searched backwards, starting at index
-        // startIndex and upto count elements. The elements of
+        // startIndex and up to count elements. The elements of
         // the list are compared to the given value using the Object.Equals
         // method.
         // 

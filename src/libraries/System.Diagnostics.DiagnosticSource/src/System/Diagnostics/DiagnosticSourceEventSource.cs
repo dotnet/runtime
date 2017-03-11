@@ -35,7 +35,7 @@ namespace System.Diagnostics
     ///   that will pick off the properties you desire.  
     ///   
     ///   Once you have the particular values you desire, the implicit payload elements are typically not needed
-    ///   anymore and you can prefix the Transform specification with a '-' which supresses the implicit 
+    ///   anymore and you can prefix the Transform specification with a '-' which suppresses the implicit 
     ///   transform (you only get the values of the properties you specifically ask for.  
     /// 
     ///   Logically a transform specification is simply a fetching specification X.Y.Z along with a name to give
@@ -96,7 +96,7 @@ namespace System.Diagnostics
     /// 
     /// * How data is logged in the EventSource 
     /// 
-    /// By default all data from Diagnostic sources is logged to the the DiagnosticEventSouce event called 'Event' 
+    /// By default all data from DiagnosticSources is logged to the DiagnosticEventSouce event called 'Event' 
     /// which has three fields  
     /// 
     ///     string SourceName, 

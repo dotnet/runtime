@@ -7,15 +7,13 @@
   </PropertyGroup>
   <PropertyGroup>
     <ProjectGuid>{4B4AA59B-89F9-4A34-B3C3-C97EF531EE00}</ProjectGuid>
-    <IsInterpreting Condition="'$(TargetGroup)' == 'netcore50'">true</IsInterpreting>
+    <IsInterpreting Condition="'$(TargetGroup)' == 'uap'">true</IsInterpreting>
     <DefineConstants Condition=" '$(IsInterpreting)' != 'true' ">$(DefineConstants);FEATURE_COMPILE</DefineConstants>
     <DefineConstants Condition=" '$(FeatureInterpret)' == 'true' ">$(DefineConstants);FEATURE_INTERPRET</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <TargetingPackExclusions Include="System.Linq.Expressions" />
     <ReferenceFromRuntime Include="System.Linq.Expressions" />
@@ -23,6 +21,9 @@
   <ItemGroup>
     <!-- Remove this when TypeBuilder extends TypeInfo. See https://github.com/dotnet/corefx/issues/14334 -->
     <Compile Include="$(CommonTestPath)\System\TypeBuilderExtensions.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <AdditionalCodeCoverageAssemblies Include="Microsoft.CSharp" /> 
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CompilerTests.cs" />

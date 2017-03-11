@@ -1846,6 +1846,17 @@ MembersMustExist : Member 'System.Runtime.Serialization.Json.DataContractJsonSer
 MembersMustExist : Member 'System.Runtime.Serialization.Json.DataContractJsonSerializerSettings.DataContractSurrogate.set(System.Runtime.Serialization.IDataContractSurrogate)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Xml.IXmlMtomReaderInitializer' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Xml.IXmlMtomWriterInitializer' does not exist in the implementation but it does exist in the contract.
+Compat issues with assembly System.Transactions:
+TypesMustExist : Type 'System.Transactions.DistributedTransactionPermission' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Transactions.DistributedTransactionPermissionAttribute' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Transactions.TransactionAbortedException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Transactions.TransactionException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Transactions.TransactionInDoubtException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Transactions.TransactionManagerCommunicationException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Transactions.TransactionPromotionException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+TypesMustExist : Type 'System.Transactions.Configuration.DefaultSettingsSection' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Transactions.Configuration.MachineSettingsSection' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Transactions.Configuration.TransactionsSectionGroup' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Web:
 TypesMustExist : Type 'System.Web.ApplicationShutdownReason' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Web.BeginEventHandler' does not exist in the implementation but it does exist in the contract.
@@ -3290,4 +3301,4 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Xml.Xsl.XsltException' does not i
 MembersMustExist : Member 'System.Xml.Xsl.XslTransform.Load(System.Xml.XmlReader, System.Xml.XmlResolver, System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Xml.Xsl.XslTransform.Load(System.Xml.XPath.IXPathNavigable, System.Xml.XmlResolver, System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Xml.Xsl.XslTransform.Load(System.Xml.XPath.XPathNavigator, System.Xml.XmlResolver, System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
-Total Issues: 3279
+Total Issues: 3289

@@ -6,8 +6,6 @@ using Xunit;
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadResolution.method.Oneclass.Twoparam.accessibility001.accessibility001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadResolution.method.Oneclass.Twoparam.accessibility001.accessibility001;
-
     public class Test
     {
         public void Method()
@@ -53,8 +51,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadRes
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadResolution.method.Oneclass.Twoparam.accessibility002.accessibility002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadResolution.method.Oneclass.Twoparam.accessibility002.accessibility002;
-
     public class Test
     {
         public void Method()
@@ -100,16 +96,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadRes
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadResolution.method.Oneclass.Twoparam.errorverifier.errorverifier
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadResolution.method.Oneclass.Twoparam.errorverifier.errorverifier;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadResolution.method.Oneclass.Twoparam.accessibility003.accessibility003;
-    using System;
-    using System.Collections;
-    using System.IO;
-    using System.Globalization;
-    using System.Reflection;
-    using System.Resources;
-    using Microsoft.CSharp.RuntimeBinder;
-
     public enum ErrorElementId
     {
         None,
@@ -294,9 +280,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadRes
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadResolution.method.Oneclass.Twoparam.accessibility003.accessibility003
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadResolution.method.Oneclass.Twoparam.errorverifier.errorverifier;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadResolution.method.Oneclass.Twoparam.accessibility003.accessibility003;
-
     public class Test
     {
         private delegate void Del(long x, int y);
@@ -339,8 +322,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadRes
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadResolution.method.Oneclass.Twoparam.accessibility004.accessibility004
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadResolution.method.Oneclass.Twoparam.accessibility004.accessibility004;
-
     // <Title>Accessibility</Title>
     // <Description>
     // </Description>
@@ -391,8 +372,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadRes
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadResolution.method.Oneclass.Twoparam.accessibility005.accessibility005
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadResolution.method.Oneclass.Twoparam.accessibility005.accessibility005;
-
     public class Test
     {
         private class Base
@@ -423,8 +402,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadRes
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadResolution.method.Oneclass.Twoparam.accessibility006.accessibility006
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadResolution.method.Oneclass.Twoparam.accessibility006.accessibility006;
-
     public class Test
     {
         protected class Base
@@ -472,8 +449,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadRes
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadResolution.method.Oneclass.Twoparam.accessibility007.accessibility007
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadResolution.method.Oneclass.Twoparam.accessibility007.accessibility007;
-
     public class Test
     {
         public void Method(int x, int y)
@@ -523,8 +498,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadRes
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadResolution.method.Oneclass.Twoparam.accessibility011.accessibility011
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadResolution.method.Oneclass.Twoparam.accessibility011.accessibility011;
-
     public class Test
     {
         public class Higher
@@ -558,8 +531,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadRes
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadResolution.method.Oneclass.Twoparam.accessibility012.accessibility012
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadResolution.method.Oneclass.Twoparam.accessibility012.accessibility012;
-
     public class Test
     {
         internal class Base

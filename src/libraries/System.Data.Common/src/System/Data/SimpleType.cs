@@ -364,7 +364,7 @@ namespace System.Data
 
             if (!string.Equals(BaseType, otherSimpleType.BaseType, StringComparison.Ordinal))
                 return ("BaseType");
-            if ((BaseSimpleType == null && otherSimpleType.BaseSimpleType != null) &&
+            if ((BaseSimpleType != null && otherSimpleType.BaseSimpleType != null) &&
                 (BaseSimpleType.HasConflictingDefinition(otherSimpleType.BaseSimpleType)).Length != 0)
                 return ("BaseSimpleType");
             return string.Empty;

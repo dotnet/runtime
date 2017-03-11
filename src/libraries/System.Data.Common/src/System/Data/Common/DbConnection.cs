@@ -10,7 +10,7 @@ namespace System.Data.Common
 {
     public abstract class DbConnection : Component, IDbConnection
     {
-        internal bool _supressStateChangeForReconnection;
+        internal bool _suppressStateChangeForReconnection;
 
         protected DbConnection() : base()
         {
@@ -95,7 +95,7 @@ namespace System.Data.Common
         
         protected virtual void OnStateChange(StateChangeEventArgs stateChange)
         {
-            if (_supressStateChangeForReconnection)
+            if (_suppressStateChangeForReconnection)
             {
                 return;
             }

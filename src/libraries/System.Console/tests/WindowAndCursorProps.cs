@@ -12,7 +12,7 @@ using Xunit.NetCore.Extensions;
 public class WindowAndCursorProps : RemoteExecutorTestBase
 {
     [Fact]
-    [PlatformSpecific(TestPlatforms.AnyUnix)]
+    [PlatformSpecific(TestPlatforms.AnyUnix)]  // Expected behavior specific to Unix
     public static void BufferSize_SettingNotSupported()
     {
         Assert.Throws<PlatformNotSupportedException>(() => Console.BufferWidth = 1);
@@ -20,7 +20,7 @@ public class WindowAndCursorProps : RemoteExecutorTestBase
     }
 
     [Fact]
-    [PlatformSpecific(TestPlatforms.AnyUnix)]
+    [PlatformSpecific(TestPlatforms.AnyUnix)]  // Expected behavior specific to Unix
     public static void BufferSize_GettingSameAsWindowSize()
     {
         Assert.Throws<PlatformNotSupportedException>(() => Console.BufferWidth = 1);
@@ -31,23 +31,14 @@ public class WindowAndCursorProps : RemoteExecutorTestBase
     }
 
     [Fact]
-    [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp | TargetFrameworkMonikers.NetcoreUwp)]
-    public static void WindowWidth_WindowHeight_InvalidSize_net46()
-    {
-        Assert.Throws<IOException>(() => Console.WindowWidth = 0);
-        Assert.Throws<IOException>(() => Console.WindowHeight = 0);
-    }
-
-    [Fact]
-    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
     public static void WindowWidth_WindowHeight_InvalidSize()
     {
-        Assert.Throws<ArgumentOutOfRangeException>("value", () => Console.WindowWidth = 0);
-        Assert.Throws<ArgumentOutOfRangeException>("value", () => Console.WindowHeight = 0);
+        Assert.Throws<ArgumentOutOfRangeException>("width", () => Console.WindowWidth = 0);
+        Assert.Throws<ArgumentOutOfRangeException>("height", () => Console.WindowHeight = 0);
     }
 
     [Fact]
-    [PlatformSpecific(TestPlatforms.AnyUnix)]
+    [PlatformSpecific(TestPlatforms.AnyUnix)]  // Expected behavior specific to Unix
     public static void WindowWidth()
     {
         Assert.Throws<PlatformNotSupportedException>(() => Console.WindowWidth = 100);
@@ -58,7 +49,7 @@ public class WindowAndCursorProps : RemoteExecutorTestBase
     }
 
     [Fact]
-    [PlatformSpecific(TestPlatforms.AnyUnix)]
+    [PlatformSpecific(TestPlatforms.AnyUnix)]  // Expected behavior specific to Unix
     public static void WindowHeight()
     {
         Assert.Throws<PlatformNotSupportedException>(() => Console.WindowHeight = 100);
@@ -69,7 +60,7 @@ public class WindowAndCursorProps : RemoteExecutorTestBase
     }
 
     [Fact]
-    [PlatformSpecific(TestPlatforms.AnyUnix)]
+    [PlatformSpecific(TestPlatforms.AnyUnix)]  // Expected behavior specific to Unix
     public static void WindowLeftTop_AnyUnix()
     {
         Assert.Equal(0, Console.WindowLeft);
@@ -79,7 +70,7 @@ public class WindowAndCursorProps : RemoteExecutorTestBase
     }
 
     [Fact]
-    [PlatformSpecific(TestPlatforms.Windows)]
+    [PlatformSpecific(TestPlatforms.Windows)]  // Expected behavior specific to Windows
     public static void WindowLeftTop_Windows()
     {
         if (Console.IsOutputRedirected)
@@ -95,7 +86,7 @@ public class WindowAndCursorProps : RemoteExecutorTestBase
     }
 
     [Fact] 
-    [PlatformSpecific(TestPlatforms.AnyUnix)]
+    [PlatformSpecific(TestPlatforms.AnyUnix)]  // Expected behavior specific to Unix
     [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] //CI system makes it difficult to run things in a non-redirected environments.
     public static void NonRedirectedCursorVisible()
     {
@@ -108,7 +99,7 @@ public class WindowAndCursorProps : RemoteExecutorTestBase
     }
 
     [Fact]
-    [PlatformSpecific(TestPlatforms.AnyUnix)]
+    [PlatformSpecific(TestPlatforms.AnyUnix)]  // Expected behavior specific to Unix
     public static void CursorVisible()
     {
         Assert.Throws<PlatformNotSupportedException>(() => { bool unused = Console.CursorVisible; });
@@ -119,7 +110,7 @@ public class WindowAndCursorProps : RemoteExecutorTestBase
     }
 
     [Fact]
-    [PlatformSpecific(TestPlatforms.AnyUnix)]
+    [PlatformSpecific(TestPlatforms.AnyUnix)]  // Expected behavior specific to Unix
     public static void Title_GetSet_Unix()
     {
         Assert.Throws<PlatformNotSupportedException>(() => Console.Title);
@@ -131,7 +122,7 @@ public class WindowAndCursorProps : RemoteExecutorTestBase
     }
 
     [Fact]
-    [PlatformSpecific(TestPlatforms.Windows)]
+    [PlatformSpecific(TestPlatforms.Windows)]  // Expected behavior specific to Windows
     public static void Title_Get_Windows()
     {
         Assert.NotNull(Console.Title);
@@ -141,7 +132,7 @@ public class WindowAndCursorProps : RemoteExecutorTestBase
     [InlineData(10)]
     [InlineData(256)]
     [InlineData(1024)]
-    [PlatformSpecific(TestPlatforms.Windows)]
+    [PlatformSpecific(TestPlatforms.Windows)]  // Expected behavior specific to Windows
     public static void Title_Set_Windows(int lengthOfTitle)
     {
         // Try to set the title to some other value.
@@ -155,7 +146,7 @@ public class WindowAndCursorProps : RemoteExecutorTestBase
     }
 
     [Fact]
-    [PlatformSpecific(TestPlatforms.Windows)]
+    [PlatformSpecific(TestPlatforms.Windows)]  // Expected behavior specific to Windows
     public static void Title_Set_Windows_longlength()
     {
         RemoteInvoke(() =>

@@ -9,6 +9,10 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <Compile Include="MemberInfoTests.cs" />
+    <Compile Include="ModuleTests.cs" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyExtensionTests.cs" />
     <Compile Include="ConstructorInfo\ConstructorInfoInvokeArrayTests.cs" />
@@ -19,9 +23,7 @@
     <Compile Include="Helpers.cs" />
     <Compile Include="EventInfoTests.cs" />
     <Compile Include="FieldInfoTests.cs" />
-    <Compile Include="MemberInfoTests.cs" />
     <Compile Include="MethodBaseTests.cs" />
-    <Compile Include="ModuleTests.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

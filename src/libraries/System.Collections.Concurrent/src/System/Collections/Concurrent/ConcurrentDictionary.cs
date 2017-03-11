@@ -93,31 +93,30 @@ namespace System.Collections.Concurrent
             // See http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-335.pdf
             //
             Type valueType = typeof(TValue);
-            if (valueType.IsEnum)
+            if (!valueType.IsValueType)
             {
-                valueType = Enum.GetUnderlyingType(valueType);
-            }
-            bool isAtomic =
-                !valueType.GetTypeInfo().IsValueType ||
-                valueType == typeof(bool) ||
-                valueType == typeof(char) ||
-                valueType == typeof(byte) ||
-                valueType == typeof(sbyte) ||
-                valueType == typeof(short) ||
-                valueType == typeof(ushort) ||
-                valueType == typeof(int) ||
-                valueType == typeof(uint) ||
-                valueType == typeof(float);
-
-            if (!isAtomic && IntPtr.Size == 8)
-            {
-                isAtomic =
-                    valueType == typeof(double) ||
-                    valueType == typeof(long) ||
-                    valueType == typeof(ulong);
+                return true;
             }
 
-            return isAtomic;
+            switch (Type.GetTypeCode(valueType))
+            {
+                case TypeCode.Boolean:
+                case TypeCode.Byte:
+                case TypeCode.Char:
+                case TypeCode.Int16:
+                case TypeCode.Int32:
+                case TypeCode.SByte:
+                case TypeCode.Single:
+                case TypeCode.UInt16:
+                case TypeCode.UInt32:
+                    return true;
+                case TypeCode.Int64:
+                case TypeCode.Double:
+                case TypeCode.UInt64:
+                    return IntPtr.Size == 8;
+                default:
+                    return false;
+            }
         }
 
         /// <summary>

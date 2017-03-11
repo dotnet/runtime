@@ -282,7 +282,7 @@ namespace System.Runtime.CompilerServices
             Type[] args;
             MethodInfo invoke = target.GetMethod("Invoke");
 
-            if (target.GetTypeInfo().IsGenericType && IsSimpleSignature(invoke, out args))
+            if (target.IsGenericType && IsSimpleSignature(invoke, out args))
             {
                 MethodInfo method = null;
                 MethodInfo noMatchMethod = null;

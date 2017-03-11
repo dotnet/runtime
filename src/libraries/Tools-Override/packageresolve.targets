@@ -40,14 +40,12 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <ResolveAssemblyReferencesDependsOn Condition="'$(_BuildAgainstPackages)' != 'true'">
+    <ResolveAssemblyReferencesDependsOn>
       $(ResolveAssemblyReferencesDependsOn);
       ResolveNuGetPackages;
       ValidatePackageVersions;
     </ResolveAssemblyReferencesDependsOn>
   </PropertyGroup>
-
-  <Import Condition="'$(_BuildAgainstPackages)' == 'true'" Project="buildagainstpackages.targets" />
 
   <PropertyGroup>
     <!-- temporarily accept the old name NuGetTargetFrameworkMoniker until all projects are moved forward -->
@@ -135,14 +133,14 @@
   </Target>
 
   <Target Name="ValidatePackageVersions"
-          Condition="'$(_BuildAgainstPackages)' != 'true' and '$(RestorePackages)'=='true' and '$(ValidatePackageVersions)'=='true' and Exists('$(ProjectJson)')">
+          Condition="'$(RestorePackages)'=='true' and '$(ValidatePackageVersions)'=='true' and Exists('$(ProjectJson)')">
     <ValidateProjectDependencyVersions ProjectJsons="$(ProjectJson)"
                                        ProhibitFloatingDependencies="$(ProhibitFloatingDependencies)"
                                        ValidationPatterns="@(ValidationPattern)" />
   </Target>
 
-  <Target Name="FilterTargetingPackResolvedNugetPackages" 
-          Condition="'$(SkipFilterTargetingPackResolvedNugetPackages)' != 'true'" 
+  <Target Name="FilterTargetingPackResolvedNugetPackages"
+          Condition="'$(SkipFilterTargetingPackResolvedNugetPackages)' != 'true'"
           AfterTargets="ResolveNuGetPackages" >
     <PropertyGroup>
       <_TargetingPackPrefix>Microsoft.TargetingPack</_TargetingPackPrefix>

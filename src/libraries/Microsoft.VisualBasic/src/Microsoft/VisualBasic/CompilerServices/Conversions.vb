@@ -1284,8 +1284,8 @@ GetSpecialValue:
                         'is harmless, but ClassifyPredefinedConversion hasn't been updated to consider Nullable conversions,
                         'and updating this across the entire runtime would be significant feature work.
 
-                        If Not (targetType.GetTypeInfo().IsGenericType AndAlso
-                                Not targetType.GetTypeInfo().IsGenericTypeDefinition AndAlso
+                        If Not (targetType.IsGenericType AndAlso
+                                Not targetType.IsGenericTypeDefinition AndAlso
                                 targetType.GetGenericTypeDefinition().Equals(GetType(Nullable(Of ))) AndAlso
                                 targetType.GetGenericArguments().Length > 0 AndAlso
                                 invocationResult.GetType().Equals(targetType.GetGenericArguments()(0))) Then

@@ -1,166 +1,47 @@
-DEFAULT_APPNAME Error: 0 : Failed to find or load matching assembly 'System.Composition.AttributedModel'.
-DEFAULT_APPNAME Error: 0 : Failed to find or load matching assembly 'System.Composition.Convention'.
-DEFAULT_APPNAME Error: 0 : Failed to find or load matching assembly 'System.Composition.Hosting'.
-DEFAULT_APPNAME Error: 0 : Failed to find or load matching assembly 'System.Composition.Runtime'.
-DEFAULT_APPNAME Error: 0 : Failed to find or load matching assembly 'System.Composition.TypedParts'.
-DEFAULT_APPNAME Error: 0 : Failed to find or load matching assembly 'System.Json'.
-DEFAULT_APPNAME Error: 0 : Failed to find or load matching assembly 'System.Runtime.CompilerServices.Unsafe'.
-DEFAULT_APPNAME Error: 0 : Failed to find or load matching assembly 'System.Text.Encodings.Web'.
-DEFAULT_APPNAME Error: 0 : Failed to find or load matching assembly 'System.Threading.Tasks.Dataflow'.
-DEFAULT_APPNAME Warning: 0 : Found 'System.Transactions' with PublicKeyToken 'b03f5f7f11d50a3a' instead of 'b77a5c561934e089'.
+DEFAULT_APPNAME Error: 0 : Failed to find or load matching assembly 'System.IO.FileSystem.AccessControl'.
+DEFAULT_APPNAME Error: 0 : Unable to resolve assembly 'Assembly(Name=System.IO.FileSystem.AccessControl, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)' referenced by the implementation assembly 'Assembly(Name=mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)'.
 Compat issues with assembly netstandard:
-TypesMustExist : Type 'System.Net.AuthenticationSchemeSelector' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.HttpListener' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.HttpListenerBasicIdentity' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.HttpListenerContext' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.HttpListenerException' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.HttpListenerPrefixCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.HttpListenerRequest' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.HttpListenerResponse' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.HttpListenerTimeoutManager' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mail.AlternateView' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mail.AlternateViewCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mail.Attachment' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mail.AttachmentBase' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mail.AttachmentCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mail.DeliveryNotificationOptions' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mail.LinkedResource' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mail.LinkedResourceCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mail.MailAddress' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mail.MailAddressCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mail.MailMessage' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mail.MailPriority' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mail.SendCompletedEventHandler' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mail.SmtpAccess' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mail.SmtpClient' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mail.SmtpDeliveryFormat' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mail.SmtpDeliveryMethod' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mail.SmtpException' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mail.SmtpFailedRecipientException' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mail.SmtpFailedRecipientsException' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mail.SmtpStatusCode' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mime.ContentDisposition' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mime.ContentType' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mime.DispositionTypeNames' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mime.MediaTypeNames' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mime.TransferEncoding' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.WebSockets.HttpListenerWebSocketContext' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Cookie' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.CookieCollection.Add(System.Net.Cookie)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.CookieCollection.CopyTo(System.Net.Cookie[], System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.CookieCollection.Item.get(System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.CookieCollection.Item.get(System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.CookieContainer.Add(System.Net.Cookie)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.CookieContainer.Add(System.Uri, System.Net.Cookie)' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.CookieException' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Cryptography.ECDsa.Create(System.Security.Cryptography.ECCurve)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Cryptography.ECDsaCng..ctor(System.Security.Cryptography.ECCurve)' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System:
-TypesMustExist : Type 'System.Net.AuthenticationSchemeSelector' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.HttpListener' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.HttpListenerBasicIdentity' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.HttpListenerContext' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.HttpListenerException' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.HttpListenerPrefixCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.HttpListenerRequest' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.HttpListenerResponse' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.HttpListenerTimeoutManager' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mail.AlternateView' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mail.AlternateViewCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mail.Attachment' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mail.AttachmentBase' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mail.AttachmentCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mail.DeliveryNotificationOptions' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mail.LinkedResource' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mail.LinkedResourceCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mail.MailAddress' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mail.MailAddressCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mail.MailMessage' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mail.MailPriority' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mail.SendCompletedEventHandler' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mail.SmtpAccess' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mail.SmtpClient' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mail.SmtpDeliveryFormat' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mail.SmtpDeliveryMethod' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mail.SmtpException' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mail.SmtpFailedRecipientException' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mail.SmtpFailedRecipientsException' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mail.SmtpStatusCode' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mime.ContentDisposition' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mime.ContentType' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mime.DispositionTypeNames' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mime.MediaTypeNames' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.Mime.TransferEncoding' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Net.WebSockets.HttpListenerWebSocketContext' does not exist in the implementation but it does exist in the contract.
-Compat issues with assembly System.Composition.AttributedModel:
-TypesMustExist : Type 'System.Composition.ExportAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Composition.ExportMetadataAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Composition.ImportAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Composition.ImportingConstructorAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Composition.ImportManyAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Composition.ImportMetadataConstraintAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Composition.MetadataAttributeAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Composition.OnImportsSatisfiedAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Composition.PartMetadataAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Composition.PartNotDiscoverableAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Composition.SharedAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Composition.SharingBoundaryAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Composition.Convention.AttributedModelProvider' does not exist in the implementation but it does exist in the contract.
-Compat issues with assembly System.Composition.Convention:
-TypesMustExist : Type 'System.Composition.Convention.ConventionBuilder' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Composition.Convention.ExportConventionBuilder' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Composition.Convention.ImportConventionBuilder' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Composition.Convention.ParameterImportConventionBuilder' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Composition.Convention.PartConventionBuilder' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Composition.Convention.PartConventionBuilder<T>' does not exist in the implementation but it does exist in the contract.
-Compat issues with assembly System.Composition.Hosting:
-TypesMustExist : Type 'System.Composition.Hosting.CompositionHost' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Composition.Hosting.Core.CompositeActivator' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Composition.Hosting.Core.CompositionDependency' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Composition.Hosting.Core.CompositionOperation' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Composition.Hosting.Core.DependencyAccessor' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Composition.Hosting.Core.ExportDescriptor' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Composition.Hosting.Core.ExportDescriptorPromise' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Composition.Hosting.Core.ExportDescriptorProvider' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Composition.Hosting.Core.LifetimeContext' does not exist in the implementation but it does exist in the contract.
-Compat issues with assembly System.Composition.Runtime:
-TypesMustExist : Type 'System.Composition.CompositionContext' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Composition.Export<T>' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Composition.ExportFactory<T>' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Composition.ExportFactory<T, TMetadata>' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Composition.Hosting.CompositionFailedException' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Composition.Hosting.Core.CompositionContract' does not exist in the implementation but it does exist in the contract.
-Compat issues with assembly System.Composition.TypedParts:
-TypesMustExist : Type 'System.Composition.CompositionContextExtensions' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Composition.Hosting.ContainerConfiguration' does not exist in the implementation but it does exist in the contract.
-Compat issues with assembly System.Json:
-TypesMustExist : Type 'System.Json.JsonArray' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Json.JsonObject' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Json.JsonPrimitive' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Json.JsonType' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Json.JsonValue' does not exist in the implementation but it does exist in the contract.
-Compat issues with assembly System.Runtime.CompilerServices.Unsafe:
-TypesMustExist : Type 'System.Runtime.CompilerServices.Unsafe' does not exist in the implementation but it does exist in the contract.
-Compat issues with assembly System.Text.Encodings.Web:
-TypesMustExist : Type 'System.Text.Encodings.Web.HtmlEncoder' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Text.Encodings.Web.JavaScriptEncoder' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Text.Encodings.Web.TextEncoder' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Text.Encodings.Web.TextEncoderSettings' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Text.Encodings.Web.UrlEncoder' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Text.Unicode.UnicodeRange' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Text.Unicode.UnicodeRanges' does not exist in the implementation but it does exist in the contract.
-Compat issues with assembly System.Threading.Tasks.Dataflow:
-TypesMustExist : Type 'System.Threading.Tasks.Dataflow.ActionBlock<TInput>' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Threading.Tasks.Dataflow.BatchBlock<T>' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Threading.Tasks.Dataflow.BatchedJoinBlock<T1, T2>' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Threading.Tasks.Dataflow.BatchedJoinBlock<T1, T2, T3>' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Threading.Tasks.Dataflow.BroadcastBlock<T>' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Threading.Tasks.Dataflow.BufferBlock<T>' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Threading.Tasks.Dataflow.DataflowBlock' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Threading.Tasks.Dataflow.DataflowBlockOptions' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Threading.Tasks.Dataflow.DataflowLinkOptions' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Threading.Tasks.Dataflow.DataflowMessageHeader' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Threading.Tasks.Dataflow.DataflowMessageStatus' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Threading.Tasks.Dataflow.ExecutionDataflowBlockOptions' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Threading.Tasks.Dataflow.GroupingDataflowBlockOptions' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Threading.Tasks.Dataflow.IDataflowBlock' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Threading.Tasks.Dataflow.IPropagatorBlock<TInput, TOutput>' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Threading.Tasks.Dataflow.IReceivableSourceBlock<TOutput>' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Threading.Tasks.Dataflow.ISourceBlock<TOutput>' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Threading.Tasks.Dataflow.ITargetBlock<TInput>' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Threading.Tasks.Dataflow.JoinBlock<T1, T2>' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Threading.Tasks.Dataflow.JoinBlock<T1, T2, T3>' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Threading.Tasks.Dataflow.TransformBlock<TInput, TOutput>' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Threading.Tasks.Dataflow.TransformManyBlock<TInput, TOutput>' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Threading.Tasks.Dataflow.WriteOnceBlock<T>' does not exist in the implementation but it does exist in the contract.
-Total Issues: 144
+TypesMustExist : Type 'System.Net.Cookie' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.CookieCollection.Add(System.Net.Cookie)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.CookieCollection.CopyTo(System.Net.Cookie[], System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.CookieCollection.Item.get(System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.CookieCollection.Item.get(System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.CookieContainer.Add(System.Net.Cookie)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.CookieContainer.Add(System.Uri, System.Net.Cookie)' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.CookieException' does not exist in the implementation but it does exist in the contract.
+Compat issues with assembly System.Core:
+MembersMustExist : Member 'System.Security.Cryptography.ECDsa.Create(System.Security.Cryptography.ECCurve)' does not exist in the implementation but it does exist in the contract.
+Compat issues with assembly System.IO.FileSystem.AccessControl:
+TypesMustExist : Type 'System.IO.FileSystemAclExtensions' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.DirectoryObjectSecurity' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.DirectorySecurity' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.FileSecurity' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.FileSystemAccessRule' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.FileSystemAuditRule' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.FileSystemRights' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.AccessControl.FileSystemSecurity' does not exist in the implementation but it does exist in the contract.
+Compat issues with assembly System.Net.Primitives:
+TypesMustExist : Type 'System.Net.Cookie' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.CookieCollection.Add(System.Net.Cookie)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.CookieCollection.CopyTo(System.Net.Cookie[], System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.CookieCollection.Item.get(System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.CookieCollection.Item.get(System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.CookieContainer.Add(System.Net.Cookie)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Net.CookieContainer.Add(System.Uri, System.Net.Cookie)' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.CookieException' does not exist in the implementation but it does exist in the contract.
+Compat issues with assembly System.Security.Cryptography.Algorithms:
+MembersMustExist : Member 'System.Security.Cryptography.ECDsa.Create(System.Security.Cryptography.ECCurve)' does not exist in the implementation but it does exist in the contract.
+Compat issues with assembly System.Security.Cryptography.Cng:
+MembersMustExist : Member 'System.Security.Cryptography.ECDsaCng..ctor(System.Security.Cryptography.ECCurve)' does not exist in the implementation but it does exist in the contract.
+Total Issues: 37

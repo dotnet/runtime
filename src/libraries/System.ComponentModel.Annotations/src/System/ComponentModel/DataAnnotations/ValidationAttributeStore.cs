@@ -124,7 +124,7 @@ namespace System.ComponentModel.DataAnnotations
                 if (!_typeStoreItems.TryGetValue(type, out item))
                 {
                     // use CustomAttributeExtensions.GetCustomAttributes() to get inherited attributes as well as direct ones
-                    var attributes = CustomAttributeExtensions.GetCustomAttributes(type.GetTypeInfo(), true);
+                    var attributes = CustomAttributeExtensions.GetCustomAttributes(type, true);
                     item = new TypeStoreItem(type, attributes);
                     _typeStoreItems[type] = item;
                 }

@@ -4,17 +4,13 @@
   <PropertyGroup>
     <ProjectGuid>{B8AD98AE-84C3-4313-B3F1-EE8BD5BFF69B}</ProjectGuid>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <EnableWinRT Condition="'$(TargetGroup)' == 'uap'">true</EnableWinRT>
     <!-- // uncomment to use the managed "unix" implementation on Windows
       <TargetsWindows>false</TargetsWindows>
       <TargetsUnix>true</TargetsUnix>
     -->
   </PropertyGroup>
-  <PropertyGroup Condition="'$(EnableWinRT)' != 'true'">
-    <DefineConstants>$(DefineConstants);FEATURE_CORECLR</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(EnableWinRT)' == 'true'">
-    <DefineConstants>$(DefineConstants);NETNATIVE</DefineConstants>
+  <PropertyGroup>
+    <DefineConstants Condition="'$(TargetGroup)' == 'uap'">$(DefineConstants);uap</DefineConstants>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='uap-Windows_NT-Debug|AnyCPU'" />
@@ -42,7 +38,7 @@
     <Compile Include="System\Net\WebSockets\WebSocketHandle.Windows.cs" />
   </ItemGroup>
   <!-- Windows : Win32 only -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(EnableWinRT)' != 'true'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(TargetGroup)' != 'uap'">
     <Compile Include="System\Net\WebSockets\WebSocketHandle.Win32.cs" />
     <Compile Include="System\Net\WebSockets\WebSocketMessageTypeAdapter.cs" />
     <Compile Include="System\Net\WebSockets\WinHttpWebSocket.cs" />
@@ -88,7 +84,7 @@
     </Compile>
   </ItemGroup>
   <!-- Windows : Win32 + WinRT -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(EnableWinRT)' == 'true'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(TargetGroup)' == 'uap'">
     <Compile Include="System\Net\WebSockets\WebSocketHandle.WinRT.cs" />
     <Compile Include="System\Net\WebSockets\WinRTWebSocket.cs" />
   </ItemGroup>

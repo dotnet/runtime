@@ -9,7 +9,6 @@ using System.Collections.Generic;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.LinkDemand, Unrestricted = true)]
     public class PrincipalValueCollection<T> : IList<T>, IList
     // T must be a ValueType or immutable ref type (such as string)
     {

@@ -995,7 +995,7 @@ nextcandidate:
             If (inferred OrElse
                 Not digThroughToBasesAndImplements OrElse
                 Not IsInstantiatedGeneric(parameterType) OrElse
-                (Not parameterType.GetTypeInfo.IsClass AndAlso Not parameterType.GetTypeInfo.IsInterface)) Then
+                (Not parameterType.IsClass AndAlso Not parameterType.IsInterface)) Then
 
                 'can only inherit from classes or interfaces.
                 'can ignore generic parameters here because it
@@ -1016,7 +1016,7 @@ nextcandidate:
                 '   array is possible.
                 '
                 If (argumentType.GetArrayRank > 1 OrElse
-                    parameterType.GetTypeInfo.IsClass) Then
+                    parameterType.IsClass) Then
 
                     Return False
                 End If
@@ -1029,8 +1029,8 @@ nextcandidate:
                     GoTo RetryInference
                 End If
 
-            ElseIf (Not argumentType.GetTypeInfo.IsClass AndAlso
-                     Not argumentType.GetTypeInfo.IsInterface) Then
+            ElseIf (Not argumentType.IsClass AndAlso
+                     Not argumentType.IsInterface) Then
 
                 Debug.Assert(Not IsGenericParameter(argumentType), "Generic parameter unexpected!!!")
 
@@ -1043,13 +1043,13 @@ nextcandidate:
             End If
 
 
-            If (parameterType.GetTypeInfo.IsClass) Then
+            If (parameterType.IsClass) Then
 
-                If (Not argumentType.GetTypeInfo.IsClass) Then
+                If (Not argumentType.IsClass) Then
                     Return False
                 End If
 
-                Dim base As Type = argumentType.GetTypeInfo.BaseType
+                Dim base As Type = argumentType.BaseType
 
                 While (base IsNot Nothing)
 
@@ -1059,7 +1059,7 @@ nextcandidate:
                         Exit While
                     End If
 
-                    base = base.GetTypeInfo.BaseType
+                    base = base.BaseType
                 End While
 
                 argumentType = base
@@ -1123,7 +1123,7 @@ RetryInference:
             '  -- If P is Array Of T, and A is Array Of X, then infer X for T
 
             If IsGenericParameter(parameterType) Then
-                If AreGenericMethodDefsEqual(parameterType.GetTypeInfo.DeclaringMethod, targetProcedure) Then
+                If AreGenericMethodDefsEqual(parameterType.DeclaringMethod, targetProcedure) Then
                     Dim parameterIndex As Integer = parameterType.GenericParameterPosition
                     If typeInferenceArguments(parameterIndex) Is Nothing Then
                         typeInferenceArguments(parameterIndex) = argumentType
