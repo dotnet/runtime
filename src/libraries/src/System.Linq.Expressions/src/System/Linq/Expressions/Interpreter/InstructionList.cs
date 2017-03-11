@@ -346,7 +346,7 @@ namespace System.Linq.Expressions.Interpreter
                 return;
             }
 
-            if (type == null || type.GetTypeInfo().IsValueType)
+            if (type == null || type.IsValueType)
             {
                 if (value is bool)
                 {
@@ -612,7 +612,7 @@ namespace System.Linq.Expressions.Interpreter
             {
                 Emit(new InitializeLocalInstruction.ImmutableValue(index, value));
             }
-            else if (type.GetTypeInfo().IsValueType)
+            else if (type.IsValueType)
             {
                 Emit(new InitializeLocalInstruction.MutableValue(index, type));
             }
@@ -783,6 +783,11 @@ namespace System.Linq.Expressions.Interpreter
             Emit(new NumericConvertInstruction.Unchecked(from, to, isLiftedToNull));
         }
 
+        public void EmitConvertToUnderlying(TypeCode to, bool isLiftedToNull)
+        {
+            Emit(new NumericConvertInstruction.ToUnderlying(to, isLiftedToNull));
+        }
+
         public void EmitCast(Type toType)
         {
             Emit(CastInstruction.Create(toType));
@@ -847,11 +852,6 @@ namespace System.Linq.Expressions.Interpreter
             Emit(TypeEqualsInstruction.Instance);
         }
 
-        public void EmitNullableTypeEquals()
-        {
-            Emit(NullableTypeEqualsInstruction.Instance);
-        }
-
         public void EmitArrayLength()
         {
             Emit(ArrayLengthInstruction.Instance);
@@ -865,11 +865,6 @@ namespace System.Linq.Expressions.Interpreter
         public void EmitNegateChecked(Type type)
         {
             Emit(NegateCheckedInstruction.Create(type));
-        }
-
-        public void EmitOnesComplement(Type type)
-        {
-            Emit(OnesComplementInstruction.Create(type));
         }
 
         public void EmitIncrement(Type type)

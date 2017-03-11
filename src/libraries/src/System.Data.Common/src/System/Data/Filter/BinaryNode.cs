@@ -326,7 +326,7 @@ namespace System.Data
             else
             {
                 vLeft = vRight = DBNull.Value;
-                resultType = StorageType.Empty; // shouldnt we make it boolean?
+                resultType = StorageType.Empty; // shouldn't we make it boolean?
             }
 
             object value = DBNull.Value;

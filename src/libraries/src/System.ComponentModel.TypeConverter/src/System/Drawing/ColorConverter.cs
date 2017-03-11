@@ -17,8 +17,13 @@ namespace System.Drawing
 {
     public class ColorConverter : TypeConverter
     {
-        private static object s_valuesLock = new object();
-        private static StandardValuesCollection s_values;
+        private static readonly Lazy<StandardValuesCollection> s_valuesLazy = new Lazy<StandardValuesCollection>(() => {
+            // We must take the value from each hashtable and combine them.
+            //
+            HashSet<Color> set = new HashSet<Color>(ColorTable.Colors.Values.Concat(ColorTable.SystemColors.Values));
+
+            return new StandardValuesCollection(set.OrderBy(c => c, new ColorComparer()).ToList());
+        });
 
         public ColorConverter()
         {
@@ -262,23 +267,7 @@ namespace System.Drawing
 
         public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext context)
         {
-            if (s_values == null)
-            {
-                lock (s_valuesLock)
-                {
-                    if (s_values == null)
-                    {
-                        // We must take the value from each hashtable and combine them.
-                        //
-                        HashSet<Color> set =
-                            new HashSet<Color>(ColorTable.Colors.Values.Concat(ColorTable.SystemColors.Values));
-
-                        s_values = new StandardValuesCollection(set.OrderBy(c => c, new ColorComparer()).ToList());
-                    }
-                }
-            }
-
-            return s_values;
+            return s_valuesLazy.Value;
         }
 
         public override bool GetStandardValuesSupported(ITypeDescriptorContext context)

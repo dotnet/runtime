@@ -141,9 +141,8 @@ namespace System.Linq.Tests
 
             Assert.Equal(expected, source.SkipWhile((element, index) => index < source.Length - 1));
         }
-        
-        [Fact]
-        [ActiveIssue("Valid test but too intensive to enable even in OuterLoop")]
+
+        [Fact(Skip = "Valid test but too intensive to enable even in OuterLoop")]
         public void IndexSkipWhileOverflowBeyondIntMaxValueElements()
         {
             var skipped = new FastInfiniteEnumerator<int>().SkipWhile((e, i) => true);

@@ -6,7 +6,6 @@ using Xunit;
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.extractDynamic.extract001.extract001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.extractDynamic.extract001.extract001;
     // <Title>Extract a dynamic element from a generic type</Title>
     // <Description>
     // </Description>
@@ -65,7 +64,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.ex
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.extractDynamic.extract002.extract002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.extractDynamic.extract002.extract002;
     // <Title>Extract a dynamic element from a generic type</Title>
     // <Description>
     // </Description>
@@ -124,7 +122,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.ex
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.extractDynamic.extract003.extract003
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.extractDynamic.extract003.extract003;
     // <Title>Extract a dynamic element from a generic type</Title>
     // <Description>
     // </Description>
@@ -183,7 +180,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.ex
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.extractDynamic.extract004.extract004
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.extractDynamic.extract004.extract004;
     // <Title>Extract a dynamic element from a generic type</Title>
     // <Description>
     // </Description>
@@ -250,7 +246,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.ex
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.extractDynamic.extract005.extract005
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.extractDynamic.extract005.extract005;
     // <Title>Extract a dynamic element from a generic type</Title>
     // <Description>
     // </Description>
@@ -317,7 +312,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.ex
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.extractDynamic.extract006.extract006
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.extractDynamic.extract006.extract006;
     // <Title>Extract a dynamic element from a generic type</Title>
     // <Description>
     // </Description>
@@ -384,7 +378,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.ex
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.extractDynamic.extract007.extract007
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.extractDynamic.extract007.extract007;
     // <Title>Extract a dynamic element from a generic type</Title>
     // <Description>
     // </Description>
@@ -451,7 +444,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.ex
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.extractDynamic.extract008.extract008
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.extractDynamic.extract008.extract008;
     // <Title>Extract a dynamic element from a generic type</Title>
     // <Description>
     // </Description>
@@ -510,7 +502,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.ex
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.extractDynamic.extract009.extract009
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.extractDynamic.extract009.extract009;
     // <Title>Extract a dynamic element from a generic type</Title>
     // <Description>
     // </Description>
@@ -569,7 +560,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.ex
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.extractDynamic.extract010.extract010
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.extractDynamic.extract010.extract010;
     // <Title>Extract a dynamic element from a generic type</Title>
     // <Description>
     // </Description>
@@ -638,14 +628,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.ex
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.extractDynamic.extract011.extract011
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.generics.extractDynamic.extract011.extract011;
     // <Title>Extract a dynamic element from a generic type</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System.Collections.Generic;
 
     public class A
     {

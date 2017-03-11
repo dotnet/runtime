@@ -3,13 +3,13 @@
     public partial class Activity
     {
         #region private
-        private string generateUniquePrefix()
-        {
-            byte[] bytes = new byte[8];
-            s_random.Value.NextBytes(bytes);
 
-            return $"{s_rootIdPrefix}{BitConverter.ToUInt64(bytes, 0):x}";
+        private string GenerateInstancePrefix()
+        {
+            string suffix = GetRandomNumber().ToString("x");
+            return RootIdPrefix + suffix;
         }
+
         #endregion
     }
 }

@@ -8,10 +8,10 @@
 //
 //
 // Contains tests for testing the Partitioner1Chunk new Dev11 feature.
-// In this partioner the chunk size is always 1
+// In this partitioner the chunk size is always 1
 //
 // The included scenarios are:
-//  1. Partitioner Corectness:
+//  1. Partitioner Correctness:
 //          - Chunk is one
 //          - ParallelForEach support iteration dependencies 
 //  2. Enumerators are disposed in ParallelForEach usage
@@ -63,7 +63,7 @@ namespace System.Threading.Tasks.Tests
             {
                 //keep track how many times the move next of the data source was called
                 //it is expected as 
-                //every call of MoveNext on partioner>GetDynamicPartions.GetEnumerator 
+                //every call of MoveNext on partitioner>GetDynamicPartions.GetEnumerator 
                 //to result in only one call of datasource Move Next
                 //there is not need to guard for concurrency issues because this scenario is single threaded
                 dataSourceMoveNextCalls++;
@@ -182,7 +182,7 @@ namespace System.Threading.Tasks.Tests
 
             Exception userEx = new InvalidOperationException("UserException");
             //this is an enumerable that will execute user actions on move next, current and dispose
-            //in this case we will set it to thorw on MoveNext for specified index
+            //in this case we will set it to throw on MoveNext for specified index
             UserActionEnumerable<int> customEnumerable = new UserActionEnumerable<int>(ds);
             Action<int> moveNextUserAction = (currentElement) =>
                                                             {
@@ -415,7 +415,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         /// <summary>
-        /// Dispose the underlying Enumerator, and supresses finalization
+        /// Dispose the underlying Enumerator, and suppresses finalization
         /// so that we will not throw.
         /// </summary>
         public void Dispose()

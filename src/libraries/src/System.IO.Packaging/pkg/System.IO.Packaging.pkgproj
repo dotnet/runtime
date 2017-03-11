@@ -5,7 +5,7 @@
     <ProjectReference Include="..\ref\System.IO.Packaging.csproj">
       <SupportedFramework>net46;netcore50;netcoreapp1.0;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\System.IO.Packaging.builds" />
+    <ProjectReference Include="..\src\System.IO.Packaging.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

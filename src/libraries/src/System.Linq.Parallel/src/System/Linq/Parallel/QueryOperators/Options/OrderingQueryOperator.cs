@@ -20,8 +20,6 @@ namespace System.Linq.Parallel
     /// <typeparam name="TSource"></typeparam>
     internal sealed class OrderingQueryOperator<TSource> : QueryOperator<TSource>
     {
-        // Turns on order (AsOrdered) or turns off order (AsUnordered)
-        private bool _orderOn;
         private QueryOperator<TSource> _child;
         private OrdinalIndexState _ordinalIndexState;
 
@@ -30,7 +28,6 @@ namespace System.Linq.Parallel
         {
             _child = child;
             _ordinalIndexState = _child.OrdinalIndexState;
-            _orderOn = orderOn;
         }
 
         internal override QueryResults<TSource> Open(QuerySettings settings, bool preferStriping)

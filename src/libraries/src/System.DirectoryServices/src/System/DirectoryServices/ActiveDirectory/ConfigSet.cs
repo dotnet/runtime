@@ -618,7 +618,7 @@ namespace System.DirectoryServices.ActiveDirectory
             throw new ActiveDirectoryObjectNotFoundException(String.Format(CultureInfo.CurrentCulture, SR.ADAMInstanceNotFoundInConfigSet , (configSetName != null) ? configSetName : context.Name), typeof(AdamInstance), null);
         }
 
-        /// <returns>Returns a DomainController object for the DC that holds the the specified FSMO role</returns>
+        /// <returns>Returns a DomainController object for the DC that holds the specified FSMO role</returns>
         private AdamInstance GetRoleOwner(AdamRole role)
         {
             DirectoryEntry entry = null;

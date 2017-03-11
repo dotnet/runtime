@@ -34,10 +34,6 @@
   <ItemGroup Condition="'$(TargetGroup)' != 'netfx' and '$(TargetsWindows)' == 'true'">
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'uapaot'">
-    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
-    <Reference Include="System.Resources.ResourceManager" />
-  </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' != 'true'">
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />

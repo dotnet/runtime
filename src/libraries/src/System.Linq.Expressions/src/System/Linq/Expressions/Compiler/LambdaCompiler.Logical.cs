@@ -94,7 +94,7 @@ namespace System.Linq.Expressions.Compiler
             {
                 EmitNullableCoalesce(b);
             }
-            else if (b.Left.Type.GetTypeInfo().IsValueType)
+            else if (b.Left.Type.IsValueType)
             {
                 throw Error.CoalesceUsedOnNonNullType();
             }
@@ -151,7 +151,7 @@ namespace System.Linq.Expressions.Compiler
             {
                 _ilg.Emit(OpCodes.Ldloca, loc);
                 _ilg.EmitGetValueOrDefault(b.Left.Type);
-                _ilg.EmitConvertToType(nnLeftType, b.Type, isChecked: true);
+                _ilg.EmitConvertToType(nnLeftType, b.Type, isChecked: true, locals: this);
             }
             else
             {
@@ -165,7 +165,7 @@ namespace System.Linq.Expressions.Compiler
             EmitExpression(b.Right);
             if (!TypeUtils.AreEquivalent(b.Right.Type, b.Type))
             {
-                _ilg.EmitConvertToType(b.Right.Type, b.Type, isChecked: true);
+                _ilg.EmitConvertToType(b.Right.Type, b.Type, isChecked: true, locals: this);
             }
             _ilg.MarkLabel(labEnd);
         }
@@ -179,9 +179,7 @@ namespace System.Linq.Expressions.Compiler
             EmitExpression(b.Left);
             _ilg.Emit(OpCodes.Dup);
             _ilg.Emit(OpCodes.Stloc, loc);
-            _ilg.Emit(OpCodes.Ldnull);
-            _ilg.Emit(OpCodes.Ceq);
-            _ilg.Emit(OpCodes.Brfalse, labNotNull);
+            _ilg.Emit(OpCodes.Brtrue, labNotNull);
             EmitExpression(b.Right);
             _ilg.Emit(OpCodes.Br, labEnd);
 
@@ -209,14 +207,12 @@ namespace System.Linq.Expressions.Compiler
             Label labCast = _ilg.DefineLabel();
             EmitExpression(b.Left);
             _ilg.Emit(OpCodes.Dup);
-            _ilg.Emit(OpCodes.Ldnull);
-            _ilg.Emit(OpCodes.Ceq);
-            _ilg.Emit(OpCodes.Brfalse, labCast);
+            _ilg.Emit(OpCodes.Brtrue, labCast);
             _ilg.Emit(OpCodes.Pop);
             EmitExpression(b.Right);
             if (!TypeUtils.AreEquivalent(b.Right.Type, b.Type))
             {
-                if (b.Right.Type.GetTypeInfo().IsValueType)
+                if (b.Right.Type.IsValueType)
                 {
                     _ilg.Emit(OpCodes.Box, b.Right.Type);
                 }
@@ -226,7 +222,7 @@ namespace System.Linq.Expressions.Compiler
             _ilg.MarkLabel(labCast);
             if (!TypeUtils.AreEquivalent(b.Left.Type, b.Type))
             {
-                Debug.Assert(!b.Left.Type.GetTypeInfo().IsValueType);
+                Debug.Assert(!b.Left.Type.IsValueType);
                 _ilg.Emit(OpCodes.Castclass, b.Type);
             }
             _ilg.MarkLabel(labEnd);
@@ -253,9 +249,7 @@ namespace System.Linq.Expressions.Compiler
             _ilg.Emit(OpCodes.Brfalse, labComputeRight);
             _ilg.Emit(OpCodes.Ldloca, locLeft);
             _ilg.EmitGetValueOrDefault(type);
-            _ilg.Emit(OpCodes.Ldc_I4_0);
-            _ilg.Emit(OpCodes.Ceq);
-            _ilg.Emit(OpCodes.Brtrue, labReturnFalse);
+            _ilg.Emit(OpCodes.Brfalse, labReturnFalse);
             // compute right
             _ilg.MarkLabel(labComputeRight);
             EmitExpression(b.Right);
@@ -265,9 +259,7 @@ namespace System.Linq.Expressions.Compiler
             _ilg.Emit(OpCodes.Brfalse_S, labReturnNull);
             _ilg.Emit(OpCodes.Ldloca, locRight);
             _ilg.EmitGetValueOrDefault(type);
-            _ilg.Emit(OpCodes.Ldc_I4_0);
-            _ilg.Emit(OpCodes.Ceq);
-            _ilg.Emit(OpCodes.Brtrue_S, labReturnFalse);
+            _ilg.Emit(OpCodes.Brfalse_S, labReturnFalse);
             // check left for null again
             _ilg.Emit(OpCodes.Ldloca, locLeft);
             _ilg.EmitHasValue(type);
@@ -381,9 +373,7 @@ namespace System.Linq.Expressions.Compiler
             _ilg.Emit(OpCodes.Brfalse, labComputeRight);
             _ilg.Emit(OpCodes.Ldloca, locLeft);
             _ilg.EmitGetValueOrDefault(type);
-            _ilg.Emit(OpCodes.Ldc_I4_0);
-            _ilg.Emit(OpCodes.Ceq);
-            _ilg.Emit(OpCodes.Brfalse, labReturnTrue);
+            _ilg.Emit(OpCodes.Brtrue, labReturnTrue);
             // compute right
             _ilg.MarkLabel(labComputeRight);
             EmitExpression(b.Right);
@@ -393,9 +383,7 @@ namespace System.Linq.Expressions.Compiler
             _ilg.Emit(OpCodes.Brfalse_S, labReturnNull);
             _ilg.Emit(OpCodes.Ldloca, locRight);
             _ilg.EmitGetValueOrDefault(type);
-            _ilg.Emit(OpCodes.Ldc_I4_0);
-            _ilg.Emit(OpCodes.Ceq);
-            _ilg.Emit(OpCodes.Brfalse_S, labReturnTrue);
+            _ilg.Emit(OpCodes.Brtrue_S, labReturnTrue);
             // check left for null again
             _ilg.Emit(OpCodes.Ldloca, locLeft);
             _ilg.EmitHasValue(type);
@@ -590,7 +578,7 @@ namespace System.Linq.Expressions.Compiler
                 }
                 else
                 {
-                    Debug.Assert(!node.Right.Type.GetTypeInfo().IsValueType);
+                    Debug.Assert(!node.Right.Type.IsValueType);
                     EmitExpression(GetEqualityOperand(node.Right));
                 }
                 EmitBranchOp(!branchWhenEqual, label);
@@ -604,7 +592,7 @@ namespace System.Linq.Expressions.Compiler
                 }
                 else
                 {
-                    Debug.Assert(!node.Left.Type.GetTypeInfo().IsValueType);
+                    Debug.Assert(!node.Left.Type.IsValueType);
                     EmitExpression(GetEqualityOperand(node.Left));
                 }
                 EmitBranchOp(!branchWhenEqual, label);
@@ -620,15 +608,7 @@ namespace System.Linq.Expressions.Compiler
             {
                 EmitExpression(GetEqualityOperand(node.Left));
                 EmitExpression(GetEqualityOperand(node.Right));
-                if (branchWhenEqual)
-                {
-                    _ilg.Emit(OpCodes.Beq, label);
-                }
-                else
-                {
-                    _ilg.Emit(OpCodes.Ceq);
-                    _ilg.Emit(OpCodes.Brfalse, label);
-                }
+                _ilg.Emit(branchWhenEqual ? OpCodes.Beq : OpCodes.Bne_Un, label);
             }
         }
 

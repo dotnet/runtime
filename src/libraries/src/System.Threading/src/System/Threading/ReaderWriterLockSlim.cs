@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Internal.Runtime.Augments;
 using System.Diagnostics; // for TraceInformation
 using System.Threading;
 using System.Runtime.CompilerServices;
@@ -80,8 +81,8 @@ namespace System.Threading
         private int _writeLockOwnerId;
 
         // conditions we wait on. 
-        private EventWaitHandle _writeEvent;    // threads waiting to aquire a write lock go here.
-        private EventWaitHandle _readEvent;     // threads waiting to aquire a read lock go here (will be released in bulk)
+        private EventWaitHandle _writeEvent;    // threads waiting to acquire a write lock go here.
+        private EventWaitHandle _readEvent;     // threads waiting to acquire a read lock go here (will be released in bulk)
         private EventWaitHandle _upgradeEvent;  // thread waiting to acquire the upgrade lock
         private EventWaitHandle _waitUpgradeEvent;  // thread waiting to upgrade from the upgrade lock to a write lock go here (at most one)
 
@@ -974,7 +975,7 @@ namespace System.Threading
 
             if (readercount == 1 && _numWriteUpgradeWaiters > 0)
             {
-                //We have to be careful now, as we are droppping the lock. 
+                //We have to be careful now, as we are dropping the lock. 
                 //No new writes should be allowed to sneak in if an upgrade
                 //was pending. 
 
@@ -1072,15 +1073,15 @@ namespace System.Threading
             {
                 if (i < LockSpinCount && pc > 1)
                 {
-                    Helpers.Spin(LockSpinCycles * (i + 1)); // Wait a few dozen instructions to let another processor release lock.
+                    RuntimeThread.SpinWait(LockSpinCycles * (i + 1)); // Wait a few dozen instructions to let another processor release lock.
                 }
                 else if (i < (LockSpinCount + LockSleep0Count))
                 {
-                    Helpers.Sleep(0);   // Give up my quantum.  
+                    RuntimeThread.Sleep(0);   // Give up my quantum.  
                 }
                 else
                 {
-                    Helpers.Sleep(1);   // Give up my quantum.  
+                    RuntimeThread.Sleep(1);   // Give up my quantum.  
                 }
 
                 if (_myLock == 0 && Interlocked.CompareExchange(ref _myLock, 1, 0) == 0)
@@ -1100,18 +1101,18 @@ namespace System.Threading
 
         private static void SpinWait(int SpinCount)
         {
-            //Exponential backoff
+            //Exponential back-off
             if ((SpinCount < 5) && (Environment.ProcessorCount > 1))
             {
-                Helpers.Spin(LockSpinCycles * SpinCount);
+                RuntimeThread.SpinWait(LockSpinCycles * SpinCount);
             }
             else if (SpinCount < MaxSpinCount - 3)
             {
-                Helpers.Sleep(0);
+                RuntimeThread.Sleep(0);
             }
             else
             {
-                Helpers.Sleep(1);
+                RuntimeThread.Sleep(1);
             }
         }
 

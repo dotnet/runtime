@@ -8,15 +8,15 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 
-// The NETNative_SystemNetHttp #define is used in some source files to indicate we are compiling classes
-// directly into the .NET Native System.Net.Http.dll implementation assembly in order to use internal class
+// The uap #define is used in some source files to indicate we are compiling classes
+// directly into the UWP System.Net.Http.dll implementation assembly in order to use internal class
 // methods. Internal methods are needed in order to map cookie response headers from the WinRT Windows.Web.Http APIs.
 // Windows.Web.Http is used underneath the System.Net.Http classes on .NET Native. Having other similarly
-// named classes would normally conflict with the public System.Net namespace classes that are also in the 
-// System.Private.Networking dll. So, we need to move the classes to a different namespace. Those classes are never
+// named classes would normally conflict with the public System.Net namespace classes.
+// So, we need to move the classes to a different namespace. Those classes are never
 // exposed up to user code so there isn't a problem.  In the future, we might expose some of the internal methods
 // as new public APIs and then we can remove this duplicate source code inclusion in the binaries.
-#if NETNative_SystemNetHttp
+#if uap
 namespace System.Net.Internal
 #else
 namespace System.Net
@@ -682,7 +682,7 @@ namespace System.Net
             set
             {
                 // Only set by HttpListenerRequest::Cookies_get()
-#if !NETNative_SystemNetHttp
+#if !uap
                 if (value != CookieVariant.Rfc2965)
                 {
                     NetEventSource.Fail(this, $"value != Rfc2965:{value}");
@@ -852,7 +852,7 @@ namespace System.Net
 #if DEBUG
         internal void Dump()
         {
-#if !NETNative_SystemNetHttp
+#if !uap
             if (NetEventSource.IsEnabled)
             {
                 if (NetEventSource.IsEnabled) NetEventSource.Info(this, 

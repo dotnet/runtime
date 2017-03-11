@@ -6,7 +6,14 @@
     <AssemblyName>System.Threading</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <GenFacadesIgnoreMissingTypes Condition="'$(TargetGroup)'=='uapaot'">true</GenFacadesIgnoreMissingTypes>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetGroup)' == 'uapaot'">
+    <GenFacadesIgnoreMissingTypes>true</GenFacadesIgnoreMissingTypes>
+    <!-- Suppress warning for LockRecursionPolicy type conflicts between this assembly and System.Private.CoreLib. -->
+    <!-- Remove when LockRecursionPolicy is removed from System.Private.CoreLib. -->
+    <NoWarn>0436</NoWarn>
+    <!-- Remove this define after enabling CdsSyncEtwBCLProvider (https://github.com/dotnet/corefx/issues/16881) -->
+    <DefineConstants>$(DefineConstants);uapaot</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
@@ -18,28 +25,25 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="System\Threading\Helpers.CoreCLR.cs" />
-    <Compile Include="System\Threading\Barrier.cs" Condition="'$(TargetGroup)'!='uapaot'" />
+    <Compile Include="System\Threading\Barrier.cs" />
     <Compile Include="System\Threading\CDSsyncETWBCLProvider.cs" Condition="'$(TargetGroup)'!='uapaot'" />
     <Compile Include="System\Threading\CountdownEvent.cs" />
-    <Compile Include="System\Threading\ReaderWriterLockSlim.cs" Condition="'$(TargetGroup)'!='uapaot'" />
+    <Compile Include="System\Threading\ReaderWriterLockSlim.cs" />
     <Compile Include="System\Threading\HostExecutionContext.cs" />
     <Compile Include="System\Threading\HostExecutionContextManager.cs" />
-    <Compile Include="System\Threading\LockCookie.cs" Condition="'$(TargetGroup)'!='uapaot'" />
-    <Compile Include="System\Threading\ReaderWriterLock.cs" Condition="'$(TargetGroup)'!='uapaot'" />
+    <Compile Include="System\Threading\LockCookie.cs" />
+    <Compile Include="System\Threading\ReaderWriterLock.cs" />
     <Compile Include="$(CommonPath)\System\HResults.cs">
       <Link>Common\System\HResults.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj">
-    </ProjectReference>
+    <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj" />
+    <!-- The Environment class is public in CoreCLR version of System.Private.CoreLib, however, internal in .NET Native's version -->
+    <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj" Condition="'$(TargetGroup)' == 'uapaot'" />
   </ItemGroup>
   <ItemGroup>
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='uapaot'">
-    <ProjectReference Include="..\..\System.Resources.ResourceManager\src\System.Resources.ResourceManager.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

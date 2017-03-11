@@ -221,7 +221,7 @@ namespace System.Security.Principal
             Contract.EndContractBlock();
 
             // Find out if the specified token is a valid.
-            uint dwLength = (uint)Marshal.SizeOf<uint>();
+            uint dwLength = (uint)sizeof(uint);
             bool result = Interop.Advapi32.GetTokenInformation(userToken, (uint)TokenInformationClass.TokenType,
                                                           SafeLocalAllocHandle.InvalidHandle, 0, out dwLength);
             if (Marshal.GetLastWin32Error() == Interop.Errors.ERROR_INVALID_HANDLE)
@@ -825,7 +825,7 @@ namespace System.Security.Principal
         private static SafeLocalAllocHandle GetTokenInformation(SafeAccessTokenHandle tokenHandle, TokenInformationClass tokenInformationClass)
         {
             SafeLocalAllocHandle safeLocalAllocHandle = SafeLocalAllocHandle.InvalidHandle;
-            uint dwLength = (uint)Marshal.SizeOf<uint>();
+            uint dwLength = (uint)sizeof(uint);
             bool result = Interop.Advapi32.GetTokenInformation(tokenHandle,
                                                           (uint)tokenInformationClass,
                                                           safeLocalAllocHandle,

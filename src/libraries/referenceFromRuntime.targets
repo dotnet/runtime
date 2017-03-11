@@ -28,7 +28,7 @@
           Condition="'$(IsTestProject)'!='true' AND '@(ReferenceFromRuntime)' != ''">
     <ItemGroup>
       <!-- transform to filename in order to intersect -->
-      <_referencePathFromRuntimeByFileName Include="@(_referencePathFromRuntime->'%(FileName)')" >
+      <_referencePathFromRuntimeByFileName Include="@(_referencePathFromRuntime->'%(FileName)')" Condition="'%(_referencePathFromRuntime.Extension)' == '.dll'" >
         <ReferencePath>%(Identity)</ReferencePath>
       </_referencePathFromRuntimeByFileName>
 
@@ -36,13 +36,23 @@
       <_filteredReferencePathFromRuntimeByFileName Include="@(_referencePathFromRuntimeByFileName)"
           Condition="'@(_referencePathFromRuntimeByFileName)' == '@(ReferenceFromRuntime)' AND '%(Identity)' != ''" />
 
-      <_missingReferenceFromRuntime Include="@(ReferenceFromRuntime)" Exclude="@(_referencePathFromRuntimeByFileName)" />
+      <_remainingReferenceFromRuntime Include="@(ReferenceFromRuntime)" Exclude="@(_filteredReferencePathFromRuntimeByFileName)" />
+
+      <!-- Fallback and check for native images for the references as well -->
+      <_remainingReferenceFromRuntimeWithNI Include="@(_remainingReferenceFromRuntime->'%(Identity).ni')">
+        <OriginalReferenceFromRuntime>%(Identity)</OriginalReferenceFromRuntime>
+      </_remainingReferenceFromRuntimeWithNI>
+
+      <_filteredReferencePathFromRuntimeByFileName Include="@(_referencePathFromRuntimeByFileName)"
+          Condition="'@(_referencePathFromRuntimeByFileName)' == '@(_remainingReferenceFromRuntimeWithNI)' AND '%(Identity)' != ''" />
+
+      <_missingReferenceFromRuntime Include="@(_remainingReferenceFromRuntimeWithNI)" Exclude="@(_filteredReferencePathFromRuntimeByFileName)" />
 
       <!-- transform back to path -->
       <ReferencePath Include="@(_filteredReferencePathFromRuntimeByFileName->'%(ReferencePath)')" />
     </ItemGroup>
 
     <Error Condition="'@(_missingReferenceFromRuntime)' != ''"
-           Text="Could not resolve ReferenceFromRuntime item(s) '@(_missingReferenceFromRuntime)' from '$(RuntimeProjectFile)'." />
+           Text="Could not resolve ReferenceFromRuntime item(s) '%(_missingReferenceFromRuntime.OriginalReferenceFromRuntime)' from '$(RuntimeProjectFile)'." />
   </Target>
 </Project>

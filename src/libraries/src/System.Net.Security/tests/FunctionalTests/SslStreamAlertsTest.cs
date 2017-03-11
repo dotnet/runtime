@@ -22,8 +22,8 @@ namespace System.Net.Security.Tests
         private const uint SEC_E_CERT_UNKNOWN = 0x80090327;
 
         [Fact]
-        [ActiveIssue(12706, TestPlatforms.Windows)]
         [ActiveIssue(12319, TestPlatforms.AnyUnix)]
+        [ActiveIssue(16516, TestPlatforms.Windows)]
         public async Task SslStream_StreamToStream_HandshakeAlert_Ok()
         {
             VirtualNetwork network = new VirtualNetwork();
@@ -48,7 +48,7 @@ namespace System.Net.Security.Tests
 
                 // The Schannel HResults for each alert are documented here: 
                 // https://msdn.microsoft.com/en-us/library/windows/desktop/dd721886(v=vs.85).aspx
-                Assert.Equal(SEC_E_CERT_UNKNOWN, (uint)win32ex.NativeErrorCode);
+                Assert.Equal(SEC_E_CERT_UNKNOWN, unchecked((uint)win32ex.NativeErrorCode));
 
                 await Assert.ThrowsAsync<AuthenticationException>(() => serverAuth);
 
@@ -58,8 +58,8 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        [ActiveIssue(12683, TestPlatforms.Windows)]
         [ActiveIssue(12319, TestPlatforms.AnyUnix)]
+        [ActiveIssue(16516, TestPlatforms.Windows)]
         public async Task SslStream_StreamToStream_ServerInitiatedCloseNotify_Ok()
         {
             VirtualNetwork network = new VirtualNetwork();
@@ -93,6 +93,7 @@ namespace System.Net.Security.Tests
 
         [Fact]
         [ActiveIssue(12319, TestPlatforms.AnyUnix)]
+        [ActiveIssue(16516, TestPlatforms.Windows)]
         public async Task SslStream_StreamToStream_ClientInitiatedCloseNotify_Ok()
         {
             VirtualNetwork network = new VirtualNetwork();
@@ -125,8 +126,8 @@ namespace System.Net.Security.Tests
         }
         
         [Fact]
-        [ActiveIssue(12706, TestPlatforms.Windows)]
         [ActiveIssue(12319, TestPlatforms.AnyUnix)]
+        [ActiveIssue(16516, TestPlatforms.Windows)]
         public async Task SslStream_StreamToStream_DataAfterShutdown_Fail()
         {
             VirtualNetwork network = new VirtualNetwork();

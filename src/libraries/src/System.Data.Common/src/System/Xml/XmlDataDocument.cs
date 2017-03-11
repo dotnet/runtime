@@ -35,7 +35,7 @@ namespace System.Xml
         private bool _ignoreDataSetEvents;   // true if DataSet events should not be processed
         private bool _isFoliationEnabled;    // true if we should create and reveal the virtual nodes, false if we should reveal only the physical stored nodes
         private bool _optimizeStorage;       // false if we should only have foilated regions.
-        private ElementState _autoFoliationState;    // When XmlBoundElement will foliate because of memeber functions, this will contain the foliation mode: usually this is
+        private ElementState _autoFoliationState;    // When XmlBoundElement will foliate because of member functions, this will contain the foliation mode: usually this is
                                                      // ElementState.StrongFoliation, however when foliation occurs due to DataDocumentNavigator operations (InsertNode for example),
                                                      // it it usually ElementState.WeakFoliation
         private bool _fAssociateDataRow;     // if true, CreateElement will create and associate data rows w/ the newly created XmlBoundElement.
@@ -499,7 +499,7 @@ namespace System.Xml
         // This function ensures that the special listeners are un-subscribed, the permanent listeners are subscribed and
         // CreateElement will attach DataRows to newly created XmlBoundElement.
         // It should be called when we have special listeners hooked and we need to change from the special-listeners mode to the
-        // populated/permanenet mode where all listeners are corectly hooked up and the mapper is correctly set-up.
+        // populated/permanenet mode where all listeners are correctly hooked up and the mapper is correctly set-up.
         private void EnsurePopulatedMode()
         {
             // Unbind special listeners, bind permanent ones, setup the mapping, etc
@@ -1224,7 +1224,7 @@ namespace System.Xml
             DataTable[] orderedTables = OrderTables(ds);
             // problem is after we add support for Namespace  for DataTable, when infering we do not guarantee that table would be 
             // in the same sequence that they were in XML because of namespace, some would be on different schema, so since they
-            // wont be in the same sequence as in XML, we may end up with having a child table, before its parent (which is not doable
+            // won't be in the same sequence as in XML, we may end up with having a child table, before its parent (which is not doable
             // with XML; and this happend because they are in different namespace)
             // this kind of problems are known and please see comment in "OnNestedParentChange"
             // so to fix it in general, we try to iterate over ordered tables instead of going over all tables in DataTableCollection with their own sequence
@@ -3034,7 +3034,7 @@ namespace System.Xml
             {
                 retValue = new DataTable[ds.Tables.Count];
                 ds.Tables.CopyTo(retValue, 0);
-                // XDD assumes PArent table exist before its child, if it does not we wont be handle the case
+                // XDD assumes PArent table exist before its child, if it does not we won't be handle the case
                 // same as Everett
             }
 

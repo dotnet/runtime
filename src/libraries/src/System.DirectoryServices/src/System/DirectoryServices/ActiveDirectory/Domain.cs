@@ -1076,7 +1076,7 @@ namespace System.DirectoryServices.ActiveDirectory
             return domainMode;
         }
 
-        /// <returns>Returns a DomainController object for the DC that holds the the specified FSMO role</returns>
+        /// <returns>Returns a DomainController object for the DC that holds the specified FSMO role</returns>
         private DomainController GetRoleOwner(ActiveDirectoryRole role)
         {
             DirectoryEntry entry = null;

@@ -39,7 +39,7 @@ the implementation without compat concerns in future releases.
 - If the library is not part of netstandard and not building against netstandard
   - All the rules for a library that is not part of netstandard apply but instead of having a target framework of
     `netstandard<latest>` it will have a target framework of `<framework><latest>`. Example `net<latest>` for desktop or `netcoreapp<latest>` for .NET Core.
-- It is not uncommon for a library to target the latest versions of multipe frameworks when adding new APIs (ex: https://github.com/dotnet/corefx/blob/master/src/System.Runtime/ref/System.Runtime.builds)
+- It is not uncommon for a library to target the latest versions of multiple frameworks when adding new APIs (ex: https://github.com/dotnet/corefx/blob/master/src/System.Runtime/ref/System.Runtime.builds)
 
 ###Determine library version
 - If targeting netstandard

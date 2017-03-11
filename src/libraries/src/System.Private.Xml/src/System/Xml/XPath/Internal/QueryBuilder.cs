@@ -247,7 +247,7 @@ namespace MS.Internal.Xml.XPath
             }
             if ((propsCond & Props.HasPosition) != 0)
             {
-                // this condition is positional rightmost filter should be avare of this.
+                // this condition is positional rightmost filter should be aware of this.
                 props |= Props.PosFilter;
             }
 

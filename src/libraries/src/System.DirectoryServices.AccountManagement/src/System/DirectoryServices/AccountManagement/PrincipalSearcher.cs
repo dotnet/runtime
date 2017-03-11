@@ -10,15 +10,12 @@ using System.Globalization;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.LinkDemand, Unrestricted = true)]
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.InheritanceDemand, Unrestricted = true)]
     public class PrincipalSearcher : IDisposable
     {
         //
         // Public constructors
         //
         [System.Security.SecurityCritical]
-        [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.Demand, Unrestricted = true)]
         public PrincipalSearcher()
         {
             SetDefaultPageSizeForContext();

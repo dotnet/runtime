@@ -62,6 +62,58 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<TestException>(doRethrowTwice);
         }
 
+        [Fact]
+        public void DefaultThrowTypeIsVoid()
+        {
+            Assert.Equal(typeof(void), Expression.Throw(null).Type);
+            Assert.Equal(typeof(void), Expression.Throw(Expression.Constant(new TestException())).Type);
+            Assert.Equal(typeof(void), Expression.Rethrow().Type);
+        }
+
+        [Fact]
+        public void ExceptionMustBeReadable()
+        {
+            Expression value = Expression.Property(null, typeof(Unreadable<Exception>), "WriteOnly");
+            Assert.Throws<ArgumentException>("value", () => Expression.Throw(value));
+        }
+
+        [Fact]
+        public void GenericThrowType()
+        {
+            Type listType = typeof(List<>);
+            Assert.Throws<ArgumentException>(
+                "type", () => Expression.Throw(Expression.Constant(new TestException()), listType));
+            Assert.Throws<ArgumentException>("type", () => Expression.Rethrow(listType));
+        }
+
+        [Fact]
+        public void ThrowTypeWithGenericParamters()
+        {
+            Type listType = typeof(List<>);
+            Type listListListType = listType.MakeGenericType(listType.MakeGenericType(listType));
+            Assert.Throws<ArgumentException>(
+                "type", () => Expression.Throw(Expression.Constant(new TestException()), listListListType));
+            Assert.Throws<ArgumentException>("type", () => Expression.Rethrow(listListListType));
+        }
+
+        [Fact]
+        public void PointerThrowType()
+        {
+            Type pointer = typeof(int).MakeByRefType();
+            Assert.Throws<ArgumentException>(
+                "type", () => Expression.Throw(Expression.Constant(new TestException()), pointer));
+            Assert.Throws<ArgumentException>("type", () => Expression.Rethrow(pointer));
+        }
+
+        [Fact]
+        public void ByRefThrowType()
+        {
+            Type byRefType = typeof(int).MakeByRefType();
+            Assert.Throws<ArgumentException>(
+                "type", () => Expression.Throw(Expression.Constant(new TestException()), byRefType));
+            Assert.Throws<ArgumentException>("type", () => Expression.Rethrow(byRefType));
+        }
+
         [Theory]
         [ClassData(typeof(CompilationTypes))]
         public void TypedThrowNullSameAsRethrow(bool useInterpreter)

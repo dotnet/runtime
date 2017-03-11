@@ -4,20 +4,13 @@
 
   <PropertyGroup>
     <PackageReportDir Condition="'$(PackageReportDir)' == ''">$(BinDir)pkg/reports/</PackageReportDir>
-    <BuildAllOSGroups Condition="'$(FilterToOSGroup)' != ''">false</BuildAllOSGroups>
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- 
+    <!--
     <Project Include="Native\pkg\**\*.builds" Condition="'$(SkipNativePackageBuild)' != 'true'">
       <AdditionalProperties>$(AdditionalProperties);SkipCreatePackageOnMissingFiles=true</AdditionalProperties>
       <BuildAllOSGroups>$(BuildAllOSGroups)</BuildAllOSGroups>
-    </Project>
-    <Project Include="*\pkg\*.builds" Condition="'$(SkipManagedPackageBuild)' != 'true'">
-      <AdditionalProperties>$(AdditionalProperties)</AdditionalProperties>
-    </Project>
-    <Project Include="..\pkg\*\*.builds" Condition="'$(SkipManagedPackageBuild)' != 'true'">
-      <AdditionalProperties>$(AdditionalProperties)</AdditionalProperties>
     </Project>
     -->
     <Project Include="$(MSBuildThisFileDirectory)..\pkg\Microsoft.NETCore.Platforms\Microsoft.NETCore.Platforms.builds" Condition="'$(SkipManagedPackageBuild)' != 'true'">
@@ -26,11 +19,17 @@
     <Project Include="$(MSBuildThisFileDirectory)..\pkg\Microsoft.Private.CoreFx.NETCoreApp\Microsoft.Private.CoreFx.NETCoreApp.builds" Condition="'$(SkipManagedPackageBuild)' != 'true'">
       <AdditionalProperties>$(AdditionalProperties)</AdditionalProperties>
     </Project>
+    <Project Include="$(MSBuildThisFileDirectory)..\pkg\Microsoft.Private.CoreFx.UAP\Microsoft.Private.CoreFx.UAP.builds" Condition="'$(SkipManagedPackageBuild)' != 'true'">
+      <AdditionalProperties>$(AdditionalProperties)</AdditionalProperties>
+    </Project>
+    <Project Include="*\pkg\*.pkgproj" Condition="'$(SkipManagedPackageBuild)' != 'true' AND '$(BuildAllConfigurations)' == 'true'">
+      <AdditionalProperties>$(AdditionalProperties)</AdditionalProperties>
+    </Project>
   </ItemGroup>
 
   <UsingTask TaskName="GenerateNetStandardSupportTable" AssemblyFile="$(PackagingTaskDir)Microsoft.DotNet.Build.Tasks.Packaging.dll" />
   <Target Name="GenerateNETStandardDocs">
-    <Error Condition="'$(WcfPackageReportDir)' == ''" 
+    <Error Condition="'$(WcfPackageReportDir)' == ''"
            Text="WcfPackageReportDir must be specified to point to the package report directory of the WCF repo.  EG: /p:WcfPackageReportDir=c:\src\wcf\bin\pkg\reports\" />
     <ItemGroup>
       <Reports Include="$(PackageReportDir)*.json" />

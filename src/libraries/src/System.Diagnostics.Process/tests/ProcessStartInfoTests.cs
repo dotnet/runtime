@@ -183,7 +183,6 @@ namespace System.Diagnostics.Tests
             });
         }
 
-        [ActiveIssue(14417)]
         [Fact]
         public void TestEnvironmentOfChildProcess()
         {
@@ -196,7 +195,7 @@ namespace System.Diagnostics.Tests
                 // to its output stream so we can read them.
                 Process p = CreateProcess(() =>
                 {
-                    Console.Write(string.Join(ItemSeparator, Environment.GetEnvironmentVariables().Cast<DictionaryEntry>().Select(e => e.Key + "=" + e.Value)));
+                    Console.Write(string.Join(ItemSeparator, Environment.GetEnvironmentVariables().Cast<DictionaryEntry>().Select(e => Convert.ToBase64String(Encoding.UTF8.GetBytes(e.Key + "=" + e.Value)))));
                     return SuccessExitCode;
                 });
                 p.StartInfo.StandardOutputEncoding = Encoding.UTF8;
@@ -206,7 +205,7 @@ namespace System.Diagnostics.Tests
                 Assert.True(p.WaitForExit(WaitInMS));
 
                 // Parse the env vars from the child process
-                var actualEnv = new HashSet<string>(output.Split(new[] { ItemSeparator }, StringSplitOptions.None));
+                var actualEnv = new HashSet<string>(output.Split(new[] { ItemSeparator }, StringSplitOptions.None).Select(s => Encoding.UTF8.GetString(Convert.FromBase64String(s))));
 
                 // Validate against StartInfo.Environment.
                 var startInfoEnv = new HashSet<string>(p.StartInfo.Environment.Select(e => e.Key + "=" + e.Value));
@@ -247,7 +246,7 @@ namespace System.Diagnostics.Tests
             Assert.False(psi.UseShellExecute, "UseShellExecute=true is not supported on onecore.");
         }
 
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)] // UseShellExecute currently not supported on Windows
         [Fact]
         public void TestUseShellExecuteProperty_SetAndGet_Unix()
         {
@@ -261,7 +260,7 @@ namespace System.Diagnostics.Tests
             Assert.False(psi.UseShellExecute);
         }
 
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)] // UseShellExecute currently not supported on Windows
         [Theory]
         [InlineData(0)]
         [InlineData(1)]
@@ -315,7 +314,7 @@ namespace System.Diagnostics.Tests
         }
 
 
-        [Fact, PlatformSpecific(TestPlatforms.AnyUnix)]
+        [Fact, PlatformSpecific(TestPlatforms.AnyUnix)]  // APIs throw PNSE on Unix
         public void TestUserCredentialsPropertiesOnUnix()
         {
             Assert.Throws<PlatformNotSupportedException>(() => _process.StartInfo.Domain);
@@ -348,7 +347,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ActiveIssue(12696)]
-        [Fact, PlatformSpecific(TestPlatforms.Windows), OuterLoop] // Requires admin privileges
+        [Fact, PlatformSpecific(TestPlatforms.Windows), OuterLoop] // Uses P/Invokes, Requires admin privileges
         public void TestUserCredentialsPropertiesOnWindows()
         {
             string username = "test", password = "PassWord123!!";

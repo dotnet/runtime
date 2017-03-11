@@ -77,7 +77,7 @@ namespace Microsoft.SqlServer.TDS
             {
                 // Write big endian value into the buffer
                 _data[2] = (byte)(value >> 8);
-                _data[3] = (byte)value;
+                _data[3] = unchecked((byte)value);
             }
         }
 

@@ -11,6 +11,7 @@ using Xunit;
 
 namespace System.Net.Tests
 {
+    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #16928")] //Test hang forever in desktop.
     public class RequestStreamTest
     {
         readonly byte[] buffer = new byte[1];

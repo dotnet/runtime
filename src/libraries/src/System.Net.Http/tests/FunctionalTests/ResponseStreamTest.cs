@@ -106,9 +106,32 @@ namespace System.Net.Http.Functional.Tests
                 Task task = stream.ReadAsync(buffer, 0, buffer.Length, cts.Token);
                 cts.Cancel();
 
-                // Verify that the task completes successfully or is canceled.
+                // Verify that the task completed.
                 Assert.True(((IAsyncResult)task).AsyncWaitHandle.WaitOne(new TimeSpan(0, 5, 0)));
-                Assert.True(task.Status == TaskStatus.RanToCompletion || task.Status == TaskStatus.Canceled);
+                Assert.True(task.IsCompleted, "Task was not yet completed");
+
+                // Verify that the task completed successfully or is canceled.
+                if (PlatformDetection.IsWindows)
+                {
+                    // On Windows, we may fault because canceling the task destroys the request handle
+                    // which may randomly cause an ObjectDisposedException (or other exception).
+                    Assert.True(
+                        task.Status == TaskStatus.RanToCompletion ||
+                        task.Status == TaskStatus.Canceled ||
+                        task.Status == TaskStatus.Faulted);
+                }
+                else
+                {
+                    if (task.IsFaulted)
+                    {
+                        // Propagate exception for debugging
+                        task.GetAwaiter().GetResult();
+                    }
+
+                    Assert.True(
+                        task.Status == TaskStatus.RanToCompletion ||
+                        task.Status == TaskStatus.Canceled);
+                }
             }
         }
 

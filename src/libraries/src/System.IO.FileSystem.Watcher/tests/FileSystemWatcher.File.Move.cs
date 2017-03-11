@@ -9,14 +9,14 @@ namespace System.IO.Tests
     public class File_Move_Tests : FileSystemWatcherTest
     {
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Expected WatcherChangeTypes are different based on OS
         public void Windows_File_Move_To_Same_Directory()
         {
             FileMove_SameDirectory(WatcherChangeTypes.Renamed);
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Expected WatcherChangeTypes are different based on OS
         public void Unix_File_Move_To_Same_Directory()
         {
             FileMove_SameDirectory(WatcherChangeTypes.Created | WatcherChangeTypes.Deleted);
@@ -29,21 +29,21 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Expected WatcherChangeTypes are different based on OS
         public void Windows_File_Move_To_Different_Watched_Directory()
         {
             FileMove_DifferentWatchedDirectory(WatcherChangeTypes.Changed);
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.OSX)]
+        [PlatformSpecific(TestPlatforms.OSX)]  // Expected WatcherChangeTypes are different based on OS
         public void OSX_File_Move_To_Different_Watched_Directory()
         {
             FileMove_DifferentWatchedDirectory(WatcherChangeTypes.Changed);
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Linux)]
+        [PlatformSpecific(TestPlatforms.Linux)]  // Expected WatcherChangeTypes are different based on OS
         public void Linux_File_Move_To_Different_Watched_Directory()
         {
             FileMove_DifferentWatchedDirectory(0);
@@ -58,7 +58,7 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Expected WatcherChangeTypes are different based on OS
         public void Windows_File_Move_In_Nested_Directory(bool includeSubdirectories)
         {
             FileMove_NestedDirectory(includeSubdirectories ? WatcherChangeTypes.Renamed : 0, includeSubdirectories);
@@ -67,21 +67,21 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Expected WatcherChangeTypes are different based on OS
         public void Unix_File_Move_In_Nested_Directory(bool includeSubdirectories)
         {
             FileMove_NestedDirectory(includeSubdirectories ? WatcherChangeTypes.Created | WatcherChangeTypes.Deleted : 0, includeSubdirectories);
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Expected WatcherChangeTypes are different based on OS
         public void Windows_File_Move_With_Set_NotifyFilter()
         {
             FileMove_WithNotifyFilter(WatcherChangeTypes.Renamed);
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Expected WatcherChangeTypes are different based on OS
         public void Unix_File_Move_With_Set_NotifyFilter()
         {
             FileMove_WithNotifyFilter(WatcherChangeTypes.Deleted);

@@ -14,7 +14,7 @@ namespace System.Collections.Immutable
     /// </summary>
     /// <typeparam name="T">The type of elements stored in the queue.</typeparam>
     [DebuggerDisplay("IsEmpty = {IsEmpty}")]
-    [DebuggerTypeProxy(typeof(ImmutableQueueDebuggerProxy<>))]
+    [DebuggerTypeProxy(typeof(ImmutableEnumerableDebuggerProxy<>))]
     [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "Ignored")]
     [SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix", Justification = "Ignored")]
     public sealed partial class ImmutableQueue<T> : IImmutableQueue<T>
@@ -46,16 +46,15 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Initializes a new instance of the <see cref="ImmutableQueue{T}"/> class.
         /// </summary>
-        /// <param name="forward">The forward stack.</param>
-        /// <param name="backward">The backward stack.</param>
-        private ImmutableQueue(ImmutableStack<T> forward, ImmutableStack<T> backward)
+        /// <param name="forwards">The forwards stack.</param>
+        /// <param name="backwards">The backwards stack.</param>
+        internal ImmutableQueue(ImmutableStack<T> forwards, ImmutableStack<T> backwards)
         {
-            Requires.NotNull(forward, nameof(forward));
-            Requires.NotNull(backward, nameof(backward));
+            Debug.Assert(forwards != null);
+            Debug.Assert(backwards != null);
 
-            _forwards = forward;
-            _backwards = backward;
-            _backwardsReversed = null;
+            _forwards = forwards;
+            _backwards = backwards;
         }
 
         /// <summary>
@@ -76,7 +75,11 @@ namespace System.Collections.Immutable
         /// </value>
         public bool IsEmpty
         {
-            get { return _forwards.IsEmpty && _backwards.IsEmpty; }
+            get
+            {
+                Debug.Assert(!_forwards.IsEmpty || _backwards.IsEmpty);
+                return _forwards.IsEmpty;
+            }
         }
 
         /// <summary>
@@ -151,7 +154,7 @@ namespace System.Collections.Immutable
 
             if (this.IsEmpty)
             {
-                return new ImmutableQueue<T>(ImmutableStack<T>.Empty.Push(value), ImmutableStack<T>.Empty);
+                return new ImmutableQueue<T>(ImmutableStack.Create(value), ImmutableStack<T>.Empty);
             }
             else
             {

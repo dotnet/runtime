@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Drawing;
+using System.Threading;
 
 namespace System.ComponentModel
 {
@@ -36,8 +37,8 @@ namespace System.ComponentModel
 
         // This is where we store the various converters, etc for the intrinsic types.
         //
-        private static volatile Hashtable s_editorTables;
-        private static volatile Hashtable s_intrinsicTypeConverters;
+        private static Hashtable s_editorTables;
+        private static Hashtable s_intrinsicTypeConverters;
 
         // For converters, etc that are bound to class attribute data, rather than a class
         // type, we have special key sentinel values that we put into the hash table.
@@ -55,10 +56,10 @@ namespace System.ComponentModel
         // in.  The keys to the property and event caches are types.
         // The keys to the attribute cache are either MemberInfos or types.
         //
-        private static volatile Hashtable s_propertyCache;
-        private static volatile Hashtable s_eventCache;
-        private static volatile Hashtable s_attributeCache;
-        private static volatile Hashtable s_extendedPropertyCache;
+        private static Hashtable s_propertyCache;
+        private static Hashtable s_eventCache;
+        private static Hashtable s_attributeCache;
+        private static Hashtable s_extendedPropertyCache;
 
         // These are keys we stuff into our object cache.  We use this
         // cache data to store extender provider info for an object.
@@ -90,65 +91,59 @@ namespace System.ComponentModel
         {
         }
 
+        private static Hashtable EditorTables => LazyInitializer.EnsureInitialized(ref s_editorTables, () => new Hashtable(4));
+
         /// <summary> 
         ///      This is a table we create for intrinsic types. 
         ///      There should be entries here ONLY for intrinsic 
         ///      types, as all other types we should be able to 
         ///      add attributes directly as metadata. 
         /// </summary> 
-        private static Hashtable IntrinsicTypeConverters
+        private static Hashtable IntrinsicTypeConverters => LazyInitializer.EnsureInitialized(ref s_intrinsicTypeConverters, () => new Hashtable
         {
-            get
-            {
-                // It is not worth taking a lock for this -- worst case of a collision
-                // would build two tables, one that garbage collects very quickly.
-                //
-                if (s_intrinsicTypeConverters == null)
-                {
-                    // Add the intrinsics
-                    //
-                    Hashtable temp = new Hashtable
-                    {
-                        [typeof(bool)] = typeof(BooleanConverter),
-                        [typeof(byte)] = typeof(ByteConverter),
-                        [typeof(SByte)] = typeof(SByteConverter),
-                        [typeof(char)] = typeof(CharConverter),
-                        [typeof(double)] = typeof(DoubleConverter),
-                        [typeof(string)] = typeof(StringConverter),
-                        [typeof(int)] = typeof(Int32Converter),
-                        [typeof(short)] = typeof(Int16Converter),
-                        [typeof(long)] = typeof(Int64Converter),
-                        [typeof(float)] = typeof(SingleConverter),
-                        [typeof(UInt16)] = typeof(UInt16Converter),
-                        [typeof(UInt32)] = typeof(UInt32Converter),
-                        [typeof(UInt64)] = typeof(UInt64Converter),
-                        [typeof(object)] = typeof(TypeConverter),
-                        [typeof(void)] = typeof(TypeConverter),
-                        [typeof(DateTime)] = typeof(DateTimeConverter),
-                        [typeof(DateTimeOffset)] = typeof(DateTimeOffsetConverter),
-                        [typeof(Decimal)] = typeof(DecimalConverter),
-                        [typeof(TimeSpan)] = typeof(TimeSpanConverter),
-                        [typeof(Guid)] = typeof(GuidConverter),
-                        [typeof(Uri)] = typeof(UriTypeConverter),
-                        [typeof(Color)] = typeof(ColorConverter),
-                        [typeof(Point)] = typeof(PointConverter),
-                        [typeof(Rectangle)] = typeof(RectangleConverter),
-                        [typeof(Size)] = typeof(SizeConverter),
-                        [typeof(SizeF)] = typeof(SizeFConverter),
-                        // Special cases for things that are not bound to a specific type
-                        //
-                        [typeof(Array)] = typeof(ArrayConverter),
-                        [typeof(ICollection)] = typeof(CollectionConverter),
-                        [typeof(Enum)] = typeof(EnumConverter),
-                        [s_intrinsicNullableKey] = typeof(NullableConverter),
-                    };
+            // Add the intrinsics
+            //
+            [typeof(bool)] = typeof(BooleanConverter),
+            [typeof(byte)] = typeof(ByteConverter),
+            [typeof(SByte)] = typeof(SByteConverter),
+            [typeof(char)] = typeof(CharConverter),
+            [typeof(double)] = typeof(DoubleConverter),
+            [typeof(string)] = typeof(StringConverter),
+            [typeof(int)] = typeof(Int32Converter),
+            [typeof(short)] = typeof(Int16Converter),
+            [typeof(long)] = typeof(Int64Converter),
+            [typeof(float)] = typeof(SingleConverter),
+            [typeof(UInt16)] = typeof(UInt16Converter),
+            [typeof(UInt32)] = typeof(UInt32Converter),
+            [typeof(UInt64)] = typeof(UInt64Converter),
+            [typeof(object)] = typeof(TypeConverter),
+            [typeof(void)] = typeof(TypeConverter),
+            [typeof(DateTime)] = typeof(DateTimeConverter),
+            [typeof(DateTimeOffset)] = typeof(DateTimeOffsetConverter),
+            [typeof(Decimal)] = typeof(DecimalConverter),
+            [typeof(TimeSpan)] = typeof(TimeSpanConverter),
+            [typeof(Guid)] = typeof(GuidConverter),
+            [typeof(Uri)] = typeof(UriTypeConverter),
+            [typeof(Color)] = typeof(ColorConverter),
+            [typeof(Point)] = typeof(PointConverter),
+            [typeof(Rectangle)] = typeof(RectangleConverter),
+            [typeof(Size)] = typeof(SizeConverter),
+            [typeof(SizeF)] = typeof(SizeFConverter),
+            // Special cases for things that are not bound to a specific type
+            //
+            [typeof(Array)] = typeof(ArrayConverter),
+            [typeof(ICollection)] = typeof(CollectionConverter),
+            [typeof(Enum)] = typeof(EnumConverter),
+            [s_intrinsicNullableKey] = typeof(NullableConverter),
+        });    
 
+        private static Hashtable PropertyCache => LazyInitializer.EnsureInitialized(ref s_propertyCache, () => new Hashtable());
 
-                    s_intrinsicTypeConverters = temp;
-                }
-                return s_intrinsicTypeConverters;
-            }
-        }
+        private static Hashtable EventCache => LazyInitializer.EnsureInitialized(ref s_eventCache, () => new Hashtable());
+
+        private static Hashtable AttributeCache => LazyInitializer.EnsureInitialized(ref s_attributeCache, () => new Hashtable());
+
+        private static Hashtable ExtendedPropertyCache => LazyInitializer.EnsureInitialized(ref s_extendedPropertyCache, () => new Hashtable());
 
         /// <summary>
         ///     Adds an editor table for the given editor base type.
@@ -172,14 +167,10 @@ namespace System.ComponentModel
 
             lock (s_internalSyncObject)
             {
-                if (s_editorTables == null)
+                Hashtable editorTables = EditorTables;
+                if (!editorTables.ContainsKey(editorBaseType))
                 {
-                    s_editorTables = new Hashtable(4);
-                }
-
-                if (!s_editorTables.ContainsKey(editorBaseType))
-                {
-                    s_editorTables[editorBaseType] = table;
+                    editorTables[editorBaseType] = table;
                 }
             }
         }
@@ -195,7 +186,7 @@ namespace System.ComponentModel
 
             if (argTypes != null)
             {
-                obj = objectType.GetTypeInfo().GetConstructor(argTypes)?.Invoke(args);
+                obj = objectType.GetConstructor(argTypes)?.Invoke(args);
             }
             else
             {
@@ -219,7 +210,7 @@ namespace System.ComponentModel
                     argTypes = Array.Empty<Type>();
                 }
 
-                obj = objectType.GetTypeInfo().GetConstructor(argTypes)?.Invoke(args);
+                obj = objectType.GetConstructor(argTypes)?.Invoke(args);
             }
 
             return obj ?? Activator.CreateInstance(objectType, args);
@@ -233,7 +224,7 @@ namespace System.ComponentModel
         /// </summary> 
         private static object CreateInstance(Type objectType, Type callingType)
         {
-            return objectType.GetTypeInfo().GetConstructor(s_typeConstructor)?.Invoke(new object[] { callingType })
+            return objectType.GetConstructor(s_typeConstructor)?.Invoke(new object[] { callingType })
                 ?? Activator.CreateInstance(objectType);
         }
 
@@ -332,18 +323,8 @@ namespace System.ComponentModel
         /// </summary> 
         private static Hashtable GetEditorTable(Type editorBaseType)
         {
-            if (s_editorTables == null)
-            {
-                lock (s_internalSyncObject)
-                {
-                    if (s_editorTables == null)
-                    {
-                        s_editorTables = new Hashtable(4);
-                    }
-                }
-            }
-
-            object table = s_editorTables[editorBaseType];
+            Hashtable editorTables = EditorTables;
+            object table = editorTables[editorBaseType];
 
             if (table == null)
             {
@@ -352,7 +333,7 @@ namespace System.ComponentModel
                 // actually run.
                 //
                 System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(editorBaseType.TypeHandle);
-                table = s_editorTables[editorBaseType];
+                table = editorTables[editorBaseType];
 
                 // If the table is still null, then throw a
                 // sentinel in there so we don't
@@ -362,10 +343,10 @@ namespace System.ComponentModel
                 {
                     lock (s_internalSyncObject)
                     {
-                        table = s_editorTables[editorBaseType];
+                        table = editorTables[editorBaseType];
                         if (table == null)
                         {
-                            s_editorTables[editorBaseType] = s_editorTables;
+                            editorTables[editorBaseType] = editorTables;
                         }
                     }
                 }
@@ -375,7 +356,7 @@ namespace System.ComponentModel
             // we have already tried and failed to get
             // a table.
             //
-            if (table == s_editorTables)
+            if (table == editorTables)
             {
                 table = null;
             }
@@ -526,7 +507,7 @@ namespace System.ComponentModel
                         Type receiverType = eppa.ReceiverType;
                         if (receiverType != null)
                         {
-                            if (receiverType.GetTypeInfo().IsAssignableFrom(componentType))
+                            if (receiverType.IsAssignableFrom(componentType))
                             {
                                 propertyList.Add(prop);
                             }
@@ -768,7 +749,7 @@ namespace System.ComponentModel
         /// </summary>
         internal Type[] GetPopulatedTypes(Module module)
         {
-            List<Type> typeList = new List<Type>(); 
+            List<Type> typeList = new List<Type>();
 
             // Manual use of IDictionaryEnumerator instead of foreach to avoid DictionaryEntry box allocations.
             IDictionaryEnumerator e = _typeData.GetEnumerator();
@@ -778,7 +759,7 @@ namespace System.ComponentModel
                 Type type = (Type)de.Key;
                 ReflectedTypeData typeData = (ReflectedTypeData)de.Value;
 
-                if (type.GetTypeInfo().Module == module && typeData.IsPopulated)
+                if (type.Module == module && typeData.IsPopulated)
                 {
                     typeList.Add(type);
                 }
@@ -919,18 +900,8 @@ namespace System.ComponentModel
         /// </summary>
         internal static Attribute[] ReflectGetAttributes(Type type)
         {
-            if (s_attributeCache == null)
-            {
-                lock (s_internalSyncObject)
-                {
-                    if (s_attributeCache == null)
-                    {
-                        s_attributeCache = new Hashtable();
-                    }
-                }
-            }
-
-            Attribute[] attrs = (Attribute[])s_attributeCache[type];
+            Hashtable attributeCache = AttributeCache;
+            Attribute[] attrs = (Attribute[])attributeCache[type];
             if (attrs != null)
             {
                 return attrs;
@@ -938,13 +909,13 @@ namespace System.ComponentModel
 
             lock (s_internalSyncObject)
             {
-                attrs = (Attribute[])s_attributeCache[type];
+                attrs = (Attribute[])attributeCache[type];
                 if (attrs == null)
                 {
                     // Get the type's attributes.
                     //
-                    attrs = type.GetTypeInfo().GetCustomAttributes(typeof(Attribute), false).OfType<Attribute>().ToArray();
-                    s_attributeCache[type] = attrs;
+                    attrs = type.GetCustomAttributes(typeof(Attribute), false).OfType<Attribute>().ToArray();
+                    attributeCache[type] = attrs;
                 }
             }
 
@@ -957,18 +928,8 @@ namespace System.ComponentModel
         /// </summary>
         internal static Attribute[] ReflectGetAttributes(MemberInfo member)
         {
-            if (s_attributeCache == null)
-            {
-                lock (s_internalSyncObject)
-                {
-                    if (s_attributeCache == null)
-                    {
-                        s_attributeCache = new Hashtable();
-                    }
-                }
-            }
-
-            Attribute[] attrs = (Attribute[])s_attributeCache[member];
+            Hashtable attributeCache = AttributeCache;
+            Attribute[] attrs = (Attribute[])attributeCache[member];
             if (attrs != null)
             {
                 return attrs;
@@ -976,13 +937,13 @@ namespace System.ComponentModel
 
             lock (s_internalSyncObject)
             {
-                attrs = (Attribute[])s_attributeCache[member];
+                attrs = (Attribute[])attributeCache[member];
                 if (attrs == null)
                 {
                     // Get the member's attributes.
                     //
                     attrs = member.GetCustomAttributes(typeof(Attribute), false).OfType<Attribute>().ToArray();
-                    s_attributeCache[member] = attrs;
+                    attributeCache[member] = attrs;
                 }
             }
 
@@ -995,18 +956,8 @@ namespace System.ComponentModel
         /// </summary>
         private static EventDescriptor[] ReflectGetEvents(Type type)
         {
-            if (s_eventCache == null)
-            {
-                lock (s_internalSyncObject)
-                {
-                    if (s_eventCache == null)
-                    {
-                        s_eventCache = new Hashtable();
-                    }
-                }
-            }
-
-            EventDescriptor[] events = (EventDescriptor[])s_eventCache[type];
+            Hashtable eventCache = EventCache;
+            EventDescriptor[] events = (EventDescriptor[])eventCache[type];
             if (events != null)
             {
                 return events;
@@ -1014,7 +965,7 @@ namespace System.ComponentModel
 
             lock (s_internalSyncObject)
             {
-                events = (EventDescriptor[])s_eventCache[type];
+                events = (EventDescriptor[])eventCache[type];
                 if (events == null)
                 {
                     BindingFlags bindingFlags = BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance;
@@ -1026,7 +977,7 @@ namespace System.ComponentModel
                     // have both add and remove, we skip it here, because it
                     // will be picked up in our base class scan.
                     //
-                    EventInfo[] eventInfos = type.GetTypeInfo().GetEvents(bindingFlags);
+                    EventInfo[] eventInfos = type.GetEvents(bindingFlags);
                     events = new EventDescriptor[eventInfos.Length];
                     int eventCount = 0;
 
@@ -1037,7 +988,7 @@ namespace System.ComponentModel
                         // GetEvents returns events that are on nonpublic types
                         // if those types are from our assembly.  Screen these.
                         // 
-                        if ((!(eventInfo.DeclaringType.GetTypeInfo().IsPublic || eventInfo.DeclaringType.GetTypeInfo().IsNestedPublic)) && (eventInfo.DeclaringType.GetTypeInfo().Assembly == typeof(ReflectTypeDescriptionProvider).GetTypeInfo().Assembly))
+                        if ((!(eventInfo.DeclaringType.IsPublic || eventInfo.DeclaringType.IsNestedPublic)) && (eventInfo.DeclaringType.Assembly == typeof(ReflectTypeDescriptionProvider).Assembly))
                         {
                             Debug.Fail("Hey, assumption holds true.  Rip this assert.");
                             continue;
@@ -1062,7 +1013,7 @@ namespace System.ComponentModel
                         Debug.Assert(dbgEvent != null, "Holes in event array for type " + type);
                     }
 #endif
-                    s_eventCache[type] = events;
+                    eventCache[type] = events;
                 }
             }
 
@@ -1103,23 +1054,14 @@ namespace System.ComponentModel
             // extender provider before.  See if we can find our class-based
             // property store.
             //
-            if (s_extendedPropertyCache == null)
-            {
-                lock (s_internalSyncObject)
-                {
-                    if (s_extendedPropertyCache == null)
-                    {
-                        s_extendedPropertyCache = new Hashtable();
-                    }
-                }
-            }
             Type providerType = provider.GetType();
-            ReflectPropertyDescriptor[] extendedProperties = (ReflectPropertyDescriptor[])s_extendedPropertyCache[providerType];
+            Hashtable extendedPropertyCache = ExtendedPropertyCache;
+            ReflectPropertyDescriptor[] extendedProperties = (ReflectPropertyDescriptor[])extendedPropertyCache[providerType];
             if (extendedProperties == null)
             {
                 lock (s_internalSyncObject)
                 {
-                    extendedProperties = (ReflectPropertyDescriptor[])s_extendedPropertyCache[providerType];
+                    extendedProperties = (ReflectPropertyDescriptor[])extendedPropertyCache[providerType];
 
                     // Our class-based property store failed as well, so we need to build up the set of
                     // extended properties here.
@@ -1139,11 +1081,11 @@ namespace System.ComponentModel
 
                                 if (receiverType != null)
                                 {
-                                    MethodInfo getMethod = providerType.GetTypeInfo().GetMethod("Get" + provideAttr.PropertyName, new Type[] { receiverType });
+                                    MethodInfo getMethod = providerType.GetMethod("Get" + provideAttr.PropertyName, new Type[] { receiverType });
 
                                     if (getMethod != null && !getMethod.IsStatic && getMethod.IsPublic)
                                     {
-                                        MethodInfo setMethod = providerType.GetTypeInfo().GetMethod("Set" + provideAttr.PropertyName, new Type[] { receiverType, getMethod.ReturnType });
+                                        MethodInfo setMethod = providerType.GetMethod("Set" + provideAttr.PropertyName, new Type[] { receiverType, getMethod.ReturnType });
 
                                         if (setMethod != null && (setMethod.IsStatic || !setMethod.IsPublic))
                                         {
@@ -1158,7 +1100,7 @@ namespace System.ComponentModel
 
                         extendedProperties = new ReflectPropertyDescriptor[extendedList.Count];
                         extendedList.CopyTo(extendedProperties, 0);
-                        s_extendedPropertyCache[providerType] = extendedProperties;
+                        extendedPropertyCache[providerType] = extendedProperties;
                     }
                 }
             }
@@ -1188,18 +1130,8 @@ namespace System.ComponentModel
         /// </summary>
         private static PropertyDescriptor[] ReflectGetProperties(Type type)
         {
-            if (s_propertyCache == null)
-            {
-                lock (s_internalSyncObject)
-                {
-                    if (s_propertyCache == null)
-                    {
-                        s_propertyCache = new Hashtable();
-                    }
-                }
-            }
-
-            PropertyDescriptor[] properties = (PropertyDescriptor[])s_propertyCache[type];
+            Hashtable propertyCache = PropertyCache;
+            PropertyDescriptor[] properties = (PropertyDescriptor[])propertyCache[type];
             if (properties != null)
             {
                 return properties;
@@ -1207,7 +1139,7 @@ namespace System.ComponentModel
 
             lock (s_internalSyncObject)
             {
-                properties = (PropertyDescriptor[])s_propertyCache[type];
+                properties = (PropertyDescriptor[])propertyCache[type];
 
                 if (properties == null)
                 {
@@ -1220,7 +1152,7 @@ namespace System.ComponentModel
                     // "new" properties of the same name, so we must preserve
                     // the member info for each method individually.
                     //
-                    PropertyInfo[] propertyInfos = type.GetTypeInfo().GetProperties(bindingFlags);
+                    PropertyInfo[] propertyInfos = type.GetProperties(bindingFlags);
                     properties = new PropertyDescriptor[propertyInfos.Length];
                     int propertyCount = 0;
 
@@ -1266,7 +1198,7 @@ namespace System.ComponentModel
 
                     Debug.Assert(!properties.Any(dbgProp => dbgProp == null), $"Holes in property array for type {type}");
 
-                    s_propertyCache[type] = properties;
+                    propertyCache[type] = properties;
                 }
             }
 
@@ -1327,7 +1259,7 @@ namespace System.ComponentModel
                         break;
                     }
 
-                    baseType = baseType.GetTypeInfo().BaseType;
+                    baseType = baseType.BaseType;
                 }
 
                 // Now make a scan through each value in the table, looking for interfaces.
@@ -1342,7 +1274,7 @@ namespace System.ComponentModel
                         DictionaryEntry de = e.Entry;
                         Type keyType = de.Key as Type;
 
-                        if (keyType != null && keyType.GetTypeInfo().IsInterface && keyType.GetTypeInfo().IsAssignableFrom(callingType))
+                        if (keyType != null && keyType.IsInterface && keyType.IsAssignableFrom(callingType))
                         {
                             hashEntry = de.Value;
                             string typeString = hashEntry as string;
@@ -1368,12 +1300,12 @@ namespace System.ComponentModel
                 //
                 if (hashEntry == null)
                 {
-                    if (callingType.GetTypeInfo().IsGenericType && callingType.GetGenericTypeDefinition() == typeof(Nullable<>))
+                    if (callingType.IsGenericType && callingType.GetGenericTypeDefinition() == typeof(Nullable<>))
                     {
                         // Check if it is a nullable value
                         hashEntry = table[s_intrinsicNullableKey];
                     }
-                    else if (callingType.GetTypeInfo().IsInterface)
+                    else if (callingType.IsInterface)
                     {
                         // Finally, check to see if the component type is some unknown interface.
                         // We have a custom converter for that.
@@ -1399,7 +1331,7 @@ namespace System.ComponentModel
                 if (type != null)
                 {
                     hashEntry = CreateInstance(type, callingType);
-                    if (type.GetTypeInfo().GetConstructor(s_typeConstructor) == null)
+                    if (type.GetConstructor(s_typeConstructor) == null)
                     {
                         table[callingType] = hashEntry;
                     }

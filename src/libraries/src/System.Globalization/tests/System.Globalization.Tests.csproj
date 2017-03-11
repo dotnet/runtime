@@ -138,7 +138,7 @@
       <Name>RemoteExecutorConsoleApp</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
+  <ItemGroup>
     <Compile Include="CharUnicodeInfo\CharUnicodeInfoTests.netstandard.cs" />
     <Compile Include="CompareInfo\CompareInfoTests.netstandard.cs" />
     <Compile Include="CultureInfo\CultureInfoTests.netstandard.cs" />

@@ -1432,14 +1432,6 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void CreateInstance_TypeNotRuntimeType_ThrowsArgumentException()
-        {
-            Assert.Throws<ArgumentException>("elementType", () => Array.CreateInstance(Helpers.NonRuntimeType(), 0));
-            Assert.Throws<ArgumentException>("elementType", () => Array.CreateInstance(Helpers.NonRuntimeType(), new int[1]));
-            Assert.Throws<ArgumentException>("elementType", () => Array.CreateInstance(Helpers.NonRuntimeType(), new int[1], new int[1]));
-        }
-
-        [Fact]
         public static void CreateInstance_LengthsNull_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>("lengths", () => Array.CreateInstance(typeof(int), null, new int[1]));

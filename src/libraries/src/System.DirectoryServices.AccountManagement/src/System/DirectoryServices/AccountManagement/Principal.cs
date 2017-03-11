@@ -13,8 +13,6 @@ using System.Collections;
 
 namespace System.DirectoryServices.AccountManagement
 {
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.LinkDemand, Unrestricted = true)]
-    [DirectoryServicesPermission(System.Security.Permissions.SecurityAction.InheritanceDemand, Unrestricted = true)]
     [System.Diagnostics.DebuggerDisplay("Name ( {Name} )")]
     abstract public class Principal : IDisposable
     {

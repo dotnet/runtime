@@ -117,7 +117,7 @@ namespace System.Runtime.Serialization
         }
     }
 
-#if NET_NATIVE
+#if uapaot
     public enum CollectionKind : byte
 #else
     internal enum CollectionKind : byte
@@ -135,7 +135,7 @@ namespace System.Runtime.Serialization
         Array,
     }
 
-#if USE_REFEMIT || NET_NATIVE
+#if USE_REFEMIT || uapaot
     public sealed class CollectionDataContract : DataContract
 #else
     internal sealed class CollectionDataContract : DataContract
@@ -330,7 +330,7 @@ namespace System.Runtime.Serialization
             { return _helper.InvalidCollectionInSharedContractMessage; }
         }
 
-#if NET_NATIVE
+#if uapaot
         private XmlFormatCollectionWriterDelegate _xmlFormatWriterDelegate;
         public XmlFormatCollectionWriterDelegate XmlFormatWriterDelegate
 #else
@@ -339,7 +339,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-#if NET_NATIVE
+#if uapaot
                 if (DataContractSerializer.Option == SerializationOption.CodeGenOnly
                 || (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup && _xmlFormatWriterDelegate != null))
                 {
@@ -362,13 +362,13 @@ namespace System.Runtime.Serialization
             }
             set
             {
-#if NET_NATIVE
+#if uapaot
                 _xmlFormatWriterDelegate = value;
 #endif
             }
         }
 
-#if NET_NATIVE
+#if uapaot
         private XmlFormatCollectionReaderDelegate _xmlFormatReaderDelegate;
         public XmlFormatCollectionReaderDelegate XmlFormatReaderDelegate
 #else
@@ -377,7 +377,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-#if NET_NATIVE
+#if uapaot
                 if (DataContractSerializer.Option == SerializationOption.CodeGenOnly
                 || (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup && _xmlFormatReaderDelegate != null))
                 {
@@ -400,13 +400,13 @@ namespace System.Runtime.Serialization
             }
             set
             {
-#if NET_NATIVE
+#if uapaot
                 _xmlFormatReaderDelegate = value;
 #endif
             }
         }
 
-#if NET_NATIVE
+#if uapaot
         private XmlFormatGetOnlyCollectionReaderDelegate _xmlFormatGetOnlyCollectionReaderDelegate;
         public XmlFormatGetOnlyCollectionReaderDelegate XmlFormatGetOnlyCollectionReaderDelegate
 #else
@@ -415,7 +415,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-#if NET_NATIVE
+#if uapaot
                 if (DataContractSerializer.Option == SerializationOption.CodeGenOnly
                 || (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup && _xmlFormatGetOnlyCollectionReaderDelegate != null))
                 {
@@ -428,7 +428,7 @@ namespace System.Runtime.Serialization
                     {
                         if (_helper.XmlFormatGetOnlyCollectionReaderDelegate == null)
                         {
-                            if (UnderlyingType.GetTypeInfo().IsInterface && (Kind == CollectionKind.Enumerable || Kind == CollectionKind.Collection || Kind == CollectionKind.GenericEnumerable))
+                            if (UnderlyingType.IsInterface && (Kind == CollectionKind.Enumerable || Kind == CollectionKind.Collection || Kind == CollectionKind.GenericEnumerable))
                             {
                                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.GetOnlyCollectionMustHaveAddMethod, GetClrTypeFullName(UnderlyingType))));
                             }
@@ -443,7 +443,7 @@ namespace System.Runtime.Serialization
             }
             set
             {
-#if NET_NATIVE
+#if uapaot
                 _xmlFormatGetOnlyCollectionReaderDelegate = value;
 #endif
             }
@@ -581,7 +581,7 @@ namespace System.Runtime.Serialization
             {
                 if (getEnumeratorMethod == null)
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.CollectionMustHaveGetEnumeratorMethod, DataContract.GetClrTypeFullName(type))));
-                if (addMethod == null && !type.GetTypeInfo().IsInterface)
+                if (addMethod == null && !type.IsInterface)
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.CollectionMustHaveAddMethod, DataContract.GetClrTypeFullName(type))));
                 if (itemType == null)
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.CollectionMustHaveItemType, DataContract.GetClrTypeFullName(type))));
@@ -864,7 +864,7 @@ namespace System.Runtime.Serialization
                 else
                 {
                     var enumeratorType = GetEnumeratorMethod.ReturnType;
-                    if (enumeratorType.GetTypeInfo().IsGenericType)
+                    if (enumeratorType.IsGenericType)
                     {
                         MethodInfo getCurrentMethod = enumeratorType.GetMethod(Globals.GetCurrentMethodName, BindingFlags.Instance | BindingFlags.Public, Array.Empty<Type>());
                         enumeratorReturnType = getCurrentMethod.ReturnType;
@@ -890,11 +890,11 @@ namespace System.Runtime.Serialization
 
         private DataContract GetSharedTypeContract(Type type)
         {
-            if (type.GetTypeInfo().IsDefined(Globals.TypeOfCollectionDataContractAttribute, false))
+            if (type.IsDefined(Globals.TypeOfCollectionDataContractAttribute, false))
             {
                 return this;
             }
-            if (type.GetTypeInfo().IsDefined(Globals.TypeOfDataContractAttribute, false))
+            if (type.IsDefined(Globals.TypeOfDataContractAttribute, false))
             {
                 return new ClassDataContract(type);
             }
@@ -903,7 +903,7 @@ namespace System.Runtime.Serialization
 
         internal static bool IsCollectionInterface(Type type)
         {
-            if (type.GetTypeInfo().IsGenericType)
+            if (type.IsGenericType)
                 type = type.GetGenericTypeDefinition();
             return ((IList<Type>)KnownInterfaces).Contains(type);
         }
@@ -996,7 +996,7 @@ namespace System.Runtime.Serialization
 
         private static bool IsArraySegment(Type t)
         {
-            return t.GetTypeInfo().IsGenericType && (t.GetGenericTypeDefinition() == typeof(ArraySegment<>));
+            return t.IsGenericType && (t.GetGenericTypeDefinition() == typeof(ArraySegment<>));
         }
 
         private static bool IsCollectionOrTryCreate(Type type, bool tryCreate, out DataContract dataContract, out Type itemType, bool constructorRequired)
@@ -1011,11 +1011,11 @@ namespace System.Runtime.Serialization
             }
             MethodInfo addMethod, getEnumeratorMethod;
             bool hasCollectionDataContract = IsCollectionDataContract(type);
-            Type baseType = type.GetTypeInfo().BaseType;
+            Type baseType = type.BaseType;
             bool isBaseTypeCollection = (baseType != null && baseType != Globals.TypeOfObject
                 && baseType != Globals.TypeOfValueType && baseType != Globals.TypeOfUri) ? IsCollection(baseType) : false;
 
-            if (type.GetTypeInfo().IsDefined(Globals.TypeOfDataContractAttribute, false))
+            if (type.IsDefined(Globals.TypeOfDataContractAttribute, false))
             {
                 return HandleIfInvalidCollection(type, tryCreate, hasCollectionDataContract, isBaseTypeCollection,
                     SR.CollectionTypeCannotHaveDataContract, null, ref dataContract);
@@ -1031,16 +1031,16 @@ namespace System.Runtime.Serialization
                 return HandleIfInvalidCollection(type, tryCreate, hasCollectionDataContract, isBaseTypeCollection,
                     SR.CollectionTypeIsNotIEnumerable, null, ref dataContract);
             }
-            if (type.GetTypeInfo().IsInterface)
+            if (type.IsInterface)
             {
-                Type interfaceTypeToCheck = type.GetTypeInfo().IsGenericType ? type.GetGenericTypeDefinition() : type;
+                Type interfaceTypeToCheck = type.IsGenericType ? type.GetGenericTypeDefinition() : type;
                 Type[] knownInterfaces = KnownInterfaces;
                 for (int i = 0; i < knownInterfaces.Length; i++)
                 {
                     if (knownInterfaces[i] == interfaceTypeToCheck)
                     {
                         addMethod = null;
-                        if (type.GetTypeInfo().IsGenericType)
+                        if (type.IsGenericType)
                         {
                             Type[] genericArgs = type.GetGenericArguments();
                             if (interfaceTypeToCheck == Globals.TypeOfIDictionaryGeneric)
@@ -1090,7 +1090,7 @@ namespace System.Runtime.Serialization
                 }
             }
             ConstructorInfo defaultCtor = null;
-            if (!type.GetTypeInfo().IsValueType)
+            if (!type.IsValueType)
             {
                 defaultCtor = type.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, Array.Empty<Type>());
                 if (defaultCtor == null && constructorRequired)
@@ -1106,7 +1106,7 @@ namespace System.Runtime.Serialization
             Type[] interfaceTypes = type.GetInterfaces();
             foreach (Type interfaceType in interfaceTypes)
             {
-                Type interfaceTypeToCheck = interfaceType.GetTypeInfo().IsGenericType ? interfaceType.GetGenericTypeDefinition() : interfaceType;
+                Type interfaceTypeToCheck = interfaceType.IsGenericType ? interfaceType.GetGenericTypeDefinition() : interfaceType;
                 Type[] knownInterfaces = KnownInterfaces;
                 for (int i = 0; i < knownInterfaces.Length; i++)
                 {
@@ -1136,7 +1136,7 @@ namespace System.Runtime.Serialization
             {
                 if (multipleDefinitions)
                     knownInterfaceType = Globals.TypeOfIEnumerable;
-                itemType = knownInterfaceType.GetTypeInfo().IsGenericType ? knownInterfaceType.GetGenericArguments()[0] : Globals.TypeOfObject;
+                itemType = knownInterfaceType.IsGenericType ? knownInterfaceType.GetGenericArguments()[0] : Globals.TypeOfObject;
                 GetCollectionMethods(type, knownInterfaceType, new Type[] { itemType },
                                      false /*addMethodOnInterface*/,
                                      out getEnumeratorMethod, out addMethod);
@@ -1160,7 +1160,7 @@ namespace System.Runtime.Serialization
                 {
                     case CollectionKind.GenericDictionary:
                         addMethodTypeArray = knownInterfaceType.GetGenericArguments();
-                        bool isOpenGeneric = knownInterfaceType.GetTypeInfo().IsGenericTypeDefinition
+                        bool isOpenGeneric = knownInterfaceType.IsGenericTypeDefinition
                             || (addMethodTypeArray[0].IsGenericParameter && addMethodTypeArray[1].IsGenericParameter);
                         itemType = isOpenGeneric ? Globals.TypeOfKeyValue : Globals.TypeOfKeyValue.MakeGenericType(addMethodTypeArray);
                         break;
@@ -1198,7 +1198,7 @@ namespace System.Runtime.Serialization
 
         internal static bool IsCollectionDataContract(Type type)
         {
-            return type.GetTypeInfo().IsDefined(Globals.TypeOfCollectionDataContractAttribute, false);
+            return type.IsDefined(Globals.TypeOfCollectionDataContractAttribute, false);
         }
 
         private static bool HandleIfInvalidCollection(Type type, bool tryCreate, bool hasCollectionDataContract, bool createContractWithException, string message, string param, ref DataContract dataContract)
@@ -1285,7 +1285,7 @@ namespace System.Runtime.Serialization
 
         private static bool IsKnownInterface(Type type)
         {
-            Type typeToCheck = type.GetTypeInfo().IsGenericType ? type.GetGenericTypeDefinition() : type;
+            Type typeToCheck = type.IsGenericType ? type.GetGenericTypeDefinition() : type;
             foreach (Type knownInterfaceType in KnownInterfaces)
             {
                 if (typeToCheck == knownInterfaceType)
@@ -1440,7 +1440,7 @@ namespace System.Runtime.Serialization
             {
                 // IsGetOnlyCollection value has already been used to create current collectiondatacontract, value can now be reset. 
                 context.IsGetOnlyCollection = false;
-#if NET_NATIVE
+#if uapaot
                 if (XmlFormatGetOnlyCollectionReaderDelegate == null)
                 {
                     throw new InvalidDataContractException(SR.Format(SR.SerializationCodeIsMissingForType, UnderlyingType.ToString()));

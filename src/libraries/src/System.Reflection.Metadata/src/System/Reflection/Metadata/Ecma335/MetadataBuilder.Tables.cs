@@ -5,7 +5,6 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Linq;
 using System.Reflection.Internal;
 
 namespace System.Reflection.Metadata.Ecma335
@@ -2052,7 +2051,7 @@ namespace System.Reflection.Metadata.Ecma335
         private void SerializeConstantTable(BlobBuilder writer, MetadataSizes metadataSizes)
         {
             // Note: we can sort the table at this point since no other table can reference its rows via RowId or CodedIndex (which would need updating otherwise).
-            var ordered = _constantTableNeedsSorting ? (IEnumerable<ConstantRow>)_constantTable.OrderBy((x, y) => x.Parent - y.Parent) : _constantTable;
+            var ordered = _constantTableNeedsSorting ? _constantTable.OrderBy((x, y) => x.Parent - y.Parent) : _constantTable;
 
             foreach (ConstantRow constant in ordered)
             {
@@ -2067,7 +2066,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             // Note: we can sort the table at this point since no other table can reference its rows via RowId or CodedIndex (which would need updating otherwise).
             // OrderBy performs a stable sort, so multiple attributes with the same parent will be sorted in the order they were added to the table.
-            var ordered = _customAttributeTableNeedsSorting ? (IEnumerable<CustomAttributeRow>)_customAttributeTable.OrderBy((x, y) => x.Parent - y.Parent) : _customAttributeTable;
+            var ordered = _customAttributeTableNeedsSorting ? _customAttributeTable.OrderBy((x, y) => x.Parent - y.Parent) : _customAttributeTable;
 
             foreach (CustomAttributeRow customAttribute in ordered)
             {
@@ -2080,7 +2079,7 @@ namespace System.Reflection.Metadata.Ecma335
         private void SerializeFieldMarshalTable(BlobBuilder writer, MetadataSizes metadataSizes)
         {
             // Note: we can sort the table at this point since no other table can reference its rows via RowId or CodedIndex (which would need updating otherwise).
-            var ordered = _fieldMarshalTableNeedsSorting ? (IEnumerable<FieldMarshalRow>)_fieldMarshalTable.OrderBy((x, y) => x.Parent - y.Parent) : _fieldMarshalTable;
+            var ordered = _fieldMarshalTableNeedsSorting ? _fieldMarshalTable.OrderBy((x, y) => x.Parent - y.Parent) : _fieldMarshalTable;
             
             foreach (FieldMarshalRow fieldMarshal in ordered)
             {
@@ -2093,7 +2092,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             // Note: we can sort the table at this point since no other table can reference its rows via RowId or CodedIndex (which would need updating otherwise).
             // OrderBy performs a stable sort, so multiple attributes with the same parent will be sorted in the order they were added to the table.
-            var ordered = _declSecurityTableNeedsSorting ? (IEnumerable<DeclSecurityRow>)_declSecurityTable.OrderBy((x, y) => x.Parent - y.Parent) : _declSecurityTable;
+            var ordered = _declSecurityTableNeedsSorting ? _declSecurityTable.OrderBy((x, y) => x.Parent - y.Parent) : _declSecurityTable;
             
             foreach (DeclSecurityRow declSecurity in ordered)
             {
@@ -2172,7 +2171,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             // Note: we can sort the table at this point since no other table can reference its rows via RowId or CodedIndex (which would need updating otherwise).
             // OrderBy performs a stable sort, so multiple attributes with the same parent will be sorted in the order they were added to the table.
-            var ordered = _methodSemanticsTableNeedsSorting ? (IEnumerable<MethodSemanticsRow>)_methodSemanticsTable.OrderBy((x, y) => (int)x.Association - (int)y.Association) : _methodSemanticsTable;
+            var ordered = _methodSemanticsTableNeedsSorting ? _methodSemanticsTable.OrderBy((x, y) => (int)x.Association - (int)y.Association) : _methodSemanticsTable;
             
             foreach (MethodSemanticsRow methodSemantic in ordered)
             {

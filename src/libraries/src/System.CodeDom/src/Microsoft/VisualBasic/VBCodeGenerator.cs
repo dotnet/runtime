@@ -2040,7 +2040,7 @@ namespace Microsoft.VisualBasic
         }
 
         // In VB, constraints are put right after the type paramater name.
-        // In C#, there is a seperate "where" statement
+        // In C#, there is a separate "where" statement
         private void OutputTypeParameterConstraints(CodeTypeParameter typeParameter)
         {
             CodeTypeReferenceCollection constraints = typeParameter.Constraints;

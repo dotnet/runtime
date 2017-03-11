@@ -6,8 +6,6 @@ using Xunit;
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.formalParameter.Operators.binary001.binary001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.formalParameter.Operators.binary001.binary001;
-
     public class Test
     {
         public class MyClass
@@ -52,8 +50,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.formalPara
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.formalParameter.Operators.binary002.binary002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.formalParameter.Operators.binary002.binary002;
-
     public class Test
     {
         public class MyClass
@@ -93,8 +89,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.formalPara
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.formalParameter.Operators.binary003.binary003
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.formalParameter.Operators.binary003.binary003;
-
     public class Test
     {
         public class MyClass
@@ -168,8 +162,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.formalPara
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.formalParameter.Operators.binary004.binary004
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.formalParameter.Operators.binary004.binary004;
-
     public class Test
     {
         public class MyClass
@@ -211,8 +203,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.formalPara
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.formalParameter.Operators.binary005.binary005
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.formalParameter.Operators.binary005.binary005;
-
     public class Test
     {
         public class MyClass

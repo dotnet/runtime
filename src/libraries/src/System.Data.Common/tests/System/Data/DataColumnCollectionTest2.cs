@@ -780,7 +780,7 @@ namespace System.Data.Tests
             });
         }
 
-        private bool _eventOccured = false;
+        private bool _eventOccurred = false;
 
         [Fact]
         public void RemoveAt_Integer()
@@ -790,7 +790,7 @@ namespace System.Data.Tests
             int originalColumnCount = dt.Columns.Count;
             dt.Columns.RemoveAt(0);
             Assert.Equal(originalColumnCount - 1, dt.Columns.Count);
-            Assert.Equal(true, _eventOccured);
+            Assert.Equal(true, _eventOccurred);
 
             Assert.Throws<IndexOutOfRangeException>(() =>
             {
@@ -836,7 +836,7 @@ namespace System.Data.Tests
 
         private void Columns_CollectionChanged1(object sender, CollectionChangeEventArgs e)
         {
-            _eventOccured = true;
+            _eventOccurred = true;
         }
     }
 }

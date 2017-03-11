@@ -171,9 +171,6 @@
   <data name="Cryptography_UnknownHashAlgorithm" xml:space="preserve">
     <value>'{0}' is not a known hash algorithm.</value>
   </data>
-  <data name="Cryptography_UnsupportedEcKeyAlgorithm" xml:space="preserve">
-    <value>Cannot use imported EC_KEY. '{0}' is not a supported algorithm.</value>
-  </data>
   <data name="Cryptography_Invalid_IA5String" xml:space="preserve">
     <value>The string contains a character not in the 7 bit ASCII character set.</value>
   </data>

@@ -18,8 +18,6 @@
       <DependentUpon>TestResx.resx</DependentUpon>
     </Compile>
     <Compile Include="SatelliteContractVersionAttributeTests.cs" />
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetGroup)' == 'netstandard' ">
     <Compile Include="$(CommonTestPath)/System/Runtime/Serialization/Formatters/BinaryFormatterHelpers.cs">
       <Link>System/Runtime/Serialization/Formatters/BinaryFormatterHelpers.cs</Link>
     </Compile>

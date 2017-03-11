@@ -888,7 +888,7 @@ namespace System.Configuration
                         // Everywhere.
                         //
                         // Note that configuration errors that may be present in the
-                        // file where intialization is delayed will be ignored, and
+                        // file where initialization is delayed will be ignored, and
                         // thus the order in which configuration sections are requested
                         // will affect results. This is considered OK as it is very
                         // expensive to determine configuration paths to
@@ -2221,7 +2221,7 @@ namespace System.Configuration
             //          A Location config is a bit wierd again in a sence that a location config is unlocked if its in the config file where the section is declared
             //          I.e. if "this" is a location record then a section is unconditionally unlocked if "this.Parent" is the section declaration level
             //      b) We are not at section declaration level - in this case the result is whatever the default lock mode for the section is ( remember
-            //         that we fall back to the default since we couldnt find a section record with explicit lock mode nowhere above us)
+            //         that we fall back to the default since we couldn't find a section record with explicit lock mode nowhere above us)
             //
             // I sure hope that made some sense!
 

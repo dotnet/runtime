@@ -94,7 +94,6 @@ namespace System.Net.Http
         private volatile bool _disposed;
         private SafeWinHttpHandle _sessionHandle;
         private WinHttpAuthHelper _authHelper = new WinHttpAuthHelper();
-        private static readonly DiagnosticListener s_diagnosticListener = new DiagnosticListener(HttpHandlerLoggingStrings.DiagnosticListenerName);
 
         public WinHttpHandler()
         {
@@ -533,8 +532,6 @@ namespace System.Net.Http
 
             CheckDisposed();
 
-            Guid loggingRequestId = s_diagnosticListener.LogHttpRequest(request);
-
             SetOperationStarted();
 
             TaskCompletionSource<HttpResponseMessage> tcs = new TaskCompletionSource<HttpResponseMessage>();
@@ -562,8 +559,6 @@ namespace System.Net.Http
                 CancellationToken.None,
                 TaskCreationOptions.DenyChildAttach,
                 TaskScheduler.Default);
-
-            s_diagnosticListener.LogHttpResponse(tcs.Task, loggingRequestId);
 
             return tcs.Task;
         }
@@ -750,7 +745,7 @@ namespace System.Net.Http
                             sessionHandle,
                             Interop.WinHttp.WINHTTP_OPTION_ASSURED_NON_BLOCKING_CALLBACKS,
                             ref optionAssuredNonBlockingTrue,
-                            (uint)Marshal.SizeOf<uint>()))
+                            (uint)sizeof(uint)))
                         {
                             // This option is not available on downlevel Windows versions. While it improves
                             // performance, we can ignore the error that the option is not available.
@@ -883,7 +878,7 @@ namespace System.Net.Http
                 // Since the headers have been read, set the "receive" timeout to be based on each read
                 // call of the response body data. WINHTTP_OPTION_RECEIVE_TIMEOUT sets a timeout on each
                 // lower layer winsock read.
-                uint optionData = (uint)_receiveDataTimeout.TotalMilliseconds;
+                uint optionData = unchecked((uint)_receiveDataTimeout.TotalMilliseconds);
                 SetWinHttpOption(state.RequestHandle, Interop.WinHttp.WINHTTP_OPTION_RECEIVE_TIMEOUT, ref optionData);
 
                 HttpResponseMessage responseMessage = WinHttpResponseParser.CreateResponseMessage(state, _doManualDecompressionCheck);

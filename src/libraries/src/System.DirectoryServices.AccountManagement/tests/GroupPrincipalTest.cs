@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.DirectoryServices.AccountManagement;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using System.DirectoryServices.AccountManagement;
+using Xunit;
 
 namespace AccountManagementUnitTests
 {
@@ -12,7 +12,6 @@ namespace AccountManagementUnitTests
     ///This is a test class for GroupPrincipalTest and is intended
     ///to contain all GroupPrincipalTest Unit Tests
     ///</summary>
-    [TestClass()]
     public class GroupPrincipalTest : PrincipalTest
     {
         #region Additional test attributes
@@ -49,12 +48,12 @@ namespace AccountManagementUnitTests
         /// <summary>
         ///A test for GroupPrincipal Constructor
         ///</summary>
-        [TestMethod()]
+        [Fact]
         public void GroupPrincipalConstructorTest()
         {
             GroupPrincipal group = new GroupPrincipal(domainContext);
             group.Dispose();
-            Assert.Inconclusive("TODO: Implement code to verify target");
+            //Assert.Inconclusive("TODO: Implement code to verify target");
         }
 
         internal override Principal CreatePrincipal(PrincipalContext context, string name)
@@ -68,19 +67,19 @@ namespace AccountManagementUnitTests
         /// Also assuming that the group and members were created - this should be done dynamically (but have to think about test performance, we don't want it to delay all tests)
         /// Maybe it's better to test ADStoreCtx.IsMemberOfInStore directly? (and also SAMStoreCTX - I still don't know what are the behavioural differences)
         ///</summary>
-        [TestMethod()]
+        [Fact]
         public void IsMemberOfTest()
         {
             using (GroupPrincipal group = GroupPrincipal.FindByIdentity(domainContext, "TestLargeGroup"))
             {
                 //CreateManyUsersInGroup(group);
 
-                Assert.IsTrue(UserPrincipal.FindByIdentity(domainContext, "user1499-LargeGroup").IsMemberOf(group));
-                Assert.IsTrue(UserPrincipal.FindByIdentity(domainContext, "user1500-LargeGroup").IsMemberOf(group));
-                Assert.IsTrue(UserPrincipal.FindByIdentity(domainContext, "user1501-LargeGroup").IsMemberOf(group));
-                Assert.IsTrue(UserPrincipal.FindByIdentity(domainContext, "user3000-LargeGroup").IsMemberOf(group));
-                Assert.IsTrue(UserPrincipal.FindByIdentity(domainContext, "user3001-LargeGroup").IsMemberOf(group));
-                Assert.IsFalse(UserPrincipal.FindByIdentity(domainContext, "userNotInLargeGroup").IsMemberOf(group));
+                Assert.True(UserPrincipal.FindByIdentity(domainContext, "user1499-LargeGroup").IsMemberOf(group));
+                Assert.True(UserPrincipal.FindByIdentity(domainContext, "user1500-LargeGroup").IsMemberOf(group));
+                Assert.True(UserPrincipal.FindByIdentity(domainContext, "user1501-LargeGroup").IsMemberOf(group));
+                Assert.True(UserPrincipal.FindByIdentity(domainContext, "user3000-LargeGroup").IsMemberOf(group));
+                Assert.True(UserPrincipal.FindByIdentity(domainContext, "user3001-LargeGroup").IsMemberOf(group));
+                Assert.False(UserPrincipal.FindByIdentity(domainContext, "userNotInLargeGroup").IsMemberOf(group));
             }
         }
 
@@ -98,7 +97,7 @@ namespace AccountManagementUnitTests
 
         internal override Principal CreateExtendedPrincipal(PrincipalContext context, string name)
         {
-            Assert.Inconclusive("TODO: Implement code to verify target");
+            //Assert.Inconclusive("TODO: Implement code to verify target");
             throw new System.NotImplementedException();
         }
 

@@ -9,6 +9,7 @@
     <OutputPath>$(RuntimePath)</OutputPath>
     <XUnitRunnerPackageId Condition="'$(TargetGroup)' != 'netfx'">xunit.console.netcore</XUnitRunnerPackageId>
     <XUnitRunnerPackageId Condition="'$(TargetGroup)' == 'netfx'">xunit.runner.console</XUnitRunnerPackageId>
+    <NuGetTargetMoniker Condition="'$(TargetGroup)' == 'uapaot'">.NETStandard,Version=v2.0</NuGetTargetMoniker>
   </PropertyGroup>
   <ItemGroup>
     <None Include="project.json" />
@@ -20,9 +21,18 @@
     <PackageToInclude Include="xunit.extensibility.execution"/>
     <PackageToInclude Include="xunit.runner.utility"/>
     <PackageToInclude Include="Microsoft.xunit.netcore.extensions"/>
-    <PackageToInclude Include="Microsoft.DotNet.xunit.performance.run.core"/>
     <PackageToInclude Include="Newtonsoft.Json"/>
     <PackageToInclude Include="$(XUnitRunnerPackageId)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetGroup)' != 'uapaot'">
+    <PackageToInclude Include="xunit.performance.core"/>
+    <PackageToInclude Include="xunit.performance.api"/>
+    <PackageToInclude Include="xunit.performance.execution"/>
+    <PackageToInclude Include="xunit.performance.metrics"/>
+    <PackageToInclude Include="Microsoft.Diagnostics.Tracing.TraceEvent"/>
+    <PackageToInclude Include="Microsoft.3rdpartytools.MarkdownLog"/>
+    <PackageToInclude Include="CommandLineParser" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
@@ -32,11 +42,14 @@
             Text="Error: looks the package $(PackagesDir)$(XUnitRunnerPackageId)\$(XUnitPackageVersion) not restored or missing xunit.console.exe."
     />
     <ItemGroup>
-      <ReferenceCopyLocalPaths Include="$(PackagesDir)$(XUnitRunnerPackageId)\$(XUnitPackageVersion)\tools\*.*">
+      <ReferenceCopyLocalPaths 
+        Include="$(PackagesDir)$(XUnitRunnerPackageId)\$(XUnitPackageVersion)\tools\*.*"
+        Exclude="$(PackagesDir)$(XUnitRunnerPackageId)\$(XUnitPackageVersion)\tools\xunit.console.exe.config"
+      >
         <Private>false</Private>
         <NuGetPackageId>$(XUnitRunnerPackageId)</NuGetPackageId>
         <NuGetPackageVersion>$(XUnitPackageVersion)</NuGetPackageVersion>
       </ReferenceCopyLocalPaths>
     </ItemGroup>
-  </Target>
+</Target>
 </Project>

@@ -30,7 +30,7 @@ namespace System.ComponentModel.Design.Serialization
         private Dictionary<RelationshipEntry, RelationshipEntry> _relationships = new Dictionary<RelationshipEntry, RelationshipEntry>();
 
         /// <summary>
-        ///    Returns the the current relationship associated with the source, or MemberRelationship.Empty if
+        ///    Returns the current relationship associated with the source, or MemberRelationship.Empty if
         ///    there is no relationship.  Also sets a relationship between two objects.  Empty
         ///    can also be passed as the property value, in which case the relationship will
         ///    be cleared.
@@ -55,7 +55,7 @@ namespace System.ComponentModel.Design.Serialization
         }
 
         /// <summary>
-        ///    Returns the the current relationship associated with the source, or null if
+        ///    Returns the current relationship associated with the source, or null if
         ///    there is no relationship.  Also sets a relationship between two objects.  Null
         ///    can be passed as the property value, in which case the relationship will
         ///    be cleared.

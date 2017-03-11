@@ -43,7 +43,7 @@ namespace System.Net
         public int GetHashCode(object myObject)
         {
             string myString = myObject as string;
-            if (myObject == null)
+            if (myString == null)
             {
                 return 0;
             }

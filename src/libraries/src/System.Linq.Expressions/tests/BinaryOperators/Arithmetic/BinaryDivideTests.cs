@@ -219,7 +219,7 @@ namespace System.Linq.Expressions.Tests
             if (b == 0)
                 Assert.Throws<DivideByZeroException>(() => f());
             else
-                Assert.Equal((short)(a / b), f());
+                Assert.Equal(unchecked((short)(a / b)), f());
         }
 
         private static void VerifyUIntDivide(uint a, uint b, bool useInterpreter)

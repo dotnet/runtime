@@ -3,6 +3,7 @@
   <PropertyGroup>
     <BuildConfigurations>
       netfx-Windows_NT;
+      uap-Windows_NT;
       netcoreapp;
     </BuildConfigurations>
   </PropertyGroup>

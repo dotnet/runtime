@@ -10,7 +10,7 @@ using System.Reflection.Emit;
 using System.Text.RegularExpressions;
 using System.Xml.Extensions;
 
-#if !NET_NATIVE
+#if !uapaot
 namespace System.Xml.Serialization
 {
     internal class SourceInfo
@@ -80,7 +80,7 @@ namespace System.Xml.Serialization
                     }
                     else
                     {
-                        if (eType.GetTypeInfo().IsValueType)
+                        if (eType.IsValueType)
                         {
                             ILG.Ldelema(eType);
                             if (!asAddress)
@@ -141,7 +141,7 @@ namespace System.Xml.Serialization
                 {
                     var = ILG.GetVariable(Arg.StartsWith("o.@", StringComparison.Ordinal) ? "o" : Arg);
                     varType = ILG.GetVariableType(var);
-                    if (varType.GetTypeInfo().IsValueType)
+                    if (varType.IsValueType)
                         ILG.LoadAddress(var);
                     else
                         ILG.Load(var);

@@ -6,6 +6,7 @@ namespace System.DirectoryServices.Protocols
 {
     using System;
     using System.Collections;
+    using System.Globalization;
     using System.Runtime.Serialization;
     using System.Security.Permissions;
 
@@ -41,26 +42,26 @@ namespace System.DirectoryServices.Protocols
         {
             s_resultCodeHash = new Hashtable();
 
-            s_resultCodeHash.Add(LdapError.IsLeaf, Res.GetString(Res.LDAP_IS_LEAF));
-            s_resultCodeHash.Add(LdapError.InvalidCredentials, Res.GetString(Res.LDAP_INVALID_CREDENTIALS));
-            s_resultCodeHash.Add(LdapError.ServerDown, Res.GetString(Res.LDAP_SERVER_DOWN));
-            s_resultCodeHash.Add(LdapError.LocalError, Res.GetString(Res.LDAP_LOCAL_ERROR));
-            s_resultCodeHash.Add(LdapError.EncodingError, Res.GetString(Res.LDAP_ENCODING_ERROR));
-            s_resultCodeHash.Add(LdapError.DecodingError, Res.GetString(Res.LDAP_DECODING_ERROR));
-            s_resultCodeHash.Add(LdapError.TimeOut, Res.GetString(Res.LDAP_TIMEOUT));
-            s_resultCodeHash.Add(LdapError.AuthUnknown, Res.GetString(Res.LDAP_AUTH_UNKNOWN));
-            s_resultCodeHash.Add(LdapError.FilterError, Res.GetString(Res.LDAP_FILTER_ERROR));
-            s_resultCodeHash.Add(LdapError.UserCancelled, Res.GetString(Res.LDAP_USER_CANCELLED));
-            s_resultCodeHash.Add(LdapError.ParameterError, Res.GetString(Res.LDAP_PARAM_ERROR));
-            s_resultCodeHash.Add(LdapError.NoMemory, Res.GetString(Res.LDAP_NO_MEMORY));
-            s_resultCodeHash.Add(LdapError.ConnectError, Res.GetString(Res.LDAP_CONNECT_ERROR));
-            s_resultCodeHash.Add(LdapError.NotSupported, Res.GetString(Res.LDAP_NOT_SUPPORTED));
-            s_resultCodeHash.Add(LdapError.NoResultsReturned, Res.GetString(Res.LDAP_NO_RESULTS_RETURNED));
-            s_resultCodeHash.Add(LdapError.ControlNotFound, Res.GetString(Res.LDAP_CONTROL_NOT_FOUND));
-            s_resultCodeHash.Add(LdapError.MoreResults, Res.GetString(Res.LDAP_MORE_RESULTS_TO_RETURN));
-            s_resultCodeHash.Add(LdapError.ClientLoop, Res.GetString(Res.LDAP_CLIENT_LOOP));
-            s_resultCodeHash.Add(LdapError.ReferralLimitExceeded, Res.GetString(Res.LDAP_REFERRAL_LIMIT_EXCEEDED));
-            s_resultCodeHash.Add(LdapError.SendTimeOut, Res.GetString(Res.LDAP_SEND_TIMEOUT));
+            s_resultCodeHash.Add(LdapError.IsLeaf, String.Format(CultureInfo.CurrentCulture, SR.LDAP_IS_LEAF));
+            s_resultCodeHash.Add(LdapError.InvalidCredentials, String.Format(CultureInfo.CurrentCulture, SR.LDAP_INVALID_CREDENTIALS));
+            s_resultCodeHash.Add(LdapError.ServerDown, String.Format(CultureInfo.CurrentCulture, SR.LDAP_SERVER_DOWN));
+            s_resultCodeHash.Add(LdapError.LocalError, String.Format(CultureInfo.CurrentCulture, SR.LDAP_LOCAL_ERROR));
+            s_resultCodeHash.Add(LdapError.EncodingError, String.Format(CultureInfo.CurrentCulture, SR.LDAP_ENCODING_ERROR));
+            s_resultCodeHash.Add(LdapError.DecodingError, String.Format(CultureInfo.CurrentCulture, SR.LDAP_DECODING_ERROR));
+            s_resultCodeHash.Add(LdapError.TimeOut, String.Format(CultureInfo.CurrentCulture, SR.LDAP_TIMEOUT));
+            s_resultCodeHash.Add(LdapError.AuthUnknown, String.Format(CultureInfo.CurrentCulture, SR.LDAP_AUTH_UNKNOWN));
+            s_resultCodeHash.Add(LdapError.FilterError, String.Format(CultureInfo.CurrentCulture, SR.LDAP_FILTER_ERROR));
+            s_resultCodeHash.Add(LdapError.UserCancelled, String.Format(CultureInfo.CurrentCulture, SR.LDAP_USER_CANCELLED));
+            s_resultCodeHash.Add(LdapError.ParameterError, String.Format(CultureInfo.CurrentCulture, SR.LDAP_PARAM_ERROR));
+            s_resultCodeHash.Add(LdapError.NoMemory, String.Format(CultureInfo.CurrentCulture, SR.LDAP_NO_MEMORY));
+            s_resultCodeHash.Add(LdapError.ConnectError, String.Format(CultureInfo.CurrentCulture, SR.LDAP_CONNECT_ERROR));
+            s_resultCodeHash.Add(LdapError.NotSupported, String.Format(CultureInfo.CurrentCulture, SR.LDAP_NOT_SUPPORTED));
+            s_resultCodeHash.Add(LdapError.NoResultsReturned, String.Format(CultureInfo.CurrentCulture, SR.LDAP_NO_RESULTS_RETURNED));
+            s_resultCodeHash.Add(LdapError.ControlNotFound, String.Format(CultureInfo.CurrentCulture, SR.LDAP_CONTROL_NOT_FOUND));
+            s_resultCodeHash.Add(LdapError.MoreResults, String.Format(CultureInfo.CurrentCulture, SR.LDAP_MORE_RESULTS_TO_RETURN));
+            s_resultCodeHash.Add(LdapError.ClientLoop, String.Format(CultureInfo.CurrentCulture, SR.LDAP_CLIENT_LOOP));
+            s_resultCodeHash.Add(LdapError.ReferralLimitExceeded, String.Format(CultureInfo.CurrentCulture, SR.LDAP_REFERRAL_LIMIT_EXCEEDED));
+            s_resultCodeHash.Add(LdapError.SendTimeOut, String.Format(CultureInfo.CurrentCulture, SR.LDAP_SEND_TIMEOUT));
         }
 
         /// <summary>
@@ -88,7 +89,7 @@ namespace System.DirectoryServices.Protocols
 
         public LdapException(string message, Exception inner) : base(message, inner) { }
 
-        public LdapException(int errorCode) : base(Res.GetString(Res.DefaultLdapError))
+        public LdapException(int errorCode) : base(String.Format(CultureInfo.CurrentCulture, SR.DefaultLdapError))
         {
             _errorCode = errorCode;
         }

@@ -27,25 +27,7 @@
     <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedViewStream.cs" />
     <Compile Include="System\IO\MemoryMappedFiles\MemoryMappedFileRights.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GlobalMemoryStatusEx.cs">
-      <Link>Common\Interop\Windows\Interop.GlobalMemoryStatusEx.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CreateFileMapping.cs">
-      <Link>Common\Interop\Windows\Interop.CreateFileMapping.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.MapViewOfFile.cs">
-      <Link>Common\Interop\Windows\Interop.MapViewOfFile.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.OpenFileMapping.cs">
-      <Link>Common\Interop\Windows\Interop.OpenFileMapping.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.VirtualAlloc.cs">
-      <Link>Common\Interop\Windows\Interop.VirtualAlloc.cs</Link>
-    </Compile>
-    <Compile Include="System\IO\MemoryMappedFiles\Interop.Windows.cs" />
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' == 'netcore50' ">
+  <ItemGroup Condition=" '$(TargetGroup)' == 'uap'">
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CreateFileMappingFromApp.cs">
       <Link>Common\Interop\Windows\Interop.CreateFileMappingFromApp.cs</Link>
     </Compile>
@@ -60,7 +42,28 @@
     </Compile>
     <Compile Include="System\IO\MemoryMappedFiles\Interop.Windows.Uap.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetGroup)' != 'uap'">
+    <Compile Include="System\IO\MemoryMappedFiles\Interop.Windows.cs" />
+  </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GlobalMemoryStatusEx.cs">
+      <Link>Common\Interop\Windows\Interop.GlobalMemoryStatusEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CreateFileMapping.cs">
+      <Link>Common\Interop\Windows\Interop.CreateFileMapping.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.MapViewOfFile.cs">
+      <Link>Common\Interop\Windows\Interop.MapViewOfFile.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.OpenFileMapping.cs">
+      <Link>Common\Interop\Windows\Interop.OpenFileMapping.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SECURITY_ATTRIBUTES.cs">
+      <Link>Common\Interop\Windows\Interop.SECURITY_ATTRIBUTES.cs</Link>
+    </Compile>    
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.VirtualAlloc.cs">
+      <Link>Common\Interop\Windows\Interop.VirtualAlloc.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>
@@ -108,9 +111,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.BOOL.cs">
       <Link>Common\Interop\Windows\Interop.BOOL.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SECURITY_ATTRIBUTES.cs">
-      <Link>Common\Interop\Windows\Interop.SECURITY_ATTRIBUTES.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SecurityOptions.cs">
       <Link>Common\Interop\Windows\Interop.SecurityOptions.cs</Link>

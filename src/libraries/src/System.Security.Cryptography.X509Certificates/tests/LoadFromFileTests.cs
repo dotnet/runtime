@@ -46,10 +46,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 byte[] serial = c.GetSerialNumber();
                 Assert.Equal(expectedSerial, serial);
-#if netstandard17
                 string serialHex = c.GetSerialNumberString();
                 Assert.Equal(expectedSerialHex, serialHex);
-#endif
             }
         }
 
@@ -63,10 +61,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 byte[] thumbPrint = c.GetCertHash();
                 Assert.Equal(expectedThumbPrint, thumbPrint);
-#if netstandard17
                 string thumbPrintHex = c.GetCertHashString();
                 Assert.Equal(expectedThumbPrintHex, thumbPrintHex);
-#endif
             }
         }
 
@@ -123,16 +119,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 byte[] publicKey = c.GetPublicKey();
                 Assert.Equal(expectedPublicKey, publicKey);
-#if netstandard17
                 string publicKeyHex = c.GetPublicKeyString();
                 Assert.Equal(expectedPublicKeyHex, publicKeyHex, true);
-#endif
             }
         }
 
         [Fact]
         [ActiveIssue(2910, TestPlatforms.AnyUnix)]
-        [ActiveIssue(2667, TestPlatforms.Windows)]
         public static void TestLoadSignedFile()
         {
             // X509Certificate2 can also extract the certificate from a signed file.
@@ -147,30 +140,24 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Equal(
                     "CN=Microsoft Code Signing PCA, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
                     issuer);
-#if netstandard17
 #pragma warning disable 0618
                 Assert.Equal(c.Issuer, c.GetIssuerName());
 #pragma warning restore 0618
-#endif
 
                 string subject = c.Subject;
                 Assert.Equal(
                     "CN=Microsoft Corporation, OU=MOPR, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
                     subject);
-#if netstandard17
 #pragma warning disable 0618
                 Assert.Equal(subject, c.GetName());
 #pragma warning restore 0618
-#endif
 
                 string expectedThumbprintHash = "67B1757863E3EFF760EA9EBB02849AF07D3A8080";
                 byte[] expectedThumbprint = expectedThumbprintHash.HexToByteArray();
                 byte[] actualThumbprint = c.GetCertHash();
                 Assert.Equal(expectedThumbprint, actualThumbprint);
-#if netstandard17
                 string actualThumbprintHash = c.GetCertHashString();
                 Assert.Equal(expectedThumbprintHash, actualThumbprintHash);
-#endif
             }
         }
 

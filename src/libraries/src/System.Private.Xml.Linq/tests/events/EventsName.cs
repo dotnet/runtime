@@ -81,7 +81,7 @@ namespace CoreXml.Test.XLinq.FunctionalTests.EventsTests
             //Add null first, this should add nothing
             xDoc.Changing += null;
             xDoc.Changed += null;
-            //Add the actuall delegate
+            //Add the actual delegate
             xDoc.Changing += new EventHandler<XObjectChangeEventArgs>(d1);
             xDoc.Changed += new EventHandler<XObjectChangeEventArgs>(d2);
             //Now set it to null

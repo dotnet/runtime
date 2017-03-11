@@ -55,11 +55,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 if (pexpr == first)
                 {
-                    first = (result == null) ? null : result.asSTMT();
+                    first = result?.asSTMT();
                 }
                 else
                 {
-                    pexpr.SetOptionalNextStatement((result == null) ? null : result.asSTMT());
+                    pexpr.SetOptionalNextStatement(result?.asSTMT());
                 }
 
                 // A transformation may return back a list of statements (or

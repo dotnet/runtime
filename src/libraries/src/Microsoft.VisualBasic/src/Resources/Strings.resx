@@ -1,64 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!-- 
-    Microsoft ResX Schema 
-    
-    Version 2.0
-    
-    The primary goals of this format is to allow a simple XML format 
-    that is mostly human readable. The generation and parsing of the 
-    various data types are done through the TypeConverter classes 
-    associated with the data types.
-    
-    Example:
-    
-    ... ado.net/XML headers & schema ...
-    <resheader name="resmimetype">text/microsoft-resx</resheader>
-    <resheader name="version">2.0</resheader>
-    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
-    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
-    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
-    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
-    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
-        <value>[base64 mime encoded serialized .NET Framework object]</value>
-    </data>
-    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
-        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
-        <comment>This is a comment</comment>
-    </data>
-                
-    There are any number of "resheader" rows that contain simple 
-    name/value pairs.
-    
-    Each data row contains a name, and value. The row also contains a 
-    type or mimetype. Type corresponds to a .NET class that support 
-    text/value conversion through the TypeConverter architecture. 
-    Classes that don't support this are serialized and stored with the 
-    mimetype set.
-    
-    The mimetype is used for serialized objects, and tells the 
-    ResXResourceReader how to depersist the object. This is currently not 
-    extensible. For a given mimetype the value must be set accordingly:
-    
-    Note - application/x-microsoft.net.object.binary.base64 is the format 
-    that the ResXResourceWriter will generate, however the reader can 
-    read any of the formats listed below.
-    
-    mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with 
-            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
-            : and then encoded with base64 encoding.
-    
-    mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with 
-            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
-            : and then encoded with base64 encoding.
-
-    mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array 
-            : using a System.ComponentModel.TypeConverter
-            : and then encoded with base64 encoding.
-    -->
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -126,47 +67,11 @@
   <data name="Argument_GEZero1" xml:space="preserve">
     <value>Argument '{0}' must be greater or equal to zero.</value>
   </data>
-  <data name="Argument_GTZero1" xml:space="preserve">
-    <value>Argument '{0}' must be greater than zero.</value>
-  </data>
-  <data name="Argument_LengthGTZero1" xml:space="preserve">
-    <value>Length of argument '{0}' must be greater than zero.</value>
-  </data>
-  <data name="Argument_RangeTwoBytes1" xml:space="preserve">
-    <value>Argument '{0}' must be within the range of -32768 to 65535.</value>
-  </data>
-  <data name="Argument_MinusOneOrGTZero1" xml:space="preserve">
-    <value>Argument '{0}' must be greater than 0 or equal to -1.</value>
-  </data>
-  <data name="Argument_GEMinusOne1" xml:space="preserve">
-    <value>Argument '{0}' must be greater than or equal to -1.</value>
-  </data>
-  <data name="Argument_GEOne1" xml:space="preserve">
-    <value>Argument '{0}' must be greater than or equal to 1.</value>
-  </data>
-  <data name="Argument_RankEQOne1" xml:space="preserve">
-    <value>Argument '{0}' cannot be a multi-dimensional array.</value>
-  </data>
   <data name="Argument_IComparable2" xml:space="preserve">
     <value>Loop control variable of type '{1}' does not implement the 'System.IComparable' interface.</value>
   </data>
-  <data name="Argument_NotNumericType2" xml:space="preserve">
-    <value>Type of argument '{0}' is '{1}', which is not numeric.</value>
-  </data>
-  <data name="Argument_InvalidValue1" xml:space="preserve">
-    <value>Argument '{0}' is not a valid value.</value>
-  </data>
-  <data name="Argument_InvalidValueType2" xml:space="preserve">
-    <value>Argument '{0}' cannot be converted to type '{1}'.</value>
-  </data>
   <data name="Argument_InvalidValue" xml:space="preserve">
     <value>Arguments are not valid.</value>
-  </data>
-  <data name="Collection_BeforeAfterExclusive" xml:space="preserve">
-    <value>'Before' and 'After' arguments cannot be combined.</value>
-  </data>
-  <data name="Collection_DuplicateKey" xml:space="preserve">
-    <value>Add failed. Duplicate key value supplied.</value>
   </data>
   <data name="ForLoop_CommonType2" xml:space="preserve">
     <value>Cannot convert start value of type '{0}' and step value of type '{1}' to a common numeric type.</value>
@@ -189,38 +94,11 @@
   <data name="InternalError" xml:space="preserve">
     <value>Internal error in the Microsoft Visual Basic runtime.</value>
   </data>
-  <data name="MaxErrNumber" xml:space="preserve">
-    <value>Error number must be within the range 0 to 65535.</value>
-  </data>
   <data name="Argument_InvalidNullValue1" xml:space="preserve">
     <value>Argument '{0}' is Nothing.</value>
   </data>
-  <data name="Argument_InvalidRank1" xml:space="preserve">
-    <value>Argument '{0}' is not valid for the array.</value>
-  </data>
-  <data name="Argument_Range0to99_1" xml:space="preserve">
-    <value>Argument '{0}' must be within the range 0 to 99.</value>
-  </data>
-  <data name="Array_RankMismatch" xml:space="preserve">
-    <value>'ReDim' cannot change the number of dimensions.</value>
-  </data>
-  <data name="Array_TypeMismatch" xml:space="preserve">
-    <value>'ReDim' can only change the rightmost dimension.</value>
-  </data>
   <data name="InvalidCast_FromTo" xml:space="preserve">
     <value>Conversion from type '{0}' to type '{1}' is not valid.</value>
-  </data>
-  <data name="InvalidCast_FromStringTo" xml:space="preserve">
-    <value>Conversion from string \"{0}\" to type '{1}' is not valid.</value>
-  </data>
-  <data name="Argument_InvalidDateValue1" xml:space="preserve">
-    <value>Argument '{0}' cannot be converted to type 'Date'.</value>
-  </data>
-  <data name="ArgumentNotNumeric1" xml:space="preserve">
-    <value>Argument '{0}' cannot be converted to a numeric value.</value>
-  </data>
-  <data name="Argument_IndexLELength2" xml:space="preserve">
-    <value>Argument '{0}' must be less than or equal to the length of argument '{1}'.</value>
   </data>
   <data name="MissingMember_NoDefaultMemberFound1" xml:space="preserve">
     <value>No default member found for type '{0}'.</value>
@@ -231,17 +109,11 @@
   <data name="IntermediateLateBoundNothingResult1" xml:space="preserve">
     <value>Invocation of '{0}' on type '{1}' returned Nothing.</value>
   </data>
-  <data name="Argument_CollectionIndex" xml:space="preserve">
-    <value>Collection index must be in the range 1 to the size of the collection.</value>
-  </data>
   <data name="RValueBaseForValueType" xml:space="preserve">
     <value>Late-bound assignment to a field of value type '{0}' is not valid when '{1}' is the result of a late-bound expression.</value>
   </data>
   <data name="ExpressionNotProcedure" xml:space="preserve">
     <value>Expression '{0}' is not a procedure, but occurs as the target of a procedure call.</value>
-  </data>
-  <data name="LateboundCallToInheritedComClass" xml:space="preserve">
-    <value>Managed classes derived from a COM class cannot be called late bound.</value>
   </data>
   <data name="MissingMember_ReadOnlyField2" xml:space="preserve">
     <value>Field '{0}' of type '{1}' is 'ReadOnly'.</value>

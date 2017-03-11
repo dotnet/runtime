@@ -31,7 +31,6 @@ public class Color
     }
 
     [Fact]
-    [PlatformSpecific(TestPlatforms.AnyUnix)]
     public static void RedirectedOutputDoesNotUseAnsiSequences()
     {
         // Make sure that redirecting to a memory stream causes Console not to write out the ANSI sequences

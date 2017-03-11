@@ -20,7 +20,6 @@ namespace System.Net.Security.Tests
         protected abstract Task AuthenticateAsClientAsync(NegotiateStream client, NetworkCredential credential, string targetName);
         protected abstract Task AuthenticateAsServerAsync(NegotiateStream server);
 
-        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void NegotiateStream_StreamToStream_Authentication_Success()
         {
@@ -72,7 +71,6 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void NegotiateStream_StreamToStream_Authentication_TargetName_Success()
         {
@@ -127,7 +125,6 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void NegotiateStream_StreamToStream_Authentication_EmptyCredentials_Fails()
         {
@@ -191,7 +188,6 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void NegotiateStream_StreamToStream_Successive_ClientWrite_Sync_Success()
         {
@@ -225,7 +221,6 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void NegotiateStream_StreamToStream_Successive_ClientWrite_Async_Success()
         {
@@ -262,7 +257,6 @@ namespace System.Net.Security.Tests
         }
 
 
-        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void NegotiateStream_StreamToStream_Flush_Propagated()
         {
@@ -277,7 +271,6 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void NegotiateStream_StreamToStream_FlushAsync_Propagated()
         {

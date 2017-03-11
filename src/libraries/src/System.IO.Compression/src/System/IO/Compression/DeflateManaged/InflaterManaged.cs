@@ -333,7 +333,7 @@ namespace System.IO.Compression
             {
                 switch (_state)
                 {
-                    case InflaterState.UncompressedAligning: // intial state when calling this function
+                    case InflaterState.UncompressedAligning: // initial state when calling this function
                                                              // we must skip to a byte boundary
                         _input.SkipToByteBoundary();
                         _state = InflaterState.UncompressedByte1;
@@ -455,7 +455,7 @@ namespace System.IO.Compression
                                     throw new InvalidDataException(SR.GenericInvalidData);
                                 }
                                 _extraBits = s_extraLengthBits[symbol];
-                                Debug.Assert(_extraBits != 0, "We handle other cases seperately!");
+                                Debug.Assert(_extraBits != 0, "We handle other cases separately!");
                             }
                             _length = symbol;
                             goto case InflaterState.HaveInitialLength;

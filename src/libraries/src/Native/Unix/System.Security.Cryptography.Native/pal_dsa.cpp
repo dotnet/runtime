@@ -60,9 +60,17 @@ extern "C" int32_t CryptoNative_DsaSign(
     uint8_t* refsignature,
     int32_t* outSignatureLength)
 {
-    if (!outSignatureLength)
+    if (outSignatureLength == nullptr || dsa == nullptr)
     {
         assert(false);
+        return 0;
+    }
+
+    // DSA_OpenSSL() returns a shared pointer, no need to free/cache.
+    if (dsa->meth == DSA_OpenSSL() && dsa->priv_key == nullptr)
+    {
+        *outSignatureLength = 0;
+        ERR_PUT_error(ERR_LIB_DSA, DSA_F_DSA_DO_SIGN, DSA_R_MISSING_PARAMETERS, __FILE__, __LINE__);
         return 0;
     }
 

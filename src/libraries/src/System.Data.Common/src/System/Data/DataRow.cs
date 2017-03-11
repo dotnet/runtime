@@ -242,7 +242,7 @@ namespace System.Data
             }
             return count;
             // Rule 1: At all times, only ONE FK  "(in a row) can be non-Null
-            // we wont allow a row to have multiple parents, as we cant handle it , also in diffgram
+            // we won't allow a row to have multiple parents, as we cant handle it , also in diffgram
         }
 
         /// <summary>

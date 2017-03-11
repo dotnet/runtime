@@ -93,4 +93,4 @@ Folks still consume our current packages so we need to keep building those until
   - As packages are deleted we'll need to opt-in to Microsoft.Private.CoreFx.NETCore.App in some way.
     - proposal:
       - each CSProj is evaluated for layout path in the context of all of its build configurations.
-      - We'll determine applicability similar to how we do for pkgprojs to idenitify which config to binplace.
+      - We'll determine applicability similar to how we do for pkgprojs to identify which config to binplace.

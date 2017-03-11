@@ -280,7 +280,7 @@ namespace System.Xml.Tests
         [Theory]
         [InlineData("other")]
         [InlineData("attribute")]
-        public void IntializeWithTypeValidate_OtherType_Attribute(String typeToValidate)
+        public void InitializeWithTypeValidate_OtherType_Attribute(String typeToValidate)
         {
             XmlSchemaValidator val;
             XmlSchemaInfo info = new XmlSchemaInfo();

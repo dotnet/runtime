@@ -281,7 +281,7 @@ namespace XLinqTests
                         TestLog.Compare(parent.Attributes().Where(x => x.Name == a.Name).IsEmpty(), "Attributes node");
 
                         // Compare the rest of the elements
-                        TestLog.Compare(expectedAttrsForParent[parent].EqualAllAttributes(parent.Attributes(), Helpers.MyAttributeComparer), "The rest of ther attributes");
+                        TestLog.Compare(expectedAttrsForParent[parent].EqualAllAttributes(parent.Attributes(), Helpers.MyAttributeComparer), "The rest of the attributes");
                     }
                 }
             }

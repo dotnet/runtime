@@ -37,7 +37,7 @@ namespace System.Net
 
                     var eppStruct = new Interop.Crypt32.SSL_EXTRA_CERT_CHAIN_POLICY_PARA()
                     {
-                        cbSize = (uint)Marshal.SizeOf<Interop.Crypt32.SSL_EXTRA_CERT_CHAIN_POLICY_PARA>(),
+                        cbSize = (uint)sizeof(Interop.Crypt32.SSL_EXTRA_CERT_CHAIN_POLICY_PARA),
                         dwAuthType = isServer ? Interop.Crypt32.AuthType.AUTHTYPE_SERVER : Interop.Crypt32.AuthType.AUTHTYPE_CLIENT,
                         fdwChecks = 0,
                         pwszServerName = null
@@ -45,7 +45,7 @@ namespace System.Net
 
                     var cppStruct = new Interop.Crypt32.CERT_CHAIN_POLICY_PARA()
                     {
-                        cbSize = (uint)Marshal.SizeOf<Interop.Crypt32.CERT_CHAIN_POLICY_PARA>(),
+                        cbSize = (uint)sizeof(Interop.Crypt32.CERT_CHAIN_POLICY_PARA),
                         dwFlags = 0,
                         pvExtraPolicyPara = &eppStruct
                     };
@@ -199,12 +199,12 @@ namespace System.Net
             return store;
         }
 
-        private static uint Verify(SafeX509ChainHandle chainContext, ref Interop.Crypt32.CERT_CHAIN_POLICY_PARA cpp)
+        private static unsafe uint Verify(SafeX509ChainHandle chainContext, ref Interop.Crypt32.CERT_CHAIN_POLICY_PARA cpp)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(chainContext, cpp.dwFlags);
 
             var status = new Interop.Crypt32.CERT_CHAIN_POLICY_STATUS();
-            status.cbSize = (uint)Marshal.SizeOf<Interop.Crypt32.CERT_CHAIN_POLICY_STATUS>();
+            status.cbSize = (uint)sizeof(Interop.Crypt32.CERT_CHAIN_POLICY_STATUS);
 
             bool errorCode =
                 Interop.Crypt32.CertVerifyCertificateChainPolicy(

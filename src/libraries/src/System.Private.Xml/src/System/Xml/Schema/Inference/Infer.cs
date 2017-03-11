@@ -1277,7 +1277,7 @@ namespace System.Xml.Schema
                         Debug.Assert(sce != null);
                         xsa = AddAttribute(_xtr.LocalName, _xtr.Prefix, _xtr.NamespaceURI, _xtr.Value, bCreatingNewType, parentSchema, sce.Attributes, ct.AttributeUses);
                     }
-                    else //add atributes directly to complex type
+                    else //add attributes directly to complex type
                     {
                         xsa = AddAttribute(_xtr.LocalName, _xtr.Prefix, _xtr.NamespaceURI, _xtr.Value, bCreatingNewType, parentSchema, ct.Attributes, ct.AttributeUses);
                     }

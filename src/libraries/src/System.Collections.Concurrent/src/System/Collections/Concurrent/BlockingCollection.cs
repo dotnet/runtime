@@ -987,7 +987,7 @@ nameof(boundedCapacity), boundedCapacity,
             uint startTime = 0;
             if (millisecondsTimeout != Timeout.Infinite)
             {
-                startTime = (uint)Environment.TickCount;
+                startTime = unchecked((uint)Environment.TickCount);
             }
 
             // Fast path for adding if there is at least one unbounded collection
@@ -1133,7 +1133,7 @@ nameof(boundedCapacity), boundedCapacity,
             // The function must be called in case the time out is not infinite
             Debug.Assert(originalWaitMillisecondsTimeout != Timeout.Infinite);
 
-            uint elapsedMilliseconds = (uint)Environment.TickCount - startTime;
+            uint elapsedMilliseconds = unchecked((uint)Environment.TickCount - startTime);
 
             // Check the elapsed milliseconds is greater than max int because this property is uint
             if (elapsedMilliseconds > int.MaxValue)
@@ -1389,7 +1389,7 @@ nameof(boundedCapacity), boundedCapacity,
             uint startTime = 0;
             if (millisecondsTimeout != Timeout.Infinite)
             {
-                startTime = (uint)Environment.TickCount;
+                startTime = unchecked((uint)Environment.TickCount);
             }
 
 

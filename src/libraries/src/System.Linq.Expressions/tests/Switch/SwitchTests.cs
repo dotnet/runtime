@@ -53,6 +53,89 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal("default", f(3));
         }
 
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void SwitchToGotos(bool useInterpreter)
+        {
+            ParameterExpression p = Expression.Parameter(typeof(int));
+            ParameterExpression p1 = Expression.Parameter(typeof(string));
+            LabelTarget end = Expression.Label();
+            LabelTarget lala = Expression.Label();
+            LabelTarget hello = Expression.Label();
+            BlockExpression block =Expression.Block(
+                new [] { p1 },
+                Expression.Switch(
+                    p,
+                    Expression.Block(
+                        Expression.Assign(p1, Expression.Constant("default")),
+                        Expression.Goto(end)
+                        ),
+                    Expression.SwitchCase(Expression.Goto(hello), Expression.Constant(1)),
+                    Expression.SwitchCase(Expression.Block(
+                        Expression.Assign(p1, Expression.Constant("two")),
+                        Expression.Goto(end)
+                        ), Expression.Constant(2)),
+                    Expression.SwitchCase(Expression.Goto(lala), Expression.Constant(4))
+                    ),
+                Expression.Label(hello),
+                Expression.Assign(p1, Expression.Constant("hello")),
+                Expression.Goto(end),
+                Expression.Label(lala),
+                Expression.Assign(p1, Expression.Constant("lala")),
+                Expression.Label(end),
+                p1
+                );
+
+            Func<int, string> f = Expression.Lambda<Func<int, string>>(block, p).Compile(useInterpreter);
+
+            Assert.Equal("hello", f(1));
+            Assert.Equal("two", f(2));
+            Assert.Equal("default", f(3));
+            Assert.Equal("lala", f(4));
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void SwitchToGotosOutOfTry(bool useInterpreter)
+        {
+            ParameterExpression p = Expression.Parameter(typeof(char));
+            ParameterExpression p1 = Expression.Parameter(typeof(string));
+            LabelTarget end = Expression.Label();
+            LabelTarget lala = Expression.Label();
+            LabelTarget hello = Expression.Label();
+            BlockExpression block = Expression.Block(
+                new[] { p1 },
+                Expression.TryFinally(
+                    Expression.Switch(
+                        p,
+                        Expression.Block(
+                            Expression.Assign(p1, Expression.Constant("default")),
+                            Expression.Goto(end)
+                            ),
+                        Expression.SwitchCase(Expression.Goto(hello), Expression.Constant('a')),
+                        Expression.SwitchCase(Expression.Block(
+                            Expression.Assign(p1, Expression.Constant("two")),
+                            Expression.Goto(end)
+                            ), Expression.Constant('b')),
+                        Expression.SwitchCase(Expression.Goto(lala), Expression.Constant('d'))
+                        ),
+                        Expression.Empty()
+                    ),
+                Expression.Label(hello),
+                Expression.Assign(p1, Expression.Constant("hello")),
+                Expression.Goto(end),
+                Expression.Label(lala),
+                Expression.Assign(p1, Expression.Constant("lala")),
+                Expression.Label(end),
+                p1
+                );
+
+            Func<char, string> f = Expression.Lambda<Func<char, string>>(block, p).Compile(useInterpreter);
+
+            Assert.Equal("hello", f('a'));
+            Assert.Equal("two", f('b'));
+            Assert.Equal("default", f('c'));
+            Assert.Equal("lala", f('d'));
+        }
+
         [Theory]
         [ClassData(typeof(CompilationTypes))]
         public void NullableIntSwitch2(bool useInterpreter)
@@ -399,6 +482,22 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<ArgumentException>(null, () => Expression.Switch(Expression.Constant(0), Expression.Empty(), comparer, Enumerable.Repeat(Expression.SwitchCase(Expression.Empty(), Expression.Constant(0)), 1)));
             Assert.Throws<ArgumentException>("cases", () => Expression.Switch(typeof(int), Expression.Constant(0), Expression.Constant(1), comparer, Expression.SwitchCase(Expression.Empty(), Expression.Constant(0))));
             Assert.Throws<ArgumentException>("cases", () => Expression.Switch(typeof(int), Expression.Constant(0), Expression.Constant(1), comparer, Enumerable.Repeat(Expression.SwitchCase(Expression.Empty(), Expression.Constant(0)), 1)));
+        }
+
+        private class GenClass<T>
+        {
+            public static bool WithinTwo(int x, int y) => Math.Abs(x - y) < 2;
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void OpenGenericMethodDeclarer(bool useInterpreter)
+        {
+            Expression switchVal = Expression.Constant(30);
+            Expression defaultExp = Expression.Constant(0);
+            SwitchCase switchCase = Expression.SwitchCase(Expression.Constant(1), Expression.Constant(2));
+            MethodInfo method = typeof(GenClass<>).GetMethod(nameof(GenClass<int>.WithinTwo), BindingFlags.Static | BindingFlags.Public);
+            Assert.Throws<ArgumentException>(
+                "comparison", () => Expression.Switch(switchVal, defaultExp, method, switchCase));
         }
 
         static bool WithinTen(int x, int y) => Math.Abs(x - y) < 10;

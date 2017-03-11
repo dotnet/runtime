@@ -5,7 +5,7 @@
     <ProjectReference Include="..\ref\System.ServiceProcess.ServiceController.csproj">
       <SupportedFramework>net463;netcoreapp2.0</SupportedFramework>
     </ProjectReference>
-    <ProjectReference Include="..\src\System.ServiceProcess.ServiceController.builds" />
+    <ProjectReference Include="..\src\System.ServiceProcess.ServiceController.csproj" />
     <NotSupportedOnTargetFramework Include="netcore50">
       <PackageTargetRuntime>win</PackageTargetRuntime>
     </NotSupportedOnTargetFramework>

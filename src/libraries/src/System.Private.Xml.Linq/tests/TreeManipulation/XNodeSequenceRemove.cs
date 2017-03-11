@@ -476,7 +476,7 @@ namespace XLinqTests
         {
             int count = 0;
             _runWithEvents = (bool)Params[0];
-            XDocument doc = XDocument.Parse(@"<A xmlns='a'><B/>text1<p:B xmlns:p='nsp'/>text2<!--commnent--><C><innerElement/></C></A>", LoadOptions.PreserveWhitespace);
+            XDocument doc = XDocument.Parse(@"<A xmlns='a'><B/>text1<p:B xmlns:p='nsp'/>text2<!--comment--><C><innerElement/></C></A>", LoadOptions.PreserveWhitespace);
             IEnumerable<XElement> toRemove = doc.Root.Elements();
             if (_runWithEvents)
             {
@@ -771,7 +771,7 @@ namespace XLinqTests
                         }
 
                         // Compare the rest of the elements
-                        TestLog.Compare(expectedNodesForParent[parent].EqualAll(parent.Nodes(), XNode.EqualityComparer), "The rest of ther nodes");
+                        TestLog.Compare(expectedNodesForParent[parent].EqualAll(parent.Nodes(), XNode.EqualityComparer), "The rest of the nodes");
                     }
                 }
             }

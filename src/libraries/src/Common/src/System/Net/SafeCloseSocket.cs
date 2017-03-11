@@ -5,8 +5,6 @@
 using Microsoft.Win32.SafeHandles;
 
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace System.Net.Sockets
@@ -61,7 +59,7 @@ namespace System.Net.Sockets
             }
             catch (Exception e)
             {
-                Debug.Assert(false, "SafeCloseSocket.AddRef after inner socket disposed." + e);
+                Debug.Fail("SafeCloseSocket.AddRef after inner socket disposed." + e);
             }
         }
 
@@ -78,7 +76,7 @@ namespace System.Net.Sockets
             }
             catch (Exception e)
             {
-                Debug.Assert(false, "SafeCloseSocket.Release after inner socket disposed." + e);
+                Debug.Fail("SafeCloseSocket.Release after inner socket disposed." + e);
             }
         }
 #endif

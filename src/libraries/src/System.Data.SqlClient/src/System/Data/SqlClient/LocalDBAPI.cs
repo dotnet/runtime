@@ -2,21 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
-//------------------------------------------------------------------------------
-
-using System.Threading;
 using System.Runtime.InteropServices;
 using System.Globalization;
 using System.Data.SqlClient;
 using System.Text;
 using System.Diagnostics;
-using Res = System.SR;
 
 
 namespace System.Data
 {
-    internal static class LocalDBAPI
+    internal static partial class LocalDBAPI
     {
         private const string const_localDbPrefix = @"(localdb)\";
 
@@ -48,45 +43,7 @@ namespace System.Data
         //This is copy of handle that SNI maintains, so we are responsible for freeing it - therefore there we are not using SafeHandle
         private static IntPtr s_userInstanceDLLHandle = IntPtr.Zero;
 
-        private static object s_dllLock = new object();
-
-        private static IntPtr UserInstanceDLLHandle
-        {
-            get
-            {
-#if MANAGED_SNI
-                return IntPtr.Zero;
-#else
-                if (s_userInstanceDLLHandle == IntPtr.Zero)
-                {
-                    bool lockTaken = false;
-                    try
-                    {
-                        Monitor.Enter(s_dllLock, ref lockTaken);
-                        if (s_userInstanceDLLHandle == IntPtr.Zero)
-                        {
-                            SNINativeMethodWrapper.SNIQueryInfo(SNINativeMethodWrapper.QTypes.SNI_QUERY_LOCALDB_HMODULE, ref s_userInstanceDLLHandle);
-                            if (s_userInstanceDLLHandle != IntPtr.Zero)
-                            {
-                            }
-                            else
-                            {
-                                SNINativeMethodWrapper.SNI_Error sniError;
-                                SNINativeMethodWrapper.SNIGetLastError(out sniError);
-                                throw CreateLocalDBException(errorMessage: Res.GetString("LocalDB_FailedGetDLLHandle"), sniError: (int)sniError.sniError);
-                            }
-                        }
-                    }
-                    finally
-                    {
-                        if (lockTaken)
-                            Monitor.Exit(s_dllLock);
-                    }
-                }
-                return s_userInstanceDLLHandle;
-#endif // MANAGED_SNI
-            }
-        }
+        private static readonly object s_dllLock = new object();
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = CharSet.Unicode)]
         private delegate int LocalDBFormatMessageDelegate(int hrLocalDB, UInt32 dwFlags, UInt32 dwLanguageId, StringBuilder buffer, ref UInt32 buflen);
@@ -99,10 +56,8 @@ namespace System.Data
             {
                 if (s_localDBFormatMessage == null)
                 {
-                    bool lockTaken = false;
-                    try
+                    lock (s_dllLock)
                     {
-                        Monitor.Enter(s_dllLock, ref lockTaken);
                         if (s_localDBFormatMessage == null)
                         {
                             IntPtr functionAddr = SafeNativeMethods.GetProcAddress(UserInstanceDLLHandle, "LocalDBFormatMessage");
@@ -110,15 +65,10 @@ namespace System.Data
                             if (functionAddr == IntPtr.Zero)
                             {
                                 int hResult = Marshal.GetLastWin32Error();
-                                throw CreateLocalDBException(errorMessage: Res.GetString("LocalDB_MethodNotFound"));
+                                throw CreateLocalDBException(errorMessage: SR.LocalDB_MethodNotFound);
                             }
                             s_localDBFormatMessage = Marshal.GetDelegateForFunctionPointer<LocalDBFormatMessageDelegate>(functionAddr);
                         }
-                    }
-                    finally
-                    {
-                        if (lockTaken)
-                            Monitor.Exit(s_dllLock);
                     }
                 }
                 return s_localDBFormatMessage;
@@ -139,7 +89,7 @@ namespace System.Data
 
 
                 // First try for current culture                
-                int hResult = LocalDBFormatMessage(hrLocalDB: hrCode, dwFlags: const_LOCALDB_TRUNCATE_ERR_MESSAGE, dwLanguageId: (uint)Locale.GetCurrentCultureLcid(),
+                int hResult = LocalDBFormatMessage(hrLocalDB: hrCode, dwFlags: const_LOCALDB_TRUNCATE_ERR_MESSAGE, dwLanguageId: (uint)CultureInfo.CurrentCulture.LCID,
                                                  buffer: buffer, buflen: ref len);
                 if (hResult >= 0)
                     return buffer.ToString();
@@ -153,12 +103,12 @@ namespace System.Data
                     if (hResult >= 0)
                         return buffer.ToString();
                     else
-                        return string.Format(CultureInfo.CurrentCulture, "{0} (0x{1:X}).", Res.GetString("LocalDB_UnobtainableMessage"), hResult);
+                        return string.Format(CultureInfo.CurrentCulture, "{0} (0x{1:X}).", SR.LocalDB_UnobtainableMessage, hResult);
                 }
             }
             catch (SqlException exc)
             {
-                return string.Format(CultureInfo.CurrentCulture, "{0} ({1}).", Res.GetString("LocalDB_UnobtainableMessage"), exc.Message);
+                return string.Format(CultureInfo.CurrentCulture, "{0} ({1}).", SR.LocalDB_UnobtainableMessage, exc.Message);
             }
         }
 

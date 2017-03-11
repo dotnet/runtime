@@ -5,7 +5,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Linq;
+using System.Reflection.Internal;
 
 namespace System.Reflection.Metadata.Ecma335
 {

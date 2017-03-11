@@ -182,7 +182,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             {
                 try
                 {
-                    // Pin the the data array:
+                    // Pin the data array:
                     gcHandle = GCHandle.Alloc(_data, GCHandleType.Pinned);
                     buffPtr = gcHandle.AddrOfPinnedObject() + _dataStartOffs;
 

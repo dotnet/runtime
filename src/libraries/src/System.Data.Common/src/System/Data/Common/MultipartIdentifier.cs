@@ -36,10 +36,10 @@ namespace System.Data.Common
             MPI_RightQuote,
         }
 
-        /* Core function  for parsing the multipart identifer string.
+        /* Core function  for parsing the multipart identifier string.
             * paramaters: name - string to parse
             * leftquote:  set of characters which are valid quoteing characters to initiate a quote
-            * rightquote: set of characters which are valid to stop a quote, array index's correspond to the the leftquote array.
+            * rightquote: set of characters which are valid to stop a quote, array index's correspond to the leftquote array.
             * separator:  separator to use
             * limit:      number of names to parse out
             * removequote:to remove the quotes on the returned string 
@@ -77,7 +77,7 @@ namespace System.Data.Common
             MPIState state = MPIState.MPI_Value;        // Initalize the starting state
 
             StringBuilder sb = new StringBuilder(name.Length); // String buffer to hold the string being currently built, init the string builder so it will never be resized
-            StringBuilder whitespaceSB = null;                  // String buffer to hold white space used when parsing nonquoted strings  'a b .  c d' = 'a b' and 'c d'
+            StringBuilder whitespaceSB = null;                  // String buffer to hold whitespace used when parsing nonquoted strings  'a b .  c d' = 'a b' and 'c d'
             char rightQuoteChar = ' ';                          // Right quote character to use given the left quote character found.
             for (int index = 0; index < name.Length; ++index)
             {
@@ -150,7 +150,7 @@ namespace System.Data.Common
                                     whitespaceSB = new StringBuilder();
                                 }
                                 whitespaceSB.Length = 0;
-                                whitespaceSB.Append(testchar);  // start to record the white space, if we are parsing a name like "foo bar" we should return "foo bar"
+                                whitespaceSB.Append(testchar);  // start to record the whitespace, if we are parsing a name like "foo bar" we should return "foo bar"
                                 state = MPIState.MPI_LookForNextCharOrSeparator;
                             }
                             else
@@ -217,7 +217,7 @@ namespace System.Data.Common
                             }
                             else
                             if (!IsWhitespace(testchar))
-                            { // If it is not white space we got problems
+                            { // If it is not whitespace we got problems
                                 throw ADP.InvalidMultipartNameIncorrectUsageOfQuotes(property, name);
                             }
                             else

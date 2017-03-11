@@ -6,6 +6,11 @@
     <AssemblyName>System.IO.FileSystem</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <!--
+      Currently the uap build is broken so forcing UWPCompatible = false to use Win32 code
+      https://github.com/dotnet/corefx/issues/16422
+    -->
+    <UWPCompatible>false</UWPCompatible>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsUnix)' == 'true'">
     <NoWarn>$(NoWarn);414</NoWarn>
@@ -17,10 +22,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
-  <ItemGroup Condition="'$(EnableWinRT)' == 'true'">
-    <Reference Include="Windows" />
-    <ProjectReference Include="$(SourceDir)/mscorlib.WinRT-Facade/mscorlib.WinRT-Facade.csproj" />
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="System\IO\Error.cs" />
     <Compile Include="System\IO\Directory.cs" />
@@ -189,7 +190,7 @@
     </Compile>
   </ItemGroup>
   <!-- Windows : Win32 only -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(EnableWinRT)' != 'true'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(UWPCompatible)' != 'true'">
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.UnsafeCreateFile.cs">
       <Link>Common\Interop\Windows\Interop.UnsafeCreateFile.cs</Link>
     </Compile>
@@ -221,7 +222,7 @@
     </Compile>
   </ItemGroup>
   <!-- Windows : UAP - Win32 + WinRT -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(EnableWinRT)' == 'true'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(UWPCompatible)' == 'true'">
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.UnsafeCreateFile.Uap.cs">
       <Link>Common\Interop\Windows\Interop.UnsafeCreateFile.Uap.cs</Link>
     </Compile>
@@ -382,6 +383,10 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Reference Include="System.Threading" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(UWPCompatible)' == 'true'">
+    <Reference Include="mscorlib" />
+    <Reference Include="Windows" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

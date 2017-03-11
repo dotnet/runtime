@@ -108,21 +108,21 @@ namespace System.IO.Tests
         #region PlatformSpecific
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Deleting non-existent path throws
         public void Windows_NonExistentPath_Throws_DirectoryNotFoundException()
         {
             Assert.Throws<DirectoryNotFoundException>(() => Delete(Path.Combine(TestDirectory, GetTestFileName(), "C")));
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Deleting non-existent path doesn't throw
         public void Unix_NonExistentPath_Nop()
         {
             Delete(Path.Combine(TestDirectory, GetTestFileName(), "C"));
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Deleting already-open file throws
         public void Windows_File_Already_Open_Throws_IOException()
         {
             string path = GetTestFilePath();
@@ -133,7 +133,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Deleting already-open file allowed
         public void Unix_File_Already_Open_Allowed()
         {
             string path = GetTestFilePath();
@@ -146,7 +146,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Deleting readonly file throws
         public void WindowsDeleteReadOnlyFile()
         {
             string path = GetTestFilePath();
@@ -158,7 +158,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Deleting readonly file allowed
         public void UnixDeleteReadOnlyFile()
         {
             FileInfo testFile = Create(GetTestFilePath());

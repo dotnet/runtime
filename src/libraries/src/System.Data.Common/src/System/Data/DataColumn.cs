@@ -1156,7 +1156,7 @@ namespace System.Data
                     DataRow dr = GetDataRow(record);
                     if (dr != null)
                     {
-                        // at initialization time (datatable.NewRow(), we would fill the storage with default value, but at that time we wont have datarow)
+                        // at initialization time (datatable.NewRow(), we would fill the storage with default value, but at that time we won't have datarow)
                         dr.LastChangedColumn = this;
                     }
                 }
@@ -1187,7 +1187,7 @@ namespace System.Data
 
             DataRow dr = GetDataRow(record);
             if (dr != null)
-            {  // at initialization time (datatable.NewRow(), we would fill the storage with default value, but at that time we wont have datarow)
+            {  // at initialization time (datatable.NewRow(), we would fill the storage with default value, but at that time we won't have datarow)
                 dr.LastChangedColumn = this;
             }
         }

@@ -205,7 +205,7 @@ namespace System.Linq.Expressions.Tests
 
             Func<byte> f = e.Compile(useInterpreter);
 
-            Assert.Equal((byte)(left ? a << b : a >> b), f());
+            Assert.Equal(unchecked((byte)(left ? a << b : a >> b)), f());
 
             Expression<Func<byte?>> en =
                 Expression.Lambda<Func<byte?>>(
@@ -222,7 +222,7 @@ namespace System.Linq.Expressions.Tests
 
             Func<byte?> fn = en.Compile(useInterpreter);
 
-            Assert.Equal((byte)(left ? a << b : a >> b), fn());
+            Assert.Equal(unchecked((byte)(left ? a << b : a >> b)), fn());
         }
 
         private static void VerifyNullableByteShift(byte? a, bool useInterpreter)
@@ -254,7 +254,7 @@ namespace System.Linq.Expressions.Tests
 
             Func<byte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((byte?)(left ? a << b : a >> b), f());
+            Assert.Equal(unchecked((byte?)(left ? a << b : a >> b)), f());
 
             e =
                 Expression.Lambda<Func<byte?>>(
@@ -271,7 +271,7 @@ namespace System.Linq.Expressions.Tests
 
             f = e.Compile(useInterpreter);
 
-            Assert.Equal((byte?)(left ? a << b : a >> b), f());
+            Assert.Equal(unchecked((byte?)(left ? a << b : a >> b)), f());
         }
 
         private static void VerifySByteShift(sbyte a, bool useInterpreter)
@@ -303,7 +303,7 @@ namespace System.Linq.Expressions.Tests
 
             Func<sbyte> f = e.Compile(useInterpreter);
 
-            Assert.Equal((sbyte)(left ? a << b : a >> b), f());
+            Assert.Equal(unchecked((sbyte)(left ? a << b : a >> b)), f());
 
             Expression<Func<sbyte?>> en =
                 Expression.Lambda<Func<sbyte?>>(
@@ -320,7 +320,7 @@ namespace System.Linq.Expressions.Tests
 
             Func<sbyte?> fn = en.Compile(useInterpreter);
 
-            Assert.Equal((sbyte)(left ? a << b : a >> b), fn());
+            Assert.Equal(unchecked((sbyte)(left ? a << b : a >> b)), fn());
         }
 
         private static void VerifyNullableSByteShift(sbyte? a, bool useInterpreter)
@@ -352,7 +352,7 @@ namespace System.Linq.Expressions.Tests
 
             Func<sbyte?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((sbyte?)(left ? a << b : a >> b), f());
+            Assert.Equal(unchecked((sbyte?)(left ? a << b : a >> b)), f());
 
             e =
                 Expression.Lambda<Func<sbyte?>>(
@@ -369,7 +369,7 @@ namespace System.Linq.Expressions.Tests
 
             f = e.Compile(useInterpreter);
 
-            Assert.Equal((sbyte?)(left ? a << b : a >> b), f());
+            Assert.Equal(unchecked((sbyte?)(left ? a << b : a >> b)), f());
         }
 
         private static void VerifyUShortShift(ushort a, bool useInterpreter)
@@ -401,7 +401,7 @@ namespace System.Linq.Expressions.Tests
 
             Func<ushort> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ushort)(left ? a << b : a >> b), f());
+            Assert.Equal(unchecked((ushort)(left ? a << b : a >> b)), f());
 
             Expression<Func<ushort?>> en =
                 Expression.Lambda<Func<ushort?>>(
@@ -418,7 +418,7 @@ namespace System.Linq.Expressions.Tests
 
             Func<ushort?> fn = en.Compile(useInterpreter);
 
-            Assert.Equal((ushort)(left ? a << b : a >> b), fn());
+            Assert.Equal(unchecked((ushort)(left ? a << b : a >> b)), fn());
         }
 
         private static void VerifyNullableUShortShift(ushort? a, bool useInterpreter)
@@ -450,7 +450,7 @@ namespace System.Linq.Expressions.Tests
 
             Func<ushort?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((ushort?)(left ? a << b : a >> b), f());
+            Assert.Equal(unchecked((ushort?)(left ? a << b : a >> b)), f());
 
             e =
                 Expression.Lambda<Func<ushort?>>(
@@ -467,7 +467,7 @@ namespace System.Linq.Expressions.Tests
 
             f = e.Compile(useInterpreter);
 
-            Assert.Equal((ushort?)(left ? a << b : a >> b), f());
+            Assert.Equal(unchecked((ushort?)(left ? a << b : a >> b)), f());
         }
 
         private static void VerifyShortShift(short a, bool useInterpreter)
@@ -499,7 +499,7 @@ namespace System.Linq.Expressions.Tests
 
             Func<short> f = e.Compile(useInterpreter);
 
-            Assert.Equal((short)(left ? a << b : a >> b), f());
+            Assert.Equal(unchecked((short)(left ? a << b : a >> b)), f());
 
             Expression<Func<short?>> en =
                 Expression.Lambda<Func<short?>>(
@@ -516,7 +516,7 @@ namespace System.Linq.Expressions.Tests
 
             Func<short?> fn = en.Compile(useInterpreter);
 
-            Assert.Equal((short)(left ? a << b : a >> b), fn());
+            Assert.Equal(unchecked((short)(left ? a << b : a >> b)), fn());
         }
 
         private static void VerifyNullableShortShift(short? a, bool useInterpreter)
@@ -548,7 +548,7 @@ namespace System.Linq.Expressions.Tests
 
             Func<short?> f = e.Compile(useInterpreter);
 
-            Assert.Equal((short?)(left ? a << b : a >> b), f());
+            Assert.Equal(unchecked((short?)(left ? a << b : a >> b)), f());
 
             e =
                 Expression.Lambda<Func<short?>>(
@@ -565,7 +565,7 @@ namespace System.Linq.Expressions.Tests
 
             f = e.Compile(useInterpreter);
 
-            Assert.Equal((short?)(left ? a << b : a >> b), f());
+            Assert.Equal(unchecked((short?)(left ? a << b : a >> b)), f());
         }
 
         private static void VerifyUIntShift(uint a, bool useInterpreter)

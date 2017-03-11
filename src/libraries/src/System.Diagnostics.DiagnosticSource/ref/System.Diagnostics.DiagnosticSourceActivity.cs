@@ -13,6 +13,7 @@ namespace System.Diagnostics {
     public DateTime StartTimeUtc {get { throw null; } private set {} }
     public Activity Parent {get { throw null; } private set {} }
     public string ParentId {get { throw null; } private set {} }
+    public string RootId {get { throw null; } private set {} }    
     public TimeSpan Duration {get { throw null; } private set {} }    
     public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> Tags { get { throw null; } }    
     public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> Baggage { get { throw null; } }
