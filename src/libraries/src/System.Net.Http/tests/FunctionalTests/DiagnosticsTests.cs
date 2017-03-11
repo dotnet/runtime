@@ -338,7 +338,10 @@ namespace System.Net.Http.Functional.Tests
                         Assert.NotNull(Activity.Current);
                         Assert.Equal(parentActivity, Activity.Current.Parent);
                         Assert.True(Activity.Current.Duration != TimeSpan.Zero);
+                        GetPropertyValueFromAnonymousTypeInstance<HttpRequestMessage>(kvp.Value, "Request");
                         GetPropertyValueFromAnonymousTypeInstance<HttpResponseMessage>(kvp.Value, "Response");
+                        var requestStatus = GetPropertyValueFromAnonymousTypeInstance<TaskStatus>(kvp.Value, "RequestTaskStatus");
+                        Assert.Equal(TaskStatus.RanToCompletion, requestStatus);
 
                         activityStopLogged = true;
                     }
@@ -427,6 +430,7 @@ namespace System.Net.Http.Functional.Tests
                     if (kvp.Key.Equals("System.Net.Http.Activity.Stop"))
                     {
                         Assert.NotNull(kvp.Value);
+                        GetPropertyValueFromAnonymousTypeInstance<HttpRequestMessage>(kvp.Value, "Request");
                         var requestStatus = GetPropertyValueFromAnonymousTypeInstance<TaskStatus>(kvp.Value, "RequestTaskStatus");
                         Assert.Equal(TaskStatus.Faulted, requestStatus);
 
@@ -469,7 +473,11 @@ namespace System.Net.Http.Functional.Tests
                 bool activityLogged = false;
                 var diagnosticListenerObserver = new FakeDiagnosticListenerObserver(kvp =>
                 {
-                    if (kvp.Key.Equals("System.Net.Http.Activity.Stop")) { activityLogged = true; }
+                    if (kvp.Key.Equals("System.Net.Http.Activity.Stop"))
+                    {
+                        GetPropertyValueFromAnonymousTypeInstance<HttpResponseMessage>(kvp.Value, "Request");
+                        activityLogged = true;
+                    }
                     else if (kvp.Key.Equals("System.Net.Http.Exception"))
                     {
                         Assert.NotNull(kvp.Value);
@@ -546,6 +554,7 @@ namespace System.Net.Http.Functional.Tests
                     if (kvp.Key == "System.Net.Http.Activity.Stop")
                     {
                         Assert.NotNull(kvp.Value);
+                        GetPropertyValueFromAnonymousTypeInstance<HttpRequestMessage>(kvp.Value, "Request");
                         var status = GetPropertyValueFromAnonymousTypeInstance<TaskStatus>(kvp.Value, "RequestTaskStatus");
                         Assert.Equal(TaskStatus.Canceled, status);
                         cancelLogged = true;
