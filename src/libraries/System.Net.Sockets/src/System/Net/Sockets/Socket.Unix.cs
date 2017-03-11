@@ -39,6 +39,17 @@ namespace System.Net.Sockets
                 return;
             }
 
+            SocketError errorCode = ReplaceHandle();
+            if (errorCode != SocketError.Success)
+            {
+                throw new SocketException((int) errorCode);
+            }
+
+            _handle.LastConnectFailed = false;
+        }
+
+        internal SocketError ReplaceHandle()
+        {
             // Copy out values from key options. The copied values should be kept in sync with the
             // handling in SafeCloseSocket.TrackOption.  Note that we copy these values out first, before
             // we change _handle, so that we can use the helpers on Socket which internally access _handle.
@@ -65,7 +76,7 @@ namespace System.Net.Sockets
             oldHandle.Dispose();
             if (errorCode != SocketError.Success)
             {
-                throw new SocketException((int)errorCode);
+                return errorCode;
             }
 
             // And put back the copied settings.  For DualMode, we use the value stored in the _handle
@@ -82,7 +93,7 @@ namespace System.Net.Sockets
             if (_handle.IsTrackedOption(TrackedSocketOptions.SendTimeout)) SendTimeout = sendTimeout;
             if (_handle.IsTrackedOption(TrackedSocketOptions.Ttl)) Ttl = ttl;
 
-            _handle.LastConnectFailed = false;
+            return SocketError.Success;
         }
 
         private static void ThrowMultiConnectNotSupported()

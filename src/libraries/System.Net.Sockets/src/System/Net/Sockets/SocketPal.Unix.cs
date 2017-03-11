@@ -1566,12 +1566,19 @@ namespace System.Net.Sockets
 
         internal static SocketError DisconnectAsync(Socket socket, SafeCloseSocket handle, bool reuseSocket, DisconnectOverlappedAsyncResult asyncResult)
         {
-            throw new PlatformNotSupportedException(SR.net_sockets_disconnect_notsupported);
+            SocketError socketError = Disconnect(socket, handle, reuseSocket);
+            asyncResult.CompletionCallback(0, SocketError.Success);
+            return socketError;
         }
 
         internal static SocketError Disconnect(Socket socket, SafeCloseSocket handle, bool reuseSocket)
         {
-            throw new PlatformNotSupportedException(SR.net_sockets_disconnect_notsupported);
+            if (reuseSocket)
+            {
+                return socket.ReplaceHandle();
+            }
+
+            return SocketError.Success;
         }
     }
 }
