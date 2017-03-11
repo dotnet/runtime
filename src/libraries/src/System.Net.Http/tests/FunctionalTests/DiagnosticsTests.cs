@@ -473,11 +473,7 @@ namespace System.Net.Http.Functional.Tests
                 bool activityLogged = false;
                 var diagnosticListenerObserver = new FakeDiagnosticListenerObserver(kvp =>
                 {
-                    if (kvp.Key.Equals("System.Net.Http.Activity.Stop"))
-                    {
-                        GetPropertyValueFromAnonymousTypeInstance<HttpResponseMessage>(kvp.Value, "Request");
-                        activityLogged = true;
-                    }
+                    if (kvp.Key.Equals("System.Net.Http.Activity.Stop")) { activityLogged = true; }
                     else if (kvp.Key.Equals("System.Net.Http.Exception"))
                     {
                         Assert.NotNull(kvp.Value);
