@@ -188,6 +188,9 @@ namespace System.Reflection.Emit
         public override EventInfo[] GetEvents(BindingFlags bindingAttr) { throw new NotSupportedException(); }
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr) { throw new NotSupportedException(); }
         protected override TypeAttributes GetAttributeFlagsImpl() { return m_type.Attributes; }
+
+        public override bool IsSZArray => false;
+
         protected override bool IsArrayImpl() { return false; }
         protected override bool IsByRefImpl() { return false; }
         protected override bool IsPointerImpl() { return false; }

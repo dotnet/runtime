@@ -107,7 +107,7 @@ namespace System.Reflection.Emit
             else if (elementType.IsByRef)
                 AddByRef();
 
-            else if (elementType.IsSzArray)
+            else if (elementType.IsSZArray)
                 AddSzArray();
 
             else if (elementType.IsArray)
