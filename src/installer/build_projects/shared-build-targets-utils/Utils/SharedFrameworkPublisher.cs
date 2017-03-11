@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -76,13 +76,26 @@ namespace Microsoft.DotNet.Cli.Build
                 s_sharedFrameworkName,
                 sharedFrameworkNugetVersion);
         }
+        public static string GetNetCoreAppRuntimeLibSymbolsPath(string symbolsRoot, string sharedFrameworkRid, string sharedFrameworkTarget)
+        {
+            return Path.Combine(symbolsRoot, s_sharedFrameworkName, "runtimes", sharedFrameworkRid, "lib", sharedFrameworkTarget);
+        }
+
+        public static string GetNetCoreAppRuntimeNativeSymbolsPath(string symbolsRoot, string sharedFrameworkRid)
+        {
+            return Path.Combine(symbolsRoot, s_sharedFrameworkName, "runtimes", sharedFrameworkRid, "native");
+        }
+
+        public static string GetNetCoreAppToolsSymbolsPath(string symbolsRoot)
+        {
+            return Path.Combine(symbolsRoot, s_sharedFrameworkName, "tools");
+        }
 
         public void CopyMuxer(string sharedFrameworkPublishRoot)
         {
             File.Copy(
                 Path.Combine(_corehostLockedDirectory, HostArtifactNames.DotnetHostBaseName),
                 Path.Combine(sharedFrameworkPublishRoot, HostArtifactNames.DotnetHostBaseName), true);
-
         }
 
         public void CopyHostFxrToVersionedDirectory(string rootDirectory, string hostFxrVersion)
@@ -145,6 +158,29 @@ namespace Microsoft.DotNet.Cli.Build
             var version = _sharedFrameworkNugetVersion;
             var content = $@"{commitHash}{Environment.NewLine}{version}{Environment.NewLine}";
             File.WriteAllText(Path.Combine(sharedFrameworkNameAndVersionRoot, ".version"), content);
+
+            // Copy symbols to publish folder
+            List<string> pdbFiles = new List<string>();
+            string symbolsRoot = Path.Combine(_repoRoot, "pkg", "bin", "symbols");
+            string libPdbPath = GetNetCoreAppRuntimeLibSymbolsPath(symbolsRoot, _sharedFrameworkRid, _sharedFrameworkTarget);
+            string nativePdbPath = GetNetCoreAppRuntimeNativeSymbolsPath(symbolsRoot, _sharedFrameworkRid);
+            string toolsPdbPath = GetNetCoreAppToolsSymbolsPath(symbolsRoot);
+            if (Directory.Exists(libPdbPath))
+            {
+                pdbFiles.AddRange(Directory.GetFiles(libPdbPath));
+            }
+            if(Directory.Exists(nativePdbPath))
+            {
+                pdbFiles.AddRange(Directory.GetFiles(nativePdbPath, "*"));
+            }
+            if (Directory.Exists(toolsPdbPath))
+            {
+                pdbFiles.AddRange(Directory.GetFiles(toolsPdbPath, "*"));
+            }
+            foreach (string pdbFile in pdbFiles)
+            {
+                File.Copy(pdbFile, Path.Combine(sharedFrameworkNameAndVersionRoot, Path.GetFileName(pdbFile)));
+            }
 
             return;
         }
@@ -216,6 +252,7 @@ namespace Microsoft.DotNet.Cli.Build
 
             string templateFile = Path.Combine(sharedFrameworkProjectPath, "project.json.template");
             JObject sharedFrameworkProject = JsonUtils.ReadProject(templateFile);
+
             sharedFrameworkProject["dependencies"]["Microsoft.NETCore.App"] = sharedFrameworkNugetVersion;
             ((JObject)sharedFrameworkProject["runtimes"]).RemoveAll();
             sharedFrameworkProject["runtimes"][rid] = new JObject();
