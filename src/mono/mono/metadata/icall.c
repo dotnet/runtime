@@ -2572,6 +2572,18 @@ ves_icall_RuntimeTypeHandle_IsPrimitive (MonoReflectionTypeHandle ref_type, Mono
 }
 
 ICALL_EXPORT MonoBoolean
+ves_icall_RuntimeTypeHandle_HasReferences (MonoReflectionTypeHandle ref_type, MonoError *error)
+{
+	error_init (error);
+	MonoType *type = MONO_HANDLE_GETVAL (ref_type, type);
+	MonoClass *klass;
+
+	klass = mono_class_from_mono_type (type);
+	mono_class_init (klass);
+	return klass->has_references;
+}
+
+ICALL_EXPORT MonoBoolean
 ves_icall_RuntimeTypeHandle_IsByRef (MonoReflectionTypeHandle ref_type, MonoError *error)
 {
 	error_init (error);

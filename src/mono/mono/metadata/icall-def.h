@@ -808,6 +808,7 @@ HANDLES(ICALL(RTH_6, "GetGenericTypeDefinition_impl", ves_icall_RuntimeTypeHandl
 HANDLES(ICALL(RTH_7, "GetMetadataToken", ves_icall_reflection_get_token))
 HANDLES(ICALL(RTH_8, "GetModule", ves_icall_RuntimeTypeHandle_GetModule))
 HANDLES(ICALL(RTH_9, "HasInstantiation", ves_icall_RuntimeTypeHandle_HasInstantiation))
+HANDLES(ICALL(RTH_20, "HasReferences", ves_icall_RuntimeTypeHandle_HasReferences))
 HANDLES(ICALL(RTH_10, "IsArray", ves_icall_RuntimeTypeHandle_IsArray))
 HANDLES(ICALL(RTH_11, "IsByRef", ves_icall_RuntimeTypeHandle_IsByRef))
 HANDLES(ICALL(RTH_12, "IsComObject", ves_icall_RuntimeTypeHandle_IsComObject))
