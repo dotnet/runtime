@@ -274,6 +274,28 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
 #if netcoreapp
         [Fact]
+        public static void ReadDSAPrivateKey()
+        {
+            byte[] data = { 1, 2, 3, 4, 5 };
+
+            using (var cert = new X509Certificate2(TestData.Dsa1024Pfx, TestData.Dsa1024PfxPassword, Cert.EphemeralIfPossible))
+            using (DSA privKey = cert.GetDSAPrivateKey())
+            using (DSA pubKey = cert.GetDSAPublicKey())
+            {
+                // Stick to FIPS 186-2 (DSS-SHA1)
+                byte[] signature = privKey.SignData(data, HashAlgorithmName.SHA1);
+
+                Assert.True(pubKey.VerifyData(data, signature, HashAlgorithmName.SHA1), "pubKey verifies signed data");
+
+                data[0] ^= 0xFF;
+                Assert.False(pubKey.VerifyData(data, signature, HashAlgorithmName.SHA1), "pubKey verifies tampered data");
+
+                // And verify that the public key isn't accidentally a private key.
+                Assert.ThrowsAny<CryptographicException>(() => pubKey.SignData(data, HashAlgorithmName.SHA1));
+            }
+        }
+
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Uses P/Invokes
         public static void EphemeralImport_HasNoKeyName()
         {

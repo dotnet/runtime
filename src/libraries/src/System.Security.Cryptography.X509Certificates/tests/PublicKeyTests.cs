@@ -95,7 +95,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(16946, TestPlatforms.AnyUnix)]
         public static void TestPublicKey_Key_DSA()
         {
             PublicKey pk = GetTestDsaKey();
@@ -487,6 +486,58 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 }
             }
         }
+
+#if netcoreapp
+        [Fact]
+        public static void TestDSAPublicKey()
+        {
+            using (var cert = new X509Certificate2(TestData.DssCer))
+            using (DSA pubKey = cert.GetDSAPublicKey())
+            {
+                Assert.NotNull(pubKey);
+                VerifyKey_DSA(pubKey);
+            }
+        }
+
+        [Fact]
+        public static void TestDSAPublicKey_VerifiesSignature()
+        {
+            byte[] data = { 1, 2, 3, 4, 5 };
+            byte[] wrongData = { 0xFE, 2, 3, 4, 5 };
+            byte[] signature =
+                "B06E26CFC939F25B864F52ABD3288222363A164259B0027FFC95DBC88F9204F7A51A901F3005C9F7".HexToByteArray();
+
+            using (var cert = new X509Certificate2(TestData.Dsa1024Cert))
+            using (DSA pubKey = cert.GetDSAPublicKey())
+            {
+                Assert.True(pubKey.VerifyData(data, signature, HashAlgorithmName.SHA1), "pubKey verifies signature");
+                Assert.False(pubKey.VerifyData(wrongData, signature, HashAlgorithmName.SHA1), "pubKey verifies tampered data");
+
+                signature[0] ^= 0xFF;
+                Assert.False(pubKey.VerifyData(data, signature, HashAlgorithmName.SHA1), "pubKey verifies tampered signature");
+            }
+        }
+
+        [Fact]
+        public static void TestDSAPublicKey_RSACert()
+        {
+            using (var cert = new X509Certificate2(TestData.Rsa384CertificatePemBytes))
+            using (DSA pubKey = cert.GetDSAPublicKey())
+            {
+                Assert.Null(pubKey);
+            }
+        }
+
+        [Fact]
+        public static void TestDSAPublicKey_ECDSACert()
+        {
+            using (var cert = new X509Certificate2(TestData.ECDsa256Certificate))
+            using (DSA pubKey = cert.GetDSAPublicKey())
+            {
+                Assert.Null(pubKey);
+            }
+        }
+#endif
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Uses P/Invokes
