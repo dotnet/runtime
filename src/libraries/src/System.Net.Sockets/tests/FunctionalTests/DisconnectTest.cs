@@ -40,10 +40,11 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
         [OuterLoop("Issue #11345")]
-        [PlatformSpecific(TestPlatforms.Windows)]  // Disconnect only supported on Windows
-        public void Disconnect_Success()
+        public void Disconnect_Success(bool reuseSocket)
         {
             AutoResetEvent completed = new AutoResetEvent(false);
 
@@ -55,29 +56,36 @@ namespace System.Net.Sockets.Tests
                 args.Completed += OnCompleted;
                 args.UserToken = completed;
                 args.RemoteEndPoint = server1.EndPoint;
-                args.DisconnectReuseSocket = true;
+                args.DisconnectReuseSocket = reuseSocket;
 
                 using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
                 {
-                    Assert.True(client.ConnectAsync(args));
-                    completed.WaitOne();
+                    if (client.ConnectAsync(args))
+                    {
+                        completed.WaitOne();
+                    }
+
                     Assert.Equal(SocketError.Success, args.SocketError);
 
-                    client.Disconnect(true);
+                    client.Disconnect(reuseSocket);
 
                     args.RemoteEndPoint = server2.EndPoint;
 
-                    Assert.True(client.ConnectAsync(args));
-                    completed.WaitOne();
-                    Assert.Equal(SocketError.Success, args.SocketError);
+                    if (client.ConnectAsync(args))
+                    {
+                        completed.WaitOne();
+                    }
+
+                    Assert.Equal(reuseSocket ? SocketError.Success : SocketError.IsConnected, args.SocketError);
                 }
             }
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
         [OuterLoop("Issue #11345")]
-        [PlatformSpecific(TestPlatforms.Windows)]  // DisconnectAsync only supported on Windows
-        public void DisconnectAsync_Success()
+        public void DisconnectAsync_Success(bool reuseSocket)
         {
             AutoResetEvent completed = new AutoResetEvent(false);
 
@@ -89,31 +97,41 @@ namespace System.Net.Sockets.Tests
                 args.Completed += OnCompleted;
                 args.UserToken = completed;
                 args.RemoteEndPoint = server1.EndPoint;
-                args.DisconnectReuseSocket = true;
+                args.DisconnectReuseSocket = reuseSocket;
 
                 using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
                 {
-                    Assert.True(client.ConnectAsync(args));
-                    completed.WaitOne();
+                    if (client.ConnectAsync(args))
+                    {
+                        completed.WaitOne();
+                    }
+
                     Assert.Equal(SocketError.Success, args.SocketError);
 
-                    Assert.True(client.DisconnectAsync(args));
-                    completed.WaitOne();
+                    if (client.DisconnectAsync(args))
+                    {
+                        completed.WaitOne();
+                    }
+
                     Assert.Equal(SocketError.Success, args.SocketError);
 
                     args.RemoteEndPoint = server2.EndPoint;
 
-                    Assert.True(client.ConnectAsync(args));
-                    completed.WaitOne();
-                    Assert.Equal(SocketError.Success, args.SocketError);
+                    if (client.ConnectAsync(args))
+                    {
+                        completed.WaitOne();
+                    }
+
+                    Assert.Equal(reuseSocket ? SocketError.Success : SocketError.IsConnected, args.SocketError);
                 }
             }
         }
 
-        [Fact]
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
         [OuterLoop("Issue #11345")]
-        [PlatformSpecific(TestPlatforms.Windows)]  // BeginDisconnect only supported on Windows
-        public void BeginDisconnect_Success()
+        public void BeginDisconnect_Success(bool reuseSocket)
         {
             AutoResetEvent completed = new AutoResetEvent(false);
 
@@ -128,52 +146,26 @@ namespace System.Net.Sockets.Tests
 
                 using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
                 {
-                    Assert.True(client.ConnectAsync(args));
-                    completed.WaitOne();
+                    if (client.ConnectAsync(args))
+                    {
+                        completed.WaitOne();
+                    }
+
                     Assert.Equal(SocketError.Success, args.SocketError);
 
-                    IAsyncResult ar = client.BeginDisconnect(true, null, null);
+                    IAsyncResult ar = client.BeginDisconnect(reuseSocket, null, null);
                     client.EndDisconnect(ar);
                     Assert.Throws<InvalidOperationException>(() => client.EndDisconnect(ar));
 
                     args.RemoteEndPoint = server2.EndPoint;
 
-                    Assert.True(client.ConnectAsync(args));
-                    completed.WaitOne();
-                    Assert.Equal(SocketError.Success, args.SocketError);
+                    if (client.ConnectAsync(args))
+                    {
+                        completed.WaitOne();
+                    }
+
+                    Assert.Equal(reuseSocket ? SocketError.Success : SocketError.IsConnected, args.SocketError);
                 }
-            }
-        }
-
-        [Fact]
-        [PlatformSpecific(~TestPlatforms.Windows)]  // Disconnect only supported on Windows
-        public void Disconnect_NonWindows_NotSupported()
-        {
-            using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            {
-                Assert.Throws<PlatformNotSupportedException>(() => client.Disconnect(true));
-            }
-        }
-
-        [Fact]
-        [PlatformSpecific(~TestPlatforms.Windows)]  // DisconnectAsync only supported on Windows
-        public void DisconnectAsync_NonWindows_NotSupported()
-        {
-            using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            {
-                SocketAsyncEventArgs args = new SocketAsyncEventArgs();
-                args.DisconnectReuseSocket = true;
-                Assert.Throws<PlatformNotSupportedException>(() => client.DisconnectAsync(args));
-            }
-        }
-
-        [Fact]
-        [PlatformSpecific(~TestPlatforms.Windows)]  // BeginDisconnect only supported on Windows
-        public void BeginDisconnect_NonWindows_NotSupported()
-        {
-            using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
-            {
-                Assert.Throws<PlatformNotSupportedException>(() => client.BeginDisconnect(true, null, null));
             }
         }
     }
