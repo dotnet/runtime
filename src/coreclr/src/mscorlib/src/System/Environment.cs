@@ -576,11 +576,11 @@ namespace System
         ==============================================================================*/
         public static String StackTrace
         {
+            [MethodImpl(MethodImplOptions.NoInlining)] // Prevent inlining from affecting where the stacktrace starts
             get
             {
                 Contract.Ensures(Contract.Result<String>() != null);
-
-                return GetStackTrace(null, true);
+                return global::Internal.Runtime.Augments.EnvironmentAugments.StackTrace;
             }
         }
 
