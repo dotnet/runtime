@@ -425,7 +425,7 @@ namespace System.Reflection.Emit
             }
             else if (clsArgument.IsArray)
             {
-                if (clsArgument.IsSzArray)
+                if (clsArgument.IsSZArray)
                 {
                     AddElementType(CorElementType.SzArray);
 
