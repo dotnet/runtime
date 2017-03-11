@@ -405,9 +405,6 @@ MONO_RT_EXTERNAL_ONLY
 MONO_API MonoType      *mono_metadata_parse_param       (MonoImage      *m,
 						const char      *ptr,
 						const char      **rptr);
-MONO_API MonoType      *mono_metadata_parse_ret_type    (MonoImage      *m,
-						const char      *ptr,
-						const char      **rptr);
 MONO_RT_EXTERNAL_ONLY
 MONO_API MonoType      *mono_metadata_parse_field_type  (MonoImage      *m,
 		                                short            field_flags,
@@ -423,8 +420,6 @@ MONO_API int            mono_type_stack_size            (MonoType        *type,
 
 MONO_API mono_bool       mono_type_generic_inst_is_valuetype      (MonoType *type);
 MONO_API mono_bool       mono_metadata_generic_class_is_valuetype (MonoGenericClass *gclass);
-MONO_API unsigned int          mono_metadata_generic_class_hash  (MonoGenericClass *gclass);
-MONO_API mono_bool       mono_metadata_generic_class_equal (MonoGenericClass *g1, MonoGenericClass *g2);
 
 MONO_API unsigned int          mono_metadata_type_hash         (MonoType *t1);
 MONO_API mono_bool       mono_metadata_type_equal        (MonoType *t1, MonoType *t2);
