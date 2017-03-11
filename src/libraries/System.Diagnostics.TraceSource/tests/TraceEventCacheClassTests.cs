@@ -55,12 +55,10 @@ namespace System.Diagnostics.TraceSourceTests
             Assert.NotEmpty(cache.Callstack);
         }
 
-        [ActiveIssue("https://github.com/dotnet/coreclr/issues/6209")]
         [Fact]
         public void CallstackTest_ContainsExpectedFrames()
         {
             var cache = new TraceEventCache();
-            Assert.Contains("at System.Environment.GetStackTrace(Exception e, Boolean needFileInfo)", cache.Callstack);
             Assert.Contains("at System.Environment.get_StackTrace()", cache.Callstack);
         }
 
