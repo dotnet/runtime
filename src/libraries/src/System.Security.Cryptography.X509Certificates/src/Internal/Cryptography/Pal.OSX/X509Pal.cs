@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Apple;
 using System.Security.Cryptography.X509Certificates;
@@ -33,6 +32,8 @@ namespace Internal.Cryptography.Pal
                     {
                         case Oids.RsaRsa:
                             return new RSAImplementation.RSASecurityTransforms(key);
+                        case Oids.DsaDsa:
+                            return new DSAImplementation.DSASecurityTransforms(key);
                         case Oids.Ecc:
                             return new ECDsaImplementation.ECDsaSecurityTransforms(key);
                     }
@@ -44,9 +45,9 @@ namespace Internal.Cryptography.Pal
                     switch (oid.Value)
                     {
                         case Oids.RsaRsa:
-                        {
                             return DecodeRsaPublicKey(encodedKeyValue);
-                        }
+                        case Oids.DsaDsa:
+                            return DecodeDsaPublicKey(encodedKeyValue, encodedParameters);
                     }
                 }
 
@@ -68,6 +69,26 @@ namespace Internal.Cryptography.Pal
                 catch (Exception)
                 {
                     rsa.Dispose();
+                    throw;
+                }
+            }
+
+            private static AsymmetricAlgorithm DecodeDsaPublicKey(byte[] encodedKeyValue, byte[] encodedParameters)
+            {
+                DSAParameters dsaParameters = new DSAParameters();
+                DerSequenceReader parameterReader = new DerSequenceReader(encodedParameters);
+
+                parameterReader.ReadSubjectPublicKeyInfo(encodedKeyValue, ref dsaParameters);
+
+                DSA dsa = DSA.Create();
+                try
+                {
+                    dsa.ImportParameters(dsaParameters);
+                    return dsa;
+                }
+                catch (Exception)
+                {
+                    dsa.Dispose();
                     throw;
                 }
             }
