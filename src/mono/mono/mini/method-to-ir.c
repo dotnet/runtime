@@ -5242,8 +5242,7 @@ static MonoInst*
 mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
 	MonoInst *ins = NULL;
-
-	 MonoClass *runtime_helpers_class = mono_class_get_runtime_helpers_class ();
+	MonoClass *runtime_helpers_class = mono_class_get_runtime_helpers_class ();
 
 	if (cmethod->klass == mono_defaults.string_class) {
 		if (strcmp (cmethod->name, "get_Chars") == 0 && fsig->param_count + fsig->hasthis == 2) {
@@ -5389,6 +5388,37 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	} else if (cmethod->klass == runtime_helpers_class) {
 		if (strcmp (cmethod->name, "get_OffsetToStringData") == 0 && fsig->param_count == 0) {
 			EMIT_NEW_ICONST (cfg, ins, MONO_STRUCT_OFFSET (MonoString, chars));
+			return ins;
+		} else if (strcmp (cmethod->name, "IsReferenceOrContainsReferences") == 0 && fsig->param_count == 0) {
+			MonoGenericContext *ctx = mono_method_get_context (cmethod);
+			g_assert (ctx);
+			g_assert (ctx->method_inst);
+			g_assert (ctx->method_inst->type_argc == 1);
+			MonoType *t = mini_get_underlying_type (ctx->method_inst->type_argv [0]);
+			MonoClass *klass = mono_class_from_mono_type (t);
+
+			ins = NULL;
+
+			mono_class_init (klass);
+			if (MONO_TYPE_IS_REFERENCE (t))
+				EMIT_NEW_ICONST (cfg, ins, 1);
+			else if (MONO_TYPE_IS_PRIMITIVE (t))
+				EMIT_NEW_ICONST (cfg, ins, 0);
+			else if (cfg->gshared && (t->type == MONO_TYPE_VAR || t->type == MONO_TYPE_MVAR) && !mini_type_var_is_vt (t))
+				EMIT_NEW_ICONST (cfg, ins, 1);
+			else if (!cfg->gshared || !mini_class_check_context_used (cfg, klass))
+				EMIT_NEW_ICONST (cfg, ins, klass->has_references ? 1 : 0);
+			else {
+				g_assert (cfg->gshared);
+
+				int context_used = mini_class_check_context_used (cfg, klass);
+
+				/* This returns 1 or 2 */
+				MonoInst *info = mini_emit_get_rgctx_klass (cfg, context_used, klass, 	MONO_RGCTX_INFO_CLASS_IS_REF_OR_CONTAINS_REFS);
+				int dreg = alloc_ireg (cfg);
+				EMIT_NEW_BIALU_IMM (cfg, ins, OP_ISUB_IMM, dreg, info->dreg, 1);
+			}
+
 			return ins;
 		} else
 			return NULL;

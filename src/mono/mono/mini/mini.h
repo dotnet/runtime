@@ -1277,6 +1277,8 @@ typedef enum {
 	 * which implements the method.
 	 */
 	MONO_RGCTX_INFO_VIRT_METHOD_BOX_TYPE,
+	/* Resolve to 2 (TRUE) or 1 (FALSE) */
+	MONO_RGCTX_INFO_CLASS_IS_REF_OR_CONTAINS_REFS
 } MonoRgctxInfoType;
 
 typedef struct _MonoRuntimeGenericContextInfoTemplate {

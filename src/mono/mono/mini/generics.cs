@@ -1308,6 +1308,68 @@ class Tests
 		c.throw_catch_t ();
 		return 0;
 	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	public static bool is_ref_or_contains_refs<T> () {
+		return RuntimeHelpers.IsReferenceOrContainsReferences<T> ();
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	public static bool is_ref_or_contains_refs_gen_ref<T> () {
+		return RuntimeHelpers.IsReferenceOrContainsReferences<GenStruct<T>> ();
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	public static bool is_ref_or_contains_refs_gen_noref<T> () {
+		return RuntimeHelpers.IsReferenceOrContainsReferences<NoRefGenStruct<T>> ();
+	}
+
+	struct GenStruct<T> {
+		T t;
+	}
+
+	struct NoRefGenStruct<T> {
+	}
+
+	struct RefStruct {
+		string s;
+	}
+
+	struct NestedRefStruct {
+		RefStruct r;
+	}
+
+	struct NoRefStruct {
+		int i;
+	}
+
+	public static int test_0_isreference_intrins () {
+		if (RuntimeHelpers.IsReferenceOrContainsReferences<int> ())
+			return 1;
+		if (!RuntimeHelpers.IsReferenceOrContainsReferences<string> ())
+			return 2;
+		if (!RuntimeHelpers.IsReferenceOrContainsReferences<RefStruct> ())
+			return 3;
+		if (!RuntimeHelpers.IsReferenceOrContainsReferences<NestedRefStruct> ())
+			return 4;
+		if (RuntimeHelpers.IsReferenceOrContainsReferences<NoRefStruct> ())
+			return 5;
+		// Generic code
+		if (is_ref_or_contains_refs<int> ())
+			return 6;
+		// Shared code
+		if (!is_ref_or_contains_refs<string> ())
+			return 7;
+		// Complex type from shared code
+		if (!is_ref_or_contains_refs_gen_ref<string> ())
+			return 8;
+		if (is_ref_or_contains_refs_gen_ref<int> ())
+			return 9;
+		if (is_ref_or_contains_refs_gen_noref<string> ())
+			return 10;
+
+		return 0;
+	}
 }
 
 #if !__MOBILE__
