@@ -802,8 +802,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             {
             }
 
-            /// I borrowed Vance's reader writer lock implementation from his blog as ReaderWriterLockSlim is
-            /// available in System.Core.dll!
+            /// Discussed @ https://blogs.msdn.microsoft.com/vancem/2006/03/29/analysis-of-reader-writer-lock/
             ///
             /// <summary>
             /// A reader-writer lock implementation that is intended to be simple, yet very
