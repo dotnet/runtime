@@ -933,7 +933,6 @@ namespace System.Net.Sockets
             for (int i = 0; i < bufferCount; i++)
             {
                 ArraySegment<byte> localCopy = _bufferListInternal[i];
-                RangeValidationHelpers.ValidateSegment(localCopy);
                 _wsaBufferArray[i].Pointer = Marshal.UnsafeAddrOfPinnedArrayElement(localCopy.Array, localCopy.Offset);
                 _wsaBufferArray[i].Length = localCopy.Count;
             }

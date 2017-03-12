@@ -165,7 +165,7 @@ namespace System.Net.Sockets
                 for (int i = 0; i < maxBuffers; i++, startOffset = 0)
                 {
                     ArraySegment<byte> buffer = buffers[startIndex + i];
-                    Debug.Assert(buffer.Offset + startOffset < buffer.Array.Length, $"Unexpected values: Offset={buffer.Offset}, startOffset={startOffset}, Length={buffer.Array.Length}");
+                    RangeValidationHelpers.ValidateSegment(buffer);
 
                     handles[i] = GCHandle.Alloc(buffer.Array, GCHandleType.Pinned);
                     iovecs[i].Base = &((byte*)handles[i].AddrOfPinnedObject())[buffer.Offset + startOffset];
@@ -275,6 +275,8 @@ namespace System.Net.Sockets
                 for (int i = 0; i < maxBuffers; i++)
                 {
                     ArraySegment<byte> buffer = buffers[i];
+                    RangeValidationHelpers.ValidateSegment(buffer);
+
                     handles[i] = GCHandle.Alloc(buffer.Array, GCHandleType.Pinned);
                     iovecs[i].Base = &((byte*)handles[i].AddrOfPinnedObject())[buffer.Offset];
 
@@ -285,6 +287,12 @@ namespace System.Net.Sockets
                         iovecs[i].Count = (UIntPtr)(space - (toReceive - available));
                         toReceive = available;
                         iovCount = i + 1;
+                        for (int j = i + 1; j < maxBuffers; j++)
+                        {
+                            // We're not going to use these extra buffers, but validate their args
+                            // to alert the dev to a mistake and to be consistent with Windows.
+                            RangeValidationHelpers.ValidateSegment(buffers[j]);
+                        }
                         break;
                     }
 
@@ -390,6 +398,8 @@ namespace System.Net.Sockets
                 for (int i = 0; i < buffersCount; i++)
                 {
                     ArraySegment<byte> buffer = buffers[i];
+                    RangeValidationHelpers.ValidateSegment(buffer);
+
                     handles[i] = GCHandle.Alloc(buffer.Array, GCHandleType.Pinned);
                     iovecs[i].Base = &((byte*)handles[i].AddrOfPinnedObject())[buffer.Offset];
                     iovecs[i].Count = (UIntPtr)buffer.Count;
