@@ -14,6 +14,8 @@ The attached notices are provided for information only.
 License notice for RFC 3492
 ---------------------------
 
+The punycode implementation is based on the sample code in RFC 3492
+        
 Copyright (C) The Internet Society (2003).  All Rights Reserved.
 
 This document and translations of it may be copied and furnished to
@@ -40,16 +42,72 @@ BUT NOT LIMITED TO ANY WARRANTY THAT THE USE OF THE INFORMATION
 HEREIN WILL NOT INFRINGE ANY RIGHTS OR ANY IMPLIED WARRANTIES OF
 MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
 
+License notice for Algorithm from Internet Draft document "UUIDs and GUIDs"
+---------------------------------------------------------------------------
+
+Copyright (c) 1990- 1993, 1996 Open Software Foundation, Inc.
+Copyright (c) 1989 by Hewlett-Packard Company, Palo Alto, Ca. &
+Digital Equipment Corporation, Maynard, Mass.
+To anyone who acknowledges that this file is provided "AS IS"
+without any express or implied warranty: permission to use, copy,
+modify, and distribute this file for any purpose is hereby
+granted without fee, provided that the above copyright notices and
+this notice appears in all source code copies, and that none of
+the names of Open Software Foundation, Inc., Hewlett-Packard
+Company, or Digital Equipment Corporation be used in advertising
+or publicity pertaining to distribution of the software without
+specific, written prior permission.  Neither Open Software
+Foundation, Inc., Hewlett-Packard Company, Microsoft, nor Digital Equipment
+Corporation makes any representations about the suitability of
+this software for any purpose.
+
+Copyright(C) The Internet Society 1997. All Rights Reserved.
+
+This document and translations of it may be copied and furnished to others,
+and derivative works that comment on or otherwise explain it or assist in
+its implementation may be prepared, copied, published and distributed, in
+whole or in part, without restriction of any kind, provided that the above
+copyright notice and this paragraph are included on all such copies and
+derivative works.However, this document itself may not be modified in any
+way, such as by removing the copyright notice or references to the Internet
+Society or other Internet organizations, except as needed for the purpose of
+developing Internet standards in which case the procedures for copyrights
+defined in the Internet Standards process must be followed, or as required
+to translate it into languages other than English.
+
+The limited permissions granted above are perpetual and will not be revoked
+by the Internet Society or its successors or assigns.
+
+This document and the information contained herein is provided on an "AS IS"
+basis and THE INTERNET SOCIETY AND THE INTERNET ENGINEERING TASK FORCE
+DISCLAIMS ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+ANY WARRANTY THAT THE USE OF THE INFORMATION HEREIN WILL NOT INFRINGE ANY
+RIGHTS OR ANY IMPLIED WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A
+PARTICULAR PURPOSE.
+
+License notice for Algorithm from RFC 4122 - 
+A Universally Unique IDentifier (UUID) URN Namespace
+----------------------------------------------------
+
+Copyright (c) 1990- 1993, 1996 Open Software Foundation, Inc.
+Copyright (c) 1989 by Hewlett-Packard Company, Palo Alto, Ca. &
+Digital Equipment Corporation, Maynard, Mass.
+Copyright (c) 1998 Microsoft.
+To anyone who acknowledges that this file is provided "AS IS"
+without any express or implied warranty: permission to use, copy,
+modify, and distribute this file for any purpose is hereby
+granted without fee, provided that the above copyright notices and
+this notice appears in all source code copies, and that none of
+the names of Open Software Foundation, Inc., Hewlett-Packard
+Company, Microsoft, or Digital Equipment Corporation be used in
+advertising or publicity pertaining to distribution of the software
+without specific, written prior permission. Neither Open Software
+Foundation, Inc., Hewlett-Packard Company, Microsoft, nor Digital
+Equipment Corporation makes any representations about the
+suitability of this software for any purpose."
+
 License notice for The LLVM Compiler Infrastructure
 ---------------------------------------------------
-==============================================================================
-LLVM Release License
-==============================================================================
-University of Illinois/NCSA
-Open Source License
-
-Copyright (c) 2003-2015 University of Illinois at Urbana-Champaign.
-All rights reserved.
 
 Developed by:
 
@@ -100,4 +158,17 @@ descriptions are © 1997-2005 Sean Eron Anderson. The code and descriptions are
 distributed in the hope that they will be useful, but WITHOUT ANY WARRANTY and
 without even the implied warranty of merchantability or fitness for a particular
 purpose. 
+
+License notice for Bob Jenkins
+------------------------------
+
+By Bob Jenkins, 1996.  bob_jenkins@burtleburtle.net.  You may use this
+code any way you wish, private, educational, or commercial.  It's free.
+
+License notice for Greg Parker
+------------------------------
+
+Greg Parker     gparker@cs.stanford.edu     December 2000
+This code is in the public domain and may be copied or modified without 
+permission. 
 
