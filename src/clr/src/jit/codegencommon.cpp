@@ -1663,14 +1663,14 @@ void CodeGen::genAdjustStackLevel(BasicBlock* block)
     {
         noway_assert(block->bbFlags & BBF_JMP_TARGET);
 
-        genStackLevel = compiler->fgThrowHlpBlkStkLevel(block) * sizeof(int);
+        SetStackLevel(compiler->fgThrowHlpBlkStkLevel(block) * sizeof(int));
 
         if (genStackLevel != 0)
         {
 #ifdef _TARGET_X86_
             getEmitter()->emitMarkStackLvl(genStackLevel);
             inst_RV_IV(INS_add, REG_SPBASE, genStackLevel, EA_PTRSIZE);
-            genStackLevel = 0;
+            SetStackLevel(0);
 #else  // _TARGET_X86_
             NYI("Need emitMarkStackLvl()");
 #endif // _TARGET_X86_
@@ -3927,12 +3927,12 @@ void CodeGen::genGCWriteBarrier(GenTreePtr tgt, GCInfo::WriteBarrierForm wbf)
         }
 #endif // DEBUG
 #endif // 0
-        genStackLevel += 4;
+        AddStackLevel(4);
         inst_IV(INS_push, wbKind);
         genEmitHelperCall(helper,
                           4,           // argSize
                           EA_PTRSIZE); // retSize
-        genStackLevel -= 4;
+        SubtractStackLevel(4);
     }
     else
     {
@@ -7567,7 +7567,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
 
     /* Restore the stack level */
 
-    genStackLevel = saveStackLvl2;
+    SetStackLevel(saveStackLvl2);
 
 #else  // target
     NYI("Emit Profiler Enter callback");
@@ -7796,7 +7796,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper /*= CORINFO_HELP_PROF_FC
 #endif // target
 
     /* Restore the stack level */
-    genStackLevel = saveStackLvl2;
+    SetStackLevel(saveStackLvl2);
 }
 
 #endif // PROFILING_SUPPORTED
@@ -11148,7 +11148,7 @@ unsigned CodeGen::getFirstArgWithStackSlot()
 //
 void CodeGen::genSinglePush()
 {
-    genStackLevel += sizeof(void*);
+    AddStackLevel(REGSIZE_BYTES);
 }
 
 //------------------------------------------------------------------------
@@ -11156,7 +11156,7 @@ void CodeGen::genSinglePush()
 //
 void CodeGen::genSinglePop()
 {
-    genStackLevel -= sizeof(void*);
+    SubtractStackLevel(REGSIZE_BYTES);
 }
 
 //------------------------------------------------------------------------
