@@ -55,5 +55,28 @@ namespace System.Collections.Tests
             Assert.Equal(default(TValue), dictionary.GetValueOrDefault(key));
             Assert.Equal(defaultValue, dictionary.GetValueOrDefault(key, defaultValue));
         }
+
+        [Theory]
+        [MemberData(nameof(ValidCollectionSizes))]
+        public void Dictionary_Generic_TryAdd(int count)
+        {
+            var dictionary = (Dictionary<TKey, TValue>)GenericIDictionaryFactory(count);
+
+            TKey key = CreateTKey(seed: count);
+            TValue value = CreateTValue(seed: count);
+            dictionary.Remove(key);
+            int originalCount = dictionary.Count;
+
+            Assert.True(dictionary.TryAdd(key, value));
+            Assert.Equal(originalCount + 1, dictionary.Count);
+            Assert.Equal(dictionary[key], value);
+
+            // After adding the key, make sure that trying to add it again fails.
+            originalCount = dictionary.Count;
+
+            Assert.False(dictionary.TryAdd(key, default(TValue)));
+            Assert.Equal(originalCount, dictionary.Count);
+            Assert.Equal(dictionary[key], value);
+        }
     }
 }
