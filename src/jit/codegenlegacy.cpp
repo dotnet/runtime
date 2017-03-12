@@ -5226,7 +5226,7 @@ void CodeGen::genCodeForTreeLeaf_GT_JMP(GenTreePtr tree)
 #endif //_TARGET_X86_
 
         /* Restore the stack level */
-        genStackLevel = saveStackLvl2;
+        SetStackLevel(saveStackLvl2);
     }
 #endif // PROFILING_SUPPORTED
 
@@ -12744,7 +12744,7 @@ void CodeGen::genCodeForBBlist()
 
         /* Both stacks are always empty on entry to a basic block */
 
-        genStackLevel = 0;
+        SetStackLevel(0);
 #if FEATURE_STACK_FP_X87
         genResetFPstkLevel();
 #endif // FEATURE_STACK_FP_X87
@@ -12950,7 +12950,7 @@ void CodeGen::genCodeForBBlist()
             }
         }
 
-        genStackLevel -= savedStkLvl;
+        SubtractStackLevel(savedStkLvl);
 
         gcInfo.gcMarkRegSetNpt(gcrefRegs | byrefRegs);
 
@@ -16347,7 +16347,7 @@ size_t CodeGen::genPushArgList(GenTreePtr call)
                         }
 
                         inst_RV_IV(INS_sub, REG_SPBASE, stkDisp, EA_PTRSIZE);
-                        genStackLevel += stkDisp;
+                        AddStackLevel(stkDisp);
 
                         while (curDisp < stkDisp)
                         {
@@ -18571,7 +18571,7 @@ regMaskTP CodeGen::genCodeForCall(GenTreePtr call, bool valUsed)
 #endif //_TARGET_X86_
 
         /* Restore the stack level */
-        genStackLevel = saveStackLvl2;
+        SetStackLevel(saveStackLvl2);
     }
 
 #endif // PROFILING_SUPPORTED
@@ -19669,7 +19669,7 @@ regMaskTP CodeGen::genCodeForCall(GenTreePtr call, bool valUsed)
 
     /* The function will pop all arguments before returning */
 
-    genStackLevel = saveStackLvl;
+    SetStackLevel(saveStackLvl);
 
     /* No trashed registers may possibly hold a pointer at this point */
     CLANG_FORMAT_COMMENT_ANCHOR;

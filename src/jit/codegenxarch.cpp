@@ -5196,7 +5196,7 @@ void CodeGen::genCallInstruction(GenTreePtr node)
 
 #if defined(_TARGET_X86_)
     // The call will pop its arguments.
-    genStackLevel -= stackArgBytes;
+    SubtractStackLevel(stackArgBytes);
 #endif // defined(_TARGET_X86_)
 
     // Update GC info:
@@ -7535,7 +7535,7 @@ bool CodeGen::genAdjustStackForPutArgStk(GenTreePutArgStk* putArgStk)
     {
         const unsigned argSize = genTypeSize(putArgStk);
         inst_RV_IV(INS_sub, REG_SPBASE, argSize, EA_PTRSIZE);
-        genStackLevel += argSize;
+        AddStackLevel(argSize);
         m_pushStkArg = false;
         return true;
     }
@@ -7579,7 +7579,7 @@ bool CodeGen::genAdjustStackForPutArgStk(GenTreePutArgStk* putArgStk)
     {
         m_pushStkArg = false;
         inst_RV_IV(INS_sub, REG_SPBASE, argSize, EA_PTRSIZE);
-        genStackLevel += argSize;
+        AddStackLevel(argSize);
         return true;
     }
 }
@@ -7667,7 +7667,7 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
             {
                 inst_IV(INS_push, 0);
                 currentOffset -= pushSize;
-                genStackLevel += pushSize;
+                AddStackLevel(pushSize);
                 adjustment -= pushSize;
             }
             m_pushStkArg = true;
@@ -7689,7 +7689,7 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
                 // Adjust the stack pointer to the next slot boundary.
                 inst_RV_IV(INS_sub, REG_SPBASE, adjustment, EA_PTRSIZE);
                 currentOffset -= adjustment;
-                genStackLevel += adjustment;
+                AddStackLevel(adjustment);
             }
 
             // Does it need to be in a byte register?
@@ -7742,7 +7742,7 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
                     }
                 }
                 currentOffset -= TARGET_POINTER_SIZE;
-                genStackLevel += TARGET_POINTER_SIZE;
+                AddStackLevel(TARGET_POINTER_SIZE);
             }
             else
             {
@@ -7788,7 +7788,7 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
     {
         // We don't expect padding at the beginning of a struct, but it could happen with explicit layout.
         inst_RV_IV(INS_sub, REG_SPBASE, currentOffset, EA_PTRSIZE);
-        genStackLevel += currentOffset;
+        AddStackLevel(currentOffset);
     }
 }
 #endif // _TARGET_X86_
@@ -7848,7 +7848,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* putArgStk)
         {
             inst_IV(INS_push, data->gtIntCon.gtIconVal);
         }
-        genStackLevel += argSize;
+        AddStackLevel(argSize);
     }
     else if (data->OperGet() == GT_FIELD_LIST)
     {
@@ -7947,7 +7947,7 @@ void CodeGen::genPushReg(var_types type, regNumber srcReg)
         inst_RV_IV(INS_sub, REG_SPBASE, size, EA_PTRSIZE);
         getEmitter()->emitIns_AR_R(ins, attr, srcReg, REG_SPBASE, 0);
     }
-    genStackLevel += size;
+    AddStackLevel(size);
 }
 #endif // _TARGET_X86_
 
@@ -8145,7 +8145,7 @@ void CodeGen::genPutStructArgStk(GenTreePutArgStk* putArgStk)
             {
                 getEmitter()->emitIns_S(INS_push, slotAttr, srcLclNum, srcLclOffset + offset);
             }
-            genStackLevel += TARGET_POINTER_SIZE;
+            AddStackLevel(TARGET_POINTER_SIZE);
         }
 #else // !defined(_TARGET_X86_)
 
