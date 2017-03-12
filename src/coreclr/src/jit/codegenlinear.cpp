@@ -296,7 +296,7 @@ void CodeGen::genCodeForBBlist()
 
         /* Both stacks are always empty on entry to a basic block */
 
-        genStackLevel = 0;
+        SetStackLevel(0);
         genAdjustStackLevel(block);
         savedStkLvl = genStackLevel;
 
@@ -490,7 +490,7 @@ void CodeGen::genCodeForBBlist()
             }
         }
 
-        genStackLevel -= savedStkLvl;
+        SubtractStackLevel(savedStkLvl);
 
 #ifdef DEBUG
         // compCurLife should be equal to the liveOut set, except that we don't keep
