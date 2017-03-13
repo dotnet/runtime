@@ -63,8 +63,8 @@
     <!-- Properties used for submission by CloudTest.Helix.Targets-->
     <BuildMoniker>$(CurrentDate)</BuildMoniker>
     <BuildMoniker Condition="'$(IsOfficial)'=='true'">$(OfficialBuildId)</BuildMoniker>
-    <!-- TODO:  This requires some specific understanding of Helix, we should try to generalize this into properties.  -->
-    <HelixJobProperties>{ &quot;architecture&quot; : &quot;$(ArchGroup)&quot;, &quot;configuration&quot;: &quot;$(ConfigurationGroup)&quot;, &quot;operatingSystem&quot; : &quot;$(TargetOS)&quot; }</HelixJobProperties>
+    <HelixArchLabel>$(ArchGroup)</HelixArchLabel>
+    <HelixConfigLabel>$(ConfigurationGroup)</HelixConfigLabel>
   </PropertyGroup>
 
   <Target Name="CoreFXPreCloudBuild" >
