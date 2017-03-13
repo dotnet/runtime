@@ -140,13 +140,6 @@ public class TestRunner
 					}
 					inputFile = args [i + 1];
 					i += 2;
-				} else if (args [i] == "--runtime") {
-					if (i + 1 >= args.Length) {
-						Console.WriteLine ("Missing argument to --runtime command line option.");
-						return 1;
-					}
-					runtime = args [i + 1];
-					i += 2;
 				} else if (args [i] == "--mono-path") {
 					if (i + 1 >= args.Length) {
 						Console.WriteLine ("Missing argument to --mono-path command line option.");
