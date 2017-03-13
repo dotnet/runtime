@@ -1012,7 +1012,7 @@ namespace System
                             }
                         }
 
-                        if (ReflectedType.IsSzArray)
+                        if (ReflectedType.IsSZArray)
                         {
                             RuntimeType arrayType = (RuntimeType)ReflectedType.GetElementType();
 
@@ -2750,7 +2750,7 @@ namespace System
 
             // SZArrays implement the methods on IList`1, IEnumerable`1, and ICollection`1 with
             // SZArrayHelper and some runtime magic. We don't have accurate interface maps for them.
-            if (IsSzArray && ifaceType.IsGenericType)
+            if (IsSZArray && ifaceType.IsGenericType)
                 throw new ArgumentException(Environment.GetResourceString("Argument_ArrayGetInterfaceMap"));
 
             int ifaceInstanceMethodCount = RuntimeTypeHandle.GetNumVirtuals(ifaceRtType);
@@ -3542,11 +3542,11 @@ namespace System
         #endregion
 
         #region Arrays
-        internal override bool IsSzArray
+        public sealed override bool IsSZArray
         {
             get
             {
-                return RuntimeTypeHandle.IsSzArray(this);
+                return RuntimeTypeHandle.IsSZArray(this);
             }
         }
 

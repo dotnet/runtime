@@ -1109,6 +1109,8 @@ namespace System.Reflection.Emit
             return m_iAttr;
         }
 
+        public override bool IsSZArray => false;
+
         protected override bool IsArrayImpl()
         {
             return false;
