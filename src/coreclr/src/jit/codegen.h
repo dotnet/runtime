@@ -162,6 +162,36 @@ private:
     //
     unsigned genStackLevel;
 
+    void SubtractStackLevel(unsigned adjustment)
+    {
+        assert(genStackLevel >= adjustment);
+        unsigned newStackLevel = genStackLevel - adjustment;
+        if (genStackLevel != newStackLevel)
+        {
+            JITDUMP("Adjusting stack level from %d to %d\n", genStackLevel, newStackLevel);
+        }
+        genStackLevel = newStackLevel;
+    }
+
+    void AddStackLevel(unsigned adjustment)
+    {
+        unsigned newStackLevel = genStackLevel + adjustment;
+        if (genStackLevel != newStackLevel)
+        {
+            JITDUMP("Adjusting stack level from %d to %d\n", genStackLevel, newStackLevel);
+        }
+        genStackLevel = newStackLevel;
+    }
+
+    void SetStackLevel(unsigned newStackLevel)
+    {
+        if (genStackLevel != newStackLevel)
+        {
+            JITDUMP("Setting stack level from %d to %d\n", genStackLevel, newStackLevel);
+        }
+        genStackLevel = newStackLevel;
+    }
+
 #if STACK_PROBES
     // Stack Probes
     bool genNeedPrologStackProbe;
