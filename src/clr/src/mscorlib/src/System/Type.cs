@@ -1182,10 +1182,10 @@ namespace System
             get { return IsArrayImpl(); }
         }
 
-        internal virtual bool IsSzArray
+        public virtual bool IsSZArray
         {
             [Pure]
-            get { return false; }
+            get { throw new NotImplementedException(); }
         }
 
         public virtual bool IsGenericType

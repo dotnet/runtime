@@ -242,6 +242,8 @@ namespace System.Reflection.Emit
             return m_typeBuilder.Attributes;
         }
 
+        public override bool IsSZArray => false;
+
         protected override bool IsArrayImpl()
         {
             return false;
