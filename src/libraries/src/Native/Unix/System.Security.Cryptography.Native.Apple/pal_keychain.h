@@ -91,6 +91,20 @@ extern "C" int32_t AppleCryptoNative_SecKeychainEnumerateIdentities(SecKeychainR
                                                                     int32_t* pOSStatus);
 
 /*
+Add a certificate from the specified keychain.
+
+Returns
+0 on failure -> see OSStatus
+1 on success
+any other value is invalid
+
+Output:
+pOSStatus: Receives the last OSStatus value..
+*/
+extern "C" int32_t
+AppleCryptoNative_X509StoreAddCertificate(CFTypeRef certOrIdentity, SecKeychainRef keychain, int32_t* pOSStatus);
+
+/*
 Remove a certificate from the specified keychain.
 
 Returns
