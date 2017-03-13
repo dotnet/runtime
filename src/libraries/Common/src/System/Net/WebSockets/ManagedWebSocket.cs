@@ -5,6 +5,7 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.IO;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -1202,21 +1203,68 @@ namespace System.Net.WebSockets
         /// <returns>The next index into the mask to be used for future applications of the mask.</returns>
         private static unsafe int ApplyMask(byte[] toMask, int toMaskOffset, int mask, int maskIndex, long count)
         {
-            Debug.Assert(toMaskOffset <= toMask.Length - count, $"Unexpected inputs: {toMaskOffset}, {toMask.Length}, {count}");
-            Debug.Assert(maskIndex < sizeof(int), $"Unexpected {nameof(maskIndex)}: {maskIndex}");
+            int maskShift = maskIndex * 8;
+            int shiftedMask = (int)(((uint)mask >> maskShift) | ((uint)mask << (32 - maskShift)));
 
-            byte* maskPtr = (byte*)&mask;
-            fixed (byte* toMaskPtr = toMask)
+            // Try to use SIMD.  We can if the number of bytes we're trying to mask is at least as much
+            // as the width of a vector and if the width is an even multiple of the mask.
+            if (Vector.IsHardwareAccelerated &&
+                Vector<byte>.Count % sizeof(int) == 0 &&
+                count >= Vector<byte>.Count)
             {
-                byte* p = toMaskPtr + toMaskOffset;
-                byte* end = p + count;
-                while (p < end)
+                // Mask bytes a vector at a time.
+                Vector<byte> maskVector = Vector.AsVectorByte(new Vector<int>(shiftedMask));
+                while (count >= Vector<byte>.Count)
                 {
-                    *p++ ^= maskPtr[maskIndex];
-                    maskIndex = (maskIndex + 1) & 3; // & 3 == faster % MaskLength
+                    count -= Vector<byte>.Count;
+                    (maskVector ^ new Vector<byte>(toMask, toMaskOffset)).CopyTo(toMask, toMaskOffset);
+                    toMaskOffset += Vector<byte>.Count;
                 }
-                return maskIndex;
+
+                // Fall through to processing any remaining bytes that were less than a vector width.
+                // Since we processed full masks at a time, we don't need to update maskIndex, and
+                // toMaskOffset has already been updated to point to the correct location.
             }
+
+            // If there are any bytes remaining (either we couldn't use vectors, or the count wasn't
+            // an even multiple of the vector width), process them without vectors.
+            if (count > 0)
+            {
+                fixed (byte* toMaskPtr = toMask)
+                {
+                    // Get the location in the target array to continue processing.
+                    byte* p = toMaskPtr + toMaskOffset;
+
+                    // Try to go an int at a time if the remaining data is 4-byte aligned and there's enough remaining.
+                    if (((long)p % sizeof(int)) == 0)
+                    {
+                        while (count >= sizeof(int))
+                        {
+                            count -= sizeof(int);
+                            *((int*)p) ^= shiftedMask;
+                            p += sizeof(int);
+                        }
+
+                        // We don't need to update the maskIndex, as its mod-4 value won't have changed.
+                        // `p` points to the remainder.
+                    }
+
+                    // Process any remaining data a byte at a time.
+                    if (count > 0)
+                    {
+                        byte* maskPtr = (byte*)&mask;
+                        byte* end = p + count;
+                        while (p < end)
+                        {
+                            *p++ ^= maskPtr[maskIndex];
+                            maskIndex = (maskIndex + 1) & 3;
+                        }
+                    }
+                }
+            }
+
+            // Return the updated index.
+            return maskIndex;
         }
 
         /// <summary>Aborts the websocket and throws an exception if an existing operation is in progress.</summary>
