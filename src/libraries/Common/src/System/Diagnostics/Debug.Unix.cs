@@ -11,6 +11,8 @@ namespace System.Diagnostics
     // another version of this partial class with the public visibility 
     static partial class Debug
     {
+        private static string NewLine => "\n"; 
+
         // internal and not readonly so that the tests can swap this out.
         internal static IDebugLogger s_logger = new UnixDebugLogger();
 
