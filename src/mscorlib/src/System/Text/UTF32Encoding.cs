@@ -193,6 +193,8 @@ namespace System.Text
 
             // For fallback we may need a fallback buffer
             EncoderFallbackBuffer fallbackBuffer = null;
+            char* charsForFallback;
+
             if (encoder != null)
             {
                 highSurrogate = encoder.charLeftOver;
@@ -250,7 +252,9 @@ namespace System.Text
                     chars--;
 
                     // Do the fallback
-                    fallbackBuffer.InternalFallback(highSurrogate, ref chars);
+                    charsForFallback = chars;
+                    fallbackBuffer.InternalFallback(highSurrogate, ref charsForFallback);
+                    chars = charsForFallback;
 
                     // We're going to fallback the old high surrogate.
                     highSurrogate = '\0';
@@ -271,7 +275,9 @@ namespace System.Text
                 if (Char.IsLowSurrogate(ch))
                 {
                     // We have a leading low surrogate, do the fallback
-                    fallbackBuffer.InternalFallback(ch, ref chars);
+                    charsForFallback = chars;
+                    fallbackBuffer.InternalFallback(ch, ref charsForFallback);
+                    chars = charsForFallback;
 
                     // Try again with fallback buffer
                     continue;
@@ -285,7 +291,10 @@ namespace System.Text
             if ((encoder == null || encoder.MustFlush) && highSurrogate > 0)
             {
                 // We have to do the fallback for the lonely high surrogate
-                fallbackBuffer.InternalFallback(highSurrogate, ref chars);
+                charsForFallback = chars;
+                fallbackBuffer.InternalFallback(highSurrogate, ref charsForFallback);
+                chars = charsForFallback;
+
                 highSurrogate = (char)0;
                 goto TryAgain;
             }
@@ -321,6 +330,8 @@ namespace System.Text
 
             // For fallback we may need a fallback buffer
             EncoderFallbackBuffer fallbackBuffer = null;
+            char* charsForFallback;
+
             if (encoder != null)
             {
                 highSurrogate = encoder.charLeftOver;
@@ -412,7 +423,9 @@ namespace System.Text
                     chars--;
 
                     // Do the fallback
-                    fallbackBuffer.InternalFallback(highSurrogate, ref chars);
+                    charsForFallback = chars;
+                    fallbackBuffer.InternalFallback(highSurrogate, ref charsForFallback);
+                    chars = charsForFallback;
 
                     // We're going to fallback the old high surrogate.
                     highSurrogate = '\0';
@@ -433,7 +446,9 @@ namespace System.Text
                 if (Char.IsLowSurrogate(ch))
                 {
                     // We have a leading low surrogate, do the fallback
-                    fallbackBuffer.InternalFallback(ch, ref chars);
+                    charsForFallback = chars;
+                    fallbackBuffer.InternalFallback(ch, ref charsForFallback);
+                    chars = charsForFallback;
 
                     // Try again with fallback buffer
                     continue;
@@ -476,7 +491,10 @@ namespace System.Text
             if ((encoder == null || encoder.MustFlush) && highSurrogate > 0)
             {
                 // We have to do the fallback for the lonely high surrogate
-                fallbackBuffer.InternalFallback(highSurrogate, ref chars);
+                charsForFallback = chars;
+                fallbackBuffer.InternalFallback(highSurrogate, ref charsForFallback);
+                chars = charsForFallback;
+
                 highSurrogate = (char)0;
                 goto TryAgain;
             }
@@ -663,6 +681,7 @@ namespace System.Text
 
             // For fallback we may need a fallback buffer
             DecoderFallbackBuffer fallbackBuffer = null;
+            char* charsForFallback;
 
             // See if there's anything in our decoder
             if (decoder != null)
@@ -729,8 +748,13 @@ namespace System.Text
                     }
 
                     // Chars won't be updated unless this works.
-                    if (!fallbackBuffer.InternalFallback(fallbackBytes, bytes, ref chars))
+                    charsForFallback = chars;
+                    bool fallbackResult = fallbackBuffer.InternalFallback(fallbackBytes, bytes, ref charsForFallback);
+                    chars = charsForFallback;
+
+                    if (!fallbackResult)
                     {
+
                         // Couldn't fallback, throw or wait til next time
                         // We either read enough bytes for bytes-=4 to work, or we're
                         // going to throw in ThrowCharsOverflow because chars == charStart
@@ -813,7 +837,11 @@ namespace System.Text
                     }
                 }
 
-                if (!fallbackBuffer.InternalFallback(fallbackBytes, bytes, ref chars))
+                charsForFallback = chars;
+                bool fallbackResult = fallbackBuffer.InternalFallback(fallbackBytes, bytes, ref charsForFallback);
+                chars = charsForFallback;
+
+                if (!fallbackResult)
                 {
                     // Couldn't fallback.
                     fallbackBuffer.InternalReset();

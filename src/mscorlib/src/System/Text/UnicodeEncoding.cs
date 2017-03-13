@@ -204,6 +204,7 @@ namespace System.Text
 
             // For fallback we may need a fallback buffer
             EncoderFallbackBuffer fallbackBuffer = null;
+            char* charsForFallback;
 
             if (encoder != null)
             {
@@ -349,7 +350,9 @@ namespace System.Text
                                 fallbackBuffer.InternalInitialize(charStart, charEnd, encoder, false);
                             }
 
-                            fallbackBuffer.InternalFallback(charLeftOver, ref chars);
+                            charsForFallback = chars; // Avoid passing chars by reference to allow it to be enregistered
+                            fallbackBuffer.InternalFallback(charLeftOver, ref charsForFallback);
+                            chars = charsForFallback;
 
                             // Now no high surrogate left over
                             charLeftOver = (char)0;
@@ -381,7 +384,9 @@ namespace System.Text
                             // Set our internal fallback interesting things.
                             fallbackBuffer.InternalInitialize(charStart, charEnd, encoder, false);
                         }
-                        fallbackBuffer.InternalFallback(ch, ref chars);
+                        charsForFallback = chars; // Avoid passing chars by reference to allow it to be enregistered
+                        fallbackBuffer.InternalFallback(ch, ref charsForFallback);
+                        chars = charsForFallback;
                         continue;
                     }
 
@@ -412,7 +417,9 @@ namespace System.Text
                         // Set our internal fallback interesting things.
                         fallbackBuffer.InternalInitialize(charStart, charEnd, encoder, false);
                     }
-                    fallbackBuffer.InternalFallback(charLeftOver, ref chars);
+                    charsForFallback = chars; // Avoid passing chars by reference to allow it to be enregistered
+                    fallbackBuffer.InternalFallback(charLeftOver, ref charsForFallback);
+                    chars = charsForFallback;
 
                     // Ignore charLeftOver or throw
                     byteCount -= 2;
@@ -452,7 +459,9 @@ namespace System.Text
                             // Set our internal fallback interesting things.
                             fallbackBuffer.InternalInitialize(charStart, charEnd, encoder, false);
                         }
-                        fallbackBuffer.InternalFallback(charLeftOver, ref chars);
+                        charsForFallback = chars; // Avoid passing chars by reference to allow it to be enregistered
+                        fallbackBuffer.InternalFallback(charLeftOver, ref charsForFallback);
+                        chars = charsForFallback;
                         charLeftOver = (char)0;
                         wasHereBefore = true;
                         goto TryAgain;
@@ -489,6 +498,7 @@ namespace System.Text
 
             // For fallback we may need a fallback buffer
             EncoderFallbackBuffer fallbackBuffer = null;
+            char* charsForFallback;
 
             // Get our encoder, but don't clear it yet.
             if (encoder != null)
@@ -695,7 +705,9 @@ namespace System.Text
                                 fallbackBuffer.InternalInitialize(charStart, charEnd, encoder, true);
                             }
 
-                            fallbackBuffer.InternalFallback(charLeftOver, ref chars);
+                            charsForFallback = chars; // Avoid passing chars by reference to allow it to be enregistered
+                            fallbackBuffer.InternalFallback(charLeftOver, ref charsForFallback);
+                            chars = charsForFallback;
 
                             charLeftOver = (char)0;
                             continue;
@@ -722,7 +734,9 @@ namespace System.Text
                             fallbackBuffer.InternalInitialize(charStart, charEnd, encoder, true);
                         }
 
-                        fallbackBuffer.InternalFallback(ch, ref chars);
+                        charsForFallback = chars; // Avoid passing chars by reference to allow it to be enregistered
+                        fallbackBuffer.InternalFallback(ch, ref charsForFallback);
+                        chars = charsForFallback;
                         continue;
                     }
 
@@ -790,7 +804,9 @@ namespace System.Text
                         fallbackBuffer.InternalInitialize(charStart, charEnd, encoder, true);
                     }
 
-                    fallbackBuffer.InternalFallback(charLeftOver, ref chars);
+                    charsForFallback = chars; // Avoid passing chars by reference to allow it to be enregistered
+                    fallbackBuffer.InternalFallback(charLeftOver, ref charsForFallback);
+                    chars = charsForFallback;
 
                     // Ignore charLeftOver or throw
                     charLeftOver = (char)0;
@@ -856,7 +872,9 @@ namespace System.Text
                         }
 
                         // If we're not flushing, this'll remember the left over character.
-                        fallbackBuffer.InternalFallback(charLeftOver, ref chars);
+                        charsForFallback = chars; // Avoid passing chars by reference to allow it to be enregistered
+                        fallbackBuffer.InternalFallback(charLeftOver, ref charsForFallback);
+                        chars = charsForFallback;
 
                         charLeftOver = (char)0;
                         wasHereBefore = true;
@@ -1249,6 +1267,7 @@ namespace System.Text
 
             // For fallback we may need a fallback buffer
             DecoderFallbackBuffer fallbackBuffer = null;
+            char* charsForFallback;
 
             byte* byteEnd = bytes + byteCount;
             char* charEnd = chars + charCount;
@@ -1396,7 +1415,11 @@ namespace System.Text
                                 fallbackBuffer.InternalInitialize(byteStart, charEnd);
                             }
 
-                            if (!fallbackBuffer.InternalFallback(byteBuffer, bytes, ref chars))
+                            charsForFallback = chars; // Avoid passing chars by reference to allow it to be enregistered
+                            bool fallbackResult = fallbackBuffer.InternalFallback(byteBuffer, bytes, ref charsForFallback);
+                            chars = charsForFallback;
+
+                            if (!fallbackResult)
                             {
                                 // couldn't fall back lonely surrogate
                                 // We either advanced bytes or chars should == charStart and throw below
@@ -1444,7 +1467,11 @@ namespace System.Text
                             fallbackBuffer.InternalInitialize(byteStart, charEnd);
                         }
 
-                        if (!fallbackBuffer.InternalFallback(byteBuffer, bytes, ref chars))
+                        charsForFallback = chars; // Avoid passing chars by reference to allow it to be enregistered
+                        bool fallbackResult = fallbackBuffer.InternalFallback(byteBuffer, bytes, ref charsForFallback);
+                        chars = charsForFallback;
+
+                        if (!fallbackResult)
                         {
                             // couldn't fall back lonely surrogate
                             // We either advanced bytes or chars should == charStart and throw below
@@ -1502,7 +1529,11 @@ namespace System.Text
                         fallbackBuffer.InternalInitialize(byteStart, charEnd);
                     }
 
-                    if (!fallbackBuffer.InternalFallback(byteBuffer, bytes, ref chars))
+                    charsForFallback = chars; // Avoid passing chars by reference to allow it to be enregistered
+                    bool fallbackResult = fallbackBuffer.InternalFallback(byteBuffer, bytes, ref charsForFallback);
+                    chars = charsForFallback;
+
+                    if (!fallbackResult)
                     {
                         // couldn't fall back high surrogate, or char that would be next
                         // We either advanced bytes or chars should == charStart and throw below
@@ -1563,7 +1594,11 @@ namespace System.Text
                         fallbackBuffer.InternalInitialize(byteStart, charEnd);
                     }
 
-                    if (!fallbackBuffer.InternalFallback(byteBuffer, bytes, ref chars))
+                    charsForFallback = chars; // Avoid passing chars by reference to allow it to be enregistered
+                    bool fallbackResult = fallbackBuffer.InternalFallback(byteBuffer, bytes, ref charsForFallback);
+                    chars = charsForFallback;
+
+                    if (!fallbackResult)
                     {
                         // 2 bytes couldn't fall back
                         // We either advanced bytes or chars should == charStart and throw below
@@ -1599,7 +1634,11 @@ namespace System.Text
                     }
 
                     // No hanging odd bytes allowed if must flush
-                    if (!fallbackBuffer.InternalFallback(new byte[] { unchecked((byte)lastByte) }, bytes, ref chars))
+                    charsForFallback = chars; // Avoid passing chars by reference to allow it to be enregistered
+                    bool fallbackResult = fallbackBuffer.InternalFallback(new byte[] { unchecked((byte)lastByte) }, bytes, ref charsForFallback);
+                    chars = charsForFallback;
+
+                    if (!fallbackResult)
                     {
                         // odd byte couldn't fall back
                         bytes--;                                        // didn't use this byte

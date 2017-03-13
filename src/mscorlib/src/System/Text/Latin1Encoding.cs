@@ -114,6 +114,7 @@ namespace System.Text
 
             // For fallback we may need a fallback buffer, we know we aren't default fallback.
             EncoderFallbackBuffer fallbackBuffer = null;
+            char* charsForFallback;
 
             // We may have a left over character from last time, try and process it.
             if (charLeftOver > 0)
@@ -127,7 +128,9 @@ namespace System.Text
                 // Since left over char was a surrogate, it'll have to be fallen back.
                 // Get Fallback
                 // This will fallback a pair if *chars is a low surrogate
-                fallbackBuffer.InternalFallback(charLeftOver, ref chars);
+                charsForFallback = chars;
+                fallbackBuffer.InternalFallback(charLeftOver, ref charsForFallback);
+                chars = charsForFallback;
             }
 
             // Now we may have fallback char[] already from the encoder
@@ -160,7 +163,9 @@ namespace System.Text
                     }
 
                     // Get Fallback
-                    fallbackBuffer.InternalFallback(ch, ref chars);
+                    charsForFallback = chars;
+                    fallbackBuffer.InternalFallback(ch, ref charsForFallback);
+                    chars = charsForFallback;
                     continue;
                 }
 
@@ -274,6 +279,7 @@ namespace System.Text
 
             // For fallback we may need a fallback buffer, we know we aren't default fallback, create & init it
             EncoderFallbackBuffer fallbackBuffer = null;
+            char* charsForFallback;
 
             // We may have a left over character from last time, try and process it.
             if (charLeftOver > 0)
@@ -288,7 +294,10 @@ namespace System.Text
                 // Since left over char was a surrogate, it'll have to be fallen back.
                 // Get Fallback
                 // This will fallback a pair if *chars is a low surrogate
-                fallbackBuffer.InternalFallback(charLeftOver, ref chars);
+                charsForFallback = chars;
+                fallbackBuffer.InternalFallback(charLeftOver, ref charsForFallback);
+                chars = charsForFallback;
+
                 if (fallbackBuffer.Remaining > byteEnd - bytes)
                 {
                     // Throw it, if we don't have enough for this we never will
@@ -326,7 +335,9 @@ namespace System.Text
                     }
 
                     // Get Fallback
-                    fallbackBuffer.InternalFallback(ch, ref chars);
+                    charsForFallback = chars;
+                    fallbackBuffer.InternalFallback(ch, ref charsForFallback);
+                    chars = charsForFallback;
 
                     // Make sure we have enough room.  Each fallback char will be 1 output char
                     // (or else cause a recursion exception)
