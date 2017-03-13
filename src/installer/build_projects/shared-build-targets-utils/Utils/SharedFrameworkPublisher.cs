@@ -171,15 +171,19 @@ namespace Microsoft.DotNet.Cli.Build
             }
             if(Directory.Exists(nativePdbPath))
             {
-                pdbFiles.AddRange(Directory.GetFiles(nativePdbPath, "*"));
+                pdbFiles.AddRange(Directory.GetFiles(nativePdbPath));
             }
             if (Directory.Exists(toolsPdbPath))
             {
-                pdbFiles.AddRange(Directory.GetFiles(toolsPdbPath, "*"));
+                pdbFiles.AddRange(Directory.GetFiles(toolsPdbPath));
             }
             foreach (string pdbFile in pdbFiles)
             {
-                File.Copy(pdbFile, Path.Combine(sharedFrameworkNameAndVersionRoot, Path.GetFileName(pdbFile)));
+                string destinationPath = Path.Combine(sharedFrameworkNameAndVersionRoot, Path.GetFileName(pdbFile));
+                if (!File.Exists(destinationPath))
+                {
+                    File.Copy(pdbFile, destinationPath);
+                }
             }
 
             return;
