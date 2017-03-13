@@ -7108,12 +7108,6 @@ fgArgTabEntryPtr Compiler::gtArgEntryByNode(GenTreePtr call, GenTreePtr node)
         {
             return curArgTabEntry;
         }
-#ifdef PROTO_JIT
-        else if (node->OperGet() == GT_RELOAD && node->gtOp.gtOp1 == curArgTabEntry->node)
-        {
-            return curArgTabEntry;
-        }
-#endif // PROTO_JIT
         else if (curArgTabEntry->parent != nullptr)
         {
             assert(curArgTabEntry->parent->OperIsList());
