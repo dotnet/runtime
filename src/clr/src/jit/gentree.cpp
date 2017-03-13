@@ -2531,7 +2531,7 @@ AGAIN:
                 }
             }
 
-            if (tree->gtCall.gtCallLateArgs)
+            if (tree->gtCall.gtControlExpr)
             {
                 if (gtHasRef(tree->gtCall.gtControlExpr, lclNum, defOnly))
                 {
