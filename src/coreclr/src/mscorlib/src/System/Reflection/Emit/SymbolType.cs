@@ -271,16 +271,7 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Type Overrides
-        internal override bool IsSzArray
-        {
-            get
-            {
-                if (m_cRank > 1)
-                    return false;
-
-                return m_isSzArray;
-            }
-        }
+        public override bool IsSZArray => m_cRank <= 1 && m_isSzArray;
 
         public override Type MakePointerType()
         {

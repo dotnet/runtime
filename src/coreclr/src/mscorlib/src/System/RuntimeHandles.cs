@@ -153,7 +153,7 @@ namespace System
             return (corElemType == CorElementType.Array || corElemType == CorElementType.SzArray);
         }
 
-        internal static bool IsSzArray(RuntimeType type)
+        internal static bool IsSZArray(RuntimeType type)
         {
             CorElementType corElemType = GetCorElementType(type);
             return (corElemType == CorElementType.SzArray);

@@ -45,7 +45,7 @@ namespace System
             List<int> elementTypes = new List<int>();
             while (type.HasElementType)
             {
-                if (type.IsSzArray)
+                if (type.IsSZArray)
                 {
                     elementTypes.Add(SzArray);
                 }
