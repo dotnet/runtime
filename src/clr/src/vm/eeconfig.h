@@ -708,12 +708,6 @@ public:
                                                                                     && pSkipGCCoverageList->IsInList(assemblyName));}
 #endif
 
-
-    // thread stress: number of threads to run
-#ifdef STRESS_THREAD
-    DWORD GetStressThreadCount ()           const {LIMITED_METHOD_CONTRACT; return dwStressThreadCount;}
-#endif
-
 #ifdef _DEBUG
     inline DWORD FastGCStressLevel() const
     {LIMITED_METHOD_CONTRACT;  return iFastGCStress;}
@@ -1090,10 +1084,6 @@ private: //----------------------------------------------------------------
 #endif // _WIN64
 
     bool fGCBreakOnOOM;
-
-#ifdef  STRESS_THREAD
-    DWORD dwStressThreadCount;
-#endif
 
 #ifdef _DEBUG
     DWORD iFastGCStress;

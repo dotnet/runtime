@@ -4733,12 +4733,6 @@ public:
     size_t *m_pCleanedStackBase;
 #endif
 
-#ifdef STRESS_THREAD
-public:
-    LONG  m_stressThreadCount;
-#endif
-
-
 private:
     PVOID      m_pFiberData;
 
