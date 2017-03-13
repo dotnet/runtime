@@ -1216,9 +1216,9 @@ namespace System.Net.WebSockets
                 Vector<byte> maskVector = Vector.AsVectorByte(new Vector<int>(shiftedMask));
                 while (count >= Vector<byte>.Count)
                 {
+                    count -= Vector<byte>.Count;
                     (maskVector ^ new Vector<byte>(toMask, toMaskOffset)).CopyTo(toMask, toMaskOffset);
                     toMaskOffset += Vector<byte>.Count;
-                    count -= Vector<byte>.Count;
                 }
 
                 // Fall through to processing any remaining bytes that were less than a vector width.
@@ -1240,9 +1240,9 @@ namespace System.Net.WebSockets
                     {
                         while (count >= sizeof(int))
                         {
+                            count -= sizeof(int);
                             *((int*)p) ^= shiftedMask;
                             p += sizeof(int);
-                            count -= sizeof(int);
                         }
 
                         // We don't need to update the maskIndex, as its mod-4 value won't have changed.
@@ -1256,8 +1256,7 @@ namespace System.Net.WebSockets
                         byte* end = p + count;
                         while (p < end)
                         {
-                            byte b = maskPtr[maskIndex];
-                            *p++ ^= b;
+                            *p++ ^= maskPtr[maskIndex];
                             maskIndex = (maskIndex + 1) & 3;
                         }
                     }
