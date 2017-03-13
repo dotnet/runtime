@@ -10,129 +10,29 @@ namespace System.Transactions
     // Base class for all durable enlistment states
     internal abstract class DurableEnlistmentState : EnlistmentState
     {
-        // Double-checked locking pattern requires volatile for read/write synchronization
-        private static volatile DurableEnlistmentActive s_durableEnlistmentActive;
-        private static volatile DurableEnlistmentAborting s_durableEnlistmentAborting;
-        private static volatile DurableEnlistmentCommitting s_durableEnlistmentCommitting;
-        private static volatile DurableEnlistmentDelegated s_durableEnlistmentDelegated;
-        private static volatile DurableEnlistmentEnded s_durableEnlistmentEnded;
+        private static DurableEnlistmentActive s_durableEnlistmentActive;
+        private static DurableEnlistmentAborting s_durableEnlistmentAborting;
+        private static DurableEnlistmentCommitting s_durableEnlistmentCommitting;
+        private static DurableEnlistmentDelegated s_durableEnlistmentDelegated;
+        private static DurableEnlistmentEnded s_durableEnlistmentEnded;
 
         // Object for synchronizing access to the entire class( avoiding lock( typeof( ... )) )
         private static object s_classSyncObject;
 
-        internal static DurableEnlistmentActive DurableEnlistmentActive
-        {
-            get
-            {
-                if (s_durableEnlistmentActive == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_durableEnlistmentActive == null)
-                        {
-                            DurableEnlistmentActive temp = new DurableEnlistmentActive();
-                            s_durableEnlistmentActive = temp;
-                        }
-                    }
-                }
+        internal static DurableEnlistmentActive DurableEnlistmentActive =>
+            LazyInitializer.EnsureInitialized(ref s_durableEnlistmentActive, ref s_classSyncObject, () => new DurableEnlistmentActive());
 
-                return s_durableEnlistmentActive;
-            }
-        }
+        protected static DurableEnlistmentAborting DurableEnlistmentAborting =>
+            LazyInitializer.EnsureInitialized(ref s_durableEnlistmentAborting, ref s_classSyncObject, () => new DurableEnlistmentAborting());
 
-        protected static DurableEnlistmentAborting DurableEnlistmentAborting
-        {
-            get
-            {
-                if (s_durableEnlistmentAborting == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_durableEnlistmentAborting == null)
-                        {
-                            DurableEnlistmentAborting temp = new DurableEnlistmentAborting();
-                            s_durableEnlistmentAborting = temp;
-                        }
-                    }
-                }
+        protected static DurableEnlistmentCommitting DurableEnlistmentCommitting =>
+            LazyInitializer.EnsureInitialized(ref s_durableEnlistmentCommitting, ref s_classSyncObject, () => new DurableEnlistmentCommitting());
 
-                return s_durableEnlistmentAborting;
-            }
-        }
+        protected static DurableEnlistmentDelegated DurableEnlistmentDelegated =>
+            LazyInitializer.EnsureInitialized(ref s_durableEnlistmentDelegated, ref s_classSyncObject, () => new DurableEnlistmentDelegated());
 
-        protected static DurableEnlistmentCommitting DurableEnlistmentCommitting
-        {
-            get
-            {
-                if (s_durableEnlistmentCommitting == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_durableEnlistmentCommitting == null)
-                        {
-                            DurableEnlistmentCommitting temp = new DurableEnlistmentCommitting();
-                            s_durableEnlistmentCommitting = temp;
-                        }
-                    }
-                }
-
-                return s_durableEnlistmentCommitting;
-            }
-        }
-
-        protected static DurableEnlistmentDelegated DurableEnlistmentDelegated
-        {
-            get
-            {
-                if (s_durableEnlistmentDelegated == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_durableEnlistmentDelegated == null)
-                        {
-                            DurableEnlistmentDelegated temp = new DurableEnlistmentDelegated();
-                            s_durableEnlistmentDelegated = temp;
-                        }
-                    }
-                }
-
-                return s_durableEnlistmentDelegated;
-            }
-        }
-
-        protected static DurableEnlistmentEnded DurableEnlistmentEnded
-        {
-            get
-            {
-                if (s_durableEnlistmentEnded == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_durableEnlistmentEnded == null)
-                        {
-                            DurableEnlistmentEnded temp = new DurableEnlistmentEnded();
-                            s_durableEnlistmentEnded = temp;
-                        }
-                    }
-                }
-
-                return s_durableEnlistmentEnded;
-            }
-        }
-
-        // Helper object for static synchronization
-        private static object ClassSyncObject
-        {
-            get
-            {
-                if (s_classSyncObject == null)
-                {
-                    object o = new object();
-                    Interlocked.CompareExchange(ref s_classSyncObject, o, null);
-                }
-                return s_classSyncObject;
-            }
-        }
+        protected static DurableEnlistmentEnded DurableEnlistmentEnded =>
+            LazyInitializer.EnsureInitialized(ref s_durableEnlistmentEnded, ref s_classSyncObject, () => new DurableEnlistmentEnded());
     }
 
     // Active state for a durable enlistment.  In this state the transaction can be aborted 

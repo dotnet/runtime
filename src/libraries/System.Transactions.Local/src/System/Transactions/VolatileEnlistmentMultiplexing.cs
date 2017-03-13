@@ -73,27 +73,9 @@ namespace System.Transactions
             }
         }
 
-        // Double-checked locking pattern requires volatile for read/write synchronization
-        private static volatile WaitCallback s_prepareCallback;
-        private static WaitCallback PrepareCallback
-        {
-            get
-            {
-                if (s_prepareCallback == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_prepareCallback == null)
-                        {
-                            WaitCallback temp = new WaitCallback(PoolablePrepare);
-                            s_prepareCallback = temp;
-                        }
-                    }
-                }
+        private static WaitCallback s_prepareCallback;
+        private static WaitCallback PrepareCallback => LazyInitializer.EnsureInitialized(ref s_prepareCallback, ref s_classSyncObject, () => new WaitCallback(PoolablePrepare));
 
-                return s_prepareCallback;
-            }
-        }
         protected static void PoolablePrepare(object state)
         {
             VolatileDemultiplexer demux = (VolatileDemultiplexer)state;
@@ -130,27 +112,8 @@ namespace System.Transactions
             }
         }
 
-        // Double-checked locking pattern requires volatile for read/write synchronization
-        private static volatile WaitCallback s_commitCallback;
-        private static WaitCallback CommitCallback
-        {
-            get
-            {
-                if (s_commitCallback == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_commitCallback == null)
-                        {
-                            WaitCallback temp = new WaitCallback(PoolableCommit);
-                            s_commitCallback = temp;
-                        }
-                    }
-                }
-
-                return s_commitCallback;
-            }
-        }
+        private static WaitCallback s_commitCallback;
+        private static WaitCallback CommitCallback => LazyInitializer.EnsureInitialized(ref s_commitCallback, ref s_classSyncObject, () => new WaitCallback(PoolableCommit));
 
         protected static void PoolableCommit(object state)
         {
@@ -188,27 +151,8 @@ namespace System.Transactions
             }
         }
 
-        // Double-checked locking pattern requires volatile for read/write synchronization
-        private static volatile WaitCallback s_rollbackCallback;
-        private static WaitCallback RollbackCallback
-        {
-            get
-            {
-                if (s_rollbackCallback == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_rollbackCallback == null)
-                        {
-                            WaitCallback temp = new WaitCallback(PoolableRollback);
-                            s_rollbackCallback = temp;
-                        }
-                    }
-                }
-
-                return s_rollbackCallback;
-            }
-        }
+        private static WaitCallback s_rollbackCallback;
+        private static WaitCallback RollbackCallback => LazyInitializer.EnsureInitialized(ref s_rollbackCallback, ref s_classSyncObject, () => new WaitCallback(PoolableRollback));
 
         protected static void PoolableRollback(object state)
         {
@@ -246,27 +190,8 @@ namespace System.Transactions
             }
         }
 
-        // Double-checked locking pattern requires volatile for read/write synchronization
-        private static volatile WaitCallback s_inDoubtCallback;
-        private static WaitCallback InDoubtCallback
-        {
-            get
-            {
-                if (s_inDoubtCallback == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (s_inDoubtCallback == null)
-                        {
-                            WaitCallback temp = new WaitCallback(PoolableInDoubt);
-                            s_inDoubtCallback = temp;
-                        }
-                    }
-                }
-
-                return s_inDoubtCallback;
-            }
-        }
+        private static WaitCallback s_inDoubtCallback;
+        private static WaitCallback InDoubtCallback => LazyInitializer.EnsureInitialized(ref s_inDoubtCallback, ref s_classSyncObject, () => new WaitCallback(PoolableInDoubt));
 
         protected static void PoolableInDoubt(object state)
         {

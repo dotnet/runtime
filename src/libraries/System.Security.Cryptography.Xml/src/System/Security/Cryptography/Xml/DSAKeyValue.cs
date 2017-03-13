@@ -186,12 +186,12 @@ namespace System.Security.Cryptography.Xml
                 Key.ImportParameters(new DSAParameters
                 {
                     P = (pNode != null) ? Convert.FromBase64String(pNode.InnerText) : null,
-                    Q = (pNode != null) ? Convert.FromBase64String(qNode.InnerText) : null,
+                    Q = (qNode != null) ? Convert.FromBase64String(qNode.InnerText) : null,
                     G = (gNode != null) ? Convert.FromBase64String(gNode.InnerText) : null,
                     Y = Convert.FromBase64String(yNode.InnerText),
                     J = (jNode != null) ? Convert.FromBase64String(jNode.InnerText) : null,
                     Seed = (seedNode != null) ? Convert.FromBase64String(seedNode.InnerText) : null,
-                    Counter = (seedNode != null) ? Convert.FromBase64String(pgenCounterNode.InnerText)[0] : 0
+                    Counter = (pgenCounterNode != null) ? Utils.ConvertByteArrayToInt(Convert.FromBase64String(pgenCounterNode.InnerText)) : 0
                 });
             }
             catch (Exception ex)
