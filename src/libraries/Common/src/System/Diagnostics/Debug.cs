@@ -97,7 +97,7 @@ namespace System.Diagnostics
 
                 try
                 {
-                    stackTrace = Environment.StackTrace;
+                    stackTrace = Internal.Runtime.Augments.EnvironmentAugments.StackTrace;
                 }
                 catch
                 {
@@ -123,7 +123,7 @@ namespace System.Diagnostics
 
         private static string FormatAssert(string stackTrace, string message, string detailMessage)
         {
-            var newLine = GetIndentString() + Environment.NewLine;
+            string newLine = GetIndentString() + NewLine;
             return SR.DebugAssertBanner + newLine
                    + SR.DebugAssertShortMessage + newLine
                    + message + newLine
@@ -141,7 +141,7 @@ namespace System.Diagnostics
         [System.Diagnostics.Conditional("DEBUG")]
         public static void WriteLine(string message)
         {
-            Write(message + Environment.NewLine);
+            Write(message + NewLine);
         }
 
         [System.Diagnostics.Conditional("DEBUG")]
@@ -160,7 +160,7 @@ namespace System.Diagnostics
                     s_needIndent = false;
                 }
                 WriteCore(message);
-                if (message.EndsWith(Environment.NewLine))
+                if (message.EndsWith(NewLine))
                 {
                     s_needIndent = true;
                 }
@@ -323,7 +323,7 @@ namespace System.Diagnostics
         private sealed class DebugAssertException : Exception
         {
             internal DebugAssertException(string message, string detailMessage, string stackTrace) :
-                base(message + Environment.NewLine + detailMessage + Environment.NewLine + stackTrace)
+                base(message + NewLine + detailMessage + NewLine + stackTrace)
             {
             }
         }
