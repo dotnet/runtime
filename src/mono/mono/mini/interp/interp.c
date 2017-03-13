@@ -1225,6 +1225,8 @@ mono_interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoOb
 	jmp_buf env;
 
 	error_init (error);
+	if (exc)
+		*exc = NULL;
 
 	frame.ex = NULL;
 
