@@ -76,6 +76,7 @@ namespace Microsoft.DotNet.Cli.Build
                 s_sharedFrameworkName,
                 sharedFrameworkNugetVersion);
         }
+        
         public static string GetNetCoreAppRuntimeLibSymbolsPath(string symbolsRoot, string sharedFrameworkRid, string sharedFrameworkTarget)
         {
             return Path.Combine(symbolsRoot, s_sharedFrameworkName, "runtimes", sharedFrameworkRid, "lib", sharedFrameworkTarget);
