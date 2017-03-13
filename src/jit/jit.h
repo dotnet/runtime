@@ -172,6 +172,31 @@
 #define _TARGET_ARMARCH_
 #endif
 
+// If the UNIX_AMD64_ABI is defined make sure that _TARGET_AMD64_ is also defined.
+#if defined(UNIX_AMD64_ABI)
+#if !defined(_TARGET_AMD64_)
+#error When UNIX_AMD64_ABI is defined you must define _TARGET_AMD64_ defined as well.
+#endif
+#endif
+
+// If the UNIX_X86_ABI is defined make sure that _TARGET_X86_ is also defined.
+#if defined(UNIX_X86_ABI)
+#if !defined(_TARGET_X86_)
+#error When UNIX_X86_ABI is defined you must define _TARGET_X86_ defined as well.
+#endif
+#endif
+
+#if defined(PLATFORM_UNIX)
+#define _HOST_UNIX_
+#endif
+
+// Are we generating code to target Unix? This is true if we will run on Unix (_HOST_UNIX_ is defined).
+// It's also true if we are building an altjit targetting Unix, which we determine by checking if either
+// UNIX_AMD64_ABI or UNIX_X86_ABI is defined.
+#if defined(_HOST_UNIX_) || ((defined(UNIX_AMD64_ABI) || defined(UNIX_X86_ABI)) && defined(ALT_JIT))
+#define _TARGET_UNIX_
+#endif
+
 // --------------------------------------------------------------------------------
 // IMAGE_FILE_MACHINE_TARGET
 // --------------------------------------------------------------------------------
@@ -190,7 +215,14 @@
 
 // Include the AMD64 unwind codes when appropriate.
 #if defined(_TARGET_AMD64_)
+// We need to temporarily set PLATFORM_UNIX, if necessary, to get the Unix-specific unwind codes.
+#if defined(_TARGET_UNIX_) && !defined(_HOST_UNIX_)
+#define PLATFORM_UNIX
+#endif
 #include "win64unwind.h"
+#if defined(_TARGET_UNIX_) && !defined(_HOST_UNIX_)
+#undef PLATFORM_UNIX
+#endif
 #endif
 
 // Macros for defining strongly-typed enums. Use as follows:

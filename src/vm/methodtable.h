@@ -1070,7 +1070,7 @@ public:
 private:
 
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF)
-    void AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel);
+    void AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel) const;
     // Builds the internal data structures and classifies struct eightbytes for Amd System V calling convention.
     bool ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct, bool isNativeStruct);
     bool ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassingHelperPtr helperPtr, unsigned int nestingLevel, unsigned int startOffsetOfStruct, bool isNativeStruct);
@@ -2012,7 +2012,7 @@ public:
     }
 #endif // FEATURE_HFA
 
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF)
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
     inline bool IsRegPassedStruct()
     {
         LIMITED_METHOD_CONTRACT;
@@ -2024,7 +2024,7 @@ public:
         LIMITED_METHOD_CONTRACT;
         SetFlag(enum_flag_IsRegStructPassed);
     }
-#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF)
+#endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 
 #ifdef FEATURE_HFA
 
@@ -3801,18 +3801,18 @@ private:
         enum_flag_HasPreciseInitCctors      = 0x00000400,   // Do we need to run class constructors at allocation time? (Not perf important, could be moved to EEClass
 
 #if defined(FEATURE_HFA)
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF)
-#error Can't define both FEATURE_HFA and FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+#error Can't define both FEATURE_HFA and FEATURE_UNIX_AMD64_STRUCT_PASSING
 #endif
         enum_flag_IsHFA                     = 0x00000800,   // This type is an HFA (Homogenous Floating-point Aggregate)
 #endif // FEATURE_HFA
 
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF)
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 #if defined(FEATURE_HFA)
-#error Can't define both FEATURE_HFA and FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF
+#error Can't define both FEATURE_HFA and FEATURE_UNIX_AMD64_STRUCT_PASSING
 #endif
         enum_flag_IsRegStructPassed         = 0x00000800,   // This type is a System V register passed struct.
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 
         enum_flag_IsByRefLike               = 0x00001000,
 

@@ -25,13 +25,13 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // same code for all platforms, hence it is here instead of in the targetXXX.cpp
 // files.
 
-#ifdef PLATFORM_UNIX
+#ifdef _TARGET_UNIX_
 // Should we distinguish Mac? Can we?
 // Should we distinguish flavors of Unix? Can we?
 const char* Target::g_tgtPlatformName = "Unix";
-#else  // !PLATFORM_UNIX
+#else  // !_TARGET_UNIX_
 const char* Target::g_tgtPlatformName = "Windows";
-#endif // !PLATFORM_UNIX
+#endif // !_TARGET_UNIX_
 
 /*****************************************************************************/
 

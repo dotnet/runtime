@@ -1839,23 +1839,23 @@ MethodTableBuilder::BuildMethodTableThrowing(
 #ifdef FEATURE_HFA
         CheckForHFA(pByValueClassCache);
 #endif
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
 #ifdef FEATURE_HFA
-#error Can't have FEATURE_HFA and FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF defined at the same time.
+#error Can't have FEATURE_HFA and FEATURE_UNIX_AMD64_STRUCT_PASSING defined at the same time.
 #endif // FEATURE_HFA
         SystemVAmd64CheckForPassStructInRegister();
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
     }
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
 #ifdef FEATURE_HFA
-#error Can't have FEATURE_HFA and FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF defined at the same time.
+#error Can't have FEATURE_HFA and FEATURE_UNIX_AMD64_STRUCT_PASSING defined at the same time.
 #endif // FEATURE_HFA
     if (HasLayout())
     {
         SystemVAmd64CheckForPassNativeStructInRegister();
     }
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 #ifdef FEATURE_HFA
     if (HasLayout())
     {
@@ -8224,7 +8224,7 @@ DWORD MethodTableBuilder::GetFieldSize(FieldDesc *pFD)
     return (1 << (DWORD)(DWORD_PTR&)(pFD->m_pMTOfEnclosingClass));
 }
 
-#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF
+#ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
 // checks whether the struct is enregisterable.
 void MethodTableBuilder::SystemVAmd64CheckForPassStructInRegister()
 {
@@ -8309,7 +8309,7 @@ void MethodTableBuilder::StoreEightByteClassification(SystemVStructRegisterPassi
     eeClass->SetEightByteClassification(helper->eightByteCount, helper->eightByteClassifications, helper->eightByteSizes);
 }
 
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 
 #ifdef FEATURE_HFA
 //---------------------------------------------------------------------------------------

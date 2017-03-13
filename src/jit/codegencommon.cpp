@@ -9683,7 +9683,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
                                        addrInfo.addr,
                                        0,                                                      // argSize
                                        EA_UNKNOWN                                              // retSize
-                                       FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(EA_UNKNOWN), // secondRetSize
+                                       MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(EA_UNKNOWN),        // secondRetSize
                                        gcInfo.gcVarPtrSetCur,
                                        gcInfo.gcRegGCrefSetCur,
                                        gcInfo.gcRegByrefSetCur,
