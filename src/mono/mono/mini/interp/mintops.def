@@ -76,7 +76,6 @@ OPDEF(MINT_STINARG_P, "stinarg.p", 2, MintOpUShortInt)
 OPDEF(MINT_STINARG_VT, "stinarg.vt", 4, MintOpShortAndInt)
 
 OPDEF(MINT_LDARGA, "ldarga", 2, MintOpUShortInt)
-OPDEF(MINT_LDTHISA, "ldthisa", 1, MintOpNoArgs)
 
 OPDEF(MINT_LDFLD_I1, "ldfld.i1", 2, MintOpUShortInt)
 OPDEF(MINT_LDFLD_U1, "ldfld.u1", 2, MintOpUShortInt)

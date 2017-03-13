@@ -1070,15 +1070,9 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 			break;
 		case CEE_LDARGA_S: {
 			/* NOTE: n includes this */
-			int n = ((guint8 *)td.ip)[1];
-			if (n == 0 && signature->hasthis) {
-				g_error ("LDTHISA: NOPE");
-				ADD_CODE(&td, MINT_LDTHISA);
-			}
-			else {
-				ADD_CODE(&td, MINT_LDARGA);
-				ADD_CODE(&td, td.rtm->arg_offsets [n]);
-			}
+			int n = ((guint8 *) td.ip) [1];
+			ADD_CODE (&td, MINT_LDARGA);
+			ADD_CODE (&td, td.rtm->arg_offsets [n]);
 			PUSH_SIMPLE_TYPE(&td, STACK_TYPE_MP);
 			td.ip += 2;
 			break;
@@ -3039,14 +3033,8 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 				break;
 			case CEE_LDARGA: {
 				int n = read16 (td.ip + 1);
-				if (n == 0 && signature->hasthis) {
-					g_error ("LDTHISA: NOPE");
-					ADD_CODE(&td, MINT_LDTHISA);
-				}
-				else {
-					ADD_CODE(&td, MINT_LDARGA);
-					ADD_CODE(&td, td.rtm->arg_offsets [n]); /* FIX for large offsets */
-				}
+				ADD_CODE (&td, MINT_LDARGA);
+				ADD_CODE (&td, td.rtm->arg_offsets [n]); /* FIX for large offsets */
 				PUSH_SIMPLE_TYPE(&td, STACK_TYPE_MP);
 				td.ip += 3;
 				break;

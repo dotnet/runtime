@@ -3793,13 +3793,6 @@ array_constructed:
 			MINT_IN_BREAK;
 		}
 
-		MINT_IN_CASE(MINT_LDTHISA)
-			g_error ("should not happen");
-			// sp->data.p = &frame->obj;
-			++ip;
-			++sp; 
-			MINT_IN_BREAK;
-
 #define LDARG(datamem, argtype) \
 	sp->data.datamem = * (argtype *)(frame->args + * (guint16 *)(ip + 1)); \
 	ip += 2; \
