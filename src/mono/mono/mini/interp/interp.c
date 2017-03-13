@@ -1467,27 +1467,35 @@ static mono_mutex_t create_method_pointer_mutex;
 
 static GHashTable *method_pointer_hash = NULL;
 
-static MonoMethod *method_pointers [2] = {0};
+#define TRAMPS_USED 8
 
-static MonoObject *
-mp_tramp_0 (MonoObject *this_obj, void **params, MonoObject **exc, void *compiled_method) {
-	MonoError error;
-	void *params_real[] = {this_obj, &params, &exc, &compiled_method};
-	MonoObject *ret = mono_interp_runtime_invoke (method_pointers [0], NULL, params_real, NULL, &error);
-	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-	return ret;
-}
+static MonoMethod *method_pointers [TRAMPS_USED] = {0};
 
-static MonoObject *
-mp_tramp_1 (MonoObject *this_obj, void **params, MonoObject **exc, void *compiled_method) {
-	MonoError error;
-	void *params_real[] = {this_obj, &params, &exc, &compiled_method};
-	MonoObject *ret = mono_interp_runtime_invoke (method_pointers [1], NULL, params_real, NULL, &error);
-	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
-	return ret;
-}
+#define GEN_METHOD_PTR_TRAMP(num) \
+		static MonoObject * mp_tramp_ ## num (MonoObject *this_obj, void **params, MonoObject **exc, void *compiled_method) { \
+			MonoError error; \
+			void *params_real[] = {this_obj, &params, &exc, &compiled_method}; \
+			MonoObject *ret = mono_interp_runtime_invoke (method_pointers [num], NULL, params_real, NULL, &error); \
+			mono_error_cleanup (&error); \
+			return ret; \
+		}
 
-gpointer *mp_tramps[] = {(gpointer) mp_tramp_0, (gpointer) mp_tramp_1};
+
+GEN_METHOD_PTR_TRAMP (0);
+GEN_METHOD_PTR_TRAMP (1);
+GEN_METHOD_PTR_TRAMP (2);
+GEN_METHOD_PTR_TRAMP (3);
+GEN_METHOD_PTR_TRAMP (4);
+GEN_METHOD_PTR_TRAMP (5);
+GEN_METHOD_PTR_TRAMP (6);
+GEN_METHOD_PTR_TRAMP (7);
+
+#undef GEN_METHOD_PTR_TRAMP
+
+gpointer *mp_tramps[TRAMPS_USED] = {
+	(gpointer) mp_tramp_0, (gpointer) mp_tramp_1, (gpointer) mp_tramp_2, (gpointer) mp_tramp_3,
+	(gpointer) mp_tramp_4, (gpointer) mp_tramp_5, (gpointer) mp_tramp_6, (gpointer) mp_tramp_7
+};
 
 static int tramps_used = 0;
 
@@ -1523,7 +1531,7 @@ mono_interp_create_method_pointer (MonoMethod *method, MonoError *error)
 	}		
 	else {
 		g_assert (method->wrapper_type == MONO_WRAPPER_RUNTIME_INVOKE);
-		g_assert (tramps_used < 2);
+		g_assert (tramps_used < TRAMPS_USED);
 
 		/* FIXME: needs locking */
 		method_pointers [tramps_used] = method;
