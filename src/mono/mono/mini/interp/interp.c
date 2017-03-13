@@ -1335,6 +1335,7 @@ handle_enum:
 		case MONO_TYPE_ARRAY:
 		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_OBJECT:
+		case MONO_TYPE_GENERICINST:
 			args [a_index].data.p = params [i];
 			break;
 		default:
