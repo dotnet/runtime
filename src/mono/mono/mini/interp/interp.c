@@ -325,6 +325,11 @@ get_virtual_method (MonoDomain *domain, RuntimeMethod *runtime_method, MonoObjec
 		virtual_method = mono_class_inflate_generic_method_checked (virtual_method, &context, &error);
 		mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 	}
+
+	if (virtual_method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED) {
+		virtual_method = mono_marshal_get_synchronized_wrapper (virtual_method);
+	}
+
 	RuntimeMethod *virtual_runtime_method = mono_interp_get_runtime_method (domain, virtual_method, &error);
 	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 	return virtual_runtime_method;
