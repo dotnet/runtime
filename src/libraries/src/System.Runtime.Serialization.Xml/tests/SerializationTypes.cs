@@ -4233,3 +4233,79 @@ public class MySpecialOrder2 : MyOrder
 {
     public int SecondaryID;
 }
+
+[System.Runtime.Serialization.DataContractAttribute(Namespace = "http://tempuri.org/")]
+public partial class GetDataRequestBody
+{
+
+    [System.Runtime.Serialization.DataMemberAttribute(Order = 0)]
+    public int value;
+
+    public GetDataRequestBody()
+    {
+    }
+
+    public GetDataRequestBody(int value)
+    {
+        this.value = value;
+    }
+}
+
+[System.Runtime.Serialization.DataContractAttribute(Namespace = "http://tempuri.org/")]
+public partial class GetDataUsingDataContractRequestBody
+{
+
+    [System.Runtime.Serialization.DataMemberAttribute(EmitDefaultValue = false, Order = 0)]
+    public CompositeTypeForXmlMembersMapping composite;
+
+    public GetDataUsingDataContractRequestBody()
+    {
+    }
+
+    public GetDataUsingDataContractRequestBody(CompositeTypeForXmlMembersMapping composite)
+    {
+        this.composite = composite;
+    }
+}
+
+[System.Runtime.Serialization.DataContractAttribute(Name = "CompositeType", Namespace = "http://tempuri.org/")]
+[System.SerializableAttribute()]
+public partial class CompositeTypeForXmlMembersMapping
+{
+    private bool BoolValueField;
+
+    [System.Runtime.Serialization.OptionalFieldAttribute()]
+    private string StringValueField;
+
+    [System.Runtime.Serialization.DataMemberAttribute(IsRequired = true)]
+    public bool BoolValue
+    {
+        get
+        {
+            return this.BoolValueField;
+        }
+        set
+        {
+            if ((this.BoolValueField.Equals(value) != true))
+            {
+                this.BoolValueField = value;
+            }
+        }
+    }
+
+    [System.Runtime.Serialization.DataMemberAttribute(EmitDefaultValue = false)]
+    public string StringValue
+    {
+        get
+        {
+            return this.StringValueField;
+        }
+        set
+        {
+            if ((object.ReferenceEquals(this.StringValueField, value) != true))
+            {
+                this.StringValueField = value;
+            }
+        }
+    }
+}
