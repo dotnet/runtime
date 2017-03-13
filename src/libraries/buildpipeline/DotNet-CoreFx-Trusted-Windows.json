@@ -105,7 +105,7 @@
       },
       "inputs": {
         "filename": "$(Build.SourcesDirectory)\\corefx\\sync.cmd",
-        "arguments": "$(PB_SyncArguments)",
+        "arguments": "$(PB_SyncArguments) $(PB_OptionalToolingSyncArguments)",
         "workingFolder": "corefx",
         "failOnStandardError": "false"
       }
@@ -141,7 +141,7 @@
       },
       "inputs": {
         "filename": "$(Build.SourcesDirectory)\\corefx\\build.cmd",
-        "arguments": "$(PB_BuildArguments)",
+        "arguments": "$(PB_BuildArguments) $(PB_PipelineBuildMSBuildArguments)",
         "workingFolder": "corefx",
         "failOnStandardError": "false"
       }
@@ -465,6 +465,28 @@
     },
     "PB_CreateHelixArguments": {
       "value": "/t:CloudBuild /p:ArchGroup=x64 /p:ConfigurationGroup=Release /p:\"EnableCloudTest=true\" /p:\"BuildMoniker=none\" /p:\"TargetQueue=Windows.10.Amd64\" /p:\"TestProduct=corefx\" /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Windows_NT\" /p:FilterToOSGroup=Windows_NT",
+      "allowOverride": true
+    },
+    "PB_OptionalToolSource": {
+      "value": null,
+      "allowOverride": true,
+      "isSecret": true
+    },
+    "PB_OptionalToolSourceUser": {
+      "value": null,
+      "allowOverride": true,
+      "isSecret": true
+    },
+    "PB_OptionalToolSourcePAT": {
+      "value": null,
+      "allowOverride": true,
+      "isSecret": true
+    },
+    "PB_OptionalToolingSyncArguments": {
+      "value": "/p:OptionalToolSource=$(PB_OptionalToolSource) /p:OptionalToolSourceUser=$(PB_OptionalToolSourceUser);OptionalToolSourcePassword=$(PB_OptionalToolSourcePAT)"
+    },
+    "PB_PipelineBuildMSBuildArguments": {
+      "value": "",
       "allowOverride": true
     }
   },
