@@ -213,7 +213,8 @@
         "TreatWarningsAsErrors": "false"
       },
       "BuildParameters": {
-        "PB_ConfigurationGroup": "Release"
+        "PB_ConfigurationGroup": "Release",
+        "PB_PipelineBuildMSBuildArguments": "/p:EnableProfileGuidedOptimization=true"
       },
       "Definitions": [
         {
