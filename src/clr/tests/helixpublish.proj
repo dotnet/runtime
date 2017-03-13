@@ -14,23 +14,29 @@
     <DummyPackages Include="$(TestWorkingDir)\archive\packages\*" ></DummyPackages>
     <ForUpload Include="@(TestList)" ></ForUpload>
     <ForUpload Include="@(CoreRootUri)" ></ForUpload>
-    <SupplementalPayload Include="@(DummyPackages)" >
-      <RelativeBlobPath>$(Platform)$(ConfigurationGroup)/Packages.zip</RelativeBlobPath>
-    </SupplementalPayload>
   </ItemGroup>
 
   <!-- Define name & location of test JSON blob -->
   <PropertyGroup>
+    <SkipArchive>true</SkipArchive>
     <PayloadTestListFilename>Tests.$(ConfigurationGroup).json</PayloadTestListFilename>
     <PayloadTestListFile>$(TestWorkingDir)$(PayloadTestListFilename)</PayloadTestListFile>
-    <SkipArchive>true</SkipArchive>
   </PropertyGroup>
 
   <Target Name="CreateTestListJson"
           DependsOnTargets="CreateAzureStorage">
 
-    <!-- Define Correlation Payload as a property -->
+    <ItemGroup>
+      <SupplementalPayload Include="@(DummyPackages)" >
+        <RelativeBlobPath>$(Platform)$(ConfigurationGroup)/Packages.zip</RelativeBlobPath>
+      </SupplementalPayload>
+      <CorrelationPayloadUri Include="@(SupplementalPayload->'$(DropUri)%(RelativeBlobPath)$(DropUriReadOnlyToken)')" />
+    </ItemGroup>
+
     <PropertyGroup>
+      <!-- flatten it into a property as msbuild chokes on @(CorrelationPayloadUri) -->
+      <CorrelationPayloadUris>@(CorrelationPayloadUri)</CorrelationPayloadUris>
+      <!-- Define Correlation Payload as a property -->
       <CoreRootUris>$(DropUri)$(Platform)$(ConfigurationGroup)/Tests/$([System.String]::Copy('%(RecursiveDir)').Replace('\', '/'))%(CoreRootUri.Filename)%(CoreRootUri.Extension)$(DropUriReadOnlyToken)</CoreRootUris>
       <CorrelationPayloadProperty>$(CorrelationPayloadUris);$(CoreRootUris)</CorrelationPayloadProperty>
     </PropertyGroup>
