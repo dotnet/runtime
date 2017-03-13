@@ -133,11 +133,11 @@
     </PropertyGroup>
     <ItemGroup>
       <_SymbolsFiles Include="%(File.Identity)" Condition="'%(File.Extension)' == '.pdb' OR '%(File.Extension)' == '$(SymbolFileExtension)'">
-        <DestinationFolder>$(_PackageSymbolsProjectDir)%(File.TargetPath)</DestinationFolder>
+        <DestinationFolder>$(_PackageSymbolsProjectDir)%(File.TargetPath)/</DestinationFolder>
       </_SymbolsFiles>
       <_PackageSymbolsTargetFrameworkDir Include="@(_SymbolsFiles->'DestinationFolder')" />
     </ItemGroup>
-    <MakeDir Directories="@(_PackageSymbolsTargetFrameworkDir)" />
+    <MakeDir Directories="%(_SymbolsFiles.DestinationFolder)" />
     <Message Importance="High" Text="Copy %(_SymbolsFiles.Identity) -> %(_SymbolsFiles.DestinationFolder)" />
     <Copy SourceFiles="%(_SymbolsFiles.Identity)"
           DestinationFolder="%(_SymbolsFiles.DestinationFolder)" />
