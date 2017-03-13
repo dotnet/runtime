@@ -2717,9 +2717,15 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 				klass = (MonoClass *) mono_method_get_wrapper_data (method, token + 1);
 				if (klass == mono_defaults.typehandle_class)
 					handle = &((MonoClass *) handle)->byval_arg;
+
+				if (generic_context) {
+					handle = mono_class_inflate_generic_type_checked (handle, generic_context, &error);
+					mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+				}
 			} else {
 				handle = mono_ldtoken (image, token, &klass, generic_context);
 			}
+			mono_class_init (klass);
 			mt = mint_type (&klass->byval_arg);
 			g_assert (mt == MINT_TYPE_VT);
 			size = mono_class_value_size (klass, NULL);
