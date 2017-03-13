@@ -21,6 +21,10 @@
 #define USE_CURRENT_CONTEXT_IN_FILTER
 #endif // _TARGET_X86_
 
+#if defined(_TARGET_ARM_) || defined(__TARGET_X86_)
+#define VSD_STUB_CAN_THROW_AV
+#endif // _TARGET_ARM_ || _TARGET_X86_
+
 #if defined(_TARGET_ARM_) || defined(_TARGET_ARM64_) || defined(_TARGET_X86_)
 #define ADJUST_PC_UNWOUND_TO_CALL
 #define STACK_RANGE_BOUNDS_ARE_CALLER_SP
@@ -5087,7 +5091,7 @@ BOOL IsSafeToCallExecutionManager()
            GCStress<cfg_instr_ngen>::IsEnabled();
 }
 
-#if defined(_TARGET_ARM_) || defined(_TARGET_X86_)
+#ifdef VSD_STUB_CAN_THROW_AV
 //Return TRUE if pContext->Pc is in VirtualStub
 static BOOL IsIPinVirtualStub(PCODE f_IP)
 {
@@ -5118,7 +5122,7 @@ static BOOL IsIPinVirtualStub(PCODE f_IP)
         return FALSE;
     }
 }
-#endif
+#endif // VSD_STUB_CAN_THROW_AV
 
 BOOL IsSafeToHandleHardwareException(PCONTEXT contextRecord, PEXCEPTION_RECORD exceptionRecord)
 {
@@ -5127,9 +5131,9 @@ BOOL IsSafeToHandleHardwareException(PCONTEXT contextRecord, PEXCEPTION_RECORD e
         exceptionRecord->ExceptionCode == STATUS_BREAKPOINT || 
         exceptionRecord->ExceptionCode == STATUS_SINGLE_STEP ||
         (IsSafeToCallExecutionManager() && ExecutionManager::IsManagedCode(controlPc)) ||
-#if defined(_TARGET_ARM_) || defined(_TARGET_X86_)
+#ifdef VSD_STUB_CAN_THROW_AV
         IsIPinVirtualStub(controlPc) ||  // access violation comes from DispatchStub of Interface call
-#endif
+#endif // VSD_STUB_CAN_THROW_AV
         IsIPInMarkedJitHelper(controlPc));
 }
 
@@ -5178,12 +5182,12 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
                 PAL_VirtualUnwind(ex->GetContextRecord(), NULL);
                 ex->GetExceptionRecord()->ExceptionAddress = (PVOID)GetIP(ex->GetContextRecord());
             }
-#if defined(_TARGET_ARM_) || defined(_TARGET_X86_)
+#ifdef VSD_STUB_CAN_THROW_AV
             else if (IsIPinVirtualStub(controlPc)) 
             {
                 AdjustContextForVirtualStub(ex->GetExceptionRecord(), ex->GetContextRecord());
             }
-#endif
+#endif // VSD_STUB_CAN_THROW_AV
             fef.InitAndLink(ex->GetContextRecord());
         }
 
