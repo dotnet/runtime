@@ -3225,7 +3225,7 @@ void CodeGen::genCodeForCpBlkRepMovs(GenTreeBlk* cpBlkNode)
 //    On x86, longTmpReg must be an xmm reg; on x64 it must be an integer register.
 //    This is checked by genStoreRegToStackArg.
 //
-int CodeGen::genMove8IfNeeded(unsigned size, regNumber longTmpReg, GenTree* srcAddr, unsigned offset)
+unsigned CodeGen::genMove8IfNeeded(unsigned size, regNumber longTmpReg, GenTree* srcAddr, unsigned offset)
 {
 #ifdef _TARGET_X86_
     instruction longMovIns = INS_movq;
@@ -3259,7 +3259,7 @@ int CodeGen::genMove8IfNeeded(unsigned size, regNumber longTmpReg, GenTree* srcA
 //    intTmpReg must be an integer register.
 //    This is checked by genStoreRegToStackArg.
 //
-int CodeGen::genMove4IfNeeded(unsigned size, regNumber intTmpReg, GenTree* srcAddr, unsigned offset)
+unsigned CodeGen::genMove4IfNeeded(unsigned size, regNumber intTmpReg, GenTree* srcAddr, unsigned offset)
 {
     if ((size & 4) != 0)
     {
@@ -3288,7 +3288,7 @@ int CodeGen::genMove4IfNeeded(unsigned size, regNumber intTmpReg, GenTree* srcAd
 //    intTmpReg must be an integer register.
 //    This is checked by genStoreRegToStackArg.
 //
-int CodeGen::genMove2IfNeeded(unsigned size, regNumber intTmpReg, GenTree* srcAddr, unsigned offset)
+unsigned CodeGen::genMove2IfNeeded(unsigned size, regNumber intTmpReg, GenTree* srcAddr, unsigned offset)
 {
     if ((size & 2) != 0)
     {
@@ -3317,7 +3317,7 @@ int CodeGen::genMove2IfNeeded(unsigned size, regNumber intTmpReg, GenTree* srcAd
 //    intTmpReg must be an integer register.
 //    This is checked by genStoreRegToStackArg.
 //
-int CodeGen::genMove1IfNeeded(unsigned size, regNumber intTmpReg, GenTree* srcAddr, unsigned offset)
+unsigned CodeGen::genMove1IfNeeded(unsigned size, regNumber intTmpReg, GenTree* srcAddr, unsigned offset)
 {
 
     if ((size & 1) != 0)
@@ -3354,7 +3354,7 @@ void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode)
     GenTreePtr dstAddr = putArgNode;
     GenTreePtr src     = putArgNode->gtOp.gtOp1;
 
-    size_t size = putArgNode->getArgSize();
+    unsigned size = putArgNode->getArgSize();
     assert(size <= CPBLK_UNROLL_LIMIT);
 
     emitter* emit         = getEmitter();
@@ -7183,7 +7183,7 @@ int CodeGenInterface::genSPtoFPdelta()
 {
     int delta;
 
-#ifdef PLATFORM_UNIX
+#ifdef UNIX_AMD64_ABI
 
     // We require frame chaining on Unix to support native tool unwinding (such as
     // unwinding by the native debugger). We have a CLR-only extension to the
@@ -7191,7 +7191,7 @@ int CodeGenInterface::genSPtoFPdelta()
     // If Unix ever supports EnC, the RSP == RBP assumption will have to be reevaluated.
     delta = genTotalFrameSize();
 
-#else // !PLATFORM_UNIX
+#else // !UNIX_AMD64_ABI
 
     // As per Amd64 ABI, RBP offset from initial RSP can be between 0 and 240 if
     // RBP needs to be reported in unwind codes.  This case would arise for methods
@@ -7217,7 +7217,7 @@ int CodeGenInterface::genSPtoFPdelta()
         delta = genTotalFrameSize();
     }
 
-#endif // !PLATFORM_UNIX
+#endif // !UNIX_AMD64_ABI
 
     return delta;
 }
@@ -8525,7 +8525,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
                                INDEBUG_LDISASM_COMMA(nullptr) addr,
                                argSize,
                                retSize
-                               FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY_ARG(EA_UNKNOWN),
+                               MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(EA_UNKNOWN),
                                gcInfo.gcVarPtrSetCur,
                                gcInfo.gcRegGCrefSetCur,
                                gcInfo.gcRegByrefSetCur,

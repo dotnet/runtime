@@ -294,7 +294,6 @@ set(CMAKE_CXX_FLAGS_CHECKED ${CLR_CXX_FLAGS_CHECKED_INIT} CACHE STRING "Flags us
 set(CMAKE_EXE_LINKER_FLAGS_CHECKED "")
 set(CMAKE_SHARED_LINKER_FLAGS_CHECKED "")
 
-# Disable the following line for UNIX altjit on Windows
 set(CMAKE_CXX_STANDARD_LIBRARIES "") # do not link against standard win32 libs i.e. kernel32, uuid, user32, etc.
 
 if (WIN32)
@@ -315,7 +314,6 @@ if (WIN32)
 
   # Linker flags
   #
-  # Disable the following line for UNIX altjit on Windows
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /MANIFEST:NO") #Do not create Side-by-Side Assembly Manifest
 
   if (CLR_CMAKE_PLATFORM_ARCH_ARM)
@@ -520,9 +518,6 @@ elseif (CLR_CMAKE_TARGET_ARCH_I386)
 else ()
     clr_unknown_arch()
 endif ()
-
-# Enable for UNIX altjit on Windows - set(CLR_CMAKE_PLATFORM_UNIX_AMD64 1)
-# Enable for UNIX altjit on Windows - add_definitions(-DCLR_CMAKE_PLATFORM_UNIX=1)
 
 #--------------------------------------
 # Compile Options
