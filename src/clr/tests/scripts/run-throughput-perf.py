@@ -32,31 +32,20 @@ import csv
 # Globals
 ##########################################################################
 
-# List of dlls we want to crossgen
-dll_list = {
+# List of dlls we want to exclude
+dll_exclude_list = {
     'Windows_NT': [
-        "System.Private.CoreLib",
-        "System.Reflection.Metadata",
-        "System.Linq.Expressions",
-        "Microsoft.CSharp",
-        "System",
-        "Microsoft.CodeAnalysis.VisualBasic",
-        "System.Private.DataContractSerialization",
-        "System.Core",
-        "System.Xml",
-        "Microsoft.CodeAnalysis.CSharp",
-        "Microsoft.CodeAnalysis",
-        "System.Linq.Parallel",
-        "System.Private.Xml"
+        # Require Newtonsoft.Json
+        "Microsoft.DotNet.ProjectModel.dll",
+        "Microsoft.Extensions.DependencyModel.dll",
+        # Require System.Security.Principal.Windows
+        "System.Net.Requests.dll",
+        "System.Net.Security.dll",
+        "System.Net.Sockets.dll"
     ],
-    'Linux': [
-        "System.Private.CoreLib",
-        "System.Reflection.Metadata",
-        "System.Linq.Expressions",
-        "Microsoft.CSharp",
-        "System.Private.DataContractSerialization",
-        "System.Linq.Parallel",
-        "System.Private.Xml"
+    'Linux' : [
+        # Required System.Runtime.WindowsRuntime
+        "System.Runtime.WindowsRuntime.UI.Xaml.dll"
     ]
 }
 
@@ -284,7 +273,7 @@ def runIterations(dll_name, dll_path, iterations, crossgen_path, jit_path, assem
 ##########################################################################
 
 def main(args):
-    global dll_list
+    global dll_exclude_list
     global jit_list
     global os_group_list
     global python_exe_list
@@ -321,38 +310,42 @@ def main(args):
     python_exe = python_exe_list[os_group]
 
     # Run throughput testing
-    for dll_name in dll_list[os_group]:
-        dll_file_name = dll_name + ".dll"
-        dll_path = os.path.join(assembly_root, dll_file_name)
-        dll_elapsed_times = runIterations(dll_file_name, dll_path, iterations, crossgen_path, jit_path, assembly_root)
+    for dll_file_name in os.listdir(assembly_root):
+        # Find all framework dlls in the assembly_root dir, which we will crossgen
+        if (dll_file_name.endswith(".dll") and
+                (not ".ni." in dll_file_name) and
+                ("Microsoft" in dll_file_name or "System" in dll_file_name) and
+                (not dll_file_name in dll_exclude_list[os_group])):
+            dll_name = dll_file_name.replace(".dll", "")
+            dll_path = os.path.join(assembly_root, dll_file_name)
+            dll_elapsed_times = runIterations(dll_file_name, dll_path, iterations, crossgen_path, jit_path, assembly_root)
 
-        if len(dll_elapsed_times) != 0:
-            if not benchview_path is None:
-                # Generate the csv file
-                csv_file_name = generateCSV(dll_name, dll_elapsed_times)
-                shutil.copy(csv_file_name, clr_root)
+            if len(dll_elapsed_times) != 0:
+                if not benchview_path is None:
+                    # Generate the csv file
+                    csv_file_name = generateCSV(dll_name, dll_elapsed_times)
+                    shutil.copy(csv_file_name, clr_root)
 
-                # For each benchmark, call measurement.py
-                measurement_args = [python_exe,
-                        os.path.join(benchview_path, "measurement.py"),
-                        "csv",
-                        os.path.join(os.getcwd(), csv_file_name),
-                        "--metric",
-                        "execution_time",
-                        "--unit",
-                        "milliseconds",
-                        "--better",
-                        "desc",
-                        "--drop-first-value",
-                        "--append"]
-                log(" ".join(measurement_args))
-                proc = subprocess.Popen(measurement_args)
-                proc.communicate()
-            else:
-                # Write output to console if we are not publishing
-                log("%s" % (dll_name))
-                log("Duration: [%s]" % (", ".join(str(x) for x in dll_elapsed_times)))
-
+                    # For each benchmark, call measurement.py
+                    measurement_args = [python_exe,
+                            os.path.join(benchview_path, "measurement.py"),
+                            "csv",
+                            os.path.join(os.getcwd(), csv_file_name),
+                            "--metric",
+                            "execution_time",
+                            "--unit",
+                            "milliseconds",
+                            "--better",
+                            "desc",
+                            "--drop-first-value",
+                            "--append"]
+                    log(" ".join(measurement_args))
+                    proc = subprocess.Popen(measurement_args)
+                    proc.communicate()
+                else:
+                    # Write output to console if we are not publishing
+                    log("%s" % (dll_name))
+                    log("Duration: [%s]" % (", ".join(str(x) for x in dll_elapsed_times)))
 
     # Upload the data
     if not benchview_path is None:
