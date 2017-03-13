@@ -4990,11 +4990,11 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
     // with an ARM-targeting "altjit").
     info.compMatchedVM = IMAGE_FILE_MACHINE_TARGET == info.compCompHnd->getExpectedTargetArchitecture();
 
-#if defined(ALT_JIT) && defined(UNIX_AMD64_ABI)
-    // ToDo: This code is to allow us to run UNIX codegen on Windows for now. Remove when appropriate.
-    // Make sure that the generated UNIX altjit code is skipped on Windows. The static jit codegen is used to run.
+#if (defined(_TARGET_UNIX_) && !defined(_HOST_UNIX_)) || (!defined(_TARGET_UNIX_) && defined(_HOST_UNIX_))
+    // The host and target platforms don't match. This info isn't handled by the existing
+    // getExpectedTargetArchitecture() JIT-EE interface method.
     info.compMatchedVM = false;
-#endif // UNIX_AMD64_ABI
+#endif
 
 #if COR_JIT_EE_VERSION > 460
     compMaxUncheckedOffsetForNullObject = eeGetEEInfo()->maxUncheckedOffsetForNullObject;
@@ -5418,7 +5418,7 @@ void Compiler::compCompileFinish()
     {
         if (compJitHaltMethod())
         {
-#if !defined(_TARGET_ARM64_) && !defined(PLATFORM_UNIX)
+#if !defined(_TARGET_ARM64_) && !defined(_HOST_UNIX_)
             // TODO-ARM64-NYI: re-enable this when we have an OS that supports a pop-up dialog
 
             // Don't do an assert, but just put up the dialog box so we get just-in-time debugger
