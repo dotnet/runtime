@@ -46,12 +46,6 @@
         <ExcludeList Include="$(XunitTestBinBase)\GC\Scenarios\DoublinkList\dlstack\*">
             <Issue>6553</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\coverage\importer\Desktop\bleref_il_d\bleref_il_d.cmd">
-            <Issue>2414</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\coverage\importer\Desktop\bleref_il_r\bleref_il_r.cmd">
-            <Issue>2414</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\coverage\importer\Desktop\ldelemnullarr1_il_d\ldelemnullarr1_il_d.cmd">
             <Issue>4851</Issue>
         </ExcludeList>
@@ -76,9 +70,6 @@
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\intrinsic\interlocked\rva_rvastatic4\rva_rvastatic4.cmd">
             <Issue>2451</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\pinvoke\preemptive_cooperative\preemptive_cooperative.cmd">
-            <Issue>2434</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\RVAInit\extended\extended.cmd">
             <Issue>2451</Issue>
         </ExcludeList>
@@ -100,35 +91,11 @@
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\rvastatics\rvastatic5\rvastatic5.cmd">
             <Issue>2451</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\tls\mutualrecurthd-tls\mutualrecurthd-tls.cmd">
-            <Issue>2441</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\tls\test-tls\test-tls.cmd">
-            <Issue>2441</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\localloc\verify\verify01_dynamic\verify01_dynamic.cmd">
-            <Issue>2414</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\localloc\verify\verify01_large\verify01_large.cmd">
-            <Issue>2414</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\localloc\verify\verify01_small\verify01_small.cmd">
-            <Issue>2414</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\regress\ndpw\21220\b21220\b21220.cmd">
-            <Issue>2414</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\cctor\misc\global_il_d\global_il_d.cmd">
             <Issue>2451</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\cctor\misc\global_il_r\global_il_r.cmd">
             <Issue>2451</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\deadcode\badcodeafterfinally_d\badcodeafterfinally_d.cmd">
-            <Issue>2444</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\deadcode\badcodeafterfinally_r\badcodeafterfinally_r.cmd">
-            <Issue>2444</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\tailcall\_il_dbgpointer\_il_dbgpointer.cmd">
             <Issue>2451</Issue>
@@ -142,32 +109,62 @@
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\tailcall\_il_relpointer_i\_il_relpointer_i.cmd">
             <Issue>2451</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\xxobj\operand\_il_dbglocalloc\_il_dbglocalloc.cmd">
-            <Issue>2444</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\xxobj\operand\_il_rellocalloc\_il_rellocalloc.cmd">
-            <Issue>2444</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-EJIT\v1-m10\b07847\b07847\b07847.cmd">
-            <Issue>2441</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1-M11-Beta1\b49644\b49644\b49644.cmd">
             <Issue>2451</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1.2-Beta1\b102637\b102637\b102637.cmd">
             <Issue>2451</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\VS-ia64-JIT\V2.0-Beta2\b410474\b410474\b410474.cmd">
+            <Issue>2451</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\coverage\importer\Desktop\bleref_il_d\bleref_il_d.cmd">		
+            <Issue>4851</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\coverage\importer\Desktop\bleref_il_r\bleref_il_r.cmd">		
+            <Issue>4851</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\localloc\verify\verify01_dynamic\verify01_dynamic.cmd">		
+            <Issue>4851</Issue>
+        </ExcludeList>		
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\localloc\verify\verify01_large\verify01_large.cmd">		
+            <Issue>4851</Issue>
+        </ExcludeList>		
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\localloc\verify\verify01_small\verify01_small.cmd">		
+            <Issue>4851</Issue>
+        </ExcludeList>		
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\jit64\regress\ndpw\21220\b21220\b21220.cmd">		
+            <Issue>4851</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\pinvoke\preemptive_cooperative\preemptive_cooperative.cmd">
+            <Issue>2434</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\tls\mutualrecurthd-tls\mutualrecurthd-tls.cmd">
+            <Issue>2441</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\tls\test-tls\test-tls.cmd">
+            <Issue>2441</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-EJIT\v1-m10\b07847\b07847\b07847.cmd">
+            <Issue>2441</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1.2-M01\b03689\b03689\b03689.cmd">
             <Issue>2441</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1.2-M01\b08046\b08046\b08046.cmd">
-            <Issue>2414</Issue>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\deadcode\badcodeafterfinally_d\badcodeafterfinally_d.cmd">
+            <Issue>2444</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\eh\deadcode\badcodeafterfinally_r\badcodeafterfinally_r.cmd">
+            <Issue>2444</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\xxobj\operand\_il_dbglocalloc\_il_dbglocalloc.cmd">
+            <Issue>2444</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\xxobj\operand\_il_rellocalloc\_il_rellocalloc.cmd">
+            <Issue>2444</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\Dev11\dev10_865840\dev10_865840\dev10_865840.cmd">
             <Issue>2445</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\VS-ia64-JIT\V2.0-Beta2\b410474\b410474\b410474.cmd">
-            <Issue>2451</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\Loader\classloader\TypeGeneratorTests\TypeGeneratorTest612\Generated612\*">
             <Issue>6707</Issue>
