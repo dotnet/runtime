@@ -27,8 +27,10 @@
     <Reference Include="System.Net.WebHeaderCollection" />
     <Reference Include="System.Net.WebSockets" />
     <Reference Include="System.Net.WebSockets.Client" />
+    <Reference Include="System.Numerics.Vectors" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Security.Claims" />
