@@ -2448,15 +2448,28 @@ bool CEEInfo::getSystemVAmd64PassStructInRegisterDescriptor(
         }
         _ASSERTE(methodTablePtr != nullptr);
 
+        // If we have full support for FEATURE_UNIX_AMD64_STRUCT_PASSING, and not just the interface,
+        // then we've cached whether this is a reg passed struct in the MethodTable, computed during
+        // MethodTable construction. Otherwise, we are just building in the interface, and we haven't
+        // computed or cached anything, so we need to compute it now.
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
         bool canPassInRegisters = useNativeLayout ? methodTablePtr->GetLayoutInfo()->IsNativeStructPassedInRegisters()
-                                                : methodTablePtr->IsRegPassedStruct();
+                                                  : methodTablePtr->IsRegPassedStruct();
+#else // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+        SystemVStructRegisterPassingHelper helper((unsigned int)th.GetSize());
+        bool canPassInRegisters = methodTablePtr->ClassifyEightBytes(&helper, 0, 0, useNativeLayout);
+#endif // !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
+
         if (canPassInRegisters)
         {
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
             SystemVStructRegisterPassingHelper helper((unsigned int)th.GetSize());
             bool result = methodTablePtr->ClassifyEightBytes(&helper, 0, 0, useNativeLayout);
 
             // The answer must be true at this point.
             _ASSERTE(result);
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
+
             structPassInRegDescPtr->passedInRegisters = true;
 
             structPassInRegDescPtr->eightByteCount = helper.eightByteCount;

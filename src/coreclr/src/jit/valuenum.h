@@ -678,9 +678,13 @@ private:
                 __fallthrough;
 
             case TYP_BYREF:
-#ifndef PLATFORM_UNIX
+
+#ifdef _MSC_VER
+
                 assert(&typeid(T) == &typeid(size_t)); // We represent ref/byref constants as size_t's.
-#endif                                                 // PLATFORM_UNIX
+
+#endif // _MSC_VER
+
                 __fallthrough;
 
             case TYP_INT:

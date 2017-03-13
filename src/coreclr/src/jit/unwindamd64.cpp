@@ -448,7 +448,7 @@ void Compiler::unwindSetFrameRegWindows(regNumber reg, unsigned offset)
 
     func->unwindHeader.FrameRegister = (BYTE)reg;
 
-#ifdef PLATFORM_UNIX
+#ifdef UNIX_AMD64_ABI
     if (offset > 240)
     {
         // On Unix only, we have a CLR-only extension to the AMD64 unwind codes: UWOP_SET_FPREG_LARGE.
@@ -467,7 +467,7 @@ void Compiler::unwindSetFrameRegWindows(regNumber reg, unsigned offset)
         func->unwindHeader.FrameOffset = 15;
     }
     else
-#endif // PLATFORM_UNIX
+#endif // UNIX_AMD64_ABI
     {
         assert(func->unwindCodeSlot > sizeof(UNWIND_CODE));
         UNWIND_CODE* code = (UNWIND_CODE*)&func->unwindCodes[func->unwindCodeSlot -= sizeof(UNWIND_CODE)];
@@ -697,7 +697,7 @@ void DumpUnwindInfo(bool                     isHotCode,
                        pCode->CodeOffset, pCode->UnwindOp, pCode->OpInfo); // This should be zero
                 break;
 
-#ifdef PLATFORM_UNIX
+#ifdef UNIX_AMD64_ABI
 
             case UWOP_SET_FPREG_LARGE:
                 printf("    CodeOffset: 0x%02X UnwindOp: UWOP_SET_FPREG_LARGE (%u) OpInfo: Unused (%u)\n",
@@ -712,7 +712,7 @@ void DumpUnwindInfo(bool                     isHotCode,
                 }
                 break;
 
-#endif // PLATFORM_UNIX
+#endif // UNIX_AMD64_ABI
 
             case UWOP_SAVE_NONVOL:
                 printf("    CodeOffset: 0x%02X UnwindOp: UWOP_SAVE_NONVOL (%u)     OpInfo: %s (%u)\n",
@@ -858,7 +858,7 @@ void Compiler::unwindReserveFuncHelper(FuncInfoDsc* func, bool isHotCode)
 #ifdef UNIX_AMD64_ABI
         if (generateCFIUnwindCodes())
         {
-            unwindCodeBytes = func->cfiCodes->size() * sizeof(CFI_CODE);
+            unwindCodeBytes = (DWORD)(func->cfiCodes->size() * sizeof(CFI_CODE));
         }
         else
 #endif // UNIX_AMD64_ABI
@@ -956,7 +956,7 @@ void Compiler::unwindEmitFuncHelper(FuncInfoDsc* func, void* pHotCode, void* pCo
 #ifdef UNIX_AMD64_ABI
         if (generateCFIUnwindCodes())
         {
-            int size = func->cfiCodes->size();
+            DWORD size = (DWORD)func->cfiCodes->size();
             if (size > 0)
             {
                 unwindCodeBytes = size * sizeof(CFI_CODE);

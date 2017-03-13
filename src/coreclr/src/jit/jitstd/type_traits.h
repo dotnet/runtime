@@ -178,14 +178,15 @@ struct make_unsigned<int>
     typedef unsigned int type;
 };
 
-#ifndef PLATFORM_UNIX
+#ifndef _HOST_UNIX_
 
 template<>
 struct make_unsigned<long>
 {
     typedef unsigned long type;
 };
-#endif // PLATFORM_UNIX
+
+#endif // !_HOST_UNIX_
 
 template<>
 struct make_unsigned<__int64>

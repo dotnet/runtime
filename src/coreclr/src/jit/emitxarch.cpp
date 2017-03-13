@@ -1665,7 +1665,7 @@ inline UNATIVE_OFFSET emitter::emitInsSizeSV(code_t code, int var, int dsp)
 
             if (EBPbased)
             {
-#if defined(_TARGET_AMD64_) && !defined(PLATFORM_UNIX)
+#if defined(_TARGET_AMD64_) && !defined(UNIX_AMD64_ABI)
                 // If localloc is not used, then ebp chaining is done and hence
                 // offset of locals will be at negative offsets, Otherwise offsets
                 // will be positive.  In future, when RBP gets positioned in the

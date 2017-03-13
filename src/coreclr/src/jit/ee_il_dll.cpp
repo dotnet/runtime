@@ -20,7 +20,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "emit.h"
 #include "corexcep.h"
 
-#if !defined(PLATFORM_UNIX)
+#if !defined(_HOST_UNIX_)
 #include <io.h>    // For _dup, _setmode
 #include <fcntl.h> // For _O_TEXT
 #include <errno.h> // For EINVAL
@@ -66,9 +66,9 @@ extern "C" void __stdcall jitStartup(ICorJitHost* jitHost)
     assert(!JitConfig.isInitialized());
     JitConfig.initialize(jitHost);
 
-#if defined(PLATFORM_UNIX)
+#if defined(_HOST_UNIX_)
     jitstdout = procstdout();
-#else
+#else  // !_HOST_UNIX_
     if (jitstdout == nullptr)
     {
         int stdoutFd = _fileno(procstdout());
@@ -99,7 +99,7 @@ extern "C" void __stdcall jitStartup(ICorJitHost* jitHost)
     {
         jitstdout = procstdout();
     }
-#endif // PLATFORM_UNIX
+#endif // !_HOST_UNIX_
 
 #ifdef FEATURE_TRACELOGGING
     JitTelemetry::NotifyDllProcessAttach();

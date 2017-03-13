@@ -5549,9 +5549,9 @@ NativeImageDumper::EnumMnemonics s_MTFlagsLow[] =
 #if defined(FEATURE_HFA)
     MTFLAG_ENTRY(IsHFA),
 #endif // FEATURE_HFA
-#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF)
+#if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
     MTFLAG_ENTRY(IsRegStructPassed),
-#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING_ITF
+#endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
     MTFLAG_ENTRY(IsByRefLike),
     MTFLAG_ENTRY(UNUSED_ComponentSize_5),
     MTFLAG_ENTRY(UNUSED_ComponentSize_6),
