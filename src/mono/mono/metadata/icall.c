@@ -582,6 +582,11 @@ ves_icall_System_Array_CreateInstanceImpl (MonoReflectionType *type, MonoArray *
 	if (mono_error_set_pending_exception (&error))
 		return NULL;
 
+	if (klass->element_class->byval_arg.type == MONO_TYPE_VOID) {
+		mono_set_pending_exception (mono_get_exception_not_supported ("Arrays of System.Void are not supported."));
+		return NULL;
+	}
+
 	if (bounds && (mono_array_length (bounds) == 1) && (mono_array_get (bounds, gint32, 0) != 0))
 		/* vectors are not the same as one dimensional arrays with no-zero bounds */
 		bounded = TRUE;
@@ -6097,6 +6102,7 @@ check_for_invalid_type (MonoClass *klass, MonoError *error)
 	name = mono_type_get_full_name (klass);
 	mono_error_set_type_load_name (error, name, g_strdup (""), "");
 }
+
 ICALL_EXPORT MonoReflectionTypeHandle
 ves_icall_RuntimeType_make_array_type (MonoReflectionTypeHandle ref_type, int rank, MonoError *error)
 {
@@ -6113,6 +6119,11 @@ ves_icall_RuntimeType_make_array_type (MonoReflectionTypeHandle ref_type, int ra
 		aklass = mono_array_class_get (klass, 1);
 	else
 		aklass = mono_bounded_array_class_get (klass, rank, TRUE);
+
+	if (mono_class_has_failure (aklass)) {
+		mono_error_set_for_class_failure (error, aklass);
+		return MONO_HANDLE_CAST (MonoReflectionType, NULL_HANDLE);
+	}
 
 	MonoDomain *domain = MONO_HANDLE_DOMAIN (ref_type);
 	return mono_type_get_object_handle (domain, &aklass->byval_arg, error);

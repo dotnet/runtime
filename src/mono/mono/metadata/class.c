@@ -6520,11 +6520,11 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 	klass->parent = parent;
 	klass->instance_size = mono_class_instance_size (klass->parent);
 
-	if (eclass->byval_arg.type == MONO_TYPE_TYPEDBYREF || eclass->byval_arg.type == MONO_TYPE_VOID) {
+	if (eclass->byval_arg.type == MONO_TYPE_TYPEDBYREF) {
 		/*Arrays of those two types are invalid.*/
 		MonoError prepared_error;
 		error_init (&prepared_error);
-		mono_error_set_invalid_program (&prepared_error, "Arrays of void or System.TypedReference types are invalid.");
+		mono_error_set_invalid_program (&prepared_error, "Arrays of System.TypedReference types are invalid.");
 		mono_class_set_failure (klass, mono_error_box (&prepared_error, klass->image));
 		mono_error_cleanup (&prepared_error);
 	} else if (eclass->enumtype && !mono_class_enum_basetype (eclass)) {
@@ -6596,6 +6596,16 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 	}
 	klass->this_arg = klass->byval_arg;
 	klass->this_arg.byref = 1;
+
+	if (rank > 32) {
+		MonoError prepared_error;
+		error_init (&prepared_error);
+		name = mono_type_get_full_name (klass);
+		mono_error_set_type_load_class (&prepared_error, klass, "%s has too many dimensions.", name);
+		mono_class_set_failure (klass, mono_error_box (&prepared_error, klass->image));
+		mono_error_cleanup (&prepared_error);
+		g_free (name);
+	}
 
 	mono_loader_lock ();
 
