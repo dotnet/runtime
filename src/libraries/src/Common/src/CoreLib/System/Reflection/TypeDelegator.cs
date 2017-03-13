@@ -100,6 +100,8 @@ namespace System.Reflection
 
         protected override TypeAttributes GetAttributeFlagsImpl() => typeImpl.Attributes;
 
+        public override bool IsSZArray => typeImpl.IsSZArray;
+
         protected override bool IsArrayImpl() => typeImpl.IsArray;
         protected override bool IsPrimitiveImpl() => typeImpl.IsPrimitive;
         protected override bool IsByRefImpl() => typeImpl.IsByRef;
