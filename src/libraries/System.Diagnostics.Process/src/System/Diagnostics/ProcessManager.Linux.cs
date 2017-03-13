@@ -204,7 +204,7 @@ namespace System.Diagnostics
                 case 'W':
                     return ThreadState.Transition;
                 default:
-                    Debug.Fail("Unexpected status character");
+                    Debug.Fail($"Unexpected status character: {c}");
                     return ThreadState.Unknown;
             }
         }
