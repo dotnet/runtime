@@ -253,26 +253,23 @@ ves_real_abort (int line, MonoMethod *mh,
 		THROW_EX (mono_get_exception_execution_engine (NULL), ip); \
 	} while (0);
 
-static mono_mutex_t runtime_method_lookup_section;
-
 RuntimeMethod*
 mono_interp_get_runtime_method (MonoDomain *domain, MonoMethod *method, MonoError *error)
 {
 	RuntimeMethod *rtm;
 	error_init (error);
 
-	mono_os_mutex_lock (&runtime_method_lookup_section);
+	mono_domain_jit_code_hash_lock (domain);
 	if ((rtm = mono_internal_hash_table_lookup (&domain->jit_code_hash, method))) {
-		mono_os_mutex_unlock (&runtime_method_lookup_section);
+		mono_domain_jit_code_hash_unlock (domain);
 		return rtm;
 	}
-	rtm = mono_mempool_alloc (domain->mp, sizeof (RuntimeMethod));
-	memset (rtm, 0, sizeof (*rtm));
+	rtm = mono_domain_alloc0 (domain, sizeof (RuntimeMethod));
 	rtm->method = method;
 	rtm->param_count = mono_method_signature (method)->param_count;
 	rtm->hasthis = mono_method_signature (method)->hasthis;
 	mono_internal_hash_table_insert (&domain->jit_code_hash, method, rtm);
-	mono_os_mutex_unlock (&runtime_method_lookup_section);
+	mono_domain_jit_code_hash_unlock (domain);
 
 	return rtm;
 }
@@ -4377,7 +4374,6 @@ mono_interp_init ()
 {
 	mono_native_tls_alloc (&thread_context_id, NULL);
     mono_native_tls_set_value (thread_context_id, NULL);
-	mono_os_mutex_init_recursive (&runtime_method_lookup_section);
 	mono_os_mutex_init_recursive (&create_method_pointer_mutex);
 
 	mono_interp_transform_init ();
@@ -4398,16 +4394,6 @@ interp_regression_step (MonoImage *image, int verbose, int *total_run, int *tota
 	g_print ("Test run: image=%s\n", mono_image_get_filename (image));
 	cfailed = failed = run = 0;
 	transform_time = elapsed = 0.0;
-
-#if 0
-	/* fixme: ugly hack - delete all previously compiled methods */
-	if (domain_jit_info (domain)) {
-		g_hash_table_destroy (domain_jit_info (domain)->jit_trampoline_hash);
-		domain_jit_info (domain)->jit_trampoline_hash = g_hash_table_new (mono_aligned_addr_hash, NULL);
-		mono_internal_hash_table_destroy (&(domain->jit_code_hash));
-		mono_jit_code_hash_init (&(domain->jit_code_hash));
-	}
-#endif
 
 	g_timer_start (timer);
 	for (i = 0; i < mono_image_get_table_rows (image, MONO_TABLE_METHOD); ++i) {
