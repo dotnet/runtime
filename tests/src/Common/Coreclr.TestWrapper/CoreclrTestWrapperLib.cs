@@ -71,23 +71,27 @@ namespace CoreclrTestLib
 
                 process.Start();
 
-                Task copyOutput = process.StandardOutput.BaseStream.CopyToAsync(outputStream);
-                Task copyError = process.StandardError.BaseStream.CopyToAsync(errorStream);
+                var cts = new CancellationTokenSource();
+                Task copyOutput = process.StandardOutput.BaseStream.CopyToAsync(outputStream, 4096, cts.Token);
+                Task copyError = process.StandardError.BaseStream.CopyToAsync(errorStream, 4096, cts.Token);
 
-                bool completed = process.WaitForExit(timeout);
-                copyOutput.Wait(timeout);
-                copyError.Wait(timeout);
-
-                if (completed)
+                if (process.WaitForExit(timeout))
                 {
                     // Process completed. Check process.ExitCode here.
                     exitCode = process.ExitCode;
+                    Task.WaitAll(copyOutput, copyError);
                 }
                 else
                 {
                     // Timed out.
-                    outputWriter.WriteLine("cmdLine:" + executable + " Timed Out");
-                    errorWriter.WriteLine("cmdLine:" + executable + " Timed Out");
+                    try
+                    {
+                        cts.Cancel();
+                    }
+                    catch {}
+
+                    outputWriter.WriteLine("\ncmdLine:" + executable + " Timed Out");
+                    errorWriter.WriteLine("\ncmdLine:" + executable + " Timed Out");
                 }
 
                outputWriter.WriteLine("Test Harness Exitcode is : " + exitCode.ToString());
