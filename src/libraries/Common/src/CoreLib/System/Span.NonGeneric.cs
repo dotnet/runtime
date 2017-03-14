@@ -165,12 +165,12 @@ namespace System
             if (byteLength == 0)
                 return;
             
-#if AMD64
+#if AMD64 && CORECLR
             if (byteLength > 4096) goto PInvoke;
             Unsafe.InitBlockUnaligned(ref b, 0, (uint)byteLength);
             return;
-#else // AMD64
-            // TODO: Optimize this method on X86 machine
+#else
+            // TODO: Optimize other platforms to be on par with AMD64 CoreCLR
             // Note: It's important that this switch handles lengths at least up to 22.
             // See notes below near the main loop for why.
 
@@ -472,7 +472,7 @@ namespace System
             }
 
             return;
-#endif // AMD64
+#endif
             
             PInvoke:
             RuntimeImports.RhZeroMemory(ref b, byteLength);
