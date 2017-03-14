@@ -321,7 +321,12 @@ class UnwindEpilogCodes : public UnwindBase, public UnwindCodesBase
 
 public:
     UnwindEpilogCodes(Compiler* comp)
-        : UnwindBase(comp), uecMem(uecMemLocal), uecMemSize(UEC_LOCAL_COUNT), uecCodeSlot(-1), uecFinalized(false)
+        : UnwindBase(comp)
+        , uecMem(uecMemLocal)
+        , firstByteOfLastCode(0)
+        , uecMemSize(UEC_LOCAL_COUNT)
+        , uecCodeSlot(-1)
+        , uecFinalized(false)
     {
     }
 
@@ -332,12 +337,16 @@ public:
     virtual void AddCode(BYTE b1)
     {
         AppendByte(b1);
+
+        firstByteOfLastCode = b1;
     }
 
     virtual void AddCode(BYTE b1, BYTE b2)
     {
         AppendByte(b1);
         AppendByte(b2);
+
+        firstByteOfLastCode = b1;
     }
 
     virtual void AddCode(BYTE b1, BYTE b2, BYTE b3)
@@ -345,6 +354,8 @@ public:
         AppendByte(b1);
         AppendByte(b2);
         AppendByte(b3);
+
+        firstByteOfLastCode = b1;
     }
 
     virtual void AddCode(BYTE b1, BYTE b2, BYTE b3, BYTE b4)
@@ -353,6 +364,8 @@ public:
         AppendByte(b2);
         AppendByte(b3);
         AppendByte(b4);
+
+        firstByteOfLastCode = b1;
     }
 
     // Return a pointer to the first unwind code byte
@@ -406,11 +419,13 @@ public:
     {
         assert(!uecFinalized);
         noway_assert(0 <= uecCodeSlot && uecCodeSlot < uecMemSize); // There better be at least one code!
-        BYTE lastCode = uecMem[uecCodeSlot];
-        if (!IsEndCode(lastCode)) // If the last code is an end code, we don't need to append one.
+
+        if (!IsEndCode(firstByteOfLastCode)) // If the last code is an end code, we don't need to append one.
         {
-            AppendByte(UWC_END); // Add a default "end" code to the end of the array of unwind codes
+            AppendByte(UWC_END);           // Add a default "end" code to the end of the array of unwind codes
+            firstByteOfLastCode = UWC_END; // Update firstByteOfLastCode in case we use it later
         }
+
         uecFinalized = true; // With the "end" code in place, now we're done
 
 #ifdef DEBUG
@@ -445,6 +460,7 @@ private:
     // If there are more unwind codes, we dynamically allocate memory.
     BYTE  uecMemLocal[UEC_LOCAL_COUNT];
     BYTE* uecMem;
+    BYTE  firstByteOfLastCode;
 
     // uecMemSize is the number of bytes/slots in uecMem. This is equal to UEC_LOCAL_COUNT unless
     // we've dynamically allocated memory to store the codes.
