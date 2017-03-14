@@ -2235,7 +2235,7 @@ public:
 
     void gtDispTreeRange(LIR::Range& containingRange, GenTree* tree);
 
-    void gtDispLIRNode(GenTree* node);
+    void gtDispLIRNode(GenTree* node, const char* prefixMsg = nullptr);
 #endif
 
     // For tree walks
