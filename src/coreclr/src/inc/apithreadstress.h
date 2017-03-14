@@ -46,37 +46,6 @@
 
 #include "utilcode.h"
 
-#ifdef STRESS_THREAD
-
-class APIThreadStress
-{
- public:
-    APIThreadStress();
-    ~APIThreadStress();
-
-    BOOL DoThreadStress();
-    static void SyncThreadStress();
-
-    static void SetThreadStressCount(int count);
-
- protected:
-    virtual void Invoke() {LIMITED_METHOD_CONTRACT;};
-
- private:
-    static DWORD WINAPI StartThread(void *arg);
-
-    static int s_threadStressCount;     
-
-    int       m_threadCount;
-    HANDLE    *m_hThreadArray;
-    BOOL      m_setupOK;
-    LONG      m_runCount;
-    HANDLE    m_syncEvent;
-
-};
-
-#else // STRESS_THREAD
-
 class APIThreadStress
 {
  public:
@@ -84,7 +53,5 @@ class APIThreadStress
     static void SyncThreadStress() { }
     static void SetThreadStressCount(int count) { }
 };
-
-#endif // STRESS_THREAD
 
 #endif  // _APITHREADSTRESS_H_
