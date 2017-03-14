@@ -3609,13 +3609,13 @@ if test "x$have_deprecated" = "xyes"; then
    AC_DEFINE(HAVE_DEPRECATED, 1, [Support for the deprecated attribute])
 fi
 
-AC_ARG_WITH(interpreter, [  --with-interpreter=yes|no       Interpreter, default=no],[buildinterpreter=$with_interpreter],[buildinterpreter=no])
-if test "x$buildinterpreter" = "xyes"; then
-    AC_DEFINE(ENABLE_INTERPRETER, 1, [Enable interpreter in the runtime.])
-    AC_MSG_NOTICE([Enable interpreter in the runtime.])
+AC_ARG_ENABLE(interpreter, [  --enable-interpreter       Enable Interpreter], enable_interpreter=$enableval, enable_interpreter=no)
+
+if test "x$enable_interpreter" = "xyes"; then
+	AC_DEFINE(ENABLE_INTERPRETER, 1, [Enable Interpreter])
 fi
 
-AM_CONDITIONAL([ENABLE_INTERPRETER], [test x$buildinterpreter != xno])
+AM_CONDITIONAL(ENABLE_INTERPRETER, [test x$enable_interpreter = xyes])
 
 
 dnl 
@@ -4613,7 +4613,7 @@ echo "
 	BigArrays:     $enable_big_arrays
 	DTrace:        $enable_dtrace
 	LLVM Back End: $enable_llvm (dynamically loaded: $enable_loadedllvm)
-	Interpreter:   $buildinterpreter
+	Interpreter:   $enable_interpreter
 
    Libraries:
 	.NET 4.x:        $with_profile4_x
