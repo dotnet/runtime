@@ -128,8 +128,8 @@ namespace System
                 return Array.Empty<AdjustmentRule>();
             }
 
-            // The rules we use in Unix cares mostly about the start and end dates but doesn’t fill the transition start and end info.
-            // as the rules now is public, we should fill it properly so the caller doesn’t have to know how we use it internally
+            // The rules we use in Unix care mostly about the start and end dates but don't fill the transition start and end info.
+            // as the rules now is public, we should fill it properly so the caller doesn't have to know how we use it internally
             // and can use it as it is used in Windows
 
             AdjustmentRule[] rules = new AdjustmentRule[_adjustmentRules.Length];
@@ -138,10 +138,14 @@ namespace System
             {
                 var rule = _adjustmentRules[i];
                 var start = rule.DateStart.Kind == DateTimeKind.Utc ?
-                            new DateTime(TimeZoneInfo.ConvertTime(rule.DateStart, this).Ticks, DateTimeKind.Unspecified) :
+                            // At the daylight start we didn't start the daylight saving yet then we convert to Local time
+                            // by adding the _baseUtcOffset to the UTC time
+                            new DateTime(rule.DateStart.Ticks + _baseUtcOffset.Ticks, DateTimeKind.Unspecified) :
                             rule.DateStart;
                 var end = rule.DateEnd.Kind == DateTimeKind.Utc ?
-                            new DateTime(TimeZoneInfo.ConvertTime(rule.DateEnd, this).Ticks - 1, DateTimeKind.Unspecified) :
+                            // At the daylight saving end, the UTC time is mapped to local time which is already shifted by the daylight delta
+                            // we calculate the local time by adding _baseUtcOffset + DaylightDelta to the UTC time
+                            new DateTime(rule.DateEnd.Ticks + _baseUtcOffset.Ticks + rule.DaylightDelta.Ticks, DateTimeKind.Unspecified) :
                             rule.DateEnd;
 
                 var startTransition = TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, start.Hour, start.Minute, start.Second), start.Month, start.Day);
