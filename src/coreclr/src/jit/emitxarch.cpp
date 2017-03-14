@@ -742,7 +742,10 @@ void emitter::emitMarkStackLvl(unsigned stackLevel)
     emitCurStackLvl = emitCurIG->igStkLvl = stackLevel;
 
     if (emitMaxStackDepth < emitCurStackLvl)
+    {
+        JITDUMP("Upping emitMaxStackDepth from %d to %d\n", emitMaxStackDepth, emitCurStackLvl);
         emitMaxStackDepth = emitCurStackLvl;
+    }
 }
 #endif
 
@@ -5137,7 +5140,10 @@ void emitter::emitAdjustStackDepthPushPop(instruction ins)
         emitCurStackLvl += emitCntStackDepth;
 
         if (emitMaxStackDepth < emitCurStackLvl)
+        {
+            JITDUMP("Upping emitMaxStackDepth from %d to %d\n", emitMaxStackDepth, emitCurStackLvl);
             emitMaxStackDepth = emitCurStackLvl;
+        }
     }
     else if (ins == INS_pop)
     {
@@ -5173,7 +5179,10 @@ void emitter::emitAdjustStackDepth(instruction ins, ssize_t val)
         emitCurStackLvl = newStackLvl.Value();
 
         if (emitMaxStackDepth < emitCurStackLvl)
+        {
+            JITDUMP("Upping emitMaxStackDepth from %d to %d\n", emitMaxStackDepth, emitCurStackLvl);
             emitMaxStackDepth = emitCurStackLvl;
+        }
     }
     else if (ins == INS_add)
     {
