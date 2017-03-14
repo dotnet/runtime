@@ -95,7 +95,7 @@ void ZapImage::SaveNativeHeader()
         // Pretend that ready-to-run images are IL-only
         nativeHeader.COR20Flags |= COMIMAGE_FLAGS_ILONLY;
 
-        // Pretend that ready-to-run images do not have native header
+        // Pretend that ready-to-run images do not have a native header
         nativeHeader.COR20Flags &= ~COMIMAGE_FLAGS_IL_LIBRARY;
 
         // Remember whether the source IL image had ReadyToRun header
