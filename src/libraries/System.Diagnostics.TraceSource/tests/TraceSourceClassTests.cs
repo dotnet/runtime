@@ -57,9 +57,7 @@ namespace System.Diagnostics.TraceSourceTests
             var listener = new TestTraceListener();
             trace.Listeners.Add(listener);
             trace.Close();
-            // NOTE: this assertion fails on .net 4.5
-            // where TraceSource.Close calls TraceListener.Close, not Dispose.
-            Assert.Equal(1, listener.GetCallCount(Method.Dispose));
+            Assert.Equal(1, listener.GetCallCount(Method.Close));
             // Assert that writing to a closed TraceSource is not an error.
             trace.TraceEvent(TraceEventType.Critical, 0);
         }
@@ -133,8 +131,20 @@ namespace System.Diagnostics.TraceSourceTests
         [Fact]
         public void EmptySourceName()
         {
-            Assert.Throws<ArgumentException>("name", () => new TraceSource(string.Empty));
-            Assert.Throws<ArgumentException>("name", () => new TraceSource(string.Empty, SourceLevels.All));
+            ArgumentException exception1 = Assert.Throws<ArgumentException>(() => new TraceSource(string.Empty));
+            ArgumentException exception2 = Assert.Throws<ArgumentException>(() => new TraceSource(string.Empty, SourceLevels.All));
+
+            // In Desktop in TraceSource.ctor we create the ArgumentException without param name, just with Message = "name", so ParamName is null
+            if (TraceTestHelper.IsFullFramework)
+            {
+                Assert.Null(exception1.ParamName);
+                Assert.Null(exception2.ParamName);
+            }
+            else
+            {
+                Assert.Equal("name", exception1.ParamName);
+                Assert.Equal("name", exception2.ParamName);
+            }
         }
     }
 

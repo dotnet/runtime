@@ -3,11 +3,14 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Text;
+using System.Runtime.InteropServices;
 
 namespace System.Diagnostics.TraceSourceTests
 {
     static class TraceTestHelper
     {
+        internal static bool IsFullFramework => RuntimeInformation.FrameworkDescription.StartsWith(".NET Framework", StringComparison.OrdinalIgnoreCase);
+
         /// <summary>
         /// Resets the static state of the trace objects before a unit test.
         /// </summary>
