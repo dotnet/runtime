@@ -70,6 +70,11 @@
     <Language Condition="'$(Language)' == '' and  '$(MSBuildProjectExtension)' == '.ilproj'">IL</Language>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'">
+    <!-- RAR thinks all EXEs require binding redirects.  That's not the case for CoreCLR -->
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+  </PropertyGroup>
+
   <!-- Set default ZapRequire level (used only when CrossGen is enabled) -->
   <PropertyGroup>
     <ZapRequire Condition="'$(ZapRequire)' == ''">2</ZapRequire>
@@ -80,6 +85,6 @@
     <ProjectLockJson>$(SourceDir)Common\test_dependencies\project.lock.json</ProjectLockJson>
 
     <!-- Specify the target framework of the common test dependency project.json. -->
-    <NuGetTargetMoniker>.NETCoreApp,Version=v1.1</NuGetTargetMoniker>
+    <NuGetTargetMoniker>.NETCoreApp,Version=v2.0</NuGetTargetMoniker>
   </PropertyGroup>
 </Project>
