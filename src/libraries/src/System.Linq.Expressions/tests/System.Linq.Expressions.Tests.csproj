@@ -8,22 +8,62 @@
   <PropertyGroup>
     <ProjectGuid>{4B4AA59B-89F9-4A34-B3C3-C97EF531EE00}</ProjectGuid>
     <IsInterpreting Condition="'$(TargetGroup)' == 'uap'">true</IsInterpreting>
+    <!-- Temporarily disable IsInterpreting build as it's broken and needs investigation
+         https://github.com/dotnet/corefx/issues/16910
+    -->
+    <IsInterpreting>false</IsInterpreting>
     <DefineConstants Condition=" '$(IsInterpreting)' != 'true' ">$(DefineConstants);FEATURE_COMPILE</DefineConstants>
     <DefineConstants Condition=" '$(FeatureInterpret)' == 'true' ">$(DefineConstants);FEATURE_INTERPRET</DefineConstants>
+    <IncludeDefaultReferences Condition="'$(TargetGroup)'=='uapaot'">false</IncludeDefaultReferences>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <TargetingPackExclusions Include="System.Linq.Expressions" />
     <ReferenceFromRuntime Include="System.Linq.Expressions" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'uapaot'">
+    <ReferenceFromRuntime Include="System.Private.CoreLib" />
+    <ReferenceFromRuntime Include="xunit.core" />
+    <ReferenceFromRuntime Include="Xunit.NetCore.Extensions" />
+    <ReferenceFromRuntime Include="xunit.assert" />
+    <ReferenceFromRuntime Include="xunit.abstractions" />
+    <ReferenceFromRuntime Include="xunit.performance.core" />
+    <ReferenceFromRuntime Include="xunit.performance.api" />
+    <ReferenceFromRuntime Include="System.Runtime" />
+    <ReferenceFromRuntime Include="System.Collections" />
+    <ReferenceFromRuntime Include="System.Reflection.Primitives" />
+    <ReferenceFromRuntime Include="Microsoft.CSharp" />
+    <ReferenceFromRuntime Include="System.Runtime.Extensions" />
+    <ReferenceFromRuntime Include="System.Private.Uri" />
+    <ReferenceFromRuntime Include="System.Text.RegularExpressions" />
+    <ReferenceFromRuntime Include="System.Diagnostics.Debug" />
+    <ReferenceFromRuntime Include="System.ObjectModel" />
+    <ReferenceFromRuntime Include="System.Threading.Thread" />
+    <ReferenceFromRuntime Include="System.Threading.Tasks" />
+    <ReferenceFromRuntime Include="System.Linq" />
+    <ReferenceFromRuntime Include="System.Linq.Queryable" />
+    <ReferenceFromRuntime Include="System.Reflection" />
+    <ReferenceFromRuntime Include="System.IO.FileSystem" />
+    <ReferenceFromRuntime Include="System.Runtime.InteropServices.RuntimeInformation" />
+    <ReferenceFromRuntime Include="System.Runtime.InteropServices" />
+    <ReferenceFromRuntime Include="System.Private.Interop" />
+    <ReferenceFromRuntime Include="netstandard" />
+    <Reference Include="System.Reflection.Emit.ILGeneration" />
+    <Reference Include="System.Reflection.Emit" />
+    <Reference Include="System.Reflection.Emit.Lightweight" />
   </ItemGroup>
   <ItemGroup>
     <!-- Remove this when TypeBuilder extends TypeInfo. See https://github.com/dotnet/corefx/issues/14334 -->
     <Compile Include="$(CommonTestPath)\System\TypeBuilderExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
-    <AdditionalCodeCoverageAssemblies Include="Microsoft.CSharp" /> 
+    <AdditionalCodeCoverageAssemblies Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CompilerTests.cs" />
