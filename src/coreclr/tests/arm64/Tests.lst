@@ -79281,7 +79281,7 @@ RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest963\Generate
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest963\Generated963
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9457;NEW
+Categories=EXPECTED_PASS;NEW
 HostStyle=0
 
 [Generated407.cmd_10034]
@@ -85593,7 +85593,7 @@ RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest928\Generate
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest928\Generated928
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9457;NEW
+Categories=EXPECTED_PASS;NEW
 HostStyle=0
 
 [DevDiv_367099.cmd_10823]
@@ -86321,7 +86321,7 @@ RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest763\Generate
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest763\Generated763
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9457;NEW
+Categories=EXPECTED_PASS;NEW
 HostStyle=0
 
 [Generated1349.cmd_10914]
@@ -87297,7 +87297,7 @@ RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest693\Generate
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest693\Generated693
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9457;NEW
+Categories=EXPECTED_PASS;NEW
 HostStyle=0
 
 [Generated500.cmd_11036]
@@ -88385,7 +88385,7 @@ RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest688\Generate
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest688\Generated688
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9457;NEW
+Categories=EXPECTED_PASS;NEW
 HostStyle=0
 
 [Generated169.cmd_11172]
@@ -89561,7 +89561,7 @@ RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1411\Generat
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1411\Generated1411
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9457;NEW
+Categories=EXPECTED_PASS;NEW
 HostStyle=0
 
 [Generated303.cmd_11319]
@@ -90049,7 +90049,7 @@ RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1412\Generat
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1412\Generated1412
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;9457;NEW
+Categories=EXPECTED_PASS;NEW
 HostStyle=0
 
 [Generated1272.cmd_11380]
