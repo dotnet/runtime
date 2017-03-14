@@ -123,6 +123,7 @@
       </AllResolvedRuntimeDependencies>
       <RunTimeDependecyCopyLocalFile Include="@(AllResolvedRuntimeDependencies)"  Exclude="@(RunTimeDependecyExcludeFiles)"/>
       <RunTimeDependecyCopyLocal Include="@(RunTimeDependecyCopyLocalFile -> '%(File)')"  />
+      <RunTimeDependecyCopyLocal Include="$(TargetingPackPath)/*" />
     </ItemGroup>
     
     <Copy
