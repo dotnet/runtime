@@ -7550,6 +7550,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
     //
     if (compiler->fgPtrArgCntMax < 1)
     {
+        JITDUMP("Upping fgPtrArgCntMax from %d to 1\n", compiler->fgPtrArgCntMax);
         compiler->fgPtrArgCntMax = 1;
     }
 #elif defined(_TARGET_ARM_)
@@ -7709,6 +7710,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper /*= CORINFO_HELP_PROF_FC
     //
     if (compiler->fgPtrArgCntMax < 1)
     {
+        JITDUMP("Upping fgPtrArgCntMax from %d to 1\n", compiler->fgPtrArgCntMax);
         compiler->fgPtrArgCntMax = 1;
     }
 

@@ -4328,6 +4328,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 
     if (fgPtrArgCntMax < fgPtrArgCntCur)
     {
+        JITDUMP("Upping fgPtrArgCntMax from %d to %d\n", fgPtrArgCntMax, fgPtrArgCntCur);
         fgPtrArgCntMax = fgPtrArgCntCur;
     }
 
@@ -14572,7 +14573,10 @@ GenTreePtr Compiler::fgMorphToEmulatedFP(GenTreePtr tree)
         tree = fgMorphIntoHelperCall(tree, helper, args);
 
         if (fgPtrArgCntMax < fgPtrArgCntCur)
+        {
+            JITDUMP("Upping fgPtrArgCntMax from %d to %d\n", fgPtrArgCntMax, fgPtrArgCntCur);
             fgPtrArgCntMax = fgPtrArgCntCur;
+        }
 
         fgPtrArgCntCur -= argc;
         return tree;

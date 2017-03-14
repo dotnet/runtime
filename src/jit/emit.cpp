@@ -4419,7 +4419,10 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 #if EMIT_TRACK_STACK_DEPTH
     /* Convert max. stack depth from # of bytes to # of entries */
 
-    emitMaxStackDepth /= sizeof(int);
+    unsigned maxStackDepthIn4ByteElements = emitMaxStackDepth / sizeof(int);
+    JITDUMP("Converting emitMaxStackDepth from bytes (%d) to elements (%d)\n", emitMaxStackDepth,
+            maxStackDepthIn4ByteElements);
+    emitMaxStackDepth = maxStackDepthIn4ByteElements;
 
     /* Should we use the simple stack */
 
