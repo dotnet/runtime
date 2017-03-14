@@ -45,6 +45,7 @@ namespace System.Net.Security.Tests
 
         [Theory]
         [ClassData(typeof(SslProtocolSupport.UnsupportedSslProtocolsTestData))]
+        [ActiveIssue(16516, TestPlatforms.Windows)]
         public async Task ServerAsyncAuthenticate_EachServerUnsupportedProtocol_Fail(SslProtocols protocol)
         {
             await Assert.ThrowsAsync<NotSupportedException>(() =>
@@ -76,6 +77,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [ActiveIssue(16516, TestPlatforms.Windows)]
         public async Task ServerAsyncAuthenticate_UnsupportedAllServer_Fail()
         {
             await Assert.ThrowsAsync<NotSupportedException>(() =>
