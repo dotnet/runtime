@@ -8,7 +8,7 @@
 
     <!-- Only build packages for current RID or non-RID-specific -->
     <ItemGroup>
-      <_projectsToBuild Include="@(Project)" Condition="'%(Project.PackageTargetRuntime)' == '$(PackageRID)' OR '%(Project.PackageTargetRuntime)' == ''" />
+      <_projectsToBuild Include="@(Project)" Condition="'%(Project.PackageTargetRuntime)' == '$(PackageRID)' OR '%(Project.BuidOnRID)' == '$(PackageRID)' OR '%(Project.PackageTargetRuntime)' == ''" />
     </ItemGroup>
 
     <ItemGroup>
