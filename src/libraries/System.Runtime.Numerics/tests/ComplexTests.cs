@@ -320,7 +320,7 @@ namespace System.Numerics.Tests
             }
         }
 
-        [Theory, MemberData("ACos_Advanced_TestData")]
+        [Theory, MemberData(nameof(ACos_Advanced_TestData))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void ACos_Advanced(double real, double imaginary, double expectedReal, double expectedImaginary)
         {
@@ -407,7 +407,7 @@ namespace System.Numerics.Tests
         }
 
         [ActiveIssue(15455)]
-        [Theory, MemberData("ASin_Advanced_TestData")]
+        [Theory, MemberData(nameof(ASin_Advanced_TestData))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void ASin_Advanced(double real, double imaginary, double expectedReal, double expectedImaginary)
         {
@@ -451,7 +451,7 @@ namespace System.Numerics.Tests
             }
         }
 
-        [Theory, MemberData("ATan_Advanced_TestData")]
+        [Theory, MemberData(nameof(ATan_Advanced_TestData))]
         public static void ATan_Advanced(double real, double imaginary, double expectedReal, double expectedImaginary)
         {
             var complex = new Complex(real, imaginary);
@@ -523,7 +523,7 @@ namespace System.Numerics.Tests
             }
         }
 
-        [ConditionalTheory(nameof(Is64Bit)), MemberData("Cos_Advanced_TestData")]
+        [ConditionalTheory(nameof(Is64Bit)), MemberData(nameof(Cos_Advanced_TestData))]
         public static void Cos_Advanced(double real, double imaginary, double expectedReal, double expectedImaginary)
         {
             var complex = new Complex(real, imaginary);
@@ -575,7 +575,7 @@ namespace System.Numerics.Tests
             }
         }
 
-        [ConditionalTheory(nameof(Is64Bit)), MemberData("Cosh_Advanced_TestData")]
+        [ConditionalTheory(nameof(Is64Bit)), MemberData(nameof(Cosh_Advanced_TestData))]
         public static void Cosh_Advanced(double real, double imaginary, double expectedReal, double expectedImaginary)
         {
             var complex = new Complex(real, imaginary);
@@ -1176,7 +1176,7 @@ namespace System.Numerics.Tests
             }
         }
 
-        [ConditionalTheory(nameof(Is64Bit)), MemberData("Sin_Advanced_TestData")]
+        [ConditionalTheory(nameof(Is64Bit)), MemberData(nameof(Sin_Advanced_TestData))]
         public static void Sin_Advanced(double real, double imaginary, double expectedReal, double expectedImaginary)
         {
             var complex = new Complex(real, imaginary);
@@ -1228,7 +1228,7 @@ namespace System.Numerics.Tests
             }
         }
 
-        [ConditionalTheory(nameof(Is64Bit)), MemberData("Sinh_Advanced_TestData")]
+        [ConditionalTheory(nameof(Is64Bit)), MemberData(nameof(Sinh_Advanced_TestData))]
         public static void Sinh_Advanced(double real, double imaginary, double expectedReal, double expectedImaginary)
         {
             var complex = new Complex(real, imaginary);
@@ -1320,7 +1320,7 @@ namespace System.Numerics.Tests
         }
 
         [Theory]
-        [MemberData("Sqrt_TestData")]
+        [MemberData(nameof(Sqrt_TestData))]
         public static void Sqrt(double real, double imaginary, double expectedReal, double expectedImaginary)
         {
             var complex = new Complex(real, imaginary);
@@ -1329,7 +1329,7 @@ namespace System.Numerics.Tests
         }
 
         [Theory]
-        [MemberData("Sqrt_AdvancedTestData")]
+        [MemberData(nameof(Sqrt_AdvancedTestData))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void Sqrt_Advanced(double real, double imaginary, double expectedReal, double expectedImaginary)
         {
@@ -1400,7 +1400,7 @@ namespace System.Numerics.Tests
             }
         }
 
-        [Theory, MemberData("Tan_Advanced_TestData")]
+        [Theory, MemberData(nameof(Tan_Advanced_TestData))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void Tan_Advanced(double real, double imaginary, double expectedReal, double expectedImaginary)
         {
@@ -1409,7 +1409,7 @@ namespace System.Numerics.Tests
             VerifyRealImaginaryProperties(result, expectedReal, expectedImaginary);
         }
 
-        [Theory, MemberData("Tan_Legacy_TestData")]
+        [Theory, MemberData(nameof(Tan_Legacy_TestData))]
         [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
         public static void Tan_Legacy (double real, double imaginary, double expectedReal, double expectedImaginary) {
             var complex = new Complex(real, imaginary);
@@ -1472,7 +1472,7 @@ namespace System.Numerics.Tests
             }
         }
 
-        [Theory, MemberData("Tanh_Advanced_TestData")]
+        [Theory, MemberData(nameof(Tanh_Advanced_TestData))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void Tanh_Advanced(double real, double imaginary, double expectedReal, double expectedImaginary)
         {
@@ -1481,7 +1481,7 @@ namespace System.Numerics.Tests
             VerifyRealImaginaryProperties(result, expectedReal, expectedImaginary);
         }
 
-        [Theory, MemberData("Tanh_Legacy_TestData")]
+        [Theory, MemberData(nameof(Tanh_Legacy_TestData))]
         [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
         public static void Tanh_Legacy (double real, double imaginary, double expectedReal, double expectedImaginary) {
             var complex = new Complex(real, imaginary);
@@ -1644,7 +1644,7 @@ namespace System.Numerics.Tests
             yield return new object[] { (BigInteger)RandomNegativeDouble() };
         }
 
-        [Theory, MemberData("Cast_BigInteger_TestData")]
+        [Theory, MemberData(nameof(Cast_BigInteger_TestData))]
         public static void Cast_BigInteger(BigInteger value)
         {
             Complex complex = (Complex)value;
@@ -1669,7 +1669,7 @@ namespace System.Numerics.Tests
             yield return new object[] { -positiveDecimal };
         }
 
-        [Theory, MemberData("Cast_Decimal_TestData")]
+        [Theory, MemberData(nameof(Cast_Decimal_TestData))]
         public static void Cast_Decimal(decimal value)
         {
             Complex complex = (Complex)value;
