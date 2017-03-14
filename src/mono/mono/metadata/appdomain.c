@@ -1189,12 +1189,13 @@ add_assemblies_to_domain (MonoDomain *domain, MonoAssembly *ass, GHashTable *ht)
 	if (!ht) {
 		ht = g_hash_table_new (mono_aligned_addr_hash, NULL);
 		destroy_ht = TRUE;
+		for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
+			g_hash_table_insert (ht, tmp->data, tmp->data);
+		}
 	}
 
 	/* FIXME: handle lazy loaded assemblies */
-	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
-		g_hash_table_insert (ht, tmp->data, tmp->data);
-	}
+
 	if (!g_hash_table_lookup (ht, ass)) {
 		mono_assembly_addref (ass);
 		g_hash_table_insert (ht, ass, ass);
@@ -1203,11 +1204,12 @@ add_assemblies_to_domain (MonoDomain *domain, MonoAssembly *ass, GHashTable *ht)
 	}
 
 	if (ass->image->references) {
-		for (i = 0; ass->image->references [i] != NULL; i++) {
-			if (ass->image->references [i] != REFERENCE_MISSING)
+		for (i = 0; i < ass->image->nreferences; i++) {
+			if (ass->image->references[i] && ass->image->references [i] != REFERENCE_MISSING) {
 				if (!g_hash_table_lookup (ht, ass->image->references [i])) {
 					add_assemblies_to_domain (domain, ass->image->references [i], ht);
 				}
+			}
 		}
 	}
 	if (destroy_ht)
