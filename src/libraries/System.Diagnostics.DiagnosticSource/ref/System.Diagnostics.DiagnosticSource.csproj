@@ -19,11 +19,10 @@
   <ItemGroup Condition="'$(TargetGroup)' != 'netstandard1.0'">
     <Compile Include="System.Diagnostics.DiagnosticSourceActivity.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.0'">  
-    <Reference Include="System.Runtime" />     
-  </ItemGroup>    
   <ItemGroup Condition="'$(TargetGroup)' == 'net46' OR '$(TargetGroup)' == 'netfx'">  
     <Reference Include="mscorlib" />
+  </ItemGroup>    
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.0'">  
     <Reference Include="System.Runtime" />     
   </ItemGroup>    
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
