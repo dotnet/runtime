@@ -1338,6 +1338,23 @@ inline BOOL PEFile::HasNativeImage()
 #endif
 }
 
+inline BOOL PEFile::HasNativeOrReadyToRunImage()
+{
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        SO_TOLERANT;
+        CANNOT_TAKE_LOCK;
+        SUPPORTS_DAC;
+    }
+    CONTRACTL_END;
+
+    return (HasNativeImage() || IsILImageReadyToRun());
+}
+
 inline PTR_PEImageLayout PEFile::GetLoadedIL() 
 {
     LIMITED_METHOD_CONTRACT;
