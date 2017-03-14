@@ -939,10 +939,6 @@ HRESULT EEConfig::sync()
 
     fStressLog        =  GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_StressLog, fStressLog) != 0;
     fForceEnc         =  GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_ForceEnc, fForceEnc) != 0;
-    
-#ifdef STRESS_THREAD
-    dwStressThreadCount =  GetConfigDWORD_DontUse_(CLRConfig::EXTERNAL_StressThreadCount, dwStressThreadCount);
-#endif
 
     iRequireZaps        = RequireZapsType(GetConfigDWORD_DontUse_(CLRConfig::EXTERNAL_ZapRequire, iRequireZaps));
     if (IsCompilationProcess() || iRequireZaps >= REQUIRE_ZAPS_COUNT)

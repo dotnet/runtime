@@ -28,7 +28,6 @@ set(UTILCODE_COMMON_SOURCES
   peinformation.cpp
   check.cpp
   log.cpp
-  apithreadstress.cpp
   arraylist.cpp
   bitvector.cpp
   comex.cpp
