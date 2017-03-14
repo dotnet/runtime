@@ -612,7 +612,13 @@ namespace System
         {
             if (byteLength == 0)
                 return;
-
+            
+#if AMD64
+            if (byteLength > 4096) goto PInvoke;
+            Unsafe.InitBlockUnaligned(ref b, 0, (uint)byteLength);
+            return;
+#endif // AMD64
+            // TODO: Optimize this method on X86 machine
             // Note: It's important that this switch handles lengths at least up to 22.
             // See notes below near the main loop for why.
 
