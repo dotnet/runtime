@@ -5,6 +5,9 @@ working_tree_root="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 echo "Running init-tools.sh"
 $working_tree_root/init-tools.sh
 
+# Always copy over the Tools-Override
+cp $__scriptpath/Tools-Override/* $__scriptpath/Tools > /dev/null
+
 toolRuntime=$working_tree_root/Tools
 dotnet=$toolRuntime/dotnetcli/dotnet
 

@@ -1,0 +1,24 @@
+{
+  "dependencies": {
+    "Microsoft.CodeAnalysis.Compilers": "1.1.1",
+    "Microsoft.DotNet.xunit.performance": "1.0.0-alpha-build0040",
+    "Microsoft.DotNet.xunit.performance.analysis": "1.0.0-alpha-build0040",
+    "Microsoft.DotNet.xunit.performance.runner.Windows": "1.0.0-alpha-build0040",
+    "Newtonsoft.Json": "9.0.1",
+    "xunit": "2.2.0-beta2-build3300",
+    "xunit.console.netcore": "1.0.2-prerelease-00177",
+    "xunit.runner.utility": "2.2.0-beta2-build3300"
+  },
+  "frameworks": {
+    "netcoreapp1.1": {
+      "imports": [
+        "dnxcore50",
+        "portable-net45+win8"
+      ]
+    }
+  },
+  "runtimes": {
+    "win7-x86": {},
+    "win7-x64": {}
+  }
+}

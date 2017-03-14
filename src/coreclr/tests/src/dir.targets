@@ -173,4 +173,15 @@
     </ItemGroup>
   </Target>
 
+  <Target Name="UpdateReferenceItems"
+          BeforeTargets="BeforeResolveReferences"
+  >
+    <ItemGroup>
+      <Reference Include="$(TargetingPackPath)/*.dll" >
+        <Private>false</Private>
+      </Reference>
+    </ItemGroup>
+
+  </Target>
+
 </Project>
