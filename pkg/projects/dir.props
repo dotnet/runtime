@@ -14,7 +14,6 @@
     <Serviceable>true</Serviceable>
 
     <IsLineupPackage Condition="'$(PackageTargetRuntime)' == ''">true</IsLineupPackage>
-    <PreventImplementationReference Condition="'$(PackageTargetRuntime)' != ''">true</PreventImplementationReference>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(PackageTargetRuntime)' == ''">
