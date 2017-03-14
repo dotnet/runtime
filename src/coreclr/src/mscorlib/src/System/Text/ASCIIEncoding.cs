@@ -23,9 +23,13 @@ namespace System.Text
     [Serializable]
     public class ASCIIEncoding : Encoding
     {
+        // Allow for devirtualization (see https://github.com/dotnet/coreclr/pull/9230)
+        [Serializable]
+        internal sealed class ASCIIEncodingSealed : ASCIIEncoding { }
+
         // Used by Encoding.ASCII for lazy initialization
         // The initialization code will not be run until a static member of the class is referenced
-        internal static readonly ASCIIEncoding s_default = new ASCIIEncoding();
+        internal static readonly ASCIIEncodingSealed s_default = new ASCIIEncodingSealed();
 
         public ASCIIEncoding() : base(Encoding.CodePageASCII)
         {
