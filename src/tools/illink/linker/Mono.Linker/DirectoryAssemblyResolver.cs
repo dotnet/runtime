@@ -56,12 +56,6 @@ namespace Mono.Linker {
 			if (assembly != null)
 				return assembly;
 
-			var framework_dir = Path.GetDirectoryName (typeof (object).Module.FullyQualifiedName);
-
-			assembly = SearchDirectory (name, new [] { framework_dir }, parameters);
-			if (assembly != null)
-				return assembly;
-
 			throw new AssemblyResolutionException (name);
 		}
 
