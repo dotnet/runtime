@@ -49,5 +49,29 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public | TypeAttributes.Abstract);
             Assert.Throws<IndexOutOfRangeException>(() => type.MakeArrayType(rank));
         }
+
+        [Fact]
+        public void IsArray()
+        {
+            TypeBuilder typeBuilder = Helpers.DynamicType(TypeAttributes.Public | TypeAttributes.Abstract);
+            Assert.False(typeBuilder.IsArray);
+            Assert.False(typeBuilder.IsSZArray);
+
+            Type asType = typeBuilder.AsType();
+            Assert.False(asType.IsArray);
+            Assert.False(asType.IsSZArray);
+
+            Type arrType = typeBuilder.MakeArrayType();
+            Assert.True(arrType.IsArray);
+            Assert.True(arrType.IsSZArray);
+
+            arrType = typeBuilder.MakeArrayType(1);
+            Assert.True(arrType.IsArray);
+            Assert.False(arrType.IsSZArray);
+
+            arrType = typeBuilder.MakeArrayType(2);
+            Assert.True(arrType.IsArray);
+            Assert.False(arrType.IsSZArray);
+        }
     }
 }
