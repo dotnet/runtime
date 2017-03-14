@@ -59,10 +59,6 @@
     <Compile Include="$(CommonPath)\System\Net\InternalException.cs">
       <Link>Common\System\Net\InternalException.cs</Link>
     </Compile>
-    <!-- HTTP -->
-    <Compile Include="$(CommonPath)\System\Net\Http\TlsCertificateExtensions.cs">
-      <Link>Common\System\Net\Http\TlsCertificateExtensions.cs</Link>
-    </Compile>
     <!-- Debug only -->
     <Compile Include="$(CommonPath)\System\Net\DebugSafeHandle.cs">
       <Link>Common\System\Net\DebugSafeHandle.cs</Link>
@@ -74,9 +70,6 @@
       <Link>Common\System\Net\DebugCriticalHandleZeroOrMinusOneIsInvalid.cs</Link>
     </Compile>
     <!-- System.Net common -->
-    <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.cs">
-      <Link>Common\System\Net\ContextAwareResult.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Net\ExceptionCheck.cs">
       <Link>Common\System\Net\ExceptionCheck.cs</Link>
     </Compile>
@@ -98,9 +91,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
       <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\IO\Error.cs">
-      <Link>Common\System\IO\Error.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\Security\SecurityBuffer.cs">
       <Link>Common\System\Net\Security\SecurityBuffer.cs</Link>
@@ -223,9 +213,6 @@
     <Compile Include="$(CommonPath)\Interop\Windows\sspicli\SecPkgContext_StreamSizes.cs">
       <Link>Common\Interop\Windows\sspicli\SecPkgContext_StreamSizes.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.Windows.cs">
-      <Link>Common\System\Net\ContextAwareResult.Windows.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
@@ -251,6 +238,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\ContextFlagsAdapterPal.Unix.cs">
       <Link>Common\System\Net\ContextFlagsAdapterPal.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Http\TlsCertificateExtensions.cs">
+      <Link>Common\System\Net\Http\TlsCertificateExtensions.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\Security\NegotiateStreamPal.Unix.cs">
       <Link>Common\System\Net\Security\NegotiateStreamPal.Unix.cs</Link>
@@ -342,9 +332,6 @@
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\Asn1SafeHandles.Unix.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\Asn1SafeHandles.Unix.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.Unix.cs">
-      <Link>Common\System\Net\ContextAwareResult.Unix.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Net\Security\Unix\SafeDeleteSslContext.cs">
       <Link>Common\System\Net\Security\Unix\SafeDeleteSslContext.cs</Link>
     </Compile>
@@ -391,9 +378,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.OSX.cs">
-      <Link>Common\System\Net\ContextAwareResult.OSX.cs</Link>
     </Compile>
     <Compile Include="System\Net\CertificateValidationPal.OSX.cs" />
     <Compile Include="System\Net\Security\Pal.OSX\SafeDeleteSslContext.cs" />
