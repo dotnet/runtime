@@ -5,8 +5,6 @@
     <ProjectGuid>{F24D3391-2928-4E83-AADE-B34423498750}</ProjectGuid>
     <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
     <UseOpenKey>true</UseOpenKey>
-    <!-- duplicate in net46 folder so older nuget clients can consume -->
-    <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard1.3'">netstandard1.3;net46</PackageTargetFramework>
     <!-- To allow this library to work on V4.5 runtimes and other old platforms
          we also have a separate complilation of this DLL that works for V4.5
          (which is netstandard1.1).  Again we duplicate in a portable-* folder
@@ -59,8 +57,7 @@
   <ItemGroup Condition="'$(TargetGroup)' == 'net46' OR '$(TargetGroup)' == 'netfx'">
     <Compile Include="AssemblyInfo.Net46.cs" />
     <Reference Include="mscorlib" />
-    <Reference Include="System" />    
-    <Reference Include="System.Runtime" />    
+    <Reference Include="System" />
   </ItemGroup>      
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
