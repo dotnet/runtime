@@ -3005,6 +3005,20 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
     [ActiveIssue(10675)]
 #endif
     [Fact]
+    public static void XmlMembersMapping_PrimitiveValue()
+    {
+        string memberName = "value";
+        var getDataRequestBodyValue = 3;
+        var getDataRequestBodyActual = RoundTripWithXmlMembersMapping<int>(getDataRequestBodyValue, memberName, "<?xml version=\"1.0\"?>\r\n<value xmlns=\"http://tempuri.org/\">3</value>");
+
+        Assert.NotNull(getDataRequestBodyActual);
+        Assert.Equal(getDataRequestBodyValue, getDataRequestBodyActual);
+    }
+
+#if ReflectionOnly
+    [ActiveIssue(10675)]
+#endif
+    [Fact]
     public static void XmlMembersMapping_SimpleType()
     {
         string memberName = "GetData";
@@ -3030,7 +3044,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.Equal(requestBodyValue.composite.StringValue, requestBodyActual.composite.StringValue);
     }
 
-    private static T RoundTripWithXmlMembersMapping<T>(object requestBodyValue, string memberName, string baseline, bool skipStringCompare = false) where T : class
+    private static T RoundTripWithXmlMembersMapping<T>(object requestBodyValue, string memberName, string baseline, bool skipStringCompare = false)
     {
         var member = new XmlReflectionMember();
         member.MemberName = memberName;
@@ -3063,8 +3077,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
             var actual = serializer.Deserialize(ms) as object[];
             Assert.NotNull(actual);
             Assert.Equal(value.Length, actual.Length);
-            var requestBodyActual = actual[0] as T;
-            return requestBodyActual;
+            return (T)actual[0];
         }
     }
 
