@@ -7,7 +7,13 @@
   <PropertyGroup Condition="'$(PackageTargetRuntime)' == ''">
     <IsLineupPackage Condition="'$(IsLineupPackage)' == ''">true</IsLineupPackage>
   </PropertyGroup>
- 
+
+  <ItemGroup Condition="'$(PackageTargetRuntime)' != ''">
+    <Dependency Include="Microsoft.NETCore.DotNetHostResolver">
+      <Version>$(HostResolverFullVersion)</Version>
+    </Dependency>
+  </ItemGroup>   
+
   <Import Project="$(MSBuildThisFileDirectory)runtime.$(OSGroup).$(MSBuildProjectName).props" />
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
