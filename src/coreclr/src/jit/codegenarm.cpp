@@ -501,10 +501,12 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
 
 #ifdef DEBUG
     lastConsumedNode = nullptr;
+    if (compiler->verbose)
+    {
+        unsigned seqNum = treeNode->gtSeqNum; // Useful for setting a conditional break in Visual Studio
+        compiler->gtDispLIRNode(treeNode, "Generating: ");
+    }
 #endif
-
-    JITDUMP("Generating: ");
-    DISPNODE(treeNode);
 
     // contained nodes are part of their parents for codegen purposes
     // ex : immediates, most LEAs
