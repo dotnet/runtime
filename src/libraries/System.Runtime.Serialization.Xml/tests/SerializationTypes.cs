@@ -4237,7 +4237,6 @@ public class MySpecialOrder2 : MyOrder
 [System.Runtime.Serialization.DataContractAttribute(Namespace = "http://tempuri.org/")]
 public partial class GetDataRequestBody
 {
-
     [System.Runtime.Serialization.DataMemberAttribute(Order = 0)]
     public int value;
 
@@ -4254,7 +4253,6 @@ public partial class GetDataRequestBody
 [System.Runtime.Serialization.DataContractAttribute(Namespace = "http://tempuri.org/")]
 public partial class GetDataUsingDataContractRequestBody
 {
-
     [System.Runtime.Serialization.DataMemberAttribute(EmitDefaultValue = false, Order = 0)]
     public CompositeTypeForXmlMembersMapping composite;
 
@@ -4282,14 +4280,11 @@ public partial class CompositeTypeForXmlMembersMapping
     {
         get
         {
-            return this.BoolValueField;
+            return BoolValueField;
         }
         set
         {
-            if ((this.BoolValueField.Equals(value) != true))
-            {
-                this.BoolValueField = value;
-            }
+            BoolValueField = value;
         }
     }
 
@@ -4298,14 +4293,11 @@ public partial class CompositeTypeForXmlMembersMapping
     {
         get
         {
-            return this.StringValueField;
+            return StringValueField;
         }
         set
         {
-            if ((object.ReferenceEquals(this.StringValueField, value) != true))
-            {
-                this.StringValueField = value;
-            }
+            StringValueField = value;
         }
     }
 }
