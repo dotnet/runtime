@@ -85,7 +85,7 @@ namespace System.Net.WebSockets
             {
                 // Connect to the remote server
                 Socket connectedSocket = await ConnectSocketAsync(uri.Host, uri.Port, cancellationToken).ConfigureAwait(false);
-                Stream stream = new AsyncEventArgsNetworkStream(connectedSocket);
+                Stream stream = new NetworkStream(connectedSocket, ownsSocket:true);
 
                 // Upgrade to SSL if needed
                 if (uri.Scheme == UriScheme.Wss)
