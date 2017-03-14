@@ -208,9 +208,104 @@ static OSStatus DeleteInKeychain(CFTypeRef needle, SecKeychainRef haystack)
 }
 
 extern "C" int32_t
+AppleCryptoNative_X509StoreAddCertificate(CFTypeRef certOrIdentity, SecKeychainRef keychain, int32_t* pOSStatus)
+{
+    if (pOSStatus != nullptr)
+        *pOSStatus = noErr;
+
+    if (certOrIdentity == nullptr || keychain == nullptr || pOSStatus == nullptr)
+        return -1;
+
+    SecCertificateRef cert = nullptr;
+    SecKeyRef privateKey = nullptr;
+
+    auto inputType = CFGetTypeID(certOrIdentity);
+    OSStatus status = noErr;
+
+    if (inputType == SecCertificateGetTypeID())
+    {
+        cert = reinterpret_cast<SecCertificateRef>(const_cast<void*>(certOrIdentity));
+        CFRetain(cert);
+    }
+    else if (inputType == SecIdentityGetTypeID())
+    {
+        SecIdentityRef identity = reinterpret_cast<SecIdentityRef>(const_cast<void*>(certOrIdentity));
+        status = SecIdentityCopyCertificate(identity, &cert);
+
+        if (status == noErr)
+        {
+            status = SecIdentityCopyPrivateKey(identity, &privateKey);
+        }
+    }
+    else
+    {
+        return -1;
+    }
+
+    SecKeychainItemRef itemCopy = nullptr;
+
+    // Copy the private key into the new keychain first, because it can fail due to
+    // non-exportability. Certificates can only fail for things like I/O errors saving the
+    // keychain back to disk.
+    if (status == noErr && privateKey != nullptr)
+    {
+        status =
+            SecKeychainItemCreateCopy(reinterpret_cast<SecKeychainItemRef>(privateKey), keychain, nullptr, &itemCopy);
+    }
+
+    if (status == errSecDuplicateItem)
+    {
+        status = noErr;
+    }
+
+    // Since we don't care about the itemCopy we'd ideally pass nullptr to SecKeychainItemCreateCopy,
+    // but even though the documentation says it can be null, clang gives an error that null isn't
+    // allowed.
+    if (itemCopy != nullptr)
+    {
+        CFRelease(itemCopy);
+        itemCopy = nullptr;
+    }
+
+    if (status == noErr && cert != nullptr)
+    {
+        status = SecKeychainItemCreateCopy(reinterpret_cast<SecKeychainItemRef>(cert), keychain, nullptr, &itemCopy);
+    }
+
+    if (status == errSecDuplicateItem)
+    {
+        status = noErr;
+    }
+
+    if (itemCopy != nullptr)
+    {
+        CFRelease(itemCopy);
+        itemCopy = nullptr;
+    }
+
+    if (privateKey != nullptr)
+    {
+        CFRelease(privateKey);
+        privateKey = nullptr;
+    }
+
+    if (cert != nullptr)
+    {
+        CFRelease(cert);
+        cert = nullptr;
+    }
+
+    *pOSStatus = status;
+    return status == noErr;
+}
+
+extern "C" int32_t
 AppleCryptoNative_X509StoreRemoveCertificate(CFTypeRef certOrIdentity, SecKeychainRef keychain, int32_t* pOSStatus)
 {
-    if (certOrIdentity == nullptr || keychain == nullptr)
+    if (pOSStatus != nullptr)
+        *pOSStatus = noErr;
+
+    if (certOrIdentity == nullptr || keychain == nullptr || pOSStatus == nullptr)
         return -1;
 
     SecCertificateRef cert = nullptr;

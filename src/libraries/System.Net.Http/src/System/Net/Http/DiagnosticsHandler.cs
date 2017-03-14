@@ -118,10 +118,13 @@ namespace System.Net.Http
                 //always stop activity if it was started
                 if (activity != null)
                 {
-                    activity.SetEndTime(DateTime.UtcNow);
                     s_diagnosticListener.StopActivity(activity, new
                     {
                         Response = responseTask.Status == TaskStatus.RanToCompletion ? responseTask.Result : null,
+                        //If request is failed or cancelled, there is no reponse, therefore no information about request;
+                        //pass the request in the payload, so consumers can have it in Stop for failed/canceled requests
+                        //and not retain all requests in Start 
+                        Request = request,
                         RequestTaskStatus = responseTask.Status
                     });
                 }

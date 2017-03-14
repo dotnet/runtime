@@ -34,53 +34,30 @@ namespace System.Net.Sockets.Tests
         public virtual bool ValidatesArrayArguments => true;
         public virtual bool SupportsNonBlocking => true;
 
-        [ActiveIssue(16715, TestPlatforms.AnyUnix)] // invalid array segments in buffer lists not handled properly
-        [Fact]
-        public async Task InvalidArguments_Throws()
+        [Theory]
+        [InlineData(null, 0, 0)] // null array
+        [InlineData(1, -1, 0)] // offset low
+        [InlineData(1, 2, 0)] // offset high
+        [InlineData(1, 0, -1)] // count low
+        [InlineData(1, 1, 2)] // count high
+        public async Task InvalidArguments_Throws(int? length, int offset, int count)
         {
-            var nullArray = new FakeArraySegment { Array = null, Offset = 0, Count = 0 }.ToActual();
-            var offsetLow = new FakeArraySegment { Array = new byte[1], Offset = -1, Count = 0 }.ToActual();
-            var offsetHigh = new FakeArraySegment { Array = new byte[1], Offset = 2, Count = 0 }.ToActual();
-            var countLow = new FakeArraySegment { Array = new byte[1], Offset = 0, Count = -1 }.ToActual();
-            var countHigh = new FakeArraySegment { Array = new byte[1], Offset = 1, Count = 2 }.ToActual();
+            if (length == null && !ValidatesArrayArguments) return;
 
             using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
-                if (ValidatesArrayArguments)
-                {
-                    await Assert.ThrowsAsync<ArgumentNullException>(() => ReceiveAsync(s, nullArray));
-                }
-                await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => ReceiveAsync(s, offsetLow));
-                await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => ReceiveAsync(s, offsetHigh));
-                await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => ReceiveAsync(s, countLow));
-                await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => ReceiveAsync(s, countHigh));
-                
-                if (ValidatesArrayArguments)
-                {
-                    await Assert.ThrowsAsync<ArgumentNullException>(() => ReceiveAsync(s, new List<ArraySegment<byte>> { nullArray }));
-                }
-                await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => ReceiveAsync(s, new List<ArraySegment<byte>> { offsetLow }));
-                await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => ReceiveAsync(s, new List<ArraySegment<byte>> { offsetHigh }));
-                await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => ReceiveAsync(s, new List<ArraySegment<byte>> { countLow }));
-                await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => ReceiveAsync(s, new List<ArraySegment<byte>> { countHigh }));
+                Type expectedExceptionType = length == null ? typeof(ArgumentNullException) : typeof(ArgumentOutOfRangeException);
 
-                if (ValidatesArrayArguments)
-                {
-                    await Assert.ThrowsAsync<ArgumentNullException>(() => SendAsync(s, nullArray));
-                }
-                await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => SendAsync(s, offsetLow));
-                await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => SendAsync(s, offsetHigh));
-                await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => SendAsync(s, countLow));
-                await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => SendAsync(s, countHigh));
+                var validBuffer = new ArraySegment<byte>(new byte[1]);
+                var invalidBuffer = new FakeArraySegment { Array = length != null ? new byte[length.Value] : null, Offset = offset, Count = count }.ToActual();
 
-                if (ValidatesArrayArguments)
-                {
-                    await Assert.ThrowsAsync<ArgumentNullException>(() => SendAsync(s, new List<ArraySegment<byte>> { nullArray }));
-                }
-                await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => SendAsync(s, new List<ArraySegment<byte>> { offsetLow }));
-                await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => SendAsync(s, new List<ArraySegment<byte>> { offsetHigh }));
-                await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => SendAsync(s, new List<ArraySegment<byte>> { countLow }));
-                await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => SendAsync(s, new List<ArraySegment<byte>> { countHigh }));
+                await Assert.ThrowsAsync(expectedExceptionType, () => ReceiveAsync(s, invalidBuffer));
+                await Assert.ThrowsAsync(expectedExceptionType, () => ReceiveAsync(s, new List<ArraySegment<byte>> { invalidBuffer }));
+                await Assert.ThrowsAsync(expectedExceptionType, () => ReceiveAsync(s, new List<ArraySegment<byte>> { validBuffer, invalidBuffer }));
+
+                await Assert.ThrowsAsync(expectedExceptionType, () => SendAsync(s, invalidBuffer));
+                await Assert.ThrowsAsync(expectedExceptionType, () => SendAsync(s, new List<ArraySegment<byte>> { invalidBuffer }));
+                await Assert.ThrowsAsync(expectedExceptionType, () => SendAsync(s, new List<ArraySegment<byte>> { validBuffer, invalidBuffer }));
             }
         }
 
@@ -1065,6 +1042,23 @@ namespace System.Net.Sockets.Tests
             saea.Completed += handler;
             if (!invoke(saea)) handler(s, saea);
             return tcs.Task;
+        }
+
+        [Theory]
+        [InlineData(1, -1, 0)] // offset low
+        [InlineData(1, 2, 0)] // offset high
+        [InlineData(1, 0, -1)] // count low
+        [InlineData(1, 1, 2)] // count high
+        public void BufferList_InvalidArguments_Throws(int length, int offset, int count)
+        {
+            using (var e = new SocketAsyncEventArgs())
+            {
+                ArraySegment<byte> invalidBuffer = new FakeArraySegment { Array = new byte[length], Offset = offset, Count = count }.ToActual();
+                Assert.Throws<ArgumentOutOfRangeException>(() => e.BufferList = new List<ArraySegment<byte>> { invalidBuffer });
+
+                ArraySegment<byte> validBuffer = new ArraySegment<byte>(new byte[1]);
+                Assert.Throws<ArgumentOutOfRangeException>(() => e.BufferList = new List<ArraySegment<byte>> { validBuffer, invalidBuffer });
+            }
         }
     }
 
