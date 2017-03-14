@@ -89,6 +89,7 @@ namespace System.Net.Security.Tests
 
         [Theory]
         [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
+        [ActiveIssue(16534, TestPlatforms.Windows)]
         public async Task ClientAsyncAuthenticate_AllServerVsIndividualClientSupportedProtocols_Success(
             SslProtocols clientProtocol)
         {
