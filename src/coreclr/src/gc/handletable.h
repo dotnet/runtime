@@ -14,6 +14,7 @@
 #ifndef _HANDLETABLE_H
 #define _HANDLETABLE_H
 
+#include "gcinterface.h"
 
 /****************************************************************************
  *
@@ -102,11 +103,6 @@ void            HndWriteBarrier(OBJECTHANDLE handle, OBJECTREF value);
  * logging an ETW event (for inlined methods)
  */
 void            HndLogSetEvent(OBJECTHANDLE handle, _UNCHECKED_OBJECTREF value);
-
- /*
-  * Scanning callback.
-  */
-typedef void (CALLBACK *HANDLESCANPROC)(PTR_UNCHECKED_OBJECTREF pref, uintptr_t *pExtraInfo, uintptr_t param1, uintptr_t param2);
 
 /*
  * NON-GC handle enumeration
