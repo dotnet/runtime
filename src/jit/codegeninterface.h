@@ -191,7 +191,7 @@ public:
     int genSPtoFPdelta();
     int genTotalFrameSize();
 
-    regNumber genGetThisArgReg(GenTreePtr call);
+    regNumber genGetThisArgReg(GenTreeCall* call) const;
 
 #ifdef _TARGET_XARCH_
 #ifdef _TARGET_AMD64_

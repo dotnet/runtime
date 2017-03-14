@@ -7062,10 +7062,9 @@ GenTreeArgList* Compiler::gtNewArgList(GenTreePtr arg1, GenTreePtr arg2, GenTree
  *  that has the matching argNum and return the fgArgTableEntryPtr
  */
 
-fgArgTabEntryPtr Compiler::gtArgEntryByArgNum(GenTreePtr call, unsigned argNum)
+fgArgTabEntryPtr Compiler::gtArgEntryByArgNum(GenTreeCall* call, unsigned argNum)
 {
-    noway_assert(call->IsCall());
-    fgArgInfoPtr argInfo = call->gtCall.fgArgInfo;
+    fgArgInfoPtr argInfo = call->fgArgInfo;
     noway_assert(argInfo != nullptr);
 
     unsigned          argCount       = argInfo->ArgCount();
@@ -7090,10 +7089,9 @@ fgArgTabEntryPtr Compiler::gtArgEntryByArgNum(GenTreePtr call, unsigned argNum)
  *  that has the matching node and return the fgArgTableEntryPtr
  */
 
-fgArgTabEntryPtr Compiler::gtArgEntryByNode(GenTreePtr call, GenTreePtr node)
+fgArgTabEntryPtr Compiler::gtArgEntryByNode(GenTreeCall* call, GenTreePtr node)
 {
-    noway_assert(call->IsCall());
-    fgArgInfoPtr argInfo = call->gtCall.fgArgInfo;
+    fgArgInfoPtr argInfo = call->fgArgInfo;
     noway_assert(argInfo != nullptr);
 
     unsigned          argCount       = argInfo->ArgCount();
@@ -7118,7 +7116,7 @@ fgArgTabEntryPtr Compiler::gtArgEntryByNode(GenTreePtr call, GenTreePtr node)
         }
         else // (curArgTabEntry->parent == NULL)
         {
-            if (call->gtCall.gtCallObjp == node)
+            if (call->gtCallObjp == node)
             {
                 return curArgTabEntry;
             }
@@ -7133,10 +7131,9 @@ fgArgTabEntryPtr Compiler::gtArgEntryByNode(GenTreePtr call, GenTreePtr node)
  *  Find and return the entry with the given "lateArgInx".  Requires that one is found
  *  (asserts this).
  */
-fgArgTabEntryPtr Compiler::gtArgEntryByLateArgIndex(GenTreePtr call, unsigned lateArgInx)
+fgArgTabEntryPtr Compiler::gtArgEntryByLateArgIndex(GenTreeCall* call, unsigned lateArgInx)
 {
-    noway_assert(call->IsCall());
-    fgArgInfoPtr argInfo = call->gtCall.fgArgInfo;
+    fgArgInfoPtr argInfo = call->fgArgInfo;
     noway_assert(argInfo != nullptr);
 
     unsigned          argCount       = argInfo->ArgCount();
@@ -8259,7 +8256,7 @@ GenTreePtr Compiler::gtCloneExpr(
             if (tree->gtCall.fgArgInfo)
             {
                 // Create and initialize the fgArgInfo for our copy of the call tree
-                copy->gtCall.fgArgInfo = new (this, CMK_Unknown) fgArgInfo(copy, tree);
+                copy->gtCall.fgArgInfo = new (this, CMK_Unknown) fgArgInfo(copy->AsCall(), tree->AsCall());
             }
             else
             {
@@ -8630,21 +8627,19 @@ bool Compiler::gtCompareTree(GenTree* op1, GenTree* op2)
     return false;
 }
 
-GenTreePtr Compiler::gtGetThisArg(GenTreePtr call)
+GenTreePtr Compiler::gtGetThisArg(GenTreeCall* call)
 {
-    assert(call->gtOper == GT_CALL);
-
-    if (call->gtCall.gtCallObjp != nullptr)
+    if (call->gtCallObjp != nullptr)
     {
-        if (call->gtCall.gtCallObjp->gtOper != GT_NOP && call->gtCall.gtCallObjp->gtOper != GT_ASG)
+        if (call->gtCallObjp->gtOper != GT_NOP && call->gtCallObjp->gtOper != GT_ASG)
         {
-            if (!(call->gtCall.gtCallObjp->gtFlags & GTF_LATE_ARG))
+            if (!(call->gtCallObjp->gtFlags & GTF_LATE_ARG))
             {
-                return call->gtCall.gtCallObjp;
+                return call->gtCallObjp;
             }
         }
 
-        if (call->gtCall.gtCallLateArgs)
+        if (call->gtCallLateArgs)
         {
             regNumber        thisReg         = REG_ARG_0;
             unsigned         argNum          = 0;
@@ -8652,13 +8647,13 @@ GenTreePtr Compiler::gtGetThisArg(GenTreePtr call)
             GenTreePtr       result          = thisArgTabEntry->node;
 
 #if !FEATURE_FIXED_OUT_ARGS
-            GenTreePtr lateArgs = call->gtCall.gtCallLateArgs;
-            regList    list     = call->gtCall.regArgList;
+            GenTreePtr lateArgs = call->gtCallLateArgs;
+            regList    list     = call->regArgList;
             int        index    = 0;
             while (lateArgs != NULL)
             {
                 assert(lateArgs->gtOper == GT_LIST);
-                assert(index < call->gtCall.regArgListCount);
+                assert(index < call->regArgListCount);
                 regNumber curArgReg = list[index];
                 if (curArgReg == thisReg)
                 {
@@ -11574,39 +11569,40 @@ void Compiler::gtDispTree(GenTreePtr   tree,
 
         case GT_CALL:
         {
-            assert(tree->gtFlags & GTF_CALL);
-            unsigned numChildren = tree->NumChildren();
+            GenTreeCall* call = tree->AsCall();
+            assert(call->gtFlags & GTF_CALL);
+            unsigned numChildren = call->NumChildren();
             GenTree* lastChild   = nullptr;
             if (numChildren != 0)
             {
-                lastChild = tree->GetChild(numChildren - 1);
+                lastChild = call->GetChild(numChildren - 1);
             }
 
-            if (tree->gtCall.gtCallType != CT_INDIRECT)
+            if (call->gtCallType != CT_INDIRECT)
             {
                 const char* methodName;
                 const char* className;
 
-                methodName = eeGetMethodName(tree->gtCall.gtCallMethHnd, &className);
+                methodName = eeGetMethodName(call->gtCallMethHnd, &className);
 
                 printf(" %s.%s", className, methodName);
             }
 
-            if ((tree->gtFlags & GTF_CALL_UNMANAGED) && (tree->gtCall.gtCallMoreFlags & GTF_CALL_M_FRAME_VAR_DEATH))
+            if ((call->gtFlags & GTF_CALL_UNMANAGED) && (call->gtCallMoreFlags & GTF_CALL_M_FRAME_VAR_DEATH))
             {
                 printf(" (FramesRoot last use)");
             }
 
-            if (((tree->gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0) && (tree->gtCall.gtInlineCandidateInfo != nullptr) &&
-                (tree->gtCall.gtInlineCandidateInfo->exactContextHnd != nullptr))
+            if (((call->gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0) && (call->gtInlineCandidateInfo != nullptr) &&
+                (call->gtInlineCandidateInfo->exactContextHnd != nullptr))
             {
-                printf(" (exactContextHnd=0x%p)", dspPtr(tree->gtCall.gtInlineCandidateInfo->exactContextHnd));
+                printf(" (exactContextHnd=0x%p)", dspPtr(call->gtInlineCandidateInfo->exactContextHnd));
             }
 
-            gtDispVN(tree);
-            if (tree->IsMultiRegCall())
+            gtDispVN(call);
+            if (call->IsMultiRegCall())
             {
-                gtDispRegVal(tree);
+                gtDispRegVal(call);
             }
             printf("\n");
 
@@ -11617,10 +11613,10 @@ void Compiler::gtDispTree(GenTreePtr   tree,
 
                 bufp = &buf[0];
 
-                if ((tree->gtCall.gtCallObjp != nullptr) && (tree->gtCall.gtCallObjp->gtOper != GT_NOP) &&
-                    (!tree->gtCall.gtCallObjp->IsArgPlaceHolderNode()))
+                if ((call->gtCallObjp != nullptr) && (call->gtCallObjp->gtOper != GT_NOP) &&
+                    (!call->gtCallObjp->IsArgPlaceHolderNode()))
                 {
-                    if (tree->gtCall.gtCallObjp->gtOper == GT_ASG)
+                    if (call->gtCallObjp->gtOper == GT_ASG)
                     {
                         sprintf_s(bufp, sizeof(buf), "this SETUP%c", 0);
                     }
@@ -11628,34 +11624,33 @@ void Compiler::gtDispTree(GenTreePtr   tree,
                     {
                         sprintf_s(bufp, sizeof(buf), "this in %s%c", compRegVarName(REG_ARG_0), 0);
                     }
-                    gtDispChild(tree->gtCall.gtCallObjp, indentStack,
-                                (tree->gtCall.gtCallObjp == lastChild) ? IIArcBottom : IIArc, bufp, topOnly);
+                    gtDispChild(call->gtCallObjp, indentStack, (call->gtCallObjp == lastChild) ? IIArcBottom : IIArc,
+                                bufp, topOnly);
                 }
 
-                if (tree->gtCall.gtCallArgs)
+                if (call->gtCallArgs)
                 {
-                    gtDispArgList(tree, indentStack);
+                    gtDispArgList(call, indentStack);
                 }
 
-                if (tree->gtCall.gtCallType == CT_INDIRECT)
+                if (call->gtCallType == CT_INDIRECT)
                 {
-                    gtDispChild(tree->gtCall.gtCallAddr, indentStack,
-                                (tree->gtCall.gtCallAddr == lastChild) ? IIArcBottom : IIArc, "calli tgt", topOnly);
+                    gtDispChild(call->gtCallAddr, indentStack, (call->gtCallAddr == lastChild) ? IIArcBottom : IIArc,
+                                "calli tgt", topOnly);
                 }
 
-                if (tree->gtCall.gtControlExpr != nullptr)
+                if (call->gtControlExpr != nullptr)
                 {
-                    gtDispChild(tree->gtCall.gtControlExpr, indentStack,
-                                (tree->gtCall.gtControlExpr == lastChild) ? IIArcBottom : IIArc, "control expr",
-                                topOnly);
+                    gtDispChild(call->gtControlExpr, indentStack,
+                                (call->gtControlExpr == lastChild) ? IIArcBottom : IIArc, "control expr", topOnly);
                 }
 
 #if !FEATURE_FIXED_OUT_ARGS
-                regList list = tree->gtCall.regArgList;
+                regList list = call->regArgList;
 #endif
                 /* process the late argument list */
                 int lateArgIndex = 0;
-                for (GenTreeArgList* lateArgs = tree->gtCall.gtCallLateArgs; lateArgs;
+                for (GenTreeArgList* lateArgs = call->gtCallLateArgs; lateArgs;
                      (lateArgIndex++, lateArgs = lateArgs->Rest()))
                 {
                     GenTreePtr argx;
@@ -11663,7 +11658,7 @@ void Compiler::gtDispTree(GenTreePtr   tree,
                     argx = lateArgs->Current();
 
                     IndentInfo arcType = (lateArgs->Rest() == nullptr) ? IIArcBottom : IIArc;
-                    gtGetLateArgMsg(tree, argx, lateArgIndex, -1, bufp, sizeof(buf));
+                    gtGetLateArgMsg(call, argx, lateArgIndex, -1, bufp, sizeof(buf));
                     gtDispChild(argx, indentStack, arcType, bufp, topOnly);
                 }
             }
@@ -11781,9 +11776,9 @@ void Compiler::gtDispTree(GenTreePtr   tree,
 //    'arg' must be an argument to 'call' (else gtArgEntryByNode will assert)
 
 void Compiler::gtGetArgMsg(
-    GenTreePtr call, GenTreePtr arg, unsigned argNum, int listCount, char* bufp, unsigned bufLength)
+    GenTreeCall* call, GenTreePtr arg, unsigned argNum, int listCount, char* bufp, unsigned bufLength)
 {
-    if (call->gtCall.gtCallLateArgs != nullptr)
+    if (call->gtCallLateArgs != nullptr)
     {
         fgArgTabEntryPtr curArgTabEntry = gtArgEntryByArgNum(call, argNum);
         assert(curArgTabEntry);
@@ -11837,7 +11832,7 @@ void Compiler::gtGetArgMsg(
 //    'arg' must be an argument to 'call' (else gtArgEntryByNode will assert)
 
 void Compiler::gtGetLateArgMsg(
-    GenTreePtr call, GenTreePtr argx, int lateArgIndex, int listCount, char* bufp, unsigned bufLength)
+    GenTreeCall* call, GenTreePtr argx, int lateArgIndex, int listCount, char* bufp, unsigned bufLength)
 {
     assert(!argx->IsArgPlaceHolderNode()); // No place holders nodes are in gtCallLateArgs;
 
@@ -11846,8 +11841,8 @@ void Compiler::gtGetLateArgMsg(
     regNumber argReg = curArgTabEntry->regNum;
 
 #if !FEATURE_FIXED_OUT_ARGS
-    assert(lateArgIndex < call->gtCall.regArgListCount);
-    assert(argReg == call->gtCall.regArgList[lateArgIndex]);
+    assert(lateArgIndex < call->regArgListCount);
+    assert(argReg == call->regArgList[lateArgIndex]);
 #else
     if (argReg == REG_STK)
     {
@@ -11902,28 +11897,25 @@ void Compiler::gtGetLateArgMsg(
 // gtDispArgList: Dump the tree for a call arg list
 //
 // Arguments:
-//    tree         - The call for which 'arg' is an argument
+//    call         - The call to dump arguments for
 //    indentStack  - the specification for the current level of indentation & arcs
 //
 // Return Value:
 //    None.
 //
-// Assumptions:
-//    'tree' must be a call node
-
-void Compiler::gtDispArgList(GenTreePtr tree, IndentStack* indentStack)
+void Compiler::gtDispArgList(GenTreeCall* call, IndentStack* indentStack)
 {
-    GenTree*  args      = tree->gtCall.gtCallArgs;
+    GenTree*  args      = call->gtCallArgs;
     unsigned  argnum    = 0;
     const int BufLength = 256;
     char      buf[BufLength];
     char*     bufp        = &buf[0];
-    unsigned  numChildren = tree->NumChildren();
+    unsigned  numChildren = call->NumChildren();
     assert(numChildren != 0);
-    bool argListIsLastChild = (args == tree->GetChild(numChildren - 1));
+    bool argListIsLastChild = (args == call->GetChild(numChildren - 1));
 
     IndentInfo arcType = IIArc;
-    if (tree->gtCall.gtCallObjp != nullptr)
+    if (call->gtCallObjp != nullptr)
     {
         argnum++;
     }
@@ -11934,7 +11926,7 @@ void Compiler::gtDispArgList(GenTreePtr tree, IndentStack* indentStack)
         GenTree* arg = args->gtOp.gtOp1;
         if (!arg->IsNothingNode() && !arg->IsArgPlaceHolderNode())
         {
-            gtGetArgMsg(tree, arg, argnum, -1, bufp, BufLength);
+            gtGetArgMsg(call, arg, argnum, -1, bufp, BufLength);
             if (argListIsLastChild && (args->gtOp.gtOp2 == nullptr))
             {
                 arcType = IIArcBottom;
@@ -14916,7 +14908,7 @@ bool Compiler::gtCanOptimizeTypeEquality(GenTreePtr tree)
     {
         if (tree->gtCall.gtCallType == CT_HELPER)
         {
-            if (gtIsTypeHandleToRuntimeTypeHelper(tree))
+            if (gtIsTypeHandleToRuntimeTypeHelper(tree->AsCall()))
             {
                 return true;
             }
@@ -14947,10 +14939,10 @@ bool Compiler::gtCanOptimizeTypeEquality(GenTreePtr tree)
     return false;
 }
 
-bool Compiler::gtIsTypeHandleToRuntimeTypeHelper(GenTreePtr tree)
+bool Compiler::gtIsTypeHandleToRuntimeTypeHelper(GenTreeCall* call)
 {
-    return tree->gtCall.gtCallMethHnd == eeFindHelper(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE) ||
-           tree->gtCall.gtCallMethHnd == eeFindHelper(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL);
+    return call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE) ||
+           call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE_MAYBENULL);
 }
 
 bool Compiler::gtIsActiveCSE_Candidate(GenTreePtr tree)

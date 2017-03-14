@@ -1252,7 +1252,7 @@ void CodeGen::sched_AM(instruction ins,
  */
 
 // clang-format off
-void CodeGen::instEmit_indCall(GenTreePtr call,
+void CodeGen::instEmit_indCall(GenTreeCall* call,
                                size_t     argSize,
                                emitAttr   retSize
                                MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize))
@@ -1269,18 +1269,16 @@ void CodeGen::instEmit_indCall(GenTreePtr call,
 
     CORINFO_SIG_INFO* sigInfo = nullptr;
 
-    assert(call->gtOper == GT_CALL);
-
     /* Get hold of the function address */
 
-    assert(call->gtCall.gtCallType == CT_INDIRECT);
-    addr = call->gtCall.gtCallAddr;
+    assert(call->gtCallType == CT_INDIRECT);
+    addr = call->gtCallAddr;
     assert(addr);
 
 #ifdef DEBUG
     // Pass the call signature information from the GenTree node so the emitter can associate
     // native call sites with the signatures they were generated from.
-    sigInfo = call->gtCall.callSig;
+    sigInfo = call->callSig;
 #endif // DEBUG
 
 #if CPU_LOAD_STORE_ARCH
@@ -1405,7 +1403,7 @@ void CodeGen::instEmit_indCall(GenTreePtr call,
             INDEBUG(bool yes =)
             genCreateAddrMode(addr, -1, true, RBM_NONE, &rev, &rv1, &rv2, &mul, &cns);
 
-            INDEBUG(PREFIX_ASSUME(yes)); // since we have called genMakeAddressable() on call->gtCall.gtCallAddr
+            INDEBUG(PREFIX_ASSUME(yes)); // since we have called genMakeAddressable() on call->gtCallAddr
 
             /* Get the additional operands if any */
 

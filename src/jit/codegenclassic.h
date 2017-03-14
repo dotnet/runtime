@@ -283,7 +283,7 @@ void genCodeForJumpTable(GenTreePtr tree);
 void genCodeForSwitchTable(GenTreePtr tree);
 void genCodeForSwitch(GenTreePtr tree);
 
-size_t genPushArgList(GenTreePtr call);
+size_t genPushArgList(GenTreeCall* call);
 
 #ifdef _TARGET_ARM_
 // We are generating code for a promoted struct local variable.  Fill the next slot (register or
@@ -351,15 +351,15 @@ bool genFillSlotFromPromotedStruct(GenTreePtr       arg,
 // of cpBlk).
 regMaskTP genFindDeadFieldRegs(GenTreePtr cpBlk);
 
-void SetupLateArgs(GenTreePtr call);
+void SetupLateArgs(GenTreeCall* call);
 
 #ifdef _TARGET_ARM_
 void PushMkRefAnyArg(GenTreePtr mkRefAnyTree, fgArgTabEntryPtr curArgTabEntry, regMaskTP regNeedMask);
 #endif // _TARGET_ARM_
 
-regMaskTP genLoadIndirectCallTarget(GenTreePtr call);
+regMaskTP genLoadIndirectCallTarget(GenTreeCall* call);
 
-regMaskTP genCodeForCall(GenTreePtr call, bool valUsed);
+regMaskTP genCodeForCall(GenTreeCall* call, bool valUsed);
 
 GenTreePtr genGetAddrModeBase(GenTreePtr tree);
 
