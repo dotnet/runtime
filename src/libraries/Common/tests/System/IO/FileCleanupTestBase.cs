@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Xunit;
 using System.Runtime.CompilerServices;
 
 namespace System.IO
@@ -22,10 +23,9 @@ namespace System.IO
             {
                 Directory.CreateDirectory(TestDirectory);
             }
-            catch
+            catch (Exception ex)
             {
-                // Don't throw exceptions during test class construction.  Attempts to use paths
-                // under this directory will instead appropriately fail later.
+                Assert.True(false, $"FileCleanupTestBase failed to create {TestDirectory} due to {ex.ToString()}");
             }
         }
 
