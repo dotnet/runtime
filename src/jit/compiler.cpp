@@ -8164,11 +8164,12 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
  * The versions that start with 'd' use the tlsCompiler, so don't require a Compiler*.
  *
  * Summary:
- *      cBlock,      dBlock         : Display a basic block (call fgDispBasicBlock()).
+ *      cBlock,      dBlock         : Display a basic block (call fgTableDispBasicBlock()).
  *      cBlocks,     dBlocks        : Display all the basic blocks of a function (call fgDispBasicBlocks()).
  *      cBlocksV,    dBlocksV       : Display all the basic blocks of a function (call fgDispBasicBlocks(true)).
  *                                    "V" means "verbose", and will dump all the trees.
  *      cTree,       dTree          : Display a tree (call gtDispTree()).
+ *      cTreeLIR,    dTreeLIR       : Display a tree in LIR form (call gtDispLIRNode()).
  *      cTrees,      dTrees         : Display all the trees in a function (call fgDumpTrees()).
  *      cEH,         dEH            : Display the EH handler table (call fgDispHandlerTab()).
  *      cVar,        dVar           : Display a local variable given its number (call lvaDumpEntry()).
@@ -8236,6 +8237,13 @@ void cTree(Compiler* comp, GenTree* tree)
     static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
     printf("===================================================================== *Tree %u\n", sequenceNumber++);
     comp->gtDispTree(tree, nullptr, ">>>");
+}
+
+void cTreeLIR(Compiler* comp, GenTree* tree)
+{
+    static unsigned sequenceNumber = 0; // separate calls with a number to indicate this function has been called
+    printf("===================================================================== *TreeLIR %u\n", sequenceNumber++);
+    comp->gtDispLIRNode(tree);
 }
 
 void cTrees(Compiler* comp)
@@ -8350,6 +8358,11 @@ void dBlocksV()
 void dTree(GenTree* tree)
 {
     cTree(JitTls::GetCompiler(), tree);
+}
+
+void dTreeLIR(GenTree* tree)
+{
+    cTreeLIR(JitTls::GetCompiler(), tree);
 }
 
 void dTrees()
