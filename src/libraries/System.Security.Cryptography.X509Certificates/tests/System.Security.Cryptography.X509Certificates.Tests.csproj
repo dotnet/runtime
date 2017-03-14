@@ -35,6 +35,7 @@
     <Compile Include="TestData.cs" />
     <Compile Include="X500DistinguishedNameEncodingTests.cs" />
     <Compile Include="X500DistinguishedNameTests.cs" />
+    <Compile Include="X509StoreMutableTests.OSX.cs" />
     <Compile Include="X509StoreTests.cs" />
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\ByteUtils.cs">
       <Link>CommonTest\System\Security\Cryptography\ByteUtils.cs</Link>
@@ -50,7 +51,7 @@
       <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' AND '$(TargetsOSX)' != 'true' ">
     <Compile Include="X509FilesystemTests.Unix.cs" />
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>

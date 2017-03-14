@@ -54,7 +54,16 @@ namespace System.Net.Security.Tests
             CheckChannelBinding(cbt3);
 
             Assert.True(cbt1 != null, "ChannelBindingKind.Endpoint token data should be returned from SCHANNEL.");
-            Assert.True(cbt2 != null, "ChannelBindingKind.Unique token data should be returned from SCHANNEL.");
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                Assert.True(cbt2 == null, "ChannelBindingKind.Unique token data is not expected from SecureTransport");
+            }
+            else
+            {
+                Assert.True(cbt2 != null, "ChannelBindingKind.Unique token data should be returned from SCHANNEL.");
+            }
+
             Assert.True(cbt3 == null, "ChannelBindingKind.Unknown token data should not be returned from SCHANNEL since it does not map to a defined context attribute.");
         }
 

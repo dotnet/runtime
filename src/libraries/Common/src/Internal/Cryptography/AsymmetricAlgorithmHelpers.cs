@@ -12,7 +12,7 @@ namespace Internal.Cryptography
     //
     // Common infrastructure for AsymmetricAlgorithm-derived classes that layer on OpenSSL.
     //
-    internal static class OpenSslAsymmetricAlgorithmCore
+    internal static class AsymmetricAlgorithmHelpers
     {
         public static byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm)
         {

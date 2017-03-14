@@ -15,6 +15,8 @@ namespace System.Security.Cryptography.Rsa.Tests
         {
             using (RSA rsa = RSAFactory.Create())
             {
+                rsa.ImportParameters(TestData.RSA2048Params);
+
                 var formatter = new RSAPKCS1SignatureFormatter(rsa);
                 var deformatter = new RSAPKCS1SignatureDeformatter(rsa);
 
@@ -31,6 +33,8 @@ namespace System.Security.Cryptography.Rsa.Tests
         {
             using (RSA rsa = RSAFactory.Create())
             {
+                rsa.ImportParameters(TestData.RSA2048Params);
+
                 var formatter = new RSAPKCS1SignatureFormatter(rsa);
                 var deformatter = new RSAPKCS1SignatureDeformatter(rsa);
 

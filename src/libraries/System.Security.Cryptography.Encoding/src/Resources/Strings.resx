@@ -82,6 +82,9 @@
   <data name="Argument_InvalidValue" xml:space="preserve">
     <value>Value was invalid.</value>
   </data>
+  <data name="Cryptography_Der_Invalid_Encoding" xml:space="preserve">
+    <value>ASN1 corrupted data.</value>
+  </data>
   <data name="ObjectDisposed_Generic" xml:space="preserve">
     <value>Cannot access a disposed object.</value>
   </data>

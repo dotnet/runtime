@@ -337,9 +337,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.False(PlatformDetection.IsWindows && PlatformDetection.WindowsVersion >= 10);
                 Assert.False(PlatformDetection.IsUbuntu1604);
                 Assert.False(PlatformDetection.IsUbuntu1610);
-                Assert.False(PlatformDetection.IsOSX);
-
-                return;
             }
         }
 
@@ -431,9 +428,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.False(PlatformDetection.IsWindows && PlatformDetection.WindowsVersion >= 10);
                 Assert.False(PlatformDetection.IsUbuntu1604);
                 Assert.False(PlatformDetection.IsUbuntu1610);
-                Assert.False(PlatformDetection.IsOSX);
-
-                return;
             }
         }
 

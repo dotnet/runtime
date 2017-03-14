@@ -22,7 +22,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Theory]
         [MemberData(nameof(GetContentBlobsWithType))]
-        public static void TestBlobContentType(byte[] blob, X509ContentType contentType)
+        public static void TestBlobContentType(string caseName, byte[] blob, X509ContentType contentType)
         {
             X509ContentType blobType = X509Certificate2.GetCertContentType(blob);
             Assert.Equal(contentType, blobType);
@@ -32,18 +32,18 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             return new[]
             {
-                new object[] { TestData.MsCertificate, X509ContentType.Cert }, 
-                new object[] { TestData.MsCertificatePemBytes, X509ContentType.Cert },
-                new object[] { TestData.Pkcs7ChainDerBytes, X509ContentType.Pkcs7 },
-                new object[] { TestData.Pkcs7ChainPemBytes, X509ContentType.Pkcs7 },
-                new object[] { TestData.Pkcs7EmptyDerBytes, X509ContentType.Pkcs7 },
-                new object[] { TestData.Pkcs7EmptyPemBytes, X509ContentType.Pkcs7 },
-                new object[] { TestData.Pkcs7SingleDerBytes, X509ContentType.Pkcs7 },
-                new object[] { TestData.Pkcs7SinglePemBytes, X509ContentType.Pkcs7 },
-                new object[] { TestData.PfxData, X509ContentType.Pkcs12 },
-                new object[] { TestData.EmptyPfx, X509ContentType.Pkcs12 },
-                new object[] { TestData.MultiPrivateKeyPfx, X509ContentType.Pkcs12 },
-                new object[] { TestData.ChainPfxBytes, X509ContentType.Pkcs12 },
+                new object[] { "MsCertificate", TestData.MsCertificate, X509ContentType.Cert },
+                new object[] { "MsCertificatePem", TestData.MsCertificatePemBytes, X509ContentType.Cert },
+                new object[] { "Pkcs7ChainDer", TestData.Pkcs7ChainDerBytes, X509ContentType.Pkcs7 },
+                new object[] { "Pkcs7ChainPem", TestData.Pkcs7ChainPemBytes, X509ContentType.Pkcs7 },
+                new object[] { "Pkcs7EmptyDer", TestData.Pkcs7EmptyDerBytes, X509ContentType.Pkcs7 },
+                new object[] { "Pkcs7EmptyPem", TestData.Pkcs7EmptyPemBytes, X509ContentType.Pkcs7 },
+                new object[] { "Pkcs7SingleDer", TestData.Pkcs7SingleDerBytes, X509ContentType.Pkcs7 },
+                new object[] { "Pkcs7SinglePem", TestData.Pkcs7SinglePemBytes, X509ContentType.Pkcs7 },
+                new object[] { "PfxData", TestData.PfxData, X509ContentType.Pkcs12 },
+                new object[] { "EmptyPfx", TestData.EmptyPfx, X509ContentType.Pkcs12 },
+                new object[] { "MultiPrivatePfx", TestData.MultiPrivateKeyPfx, X509ContentType.Pkcs12 },
+                new object[] { "ChainPfx", TestData.ChainPfxBytes, X509ContentType.Pkcs12 },
             };
         }
     }

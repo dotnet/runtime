@@ -48,6 +48,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(16705, TestPlatforms.OSX)]
         public static void ExportAsPfx()
         {
             using (X509Certificate2 c1 = new X509Certificate2(TestData.MsCertificate))
@@ -64,6 +65,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(16705, TestPlatforms.OSX)]
         public static void ExportAsPfxWithPassword()
         {
             const string password = "Cotton";
@@ -82,6 +84,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(16705, TestPlatforms.OSX)]
         public static void ExportAsPfxVerifyPassword()
         {
             const string password = "Cotton";
@@ -90,6 +93,71 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 byte[] pfx = c1.Export(X509ContentType.Pkcs12, password);
                 Assert.ThrowsAny<CryptographicException>(() => new X509Certificate2(pfx, "WRONGPASSWORD"));
+            }
+        }
+
+        [Fact]
+        public static void ExportAsPfxWithPrivateKeyVerifyPassword()
+        {
+            using (var cert = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, X509KeyStorageFlags.Exportable))
+            {
+                Assert.True(cert.HasPrivateKey, "cert.HasPrivateKey");
+
+                const string password = "Cotton";
+
+                byte[] pfx = cert.Export(X509ContentType.Pkcs12, password);
+
+                Assert.ThrowsAny<CryptographicException>(() => new X509Certificate2(pfx, "WRONGPASSWORD"));
+
+                using (var cert2 = new X509Certificate2(pfx, password))
+                {
+                    Assert.Equal(cert, cert2);
+                    Assert.True(cert2.HasPrivateKey, "cert2.HasPrivateKey");
+                }
+            }
+        }
+
+        [Fact]
+        public static void ExportAsPfxWithPrivateKey()
+        {
+            using (X509Certificate2 cert = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword, X509KeyStorageFlags.Exportable))
+            {
+                Assert.True(cert.HasPrivateKey, "cert.HasPrivateKey");
+
+                byte[] pfxBytes = cert.Export(X509ContentType.Pkcs12);
+
+                using (X509Certificate2 fromPfx = new X509Certificate2(pfxBytes))
+                {
+                    Assert.Equal(cert, fromPfx);
+                    Assert.True(fromPfx.HasPrivateKey, "fromPfx.HasPrivateKey");
+
+                    byte[] origSign;
+                    byte[] copySign;
+
+                    using (RSA origPriv = cert.GetRSAPrivateKey())
+                    {
+                        origSign = origPriv.SignData(pfxBytes, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+                    }
+
+                    using (RSA copyPriv = fromPfx.GetRSAPrivateKey())
+                    {
+                        copySign = copyPriv.SignData(pfxBytes, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+                    }
+
+                    using (RSA origPub = cert.GetRSAPublicKey())
+                    {
+                        Assert.True(
+                            origPub.VerifyData(pfxBytes, copySign, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1),
+                            "oPub v copySig");
+                    }
+
+                    using (RSA copyPub = fromPfx.GetRSAPublicKey())
+                    {
+                        Assert.True(
+                            copyPub.VerifyData(pfxBytes, origSign, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1),
+                            "copyPub v oSig");
+                    }
+                }
             }
         }
     }

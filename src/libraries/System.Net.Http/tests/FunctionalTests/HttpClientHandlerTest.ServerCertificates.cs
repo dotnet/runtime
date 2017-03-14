@@ -174,10 +174,45 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task NoCallback_RevokedCertificate_NoRevocationChecking_Succeeds()
         {
-            using (var client = new HttpClient())
-            using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RevokedCertRemoteServer))
+            // On macOS (libcurl+darwinssl) we cannot turn revocation off.
+            // But we also can't realistically say that the default value for
+            // CheckCertificateRevocationList throws in the general case.
+            try
             {
-                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                using (var client = new HttpClient())
+                using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RevokedCertRemoteServer))
+                {
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                }
+            }
+            catch (HttpRequestException)
+            {
+                if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                    throw;
+
+                // If a run on a clean macOS ever fails we need to consider that "false"
+                // for CheckCertificateRevocationList is actually "use a system default" now,
+                // and may require changing how this option is exposed. Considering the variety of
+                // systems this should probably be complex like
+                // enum RevocationCheckingOption {
+                //     // Use it if able
+                //     BestPlatformSecurity = 0,
+                //     // Don't use it, if that's an option.
+                //     BestPlatformPerformance,
+                //     // Required
+                //     MustCheck,
+                //     // Prohibited
+                //     MustNotCheck,
+                // }
+
+                switch (CurlSslVersionDescription())
+                {
+                    case "SecureTransport":
+                        // Suppress the exception, making the test pass.
+                        break;
+                    default:
+                        throw;
+                }
             }
         }
 
@@ -241,6 +276,8 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(nameof(BackendDoesNotSupportCustomCertificateHandling))]
+        // For macOS the "custom handling" means that revocation can't be *disabled*. So this test does not apply.
+        [PlatformSpecific(~TestPlatforms.OSX)]
         public async Task SSLBackendNotSupported_Revocation_ThrowsPlatformNotSupportedException()
         {
             using (var client = new HttpClient(new HttpClientHandler() { CheckCertificateRevocationList = true }))
@@ -299,9 +336,25 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        private static bool BackendSupportsCustomCertificateHandling =>
-            RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ||
-            (CurlSslVersionDescription()?.StartsWith("OpenSSL") ?? false);
+        internal static bool BackendSupportsCustomCertificateHandling
+        {
+            get
+            {
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    return true;
+                }
+
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                {
+                    return false;
+                }
+
+                // For other Unix-based systems it's true if (and only if) the openssl backend
+                // is used with libcurl.
+                return (CurlSslVersionDescription()?.StartsWith("OpenSSL") ?? false);
+            }
+        }
 
         private static bool BackendDoesNotSupportCustomCertificateHandling => !BackendSupportsCustomCertificateHandling;
 
