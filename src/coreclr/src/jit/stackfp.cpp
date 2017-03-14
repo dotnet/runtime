@@ -2595,7 +2595,7 @@ void CodeGen::genCodeForTreeStackFP_Special(GenTreePtr tree)
     {
         case GT_CALL:
         {
-            genCodeForCall(tree, true);
+            genCodeForCall(tree->AsCall(), true);
             break;
         }
         default:

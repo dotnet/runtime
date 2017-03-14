@@ -337,7 +337,7 @@ private:
     void rsSpillTree(regNumber reg, GenTreePtr tree, unsigned regIdx = 0);
 
 #if defined(_TARGET_X86_) && !FEATURE_STACK_FP_X87
-    void rsSpillFPStack(GenTreePtr tree);
+    void rsSpillFPStack(GenTreeCall* call);
 #endif // defined(_TARGET_X86_) && !FEATURE_STACK_FP_X87
 
 #ifdef LEGACY_BACKEND

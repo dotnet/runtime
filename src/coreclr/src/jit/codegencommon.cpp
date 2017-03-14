@@ -1406,9 +1406,8 @@ void CodeGenInterface::reloadFloatReg(var_types type, TempDsc* tmp, regNumber re
 #endif // LEGACY_BACKEND
 
 // inline
-regNumber CodeGenInterface::genGetThisArgReg(GenTreePtr call)
+regNumber CodeGenInterface::genGetThisArgReg(GenTreeCall* call) const
 {
-    noway_assert(call->IsCall());
     return REG_ARG_0;
 }
 
