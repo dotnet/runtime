@@ -389,6 +389,14 @@ void ZapImage::OutputInliningTableForReadyToRun()
     GetReadyToRunHeader()->RegisterSection(READYTORUN_SECTION_INLINING_INFO, pBlob);
 }
 
+void ZapImage::OutputProfileDataForReadyToRun()
+{
+    if (m_pInstrumentSection != nullptr)
+    {
+        GetReadyToRunHeader()->RegisterSection(READYTORUN_SECTION_PROFILEDATA_INFO, m_pInstrumentSection);
+    }
+}
+
 void ZapImage::OutputTypesTableForReadyToRun(IMDInternalImport * pMDImport)
 {
     NativeWriter writer;

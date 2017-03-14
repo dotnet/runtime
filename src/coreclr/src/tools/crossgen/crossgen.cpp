@@ -834,14 +834,6 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
             exit(FAILURE_RESULT);
         }
     }
-
-#ifdef FEATURE_READYTORUN_COMPILER
-    if (((dwFlags & NGENWORKER_FLAGS_TUNING) != 0) && ((dwFlags & NGENWORKER_FLAGS_READYTORUN) != 0))
-    {
-        Output(W("The /Tuning switch cannot be used with /ReadyToRun switch.\n"));
-        exit(FAILURE_RESULT);
-    }
-#endif
     
     // All argument processing has happened by now. The only messages that should appear before here are errors
     // related to argument parsing, such as the Usage message. Afterwards, other messages can appear.

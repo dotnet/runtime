@@ -551,7 +551,7 @@ public:
 
     BOOL IsSIMDVectorAssembly() { LIMITED_METHOD_DAC_CONTRACT; return m_fIsSIMDVectorAssembly; }
 
-#ifdef FEATURE_PREJIT    
+#ifdef FEATURE_PREJIT
     BOOL IsInstrumented();
     BOOL IsInstrumentedHelper();
 #endif // FEATURE_PREJIT
@@ -704,7 +704,6 @@ protected:
     // Keep track of the vars that need to be freed.
     short int m_FreeFlag;
 
-
 private:
 
     //****************************************************************************************
@@ -774,6 +773,15 @@ private:
     UINT64                m_HostAssemblyId;
 
     DWORD                 m_dwReliabilityContract;
+
+#ifdef FEATURE_PREJIT
+    enum IsInstrumentedStatus {
+        IS_INSTRUMENTED_UNSET = 0,
+        IS_INSTRUMENTED_FALSE = 1,
+        IS_INSTRUMENTED_TRUE = 2,
+    };
+    IsInstrumentedStatus    m_isInstrumentedStatus;
+#endif // FEATURE_PREJIT
 
 };
 
