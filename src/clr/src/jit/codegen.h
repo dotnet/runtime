@@ -860,8 +860,8 @@ public:
         instruction ins, regNumber reg, TempDsc* tmp, unsigned ofs, var_types type, emitAttr size = EA_UNKNOWN);
     void inst_FS_ST(instruction ins, emitAttr size, TempDsc* tmp, unsigned ofs);
 
-    void instEmit_indCall(GenTreePtr call,
-                          size_t     argSize,
+    void instEmit_indCall(GenTreeCall* call,
+                          size_t       argSize,
                           emitAttr retSize MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(emitAttr secondRetSize));
 
     void instEmit_RM(instruction ins, GenTreePtr tree, GenTreePtr addr, unsigned offs);

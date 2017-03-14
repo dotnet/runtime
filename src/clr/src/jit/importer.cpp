@@ -1232,13 +1232,13 @@ GenTreePtr Compiler::impAssignStructPtr(GenTreePtr           destAddr,
     }
     else if (src->gtOper == GT_RET_EXPR)
     {
-        GenTreePtr call = src->gtRetExpr.gtInlineCandidate;
+        GenTreeCall* call = src->gtRetExpr.gtInlineCandidate->AsCall();
         noway_assert(call->gtOper == GT_CALL);
 
-        if (call->AsCall()->HasRetBufArg())
+        if (call->HasRetBufArg())
         {
             // insert the return value buffer into the argument list as first byref parameter
-            call->gtCall.gtCallArgs = gtNewListNode(destAddr, call->gtCall.gtCallArgs);
+            call->gtCallArgs = gtNewListNode(destAddr, call->gtCallArgs);
 
             // now returns void, not a struct
             src->gtType  = TYP_VOID;
@@ -1252,7 +1252,7 @@ GenTreePtr Compiler::impAssignStructPtr(GenTreePtr           destAddr,
         {
             // Case of inline method returning a struct in one or more registers.
             //
-            var_types returnType = (var_types)call->gtCall.gtReturnType;
+            var_types returnType = (var_types)call->gtReturnType;
 
             // We won't need a return buffer
             asgType      = returnType;
@@ -1842,7 +1842,7 @@ GenTreePtr Compiler::impReadyToRunLookupToTree(CORINFO_CONST_LOOKUP* pLookup,
     return gtNewIconEmbHndNode(handle, pIndirection, handleFlags, 0, nullptr, compileTimeHandle);
 }
 
-GenTreePtr Compiler::impReadyToRunHelperToTree(
+GenTreeCall* Compiler::impReadyToRunHelperToTree(
     CORINFO_RESOLVED_TOKEN* pResolvedToken,
     CorInfoHelpFunc         helper,
     var_types               type,
@@ -1859,9 +1859,9 @@ GenTreePtr Compiler::impReadyToRunHelperToTree(
     info.compCompHnd->getReadyToRunHelper(pResolvedToken, helper, &lookup);
 #endif
 
-    GenTreePtr op1 = gtNewHelperCallNode(helper, type, GTF_EXCEPT, args);
+    GenTreeCall* op1 = gtNewHelperCallNode(helper, type, GTF_EXCEPT, args);
 
-    op1->gtCall.setEntryPoint(lookup);
+    op1->setEntryPoint(lookup);
 
     return op1;
 }
@@ -3557,7 +3557,7 @@ GenTreePtr Compiler::impIntrinsic(GenTreePtr            newobjThis,
         case CORINFO_INTRINSIC_GetTypeFromHandle:
             op1 = impStackTop(0).val;
             if (op1->gtOper == GT_CALL && (op1->gtCall.gtCallType == CT_HELPER) &&
-                gtIsTypeHandleToRuntimeTypeHelper(op1))
+                gtIsTypeHandleToRuntimeTypeHelper(op1->AsCall()))
             {
                 op1 = impPopStack().val;
                 // Change call to return RuntimeType directly.
@@ -3570,7 +3570,7 @@ GenTreePtr Compiler::impIntrinsic(GenTreePtr            newobjThis,
         case CORINFO_INTRINSIC_RTH_GetValueInternal:
             op1 = impStackTop(0).val;
             if (op1->gtOper == GT_CALL && (op1->gtCall.gtCallType == CT_HELPER) &&
-                gtIsTypeHandleToRuntimeTypeHelper(op1))
+                gtIsTypeHandleToRuntimeTypeHelper(op1->AsCall()))
             {
                 // Old tree
                 // Helper-RuntimeTypeHandle -> TreeToGetNativeTypeHandle
@@ -5541,14 +5541,14 @@ bool Compiler::impCanPInvokeInlineCallSite(BasicBlock* block)
 //   If GTF_CALL_UNMANAGED is set, increments info.compCallUnmanaged
 
 void Compiler::impCheckForPInvokeCall(
-    GenTreePtr call, CORINFO_METHOD_HANDLE methHnd, CORINFO_SIG_INFO* sig, unsigned mflags, BasicBlock* block)
+    GenTreeCall* call, CORINFO_METHOD_HANDLE methHnd, CORINFO_SIG_INFO* sig, unsigned mflags, BasicBlock* block)
 {
     CorInfoUnmanagedCallConv unmanagedCallConv;
 
     // If VM flagged it as Pinvoke, flag the call node accordingly
     if ((mflags & CORINFO_FLG_PINVOKE) != 0)
     {
-        call->gtCall.gtCallMoreFlags |= GTF_CALL_M_PINVOKE;
+        call->gtCallMoreFlags |= GTF_CALL_M_PINVOKE;
     }
 
     if (methHnd)
@@ -5573,7 +5573,7 @@ void Compiler::impCheckForPInvokeCall(
         static_assert_no_msg((unsigned)CORINFO_CALLCONV_THISCALL == (unsigned)CORINFO_UNMANAGED_CALLCONV_THISCALL);
         unmanagedCallConv = CorInfoUnmanagedCallConv(callConv);
 
-        assert(!call->gtCall.gtCallCookie);
+        assert(!call->gtCallCookie);
     }
 
     if (unmanagedCallConv != CORINFO_UNMANAGED_CALLCONV_C && unmanagedCallConv != CORINFO_UNMANAGED_CALLCONV_STDCALL &&
@@ -5633,11 +5633,11 @@ void Compiler::impCheckForPInvokeCall(
 
     if (unmanagedCallConv == CORINFO_UNMANAGED_CALLCONV_THISCALL)
     {
-        call->gtCall.gtCallMoreFlags |= GTF_CALL_M_UNMGD_THISCALL;
+        call->gtCallMoreFlags |= GTF_CALL_M_UNMGD_THISCALL;
     }
 }
 
-GenTreePtr Compiler::impImportIndirectCall(CORINFO_SIG_INFO* sig, IL_OFFSETX ilOffset)
+GenTreeCall* Compiler::impImportIndirectCall(CORINFO_SIG_INFO* sig, IL_OFFSETX ilOffset)
 {
     var_types callRetTyp = JITtype2varType(sig->retType);
 
@@ -5671,7 +5671,7 @@ GenTreePtr Compiler::impImportIndirectCall(CORINFO_SIG_INFO* sig, IL_OFFSETX ilO
 
     /* Create the call node */
 
-    GenTreePtr call = gtNewIndCallNode(fptr, callRetTyp, nullptr, ilOffset);
+    GenTreeCall* call = gtNewIndCallNode(fptr, callRetTyp, nullptr, ilOffset);
 
     call->gtFlags |= GTF_EXCEPT | (fptr->gtFlags & GTF_GLOB_EFFECT);
 
@@ -7079,7 +7079,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     {
         // New lexical block here to avoid compilation errors because of GOTOs.
         BasicBlock* block = compIsForInlining() ? impInlineInfo->iciBlock : compCurBB;
-        impCheckForPInvokeCall(call, methHnd, sig, mflags, block);
+        impCheckForPInvokeCall(call->AsCall(), methHnd, sig, mflags, block);
     }
 
     if (call->gtFlags & GTF_CALL_UNMANAGED)
@@ -7384,7 +7384,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             {
                 // New inliner morph it in impImportCall.
                 // This will allow us to inline the call to the delegate constructor.
-                call = fgOptimizeDelegateConstructor(call, &exactContextHnd);
+                call = fgOptimizeDelegateConstructor(call->AsCall(), &exactContextHnd);
             }
 
             if (!bIntrinsicImported)
@@ -7685,7 +7685,7 @@ DONE_CALL:
             bool fatPointerCandidate = call->AsCall()->IsFatPointerCandidate();
             if (varTypeIsStruct(callRetTyp))
             {
-                call = impFixupCallStructReturn(call, sig->retTypeClass);
+                call = impFixupCallStructReturn(call->AsCall(), sig->retTypeClass);
             }
 
             if ((call->gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0)
@@ -7870,33 +7870,29 @@ var_types Compiler::impImportJitTestLabelMark(int numArgs)
 //  Return Value:
 //    Returns new GenTree node after fixing struct return of call node
 //
-GenTreePtr Compiler::impFixupCallStructReturn(GenTreePtr call, CORINFO_CLASS_HANDLE retClsHnd)
+GenTreePtr Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HANDLE retClsHnd)
 {
-    assert(call->gtOper == GT_CALL);
-
     if (!varTypeIsStruct(call))
     {
         return call;
     }
 
-    call->gtCall.gtRetClsHnd = retClsHnd;
-
-    GenTreeCall* callNode = call->AsCall();
+    call->gtRetClsHnd = retClsHnd;
 
 #if FEATURE_MULTIREG_RET
     // Initialize Return type descriptor of call node
-    ReturnTypeDesc* retTypeDesc = callNode->GetReturnTypeDesc();
+    ReturnTypeDesc* retTypeDesc = call->GetReturnTypeDesc();
     retTypeDesc->InitializeStructReturnType(this, retClsHnd);
 #endif // FEATURE_MULTIREG_RET
 
 #ifdef FEATURE_UNIX_AMD64_STRUCT_PASSING
 
     // Not allowed for FEATURE_CORCLR which is the only SKU available for System V OSs.
-    assert(!callNode->IsVarargs() && "varargs not allowed for System V OSs.");
+    assert(!call->IsVarargs() && "varargs not allowed for System V OSs.");
 
     // The return type will remain as the incoming struct type unless normalized to a
     // single eightbyte return type below.
-    callNode->gtReturnType = call->gtType;
+    call->gtReturnType = call->gtType;
 
     unsigned retRegCount = retTypeDesc->GetReturnRegCount();
     if (retRegCount != 0)
@@ -7904,14 +7900,14 @@ GenTreePtr Compiler::impFixupCallStructReturn(GenTreePtr call, CORINFO_CLASS_HAN
         if (retRegCount == 1)
         {
             // struct returned in a single register
-            callNode->gtReturnType = retTypeDesc->GetReturnRegType(0);
+            call->gtReturnType = retTypeDesc->GetReturnRegType(0);
         }
         else
         {
             // must be a struct returned in two registers
             assert(retRegCount == 2);
 
-            if ((!callNode->CanTailCall()) && (!callNode->IsInlineCandidate()))
+            if ((!call->CanTailCall()) && (!call->IsInlineCandidate()))
             {
                 // Force a call returning multi-reg struct to be always of the IR form
                 //   tmp = call
@@ -7926,7 +7922,7 @@ GenTreePtr Compiler::impFixupCallStructReturn(GenTreePtr call, CORINFO_CLASS_HAN
     else
     {
         // struct not returned in registers i.e returned via hiddden retbuf arg.
-        callNode->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG;
+        call->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG;
     }
 
 #else // not FEATURE_UNIX_AMD64_STRUCT_PASSING
@@ -7935,15 +7931,15 @@ GenTreePtr Compiler::impFixupCallStructReturn(GenTreePtr call, CORINFO_CLASS_HAN
     // There is no fixup necessary if the return type is a HFA struct.
     // HFA structs are returned in registers for ARM32 and ARM64
     //
-    if (!call->gtCall.IsVarargs() && IsHfa(retClsHnd))
+    if (!call->IsVarargs() && IsHfa(retClsHnd))
     {
-        if (call->gtCall.CanTailCall())
+        if (call->CanTailCall())
         {
             if (info.compIsVarArgs)
             {
                 // We cannot tail call because control needs to return to fixup the calling
                 // convention for result return.
-                call->gtCall.gtCallMoreFlags &= ~GTF_CALL_M_EXPLICIT_TAILCALL;
+                call->gtCallMoreFlags &= ~GTF_CALL_M_EXPLICIT_TAILCALL;
             }
             else
             {
@@ -7976,12 +7972,12 @@ GenTreePtr Compiler::impFixupCallStructReturn(GenTreePtr call, CORINFO_CLASS_HAN
     if (howToReturnStruct == SPK_ByReference)
     {
         assert(returnType == TYP_UNKNOWN);
-        call->gtCall.gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG;
+        call->gtCallMoreFlags |= GTF_CALL_M_RETBUFFARG;
     }
     else
     {
         assert(returnType != TYP_UNKNOWN);
-        call->gtCall.gtReturnType = returnType;
+        call->gtReturnType = returnType;
 
         // ToDo: Refactor this common code sequence into its own method as it is used 4+ times
         if ((returnType == TYP_LONG) && (compLongUsed == false))
@@ -7999,7 +7995,7 @@ GenTreePtr Compiler::impFixupCallStructReturn(GenTreePtr call, CORINFO_CLASS_HAN
 
         if (retRegCount >= 2)
         {
-            if ((!callNode->CanTailCall()) && (!callNode->IsInlineCandidate()))
+            if ((!call->CanTailCall()) && (!call->IsInlineCandidate()))
             {
                 // Force a call returning multi-reg struct to be always of the IR form
                 //   tmp = call
@@ -13755,7 +13751,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 #ifdef FEATURE_READYTORUN_COMPILER
                 if (opts.IsReadyToRun())
                 {
-                    GenTreePtr opLookup =
+                    GenTreeCall* opLookup =
                         impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_ISINSTANCEOF, TYP_REF,
                                                   gtNewArgList(op1));
                     usingReadyToRunHelper = (opLookup != nullptr);
@@ -14286,8 +14282,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 #ifdef FEATURE_READYTORUN_COMPILER
                 if (opts.IsReadyToRun())
                 {
-                    GenTreePtr opLookup = impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_CHKCAST,
-                                                                    TYP_REF, gtNewArgList(op1));
+                    GenTreeCall* opLookup = impReadyToRunHelperToTree(&resolvedToken, CORINFO_HELP_READYTORUN_CHKCAST,
+                                                                      TYP_REF, gtNewArgList(op1));
                     usingReadyToRunHelper = (opLookup != nullptr);
                     op1                   = (usingReadyToRunHelper ? opLookup : op1);
 
@@ -15195,8 +15191,7 @@ bool Compiler::impReturnInstruction(BasicBlock* block, int prefixFlags, OPCODE& 
                 // compRetNativeType is TYP_STRUCT.
                 // This implies that struct return via RetBuf arg or multi-reg struct return
 
-                GenTreePtr iciCall = impInlineInfo->iciCall;
-                assert(iciCall->gtOper == GT_CALL);
+                GenTreeCall* iciCall = impInlineInfo->iciCall->AsCall();
 
                 // Assign the inlinee return into a spill temp.
                 // spill temp only exists if there are multiple return points
@@ -15260,7 +15255,7 @@ bool Compiler::impReturnInstruction(BasicBlock* block, int prefixFlags, OPCODE& 
 
                 if (retRegCount != 0)
                 {
-                    assert(!iciCall->AsCall()->HasRetBufArg());
+                    assert(!iciCall->HasRetBufArg());
                     assert(retRegCount >= 2);
                     if (lvaInlineeReturnSpillTemp != BAD_VAR_NUM)
                     {
@@ -15279,8 +15274,8 @@ bool Compiler::impReturnInstruction(BasicBlock* block, int prefixFlags, OPCODE& 
                 else
 #endif // defined(_TARGET_ARM64_)
                 {
-                    assert(iciCall->AsCall()->HasRetBufArg());
-                    GenTreePtr dest = gtCloneExpr(iciCall->gtCall.gtCallArgs->gtOp.gtOp1);
+                    assert(iciCall->HasRetBufArg());
+                    GenTreePtr dest = gtCloneExpr(iciCall->gtCallArgs->gtOp.gtOp1);
                     // spill temp only exists if there are multiple return points
                     if (lvaInlineeReturnSpillTemp != BAD_VAR_NUM)
                     {

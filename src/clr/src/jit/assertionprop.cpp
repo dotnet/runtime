@@ -2099,7 +2099,7 @@ void Compiler::optAssertionGen(GenTreePtr tree)
             if ((tree->gtFlags & GTF_CALL_NULLCHECK) || ((tree->gtFlags & GTF_CALL_VIRT_KIND_MASK) != GTF_CALL_NONVIRT))
             {
                 //  Retrieve the 'this' arg
-                GenTreePtr thisArg = gtGetThisArg(tree);
+                GenTreePtr thisArg = gtGetThisArg(tree->AsCall());
 #if defined(_TARGET_X86_) || defined(_TARGET_AMD64_) || defined(_TARGET_ARM_)
                 if (thisArg == nullptr)
                 {
@@ -3590,16 +3590,13 @@ Compiler::AssertionIndex Compiler::optAssertionIsNonNullInternal(GenTreePtr op, 
  *  Returns the modified tree, or nullptr if no assertion prop took place.
  *
  */
-GenTreePtr Compiler::optNonNullAssertionProp_Call(ASSERT_VALARG_TP assertions,
-                                                  const GenTreePtr tree,
-                                                  const GenTreePtr stmt)
+GenTreePtr Compiler::optNonNullAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCall* call, const GenTreePtr stmt)
 {
-    assert(tree->gtOper == GT_CALL);
-    if ((tree->gtFlags & GTF_CALL_NULLCHECK) == 0)
+    if ((call->gtFlags & GTF_CALL_NULLCHECK) == 0)
     {
         return nullptr;
     }
-    GenTreePtr op1 = gtGetThisArg(tree);
+    GenTreePtr op1 = gtGetThisArg(call);
     noway_assert(op1 != nullptr);
     if (op1->gtOper != GT_LCL_VAR)
     {
@@ -3617,13 +3614,13 @@ GenTreePtr Compiler::optNonNullAssertionProp_Call(ASSERT_VALARG_TP assertions,
         {
             (vnBased) ? printf("\nVN based non-null prop in BB%02u:\n", compCurBB->bbNum)
                       : printf("\nNon-null prop for index #%02u in BB%02u:\n", index, compCurBB->bbNum);
-            gtDispTree(tree, nullptr, nullptr, true);
+            gtDispTree(call, nullptr, nullptr, true);
         }
 #endif
-        tree->gtFlags &= ~GTF_CALL_NULLCHECK;
-        tree->gtFlags &= ~GTF_EXCEPT;
-        noway_assert(tree->gtFlags & GTF_SIDE_EFFECT);
-        return tree;
+        call->gtFlags &= ~GTF_CALL_NULLCHECK;
+        call->gtFlags &= ~GTF_EXCEPT;
+        noway_assert(call->gtFlags & GTF_SIDE_EFFECT);
+        return call;
     }
     return nullptr;
 }
@@ -3640,33 +3637,31 @@ GenTreePtr Compiler::optNonNullAssertionProp_Call(ASSERT_VALARG_TP assertions,
  *
  */
 
-GenTreePtr Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, const GenTreePtr tree, const GenTreePtr stmt)
+GenTreePtr Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCall* call, const GenTreePtr stmt)
 {
-    assert(tree->gtOper == GT_CALL);
-
-    if (optNonNullAssertionProp_Call(assertions, tree, stmt))
+    if (optNonNullAssertionProp_Call(assertions, call, stmt))
     {
-        return optAssertionProp_Update(tree, tree, stmt);
+        return optAssertionProp_Update(call, call, stmt);
     }
-    else if (!optLocalAssertionProp && (tree->gtCall.gtCallType == CT_HELPER))
+    else if (!optLocalAssertionProp && (call->gtCallType == CT_HELPER))
     {
-        if (tree->gtCall.gtCallMethHnd == eeFindHelper(CORINFO_HELP_ISINSTANCEOFINTERFACE) ||
-            tree->gtCall.gtCallMethHnd == eeFindHelper(CORINFO_HELP_ISINSTANCEOFARRAY) ||
-            tree->gtCall.gtCallMethHnd == eeFindHelper(CORINFO_HELP_ISINSTANCEOFCLASS) ||
-            tree->gtCall.gtCallMethHnd == eeFindHelper(CORINFO_HELP_ISINSTANCEOFANY) ||
-            tree->gtCall.gtCallMethHnd == eeFindHelper(CORINFO_HELP_CHKCASTINTERFACE) ||
-            tree->gtCall.gtCallMethHnd == eeFindHelper(CORINFO_HELP_CHKCASTARRAY) ||
-            tree->gtCall.gtCallMethHnd == eeFindHelper(CORINFO_HELP_CHKCASTCLASS) ||
-            tree->gtCall.gtCallMethHnd == eeFindHelper(CORINFO_HELP_CHKCASTANY) ||
-            tree->gtCall.gtCallMethHnd == eeFindHelper(CORINFO_HELP_CHKCASTCLASS_SPECIAL))
+        if (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_ISINSTANCEOFINTERFACE) ||
+            call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_ISINSTANCEOFARRAY) ||
+            call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_ISINSTANCEOFCLASS) ||
+            call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_ISINSTANCEOFANY) ||
+            call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_CHKCASTINTERFACE) ||
+            call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_CHKCASTARRAY) ||
+            call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_CHKCASTCLASS) ||
+            call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_CHKCASTANY) ||
+            call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_CHKCASTCLASS_SPECIAL))
         {
-            GenTreePtr arg1 = gtArgEntryByArgNum(tree->AsCall(), 1)->node;
+            GenTreePtr arg1 = gtArgEntryByArgNum(call, 1)->node;
             if (arg1->gtOper != GT_LCL_VAR)
             {
                 return nullptr;
             }
 
-            GenTreePtr arg2 = gtArgEntryByArgNum(tree->AsCall(), 0)->node;
+            GenTreePtr arg2 = gtArgEntryByArgNum(call, 0)->node;
 
             unsigned index = optAssertionIsSubtype(arg1, arg2, assertions);
             if (index != NO_ASSERTION_INDEX)
@@ -3675,18 +3670,18 @@ GenTreePtr Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, const Ge
                 if (verbose)
                 {
                     printf("\nDid VN based subtype prop for index #%02u in BB%02u:\n", index, compCurBB->bbNum);
-                    gtDispTree(tree, nullptr, nullptr, true);
+                    gtDispTree(call, nullptr, nullptr, true);
                 }
 #endif
                 GenTreePtr list = nullptr;
-                gtExtractSideEffList(tree, &list, GTF_SIDE_EFFECT, true);
+                gtExtractSideEffList(call, &list, GTF_SIDE_EFFECT, true);
                 if (list != nullptr)
                 {
-                    arg1 = gtNewOperNode(GT_COMMA, tree->TypeGet(), list, arg1);
+                    arg1 = gtNewOperNode(GT_COMMA, call->TypeGet(), list, arg1);
                     fgSetTreeSeq(arg1);
                 }
 
-                return optAssertionProp_Update(arg1, tree, stmt);
+                return optAssertionProp_Update(arg1, call, stmt);
             }
         }
     }
@@ -3917,7 +3912,7 @@ GenTreePtr Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, const GenTree
             return optAssertionProp_Cast(assertions, tree, stmt);
 
         case GT_CALL:
-            return optAssertionProp_Call(assertions, tree, stmt);
+            return optAssertionProp_Call(assertions, tree->AsCall(), stmt);
 
         case GT_EQ:
         case GT_NE:
@@ -4887,7 +4882,7 @@ void Compiler::optVnNonNullPropCurStmt(BasicBlock* block, GenTreePtr stmt, GenTr
     GenTreePtr newTree = nullptr;
     if (tree->OperGet() == GT_CALL)
     {
-        newTree = optNonNullAssertionProp_Call(empty, tree, stmt);
+        newTree = optNonNullAssertionProp_Call(empty, tree->AsCall(), stmt);
     }
     else if (tree->OperIsIndir())
     {
