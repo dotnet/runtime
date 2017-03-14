@@ -273,7 +273,11 @@ Note that JIT64 does not implement this properly. The C# compiler used to always
 
 ## The PSPSym and funclet parameters
 
-The name *PSPSym* stands for Previous Stack Pointer Symbol. It is how a funclet accesses locals from the main function body. This is not used for x86: the frame pointer on x86 is always preserved when the handlers are invoked.
+The *PSPSym* (which stands for Previous Stack Pointer Symbol) is a pointer-sized local variable used to access locals from the main function body.
+
+CoreRT does not use PSPSym. For filter funclets the VM sets the frame register to be the same as the parent function. For second pass funclets the VM restores all non-volatile registers. The same convention is used across all platforms.
+
+CoreCLR uses PSPSym for all platforms except x86: the frame pointer on x86 is always preserved when the handlers are invoked.
 
 First, two definitions.
 
@@ -281,7 +285,7 @@ First, two definitions.
 
 *Initial-SP* is the initial value of the stack pointer after the fixed-size portion of the frame has been allocated. That is, before any "alloca"-type allocations.
 
-The PSPSym is a pointer-sized local variable in the frame of the main function and of each funclet. The value stored in PSPSym is the value of Initial-SP for AMD64 or Caller-SP for other platforms, for the main function. The stack offset of the PSPSym is reported to the VM in the GC information header. The value reported in the GC information is the offset of the PSPSym from Initial-SP for AMD64 or Caller-SP for other platforms. (Note that both the value stored, and the way the value is reported to the VM, differs between architectures. In particular, note that most things in the GC information header are reported as offsets relative to Caller-SP, but PSPSym on AMD64 is one exception, and maybe the only exception.)
+The value stored in PSPSym is the value of Initial-SP for AMD64 or Caller-SP for other platforms, for the main function. The stack offset of the PSPSym is reported to the VM in the GC information header. The value reported in the GC information is the offset of the PSPSym from Initial-SP for AMD64 or Caller-SP for other platforms. (Note that both the value stored, and the way the value is reported to the VM, differs between architectures. In particular, note that most things in the GC information header are reported as offsets relative to Caller-SP, but PSPSym on AMD64 is one exception, and maybe the only exception.)
 
 The VM uses the PSPSym to find other locals it cares about (such as the generics context in a funclet frame). The JIT uses it to re-establish the frame pointer register, so that the frame pointer is the same value in a funclet as it is in the main function body.
 
@@ -292,8 +296,6 @@ Using the establisher frame, the funclet wants to load the value of the PSPSym. 
 On ARM and ARM64, for all second pass funclets (finally, fault, catch, and filter-handler) the VM restores all non-volatile registers to their values within the parent frame. This includes the frame register (`R11`). Thus, the PSPSym is not used to recompute the frame pointer register in this case, though the PSPSym is copied to the funclet's frame, as for all funclets.
 
 Catch, Filter, and Filter-handlers also get an Exception object (GC ref) as an argument (`REG_EXCEPTION_OBJECT`). On AMD64 it is the second argument and thus passed in RDX. On ARM and ARM64 this is the first argument and passed in R0.
-
-CoreRT does not use PSPSym. For filter funclets the VM sets the frame register to be the same as the parent function. For second pass funclets the VM restores all non-volatile registers. The same convention is used across all platforms.
 
 (Note that the JIT64 source code contains a comment that says, "The current CLR doesn't always pass the correct establisher frame to the funclet. Funclet may receive establisher frame of funclet when expecting that of original routine." It indicates this is the reason that a PSPSym is required in all funclets as well as the main function, whereas if the establisher frame was correctly reported, the PSPSym could be omitted in some cases.)
 
