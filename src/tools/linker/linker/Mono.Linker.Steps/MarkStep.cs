@@ -1044,8 +1044,8 @@ namespace Mono.Linker.Steps {
 			MarkCustomAttributes (method.MethodReturnType);
 			MarkMarshalSpec (method.MethodReturnType);
 
-			if (method.IsPInvokeImpl) {
-				ProcessPInvokeImplMethod (method);
+			if (method.IsPInvokeImpl || method.IsInternalCall) {
+				ProcessInteropMethod (method);
 			}
 
 			if (ShouldParseMethodBody (method))
@@ -1079,19 +1079,30 @@ namespace Mono.Linker.Steps {
 			}
 		}
 
-		void ProcessPInvokeImplMethod(MethodDefinition method)
+		void ProcessInteropMethod(MethodDefinition method)
 		{
 			TypeDefinition returnTypeDefinition = ResolveTypeDefinition (method.ReturnType);
-			MarkDefaultConstructor (returnTypeDefinition);
 			const bool includeStaticFields = false;
-			MarkFields (returnTypeDefinition, includeStaticFields);
+			if (returnTypeDefinition != null) {
+				MarkDefaultConstructor (returnTypeDefinition);
+				MarkFields (returnTypeDefinition, includeStaticFields);
+			}
+
+			if (method.HasThis) {
+				MarkFields (method.DeclaringType, includeStaticFields);
+			}
 
 			foreach (ParameterDefinition pd in method.Parameters) {
-				if (pd.ParameterType.IsByReference) {
-					TypeReference paramTypeReference = ((ByReferenceType)pd.ParameterType).ElementType;
-					TypeDefinition paramTypeDefinition = ResolveTypeDefinition (paramTypeReference);
-					MarkDefaultConstructor (paramTypeDefinition);
+				TypeReference paramTypeReference = pd.ParameterType;
+				if (paramTypeReference is TypeSpecification) {
+					paramTypeReference = (paramTypeReference as TypeSpecification).ElementType;
+				}
+				TypeDefinition paramTypeDefinition = ResolveTypeDefinition (paramTypeReference);
+				if (paramTypeDefinition != null) {
 					MarkFields (paramTypeDefinition, includeStaticFields);
+					if (paramTypeReference.IsByReference) {
+						MarkDefaultConstructor (paramTypeDefinition);
+					}
 				}
 			}
 		}
