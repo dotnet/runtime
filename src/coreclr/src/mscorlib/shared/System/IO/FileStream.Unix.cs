@@ -230,7 +230,15 @@ namespace System.IO
                 if (_fileHandle != null && !_fileHandle.IsClosed)
                 {
                     // Flush any remaining data in the file
-                    FlushWriteBuffer();
+                    try
+                    {
+                        FlushWriteBuffer();
+                    }
+                    catch (IOException) when (!disposing)
+                    {
+                        // On finalization, ignore failures from trying to flush the write buffer,
+                        // e.g. if this stream is wrapping a pipe and the pipe is now broken.
+                    }
 
                     // If DeleteOnClose was requested when constructed, delete the file now.
                     // (Unix doesn't directly support DeleteOnClose, so we mimic it here.)
