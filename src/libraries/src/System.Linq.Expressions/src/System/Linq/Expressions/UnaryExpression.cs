@@ -864,14 +864,16 @@ namespace System.Linq.Expressions
         public static UnaryExpression ArrayLength(Expression array)
         {
             RequiresCanRead(array, nameof(array));
-            if (!array.Type.IsArray || !typeof(Array).IsAssignableFrom(array.Type))
+            if (!array.Type.IsSZArray)
             {
-                throw Error.ArgumentMustBeArray(nameof(array));
-            }
-            if (!array.Type.IsVector())
-            {
+                if (!array.Type.IsArray || !typeof(Array).IsAssignableFrom(array.Type))
+                {
+                    throw Error.ArgumentMustBeArray(nameof(array));
+                }
+
                 throw Error.ArgumentMustBeSingleDimensionalArrayType(nameof(array));
             }
+
             return new UnaryExpression(ExpressionType.ArrayLength, array, typeof(int), null);
         }
 

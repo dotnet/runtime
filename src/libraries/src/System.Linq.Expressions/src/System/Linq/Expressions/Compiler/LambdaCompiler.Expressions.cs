@@ -304,15 +304,15 @@ namespace System.Linq.Expressions.Compiler
 
         private void EmitGetArrayElement(Type arrayType)
         {
-            if (!arrayType.IsVector())
-            {
-                // Multidimensional arrays, call get
-                _ilg.Emit(OpCodes.Call, arrayType.GetMethod("Get", BindingFlags.Public | BindingFlags.Instance));
-            }
-            else
+            if (arrayType.IsSZArray)
             {
                 // For one dimensional arrays, emit load
                 _ilg.EmitLoadElement(arrayType.GetElementType());
+            }
+            else
+            {
+                // Multidimensional arrays, call get
+                _ilg.Emit(OpCodes.Call, arrayType.GetMethod("Get", BindingFlags.Public | BindingFlags.Instance));
             }
         }
 
@@ -332,15 +332,15 @@ namespace System.Linq.Expressions.Compiler
 
         private void EmitSetArrayElement(Type arrayType)
         {
-            if (!arrayType.IsVector())
-            {
-                // Multidimensional arrays, call set
-                _ilg.Emit(OpCodes.Call, arrayType.GetMethod("Set", BindingFlags.Public | BindingFlags.Instance));
-            }
-            else
+            if (arrayType.IsSZArray)
             {
                 // For one dimensional arrays, emit store
                 _ilg.EmitStoreElement(arrayType.GetElementType());
+            }
+            else
+            {
+                // Multidimensional arrays, call set
+                _ilg.Emit(OpCodes.Call, arrayType.GetMethod("Set", BindingFlags.Public | BindingFlags.Instance));
             }
         }
 
