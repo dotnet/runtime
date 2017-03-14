@@ -19,7 +19,7 @@ def osGroupMap = ['Ubuntu14.04':'Linux',
                   'Debian8.4':'Linux',
                   'Fedora23':'Linux',
                   'Fedora24':'Linux',
-                  'OSX':'OSX',
+                  'OSX10.12':'OSX',
                   'Windows_NT':'Windows_NT',
                   'CentOS7.1': 'Linux',
                   'OpenSUSE13.2': 'Linux',
@@ -33,7 +33,7 @@ def osShortName = ['Windows 10': 'win10',
                    'Windows 7' : 'win7',
                    'Windows_NT' : 'windows_nt',
                    'Ubuntu14.04' : 'ubuntu14.04',
-                   'OSX' : 'osx',
+                   'OSX10.12' : 'osx',
                    'Windows Nano 2016' : 'winnano16',
                    'Ubuntu16.04' : 'ubuntu16.04',
                    'Ubuntu16.10' : 'ubuntu16.10',
@@ -209,7 +209,7 @@ def buildArchConfiguration = ['Debug': 'x86',
 // Define outerloop testing for OSes that can build and run.  Run locally on each machine.
 // **************************
 [true, false].each { isPR ->
-    ['Windows 10', 'Windows 7', 'Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Ubuntu16.10', 'CentOS7.1', 'OpenSUSE13.2', 'OpenSUSE42.1', 'RHEL7.2', 'Fedora23', 'Fedora24', 'Debian8.4', 'OSX', 'PortableLinux'].each { osName ->
+    ['Windows 10', 'Windows 7', 'Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Ubuntu16.10', 'CentOS7.1', 'OpenSUSE13.2', 'OpenSUSE42.1', 'RHEL7.2', 'Fedora23', 'Fedora24', 'Debian8.4', 'OSX10.12', 'PortableLinux'].each { osName ->
         ['Debug', 'Release'].each { configurationGroup ->
 
             def osForMachineAffinity = osName
@@ -227,7 +227,7 @@ def buildArchConfiguration = ['Debug': 'x86',
                         batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd -${configurationGroup}")
                         batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build-tests.cmd -${configurationGroup} -outerloop -- /p:IsCIBuild=true")
                     }
-                    else if (osName == 'OSX') {
+                    else if (osName == 'OSX10.12') {
                         shell("HOME=\$WORKSPACE/tempHome ./build.sh -${configurationGroup.toLowerCase()}")
                         shell("HOME=\$WORKSPACE/tempHome ./build-tests.sh -${configurationGroup.toLowerCase()} -outerloop -- /p:IsCIBuild=true")
                     }
@@ -246,7 +246,7 @@ def buildArchConfiguration = ['Debug': 'x86',
             }
 
             // Set the affinity.  OS name matches the machine affinity.
-            if (osName == 'Windows_NT' || osName == 'OSX') {
+            if (osName == 'Windows_NT' || osName == 'OSX10.12') {
                 Utilities.setMachineAffinity(newJob, osForMachineAffinity, "latest-or-auto-elevated")
             }
             else if (osGroupMap[osName] == 'Linux') {
@@ -291,6 +291,8 @@ def buildArchConfiguration = ['Debug': 'x86',
                 helix("Build.cmd -- /p:Creator=dotnet-bot /p:ArchiveTests=true /p:ConfigurationGroup=${configurationGroup} /p:Configuration=Windows_${configurationGroup} /p:TestDisabled=true /p:EnableCloudTest=true /p:BuildMoniker={uniqueId} /p:TargetQueue=Windows.10.Amd64 /p:TestProduct=CoreFx /p:Branch=master /p:OSGroup=Windows_NT /p:CloudDropAccountName=dotnetbuilddrops /p:CloudResultsAccountName=dotnetjobresults /p:CloudDropAccessToken={CloudDropAccessToken} /p:CloudResultsAccessToken={CloudResultsAccessToken} /p:BuildCompleteConnection={BuildCompleteConnection} /p:BuildIsOfficialConnection={BuildIsOfficialConnection} /p:DocumentDbKey={DocumentDbKey} /p:DocumentDbUri=https://hms.documents.azure.com:443/ /p:FuncTestsDisabled=true /p:Performance=true")
             }
         }
+
+        Utilities.setMachineAffinity(newJob, 'Windows_NT', 'latest-or-auto')
 
         Utilities.setMachineAffinity(newJob, 'Windows_NT', 'latest-or-auto')
 
@@ -380,7 +382,7 @@ def buildArchConfiguration = ['Debug': 'x86',
 [true, false].each { isPR ->
     ['netcoreapp'].each { targetGroup ->
         ['Debug', 'Release'].each { configurationGroup ->
-            ['Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Ubuntu16.10', 'Debian8.4', 'CentOS7.1', 'OpenSUSE13.2', 'OpenSUSE42.1', 'Fedora23', 'Fedora24', 'RHEL7.2', 'OSX', 'PortableLinux'].each { osName ->
+            ['Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Ubuntu16.10', 'Debian8.4', 'CentOS7.1', 'OpenSUSE13.2', 'OpenSUSE42.1', 'Fedora23', 'Fedora24', 'RHEL7.2', 'OSX10.12', 'PortableLinux'].each { osName ->
                 def osGroup = osGroupMap[osName]
                 def osForMachineAffinity = osName
                 
@@ -434,7 +436,7 @@ def buildArchConfiguration = ['Debug': 'x86',
                 // Set up triggers
                 if (isPR) {
                     // Set PR trigger, we run Windows_NT, Ubuntu 14.04, CentOS 7.1, PortableLinux and OSX on every PR.
-                    if ( osName == 'Windows_NT' || osName == 'Ubuntu14.04' || osName == 'CentOS7.1' || osName == 'OSX' || osName== 'PortableLinux') {
+                    if ( osName == 'Windows_NT' || osName == 'Ubuntu14.04' || osName == 'CentOS7.1' || osName == 'OSX10.12' || osName== 'PortableLinux') {
                         Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop ${osName} ${configurationGroup} ${archGroup} Build and Test")
                     }
                     else {

@@ -2,4 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#include "pal_secimportexport.h"
+#include "pal_sec.h"
+
+extern "C" CFStringRef AppleCryptoNative_SecCopyErrorMessageString(int32_t osStatus)
+{
+    return SecCopyErrorMessageString(osStatus, nullptr);
+}

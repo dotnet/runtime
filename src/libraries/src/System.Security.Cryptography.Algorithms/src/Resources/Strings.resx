@@ -85,8 +85,17 @@
   <data name="Cryptography_CSP_NoPrivateKey" xml:space="preserve">
     <value>Object contains only the public half of a key pair. A private key must also be provided.</value>
   </data>
+  <data name="Cryptography_Der_Invalid_Encoding" xml:space="preserve">
+    <value>ASN1 corrupted data.</value>
+  </data>
+  <data name="Cryptography_DSA_KeyGenNotSupported" xml:space="preserve">
+    <value>DSA keys can be imported, but new key generation is not supported on this platform.</value>
+  </data>
   <data name="Cryptography_ECXmlSerializationFormatRequired" xml:space="preserve">
     <value>XML serialization of an elliptic curve key requires using an overload which specifies the XML format to be used.</value>
+  </data>
+  <data name="Cryptography_ECC_NamedCurvesOnly" xml:space="preserve">
+    <value>Only named curves are supported on this platform.</value>
   </data>
   <data name="Cryptography_HashAlgorithmNameNullOrEmpty" xml:space="preserve">
     <value>The hash algorithm name cannot be null or empty.</value>

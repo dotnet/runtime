@@ -291,7 +291,7 @@
     }
   },
   "demands": [
-    "Agent.OS -equals darwin"
+    "Configuration -equals VSTSAgent_Mac_v3.0.0"
   ],
   "retentionRules": [
     {
@@ -331,11 +331,11 @@
   "quality": "definition",
   "queue": {
     "pool": {
-      "id": 39,
-      "name": "DotNet-Build"
+      "id": 97,
+      "name": "DotNetCore-Build"
     },
-    "id": 36,
-    "name": "DotNet-Build"
+    "id": 330,
+    "name": "DotNetCore-Build"
   },
   "path": "\\",
   "type": "build",

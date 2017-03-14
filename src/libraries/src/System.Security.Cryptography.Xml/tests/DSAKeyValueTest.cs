@@ -12,6 +12,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Xml;
 using Xunit;
 
@@ -50,9 +51,9 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue(17001, TestPlatforms.OSX)]
         public void GetXml()
         {
-
             DSAKeyValue dsa = new DSAKeyValue();
             XmlElement xmlkey = dsa.GetXml();
 
@@ -78,6 +79,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue(17001, TestPlatforms.OSX)]
         public void GetXml_SameDsa()
         {
             using (DSA dsa = DSA.Create())

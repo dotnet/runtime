@@ -364,11 +364,18 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             CryptographicException ex = Assert.ThrowsAny<CryptographicException>(
                 () => new X509Certificate2(new byte[] { 0x01, 0x02, 0x03 }));
 
+            CryptographicException defaultException = new CryptographicException();
+            Assert.NotEqual(defaultException.Message, ex.Message);
+
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 Assert.Equal(unchecked((int)0x80092009), ex.HResult);
                 // TODO (3233): Test that Message is also set correctly
                 //Assert.Equal("Cannot find the requested object.", ex.Message);
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                Assert.Equal(-25257, ex.HResult);
             }
             else // Any Unix
             {

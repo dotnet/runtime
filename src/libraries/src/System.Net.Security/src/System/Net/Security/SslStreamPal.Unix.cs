@@ -70,11 +70,27 @@ namespace System.Net.Security
             return retVal;
         }
 
-        public static SafeFreeContextBufferChannelBinding QueryContextChannelBinding(SafeDeleteContext securityContext, ChannelBindingKind attribute)
+        public static ChannelBinding QueryContextChannelBinding(SafeDeleteContext securityContext, ChannelBindingKind attribute)
         {
-            SafeChannelBindingHandle bindingHandle = Interop.OpenSsl.QueryChannelBinding(((SafeDeleteSslContext)securityContext).SslContext, attribute);
-            var refHandle = bindingHandle == null ? null : new SafeFreeContextBufferChannelBinding(bindingHandle);
-            return refHandle;
+            ChannelBinding bindingHandle;
+
+            if (attribute == ChannelBindingKind.Endpoint)
+            {
+                bindingHandle = EndpointChannelBindingToken.Build(securityContext);
+
+                if (bindingHandle == null)
+                {
+                    throw Interop.OpenSsl.CreateSslException(SR.net_ssl_invalid_certificate);
+                }
+            }
+            else
+            {
+                bindingHandle = Interop.OpenSsl.QueryChannelBinding(
+                    ((SafeDeleteSslContext)securityContext).SslContext,
+                    attribute);
+            }
+
+            return bindingHandle;
         }
 
         public static void QueryContextStreamSizes(SafeDeleteContext securityContext, out StreamSizes streamSizes)

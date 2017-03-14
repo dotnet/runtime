@@ -84,7 +84,7 @@ namespace System.Security.Cryptography
                 if (!Interop.Crypto.EcDsaSign(hash, hash.Length, signature, ref signatureLength, key))
                     throw Interop.Crypto.CreateOpenSslCryptographicException();
 
-                byte[] converted = OpenSslAsymmetricAlgorithmCore.ConvertDerToIeee1363(signature, 0, signatureLength, KeySize);
+                byte[] converted = AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(signature, 0, signatureLength, KeySize);
 
                 return converted;
             }
@@ -99,14 +99,14 @@ namespace System.Security.Cryptography
                 // The signature format for .NET is r.Concat(s). Each of r and s are of length BitsToBytes(KeySize), even
                 // when they would have leading zeroes.  If it's the correct size, then we need to encode it from
                 // r.Concat(s) to SEQUENCE(INTEGER(r), INTEGER(s)), because that's the format that OpenSSL expects.
-                int expectedBytes = 2 * OpenSslAsymmetricAlgorithmCore.BitsToBytes(KeySize);
+                int expectedBytes = 2 * AsymmetricAlgorithmHelpers.BitsToBytes(KeySize);
                 if (signature.Length != expectedBytes)
                 {
                     // The input isn't of the right length, so we can't sensibly re-encode it.
                     return false;
                 }
 
-                byte[] openSslFormat = OpenSslAsymmetricAlgorithmCore.ConvertIeee1363ToDer(signature);
+                byte[] openSslFormat = AsymmetricAlgorithmHelpers.ConvertIeee1363ToDer(signature);
 
                 SafeEcKeyHandle key = _key.Value;
                 int verifyResult = Interop.Crypto.EcDsaVerify(hash, hash.Length, openSslFormat, openSslFormat.Length, key);
@@ -115,12 +115,12 @@ namespace System.Security.Cryptography
 
             protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm)
             {
-                return OpenSslAsymmetricAlgorithmCore.HashData(data, offset, count, hashAlgorithm);
+                return AsymmetricAlgorithmHelpers.HashData(data, offset, count, hashAlgorithm);
             }
 
             protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm)
             {
-                return OpenSslAsymmetricAlgorithmCore.HashData(data, hashAlgorithm);
+                return AsymmetricAlgorithmHelpers.HashData(data, hashAlgorithm);
             }
 
             protected override void Dispose(bool disposing)
