@@ -49,7 +49,7 @@ namespace CoreXml.Test.XLinq
         }
 
         [Theory]
-        [MemberData("RoundtripOptions_MemberData")]
+        [MemberData(nameof(RoundtripOptions_MemberData))]
         public static async Task RoundtripSyncAsyncMatches_XmlReader(bool document, LoadOptions loadOptions, SaveOptions saveOptions)
         {
             // Create reader and writer settings
@@ -106,7 +106,7 @@ namespace CoreXml.Test.XLinq
         }
 
         [Theory]
-        [MemberData("RoundtripOptions_MemberData")]
+        [MemberData(nameof(RoundtripOptions_MemberData))]
         public static async Task RoundtripSyncAsyncMatches_StreamReader(bool document, LoadOptions loadOptions, SaveOptions saveOptions)
         {
             // Roundtrip XML using synchronous and StreamReader/Writer
@@ -148,7 +148,7 @@ namespace CoreXml.Test.XLinq
         }
 
         [Theory]
-        [MemberData("RoundtripOptions_MemberData")]
+        [MemberData(nameof(RoundtripOptions_MemberData))]
         public static async Task RoundtripSyncAsyncMatches_Stream(bool document, LoadOptions loadOptions, SaveOptions saveOptions)
         {
             // Roundtrip XML using synchronous and Stream

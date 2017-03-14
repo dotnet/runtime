@@ -70,7 +70,7 @@ namespace System.IO.IsolatedStorage
             }
         }
 
-        [Theory MemberData("ValidStores")]
+        [Theory MemberData(nameof(ValidStores))]
         public void DirectoryExists_Existance(PresetScopes scope)
         {
             using (var isf = GetPresetScope(scope))
