@@ -5,25 +5,27 @@
     <ProjectGuid>{F24D3391-2928-4E83-AADE-B34423498750}</ProjectGuid>
     <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
     <UseOpenKey>true</UseOpenKey>
-    <!-- duplicate in net46 folder so older nuget clients can consume -->
-    <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard1.3'">netstandard1.3;net46</PackageTargetFramework>
     <!-- To allow this library to work on V4.5 runtimes and other old platforms
          we also have a separate complilation of this DLL that works for V4.5
          (which is netstandard1.1).  Again we duplicate in a portable-* folder
          to work with older NuGet clients -->
     <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard1.1'">netstandard1.1;portable-net45+win8+wpa81</PackageTargetFramework>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>    
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks> 
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetGroup)' == 'netstandard1.1' Or '$(TargetGroup)' == 'net45'">
+  <PropertyGroup Condition="'$(TargetGroup)' == 'netstandard1.1'">
     <DefineConstants>;NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46-Windows_NT-Release|AnyCPU'" />  
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.3-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.3-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
@@ -37,21 +39,13 @@
     <Compile Include="System\Diagnostics\DiagnosticSourceActivity.cs" />
     <None Include="ActivityUserGuide.md" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetGroup)' != 'net45' And '$(TargetGroup)' != 'netstandard1.1'">
-    <Compile Include="System\Diagnostics\Activity.Current.net46.cs" />
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetGroup)' == 'net45' ">
-    <Compile Include="System\Diagnostics\Activity.Current.net45.cs" />
-    <TargetingPackReference Include="System" />
-    <TargetingPackReference Include="System.Runtime.Remoting" />
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetGroup)' == 'netstandard1.3' ">
+  <ItemGroup Condition=" '$(TargetGroup)' == 'netstandard1.3' OR '$(TargetGroup)' == 'uap'">
     <Compile Include="System\Diagnostics\Activity.Id.Random.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetGroup)' != 'netstandard1.3' And '$(TargetGroup)' != 'netstandard1.1'">
+  <ItemGroup Condition=" '$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)' == 'netstandard' OR '$(TargetGroup)' == 'net46' OR '$(TargetGroup)' == 'netfx'">
     <Compile Include="System\Diagnostics\Activity.Id.MachineName.cs" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' != 'net46' AND '$(TargetGroup)' != 'netfx'">
     <Reference Include="System.Collections" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tracing" />
@@ -60,5 +54,10 @@
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Threading" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'net46' OR '$(TargetGroup)' == 'netfx'">
+    <Compile Include="AssemblyInfo.Net46.cs" />
+    <Reference Include="mscorlib" />
+    <Reference Include="System" />
+  </ItemGroup>      
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Security;
 using System.Threading;
 
 namespace System.Diagnostics
@@ -131,6 +132,16 @@ namespace System.Diagnostics
                     for (var baggage = activity._baggage; baggage != null; baggage = baggage.Next)
                         yield return baggage.keyValue;
             }
+        }
+
+        /// <summary>
+        /// Returns the current operation (Activity) for the current thread.  This flows 
+        /// across async calls.
+        /// </summary>
+        public static Activity Current
+        {
+            get { return s_current.Value; }
+            private set { s_current.Value = value; }
         }
 
         /// <summary>
@@ -358,7 +369,7 @@ namespace System.Diagnostics
         private string AppendSuffix(string parentId, string suffix, char delimiter)
         {
 #if DEBUG
-            suffix = OperationName + "-" + suffix;
+            suffix = OperationName.Replace('.', '-') + "-" + suffix;
 #endif
             if (parentId.Length + suffix.Length < RequestIdMaxLength)
                 return parentId + suffix + delimiter;
@@ -392,13 +403,14 @@ namespace System.Diagnostics
                 Interlocked.CompareExchange(ref s_uniqPrefix, GenerateInstancePrefix(), null);
             }
 #if DEBUG
-            string ret = s_uniqPrefix + "-" + OperationName + "-" + Interlocked.Increment(ref s_currentRootId).ToString("x") + '.';
+            string ret = s_uniqPrefix + "-" + OperationName.Replace('.', '-') + "-" + Interlocked.Increment(ref s_currentRootId).ToString("x") + '.';
 #else       // To keep things short, we drop the operation name 
             string ret = s_uniqPrefix + "-" + Interlocked.Increment(ref s_currentRootId).ToString("x") + '.';
 #endif
             return ret;
         }
 
+        [SecuritySafeCritical]
         private static unsafe long GetRandomNumber()
         {
             Guid g = Guid.NewGuid();
@@ -413,7 +425,7 @@ namespace System.Diagnostics
 
         //A unique number inside the appdomain, randomized between appdomains. 
         //Int gives enough randomization and keeps hex-encoded s_currentRootId 8 chars long for most applications
-        private static long s_currentRootId = (int)GetRandomNumber();  
+        private static long s_currentRootId = (uint)GetRandomNumber();  
 
         private const int RequestIdMaxLength = 1024;
         private const char RootIdPrefix = '|';
@@ -429,6 +441,7 @@ namespace System.Diagnostics
         private KeyValueListNode _tags;
         private KeyValueListNode _baggage;
         private bool isFinished;
-#endregion // private
+        private static readonly AsyncLocal<Activity> s_current = new AsyncLocal<Activity>();
+        #endregion // private
     }
 }
