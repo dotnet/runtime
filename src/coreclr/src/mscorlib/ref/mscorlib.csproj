@@ -39,10 +39,9 @@
     <DefineConstants>$(DefineConstants);FEATURE_COREFX_GLOBALIZATION;FEATURE_COMINTEROP</DefineConstants>
   </PropertyGroup>
 
-  <!-- Roslyn does not support writing PDBs on Unix -->
+  <!-- Make portable PDBs on Unix -->
   <PropertyGroup Condition="'$(OsEnvironment)' == 'Unix'">
-    <DebugSymbols>false</DebugSymbols>
-    <DebugType>none</DebugType>
+    <DebugType>portable</DebugType>
   </PropertyGroup>
 
   <!-- Assembly attributes -->

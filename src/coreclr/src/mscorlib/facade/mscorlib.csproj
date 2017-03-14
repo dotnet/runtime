@@ -48,10 +48,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net462_Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net462_Release|AnyCPU'" />
 
-  <!-- Roslyn does not support writing PDBs on Unix -->
+  <!-- Make portable PDBs on Unix -->
   <PropertyGroup Condition="'$(OsEnvironment)' == 'Unix'">
-    <DebugSymbols>false</DebugSymbols>
-    <DebugType>none</DebugType>
+    <DebugType>portable</DebugType>
   </PropertyGroup>
 
   <!-- Output paths -->
