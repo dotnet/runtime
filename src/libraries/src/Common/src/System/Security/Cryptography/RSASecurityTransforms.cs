@@ -73,8 +73,11 @@ namespace System.Security.Cryptography
                     // Set the KeySize before freeing the key so that an invalid value doesn't throw away the key
                     base.KeySize = value;
 
-                    _keys?.Dispose();
-                    _keys = null;
+                    if (_keys != null)
+                    {
+                        _keys.Dispose();
+                        _keys = null;
+                    }
                 }
             }
 
@@ -217,8 +220,11 @@ namespace System.Security.Cryptography
             {
                 if (disposing)
                 {
-                    _keys?.Dispose();
-                    _keys = null;
+                    if (_keys != null)
+                    {
+                        _keys.Dispose();
+                        _keys = null;
+                    }
                 }
 
                 base.Dispose(disposing);
