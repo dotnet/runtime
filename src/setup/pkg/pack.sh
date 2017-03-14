@@ -58,9 +58,9 @@ __msbuild="$__project_dir/Tools/msbuild.sh"
 
 __targets_param=
 if [ "$(uname -s)" == "Darwin" ]; then
-    __targets_param="TargetsOSX=true"
+    __targets_param="OSGroup=OSX"
 else
-    __targets_param="TargetsLinux=true"
+    __targets_param="OSGroup=Linux"
     if [ -z $__distro_rid ]; then
         echo "Runtime Identifier not defined"
         exit 1

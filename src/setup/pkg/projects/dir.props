@@ -11,14 +11,43 @@
     <!-- This property must be set to the same value as $(PackageOutputPath) for the nuspecs and nupkgs to be binplaced to the intended location. -->
     <OutputPath>$(PackageOutputPath)</OutputPath>
 
-    <Version>$(NetCoreAppVersion)</Version>
     <Serviceable>true</Serviceable>
+
+    <IsLineupPackage Condition="'$(PackageTargetRuntime)' == ''">true</IsLineupPackage>
+    <PreventImplementationReference Condition="'$(PackageTargetRuntime)' != ''">true</PreventImplementationReference>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(PackageTargetRuntime)' == ''">
     <SkipValidatePackage>true</SkipValidatePackage>
     <IncludeRuntimeJson>true</IncludeRuntimeJson>
   </PropertyGroup>
+
+  <Choose>
+    <When Condition="$(PackageTargetRuntime.StartsWith('win'))">
+      <PropertyGroup>
+        <ApplicationFileExtension>.exe</ApplicationFileExtension>
+        <LibraryFilePrefix></LibraryFilePrefix>
+        <LibraryFileExtension>.dll</LibraryFileExtension>
+        <SymbolFileExtension>.pdb</SymbolFileExtension>
+      </PropertyGroup>
+    </When>
+    <When Condition="$(PackageTargetRuntime.StartsWith('osx'))">
+      <PropertyGroup>
+        <ApplicationFileExtension></ApplicationFileExtension>
+        <LibraryFilePrefix>lib</LibraryFilePrefix>
+        <LibraryFileExtension>.dylib</LibraryFileExtension>
+        <SymbolFileExtension>.dwarf</SymbolFileExtension>
+      </PropertyGroup>
+    </When>
+    <Otherwise>
+      <PropertyGroup>
+        <ApplicationFileExtension></ApplicationFileExtension>
+        <LibraryFilePrefix>lib</LibraryFilePrefix>
+        <LibraryFileExtension>.so</LibraryFileExtension>
+        <SymbolFileExtension>.dbg</SymbolFileExtension>
+      </PropertyGroup>
+    </Otherwise>
+  </Choose>
 
   <PropertyGroup Condition="'$(PackageRID)' == ''">
     <PackageRID>$(DistroRid)</PackageRID>
@@ -29,6 +58,9 @@
   <ItemGroup>
     <OfficialBuildRID Include="alpine.3.4.3-x64" />
     <OfficialBuildRID Include="debian.8-x64" />
+    <OfficialBuildRid Include="debian.8-armel">
+      <Platform>armel</Platform>
+    </OfficialBuildRid>
     <OfficialBuildRID Include="fedora.23-x64" />
     <OfficialBuildRID Include="fedora.24-x64" />
     <OfficialBuildRID Include="linux-x64" />
@@ -65,6 +97,9 @@
     <OfficialBuildRID Include="ubuntu.16.04-arm">
       <Platform>arm</Platform>
     </OfficialBuildRID>
+    <OfficialBuildRid Include="tizen.4.0.0-armel">
+      <Platform>armel</Platform>
+    </OfficialBuildRid>
 
     <!-- Ensure we have a RID-specific package for the current build, even if it isn't in our official set -->
     <BuildRID Include="@(OfficialBuildRID)" Exclude="$(PackageRID)"/>
