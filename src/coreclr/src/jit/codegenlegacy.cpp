@@ -10014,7 +10014,7 @@ void CodeGen::genCodeForTreeSmpOp(GenTreePtr tree, regMaskTP destReg, regMaskTP 
                         // We have a return call() because we failed to tail call.
                         // In any case, just generate the call and be done.
                         assert(compiler->IsHfa(op1));
-                        genCodeForCall(op1, true);
+                        genCodeForCall(op1->AsCall(), true);
                         genMarkTreeInReg(op1, REG_FLOATRET);
                     }
                     else
@@ -11238,7 +11238,7 @@ void CodeGen::genStoreFromFltRetRegs(GenTreePtr tree)
     assert(op2->gtOper == GT_CALL);
 
     // Generate code for call and copy the return registers into the local.
-    regMaskTP retMask = genCodeForCall(op2, true);
+    regMaskTP retMask = genCodeForCall(op2->AsCall(), true);
 
     // Ret mask should be contiguously set from s0, up to s3 or starting from d0 upto d3.
     CLANG_FORMAT_COMMENT_ANCHOR;
@@ -12088,7 +12088,7 @@ void CodeGen::genCodeForTreeSpecialOp(GenTreePtr tree, regMaskTP destReg, regMas
     switch (oper)
     {
         case GT_CALL:
-            regs = genCodeForCall(tree, true);
+            regs = genCodeForCall(tree->AsCall(), true);
 
             /* If the result is in a register, make sure it ends up in the right place */
 
@@ -12843,7 +12843,7 @@ void CodeGen::genCodeForBBlist()
                     // Managed Retval under managed debugger - we need to make sure that the returned ref-type is
                     // reported as alive even though not used within the caller for managed debugger sake.  So
                     // consider the return value of the method as used if generating debuggable code.
-                    genCodeForCall(tree, compiler->opts.MinOpts() || compiler->opts.compDbgCode);
+                    genCodeForCall(tree->AsCall(), compiler->opts.MinOpts() || compiler->opts.compDbgCode);
                     genUpdateLife(tree);
                     gcInfo.gcMarkRegSetNpt(RBM_INTRET);
                     break;
@@ -15044,7 +15044,7 @@ void CodeGen::genCodeForTreeLng(GenTreePtr tree, regMaskTP needReg, regMaskTP av
     {
         regMaskTP retMask;
         case GT_CALL:
-            retMask = genCodeForCall(tree, true);
+            retMask = genCodeForCall(tree->AsCall(), true);
             if (retMask == RBM_NONE)
                 regPair = REG_PAIR_NONE;
             else
@@ -15665,9 +15665,9 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize)
 #pragma warning(push)
 #pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
 #endif
-size_t CodeGen::genPushArgList(GenTreePtr call)
+size_t CodeGen::genPushArgList(GenTreeCall* call)
 {
-    GenTreeArgList* regArgs = call->gtCall.gtCallLateArgs;
+    GenTreeArgList* regArgs = call->gtCallLateArgs;
     size_t          size    = 0;
     regMaskTP       addrReg;
 
@@ -15675,14 +15675,14 @@ size_t CodeGen::genPushArgList(GenTreePtr call)
     // Create a local, artificial GenTreeArgList that includes the gtCallObjp, if that exists, as first argument,
     // so we can iterate over this argument list more uniformly.
     // Need to provide a temporary non-null first argument here: if we use this, we'll replace it.
-    GenTreeArgList firstForObjp(/*temp dummy arg*/ call, call->gtCall.gtCallArgs);
-    if (call->gtCall.gtCallObjp == NULL)
+    GenTreeArgList firstForObjp(/*temp dummy arg*/ call, call->gtCallArgs);
+    if (call->gtCallObjp == NULL)
     {
-        args = call->gtCall.gtCallArgs;
+        args = call->gtCallArgs;
     }
     else
     {
-        firstForObjp.Current() = call->gtCall.gtCallObjp;
+        firstForObjp.Current() = call->gtCallObjp;
         args                   = &firstForObjp;
     }
 
@@ -16497,10 +16497,9 @@ size_t CodeGen::genPushArgList(GenTreePtr call)
 // ARM and AMD64 uses this method to pass the stack based args
 //
 // returns size pushed (always zero)
-size_t CodeGen::genPushArgList(GenTreePtr call)
+size_t CodeGen::genPushArgList(GenTreeCall* call)
 {
-
-    GenTreeArgList* lateArgs = call->gtCall.gtCallLateArgs;
+    GenTreeArgList* lateArgs = call->gtCallLateArgs;
     GenTreePtr      curr;
     var_types       type;
     int             argSize;
@@ -16509,14 +16508,14 @@ size_t CodeGen::genPushArgList(GenTreePtr call)
     // Create a local, artificial GenTreeArgList that includes the gtCallObjp, if that exists, as first argument,
     // so we can iterate over this argument list more uniformly.
     // Need to provide a temporary non-null first argument here: if we use this, we'll replace it.
-    GenTreeArgList objpArgList(/*temp dummy arg*/ call, call->gtCall.gtCallArgs);
-    if (call->gtCall.gtCallObjp == NULL)
+    GenTreeArgList objpArgList(/*temp dummy arg*/ call, call->gtCallArgs);
+    if (call->gtCallObjp == NULL)
     {
-        args = call->gtCall.gtCallArgs;
+        args = call->gtCallArgs;
     }
     else
     {
-        objpArgList.Current() = call->gtCall.gtCallObjp;
+        objpArgList.Current() = call->gtCallObjp;
         args                  = &objpArgList;
     }
 
@@ -17467,14 +17466,14 @@ regMaskTP CodeGen::genFindDeadFieldRegs(GenTreePtr cpBlk)
     return res;
 }
 
-void CodeGen::SetupLateArgs(GenTreePtr call)
+void CodeGen::SetupLateArgs(GenTreeCall* call)
 {
     GenTreeArgList* lateArgs;
     GenTreePtr      curr;
 
     /* Generate the code to move the late arguments into registers */
 
-    for (lateArgs = call->gtCall.gtCallLateArgs; lateArgs; lateArgs = lateArgs->Rest())
+    for (lateArgs = call->gtCallLateArgs; lateArgs; lateArgs = lateArgs->Rest())
     {
         curr = lateArgs->Current();
         assert(curr);
@@ -18024,7 +18023,7 @@ void CodeGen::SetupLateArgs(GenTreePtr call)
 
     /* If any of the previously loaded arguments were spilled - reload them */
 
-    for (lateArgs = call->gtCall.gtCallLateArgs; lateArgs; lateArgs = lateArgs->Rest())
+    for (lateArgs = call->gtCallLateArgs; lateArgs; lateArgs = lateArgs->Rest())
     {
         curr = lateArgs->Current();
         assert(curr);
@@ -18128,9 +18127,9 @@ void CodeGen::PushMkRefAnyArg(GenTreePtr mkRefAnyTree, fgArgTabEntryPtr curArgTa
 
 #endif // FEATURE_FIXED_OUT_ARGS
 
-regMaskTP CodeGen::genLoadIndirectCallTarget(GenTreePtr call)
+regMaskTP CodeGen::genLoadIndirectCallTarget(GenTreeCall* call)
 {
-    assert((gtCallTypes)call->gtCall.gtCallType == CT_INDIRECT);
+    assert((gtCallTypes)call->gtCallType == CT_INDIRECT);
 
     regMaskTP fptrRegs;
 
@@ -18181,7 +18180,7 @@ regMaskTP CodeGen::genLoadIndirectCallTarget(GenTreePtr call)
     }
 
     /* Record the register(s) used for the indirect call func ptr */
-    fptrRegs = genMakeRvalueAddressable(call->gtCall.gtCallAddr, prefRegs, RegSet::KEEP_REG, false);
+    fptrRegs = genMakeRvalueAddressable(call->gtCallAddr, prefRegs, RegSet::KEEP_REG, false);
 
     /* If any of the previously loaded arguments were spilled, reload them */
 
@@ -18204,7 +18203,7 @@ regMaskTP CodeGen::genLoadIndirectCallTarget(GenTreePtr call)
 
     /* Make sure the target is still addressable while avoiding the argument registers */
 
-    fptrRegs = genKeepAddressable(call->gtCall.gtCallAddr, fptrRegs, argRegs);
+    fptrRegs = genKeepAddressable(call->gtCallAddr, fptrRegs, argRegs);
 
     return fptrRegs;
 }
@@ -18220,7 +18219,7 @@ regMaskTP CodeGen::genLoadIndirectCallTarget(GenTreePtr call)
 #pragma warning(push)
 #pragma warning(disable : 21000) // Suppress PREFast warning about overly large function
 #endif
-regMaskTP CodeGen::genCodeForCall(GenTreePtr call, bool valUsed)
+regMaskTP CodeGen::genCodeForCall(GenTreeCall* call, bool valUsed)
 {
     emitAttr              retSize;
     size_t                argSize;
@@ -18252,7 +18251,7 @@ regMaskTP CodeGen::genCodeForCall(GenTreePtr call, bool valUsed)
     }
 #endif
 
-    gtCallTypes callType = (gtCallTypes)call->gtCall.gtCallType;
+    gtCallTypes callType = (gtCallTypes)call->gtCallType;
     IL_OFFSETX  ilOffset = BAD_IL_OFFSET;
 
     CORINFO_SIG_INFO* sigInfo = nullptr;
@@ -18264,13 +18263,11 @@ regMaskTP CodeGen::genCodeForCall(GenTreePtr call, bool valUsed)
 
     /* Make some sanity checks on the call node */
 
-    // This is a call
-    noway_assert(call->IsCall());
     // "this" only makes sense for user functions
-    noway_assert(call->gtCall.gtCallObjp == 0 || callType == CT_USER_FUNC || callType == CT_INDIRECT);
+    noway_assert(call->gtCallObjp == 0 || callType == CT_USER_FUNC || callType == CT_INDIRECT);
     // tailcalls won't be done for helpers, caller-pop args, and check that
     // the global flag is set
-    noway_assert(!call->gtCall.IsTailCall() ||
+    noway_assert(!call->IsTailCall() ||
                  (callType != CT_HELPER && !(call->gtFlags & GTF_CALL_POP_ARGS) && compiler->compTailCallUsed));
 
 #ifdef DEBUG
@@ -18278,7 +18275,7 @@ regMaskTP CodeGen::genCodeForCall(GenTreePtr call, bool valUsed)
     // native call sites with the signatures they were generated from.
     if (callType != CT_HELPER)
     {
-        sigInfo = call->gtCall.callSig;
+        sigInfo = call->callSig;
     }
 #endif // DEBUG
 
@@ -18327,7 +18324,7 @@ regMaskTP CodeGen::genCodeForCall(GenTreePtr call, bool valUsed)
 
     /* Pass the arguments */
 
-    if ((call->gtCall.gtCallObjp != NULL) || (call->gtCall.gtCallArgs != NULL))
+    if ((call->gtCallObjp != NULL) || (call->gtCallArgs != NULL))
     {
         argSize += genPushArgList(call);
     }
@@ -18411,8 +18408,8 @@ regMaskTP CodeGen::genCodeForCall(GenTreePtr call, bool valUsed)
     /* Do not spill the argument registers.
        Multi-use of RBM_ARG_REGS should be prevented by genPushArgList() */
 
-    noway_assert((regSet.rsMaskMult & call->gtCall.gtCallRegUsedMask) == 0);
-    spillRegs &= ~call->gtCall.gtCallRegUsedMask;
+    noway_assert((regSet.rsMaskMult & call->gtCallRegUsedMask) == 0);
+    spillRegs &= ~call->gtCallRegUsedMask;
 
     if (spillRegs)
     {
@@ -18438,7 +18435,7 @@ regMaskTP CodeGen::genCodeForCall(GenTreePtr call, bool valUsed)
         compCurFPState.Push(regReturn);
     }
 #else
-    SpillForCallRegisterFP(call->gtCall.gtCallRegUsedMask);
+    SpillForCallRegisterFP(call->gtCallRegUsedMask);
 #endif
 
     /* If the method returns a GC ref, set size to EA_GCREF or EA_BYREF */
@@ -18476,7 +18473,7 @@ regMaskTP CodeGen::genCodeForCall(GenTreePtr call, bool valUsed)
 
     /* fire the event at the call site */
     /* alas, right now I can only handle calls via a method handle */
-    if (compiler->compIsProfilerHookNeeded() && (callType == CT_USER_FUNC) && call->gtCall.IsTailCall())
+    if (compiler->compIsProfilerHookNeeded() && (callType == CT_USER_FUNC) && call->IsTailCall())
     {
         unsigned saveStackLvl2 = genStackLevel;
 
@@ -18488,7 +18485,7 @@ regMaskTP CodeGen::genCodeForCall(GenTreePtr call, bool valUsed)
 #ifdef _TARGET_X86_
         regMaskTP byrefPushedRegs;
         regMaskTP norefPushedRegs;
-        regMaskTP pushedArgRegs = genPushRegs(call->gtCall.gtCallRegUsedMask, &byrefPushedRegs, &norefPushedRegs);
+        regMaskTP pushedArgRegs = genPushRegs(call->gtCallRegUsedMask, &byrefPushedRegs, &norefPushedRegs);
 
         if (compiler->compProfilerMethHndIndirected)
         {
@@ -18586,7 +18583,7 @@ regMaskTP CodeGen::genCodeForCall(GenTreePtr call, bool valUsed)
         // check the stacks as frequently as possible
         && !call->IsHelperCall()
 #else
-        && call->gtCall.gtCallType == CT_USER_FUNC
+        && call->gtCallType == CT_USER_FUNC
 #endif
             )
     {
@@ -18606,18 +18603,18 @@ regMaskTP CodeGen::genCodeForCall(GenTreePtr call, bool valUsed)
 
     bool fTailCallTargetIsVSD = false;
 
-    bool fTailCall = (call->gtCall.gtCallMoreFlags & GTF_CALL_M_TAILCALL) != 0;
+    bool fTailCall = (call->gtCallMoreFlags & GTF_CALL_M_TAILCALL) != 0;
 
     /* Check for Delegate.Invoke. If so, we inline it. We get the
        target-object and target-function from the delegate-object, and do
        an indirect call.
      */
 
-    if ((call->gtCall.gtCallMoreFlags & GTF_CALL_M_DELEGATE_INV) && !fTailCall)
+    if ((call->gtCallMoreFlags & GTF_CALL_M_DELEGATE_INV) && !fTailCall)
     {
-        noway_assert(call->gtCall.gtCallType == CT_USER_FUNC);
+        noway_assert(call->gtCallType == CT_USER_FUNC);
 
-        assert((compiler->info.compCompHnd->getMethodAttribs(call->gtCall.gtCallMethHnd) &
+        assert((compiler->info.compCompHnd->getMethodAttribs(call->gtCallMethHnd) &
                 (CORINFO_FLG_DELEGATE_INVOKE | CORINFO_FLG_FINAL)) ==
                (CORINFO_FLG_DELEGATE_INVOKE | CORINFO_FLG_FINAL));
 
@@ -18633,7 +18630,7 @@ regMaskTP CodeGen::genCodeForCall(GenTreePtr call, bool valUsed)
         firstTgtOffs = pInfo->offsetOfDelegateFirstTarget;
 
 #ifdef _TARGET_ARM_
-        if ((call->gtCall.gtCallMoreFlags & GTF_CALL_M_SECURE_DELEGATE_INV))
+        if ((call->gtCallMoreFlags & GTF_CALL_M_SECURE_DELEGATE_INV))
         {
             getEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, REG_VIRTUAL_STUB_PARAM, regThis,
                                         pInfo->offsetOfSecureDelegateIndirectCell);
@@ -18714,13 +18711,13 @@ regMaskTP CodeGen::genCodeForCall(GenTreePtr call, bool valUsed)
 
                         // No need to null check the this pointer - the dispatch code will deal with this.
 
-                        noway_assert(genStillAddressable(call->gtCall.gtCallAddr));
+                        noway_assert(genStillAddressable(call->gtCallAddr));
 
                         // Now put the address in REG_VIRTUAL_STUB_PARAM.
                         // This is typically a nop when the register used for
                         // the gtCallAddr is REG_VIRTUAL_STUB_PARAM
                         //
-                        inst_RV_TT(INS_mov, REG_VIRTUAL_STUB_PARAM, call->gtCall.gtCallAddr);
+                        inst_RV_TT(INS_mov, REG_VIRTUAL_STUB_PARAM, call->gtCallAddr);
                         regTracker.rsTrackRegTrash(REG_VIRTUAL_STUB_PARAM);
 
 #if defined(_TARGET_X86_)
@@ -18738,11 +18735,11 @@ regMaskTP CodeGen::genCodeForCall(GenTreePtr call, bool valUsed)
                         emitCallType = emitter::EC_INDIR_ARD;
 
                         indReg = REG_VIRTUAL_STUB_PARAM;
-                        genDoneAddressable(call->gtCall.gtCallAddr, fptrRegs, RegSet::KEEP_REG);
+                        genDoneAddressable(call->gtCallAddr, fptrRegs, RegSet::KEEP_REG);
 
 #elif CPU_LOAD_STORE_ARCH // ARM doesn't allow us to use an indirection for the call
 
-                        genDoneAddressable(call->gtCall.gtCallAddr, fptrRegs, RegSet::KEEP_REG);
+                        genDoneAddressable(call->gtCallAddr, fptrRegs, RegSet::KEEP_REG);
 
                         // Make the virtual stub call:
                         //     ldr   indReg, [REG_VIRTUAL_STUB_PARAM]
@@ -18753,7 +18750,7 @@ regMaskTP CodeGen::genCodeForCall(GenTreePtr call, bool valUsed)
                         // Now dereference [REG_VIRTUAL_STUB_PARAM] and put it in a new temp register 'indReg'
                         //
                         indReg = regSet.rsGrabReg(RBM_ALLINT & ~RBM_VIRTUAL_STUB_PARAM);
-                        assert(call->gtCall.gtCallAddr->gtFlags & GTF_REG_VAL);
+                        assert(call->gtCallAddr->gtFlags & GTF_REG_VAL);
                         getEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, indReg, REG_VIRTUAL_STUB_PARAM, 0);
                         regTracker.rsTrackRegTrash(indReg);
 
@@ -18776,7 +18773,7 @@ regMaskTP CodeGen::genCodeForCall(GenTreePtr call, bool valUsed)
                         // Get stub addr. This will return NULL if virtual call stubs are not active
                         void* stubAddr = NULL;
 
-                        stubAddr = (void*)call->gtCall.gtStubCallStubAddr;
+                        stubAddr = (void*)call->gtStubCallStubAddr;
 
                         noway_assert(stubAddr != NULL);
 
@@ -18792,7 +18789,7 @@ regMaskTP CodeGen::genCodeForCall(GenTreePtr call, bool valUsed)
                         int                   disp             = 0;
                         regNumber             callReg          = REG_NA;
 
-                        if (call->gtCall.gtCallMoreFlags & GTF_CALL_M_VIRTSTUB_REL_INDIRECT)
+                        if (call->gtCallMoreFlags & GTF_CALL_M_VIRTSTUB_REL_INDIRECT)
                         {
 #if CPU_LOAD_STORE_ARCH
                             callReg = regSet.rsGrabReg(RBM_VIRTUAL_STUB_PARAM);
@@ -18822,7 +18819,7 @@ regMaskTP CodeGen::genCodeForCall(GenTreePtr call, bool valUsed)
                         if (callTypeStubAddr != emitter::EC_INDIR_R)
 #endif
                         {
-                            getEmitter()->emitIns_Call(callTypeStubAddr, call->gtCall.gtCallMethHnd,
+                            getEmitter()->emitIns_Call(callTypeStubAddr, call->gtCallMethHnd,
                                                        INDEBUG_LDISASM_COMMA(sigInfo) addr, args, retSize,
                                                        gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
                                                        gcInfo.gcRegByrefSetCur, ilOffset, callReg, REG_NA, 0, disp);
@@ -18844,21 +18841,21 @@ regMaskTP CodeGen::genCodeForCall(GenTreePtr call, bool valUsed)
 
                     if (callType == CT_INDIRECT)
                     {
-                        noway_assert(genStillAddressable(call->gtCall.gtCallAddr));
+                        noway_assert(genStillAddressable(call->gtCallAddr));
 
                         // Now put the address in EAX.
-                        inst_RV_TT(INS_mov, REG_TAILCALL_ADDR, call->gtCall.gtCallAddr);
+                        inst_RV_TT(INS_mov, REG_TAILCALL_ADDR, call->gtCallAddr);
                         regTracker.rsTrackRegTrash(REG_TAILCALL_ADDR);
 
-                        genDoneAddressable(call->gtCall.gtCallAddr, fptrRegs, RegSet::KEEP_REG);
+                        genDoneAddressable(call->gtCallAddr, fptrRegs, RegSet::KEEP_REG);
                     }
                     else
                     {
                         // importer/EE should guarantee the indirection
-                        noway_assert(call->gtCall.gtCallMoreFlags & GTF_CALL_M_VIRTSTUB_REL_INDIRECT);
+                        noway_assert(call->gtCallMoreFlags & GTF_CALL_M_VIRTSTUB_REL_INDIRECT);
 
                         instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, REG_TAILCALL_ADDR,
-                                               ssize_t(call->gtCall.gtStubCallStubAddr));
+                                               ssize_t(call->gtStubCallStubAddr));
                     }
 
                     fTailCallTargetIsVSD = true;
@@ -18892,12 +18889,11 @@ regMaskTP CodeGen::genCodeForCall(GenTreePtr call, bool valUsed)
                                                VPTR_OFFS);
                     regTracker.rsTrackRegTrash(vptrReg);
 
-                    noway_assert(vptrMask & ~call->gtCall.gtCallRegUsedMask);
+                    noway_assert(vptrMask & ~call->gtCallRegUsedMask);
 
                     /* Get hold of the vtable offset (note: this might be expensive) */
 
-                    compiler->info.compCompHnd->getMethodVTableOffset(call->gtCall.gtCallMethHnd,
-                                                                      &vtabOffsOfIndirection,
+                    compiler->info.compCompHnd->getMethodVTableOffset(call->gtCallMethHnd, &vtabOffsOfIndirection,
                                                                       &vtabOffsAfterIndirection);
 
                     /* Get the appropriate vtable chunk */
@@ -18924,13 +18920,13 @@ regMaskTP CodeGen::genCodeForCall(GenTreePtr call, bool valUsed)
                         getEmitter()->emitIns_R_AR(ins_Load(TYP_I_IMPL), EA_PTRSIZE, vptrReg, vptrReg,
                                                    vtabOffsAfterIndirection);
 
-                        getEmitter()->emitIns_Call(emitter::EC_INDIR_R, call->gtCall.gtCallMethHnd,
+                        getEmitter()->emitIns_Call(emitter::EC_INDIR_R, call->gtCallMethHnd,
                                                    INDEBUG_LDISASM_COMMA(sigInfo) NULL, // addr
                                                    args, retSize, gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
                                                    gcInfo.gcRegByrefSetCur, ilOffset,
                                                    vptrReg); // ireg
 #else
-                        getEmitter()->emitIns_Call(emitter::EC_FUNC_VIRTUAL, call->gtCall.gtCallMethHnd,
+                        getEmitter()->emitIns_Call(emitter::EC_FUNC_VIRTUAL, call->gtCallMethHnd,
                                                    INDEBUG_LDISASM_COMMA(sigInfo) NULL, // addr
                                                    args, retSize, gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
                                                    gcInfo.gcRegByrefSetCur, ilOffset,
@@ -18956,7 +18952,7 @@ regMaskTP CodeGen::genCodeForCall(GenTreePtr call, bool valUsed)
                 //    - Indirect calls to computed addresses
                 //    - Tailcall versions of all of the above
 
-                CORINFO_METHOD_HANDLE methHnd = call->gtCall.gtCallMethHnd;
+                CORINFO_METHOD_HANDLE methHnd = call->gtCallMethHnd;
 
                 //------------------------------------------------------
                 // Non-virtual/Indirect calls: Insert a null check on the "this" pointer if needed
@@ -19004,10 +19000,10 @@ regMaskTP CodeGen::genCodeForCall(GenTreePtr call, bool valUsed)
 
                     if (callType == CT_INDIRECT)
                     {
-                        noway_assert(genStillAddressable(call->gtCall.gtCallAddr));
+                        noway_assert(genStillAddressable(call->gtCallAddr));
 
-                        if (call->gtCall.gtCallAddr->gtFlags & GTF_REG_VAL)
-                            indCallReg = call->gtCall.gtCallAddr->gtRegNum;
+                        if (call->gtCallAddr->gtFlags & GTF_REG_VAL)
+                            indCallReg = call->gtCallAddr->gtRegNum;
 
                         nArgSize = (call->gtFlags & GTF_CALL_POP_ARGS) ? 0 : (int)argSize;
                         methHnd  = 0;
@@ -19042,7 +19038,7 @@ regMaskTP CodeGen::genCodeForCall(GenTreePtr call, bool valUsed)
                             anyways.
                             */
 
-                            inst_RV_TT(INS_mov, indCallReg, call->gtCall.gtCallAddr);
+                            inst_RV_TT(INS_mov, indCallReg, call->gtCallAddr);
                             regTracker.rsTrackRegTrash(indCallReg);
                         }
 
@@ -19110,7 +19106,7 @@ regMaskTP CodeGen::genCodeForCall(GenTreePtr call, bool valUsed)
                                                ilOffset, indCallReg);
 
                     if (callType == CT_INDIRECT)
-                        genDoneAddressable(call->gtCall.gtCallAddr, fptrRegs, RegSet::KEEP_REG);
+                        genDoneAddressable(call->gtCallAddr, fptrRegs, RegSet::KEEP_REG);
 
                     getEmitter()->emitEnableRandomNops();
 
@@ -19120,15 +19116,15 @@ regMaskTP CodeGen::genCodeForCall(GenTreePtr call, bool valUsed)
 
                 if (callType == CT_INDIRECT)
                 {
-                    noway_assert(genStillAddressable(call->gtCall.gtCallAddr));
+                    noway_assert(genStillAddressable(call->gtCallAddr));
 
-                    if (call->gtCall.gtCallCookie)
+                    if (call->gtCallCookie)
                     {
                         //------------------------------------------------------
                         // Non-virtual indirect calls via the P/Invoke stub
 
-                        GenTreePtr cookie = call->gtCall.gtCallCookie;
-                        GenTreePtr target = call->gtCall.gtCallAddr;
+                        GenTreePtr cookie = call->gtCallCookie;
+                        GenTreePtr target = call->gtCallAddr;
 
                         noway_assert((call->gtFlags & GTF_CALL_POP_ARGS) == 0);
 
@@ -19177,8 +19173,7 @@ regMaskTP CodeGen::genCodeForCall(GenTreePtr call, bool valUsed)
                         // Ensure that we don't trash any of these registers if we have to load
                         // the helper call target into a register to invoke it.
                         regMaskTP regsUsed;
-                        regSet.rsLockReg(call->gtCall.gtCallRegUsedMask | RBM_PINVOKE_TARGET_PARAM |
-                                             RBM_PINVOKE_COOKIE_PARAM,
+                        regSet.rsLockReg(call->gtCallRegUsedMask | RBM_PINVOKE_TARGET_PARAM | RBM_PINVOKE_COOKIE_PARAM,
                                          &regsUsed);
 #else
                         NYI("Non-virtual indirect calls via the P/Invoke stub");
@@ -19190,7 +19185,7 @@ regMaskTP CodeGen::genCodeForCall(GenTreePtr call, bool valUsed)
                         genEmitHelperCall(CORINFO_HELP_PINVOKE_CALLI, (int)args, retSize);
 
 #if defined(_TARGET_ARM_)
-                        regSet.rsUnlockReg(call->gtCall.gtCallRegUsedMask | RBM_PINVOKE_TARGET_PARAM |
+                        regSet.rsUnlockReg(call->gtCallRegUsedMask | RBM_PINVOKE_TARGET_PARAM |
                                                RBM_PINVOKE_COOKIE_PARAM,
                                            regsUsed);
 #endif
@@ -19207,14 +19202,14 @@ regMaskTP CodeGen::genCodeForCall(GenTreePtr call, bool valUsed)
 
                         if (fTailCall)
                         {
-                            inst_RV_TT(INS_mov, REG_TAILCALL_ADDR, call->gtCall.gtCallAddr);
+                            inst_RV_TT(INS_mov, REG_TAILCALL_ADDR, call->gtCallAddr);
                             regTracker.rsTrackRegTrash(REG_TAILCALL_ADDR);
                         }
                         else
                             instEmit_indCall(call, args, retSize);
                     }
 
-                    genDoneAddressable(call->gtCall.gtCallAddr, fptrRegs, RegSet::KEEP_REG);
+                    genDoneAddressable(call->gtCallAddr, fptrRegs, RegSet::KEEP_REG);
 
                     // Done with indirect calls
                     break;
@@ -19253,7 +19248,7 @@ regMaskTP CodeGen::genCodeForCall(GenTreePtr call, bool valUsed)
 
                     CORINFO_ACCESS_FLAGS aflags = CORINFO_ACCESS_ANY;
 
-                    if (call->gtCall.gtCallMoreFlags & GTF_CALL_M_NONVIRT_SAME_THIS)
+                    if (call->gtCallMoreFlags & GTF_CALL_M_NONVIRT_SAME_THIS)
                         aflags = (CORINFO_ACCESS_FLAGS)(aflags | CORINFO_ACCESS_THIS);
 
                     if ((call->gtFlags & GTF_CALL_NULLCHECK) == 0)
@@ -19351,7 +19346,7 @@ regMaskTP CodeGen::genCodeForCall(GenTreePtr call, bool valUsed)
                                                    getEmitter()->emitCurIGsize +     // size of the current IG
                                                    4;                                // size of the jump instruction
                                                                                      // that we are now emitting
-                            if (compiler->gtIsRecursiveCall(call->AsCall()) && codeOffset <= -CALL_DIST_MAX_NEG)
+                            if (compiler->gtIsRecursiveCall(call) && codeOffset <= -CALL_DIST_MAX_NEG)
                             {
                                 getEmitter()->emitIns_Call(emitter::EC_FUNC_TOKEN, methHnd,
                                                            INDEBUG_LDISASM_COMMA(sigInfo) NULL, // addr
@@ -19565,7 +19560,7 @@ regMaskTP CodeGen::genCodeForCall(GenTreePtr call, bool valUsed)
         regMaskTP curArgMask = genMapArgNumToRegMask(areg, TYP_INT);
 
         // Is this one of the used argument registers?
-        if ((curArgMask & call->gtCall.gtCallRegUsedMask) == 0)
+        if ((curArgMask & call->gtCallRegUsedMask) == 0)
             continue;
 
 #ifdef _TARGET_ARM_
@@ -19598,7 +19593,7 @@ regMaskTP CodeGen::genCodeForCall(GenTreePtr call, bool valUsed)
         regMaskTP curArgMask = genMapArgNumToRegMask(areg, TYP_FLOAT);
 
         // Is this one of the used argument registers?
-        if ((curArgMask & call->gtCall.gtCallRegUsedMask) == 0)
+        if ((curArgMask & call->gtCallRegUsedMask) == 0)
             continue;
 
         regSet.rsMaskUsed &= ~curArgMask;
@@ -19649,7 +19644,7 @@ regMaskTP CodeGen::genCodeForCall(GenTreePtr call, bool valUsed)
     if (call->gtType == TYP_FLOAT || call->gtType == TYP_DOUBLE)
     {
 #ifdef _TARGET_ARM_
-        if (call->gtCall.IsVarargs() || compiler->opts.compUseSoftFP)
+        if (call->IsVarargs() || compiler->opts.compUseSoftFP)
         {
             // Result return for vararg methods is in r0, r1, but our callers would
             // expect the return in s0, s1 because of floating type. Do the move now.
@@ -19874,9 +19869,9 @@ regMaskTP CodeGen::genCodeForCall(GenTreePtr call, bool valUsed)
 #ifdef _TARGET_ARM_
         case TYP_STRUCT:
         {
-            assert(call->gtCall.gtRetClsHnd != NULL);
-            assert(compiler->IsHfa(call->gtCall.gtRetClsHnd));
-            int retSlots = compiler->GetHfaCount(call->gtCall.gtRetClsHnd);
+            assert(call->gtRetClsHnd != NULL);
+            assert(compiler->IsHfa(call->gtRetClsHnd));
+            int retSlots = compiler->GetHfaCount(call->gtRetClsHnd);
             assert(retSlots > 0 && retSlots <= MAX_HFA_RET_SLOTS);
             assert(MAX_HFA_RET_SLOTS < sizeof(int) * 8);
             retVal = ((1 << retSlots) - 1) << REG_FLOATRET;
@@ -19913,7 +19908,7 @@ regMaskTP CodeGen::genCodeForCall(GenTreePtr call, bool valUsed)
     if (frameListRoot)
         genPInvokeCallEpilog(frameListRoot, retVal);
 
-    if (frameListRoot && (call->gtCall.gtCallMoreFlags & GTF_CALL_M_FRAME_VAR_DEATH))
+    if (frameListRoot && (call->gtCallMoreFlags & GTF_CALL_M_FRAME_VAR_DEATH))
     {
         if (frameListRoot->lvRegister)
         {
@@ -19929,7 +19924,7 @@ regMaskTP CodeGen::genCodeForCall(GenTreePtr call, bool valUsed)
         // check the stack as frequently as possible
         && !call->IsHelperCall()
 #else
-        && call->gtCall.gtCallType == CT_USER_FUNC
+        && call->gtCallType == CT_USER_FUNC
 #endif
             )
     {

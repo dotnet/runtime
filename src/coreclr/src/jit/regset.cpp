@@ -1735,13 +1735,12 @@ void RegSet::rsSpillTree(regNumber reg, GenTreePtr tree, unsigned regIdx /* =0 *
 *
 *  Spill the top of the FP x87 stack.
 */
-void RegSet::rsSpillFPStack(GenTreePtr tree)
+void RegSet::rsSpillFPStack(GenTreeCall* call)
 {
     SpillDsc* spill;
     TempDsc*  temp;
-    var_types treeType = tree->TypeGet();
+    var_types treeType = call->TypeGet();
 
-    assert(tree->OperGet() == GT_CALL);
     spill = SpillDsc::alloc(m_rsCompiler, this, treeType);
 
     /* Grab a temp to store the spilled value */
@@ -1750,10 +1749,10 @@ void RegSet::rsSpillFPStack(GenTreePtr tree)
 
     /* Remember what it is we have spilled */
 
-    spill->spillTree  = tree;
+    spill->spillTree  = call;
     SpillDsc* lastDsc = spill;
 
-    regNumber reg      = tree->gtRegNum;
+    regNumber reg      = call->gtRegNum;
     lastDsc->spillNext = rsSpillDesc[reg];
     rsSpillDesc[reg]   = spill;
 
@@ -1766,7 +1765,7 @@ void RegSet::rsSpillFPStack(GenTreePtr tree)
 
     /* Mark the tree node as having been spilled */
 
-    rsMarkSpill(tree, reg);
+    rsMarkSpill(call, reg);
 }
 #endif // defined(_TARGET_X86_) && !FEATURE_STACK_FP_X87
 

@@ -637,7 +637,7 @@ void CodeGen::genCodeForTreeFloat(GenTreePtr tree, RegSet::RegisterPreference* p
     else
     {
         assert(oper == GT_CALL);
-        genCodeForCall(tree, true);
+        genCodeForCall(tree->AsCall(), true);
     }
 }
 

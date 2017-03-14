@@ -4599,7 +4599,7 @@ struct GenTreePutArgStk : public GenTreeUnOp
                      var_types  type,
                      unsigned slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(unsigned numSlots)
                          PUT_STRUCT_ARG_STK_ONLY_ARG(bool isStruct),
-                     bool _putInIncomingArgArea = false DEBUGARG(GenTreePtr callNode = nullptr)
+                     bool _putInIncomingArgArea = false DEBUGARG(GenTreeCall* callNode = nullptr)
                          DEBUGARG(bool largeNode = false))
         : GenTreeUnOp(oper, type DEBUGARG(largeNode))
         , gtSlotNum(slotNum)
@@ -4623,7 +4623,7 @@ struct GenTreePutArgStk : public GenTreeUnOp
                      var_types  type,
                      GenTreePtr op1,
                      unsigned slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(unsigned numSlots),
-                     bool _putInIncomingArgArea = false DEBUGARG(GenTreePtr callNode = nullptr)
+                     bool _putInIncomingArgArea = false DEBUGARG(GenTreeCall* callNode = nullptr)
                          DEBUGARG(bool largeNode = false))
         : GenTreeUnOp(oper, type, op1 DEBUGARG(largeNode))
         , gtSlotNum(slotNum)
@@ -4648,7 +4648,7 @@ struct GenTreePutArgStk : public GenTreeUnOp
     GenTreePutArgStk(genTreeOps oper,
                      var_types  type,
                      unsigned slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(unsigned numSlots)
-                         DEBUGARG(GenTreePtr callNode = NULL) DEBUGARG(bool largeNode = false))
+                         DEBUGARG(GenTreeCall* callNode = NULL) DEBUGARG(bool largeNode = false))
         : GenTreeUnOp(oper, type DEBUGARG(largeNode))
         , gtSlotNum(slotNum)
 #if defined(UNIX_X86_ABI)
@@ -4670,7 +4670,7 @@ struct GenTreePutArgStk : public GenTreeUnOp
                      var_types  type,
                      GenTreePtr op1,
                      unsigned slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(unsigned numSlots)
-                         DEBUGARG(GenTreePtr callNode = NULL) DEBUGARG(bool largeNode = false))
+                         DEBUGARG(GenTreeCall* callNode = NULL) DEBUGARG(bool largeNode = false))
         : GenTreeUnOp(oper, type, op1 DEBUGARG(largeNode))
         , gtSlotNum(slotNum)
 #if defined(UNIX_X86_ABI)
@@ -4738,7 +4738,7 @@ struct GenTreePutArgStk : public GenTreeUnOp
 #endif // FEATURE_PUT_STRUCT_ARG_STK
 
 #ifdef DEBUG
-    GenTreePtr gtCall; // the call node to which this argument belongs
+    GenTreeCall* gtCall; // the call node to which this argument belongs
 #endif
 
 #ifdef FEATURE_PUT_STRUCT_ARG_STK

@@ -218,7 +218,7 @@ void genStoreInd(GenTreePtr node);
 
 bool genEmitOptimizedGCWriteBarrier(GCInfo::WriteBarrierForm writeBarrierForm, GenTree* addr, GenTree* data);
 
-void genCallInstruction(GenTreePtr call);
+void genCallInstruction(GenTreeCall* call);
 
 void genJmpMethod(GenTreePtr jmp);
 

@@ -4836,18 +4836,16 @@ void Compiler::optEnsureUniqueHead(unsigned loopInd, unsigned ambientWeight)
  *  Determine the kind of interference for the call.
  */
 
-/* static */ inline Compiler::callInterf Compiler::optCallInterf(GenTreePtr call)
+/* static */ inline Compiler::callInterf Compiler::optCallInterf(GenTreeCall* call)
 {
-    assert(call->gtOper == GT_CALL);
-
     // if not a helper, kills everything
-    if (call->gtCall.gtCallType != CT_HELPER)
+    if (call->gtCallType != CT_HELPER)
     {
         return CALLINT_ALL;
     }
 
     // setfield and array address store kill all indirections
-    switch (eeGetHelperNum(call->gtCall.gtCallMethHnd))
+    switch (eeGetHelperNum(call->gtCallMethHnd))
     {
         case CORINFO_HELP_ASSIGN_REF:         // Not strictly needed as we don't make a GT_CALL with this
         case CORINFO_HELP_CHECKED_ASSIGN_REF: // Not strictly needed as we don't make a GT_CALL with this
@@ -5311,7 +5309,7 @@ Compiler::fgWalkResult Compiler::optIsVarAssgCB(GenTreePtr* pTree, fgWalkData* d
         isVarAssgDsc* desc = (isVarAssgDsc*)data->pCallbackData;
         assert(desc && desc->ivaSelf == desc);
 
-        desc->ivaMaskCall = optCallInterf(tree);
+        desc->ivaMaskCall = optCallInterf(tree->AsCall());
     }
 
     return WALK_CONTINUE;
