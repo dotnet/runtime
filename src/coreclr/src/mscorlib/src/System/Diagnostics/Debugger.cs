@@ -30,6 +30,7 @@ namespace System.Diagnostics
         // Break causes a breakpoint to be signalled to an attached debugger.  If no debugger
         // is attached, the user is asked if he wants to attach a debugger. If yes, then the 
         // debugger is launched.
+        [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public static void Break()
         {
             // Causing a break is now allowed.
