@@ -141,18 +141,21 @@ namespace System.Net.Sockets
                         // Copy the user-provided list into our internal buffer list,
                         // so that we are not affected by subsequent changes to the list.
                         // We reuse the existing list so that we can avoid reallocation when possible.
+                        int bufferCount = value.Count;
                         if (_bufferListInternal == null)
                         {
-                            _bufferListInternal = new List<ArraySegment<byte>>(value.Count);
+                            _bufferListInternal = new List<ArraySegment<byte>>(bufferCount);
                         }
                         else
                         {
                             _bufferListInternal.Clear();
                         }
 
-                        for (int i = 0; i < value.Count; i++)
+                        for (int i = 0; i < bufferCount; i++)
                         {
-                            _bufferListInternal.Add(value[i]);
+                            ArraySegment<byte> buffer = value[i];
+                            RangeValidationHelpers.ValidateSegment(buffer);
+                            _bufferListInternal.Add(buffer);
                         }
                     }
                     else

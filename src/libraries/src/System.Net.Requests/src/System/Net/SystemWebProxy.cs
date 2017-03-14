@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Threading;
 
 namespace System.Net
 {
@@ -29,22 +30,7 @@ namespace System.Net
         {
         }
 
-        public static IWebProxy Get()
-        {
-            if (!s_systemWebProxyInitialized)
-            {
-                lock (s_lockObject)
-                {
-                    if (!s_systemWebProxyInitialized)
-                    {
-                        s_systemWebProxy = new SystemWebProxy();
-                        s_systemWebProxyInitialized = true;
-                    }
-                }
-            }
-
-            return s_systemWebProxy;
-        }
+        public static IWebProxy Get() => LazyInitializer.EnsureInitialized(ref s_systemWebProxy, ref s_systemWebProxyInitialized, ref s_lockObject, () => new SystemWebProxy());
 
         public ICredentials Credentials
         {
