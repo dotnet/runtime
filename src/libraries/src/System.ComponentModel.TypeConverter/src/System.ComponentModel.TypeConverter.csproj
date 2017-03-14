@@ -260,7 +260,6 @@
     <Reference Include="System.Linq" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Security" />
-    <Reference Include="System.Net.WebClient" />
     <Reference Include="System.ObjectModel" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Resources.Writer" />
