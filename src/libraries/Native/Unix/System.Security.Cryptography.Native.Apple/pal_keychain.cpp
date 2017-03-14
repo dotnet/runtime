@@ -210,7 +210,10 @@ static OSStatus DeleteInKeychain(CFTypeRef needle, SecKeychainRef haystack)
 extern "C" int32_t
 AppleCryptoNative_X509StoreAddCertificate(CFTypeRef certOrIdentity, SecKeychainRef keychain, int32_t* pOSStatus)
 {
-    if (certOrIdentity == nullptr || keychain == nullptr)
+    if (pOSStatus != nullptr)
+        *pOSStatus = noErr;
+
+    if (certOrIdentity == nullptr || keychain == nullptr || pOSStatus == nullptr)
         return -1;
 
     SecCertificateRef cert = nullptr;
@@ -299,7 +302,10 @@ AppleCryptoNative_X509StoreAddCertificate(CFTypeRef certOrIdentity, SecKeychainR
 extern "C" int32_t
 AppleCryptoNative_X509StoreRemoveCertificate(CFTypeRef certOrIdentity, SecKeychainRef keychain, int32_t* pOSStatus)
 {
-    if (certOrIdentity == nullptr || keychain == nullptr)
+    if (pOSStatus != nullptr)
+        *pOSStatus = noErr;
+
+    if (certOrIdentity == nullptr || keychain == nullptr || pOSStatus == nullptr)
         return -1;
 
     SecCertificateRef cert = nullptr;
