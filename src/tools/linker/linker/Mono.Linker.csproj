@@ -74,7 +74,7 @@
     <Compile Include="Mono.Linker\XApiReader.cs" />
     <Compile Include="Mono.Linker.Steps\TypeMapStep.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(DoNotEmbedDescriptors)' == '' ">
+  <ItemGroup Condition=" '$(DoNotEmbedDescriptors)' == '' AND ! $(Configuration.StartsWith('netcore'))">
     <EmbeddedResource Include="Descriptors\mscorlib.xml">
       <LogicalName>mscorlib.xml</LogicalName>
     </EmbeddedResource>
