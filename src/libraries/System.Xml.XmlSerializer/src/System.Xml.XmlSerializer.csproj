@@ -17,7 +17,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\System.Private.Xml\src\System.Private.Xml.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'uapaot'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'uap'">
     <EmbeddedResource Include="..\..\System.Private.Xml\src\Resources\System.Private.Xml.rd.xml" />
   </ItemGroup>
   <ItemGroup>
