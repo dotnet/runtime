@@ -6,7 +6,7 @@
     <Version>$(HostPolicyVersion)</Version>
   </PropertyGroup>   
 
-  <ItemGroup Condition="'$(PackageTargetRuntime)' != ''">
+  <ItemGroup>
     <Dependency Include="Microsoft.NETCore.DotNetHostResolver">
       <Version>$(HostResolverFullVersion)</Version>
     </Dependency>
