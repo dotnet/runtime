@@ -236,7 +236,7 @@ namespace System.Diagnostics
                 {
                     foreach (TraceListener listener in Listeners)
                     {
-                        listener.Dispose();
+                        listener.Close();
                     }
                 }
             }

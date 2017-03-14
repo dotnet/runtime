@@ -104,7 +104,7 @@ namespace System.Diagnostics
                 {
                     foreach (TraceListener listener in _listeners)
                     {
-                        listener.Dispose();
+                        listener.Close();
                     }
                 }
             }
