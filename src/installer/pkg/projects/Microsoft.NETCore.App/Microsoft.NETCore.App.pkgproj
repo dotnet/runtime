@@ -48,7 +48,6 @@
     </Otherwise>
   </Choose>
   
-  <Import Project="$(MSBuildProjectName).props" />
   <Import Project="netcoreapp1.0.props" />
 
   <!-- Identity / Reference package content -->
