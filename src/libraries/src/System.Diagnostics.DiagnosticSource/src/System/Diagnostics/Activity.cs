@@ -3,9 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS
 using System.Security;
-#endif
 using System.Threading;
 
 namespace System.Diagnostics
@@ -412,9 +410,7 @@ namespace System.Diagnostics
             return ret;
         }
 
-#if ALLOW_PARTIALLY_TRUSTED_CALLERS        
         [SecuritySafeCritical]
-#endif
         private static unsafe long GetRandomNumber()
         {
             Guid g = Guid.NewGuid();
