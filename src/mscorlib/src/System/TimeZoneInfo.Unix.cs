@@ -927,7 +927,7 @@ namespace System
         /// Creates an AdjustmentRule given the POSIX TZ environment variable string.
         /// </summary>
         /// <remarks>
-        /// See http://www.gnu.org/software/libc/manual/html_node/TZ-Variable.html for the format and semantics of this POSX string.
+        /// See http://man7.org/linux/man-pages/man3/tzset.3.html for the format and semantics of this POSX string.
         /// </remarks>
         private static AdjustmentRule TZif_CreateAdjustmentRuleForPosixFormat(string posixFormat, DateTime startTransitionDate, TimeSpan timeZoneBaseUtcOffset)
         {
@@ -1189,8 +1189,32 @@ namespace System
             return !string.IsNullOrEmpty(standardName) && !string.IsNullOrEmpty(standardOffset);
         }
 
-        private static string TZif_ParsePosixName(string posixFormat, ref int index) =>
-            TZif_ParsePosixString(posixFormat, ref index, c => char.IsDigit(c) || c == '+' || c == '-' || c == ',');
+        private static string TZif_ParsePosixName(string posixFormat, ref int index)
+        {
+            bool isBracketEnclosed = index < posixFormat.Length && posixFormat[index] == '<';
+            if (isBracketEnclosed)
+            {
+                // move past the opening bracket
+                index++;
+
+                string result = TZif_ParsePosixString(posixFormat, ref index, c => c == '>');
+
+                // move past the closing bracket
+                if (index < posixFormat.Length && posixFormat[index] == '>')
+                {
+                    index++;
+                }
+
+                return result;
+            }
+            else
+            {
+                return TZif_ParsePosixString(
+                    posixFormat,
+                    ref index,
+                    c => char.IsDigit(c) || c == '+' || c == '-' || c == ',');
+            }
+        }
 
         private static string TZif_ParsePosixOffset(string posixFormat, ref int index) =>
             TZif_ParsePosixString(posixFormat, ref index, c => !char.IsDigit(c) && c != '+' && c != '-' && c != ':');
