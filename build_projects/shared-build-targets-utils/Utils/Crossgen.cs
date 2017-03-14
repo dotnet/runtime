@@ -14,6 +14,7 @@ namespace Microsoft.DotNet.Cli.Build
         private string _jitVersion;
         private string _crossGenPath;
         private string _targetRID;
+        private static readonly string s_transportPackagePrefix = "transport";
         private static readonly string[] s_excludedLibraries =
         {
             "mscorlib.dll",
@@ -104,7 +105,7 @@ namespace Microsoft.DotNet.Cli.Build
                 return null;
             }
 
-            string packageId = $"runtime.{jitRid}.Microsoft.NETCore.Jit";
+            string packageId = $"{s_transportPackagePrefix}.runtime.{jitRid}.Microsoft.NETCore.Jit";
 
             return Path.Combine(
                 Dirs.PkgNuGetPackages,
@@ -121,7 +122,7 @@ namespace Microsoft.DotNet.Cli.Build
                 return null;
             }
 
-            string packageId = $"runtime.{coreclrRid}.Microsoft.NETCore.Runtime.CoreCLR";
+            string packageId = $"{s_transportPackagePrefix}.runtime.{coreclrRid}.Microsoft.NETCore.Runtime.CoreCLR";
 
             return Path.Combine(
                 Dirs.PkgNuGetPackages,
@@ -142,7 +143,7 @@ namespace Microsoft.DotNet.Cli.Build
                 return null;
             }
 
-            string packageId = $"runtime.{coreclrRid}.Microsoft.NETCore.Runtime.CoreCLR";
+            string packageId = $"{s_transportPackagePrefix}.runtime.{coreclrRid}.Microsoft.NETCore.Runtime.CoreCLR";
 
             return Path.Combine(
                 Dirs.PkgNuGetPackages,

@@ -21,10 +21,11 @@
 
     <!-- Input Directories -->
     <PackagesDir Condition="'$(PackagesDir)'==''">$(ProjectDir)packages/</PackagesDir>
+    <PackageSymbolsBinDir Condition="'$(PackageSymbolsBinDir)' == ''">$(BinDir)symbols/</PackageSymbolsBinDir>
     <ToolRuntimePath Condition="'$(ToolRuntimePath)'==''">$(ProjectDir)Tools/</ToolRuntimePath>
     <ToolsDir Condition="'$(UseToolRuntimeForToolsDir)'=='true'">$(ToolRuntimePath)</ToolsDir>
     <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)Tools/</ToolsDir>
-    <BuildToolsTaskDir Condition="'$(BuildToolsTargets45)' == 'true' OR '$(MSBuildRuntimeType)' != 'Core'">$(ToolsDir)net45/</BuildToolsTaskDir>
+    <BuildToolsTaskDir Condition="'$(BuildToolsTargets45)' == 'true' OR '$(MSBuildRuntimeType)' != 'Core'">$(ToolsDir)net46/</BuildToolsTaskDir>
     <PackagingTaskDir Condition="'$(BuildToolsTaskDir)' != ''">$(BuildToolsTaskDir)</PackagingTaskDir>
     <UseRoslynCompilers Condition="'$(UseRoslynCompilers)'=='' and '$(OSEnvironment)'!='Windows_NT'">false</UseRoslynCompilers>
     <!-- core-setup does its own versioning -->
@@ -40,7 +41,7 @@
   <PropertyGroup>
     <PackageOutputPath>$(PackagesOutDir)</PackageOutputPath>
     <SymbolPackageOutputPath>$(SymbolPackagesOutDir)</SymbolPackageOutputPath>
-    <RuntimeIdGraphDefinitionFile>$(ProjectDir)packages\Microsoft.NETCore.Platforms\2.0.0-beta-25110-02\runtime.json</RuntimeIdGraphDefinitionFile>
+    <RuntimeIdGraphDefinitionFile>$(ProjectDir)packages\Microsoft.NETCore.Platforms\2.0.0-beta-25114-01\runtime.json</RuntimeIdGraphDefinitionFile>
     <PackageLicenseFile>$(ProjectDir)projects/dotnet_library_license.txt</PackageLicenseFile>
     <PackageThirdPartyNoticesFile>$(ProjectDir)projects/ThirdPartyNotices.txt</PackageThirdPartyNoticesFile>
     <PackageDescriptionFile>$(ProjectDir)projects/descriptions.json</PackageDescriptionFile>
@@ -49,6 +50,10 @@
     <ProjectUrl>https://dot.net</ProjectUrl>
     <PackagePlatform Condition="'$(PackagePlatform)' == ''">$(Platform)</PackagePlatform>
     <PackagePlatform Condition="'$(PackagePlatform)' == 'amd64'">x64</PackagePlatform>
+
+    <PackageIndexFile>$(MSBuildThisFileDirectory)packageIndex.json</PackageIndexFile> 
+    <!-- core-setup doesn't currently use the index so don't force it to be in sync --> 
+    <SkipIndexCheck>true</SkipIndexCheck>     
   </PropertyGroup>
 
   <!-- Add required legal files to packages -->
@@ -61,6 +66,7 @@
           Include="$(PackageThirdPartyNoticesFile)" >
       <SkipPackageFileCheck>true</SkipPackageFileCheck>
     </File>
+    <PackageIndex Include="$(PackageIndexFile)" />     
   </ItemGroup>
 
   <PropertyGroup>
