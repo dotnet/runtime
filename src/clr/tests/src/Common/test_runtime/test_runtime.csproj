@@ -8,11 +8,8 @@
     <!-- Reset the Default project.json-->
     <ProjectJson></ProjectJson>
     <ProjectLockJson></ProjectLockJson>
-    <NugetTargetMoniker>.NETCoreApp,Version=v1.1</NugetTargetMoniker>
+    <NugetTargetMoniker>.NETCoreApp,Version=v2.0</NugetTargetMoniker>
   </PropertyGroup>
-  <ItemGroup>
-    <DnuSourceList Include="$(CORE_ROOT)\.nuget\pkg" />
-  </ItemGroup>
   <ItemGroup>
     <None Include="project.json" />
   </ItemGroup>

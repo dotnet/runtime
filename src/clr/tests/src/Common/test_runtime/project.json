@@ -7,7 +7,7 @@
     "jit-analyze": "0.0.1.1"
   },
   "frameworks": {
-    "netcoreapp1.1": {
+    "netcoreapp2.0": {
       "imports": [
         "dnxcore50",
         "portable-net45+win8"
