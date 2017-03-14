@@ -1869,10 +1869,6 @@ Thread::Thread()
     m_dwAbortPoint = 0;
 #endif
 
-#ifdef STRESS_THREAD
-    m_stressThreadCount = -1;
-#endif
-
     m_pFiberData = NULL;
 
     m_TaskId = INVALID_TASK_ID;
