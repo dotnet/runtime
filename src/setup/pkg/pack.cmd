@@ -3,7 +3,7 @@ setlocal EnableDelayedExpansion
 
 set __ProjectDir=%~dp0
 set __DotNet=%__ProjectDir%\Tools\dotnetcli\dotnet.exe
-set __MSBuild=%__ProjectDir%\Tools\MSBuild.exe
+set __MSBuild=%__ProjectDir%\Tools\MSBuild.dll
 
 :: Initialize the MSBuild Tools
 call "%__ProjectDir%\init-tools.cmd"
