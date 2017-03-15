@@ -10,12 +10,12 @@ namespace System.CodeDom
     [Serializable]
     public class CodeNamespaceImportCollection : IList
     {
-        private readonly List<CodeNamespaceImport> _data = new List<CodeNamespaceImport>();
+        private readonly ArrayList _data = new ArrayList(); // not List<CodeNamespaceImport> to provide desktop-consistent semantics for CopyTo
         private readonly Dictionary<string, CodeNamespaceImport> _keys = new Dictionary<string, CodeNamespaceImport>(StringComparer.OrdinalIgnoreCase);
 
         public CodeNamespaceImport this[int index]
         {
-            get { return _data[index]; }
+            get { return (CodeNamespaceImport)_data[index]; }
             set
             {
                 _data[index] = value;
@@ -84,15 +84,15 @@ namespace System.CodeDom
 
         object ICollection.SyncRoot => null;
 
-        void ICollection.CopyTo(Array array, int index) => ((IList)_data).CopyTo(array, index);
+        void ICollection.CopyTo(Array array, int index) => _data.CopyTo(array, index);
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-        int IList.Add(object value) => ((IList)_data).Add((CodeNamespaceImport)value);
+        int IList.Add(object value) => _data.Add((CodeNamespaceImport)value);
 
         void IList.Clear() => Clear();
 
-        bool IList.Contains(object value) => ((IList)_data).Contains(value);
+        bool IList.Contains(object value) => _data.Contains(value);
 
         int IList.IndexOf(object value) => _data.IndexOf((CodeNamespaceImport)value);
 
