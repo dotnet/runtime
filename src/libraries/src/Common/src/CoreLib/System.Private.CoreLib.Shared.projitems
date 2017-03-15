@@ -86,6 +86,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\IEnumerator.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\IEqualityComparer.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\IList.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Convert.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Action.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\ApplicationException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\ArgumentNullException.cs"/>
