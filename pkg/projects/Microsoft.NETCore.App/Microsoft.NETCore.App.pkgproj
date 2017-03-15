@@ -63,6 +63,10 @@
     <Dependency Include="@(NETCoreApp11Dependency)">
       <TargetFramework>.NETCoreApp1.1</TargetFramework>
     </Dependency>
+    <!-- references the host packages -->
+    <Dependency Include="Microsoft.NETCore.DotNetAppHost">
+       <Version>$(AppHostFullVersion)</Version>
+    </Dependency>
 
     <!-- Add a placeholder to make sure NuGet understands we still support older versions,
          even though they don't have ref-assets -->
