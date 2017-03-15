@@ -1271,7 +1271,7 @@ static void LockingCallback(int mode, int n, const char* file, int line)
         result = pthread_mutex_unlock(&g_locks[n]);
     }
 
-#pragma clang diagnostic push
+#pragma clang diagnostic pop
 
     if (result != 0)
     {
