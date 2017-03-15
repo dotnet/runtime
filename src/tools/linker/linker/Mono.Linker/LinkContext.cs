@@ -173,7 +173,7 @@ namespace Mono.Linker {
 			return !_annotations.HasAction (assembly);
 		}
 
-		public void SafeReadSymbols (AssemblyDefinition assembly)
+		public virtual void SafeReadSymbols (AssemblyDefinition assembly)
 		{
 			if (!_linkSymbols)
 				return;
