@@ -111,10 +111,10 @@ namespace Mono.Linker {
 		{
 		}
 
-		public LinkContext(Pipeline pipeline, AssemblyResolver resolver)
+		public LinkContext (Pipeline pipeline, AssemblyResolver resolver)
 			: this(pipeline, resolver, new ReaderParameters
 			{
-				AssemblyResolver = resolver,
+				AssemblyResolver = resolver
 			})
 		{
 		}
