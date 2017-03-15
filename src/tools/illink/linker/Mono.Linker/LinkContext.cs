@@ -121,17 +121,18 @@ namespace Mono.Linker {
 			: this(pipeline, resolver, new ReaderParameters
 			{
 				AssemblyResolver = resolver
-			})
+			},
+			new AnnotationStore ())
 		{
 		}
 
-		public LinkContext (Pipeline pipeline, AssemblyResolver resolver, ReaderParameters readerParameters)
+		public LinkContext (Pipeline pipeline, AssemblyResolver resolver, ReaderParameters readerParameters, AnnotationStore annotations)
 		{
 			_pipeline = pipeline;
 			_resolver = resolver;
 			_actions = new Dictionary<string, AssemblyAction> ();
 			_parameters = new Dictionary<string, string> ();
-			_annotations = new AnnotationStore ();
+			_annotations = annotations;
 			_readerParameters = readerParameters;
 		}
 
