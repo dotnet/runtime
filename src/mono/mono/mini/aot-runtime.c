@@ -2262,7 +2262,7 @@ load_aot_module (MonoAssembly *assembly, gpointer user_data)
 	/*
 	 * Register the plt region as a single trampoline so we can unwind from this code
 	 */
-	mono_tramp_info_register (
+	mono_aot_tramp_info_register (
 		mono_tramp_info_create (
 			NULL,
 			amodule->plt,
@@ -5143,7 +5143,7 @@ mono_aot_get_trampoline (const char *name)
 	gpointer code;
 
 	code =  mono_aot_get_trampoline_full (name, &out_tinfo);
-	mono_tramp_info_register (out_tinfo, NULL);
+	mono_aot_tramp_info_register (out_tinfo, NULL);
 
 	return code;
 }
@@ -5297,7 +5297,7 @@ get_new_trampoline_from_page (int tramp_type)
 		/* Register the generic part at the beggining of the trampoline page */
 		gen_info = mono_tramp_info_create (NULL, (guint8*)taddr, amodule->info.tramp_page_code_offsets [tramp_type], NULL, NULL);
 		read_page_trampoline_uwinfo (gen_info, tramp_type, TRUE);
-		mono_tramp_info_register (gen_info, NULL);
+		mono_aot_tramp_info_register (gen_info, NULL);
 		/*
 		 * FIXME
 		 * Registering each specific trampoline produces a lot of
@@ -5308,7 +5308,7 @@ get_new_trampoline_from_page (int tramp_type)
 			/* Register the rest of the page as a single trampoline */
 			sp_info = mono_tramp_info_create (NULL, code, page->trampolines_end - code, NULL, NULL);
 			read_page_trampoline_uwinfo (sp_info, tramp_type, FALSE);
-			mono_tramp_info_register (sp_info, NULL);
+			mono_aot_tramp_info_register (sp_info, NULL);
 		}
 		return code;
 	}
@@ -5577,7 +5577,7 @@ mono_aot_get_unbox_trampoline (MonoMethod *method)
 	}
 
 	tinfo->code_size = *(guint32*)symbol_addr;
-	mono_tramp_info_register (tinfo, NULL);
+	mono_aot_tramp_info_register (tinfo, NULL);
 
 	/* The caller expects an ftnptr */
 	return mono_create_ftnptr (mono_domain_get (), code);
