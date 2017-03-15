@@ -1102,7 +1102,7 @@ Mono provides its own implementation of those assemblies so it's safe to do so.
 
 The ignored_assemblies list is generated using tools/nuget-hash-extractor and feeding the problematic nugets to it.
 
-Right now the list of nugets are the ones that provide the assemblies in $ignored_assemblies_names.
+Right now the list of nugets are the ones that provide the assemblies in $ignored_assemblies_file_names.
 
 This is to be removed once a proper fix is shipped through nuget.
 
@@ -1124,7 +1124,12 @@ typedef struct {
 	const char guid [40];
 } IgnoredAssembly;
 
-const char *ignored_assemblies_names[] = {
+typedef struct {
+	int assembly_name;
+	guint16 major, minor, build, revision;
+} IgnoredAssemblyVersion;
+
+const char *ignored_assemblies_file_names[] = {
 	"System.Runtime.InteropServices.RuntimeInformation.dll",
 	"System.Globalization.Extensions.dll",
 	"System.IO.Compression.dll",
@@ -1154,6 +1159,50 @@ static const IgnoredAssembly ignored_assemblies [] = {
 	IGNORED_ASSEMBLY (0xFA686A38, SYS_TEXT_ENC_CODEPAGES, "FD178CD4-EF4F-44D5-9C3F-812B1E25126B", "4.3.0 net46"),
 	IGNORED_ASSEMBLY (0x75B4B041, SYS_VALUE_TUPLE, "F81A4140-A898-4E2B-B6E9-55CE78C273EC", "4.3.0 netstandard1.0"),
 };
+
+
+const char *ignored_assemblies_names[] = {
+	"System.Runtime.InteropServices.RuntimeInformation",
+	"System.Globalization.Extensions",
+	"System.IO.Compression",
+	"System.Net.Http",
+	"System.Text.Encoding.CodePages",
+	"System.Reflection.DispatchProxy",
+	"System.ValueTuple"
+};
+
+#define IGNORED_ASM_VER(NAME, MAJOR, MINOR, BUILD, REVISION) { .assembly_name = NAME, .major = MAJOR, .minor = MINOR, .build = BUILD, .revision = REVISION }
+
+static const IgnoredAssemblyVersion ignored_assembly_versions [] = {
+	IGNORED_ASM_VER (SYS_GLOBALIZATION_EXT, 4, 0, 0, 0),
+	IGNORED_ASM_VER (SYS_GLOBALIZATION_EXT, 4, 0, 1, 0),
+	IGNORED_ASM_VER (SYS_GLOBALIZATION_EXT, 4, 0, 2, 0),
+	IGNORED_ASM_VER (SYS_IO_COMPRESSION, 4, 1, 0, 0),
+	IGNORED_ASM_VER (SYS_IO_COMPRESSION, 4, 1, 2, 0),
+	IGNORED_ASM_VER (SYS_NET_HTTP, 4, 1, 0, 0),
+	IGNORED_ASM_VER (SYS_NET_HTTP, 4, 1, 0, 1),
+	IGNORED_ASM_VER (SYS_NET_HTTP, 4, 1, 1, 0),
+	IGNORED_ASM_VER (SYS_RT_INTEROP_RUNTIME_INFO, 4, 0, 0, 0),
+	IGNORED_ASM_VER (SYS_RT_INTEROP_RUNTIME_INFO, 4, 0, 1, 0),
+	IGNORED_ASM_VER (SYS_TEXT_ENC_CODEPAGES, 4, 0, 1, 0),
+	IGNORED_ASM_VER (SYS_TEXT_ENC_CODEPAGES, 4, 0, 2, 0),
+};
+
+gboolean
+mono_assembly_is_problematic_version (const char *name, guint16 major, guint16 minor, guint16 build, guint16 revision)
+{
+	return FALSE;
+	for (int i = 0; i < G_N_ELEMENTS (ignored_assembly_versions); ++i) {
+		if (ignored_assembly_versions [i].major != major ||
+			ignored_assembly_versions [i].minor != minor ||
+			ignored_assembly_versions [i].build != build ||
+			ignored_assembly_versions [i].revision != revision)
+				continue;
+		if (!strcmp (ignored_assemblies_names [ignored_assembly_versions [i].assembly_name], name))
+			return TRUE;
+	}
+	return FALSE;
+}
 
 /*
 Equivalent C# code:
@@ -1187,7 +1236,7 @@ is_problematic_image (MonoImage *image)
 	// Either sort by hash and bseach or use SoA and make the linear search more cache efficient.
 	for (int i = 0; i < G_N_ELEMENTS (ignored_assemblies); ++i) {
 		if (ignored_assemblies [i].hash == h && !strcmp (image->guid, ignored_assemblies [i].guid)) {
-			const char *needle = ignored_assemblies_names [ignored_assemblies [i].assembly_name];
+			const char *needle = ignored_assemblies_file_names [ignored_assemblies [i].assembly_name];
 			size_t needle_len = strlen (needle);
 			size_t asm_len = strlen (image->name);
 			if (asm_len > needle_len && !g_ascii_strcasecmp (image->name + (asm_len - needle_len), needle))
