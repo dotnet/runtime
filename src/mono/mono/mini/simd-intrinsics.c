@@ -1028,13 +1028,15 @@ type_to_pmul_op (MonoType *t)
 	case MONO_TYPE_U4:
 	case MONO_TYPE_I4:
 		return OP_PMULD;
-	case MONO_TYPE_U8:
-	case MONO_TYPE_I8:
-		return OP_PMULQ;
 	case MONO_TYPE_R4:
 		return OP_MULPS;
 	case MONO_TYPE_R8:
 		return OP_MULPD;
+	case MONO_TYPE_U8:
+		/* PMULQ multiplies two 32 bit numbers into a 64 bit one */
+		return -1;
+	case MONO_TYPE_I8:
+		return -1;
 	default:
 		break;
 	}
@@ -2148,9 +2150,9 @@ emit_vector_t_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 	case SN_op_Explicit:
 		return simd_intrinsic_emit_cast (intrins, cfg, cmethod, args);
 	case SN_Equals:
-		if (fsig->param_count == 1)
+		if (fsig->param_count == 1 && fsig->ret->type == MONO_TYPE_BOOLEAN && mono_metadata_type_equal (fsig->params [0], type))
 			return simd_intrinsic_emit_equality_op (cfg, cmethod, args, type_to_comp_op (etype), SIMD_COMP_EQ);
-		if (fsig->param_count == 2)
+		if (fsig->param_count == 2 && fsig->ret->type == MONO_TYPE_BOOLEAN && mono_metadata_type_equal (fsig->params [0], type) && mono_metadata_type_equal (fsig->params [1], type))
 			return simd_intrinsic_emit_binary_op (cfg, type_to_comp_op (etype), 0, cmethod->klass, fsig->params [0], fsig->params [1], args [0], args [1]);
 		break;
 
@@ -2176,15 +2178,15 @@ emit_vector_t_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 		switch (intrins->name) {
 		case SN_GreaterThan:
 			return simd_intrinsic_emit_binary_op (cfg, gt_op, 0, cmethod->klass, fsig->params [0], fsig->params [1], args [0], args [1]);
-		case SN_LessThanOrEqual:
+		case SN_LessThan:
 			return simd_intrinsic_emit_binary_op (cfg, gt_op, 0, cmethod->klass, fsig->params [0], fsig->params [1], args [1], args [0]);
+		case SN_LessThanOrEqual:
+			cmp1 = simd_intrinsic_emit_binary_op (cfg, eq_op, 0, cmethod->klass, fsig->params [0], fsig->params [1], args [1], args [0]);
+			cmp2 = simd_intrinsic_emit_binary_op (cfg, gt_op, 0, cmethod->klass, fsig->params [0], fsig->params [1], args [1], args [0]);
+			return simd_intrinsic_emit_binary_op (cfg, OP_POR, 0, cmethod->klass, fsig->params [0], fsig->params [1], cmp1, cmp2);
 		case SN_GreaterThanOrEqual:
 			cmp1 = simd_intrinsic_emit_binary_op (cfg, eq_op, 0, cmethod->klass, fsig->params [0], fsig->params [1], args [0], args [1]);
 			cmp2 = simd_intrinsic_emit_binary_op (cfg, gt_op, 0, cmethod->klass, fsig->params [0], fsig->params [1], args [0], args [1]);
-			return simd_intrinsic_emit_binary_op (cfg, OP_POR, 0, cmethod->klass, fsig->params [0], fsig->params [1], cmp1, cmp2);
-		case SN_LessThan:
-			cmp1 = simd_intrinsic_emit_binary_op (cfg, eq_op, 0, cmethod->klass, fsig->params [0], fsig->params [1], args [1], args [0]);
-			cmp2 = simd_intrinsic_emit_binary_op (cfg, gt_op, 0, cmethod->klass, fsig->params [0], fsig->params [1], args [1], args [0]);
 			return simd_intrinsic_emit_binary_op (cfg, OP_POR, 0, cmethod->klass, fsig->params [0], fsig->params [1], cmp1, cmp2);
 		default:
 			g_assert_not_reached ();

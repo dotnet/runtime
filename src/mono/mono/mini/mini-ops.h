@@ -864,6 +864,7 @@ MINI_OP(OP_PSUBW_SAT_UN, "psubw_sat_un", XREG, XREG, XREG)
 
 MINI_OP(OP_PMULW, "pmulw", XREG, XREG, XREG)
 MINI_OP(OP_PMULD, "pmuld", XREG, XREG, XREG)
+/* Multiplies two 32 bit numbers into a 64 bit one */
 MINI_OP(OP_PMULQ, "pmulq", XREG, XREG, XREG)
 
 MINI_OP(OP_PMULW_HIGH_UN, "pmul_high_un", XREG, XREG, XREG)
