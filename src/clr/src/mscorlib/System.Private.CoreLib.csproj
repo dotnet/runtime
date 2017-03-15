@@ -483,7 +483,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\MemberInfoSerializationHolder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\MemberTypes.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodAttributes.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodBase.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodBase.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodImplAttributes.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodInfo.cs" />

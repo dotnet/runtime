@@ -877,6 +877,12 @@ internal static class SR
         get { return Environment.GetResourceString("Serialization_NonSerType"); }
     }
 
+
+    internal static string NotSupported_SubclassOverride
+    {
+        get { return Environment.GetResourceString("NotSupported_SubclassOverride"); }
+    }
+
     internal static string InvalidCast_IConvertible =>
         Environment.GetResourceString("InvalidCast_IConvertible");
 
