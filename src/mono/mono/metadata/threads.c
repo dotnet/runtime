@@ -282,8 +282,11 @@ mono_threads_end_abort_protected_block (void)
 		int new_val = ((old_state & ABORT_PROT_BLOCK_MASK) >> ABORT_PROT_BLOCK_SHIFT) - 1;
 		new_state = 0;
 
-		if ((old_state & INTERRUPT_REQUEST_DEFERRED_BIT) && new_val == 0) {
-			new_state |= INTERRUPT_REQUESTED_BIT;
+		if (old_state & INTERRUPT_REQUEST_DEFERRED_BIT) {
+			if (new_val == 0)
+				new_state |= INTERRUPT_REQUESTED_BIT;
+			else
+				new_state |= INTERRUPT_REQUEST_DEFERRED_BIT;
 		}
 
 		//bounds check abort_prot_count
