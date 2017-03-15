@@ -54,6 +54,8 @@
     <PackageIndexFile>$(MSBuildThisFileDirectory)packageIndex.json</PackageIndexFile> 
     <!-- core-setup doesn't currently use the index so don't force it to be in sync --> 
     <SkipIndexCheck>true</SkipIndexCheck>     
+
+    <Serviceable>true</Serviceable>
   </PropertyGroup>
 
   <!-- Add required legal files to packages -->
