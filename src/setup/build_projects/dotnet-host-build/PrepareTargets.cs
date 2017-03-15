@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -256,6 +256,7 @@ namespace Microsoft.DotNet.Host.Build
             AddInstallerArtifactToContext(c, "dotnet-host", "SharedHost", hostVersion);
             AddInstallerArtifactToContext(c, "dotnet-hostfxr", "HostFxr", hostFxrVersion);
             AddInstallerArtifactToContext(c, "dotnet-sharedframework", "SharedFramework", sharedFrameworkVersion);
+            AddInstallerArtifactToContext(c, "dotnet-sharedframework-symbols", "SharedFrameworkSymbols", sharedFrameworkVersion);
             AddInstallerArtifactToContext(c, "dotnet", "CombinedMuxerHostFxrFramework", sharedFrameworkVersion);
 
             return c.Success();
