@@ -158,7 +158,7 @@ void genSetRegToIcon(regNumber reg, ssize_t val, var_types type = TYP_INT, insFl
 
 void genCodeForShift(GenTreePtr tree);
 
-#if defined(_TARGET_X86_)
+#if defined(_TARGET_X86_) || defined(_TARGET_ARM_)
 void genCodeForShiftLong(GenTreePtr tree);
 #endif
 
