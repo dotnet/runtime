@@ -155,6 +155,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\PlatformNotSupportedException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\RankException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MemberInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ObfuscateAssemblyAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ObfuscationAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\TypeDelegator.cs" />
