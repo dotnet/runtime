@@ -177,7 +177,7 @@ namespace System.Net.Tests
 
                 sw.Stop();
 
-                Assert.InRange(sw.ElapsedMilliseconds, 1, 10 * 1000); // Allow a very wide range.
+                Assert.InRange(sw.ElapsedMilliseconds, 1, 60 * 1000); // Allow a very wide range as this has taken over 10 seconds occasionally
                 Assert.Equal(WebExceptionStatus.Timeout, exception.Status);
                 Assert.Equal(null, exception.InnerException);
                 Assert.Equal(null, exception.Response);
