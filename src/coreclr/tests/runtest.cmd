@@ -80,6 +80,8 @@ if /i "%1" == "jitdisasm"             (set __JitDisasm=1&shift&goto Arg_Loop)
 if /i "%1" == "GenerateLayoutOnly"    (set __GenerateLayoutOnly=1&shift&goto Arg_Loop)
 if /i "%1" == "PerfTests"             (set __PerfTests=true&shift&goto Arg_Loop)
 if /i "%1" == "runcrossgentests"      (set RunCrossGen=true&shift&goto Arg_Loop)
+if /i "%1" == "link"                  (set DoLink=true&set ILLINK=%2&shift&shift&goto Arg_Loop)
+
 REM change it to COMPlus_GCStress when we stop using xunit harness
 if /i "%1" == "gcstresslevel"         (set __GCSTRESSLEVEL=%2&set __TestTimeout=1800000&shift&shift&goto Arg_Loop)
 
@@ -399,6 +401,7 @@ echo TestEnv- Optional parameter - this will run a custom script to set custom t
 echo VSVersion- Optional parameter - VS2015 or VS2017 ^(default: VS2017^)
 echo AgainstPackages - Optional parameter - this indicates that we are running tests that were built against packages
 echo GenerateLayoutOnly - If specified will not run the tests and will only create the Runtime Dependency Layout
+echo link "ILlink"      - Runs the tests after linking via ILlink
 echo RunCrossgenTests   - Runs ReadytoRun tests
 echo jitstress n        - Runs the tests with COMPlus_JitStress=n
 echo jitstressregs n    - Runs the tests with COMPlus_JitStressRegs=n
