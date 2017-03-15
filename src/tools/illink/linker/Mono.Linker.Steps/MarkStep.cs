@@ -1100,7 +1100,7 @@ namespace Mono.Linker.Steps {
 				TypeDefinition paramTypeDefinition = ResolveTypeDefinition (paramTypeReference);
 				if (paramTypeDefinition != null) {
 					MarkFields (paramTypeDefinition, includeStaticFields);
-					if (paramTypeReference.IsByReference) {
+					if (pd.ParameterType.IsByReference) {
 						MarkDefaultConstructor (paramTypeDefinition);
 					}
 				}
