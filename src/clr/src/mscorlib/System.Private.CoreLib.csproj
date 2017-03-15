@@ -479,7 +479,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\MdConstant.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\MdImport.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\MemberFilter.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\MemberInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\MemberInfo.Internal.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\MemberInfoSerializationHolder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\MemberTypes.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodAttributes.cs" />
@@ -976,6 +976,7 @@
     <!-- These are files are preprocessed  -->
     <Compile Include="$(CommonPath)\Preprocessed\AssemblyRefs.g.cs" />
     <!-- These files are shared with other framework components and don't live the same folder as the rest of them-->
+    <Compile Include="$(CommonPath)\NotImplemented.cs" />
     <Compile Include="$(CommonPath)\PinnableBufferCache.cs" />
     <!-- Include Internals visible to file in the compilation -->
     <Compile Include="$(BclSourcesRoot)\mscorlib.Friends.cs" />
