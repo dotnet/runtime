@@ -1567,18 +1567,16 @@ namespace System.Net.Sockets
         internal static SocketError DisconnectAsync(Socket socket, SafeCloseSocket handle, bool reuseSocket, DisconnectOverlappedAsyncResult asyncResult)
         {
             SocketError socketError = Disconnect(socket, handle, reuseSocket);
-            asyncResult.CompletionCallback(0, SocketError.Success);
+            asyncResult.PostCompletion(socketError);
             return socketError;
         }
 
         internal static SocketError Disconnect(Socket socket, SafeCloseSocket handle, bool reuseSocket)
         {
-            if (reuseSocket)
-            {
-                return socket.ReplaceHandle();
-            }
-
-            return SocketError.Success;
+            socket.Shutdown(SocketShutdown.Both);
+            return reuseSocket ?
+                socket.ReplaceHandle() :
+                SocketError.Success;
         }
     }
 }

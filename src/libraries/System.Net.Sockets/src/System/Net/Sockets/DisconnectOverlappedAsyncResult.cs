@@ -4,10 +4,10 @@
 
 namespace System.Net.Sockets
 {
-    // DisconnectOverlappedAsyncResult - used to take care of storage for async Socket BeginAccept call.
-    internal sealed class DisconnectOverlappedAsyncResult : BaseOverlappedAsyncResult
+    // DisconnectOverlappedAsyncResult - used to take care of storage for async Socket BeginDisconnect call.
+    internal sealed partial class DisconnectOverlappedAsyncResult : BaseOverlappedAsyncResult
     {
-        internal DisconnectOverlappedAsyncResult(Socket socket, Object asyncState, AsyncCallback asyncCallback) :
+        internal DisconnectOverlappedAsyncResult(Socket socket, object asyncState, AsyncCallback asyncCallback) :
             base(socket, asyncState, asyncCallback)
         {
         }
