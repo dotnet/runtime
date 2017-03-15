@@ -1,0 +1,5 @@
+<linker>
+    <assembly fullname="TestObjectGetTypeVirtual">
+        <type fullname="*" required="true" />
+    </assembly>
+</linker>
