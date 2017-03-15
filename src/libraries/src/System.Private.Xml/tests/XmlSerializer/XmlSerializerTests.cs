@@ -3000,6 +3000,87 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         var cg = new MycodeGenerator();
         Assert.NotNull(cg);
     }
+
+#if ReflectionOnly
+    [ActiveIssue(10675)]
+#endif
+    [Fact]
+    public static void XmlMembersMapping_PrimitiveValue()
+    {
+        string memberName = "value";
+        var getDataRequestBodyValue = 3;
+        var getDataRequestBodyActual = RoundTripWithXmlMembersMapping<int>(getDataRequestBodyValue, memberName, "<?xml version=\"1.0\"?>\r\n<value xmlns=\"http://tempuri.org/\">3</value>");
+
+        Assert.NotNull(getDataRequestBodyActual);
+        Assert.Equal(getDataRequestBodyValue, getDataRequestBodyActual);
+    }
+
+#if ReflectionOnly
+    [ActiveIssue(10675)]
+#endif
+    [Fact]
+    public static void XmlMembersMapping_SimpleType()
+    {
+        string memberName = "GetData";
+        var getDataRequestBodyValue = new GetDataRequestBody(3);
+        var getDataRequestBodyActual = RoundTripWithXmlMembersMapping<GetDataRequestBody>(getDataRequestBodyValue, memberName, "<?xml version=\"1.0\"?>\r\n<GetData xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns=\"http://tempuri.org/\">\r\n  <value>3</value>\r\n</GetData>");
+
+        Assert.NotNull(getDataRequestBodyActual);
+        Assert.Equal(getDataRequestBodyValue.value, getDataRequestBodyActual.value);
+    }
+
+#if ReflectionOnly
+    [ActiveIssue(10675)]
+#endif
+    [Fact]
+    public static void XmlMembersMapping_CompositeType()
+    {
+        string memberName = "GetDataUsingDataContract";
+        var requestBodyValue = new GetDataUsingDataContractRequestBody() { composite = new CompositeTypeForXmlMembersMapping() { BoolValue = true, StringValue = "foo" } };
+        var requestBodyActual = RoundTripWithXmlMembersMapping<GetDataUsingDataContractRequestBody>(requestBodyValue, memberName, "<?xml version=\"1.0\"?>\r\n<GetDataUsingDataContract xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns=\"http://tempuri.org/\">\r\n  <composite>\r\n    <BoolValue>true</BoolValue>\r\n    <StringValue>foo</StringValue>\r\n  </composite>\r\n</GetDataUsingDataContract>");
+
+        Assert.NotNull(requestBodyActual);
+        Assert.Equal(requestBodyValue.composite.BoolValue, requestBodyActual.composite.BoolValue);
+        Assert.Equal(requestBodyValue.composite.StringValue, requestBodyActual.composite.StringValue);
+    }
+
+    private static T RoundTripWithXmlMembersMapping<T>(object requestBodyValue, string memberName, string baseline, bool skipStringCompare = false)
+    {
+        var member = new XmlReflectionMember();
+        member.MemberName = memberName;
+        member.MemberType = typeof(T);
+        member.XmlAttributes = new XmlAttributes();
+        var elementAttribute = new XmlElementAttribute();
+        elementAttribute.ElementName = memberName;
+        string ns = "http://tempuri.org/";
+        elementAttribute.Namespace = ns;
+        member.XmlAttributes.XmlElements.Add(elementAttribute);
+
+        var importer = new XmlReflectionImporter(null, ns);
+        var membersMapping = importer.ImportMembersMapping(null, ns, new XmlReflectionMember[] { member }, false);
+        var serializer = XmlSerializer.FromMappings(new XmlMapping[] { membersMapping })[0];
+        using (var ms = new MemoryStream())
+        {
+            object[] value = new object[] { requestBodyValue };
+            serializer.Serialize(ms, value);
+            ms.Flush();
+            ms.Position = 0;
+            string actualOutput = new StreamReader(ms).ReadToEnd();
+            if (!skipStringCompare)
+            {
+                Utils.CompareResult result = Utils.Compare(baseline, actualOutput);
+                Assert.True(result.Equal, string.Format("{1}{0}Test failed for input: {2}{0}Expected: {3}{0}Actual: {4}",
+                    Environment.NewLine, result.ErrorMessage, value, baseline, actualOutput));
+            }
+
+            ms.Position = 0;
+            var actual = serializer.Deserialize(ms) as object[];
+            Assert.NotNull(actual);
+            Assert.Equal(value.Length, actual.Length);
+            return (T)actual[0];
+        }
+    }
+
     private static Stream GenerateStreamFromString(string s)
     {
         var stream = new MemoryStream();
