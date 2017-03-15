@@ -105,7 +105,7 @@
     </BuildRID>
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(HasRuntimePackages)' != 'false'">
     <_project Include="@(BuildRID)">
       <Platform Condition="'%(Platform)' == ''">x64</Platform>
       <PackageTargetRuntime>%(Identity)</PackageTargetRuntime>
@@ -115,7 +115,7 @@
     <Project Include="@(_project->'$(MSBuildProjectName).pkgproj')" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(PackageTargetRuntime)' == ''">
+  <ItemGroup Condition="'$(PackageTargetRuntime)' == '' and '$(HasRuntimePackages)' != 'false'">
     <ProjectReference Include="@(Project)" />
   </ItemGroup>  
 </Project>
