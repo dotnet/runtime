@@ -1,0 +1,5 @@
+<linker>
+    <assembly fullname="self_override3">
+        <type fullname="*" required="true" />
+    </assembly>
+</linker>

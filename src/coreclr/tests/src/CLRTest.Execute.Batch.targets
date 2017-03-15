@@ -33,17 +33,21 @@ WARNING:   When setting properties based on their current state (for example:
        <!-- https://github.com/dotnet/coreclr/issues/2481. Delete /raweh to ildasm once it is resolved.-->
       <IlasmRoundTripBatchScript Condition="'$(IlasmRoundTrip)'=='true'">
       <![CDATA[
-ECHO %CORE_ROOT%\ildasm.exe /raweh /out=$(DisassemblyName) $(InputAssemblyName)
-%CORE_ROOT%\ildasm.exe /raweh /out=$(DisassemblyName) $(InputAssemblyName)
-IF NOT "!ERRORLEVEL!"=="0" (
-  ECHO EXECUTION OF ILDASM - FAILED !ERRORLEVEL!
-  Exit /b 1
-)
-ECHO %CORE_ROOT%\ilasm.exe /output=$(TargetAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
-%CORE_ROOT%\ilasm.exe /output=$(TargetAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
-IF NOT "!ERRORLEVEL!"=="0" (
-  ECHO EXECUTION OF ILASM - FAILED !ERRORLEVEL!
-  Exit /b 1
+REM Disable Ilasm round-tripping for Linker tests.
+REM Todo: Ilasm round-trip on linked binaries.
+IF NOT DEFINED DoLink ( 
+  ECHO %CORE_ROOT%\ildasm.exe /raweh /out=$(DisassemblyName) $(InputAssemblyName)
+  %CORE_ROOT%\ildasm.exe /raweh /out=$(DisassemblyName) $(InputAssemblyName)
+  IF NOT "!ERRORLEVEL!"=="0" (
+    ECHO EXECUTION OF ILDASM - FAILED !ERRORLEVEL!
+    Exit /b 1
+  )
+  ECHO %CORE_ROOT%\ilasm.exe /output=$(TargetAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
+  %CORE_ROOT%\ilasm.exe /output=$(TargetAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
+  IF NOT "!ERRORLEVEL!"=="0" (
+    ECHO EXECUTION OF ILASM - FAILED !ERRORLEVEL!
+    Exit /b 1
+  )
 )
       ]]>
       </IlasmRoundTripBatchScript>
@@ -203,7 +207,72 @@ Exit /b 0
       </BatchCLRTestExecutionScriptArgument>
     </ItemGroup>
 
-    <PropertyGroup> 
+      <PropertyGroup>
+          <ReflectionRootsXml>$(MSBuildProjectName).reflect.xml</ReflectionRootsXml>
+          <BatchLinkerTestLaunchCmds><![CDATA[
+REM Linker commands
+
+set LinkBin=__Link
+set Assemblies=-a System.Private.CoreLib
+
+IF defined DoLink ( 
+    IF NOT EXIST !ILLINK! (
+      ECHO ILLink [%ILLINK%] Not Found
+      Exit /b 1
+    )
+    
+    REM Clean up old Linked binaries, if any
+    IF EXIST %LinkBin% rmdir /s /q %LinkBin%
+    
+    REM Remove Native images, since the goal is to run from Linked binaries
+    del /q /f *.ni.* 2> nul
+
+    REM Use hints for reflection roots, if provided in $(ReflectionRootsXml)
+    IF EXIST $(ReflectionRootsXml) set ReflectionRoots=-x $(ReflectionRootsXml)
+
+    REM Include all .exe files in this directory as entry points (some tests had multiple .exe file modules)
+    FOR /F "delims=" %%E IN ('dir /b *.exe *.dll') DO SET Assemblies=!Assemblies! -a %%~nE
+
+    REM Run dotnet-linker
+    REM Run the Linker such that all assemblies except System.Private.Corlib.dll are linked
+    REM Debug symbol generation needs some fixes, and is currently omitted.
+    REM Once this is fixed, add -b true option.
+    ECHO %ILLINK% -out %LinkBin% -d %CORE_ROOT% -c link -l none -t !Assemblies! !ReflectionRoots!
+    %ILLINK% -out %LinkBin% -d %CORE_ROOT% -c link -l none -t !Assemblies! !ReflectionRoots!
+    IF NOT "!ERRORLEVEL!"=="0" (
+      ECHO EXECUTION OF %DOTNETLINK% - FAILED !ERRORLEVEL!
+      IF EXIST %LinkBin% rmdir /s /q %LinkBin%
+      Exit /b 1
+    )
+
+    REM Copy CORECLR native binaries to %LinkBin%, so that we can run the test based on that directory
+    copy %CORE_ROOT%\clrjit.dll %LinkBin% > nul 2> nul
+    copy %CORE_ROOT%\coreclr.dll %LinkBin% > nul 2> nul
+    copy %CORE_ROOT%\mscorrc.dll %LinkBin% > nul 2> nul
+    copy %CORE_ROOT%\CoreRun.exe %LinkBin% > nul 2> nul
+
+    REM Copy some files that may be arguments
+    copy *.txt %LinkBin% > nul 2> nul
+
+    set ExePath=%LinkBin%\$(InputAssemblyName)
+    set CORE_ROOT=%~dp0%LinkBin%
+)
+]]>
+          </BatchLinkerTestLaunchCmds>
+          <BatchLinkerTestCleanupCmds>
+              <![CDATA[
+REM Clean up the LinkBin directories after test execution.
+REM Otherwise, RunTests may run out of disk space.
+
+if defined DoLink (
+    if not defined KeepLinkedBinaries (
+        IF EXIST %LinkBin% rmdir /s /q %LinkBin%
+    )
+)              
+]]>
+          </BatchLinkerTestCleanupCmds>
+      </PropertyGroup>      
+      <PropertyGroup>      
       <_CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"%CORE_ROOT%\corerun.exe"</_CLRTestRunFile>
       <BatchCLRTestLaunchCmds><![CDATA[
 IF NOT "%CLRCustomTestLauncher%"=="" (
@@ -213,21 +282,28 @@ IF NOT "%CLRCustomTestLauncher%"=="" (
 )
       ]]></BatchCLRTestLaunchCmds>
       <BatchCLRTestLaunchCmds Condition=" '$(IlasmRoundTrip)'=='true' "><![CDATA[
-$(BatchCLRTestLaunchCmds)
-ECHO %LAUNCHER% $(TargetAssemblyName) %CLRTestExecutionArguments% %Host_Args%
-%LAUNCHER% $(TargetAssemblyName) %CLRTestExecutionArguments% %Host_Args%
+  $(BatchCLRTestLaunchCmds)
+IF NOT DEFINED DoLink ( 
+  ECHO %LAUNCHER% $(TargetAssemblyName) %CLRTestExecutionArguments% %Host_Args%
+  %LAUNCHER% $(TargetAssemblyName) %CLRTestExecutionArguments% %Host_Args%
 
-IF NOT "!ERRORLEVEL!"=="%CLRTestExpectedExitCode%" (
-  ECHO END EXECUTION OF IL{D}ASM BINARY - FAILED !ERRORLEVEL! vs %CLRTestExpectedExitCode%
-  ECHO FAILED
-  Exit /b 1
+  IF NOT "!ERRORLEVEL!"=="%CLRTestExpectedExitCode%" (
+    ECHO END EXECUTION OF IL{D}ASM BINARY - FAILED !ERRORLEVEL! vs %CLRTestExpectedExitCode%
+    ECHO FAILED
+    Exit /b 1
+  )
 )
       ]]></BatchCLRTestLaunchCmds>
-      <BatchCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun'"><![CDATA[
+      <BatchCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun'">
+    <![CDATA[
+set ExePath=$(InputAssemblyName)
+$(BatchLinkerTestLaunchCmds)
 $(BatchCLRTestLaunchCmds)
-ECHO %LAUNCHER% $(InputAssemblyName) %CLRTestExecutionArguments%
-%LAUNCHER% $(InputAssemblyName) %CLRTestExecutionArguments%
+
+ECHO %LAUNCHER% %ExePath% %CLRTestExecutionArguments%
+%LAUNCHER% %ExePath% %CLRTestExecutionArguments%
 set CLRTestExitCode=!ERRORLEVEL!
+$(BatchLinkerTestCleanupCmds)
       ]]></BatchCLRTestLaunchCmds>
 
       <BatchCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'RunOnly'"><![CDATA[
