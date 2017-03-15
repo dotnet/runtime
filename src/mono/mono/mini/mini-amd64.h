@@ -63,19 +63,19 @@ typedef struct {
 // instead of RtlInstallFunctionTableCallback. This gives us the benefit to
 // include all needed unwind upon registration.
 typedef DWORD (NTAPI* RtlAddGrowableFunctionTablePtr)(
-    _Out_ PVOID * DynamicTable,
-    _In_reads_(MaximumEntryCount) PRUNTIME_FUNCTION FunctionTable,
-    _In_ DWORD EntryCount,
-    _In_ DWORD MaximumEntryCount,
-    _In_ ULONG_PTR RangeBase,
-    _In_ ULONG_PTR RangeEnd);
+    PVOID * DynamicTable,
+    PRUNTIME_FUNCTION FunctionTable,
+    DWORD EntryCount,
+    DWORD MaximumEntryCount,
+    ULONG_PTR RangeBase,
+    ULONG_PTR RangeEnd);
 
 typedef VOID (NTAPI* RtlGrowFunctionTablePtr)(
-    _Inout_ PVOID DynamicTable,
-    _In_ DWORD NewEntryCount);
+    PVOID DynamicTable,
+    DWORD NewEntryCount);
 
 typedef VOID (NTAPI* RtlDeleteGrowableFunctionTablePtr)(
-    _In_ PVOID DynamicTable);
+    PVOID DynamicTable);
 
 #endif /* HOST_WIN32 */
 
