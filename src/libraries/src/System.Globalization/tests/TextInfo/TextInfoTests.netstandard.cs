@@ -60,5 +60,18 @@ namespace System.Globalization.Tests
 
             Assert.Throws<ArgumentNullException>("str", () => ti.ToTitleCase(null));
         }
+
+        [Fact]
+        public void ToTitleCaseDutchTest()
+        {
+            string[] dutchCultureInfos = new string[] { "nl-BE", "nl-NL" };
+            foreach (string cultureInfo in dutchCultureInfos)
+            {
+                TextInfo ti = CultureInfo.GetCultureInfo(cultureInfo).TextInfo;
+                Assert.Equal("IJ IJ IJ IJ", ti.ToTitleCase("ij iJ Ij IJ"));
+                Assert.Equal("IJzeren Eigenschappen", ti.ToTitleCase("ijzeren eigenschappen"));
+                Assert.Equal("Lake IJssel", ti.ToTitleCase("lake iJssel"));
+            }
+        }
     }
 }
