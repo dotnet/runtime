@@ -1280,19 +1280,20 @@ namespace System.Numerics.Tests
             // Simple known values.
             yield return new object[] { 0, 0, 0, 0 };
             yield return new object[] { 1, 0, 1, 0 };
-            yield return new object[] { -1, 0, 0, 1 };
             yield return new object[] { 0, 1, 0.707106781186547, 0.707106781186547 };
             yield return new object[] { 0, -1, 0.707106781186547, -0.707106781186547 };
 
             // Extreme values don't overflow, even when intermediate quantities would if handled naively.
             yield return new object[] { double.MaxValue, 0.0, Math.Sqrt(double.MaxValue), 0.0 };
-            yield return new object[] { -double.MaxValue, 0.0, 0.0, Math.Sqrt(double.MaxValue) };
             yield return new object[] { 0, double.MaxValue, 9.48075190810917E+153, 9.48075190810917E+153 };
             yield return new object[] { 0, double.MinValue, 9.48075190810917E+153, -9.48075190810917E+153 };
         }
 
         public static IEnumerable<object> Sqrt_AdvancedTestData ()
         {
+            yield return new object[] { -1, 0, 0, 1 }; // .NET Framework does not properly handle this simple case.
+            yield return new object[] { -double.MaxValue, 0.0, 0.0, Math.Sqrt(double.MaxValue) };
+
             // Extreme values don't overflow, even when intermediate quantities would if handled naively.
             yield return new object[] { double.MaxValue, double.MaxValue, Math.Sqrt(Math.Sqrt(2.0)) * Math.Sqrt(double.MaxValue) * Math.Cos(Math.PI / 8.0), Math.Sqrt(Math.Sqrt(2.0)) * Math.Sqrt(double.MaxValue) * Math.Sin(Math.PI / 8.0) };
 
