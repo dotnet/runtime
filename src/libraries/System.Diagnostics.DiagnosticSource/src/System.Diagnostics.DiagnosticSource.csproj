@@ -58,6 +58,7 @@
     <Reference Include="System.Threading" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net46' OR '$(TargetGroup)' == 'netfx'">
+    <Compile Include="AssemblyInfo.Net46.cs" />  
     <Reference Include="mscorlib" />
     <Reference Include="System" />
   </ItemGroup>      
