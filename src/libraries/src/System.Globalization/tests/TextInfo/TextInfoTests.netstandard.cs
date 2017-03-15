@@ -61,18 +61,20 @@ namespace System.Globalization.Tests
             Assert.Throws<ArgumentNullException>("str", () => ti.ToTitleCase(null));
         }
 
-        [Fact]
-        public void ToTitleCaseDutchTest()
+        public static IEnumerable<object[]> DutchTitleCaseInfo_TestData()
         {
-            string[] dutchCultureInfos = new string[] { "nl-BE", "nl-NL" };
-            foreach (string cultureInfo in dutchCultureInfos)
-            {
-                TextInfo ti = CultureInfo.GetCultureInfo(cultureInfo).TextInfo;
-                Assert.Equal("IJ IJ IJ IJ", ti.ToTitleCase("ij iJ Ij IJ"));
-                Assert.Equal("IJzeren Eigenschappen", ti.ToTitleCase("ijzeren eigenschappen"));
-                Assert.Equal("Lake IJssel", ti.ToTitleCase("lake iJssel"));
-                Assert.Equal("Boba N' IJango Fett PEW PEW", ti.ToTitleCase("Boba n' Ijango fett PEW PEW"));
-            }
+            yield return new object[] { "nl-NL", "IJ IJ IJ IJ", "ij iJ Ij IJ" };
+            yield return new object[] { "en-us", "Ijill And Ijack", "ijill and ijack" };
+            yield return new object[] { "de-DE", "Ij Ij IJ Ij", "ij ij IJ ij" };
+            yield return new object[] { "he-il", "Ijon't Know What Will Happen.", "Ijon't know what Will happen." };
+        }
+
+        [Theory]
+        [MemberData(nameof(DutchTitleCaseInfo_TestData))]
+        public void ToTitleCaseDutchTest(string cultureName, string expected, string actual)
+        {
+            TextInfo ti = CultureInfo.GetCultureInfo(cultureName).TextInfo;
+            Assert.Equal(expected, ti.ToTitleCase(actual));
         }
     }
 }
