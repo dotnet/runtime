@@ -2188,6 +2188,8 @@ public:
     CORINFO_CLASS_HANDLE gtGetStructHandleIfPresent(GenTreePtr tree);
     // Get the handle, and assert if not found.
     CORINFO_CLASS_HANDLE gtGetStructHandle(GenTreePtr tree);
+    // Get the handle for a ref type.
+    CORINFO_CLASS_HANDLE gtGetClassHandle(GenTreePtr tree, bool* isExact, bool* isNonNull);
 
 //-------------------------------------------------------------------------
 // Functions to display the trees
