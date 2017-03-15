@@ -268,6 +268,7 @@
     <Compile Include="System\Net\Sockets\AcceptOverlappedAsyncResult.Unix.cs" />
     <Compile Include="System\Net\Sockets\BaseOverlappedAsyncResult.Unix.cs" />
     <Compile Include="System\Net\Sockets\ConnectOverlappedAsyncResult.Unix.cs" />
+    <Compile Include="System\Net\Sockets\DisconnectOverlappedAsyncResult.Unix.cs" />
     <Compile Include="System\Net\Sockets\OverlappedAsyncResult.Unix.cs" />
     <Compile Include="System\Net\Sockets\ReceiveMessageOverlappedAsyncResult.Unix.cs" />
     <Compile Include="System\Net\Sockets\SendPacketsElementFlags.Unix.cs" />
