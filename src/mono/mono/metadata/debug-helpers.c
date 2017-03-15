@@ -814,6 +814,7 @@ mono_method_get_name_full (MonoMethod *method, gboolean signature, gboolean ret,
 	char wrapper [64];
 	char *klass_desc;
 	char *inst_desc = NULL;
+	MonoError error;
 
 	if (format == MONO_TYPE_NAME_FORMAT_IL)
 		klass_desc = mono_type_full_name (&method->klass->byval_arg);
@@ -858,14 +859,22 @@ mono_method_get_name_full (MonoMethod *method, gboolean signature, gboolean ret,
 		strcpy (wrapper, "");
 
 	if (signature) {
-		char *tmpsig = mono_signature_get_desc (mono_method_signature (method), TRUE);
+		MonoMethodSignature *sig = mono_method_signature_checked (method, &error);
+		char *tmpsig;
+
+		if (!is_ok (&error)) {
+			tmpsig = g_strdup_printf ("<unable to load signature>");
+			mono_error_cleanup (&error);
+		} else {
+			tmpsig = mono_signature_get_desc (sig, TRUE);
+		}
 
 		if (method->wrapper_type != MONO_WRAPPER_NONE)
 			sprintf (wrapper, "(wrapper %s) ", wrapper_type_to_str (method->wrapper_type));
 		else
 			strcpy (wrapper, "");
-		if (ret) {
-			char *ret_str = mono_type_full_name (mono_method_signature (method)->ret);
+		if (ret && sig) {
+			char *ret_str = mono_type_full_name (sig->ret);
 			res = g_strdup_printf ("%s%s %s:%s%s (%s)", wrapper, ret_str, klass_desc,
 								   method->name, inst_desc ? inst_desc : "", tmpsig);
 			g_free (ret_str);
