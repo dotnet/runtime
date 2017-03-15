@@ -22337,6 +22337,39 @@ GenTreePtr Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                 }
                 else
                 {
+                    // We're going to assign the argument value to the
+                    // temp we use for it in the inline body.
+                    //
+                    // If we know the argument's value can't be
+                    // changed within the method body, try and improve
+                    // the type of the temp.
+                    if (!inlArgInfo[argNum].argHasLdargaOp && !inlArgInfo[argNum].argHasStargOp)
+                    {
+                        GenTree*             argNode        = inlArgInfo[argNum].argNode;
+                        bool                 isExact        = false;
+                        bool                 isNonNull      = false;
+                        CORINFO_CLASS_HANDLE refClassHandle = gtGetClassHandle(argNode, &isExact, &isNonNull);
+
+                        if (refClassHandle != nullptr)
+                        {
+                            const unsigned tmpNum = inlArgInfo[argNum].argTmpNum;
+
+                            // If we already had an exact type for
+                            // this temp, this new information had
+                            // better agree with what we knew before.
+                            if (lvaTable[tmpNum].lvClassIsExact)
+                            {
+                                assert(isExact);
+                                assert(refClassHandle == lvaTable[tmpNum].lvClassHnd);
+                            }
+                            else
+                            {
+                                lvaTable[tmpNum].lvClassHnd     = refClassHandle;
+                                lvaTable[tmpNum].lvClassIsExact = isExact;
+                            }
+                        }
+                    }
+
                     /* Create the temp assignment for this argument */
 
                     CORINFO_CLASS_HANDLE structHnd = DUMMY_INIT(0);
