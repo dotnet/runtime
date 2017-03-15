@@ -322,7 +322,6 @@ namespace System.Numerics.Tests
             yield return new object[] { double.NegativeInfinity, double.NaN, double.NaN, double.NaN };
             yield return new object[] { double.NaN, 0.0, double.NaN, double.NaN };
             yield return new object[] { double.NaN, double.PositiveInfinity, double.NaN, double.NaN };
-
         }
 
         [Theory, MemberData(nameof(ACos_Advanced_TestData))]
@@ -436,8 +435,7 @@ namespace System.Numerics.Tests
             yield return new object[] { 0.0, double.NaN, double.NaN, double.NaN };
             yield return new object[] { double.PositiveInfinity, double.NaN, double.NaN, double.NaN };
             yield return new object[] { double.NaN, 1.0, double.NaN, double.NaN };
-            yield return new object[] { double.NaN, double.NegativeInfinity, double.NaN, double.NaN };
-            
+            yield return new object[] { double.NaN, double.NegativeInfinity, double.NaN, double.NaN };            
         }
 
         [ActiveIssue(15455)]
@@ -476,8 +474,6 @@ namespace System.Numerics.Tests
             Complex result = Complex.Asin(complex);
             VerifyRealImaginaryProperties(result, expectedReal, expectedImaginary);
         }
-
-
 
         [Theory]
         [MemberData(nameof(Primitives_2_TestData))]
