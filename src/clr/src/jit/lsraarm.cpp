@@ -897,7 +897,6 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
     JITDUMP("TreeNodeInfoInit for: ");
     DISPNODE(tree);
 
-    NYI_IF(tree->TypeGet() == TYP_STRUCT, "lowering struct");
     NYI_IF(tree->TypeGet() == TYP_DOUBLE, "lowering double");
 
     switch (tree->OperGet())
@@ -1340,11 +1339,6 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
         case GT_LCL_FLD_ADDR:
         case GT_LCL_VAR:
         case GT_LCL_VAR_ADDR:
-        {
-            unsigned   varNum = tree->gtLclVarCommon.gtLclNum;
-            LclVarDsc* varDsc = comp->lvaTable + varNum;
-            NYI_IF(varTypeIsStruct(varDsc), "lowering struct var");
-        }
         case GT_PHYSREG:
         case GT_CLS_VAR_ADDR:
         case GT_IL_OFFSET:
