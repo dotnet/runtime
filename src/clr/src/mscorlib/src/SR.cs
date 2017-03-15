@@ -876,4 +876,67 @@ internal static class SR
     {
         get { return Environment.GetResourceString("Serialization_NonSerType"); }
     }
+
+    internal static string InvalidCast_IConvertible =>
+        Environment.GetResourceString("InvalidCast_IConvertible");
+
+    internal static string InvalidCast_DBNull =>
+        Environment.GetResourceString("InvalidCast_DBNull");
+
+    internal static string InvalidCast_Empty =>
+        Environment.GetResourceString("InvalidCast_Empty");
+
+    internal static string InvalidCast_FromTo =>
+        Environment.GetResourceString("InvalidCast_FromTo");
+
+    internal static string Arg_UnknownTypeCode =>
+        Environment.GetResourceString("Arg_UnknownTypeCode");
+
+    internal static string InvalidCast_CannotCastNullToValueType =>
+        Environment.GetResourceString("InvalidCast_CannotCastNullToValueType");
+
+    internal static string Overflow_Char =>
+        Environment.GetResourceString("Overflow_Char");
+
+    internal static string Overflow_Byte =>
+        Environment.GetResourceString("Overflow_Byte");
+
+    internal static string Overflow_SByte =>
+        Environment.GetResourceString("Overflow_SByte");
+
+    internal static string Overflow_Int16 =>
+        Environment.GetResourceString("Overflow_Int16");
+
+    internal static string Overflow_UInt16 =>
+        Environment.GetResourceString("Overflow_UInt16");
+
+    internal static string Overflow_Int32 =>
+        Environment.GetResourceString("Overflow_Int32");
+
+    internal static string Overflow_UInt32 =>
+        Environment.GetResourceString("Overflow_UInt32");
+
+    internal static string Overflow_Int64 =>
+        Environment.GetResourceString("Overflow_Int64");
+
+    internal static string Overflow_UInt64 =>
+        Environment.GetResourceString("Overflow_UInt64");
+
+    internal static string Arg_InvalidBase =>
+        Environment.GetResourceString("Arg_InvalidBase");
+
+    internal static string ArgumentOutOfRange_OffsetOut =>
+        Environment.GetResourceString("ArgumentOutOfRange_OffsetOut");
+
+    internal static string Format_BadBase64Char =>
+        Environment.GetResourceString("Format_BadBase64Char");
+
+    internal static string Format_BadBase64CharArrayLength =>
+        Environment.GetResourceString("Format_BadBase64CharArrayLength");
+
+    internal static string Format_NeedSingleChar =>
+        Environment.GetResourceString("Format_BadBase64CharArrayLength");
+
+    internal static string Arg_EnumIllegalVal =>
+        Environment.GetResourceString("Arg_EnumIllegalVal");
 }

@@ -2,15 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*============================================================
-**
-**
-**
-** Purpose: Home for static conversion methods.
-**
-**
-===========================================================*/
-
 using System;
 using System.Globalization;
 using System.Threading;
@@ -21,7 +12,6 @@ using System.Runtime.Versioning;
 using System.Security;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
-
 
 namespace System
 {
@@ -112,30 +102,30 @@ namespace System
         //A typeof operation is fairly expensive (does a system call), so we'll cache these here
         //statically.  These are exactly lined up with the TypeCode, eg. ConvertType[TypeCode.Int16]
         //will give you the type of an Int16.
-        internal static readonly RuntimeType[] ConvertTypes = {
-            (RuntimeType)typeof(System.Empty),
-            (RuntimeType)typeof(Object),
-            (RuntimeType)typeof(System.DBNull),
-            (RuntimeType)typeof(Boolean),
-            (RuntimeType)typeof(Char),
-            (RuntimeType)typeof(SByte),
-            (RuntimeType)typeof(Byte),
-            (RuntimeType)typeof(Int16),
-            (RuntimeType)typeof(UInt16),
-            (RuntimeType)typeof(Int32),
-            (RuntimeType)typeof(UInt32),
-            (RuntimeType)typeof(Int64),
-            (RuntimeType)typeof(UInt64),
-            (RuntimeType)typeof(Single),
-            (RuntimeType)typeof(Double),
-            (RuntimeType)typeof(Decimal),
-            (RuntimeType)typeof(DateTime),
-            (RuntimeType)typeof(Object), //TypeCode is discontinuous so we need a placeholder.
-            (RuntimeType)typeof(String)
+        internal static readonly Type[] ConvertTypes = {
+            typeof(System.Empty),
+            typeof(Object),
+            typeof(System.DBNull),
+            typeof(Boolean),
+            typeof(Char),
+            typeof(SByte),
+            typeof(Byte),
+            typeof(Int16),
+            typeof(UInt16),
+            typeof(Int32),
+            typeof(UInt32),
+            typeof(Int64),
+            typeof(UInt64),
+            typeof(Single),
+            typeof(Double),
+            typeof(Decimal),
+            typeof(DateTime),
+            typeof(Object), //TypeCode is discontinuous so we need a placeholder.
+            typeof(String)
         };
 
         // Need to special case Enum because typecode will be underlying type, e.g. Int32
-        private static readonly RuntimeType EnumType = (RuntimeType)typeof(Enum);
+        private static readonly Type EnumType = typeof(Enum);
 
         internal static readonly char[] base64Table = {'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O',
                                                        'P','Q','R','S','T','U','V','W','X','Y','Z','a','b','c','d',
@@ -204,7 +194,7 @@ namespace System
         // object's implementation of IConvertible.
         public static Object ChangeType(Object value, TypeCode typeCode)
         {
-            return ChangeType(value, typeCode, Thread.CurrentThread.CurrentCulture);
+            return ChangeType(value, typeCode, CultureInfo.CurrentCulture);
         }
 
         public static Object ChangeType(Object value, TypeCode typeCode, IFormatProvider provider)
@@ -217,7 +207,7 @@ namespace System
             IConvertible v = value as IConvertible;
             if (v == null)
             {
-                throw new InvalidCastException(Environment.GetResourceString("InvalidCast_IConvertible"));
+                throw new InvalidCastException(SR.InvalidCast_IConvertible);
             }
 
             // This line is invalid for things like Enums that return a TypeCode
@@ -258,84 +248,79 @@ namespace System
                 case TypeCode.Object:
                     return value;
                 case TypeCode.DBNull:
-                    throw new InvalidCastException(Environment.GetResourceString("InvalidCast_DBNull"));
+                    throw new InvalidCastException(SR.InvalidCast_DBNull);
                 case TypeCode.Empty:
-                    throw new InvalidCastException(Environment.GetResourceString("InvalidCast_Empty"));
+                    throw new InvalidCastException(SR.InvalidCast_Empty);
                 default:
-                    throw new ArgumentException(Environment.GetResourceString("Arg_UnknownTypeCode"));
+                    throw new ArgumentException(SR.Arg_UnknownTypeCode);
             }
         }
 
         internal static Object DefaultToType(IConvertible value, Type targetType, IFormatProvider provider)
         {
-            Contract.Requires(value != null, "[Convert.DefaultToType]value!=null");
+            Debug.Assert(value != null, "[Convert.DefaultToType]value!=null");
             if (targetType == null)
             {
                 throw new ArgumentNullException(nameof(targetType));
             }
             Contract.EndContractBlock();
 
-            RuntimeType rtTargetType = targetType as RuntimeType;
-
-            if (rtTargetType != null)
+            if (ReferenceEquals(value.GetType(), targetType))
             {
-                if (value.GetType() == targetType)
-                {
-                    return value;
-                }
-
-                if (rtTargetType == ConvertTypes[(int)TypeCode.Boolean])
-                    return value.ToBoolean(provider);
-                if (rtTargetType == ConvertTypes[(int)TypeCode.Char])
-                    return value.ToChar(provider);
-                if (rtTargetType == ConvertTypes[(int)TypeCode.SByte])
-                    return value.ToSByte(provider);
-                if (rtTargetType == ConvertTypes[(int)TypeCode.Byte])
-                    return value.ToByte(provider);
-                if (rtTargetType == ConvertTypes[(int)TypeCode.Int16])
-                    return value.ToInt16(provider);
-                if (rtTargetType == ConvertTypes[(int)TypeCode.UInt16])
-                    return value.ToUInt16(provider);
-                if (rtTargetType == ConvertTypes[(int)TypeCode.Int32])
-                    return value.ToInt32(provider);
-                if (rtTargetType == ConvertTypes[(int)TypeCode.UInt32])
-                    return value.ToUInt32(provider);
-                if (rtTargetType == ConvertTypes[(int)TypeCode.Int64])
-                    return value.ToInt64(provider);
-                if (rtTargetType == ConvertTypes[(int)TypeCode.UInt64])
-                    return value.ToUInt64(provider);
-                if (rtTargetType == ConvertTypes[(int)TypeCode.Single])
-                    return value.ToSingle(provider);
-                if (rtTargetType == ConvertTypes[(int)TypeCode.Double])
-                    return value.ToDouble(provider);
-                if (rtTargetType == ConvertTypes[(int)TypeCode.Decimal])
-                    return value.ToDecimal(provider);
-                if (rtTargetType == ConvertTypes[(int)TypeCode.DateTime])
-                    return value.ToDateTime(provider);
-                if (rtTargetType == ConvertTypes[(int)TypeCode.String])
-                    return value.ToString(provider);
-                if (rtTargetType == ConvertTypes[(int)TypeCode.Object])
-                    return (Object)value;
-                //  Need to special case Enum because typecode will be underlying type, e.g. Int32
-                if (rtTargetType == EnumType)
-                    return (Enum)value;
-                if (rtTargetType == ConvertTypes[(int)TypeCode.DBNull])
-                    throw new InvalidCastException(Environment.GetResourceString("InvalidCast_DBNull"));
-                if (rtTargetType == ConvertTypes[(int)TypeCode.Empty])
-                    throw new InvalidCastException(Environment.GetResourceString("InvalidCast_Empty"));
+                return value;
             }
 
-            throw new InvalidCastException(Environment.GetResourceString("InvalidCast_FromTo", value.GetType().FullName, targetType.FullName));
+            if (ReferenceEquals(targetType, ConvertTypes[(int)TypeCode.Boolean]))
+                return value.ToBoolean(provider);
+            if (ReferenceEquals(targetType, ConvertTypes[(int)TypeCode.Char]))
+                return value.ToChar(provider);
+            if (ReferenceEquals(targetType, ConvertTypes[(int)TypeCode.SByte]))
+                return value.ToSByte(provider);
+            if (ReferenceEquals(targetType, ConvertTypes[(int)TypeCode.Byte]))
+                return value.ToByte(provider);
+            if (ReferenceEquals(targetType, ConvertTypes[(int)TypeCode.Int16]))
+                return value.ToInt16(provider);
+            if (ReferenceEquals(targetType, ConvertTypes[(int)TypeCode.UInt16]))
+                return value.ToUInt16(provider);
+            if (ReferenceEquals(targetType, ConvertTypes[(int)TypeCode.Int32]))
+                return value.ToInt32(provider);
+            if (ReferenceEquals(targetType, ConvertTypes[(int)TypeCode.UInt32]))
+                return value.ToUInt32(provider);
+            if (ReferenceEquals(targetType, ConvertTypes[(int)TypeCode.Int64]))
+                return value.ToInt64(provider);
+            if (ReferenceEquals(targetType, ConvertTypes[(int)TypeCode.UInt64]))
+                return value.ToUInt64(provider);
+            if (ReferenceEquals(targetType, ConvertTypes[(int)TypeCode.Single]))
+                return value.ToSingle(provider);
+            if (ReferenceEquals(targetType, ConvertTypes[(int)TypeCode.Double]))
+                return value.ToDouble(provider);
+            if (ReferenceEquals(targetType, ConvertTypes[(int)TypeCode.Decimal]))
+                return value.ToDecimal(provider);
+            if (ReferenceEquals(targetType, ConvertTypes[(int)TypeCode.DateTime]))
+                return value.ToDateTime(provider);
+            if (ReferenceEquals(targetType, ConvertTypes[(int)TypeCode.String]))
+                return value.ToString(provider);
+            if (ReferenceEquals(targetType, ConvertTypes[(int)TypeCode.Object]))
+                return (Object)value;
+            //  Need to special case Enum because typecode will be underlying type, e.g. Int32
+            if (ReferenceEquals(targetType, EnumType))
+                return (Enum)value;
+            if (ReferenceEquals(targetType, ConvertTypes[(int)TypeCode.DBNull]))
+                throw new InvalidCastException(SR.InvalidCast_DBNull);
+            if (ReferenceEquals(targetType, ConvertTypes[(int)TypeCode.Empty]))
+                throw new InvalidCastException(SR.InvalidCast_Empty);
+
+            throw new InvalidCastException(string.Format(SR.InvalidCast_FromTo, value.GetType().FullName, targetType.FullName));
         }
 
         public static Object ChangeType(Object value, Type conversionType)
         {
-            return ChangeType(value, conversionType, Thread.CurrentThread.CurrentCulture);
+            return ChangeType(value, conversionType, CultureInfo.CurrentCulture);
         }
 
         public static Object ChangeType(Object value, Type conversionType, IFormatProvider provider)
         {
-            if (conversionType == null)
+            if (ReferenceEquals(conversionType, null))
             {
                 throw new ArgumentNullException(nameof(conversionType));
             }
@@ -345,7 +330,7 @@ namespace System
             {
                 if (conversionType.IsValueType)
                 {
-                    throw new InvalidCastException(Environment.GetResourceString("InvalidCast_CannotCastNullToValueType"));
+                    throw new InvalidCastException(SR.InvalidCast_CannotCastNullToValueType);
                 }
                 return null;
             }
@@ -357,73 +342,71 @@ namespace System
                 {
                     return value;
                 }
-                throw new InvalidCastException(Environment.GetResourceString("InvalidCast_IConvertible"));
+                throw new InvalidCastException(SR.InvalidCast_IConvertible);
             }
 
-            RuntimeType rtConversionType = conversionType as RuntimeType;
-
-            if (rtConversionType == ConvertTypes[(int)TypeCode.Boolean])
+            if (ReferenceEquals(conversionType, ConvertTypes[(int)TypeCode.Boolean]))
                 return ic.ToBoolean(provider);
-            if (rtConversionType == ConvertTypes[(int)TypeCode.Char])
+            if (ReferenceEquals(conversionType, ConvertTypes[(int)TypeCode.Char]))
                 return ic.ToChar(provider);
-            if (rtConversionType == ConvertTypes[(int)TypeCode.SByte])
+            if (ReferenceEquals(conversionType, ConvertTypes[(int)TypeCode.SByte]))
                 return ic.ToSByte(provider);
-            if (rtConversionType == ConvertTypes[(int)TypeCode.Byte])
+            if (ReferenceEquals(conversionType, ConvertTypes[(int)TypeCode.Byte]))
                 return ic.ToByte(provider);
-            if (rtConversionType == ConvertTypes[(int)TypeCode.Int16])
+            if (ReferenceEquals(conversionType, ConvertTypes[(int)TypeCode.Int16]))
                 return ic.ToInt16(provider);
-            if (rtConversionType == ConvertTypes[(int)TypeCode.UInt16])
+            if (ReferenceEquals(conversionType, ConvertTypes[(int)TypeCode.UInt16]))
                 return ic.ToUInt16(provider);
-            if (rtConversionType == ConvertTypes[(int)TypeCode.Int32])
+            if (ReferenceEquals(conversionType, ConvertTypes[(int)TypeCode.Int32]))
                 return ic.ToInt32(provider);
-            if (rtConversionType == ConvertTypes[(int)TypeCode.UInt32])
+            if (ReferenceEquals(conversionType, ConvertTypes[(int)TypeCode.UInt32]))
                 return ic.ToUInt32(provider);
-            if (rtConversionType == ConvertTypes[(int)TypeCode.Int64])
+            if (ReferenceEquals(conversionType, ConvertTypes[(int)TypeCode.Int64]))
                 return ic.ToInt64(provider);
-            if (rtConversionType == ConvertTypes[(int)TypeCode.UInt64])
+            if (ReferenceEquals(conversionType, ConvertTypes[(int)TypeCode.UInt64]))
                 return ic.ToUInt64(provider);
-            if (rtConversionType == ConvertTypes[(int)TypeCode.Single])
+            if (ReferenceEquals(conversionType, ConvertTypes[(int)TypeCode.Single]))
                 return ic.ToSingle(provider);
-            if (rtConversionType == ConvertTypes[(int)TypeCode.Double])
+            if (ReferenceEquals(conversionType, ConvertTypes[(int)TypeCode.Double]))
                 return ic.ToDouble(provider);
-            if (rtConversionType == ConvertTypes[(int)TypeCode.Decimal])
+            if (ReferenceEquals(conversionType, ConvertTypes[(int)TypeCode.Decimal]))
                 return ic.ToDecimal(provider);
-            if (rtConversionType == ConvertTypes[(int)TypeCode.DateTime])
+            if (ReferenceEquals(conversionType, ConvertTypes[(int)TypeCode.DateTime]))
                 return ic.ToDateTime(provider);
-            if (rtConversionType == ConvertTypes[(int)TypeCode.String])
+            if (ReferenceEquals(conversionType, ConvertTypes[(int)TypeCode.String]))
                 return ic.ToString(provider);
-            if (rtConversionType == ConvertTypes[(int)TypeCode.Object])
+            if (ReferenceEquals(conversionType, ConvertTypes[(int)TypeCode.Object]))
                 return (Object)value;
 
             return ic.ToType(conversionType, provider);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void ThrowCharOverflowException() { throw new OverflowException(Environment.GetResourceString("Overflow_Char")); }
+        private static void ThrowCharOverflowException() { throw new OverflowException(SR.Overflow_Char); }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void ThrowByteOverflowException() { throw new OverflowException(Environment.GetResourceString("Overflow_Byte")); }
+        private static void ThrowByteOverflowException() { throw new OverflowException(SR.Overflow_Byte); }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void ThrowSByteOverflowException() { throw new OverflowException(Environment.GetResourceString("Overflow_SByte")); }
+        private static void ThrowSByteOverflowException() { throw new OverflowException(SR.Overflow_SByte); }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void ThrowInt16OverflowException() { throw new OverflowException(Environment.GetResourceString("Overflow_Int16")); }
+        private static void ThrowInt16OverflowException() { throw new OverflowException(SR.Overflow_Int16); }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void ThrowUInt16OverflowException() { throw new OverflowException(Environment.GetResourceString("Overflow_UInt16")); }
+        private static void ThrowUInt16OverflowException() { throw new OverflowException(SR.Overflow_UInt16); }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void ThrowInt32OverflowException() { throw new OverflowException(Environment.GetResourceString("Overflow_Int32")); }
+        private static void ThrowInt32OverflowException() { throw new OverflowException(SR.Overflow_Int32); }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void ThrowUInt32OverflowException() { throw new OverflowException(Environment.GetResourceString("Overflow_UInt32")); }
+        private static void ThrowUInt32OverflowException() { throw new OverflowException(SR.Overflow_UInt32); }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void ThrowInt64OverflowException() { throw new OverflowException(Environment.GetResourceString("Overflow_Int64")); }
+        private static void ThrowInt64OverflowException() { throw new OverflowException(SR.Overflow_Int64); }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void ThrowUInt64OverflowException() { throw new OverflowException(Environment.GetResourceString("Overflow_UInt64")); }
+        private static void ThrowUInt64OverflowException() { throw new OverflowException(SR.Overflow_UInt64); }
 
         // Conversions to Boolean
         public static bool ToBoolean(Object value)
@@ -626,7 +609,7 @@ namespace System
             Contract.EndContractBlock();
 
             if (value.Length != 1)
-                throw new FormatException(Environment.GetResourceString(ResId.Format_NeedSingleChar));
+                throw new FormatException(SR.Format_NeedSingleChar);
 
             return value[0];
         }
@@ -1259,12 +1242,12 @@ namespace System
                     return result;
                 }
             }
-            throw new OverflowException(Environment.GetResourceString("Overflow_Int32"));
+            throw new OverflowException(SR.Overflow_Int32);
         }
 
         public static int ToInt32(decimal value)
         {
-            return Decimal.FCallToInt32(value);
+            return Decimal.ToInt32(Decimal.Round(value, 0));
         }
 
         public static int ToInt32(String value)
@@ -1391,7 +1374,7 @@ namespace System
                 if (dif > 0.5 || dif == 0.5 && (result & 1) != 0) result++;
                 return result;
             }
-            throw new OverflowException(Environment.GetResourceString("Overflow_UInt32"));
+            throw new OverflowException(SR.Overflow_UInt32);
         }
 
         [CLSCompliant(false)]
@@ -2099,7 +2082,7 @@ namespace System
         public static string ToString(bool value, IFormatProvider provider)
         {
             Contract.Ensures(Contract.Result<string>() != null);
-            return value.ToString(provider);
+            return value.ToString();
         }
 
         public static string ToString(char value)
@@ -2111,7 +2094,7 @@ namespace System
         public static string ToString(char value, IFormatProvider provider)
         {
             Contract.Ensures(Contract.Result<string>() != null);
-            return value.ToString(provider);
+            return value.ToString();
         }
 
         [CLSCompliant(false)]
@@ -2290,7 +2273,7 @@ namespace System
         {
             if (fromBase != 2 && fromBase != 8 && fromBase != 10 && fromBase != 16)
             {
-                throw new ArgumentException(Environment.GetResourceString("Arg_InvalidBase"));
+                throw new ArgumentException(SR.Arg_InvalidBase);
             }
             Contract.EndContractBlock();
             int r = ParseNumbers.StringToInt(value, fromBase, ParseNumbers.IsTight | ParseNumbers.TreatAsUnsigned);
@@ -2308,7 +2291,7 @@ namespace System
         {
             if (fromBase != 2 && fromBase != 8 && fromBase != 10 && fromBase != 16)
             {
-                throw new ArgumentException(Environment.GetResourceString("Arg_InvalidBase"));
+                throw new ArgumentException(SR.Arg_InvalidBase);
             }
             Contract.EndContractBlock();
             int r = ParseNumbers.StringToInt(value, fromBase, ParseNumbers.IsTight | ParseNumbers.TreatAsI1);
@@ -2328,7 +2311,7 @@ namespace System
         {
             if (fromBase != 2 && fromBase != 8 && fromBase != 10 && fromBase != 16)
             {
-                throw new ArgumentException(Environment.GetResourceString("Arg_InvalidBase"));
+                throw new ArgumentException(SR.Arg_InvalidBase);
             }
             Contract.EndContractBlock();
             int r = ParseNumbers.StringToInt(value, fromBase, ParseNumbers.IsTight | ParseNumbers.TreatAsI2);
@@ -2349,7 +2332,7 @@ namespace System
         {
             if (fromBase != 2 && fromBase != 8 && fromBase != 10 && fromBase != 16)
             {
-                throw new ArgumentException(Environment.GetResourceString("Arg_InvalidBase"));
+                throw new ArgumentException(SR.Arg_InvalidBase);
             }
             Contract.EndContractBlock();
             int r = ParseNumbers.StringToInt(value, fromBase, ParseNumbers.IsTight | ParseNumbers.TreatAsUnsigned);
@@ -2366,7 +2349,7 @@ namespace System
         {
             if (fromBase != 2 && fromBase != 8 && fromBase != 10 && fromBase != 16)
             {
-                throw new ArgumentException(Environment.GetResourceString("Arg_InvalidBase"));
+                throw new ArgumentException(SR.Arg_InvalidBase);
             }
             Contract.EndContractBlock();
             return ParseNumbers.StringToInt(value, fromBase, ParseNumbers.IsTight);
@@ -2381,7 +2364,7 @@ namespace System
         {
             if (fromBase != 2 && fromBase != 8 && fromBase != 10 && fromBase != 16)
             {
-                throw new ArgumentException(Environment.GetResourceString("Arg_InvalidBase"));
+                throw new ArgumentException(SR.Arg_InvalidBase);
             }
             Contract.EndContractBlock();
             return (uint)ParseNumbers.StringToInt(value, fromBase, ParseNumbers.TreatAsUnsigned | ParseNumbers.IsTight);
@@ -2395,7 +2378,7 @@ namespace System
         {
             if (fromBase != 2 && fromBase != 8 && fromBase != 10 && fromBase != 16)
             {
-                throw new ArgumentException(Environment.GetResourceString("Arg_InvalidBase"));
+                throw new ArgumentException(SR.Arg_InvalidBase);
             }
             Contract.EndContractBlock();
             return ParseNumbers.StringToLong(value, fromBase, ParseNumbers.IsTight);
@@ -2410,7 +2393,7 @@ namespace System
         {
             if (fromBase != 2 && fromBase != 8 && fromBase != 10 && fromBase != 16)
             {
-                throw new ArgumentException(Environment.GetResourceString("Arg_InvalidBase"));
+                throw new ArgumentException(SR.Arg_InvalidBase);
             }
             Contract.EndContractBlock();
             return (ulong)ParseNumbers.StringToLong(value, fromBase, ParseNumbers.TreatAsUnsigned | ParseNumbers.IsTight);
@@ -2421,7 +2404,7 @@ namespace System
         {
             if (toBase != 2 && toBase != 8 && toBase != 10 && toBase != 16)
             {
-                throw new ArgumentException(Environment.GetResourceString("Arg_InvalidBase"));
+                throw new ArgumentException(SR.Arg_InvalidBase);
             }
             Contract.EndContractBlock();
             return ParseNumbers.IntToString((int)value, toBase, -1, ' ', ParseNumbers.PrintAsI1);
@@ -2432,7 +2415,7 @@ namespace System
         {
             if (toBase != 2 && toBase != 8 && toBase != 10 && toBase != 16)
             {
-                throw new ArgumentException(Environment.GetResourceString("Arg_InvalidBase"));
+                throw new ArgumentException(SR.Arg_InvalidBase);
             }
             Contract.EndContractBlock();
             return ParseNumbers.IntToString((int)value, toBase, -1, ' ', ParseNumbers.PrintAsI2);
@@ -2443,7 +2426,7 @@ namespace System
         {
             if (toBase != 2 && toBase != 8 && toBase != 10 && toBase != 16)
             {
-                throw new ArgumentException(Environment.GetResourceString("Arg_InvalidBase"));
+                throw new ArgumentException(SR.Arg_InvalidBase);
             }
             Contract.EndContractBlock();
             return ParseNumbers.IntToString(value, toBase, -1, ' ', 0);
@@ -2454,7 +2437,7 @@ namespace System
         {
             if (toBase != 2 && toBase != 8 && toBase != 10 && toBase != 16)
             {
-                throw new ArgumentException(Environment.GetResourceString("Arg_InvalidBase"));
+                throw new ArgumentException(SR.Arg_InvalidBase);
             }
             Contract.EndContractBlock();
             return ParseNumbers.LongToString(value, toBase, -1, ' ', 0);
@@ -2493,11 +2476,11 @@ namespace System
             if (inArray == null)
                 throw new ArgumentNullException(nameof(inArray));
             if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length), Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_Index);
             if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_GenericPositive);
             if (options < Base64FormattingOptions.None || options > Base64FormattingOptions.InsertLineBreaks)
-                throw new ArgumentException(Environment.GetResourceString("Arg_EnumIllegalVal", (int)options));
+                throw new ArgumentException(string.Format(SR.Arg_EnumIllegalVal, (int)options));
             Contract.Ensures(Contract.Result<string>() != null);
             Contract.EndContractBlock();
 
@@ -2506,7 +2489,7 @@ namespace System
 
             inArrayLength = inArray.Length;
             if (offset > (inArrayLength - length))
-                throw new ArgumentOutOfRangeException(nameof(offset), Environment.GetResourceString("ArgumentOutOfRange_OffsetLength"));
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_OffsetLength);
 
             if (inArrayLength == 0)
                 return String.Empty;
@@ -2521,7 +2504,7 @@ namespace System
                 fixed (byte* inData = &inArray[0])
                 {
                     int j = ConvertToBase64Array(outChars, inData, offset, length, insertLineBreaks);
-                    BCLDebug.Assert(returnString.Length == j, "returnString.Length == j");
+                    Debug.Assert(returnString.Length == j, "returnString.Length == j");
                     return returnString;
                 }
             }
@@ -2544,15 +2527,15 @@ namespace System
             if (outArray == null)
                 throw new ArgumentNullException(nameof(outArray));
             if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length), Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_Index);
             if (offsetIn < 0)
-                throw new ArgumentOutOfRangeException(nameof(offsetIn), Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
+                throw new ArgumentOutOfRangeException(nameof(offsetIn), SR.ArgumentOutOfRange_GenericPositive);
             if (offsetOut < 0)
-                throw new ArgumentOutOfRangeException(nameof(offsetOut), Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
+                throw new ArgumentOutOfRangeException(nameof(offsetOut), SR.ArgumentOutOfRange_GenericPositive);
 
             if (options < Base64FormattingOptions.None || options > Base64FormattingOptions.InsertLineBreaks)
             {
-                throw new ArgumentException(Environment.GetResourceString("Arg_EnumIllegalVal", (int)options));
+                throw new ArgumentException(string.Format(SR.Arg_EnumIllegalVal, (int)options));
             }
             Contract.Ensures(Contract.Result<int>() >= 0);
             Contract.Ensures(Contract.Result<int>() <= outArray.Length);
@@ -2568,7 +2551,7 @@ namespace System
             inArrayLength = inArray.Length;
 
             if (offsetIn > (int)(inArrayLength - length))
-                throw new ArgumentOutOfRangeException(nameof(offsetIn), Environment.GetResourceString("ArgumentOutOfRange_OffsetLength"));
+                throw new ArgumentOutOfRangeException(nameof(offsetIn), SR.ArgumentOutOfRange_OffsetLength);
 
             if (inArrayLength == 0)
                 return 0;
@@ -2581,7 +2564,7 @@ namespace System
             numElementsToCopy = ToBase64_CalculateAndValidateOutputLength(length, insertLineBreaks);
 
             if (offsetOut > (int)(outArrayLength - numElementsToCopy))
-                throw new ArgumentOutOfRangeException(nameof(offsetOut), Environment.GetResourceString("ArgumentOutOfRange_OffsetOut"));
+                throw new ArgumentOutOfRangeException(nameof(offsetOut), SR.ArgumentOutOfRange_OffsetOut);
 
             fixed (char* outChars = &outArray[offsetOut])
             {
@@ -2720,19 +2703,19 @@ namespace System
                 throw new ArgumentNullException(nameof(inArray));
 
             if (length < 0)
-                throw new ArgumentOutOfRangeException(nameof(length), Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_Index);
 
             if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), Environment.GetResourceString("ArgumentOutOfRange_GenericPositive"));
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_GenericPositive);
 
             if (offset > inArray.Length - length)
-                throw new ArgumentOutOfRangeException(nameof(offset), Environment.GetResourceString("ArgumentOutOfRange_OffsetLength"));
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_OffsetLength);
 
             Contract.EndContractBlock();
 
             unsafe
             {
-                fixed (Char* inArrayPtr = inArray)
+                fixed (Char* inArrayPtr = &inArray[0])
                 {
                     return FromBase64CharPtr(inArrayPtr + offset, length);
                 }
@@ -2805,7 +2788,7 @@ namespace System
         /// Otherwise return the number of result bytes actually produced.</returns>
         private static unsafe Int32 FromBase64_Decode(Char* startInputPtr, Int32 inputLength, Byte* startDestPtr, Int32 destLength)
         {
-            // You may find this method weird to look at. It’s written for performance, not aesthetics.
+            // You may find this method weird to look at. It's written for performance, not aesthetics.
             // You will find unrolled loops label jumps and bit manipulations.
 
             const UInt32 intA = (UInt32)'A';
@@ -2887,7 +2870,7 @@ namespace System
 
                             // Other chars are illegal:
                             default:
-                                throw new FormatException(Environment.GetResourceString("Format_BadBase64Char"));
+                                throw new FormatException(SR.Format_BadBase64Char);
                         }
                     }
 
@@ -2927,7 +2910,7 @@ namespace System
 
                 // The '=' did not complete a 4-group. The input must be bad:
                 if ((currBlockCodes & 0x80000000u) == 0u)
-                    throw new FormatException(Environment.GetResourceString("Format_BadBase64CharArrayLength"));
+                    throw new FormatException(SR.Format_BadBase64CharArrayLength);
 
                 if ((int)(endDestPtr - destPtr) < 2)  // Autch! We underestimated the output length!
                     return -1;
@@ -2957,7 +2940,7 @@ namespace System
 
                     // The '=' did not complete a 4-group. The input must be bad:
                     if ((currBlockCodes & 0x80000000u) == 0u)
-                        throw new FormatException(Environment.GetResourceString("Format_BadBase64CharArrayLength"));
+                        throw new FormatException(SR.Format_BadBase64CharArrayLength);
 
                     if ((Int32)(endDestPtr - destPtr) < 1)  // Autch! We underestimated the output length!
                         return -1;
@@ -2968,7 +2951,7 @@ namespace System
                     currBlockCodes = 0x000000FFu;
                 }
                 else  // '=' is not ok at places other than the end:
-                    throw new FormatException(Environment.GetResourceString("Format_BadBase64Char"));
+                    throw new FormatException(SR.Format_BadBase64Char);
             }
 
         // We get here either from above or by jumping out of the loop:
@@ -2976,7 +2959,7 @@ namespace System
 
             // The last block of chars has less than 4 items
             if (currBlockCodes != 0x000000FFu)
-                throw new FormatException(Environment.GetResourceString("Format_BadBase64CharArrayLength"));
+                throw new FormatException(SR.Format_BadBase64CharArrayLength);
 
             // Return how many bytes were actually recovered:
             return (Int32)(destPtr - startDestPtr);
@@ -3032,7 +3015,7 @@ namespace System
                 else if (padding == 2)
                     padding = 1;
                 else
-                    throw new FormatException(Environment.GetResourceString("Format_BadBase64Char"));
+                    throw new FormatException(SR.Format_BadBase64Char);
             }
 
             // Done:
