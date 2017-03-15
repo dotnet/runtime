@@ -7597,8 +7597,11 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		return;
 	}
 	if (cfg->exception_type != MONO_EXCEPTION_NONE) {
-		if (acfg->aot_opts.print_skipped_methods)
+		if (acfg->aot_opts.print_skipped_methods) {
 			printf ("Skip (JIT failure): %s\n", mono_method_get_full_name (method));
+			if (cfg->exception_message)
+				printf ("Caused by: %s\n", cfg->exception_message);
+		}
 		/* Let the exception happen at runtime */
 		return;
 	}
