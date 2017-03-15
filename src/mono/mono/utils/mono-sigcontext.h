@@ -45,6 +45,15 @@
 	#define UCONTEXT_REG_ESI(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__esi)
 	#define UCONTEXT_REG_EDI(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__edi)
 	#define UCONTEXT_REG_EIP(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__eip)
+	#define UCONTEXT_REG_XMM
+	#define UCONTEXT_REG_XMM0(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__fs.__fpu_xmm0)
+	#define UCONTEXT_REG_XMM1(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__fs.__fpu_xmm1)
+	#define UCONTEXT_REG_XMM2(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__fs.__fpu_xmm2)
+	#define UCONTEXT_REG_XMM3(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__fs.__fpu_xmm3)
+	#define UCONTEXT_REG_XMM4(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__fs.__fpu_xmm4)
+	#define UCONTEXT_REG_XMM5(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__fs.__fpu_xmm5)
+	#define UCONTEXT_REG_XMM6(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__fs.__fpu_xmm6)
+	#define UCONTEXT_REG_XMM7(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__fs.__fpu_xmm7)
 #  else
 	#define UCONTEXT_REG_EAX(ctx) (((ucontext_t*)(ctx))->uc_mcontext->ss.eax)
 	#define UCONTEXT_REG_EBX(ctx) (((ucontext_t*)(ctx))->uc_mcontext->ss.ebx)

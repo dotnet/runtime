@@ -192,7 +192,7 @@ typedef struct {
 				[xmm4] MONO_CONTEXT_OFFSET (fregs, X86_XMM4, MonoContextSimdReg), \
 				[xmm5] MONO_CONTEXT_OFFSET (fregs, X86_XMM5, MonoContextSimdReg), \
 				[xmm6] MONO_CONTEXT_OFFSET (fregs, X86_XMM6, MonoContextSimdReg), \
-				[xmm7] MONO_CONTEXT_OFFSET (fregs, X86_XMM7, MonoContextSimdReg), \
+				[xmm7] MONO_CONTEXT_OFFSET (fregs, X86_XMM7, MonoContextSimdReg)); \
 	} while (0)
 #else
 #define MONO_CONTEXT_GET_CURRENT_FREGS(ctx)

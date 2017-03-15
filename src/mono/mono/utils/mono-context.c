@@ -60,6 +60,16 @@ mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 	mctx->esi = UCONTEXT_REG_ESI (ctx);
 	mctx->edi = UCONTEXT_REG_EDI (ctx);
 	mctx->eip = UCONTEXT_REG_EIP (ctx);
+#ifdef UCONTEXT_REG_XMM
+	mctx->fregs [0] = UCONTEXT_REG_XMM0 (ctx);
+	mctx->fregs [1] = UCONTEXT_REG_XMM1 (ctx);
+	mctx->fregs [2] = UCONTEXT_REG_XMM2 (ctx);
+	mctx->fregs [3] = UCONTEXT_REG_XMM3 (ctx);
+	mctx->fregs [4] = UCONTEXT_REG_XMM4 (ctx);
+	mctx->fregs [5] = UCONTEXT_REG_XMM5 (ctx);
+	mctx->fregs [6] = UCONTEXT_REG_XMM6 (ctx);
+	mctx->fregs [7] = UCONTEXT_REG_XMM7 (ctx);
+#endif
 #elif defined(HOST_WIN32)
 	CONTEXT *context = (CONTEXT*)sigctx;
 
@@ -106,6 +116,16 @@ mono_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 	UCONTEXT_REG_ESI (ctx) = mctx->esi;
 	UCONTEXT_REG_EDI (ctx) = mctx->edi;
 	UCONTEXT_REG_EIP (ctx) = mctx->eip;
+#ifdef UCONTEXT_REG_XMM
+	UCONTEXT_REG_XMM0 (ctx) = mctx->fregs [0];
+	UCONTEXT_REG_XMM1 (ctx) = mctx->fregs [1];
+	UCONTEXT_REG_XMM2 (ctx) = mctx->fregs [2];
+	UCONTEXT_REG_XMM3 (ctx) = mctx->fregs [3];
+	UCONTEXT_REG_XMM4 (ctx) = mctx->fregs [4];
+	UCONTEXT_REG_XMM5 (ctx) = mctx->fregs [5];
+	UCONTEXT_REG_XMM6 (ctx) = mctx->fregs [6];
+	UCONTEXT_REG_XMM7 (ctx) = mctx->fregs [7];
+#endif
 #elif defined(HOST_WIN32)
 	CONTEXT *context = (CONTEXT*)sigctx;
 
