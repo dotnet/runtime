@@ -1,3 +1,4 @@
+Compat issues with assembly System.Runtime.Extensions:
 MembersMustExist : Member 'System.AppDomain.add_AssemblyLoad(System.AssemblyLoadEventHandler)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.AppDomain.add_AssemblyResolve(System.ResolveEventHandler)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.AppDomain.add_FirstChanceException(System.EventHandler<System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs>)' does not exist in the implementation but it does exist in the contract.
@@ -90,3 +91,4 @@ MembersMustExist : Member 'System.StringComparer.InvariantCulture.get()' does no
 MembersMustExist : Member 'System.StringComparer.InvariantCultureIgnoreCase.get()' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.IO.BufferedStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.IO.MemoryStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
+Total Issues: 92
