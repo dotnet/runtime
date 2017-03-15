@@ -122,12 +122,13 @@ namespace System.Net.Sockets
 
         internal SocketError DoOperationDisconnect(Socket socket, SafeCloseSocket handle)
         {
-            throw new PlatformNotSupportedException(SR.net_sockets_disconnect_notsupported);
+            SocketError socketError = SocketPal.Disconnect(socket, handle, _disconnectReuseSocket);
+            FinishOperationSync(socketError, 0, SocketFlags.None);
+            return socketError;
         }
 
         private void InnerStartOperationDisconnect()
         {
-            throw new PlatformNotSupportedException(SR.net_sockets_disconnect_notsupported);
         }
 
         private Action<int, byte[], int, SocketFlags, SocketError> TransferCompletionCallback =>
