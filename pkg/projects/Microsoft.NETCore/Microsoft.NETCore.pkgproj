@@ -3,7 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
-    <Version>$(MicrosoftNetCoreVersion)</Version>
+    <Version>5.0.3</Version>
     <PackagePlatform>AnyCPU</PackagePlatform>
     <IsLineupPackage>false</IsLineupPackage>
     <IncludeRuntimeJson>false</IncludeRuntimeJson>
