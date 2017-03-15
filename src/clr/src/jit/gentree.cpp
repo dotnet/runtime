@@ -16334,6 +16334,207 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandle(GenTree* tree)
     return structHnd;
 }
 
+//------------------------------------------------------------------------
+// gtGetClassHandle: find class handle for a ref type
+//
+// Arguments:
+//    tree -- tree to find handle for
+//    isExact   [out] -- whether handle is exact type
+//    isNonNull [out] -- whether tree value is known not to be null
+//
+// Return Value:
+//    nullptr if class handle is unknown,
+//        otherwise the class handle.
+//    isExact set true if tree type is known to be exactly the handle type,
+//        otherwise actual type may be a subtype.
+//    isNonNull set true if tree value is known not to be null,
+//        otherwise a null value is possible.
+
+CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTreePtr tree, bool* isExact, bool* isNonNull)
+{
+    // Set default values for our out params.
+    *isNonNull                    = false;
+    *isExact                      = false;
+    CORINFO_CLASS_HANDLE objClass = nullptr;
+
+    // Bail out if the tree is not a ref type.
+    var_types treeType = tree->TypeGet();
+    if (treeType != TYP_REF)
+    {
+        return objClass;
+    }
+
+    // Tunnel through commas.
+    GenTreePtr       obj   = tree->gtEffectiveVal(false);
+    const genTreeOps objOp = obj->OperGet();
+
+    switch (objOp)
+    {
+        case GT_COMMA:
+        {
+            // gtEffectiveVal above means we shouldn't see commas here.
+            assert(!"unexpected GT_COMMA");
+            break;
+        }
+
+        case GT_LCL_VAR:
+        {
+            // For locals, pick up type info from the local table.
+            const unsigned objLcl = obj->AsLclVar()->GetLclNum();
+
+            objClass = lvaTable[objLcl].lvClassHnd;
+            *isExact = lvaTable[objLcl].lvClassIsExact;
+            break;
+        }
+
+        case GT_FIELD:
+        {
+            // For fields, get the type from the field handle.
+            CORINFO_FIELD_HANDLE fieldHnd = obj->gtField.gtFldHnd;
+
+            if (fieldHnd != nullptr)
+            {
+                CORINFO_CLASS_HANDLE fieldClass   = nullptr;
+                CorInfoType          fieldCorType = info.compCompHnd->getFieldType(fieldHnd, &fieldClass);
+                if (fieldCorType == CORINFO_TYPE_CLASS)
+                {
+                    objClass = fieldClass;
+                }
+            }
+
+            break;
+        }
+
+        case GT_RET_EXPR:
+        {
+            // If we see a RET_EXPR, recurse through to examine the
+            // return value expression.
+            GenTreePtr retExpr = tree->gtRetExpr.gtInlineCandidate;
+            objClass           = gtGetClassHandle(retExpr, isExact, isNonNull);
+            break;
+        }
+
+        case GT_CALL:
+        {
+            GenTreeCall* call = tree->AsCall();
+            if (call->IsInlineCandidate())
+            {
+                // For inline candidates, we've already cached the return
+                // type class handle in the inline info.
+                InlineCandidateInfo* inlInfo = call->gtInlineCandidateInfo;
+                assert(inlInfo != nullptr);
+
+                // Grab it as our first cut at a return type.
+                assert(inlInfo->methInfo.args.retType == CORINFO_TYPE_CLASS);
+                objClass = inlInfo->methInfo.args.retTypeClass;
+
+                // If the method is shared, the above may not capture
+                // the most precise return type information (that is,
+                // it may represent a shared return type and as such,
+                // have instances of __Canon). See if we can use the
+                // context to get at something more definite.
+                //
+                // For now, we do this here on demand rather than when
+                // processing the call, but we could/should apply
+                // similar sharpening to the argument and local types
+                // of the inlinee.
+                const unsigned retClassFlags = info.compCompHnd->getClassAttribs(objClass);
+                if (retClassFlags & CORINFO_FLG_SHAREDINST)
+                {
+                    CORINFO_CONTEXT_HANDLE context = inlInfo->exactContextHnd;
+
+                    if (context != nullptr)
+                    {
+                        CORINFO_CLASS_HANDLE exactClass = nullptr;
+
+                        if (((size_t)context & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS)
+                        {
+                            exactClass = (CORINFO_CLASS_HANDLE)((size_t)context & ~CORINFO_CONTEXTFLAGS_MASK);
+                        }
+                        else
+                        {
+                            CORINFO_METHOD_HANDLE exactMethod =
+                                (CORINFO_METHOD_HANDLE)((size_t)context & ~CORINFO_CONTEXTFLAGS_MASK);
+                            exactClass = info.compCompHnd->getMethodClass(exactMethod);
+                        }
+
+                        // Grab the signature in this context.
+                        CORINFO_SIG_INFO sig;
+                        eeGetMethodSig(call->gtCallMethHnd, &sig, exactClass);
+                        assert(sig.retType == CORINFO_TYPE_CLASS);
+                        objClass = sig.retTypeClass;
+                    }
+                }
+            }
+            else if (call->gtCallType == CT_USER_FUNC)
+            {
+                // For user calls, we can fetch the approximate return
+                // type info from the method handle. Unfortunately
+                // we've lost the exact context, so this is the best
+                // we can do for now.
+                CORINFO_METHOD_HANDLE method     = call->gtCallMethHnd;
+                CORINFO_CLASS_HANDLE  exactClass = nullptr;
+                CORINFO_SIG_INFO      sig;
+                eeGetMethodSig(method, &sig, exactClass);
+                if (sig.retType == CORINFO_TYPE_VOID)
+                {
+                    // This is a constructor call.
+                    const unsigned methodFlags = info.compCompHnd->getMethodAttribs(method);
+                    assert((methodFlags & CORINFO_FLG_CONSTRUCTOR) != 0);
+                    objClass   = info.compCompHnd->getMethodClass(method);
+                    *isExact   = true;
+                    *isNonNull = true;
+                }
+                else
+                {
+                    assert(sig.retType == CORINFO_TYPE_CLASS);
+                    objClass = sig.retTypeClass;
+                }
+            }
+
+            break;
+        }
+
+        case GT_CNS_STR:
+        {
+            // For literal strings, we know the class and that the
+            // value is not null.
+            objClass   = impGetStringClass();
+            *isExact   = true;
+            *isNonNull = true;
+            break;
+        }
+
+        case GT_IND:
+        {
+            // indir(addr(lcl)) --> lcl
+            //
+            // This comes up during constrained callvirt on ref types.
+            GenTreeIndir* indir = obj->AsIndir();
+            if (indir->HasBase() && !indir->HasIndex())
+            {
+                GenTreePtr           base = indir->Base();
+                GenTreeLclVarCommon* lcl  = base->IsLocalAddrExpr();
+
+                if ((lcl != nullptr) && (base->OperGet() != GT_ADD))
+                {
+                    const unsigned objLcl = lcl->GetLclNum();
+                    objClass              = lvaTable[objLcl].lvClassHnd;
+                    *isExact              = lvaTable[objLcl].lvClassIsExact;
+                }
+            }
+            break;
+        }
+
+        default:
+        {
+            break;
+        }
+    }
+
+    return objClass;
+}
+
 void GenTree::ParseArrayAddress(
     Compiler* comp, ArrayInfo* arrayInfo, GenTreePtr* pArr, ValueNum* pInxVN, FieldSeqNode** pFldSeq)
 {
