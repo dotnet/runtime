@@ -1,0 +1,9 @@
+<linker>
+    <assembly fullname="dev11_95728">
+        <type fullname="*" required="true" />
+    </assembly>
+    <assembly fullname="System.Linq.Expressions">
+     <!-- - Called by System.Linq.Expressions.Expression:CreateLambda --> 
+     <type fullname="System.Linq.Expressions.Expression`1" required="true" /> 
+    </assembly>
+</linker>
