@@ -71,6 +71,7 @@ namespace System.Globalization.Tests
                 Assert.Equal("IJ IJ IJ IJ", ti.ToTitleCase("ij iJ Ij IJ"));
                 Assert.Equal("IJzeren Eigenschappen", ti.ToTitleCase("ijzeren eigenschappen"));
                 Assert.Equal("Lake IJssel", ti.ToTitleCase("lake iJssel"));
+                Assert.Equal("Boba N' IJango Fett PEW PEW", ti.ToTitleCase("Boba n' Ijango fett PEW PEW"));
             }
         }
     }
