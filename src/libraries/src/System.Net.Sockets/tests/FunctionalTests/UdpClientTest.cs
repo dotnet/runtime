@@ -221,7 +221,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ActiveIssue(16739, TestPlatforms.AnyUnix)] // DontFragment currently isn't supported on Unix
+        [PlatformSpecific(~TestPlatforms.OSX)] // macOS doesn't have an equivalent of DontFragment
         [Fact]
         public void DontFragment_Roundtrips()
         {
