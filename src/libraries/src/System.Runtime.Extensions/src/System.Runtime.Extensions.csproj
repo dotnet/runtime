@@ -8,9 +8,9 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <GenFacadesIgnoreMissingTypes Condition="'$(TargetGroup)'=='uapaot'">true</GenFacadesIgnoreMissingTypes>
+    <DefineConstants Condition="'$(TargetGroup)' == 'uapaot'">$(DefineConstants);uapaot</DefineConstants>
     <!-- System.IO.Path conflicts between type in partial facade and in mscorlib -->
     <NoWarn>0436</NoWarn>
-    <TargetsWindowsUap Condition="'$(TargetGroup)'=='uapaot'">true</TargetsWindowsUap>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
@@ -22,7 +22,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="System\AppDomain.cs" Condition="'$(TargetGroup)' != 'uapaot'" />
+    <Compile Include="System\AppDomain.cs" />
     <Compile Include="System\Context.cs" />
     <Compile Include="System\AppDomainUnloadedException.cs" />
     <Compile Include="System\ApplicationId.cs" />
@@ -302,7 +302,7 @@
     <Compile Include="System\StringNormalizationExtensions.cs" />
     <Compile Include="System\Globalization\Extensions.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap'">
+  <ItemGroup>
     <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj" />
     <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj" />
     <ProjectReference Include="..\..\System.Security.Principal\src\System.Security.Principal.csproj">
@@ -314,8 +314,6 @@
     <Reference Include="mscorlib" />
     <Reference Include="Windows" />
     <ReferenceFromRuntime Include="System.Private.Interop" />
-    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
-    <ProjectReference Include="..\..\System.Private.Uri\src\System.Private.Uri.csproj" />
   </ItemGroup>
   <ItemGroup>
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
