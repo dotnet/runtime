@@ -18000,13 +18000,24 @@ BOOL Compiler::impInlineIsGuaranteedThisDerefBeforeAnySideEffects(GenTreePtr  ad
     return TRUE;
 }
 
-/******************************************************************************/
-// Check the inlining eligibility of this GT_CALL node.
-// Mark GTF_CALL_INLINE_CANDIDATE on the GT_CALL node
-
-// Todo: find a way to record the failure reasons in the IR (or
-// otherwise build tree context) so when we do the inlining pass we
-// can capture these reasons
+//------------------------------------------------------------------------
+// impMarkInlineCandidate: determine if this call can be subsequently inlined
+//
+// Arguments:
+//    callNode -- call under scrutiny
+//    exactContextHnd -- context handle for inlining
+//    exactContextNeedsRuntimeLookup -- true if context required runtime lookup
+//    callInfo -- call info from VM
+//
+// Notes:
+//    If callNode is an inline candidate, this method sets the flag
+//    GTF_CALL_INLINE_CANDIDATE, and ensures that helper methods have
+//    filled in the associated InlineCandidateInfo.
+//
+//    If callNode is not an inline candidate, and the reason is
+//    something that is inherent to the method being called, the
+//    method may be marked as "noinline" to short-circuit any
+//    future assessments of calls to this method.
 
 void Compiler::impMarkInlineCandidate(GenTreePtr             callNode,
                                       CORINFO_CONTEXT_HANDLE exactContextHnd,
@@ -18376,109 +18387,32 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     }
 
 #if defined(DEBUG)
-
     // Bail if devirt is disabled.
     if (JitConfig.JitEnableDevirtualization() == 0)
     {
         return;
     }
 
+    const bool doPrint = JitConfig.JitPrintDevirtualizedMethods() == 1;
 #endif // DEBUG
 
-    // Do we know anything about the type of the 'this'?
-    //
-    // Unfortunately the jit has historcally only kept track of class
-    // handles for struct types, so the type information needed here
-    // is missing for many tree nodes.
-    //
-    // Even when we can deduce the type, we may not be able to
-    // devirtualize, but if we can't deduce the type, we can't do
-    // anything.
-    CORINFO_CLASS_HANDLE objClass     = nullptr;
-    GenTreePtr           obj          = thisObj->gtEffectiveVal(false);
-    const genTreeOps     objOp        = obj->OperGet();
-    bool                 objIsNonNull = false;
-    bool                 isExact      = false;
+    // Fetch information about the virtual method we're calling.
+    CORINFO_METHOD_HANDLE baseMethod        = callInfo->hMethod;
+    unsigned              baseMethodAttribs = callInfo->methodFlags;
 
-    switch (objOp)
+    if (baseMethodAttribs == 0)
     {
-        case GT_LCL_VAR:
-        {
-            const unsigned objLcl = obj->AsLclVar()->GetLclNum();
-
-            objClass = lvaTable[objLcl].lvClassHnd;
-            isExact  = lvaTable[objLcl].lvClassIsExact;
-            break;
-        }
-
-        case GT_FIELD:
-        {
-            CORINFO_FIELD_HANDLE fieldHnd = obj->gtField.gtFldHnd;
-
-            if (fieldHnd != nullptr)
-            {
-                CORINFO_CLASS_HANDLE fieldClass   = nullptr;
-                CorInfoType          fieldCorType = info.compCompHnd->getFieldType(fieldHnd, &fieldClass);
-                if (fieldCorType == CORINFO_TYPE_CLASS)
-                {
-                    objClass = fieldClass;
-                }
-            }
-
-            break;
-        }
-
-        case GT_RET_EXPR:
-        {
-            // If we see a RET_EXPR, then obj is the return value from
-            // an inlineable call. Use the declared return type to
-            // devirtualize. Note if/when we inline we may get an even
-            // better type -- so there are opportunities for
-            // downstream devirtualization that we'll miss right now.
-            GenTreeCall*         objFromCall = obj->gtRetExpr.gtInlineCandidate->AsCall();
-            InlineCandidateInfo* inlInfo     = objFromCall->gtInlineCandidateInfo;
-            if (inlInfo != nullptr)
-            {
-                assert(inlInfo->methInfo.args.retType == CORINFO_TYPE_CLASS);
-                objClass = inlInfo->methInfo.args.retTypeClass;
-            }
-
-            break;
-        }
-
-        case GT_CNS_STR:
-        {
-            objClass     = impGetStringClass();
-            objIsNonNull = true;
-            break;
-        }
-
-        case GT_COMMA:
-        {
-            // gtEffectiveVal used above should've burrowed through commas
-            assert(!"unexpected GT_COMMA");
-            break;
-        }
-
-        default:
-        {
-            break;
-        }
+        // For late devirt we may not have method attributes, so fetch them.
+        baseMethodAttribs = info.compCompHnd->getMethodAttribs(baseMethod);
     }
-
-    // Bail if we can't figure out the type of 'this'.
-    if (objClass == nullptr)
+    else
     {
-        JITDUMP("impDevirtualizeCall: no type available (op=%s)\n", GenTree::OpName(objOp));
-        return;
+#if defined(DEBUG)
+        // Validate that callInfo has up to date method flags
+        const DWORD freshBaseMethodAttribs = info.compCompHnd->getMethodAttribs(baseMethod);
+        assert(freshBaseMethodAttribs == baseMethodAttribs);
+#endif // DEBUG
     }
-
-    JITDUMP("impDevirtualizeCall: type available, attempting devirt\n");
-
-    // Fetch VM handles for base method and base class.
-    CORINFO_METHOD_HANDLE baseMethod = callInfo->hMethod;
-    CORINFO_CLASS_HANDLE  baseClass  = info.compCompHnd->getMethodClass(baseMethod);
-    assert(baseClass != nullptr);
 
     // In R2R mode, we might see virtual stub calls to
     // non-virtuals. For instance cases where the non-virtual method
@@ -18489,43 +18423,60 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     // In non-R2R modes CALLVIRT <nonvirtual> will be turned into a
     // regular call+nullcheck upstream, so we won't reach this
     // point.
-    const DWORD baseMethodAttribs = info.compCompHnd->getMethodAttribs(baseMethod);
     if ((baseMethodAttribs & CORINFO_FLG_VIRTUAL) == 0)
     {
         assert(call->IsVirtualStub());
         assert(opts.IsReadyToRun());
-        JITDUMP("--- [R2R] base method not virtual, sorry\n");
+        JITDUMP("\nimpDevirtualizeCall: [R2R] base method not virtual, sorry\n");
         return;
     }
+
+    // See what we know about the type of 'this' in the call.
+    bool                 isExact      = false;
+    bool                 objIsNonNull = false;
+    CORINFO_CLASS_HANDLE objClass     = gtGetClassHandle(thisObj, &isExact, &objIsNonNull);
+
+    // Bail if we know nothing.
+    if (objClass == nullptr)
+    {
+        JITDUMP("\nimpDevirtualizeCall: no type available (op=%s)\n", GenTree::OpName(thisObj->OperGet()));
+        return;
+    }
+
+    // Fetch information about the class that introduced the virtual method.
+    CORINFO_CLASS_HANDLE baseClass        = info.compCompHnd->getMethodClass(baseMethod);
+    const DWORD          baseClassAttribs = info.compCompHnd->getClassAttribs(baseClass);
+
+    // Is the call an interface call?
+    const bool isInterface = (baseClassAttribs & CORINFO_FLG_INTERFACE) != 0;
 
     // If the objClass is sealed (final), then we may be able to devirtualize.
     const DWORD objClassAttribs = info.compCompHnd->getClassAttribs(objClass);
     const bool  objClassIsFinal = (objClassAttribs & CORINFO_FLG_FINAL) != 0;
 
 #if defined(DEBUG)
-    const char* const objClassNote   = isExact ? " [exact]" : objClassIsFinal ? " [final]" : "";
-    const char* const objClassName   = info.compCompHnd->getClassName(objClass);
-    const char* const baseClassName  = info.compCompHnd->getClassName(baseClass);
-    const char* const baseMethodName = eeGetMethodName(baseMethod, nullptr);
+    const char* callKind       = isInterface ? "interface" : "virtual";
+    const char* objClassNote   = "[?]";
+    const char* objClassName   = "?objClass";
+    const char* baseClassName  = "?baseClass";
+    const char* baseMethodName = "?baseMethod";
 
-    if (verbose)
+    if (verbose || doPrint)
     {
-        printf("$$$ In %s: Maybe devirt?\n"
-               "    class for 'this' is %s%s (attrib %08x)\n"
-               "    base method is %s::%s\n",
-               info.compFullName, objClassName, objClassNote, objClassAttribs, baseClassName, baseMethodName);
+        objClassNote   = isExact ? " [exact]" : objClassIsFinal ? " [final]" : "";
+        objClassName   = info.compCompHnd->getClassName(objClass);
+        baseClassName  = info.compCompHnd->getClassName(baseClass);
+        baseMethodName = eeGetMethodName(baseMethod, nullptr);
+
+        if (verbose)
+        {
+            printf("\nimpDevirtualizeCall: Trying to devirtualize %s call:\n"
+                   "    class for 'this' is %s%s (attrib %08x)\n"
+                   "    base method is %s::%s\n",
+                   callKind, objClassName, objClassNote, objClassAttribs, baseClassName, baseMethodName);
+        }
     }
 #endif // defined(DEBUG)
-
-    // Screen out interface calls.
-    // We might be able to devirtualize these some day.
-    const DWORD baseClassAttribs = info.compCompHnd->getClassAttribs(baseClass);
-    if ((baseClassAttribs & CORINFO_FLG_INTERFACE) != 0)
-    {
-        assert(call->IsVirtualStub());
-        JITDUMP("--- base class is interface, sorry\n");
-        return;
-    }
 
     // Bail if obj class is an interface.
     // See for instance System.ValueTuple`8::GetHashCode, where lcl 0 is System.IValueTupleInternal
@@ -18534,6 +18485,14 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     if ((objClassAttribs & CORINFO_FLG_INTERFACE) != 0)
     {
         JITDUMP("--- obj class is interface, sorry\n");
+        return;
+    }
+
+    // Bail (for now) if base class is an interface.
+    if (isInterface)
+    {
+        assert(call->IsVirtualStub());
+        JITDUMP("--- base class is interface, sorry\n");
         return;
     }
 
@@ -18554,13 +18513,31 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     const bool  derivedMethodIsFinal = ((derivedMethodAttribs & CORINFO_FLG_FINAL) != 0);
 
 #if defined(DEBUG)
-    const char* const derivedMethodNote = derivedMethodIsFinal ? " [final]" : "";
-    const char*       derivedClassName;
-    const char* const derivedMethodName = eeGetMethodName(derivedMethod, &derivedClassName);
-    if (verbose)
+    const char* derivedClassName  = "?derivedClass";
+    const char* derivedMethodName = "?derivedMethod";
+
+    const char* note = "speculative";
+    if (isExact)
     {
-        printf("    devirt to %s::%s%s\n", derivedClassName, derivedMethodName, derivedMethodNote);
-        gtDispTree(call);
+        note = "exact";
+    }
+    else if (objClassIsFinal)
+    {
+        note = "final class";
+    }
+    else if (derivedMethodIsFinal)
+    {
+        note = "final method";
+    }
+
+    if (verbose || doPrint)
+    {
+        derivedMethodName = eeGetMethodName(derivedMethod, &derivedClassName);
+        if (verbose)
+        {
+            printf("    devirt to %s::%s -- %s\n", derivedClassName, derivedMethodName, note);
+            gtDispTree(call);
+        }
     }
 #endif // defined(DEBUG)
 
@@ -18580,7 +18557,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         return;
     }
 
-    JITDUMP("!!! %s; can devirtualize\n", isExact ? "exact type known" : "final class or method");
+    JITDUMP("    %s; can devirtualize\n", note);
 
     // Make the updates.
     call->gtFlags &= ~GTF_CALL_VIRT_VTABLE;
@@ -18631,7 +18608,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         call->gtCallMoreFlags &= ~GTF_CALL_M_R2R_REL_INDIRECT;
         call->setEntryPoint(derivedCallInfo.codePointerLookup.constLookup);
     }
-#endif
+#endif // FEATURE_READYTORUN_COMPILER
 
     // Need to update call info too. This is fragile
     // but hopefully the derived method conforms to
@@ -18653,10 +18630,10 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         gtDispTree(call);
     }
 
-    if (JitConfig.JitPrintDevirtualizedMethods())
+    if (doPrint)
     {
-        printf("Devirtualized call to %s:%s to directly call %s:%s\n", baseClassName, baseMethodName, derivedClassName,
-               derivedMethodName);
+        printf("Devirtualized %s call to %s:%s; now direct call to %s:%s [%s]\n", callKind, baseClassName,
+               baseMethodName, derivedClassName, derivedMethodName, note);
     }
 #endif // defined(DEBUG)
 }
