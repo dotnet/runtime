@@ -23,7 +23,7 @@ namespace System.Net.Sockets
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, socket);
         }
 
-        protected void CompletionCallback(int numBytes, SocketError errorCode)
+        internal void CompletionCallback(int numBytes, SocketError errorCode)
         {
             ErrorCode = (int)errorCode;
             InvokeCallback(PostCompletion(numBytes));
