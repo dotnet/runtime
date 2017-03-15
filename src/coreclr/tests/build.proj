@@ -20,7 +20,7 @@
     </TraversalBuildDependsOn>
   </PropertyGroup>
 
-  <Target Name="BuildTargetingPack" DependsOnTargets="BatchRestorePackages">
+  <Target Name="BuildTargetingPack" AfterTargets="BatchRestorePackages">
     <Message Text="Building Targeting Pack" Importance="High" />
     <MSBuild Projects="$(MSBuildThisFileDirectory)\src\Common\external\external.depproj" />
   </Target>
