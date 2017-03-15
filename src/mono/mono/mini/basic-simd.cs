@@ -557,12 +557,12 @@ public class SimdTests {
 		if (a.Y != 2)
 			return 2;
 
-		a.X = 500000000000055l;
-		a.Y = -12345678900l;
+		a.X = 500000000000055L;
+		a.Y = -12345678900L;
 
-		if (a.X != 500000000000055l)
+		if (a.X != 500000000000055L)
 			return 3;
-		if (a.Y != -12345678900l)
+		if (a.Y != -12345678900L)
 			return 4;
 		return 0;
 	}

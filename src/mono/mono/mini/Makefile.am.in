@@ -650,7 +650,7 @@ libmonoincludedir = $(includedir)/mono-$(API_VER)/mono/jit
 
 libmonoinclude_HEADERS = jit.h
 
-CSFLAGS = -unsafe -nowarn:0219,0169,0414,0649
+CSFLAGS = -unsafe -nowarn:0219,0169,0414,0649,0618
 
 basic-simd.exe: basic-simd.cs TestDriver.dll
 	$(MCS) -out:$@ $(CSFLAGS) $< -r:TestDriver.dll -r:$(CLASS)/Mono.Simd.dll
