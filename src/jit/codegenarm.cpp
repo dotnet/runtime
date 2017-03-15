@@ -599,7 +599,11 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
         case GT_RSZ:
         case GT_ROR:
             genCodeForShift(treeNode);
-            // genCodeForShift() calls genProduceReg()
+            break;
+
+        case GT_LSH_HI:
+        case GT_RSH_LO:
+            genCodeForShiftLong(treeNode);
             break;
 
         case GT_CAST:
@@ -1654,6 +1658,12 @@ instruction CodeGen::genGetInsForOper(genTreeOps oper, var_types type)
         case GT_SUB_HI:
             ins = INS_sbc;
             break;
+        case GT_LSH_HI:
+            ins = INS_SHIFT_LEFT_LOGICAL;
+            break;
+        case GT_RSH_LO:
+            ins = INS_SHIFT_RIGHT_LOGICAL;
+            break;
         default:
             unreached();
             break;
@@ -1799,6 +1809,69 @@ void CodeGen::genCodeForInitBlk(GenTreeBlk* initBlkNode)
 
     genConsumeBlockOp(initBlkNode, REG_ARG_0, REG_ARG_1, REG_ARG_2);
     genEmitHelperCall(CORINFO_HELP_MEMSET, 0, EA_UNKNOWN);
+}
+
+//------------------------------------------------------------------------
+// genCodeForShiftLong: Generates the code sequence for a GenTree node that
+// represents a three operand bit shift or rotate operation (<<Hi, >>Lo).
+//
+// Arguments:
+//    tree - the bit shift node (that specifies the type of bit shift to perform).
+//
+// Assumptions:
+//    a) All GenTrees are register allocated.
+//    b) The shift-by-amount in tree->gtOp.gtOp2 is a contained constant
+//
+void CodeGen::genCodeForShiftLong(GenTreePtr tree)
+{
+    // Only the non-RMW case here.
+    genTreeOps oper = tree->OperGet();
+    assert(oper == GT_LSH_HI || oper == GT_RSH_LO);
+
+    GenTree* operand = tree->gtOp.gtOp1;
+    assert(operand->OperGet() == GT_LONG);
+    assert(operand->gtOp.gtOp1->isUsedFromReg());
+    assert(operand->gtOp.gtOp2->isUsedFromReg());
+
+    GenTree* operandLo = operand->gtGetOp1();
+    GenTree* operandHi = operand->gtGetOp2();
+
+    regNumber regLo = operandLo->gtRegNum;
+    regNumber regHi = operandHi->gtRegNum;
+
+    genConsumeOperands(tree->AsOp());
+
+    var_types   targetType = tree->TypeGet();
+    instruction ins        = genGetInsForOper(oper, targetType);
+
+    GenTreePtr shiftBy = tree->gtGetOp2();
+
+    assert(shiftBy->isContainedIntOrIImmed());
+
+    unsigned int count = shiftBy->AsIntConCommon()->IconValue();
+
+    regNumber regResult = (oper == GT_LSH_HI) ? regHi : regLo;
+
+    if (regResult != tree->gtRegNum)
+    {
+        inst_RV_RV(INS_mov, tree->gtRegNum, regResult, targetType);
+    }
+
+    if (oper == GT_LSH_HI)
+    {
+        inst_RV_SH(ins, EA_4BYTE, tree->gtRegNum, count);
+        getEmitter()->emitIns_R_R_R_I(INS_OR, EA_4BYTE, tree->gtRegNum, tree->gtRegNum, regLo, 32 - count,
+                                      INS_FLAGS_DONT_CARE, INS_OPTS_LSR);
+    }
+    else
+    {
+        assert(oper == GT_RSH_LO);
+        inst_RV_SH(INS_SHIFT_RIGHT_LOGICAL, EA_4BYTE, tree->gtRegNum, count);
+        getEmitter()->emitIns_R_R_R_I(INS_OR, EA_4BYTE, tree->gtRegNum, tree->gtRegNum, regHi, 32 - count,
+                                      INS_FLAGS_DONT_CARE, INS_OPTS_LSL);
+    }
+
+    genProduceReg(tree);
 }
 
 //------------------------------------------------------------------------
