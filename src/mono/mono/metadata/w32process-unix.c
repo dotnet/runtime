@@ -1215,7 +1215,8 @@ mono_w32process_module_get_name (gpointer process, gpointer module, gunichar2 *b
 	pname = g_strdup (process_handle->pname);
 
 	mods = mono_w32process_get_modules (pid);
-	if (!mods) {
+	if (!mods && module != NULL) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: Can't get modules %p", __func__, process);
 		g_free (pname);
 		return 0;
 	}
