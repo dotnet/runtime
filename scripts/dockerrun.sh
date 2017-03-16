@@ -115,7 +115,7 @@ execute() {
 echo "Building Docker Container using Dockerfile: $DOCKERFILE"
 
 # Get the name of Docker image.
-image=$(grep -i "^FROM " "$DOCKERFILE" | awk '{ print $2 }')
+image=$(grep -i "^FROM " "$DOCKERFILE/Dockerfile" | awk '{ print $2 }')
 
 # Explicitly pull the base image with retry logic. 
 # This eliminates intermittent failures during docker build caused by failing to retrieve the base image.
