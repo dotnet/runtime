@@ -11,6 +11,9 @@ def projectFolder = Utilities.getFolderName(project) + '/' + Utilities.getFolder
 // Create a folder for JIT stress jobs
 folder('jitstress')
 
+// Create a folder for testing via illink
+folder('illink')
+
 def static getOSGroup(def os) {
     def osGroupMap = ['Ubuntu':'Linux',
         'RHEL7.2': 'Linux',
@@ -132,8 +135,9 @@ class Constants {
                'coverage',
                'formatting',
                'gcsimulator',
-               'jitdiff',
-               'standalone_gc'] + r2rJitStressScenarios
+               'jitdiff',              
+               'standalone_gc',
+               'illink'] + r2rJitStressScenarios
 
     def static configurationList = ['Debug', 'Checked', 'Release']
 
@@ -229,6 +233,16 @@ def static setTestJobTimeOut(newJob, scenario) {
     // Non-test jobs use the default timeout value.
 }
 
+def static getJobFolder(def scenario) {
+    if (isJITStressJob(scenario)) {
+        return 'jitstress'
+    }
+    if (scenario == 'illink') {
+        return 'illink'
+    }
+    return ''
+}
+
 def static getStressModeDisplayName(def scenario) {
     def displayStr = ''
     Constants.jitStressModeScenarios[scenario].each{ k, v ->
@@ -310,6 +324,10 @@ def static getJobName(def configuration, def architecture, def os, def scenario,
             else if (scenario == 'formatting') {
                 // we don't care about the configuration for the formatting job. It runs all configs
                 baseName = architecture.toLowerCase() + '_' + os.toLowerCase()
+            }
+            else if (scenario == 'illink') {
+                // Identify that the job ran post-illink
+                baseName = architecture.toLowerCase() + '_' + configuration.toLowerCase() + '_' + os.toLowerCase() + '_illink'
             }
             else {
                 baseName = architecture.toLowerCase() + '_' + configuration.toLowerCase() + '_' + os.toLowerCase()
@@ -602,6 +620,14 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
                 }
             }
             break
+
+        case 'illink':
+            // Testing on other operating systems TBD
+            assert (os == 'Windows_NT')
+            assert (architecture == 'x64' || architecture == 'x86' || architecture == 'x86compatjit')
+            Utilities.addPeriodicTrigger(job, '@daily')
+	    break
+
         default:
             println("Unknown scenario: ${scenario}");
             assert false
@@ -972,6 +998,9 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                             Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Build and Test (Jit - ${displayName})",
                                "(?i).*test\\W+${os}\\W+${architecture}\\W+${scenario}.*")
                             break
+                        case 'illink':
+                            Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} via ILLink", "(?i).*test\\W+illink\\W+${os}\\W+${configuration}\\W+${scenario}.*")
+    			            break
                         default:
                             println("Unknown scenario: ${scenario}");
                             assert false
@@ -1230,6 +1259,9 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                     Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Build and Test (Jit - ${displayName})",
                        "(?i).*test\\W+${os}\\W+${architecture}\\W+${scenario}.*")
                     break
+                case 'illink':
+                    Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} via ILLink", "(?i).*test\\W+illink\\W+${os}\\W+${configuration}\\W+${scenario}.*")
+                    break
                 default:
                     println("Unknown scenario: ${os} ${architecture} ${scenario}");
                     assert false
@@ -1366,6 +1398,9 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                     Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${arch} ${jit} ${configuration} Build and Test (Jit - ${displayName})",
                        "(?i).*test\\W+${os}\\W+${arch}\\W+${jit}\\W+${configuration}\\W+${scenario}.*")
                     break
+                case 'illink':
+                    Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} via ILLink", "(?i).*test\\W+illink\\W+${os}\\W+${configuration}\\W+${scenario}.*")
+                    break
                 default:
                     println("Unknown scenario: ${os} ${arch} ${jit} ${scenario}");
                     assert false
@@ -1401,10 +1436,19 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         buildOpts = 'compatjitcrossgen skiptests'
                     }
 
+                    // build_illink.cmd performs the following tasks:
+                    // - Clone and build illink for netcoreapp2.0
+                    // - sets ILLINK=<path to illink.exe> in the environment.
+                    if (scenario == 'illink') {
+                        def illinkArgs = (architecture == 'x86compatjit') ? 'x86' : architecture
+                        buildCommands += "tests\\build_illink.cmd clone setenv ${illinkArgs}"
+                    }
+
                     if (Constants.jitStressModeScenarios.containsKey(scenario) ||
                             scenario == 'default' ||
                             scenario == 'r2r' ||
                             scenario == 'jitdiff' ||
+                            scenario == 'illink' ||
                             Constants.r2rJitStressScenarios.indexOf(scenario) != -1) {
                         buildOpts += enableCorefxTesting ? ' skiptests' : ''
                         buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${arch} ${buildOpts}"
@@ -1456,6 +1500,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         def gcstressStr = ''
                         def runtestArguments = ''
                         def gcTestArguments = ''
+                        def illinkArguments = ''
 
                         if (scenario == 'r2r' ||
                             scenario == 'pri1r2r' ||
@@ -1515,7 +1560,12 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                             gcTestArguments = "${scenario} sequential"
                         }
 
-                        runtestArguments = "${lowerConfiguration} ${arch} ${gcstressStr} ${crossgenStr} ${runcrossgentestsStr} ${runjitstressStr} ${runjitstressregsStr} ${runjitmioptsStr} ${runjitforcerelocsStr} ${runjitdisasmStr} ${gcTestArguments} collectdumps"
+                        if (scenario == 'illink')
+                        {
+                            illinkArguments = 'link %ILLINK%'
+                        }
+
+                        runtestArguments = "${lowerConfiguration} ${arch} ${gcstressStr} ${crossgenStr} ${runcrossgentestsStr} ${runjitstressStr} ${runjitstressregsStr} ${runjitmioptsStr} ${runjitforcerelocsStr} ${runjitdisasmStr} ${gcTestArguments} ${illinkArguments} collectdumps"
 
                         if (Constants.jitStressModeScenarios.containsKey(scenario)) {
                             def stepScriptLocation = "%WORKSPACE%\\SetStressModes.bat"
@@ -2069,6 +2119,17 @@ combinedScenarios.each { scenario ->
                                     return
                                 }
                                 break
+                            case 'illink':
+                                if (os != 'Windows_NT') {
+                                    return
+                                }
+                                if (architecture != 'x64' && architecture != 'x86' && architecture != 'x86compatjit') {
+                                    return
+                                }
+                                if (isBuildOnly) {
+                                    return
+                                }
+                                break
                             case 'default':
                                 // Nothing skipped
                                 break
@@ -2082,7 +2143,7 @@ combinedScenarios.each { scenario ->
                     // Calculate names
                     def lowerConfiguration = configuration.toLowerCase()
                     def jobName = getJobName(configuration, architecture, os, scenario, isBuildOnly, isLinuxEmulatorBuild)
-                    def folderName = isJITStressJob(scenario) ? 'jitstress' : '';
+                    def folderName = getJobFolder(scenario)
 
                     // Create the new job
                     def newJob = job(Utilities.getFullJobName(project, jobName, isPR, folderName)) {}
@@ -2310,6 +2371,11 @@ combinedScenarios.each { scenario ->
                                 }
                             case 'formatting':
                                 return
+                            case 'illink':
+                                if (os != 'Windows_NT') {
+                                    return
+                                }
+                                break
                             case 'default':
                                 // Nothing skipped
                                 break
@@ -2450,7 +2516,7 @@ combinedScenarios.each { scenario ->
                         }
                     }
 
-                    def folder = isJITStressJob(scenario) ? 'jitstress' : ''
+                    def folder = getJobFolder(scenario)
                     def newJob = job(Utilities.getFullJobName(project, jobName, isPR, folder)) {
                         // Add parameters for the inputs
 
