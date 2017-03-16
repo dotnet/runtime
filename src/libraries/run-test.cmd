@@ -8,7 +8,7 @@ set LOCATION=%1
 set RUNTIME_PATH=%2
 
 if "%LOCATION%" == "" set LOCATION=%~dp0\bin\Windows_NT.AnyCPU.Debug
-if "%RUNTIME_PATH%" == "" set RUNTIME_PATH=%~dp0\Tools\testdotnetcli
+if "%RUNTIME_PATH%" == "" set RUNTIME_PATH=%~dp0\bin\runtime\netcoreapp-Windows_NT-Debug-x64
 
 pushd %LOCATION%
 
