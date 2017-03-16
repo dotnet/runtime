@@ -562,6 +562,7 @@ void MscorlibBinder::Check()
     }
 }
 
+#ifdef CHECK_FCALL_SIGNATURE
 //
 // check consistency of the unmanaged and managed fcall signatures
 //
@@ -842,6 +843,7 @@ static void FCallCheckSignature(MethodDesc* pMD, PCODE pImpl)
         }
     }
 }
+#endif // CHECK_FCALL_SIGNATURE
 
 //
 // extended check of consistency between mscorlib and mscorwks:
@@ -1047,10 +1049,12 @@ void MscorlibBinder::CheckExtended()
             usedECallIds.Add(id);
         }
 
+#ifdef CHECK_FCALL_SIGNATURE
         if (pMD->IsFCall())
         {
             FCallCheckSignature(pMD, ECall::GetFCallImpl(pMD));
         }
+#endif // CHECK_FCALL_SIGNATURE
     }
 
     pInternalImport->EnumClose(&hEnum);
