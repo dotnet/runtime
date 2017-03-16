@@ -32,6 +32,13 @@
     <Exec Condition="Exists('$(OptDataProjectJson)')" Command="$(DnuRestoreCommand) &quot;$(OptDataProjectJson)&quot; --source &quot;$(OptDataPackageFeed)&quot;" />
   </Target>
 
+  <!--
+    BuildTools will conditionally restore additional packages, including IBC tools, using the "RestoreOptionalToolingPackages"
+    target, which runs automatically before "Sync". Since no "Sync" target actually exists, go ahead and define one now so that
+    the tools are fetched before "Build".
+  -->
+  <Target Name="Sync" BeforeTargets="Build" />
+
   <Target Name="RestoreNETCorePlatforms" AfterTargets="Build" Condition="'$(RestoreDuringBuild)'=='true'">
     <Exec Command="$(DnuRestoreCommand) &quot;$(SourceDir).nuget/init/project.json&quot; --source https://dotnet.myget.org/F/dotnet-core/api/v3/index.json" />
   </Target>
