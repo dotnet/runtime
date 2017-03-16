@@ -13,6 +13,11 @@ endif
 
 ### test runner stuff
 
+if HOST_WIN32
+PLATFORM_PATH_SEPARATOR=;
+else
+PLATFORM_PATH_SEPARATOR=:
+endif
 
 RUNTIME= $(top_builddir)/runtime/mono-wrapper
 TEST_RUNTIME = MONO_PATH=$(CLASS) $(RUNTIME)
@@ -142,19 +147,19 @@ $(SIGNED_V2_DLL): $(V2_SRC) $(SIGNING_KEY)
 	$(TEST_RUNTIME) $(AOT_BUILD_FLAGS) $<
 
 test-signed-v1-app-mp-unsigned-v1: $(APP_SIGNED_V1_EXE) prereqs
-	$(TOOLS_RUNTIME) $(TEST_RUNNER) $(TEST_RUNNER_ARGS) --testsuite-name "testing_gac_$@" --mono-path "unsigned_v1:$(BASE_MONO_PATH)" --expected-exit-code 1 $(APP_SIGNED_V1_EXE)
+	$(TOOLS_RUNTIME) $(TEST_RUNNER) $(TEST_RUNNER_ARGS) --testsuite-name "testing_gac_$@" --mono-path "unsigned_v1$(PLATFORM_PATH_SEPARATOR)$(BASE_MONO_PATH)" --expected-exit-code 1 $(APP_SIGNED_V1_EXE)
 
 test-signed-v1-app-mp-signed-v1: $(APP_SIGNED_V1_EXE) prereqs
-	$(TOOLS_RUNTIME) $(TEST_RUNNER) $(TEST_RUNNER_ARGS) --testsuite-name "testing_gac_$@" --mono-path "signed_v1:$(BASE_MONO_PATH)"  $(APP_SIGNED_V1_EXE)
+	$(TOOLS_RUNTIME) $(TEST_RUNNER) $(TEST_RUNNER_ARGS) --testsuite-name "testing_gac_$@" --mono-path "signed_v1$(PLATFORM_PATH_SEPARATOR)$(BASE_MONO_PATH)"  $(APP_SIGNED_V1_EXE)
 
 test-signed-v1-app-gac: $(APP_SIGNED_V1_EXE) gacinstall prereqs
 	$(TOOLS_RUNTIME) $(TEST_RUNNER) $(TEST_RUNNER_ARGS) --testsuite-name "testing_gac_$@" --mono-gac-prefix $(GACDIR) $(APP_SIGNED_V1_EXE)
 
 test-signed-v1-app-mp-unsigned-v2-signed-v1: $(APP_SIGNED_V1_EXE) prereqs
-	$(TOOLS_RUNTIME) $(TEST_RUNNER) $(TEST_RUNNER_ARGS) --testsuite-name "testing_gac_$@" --mono-path "unsigned_v2:signed_v1:$(BASE_MONO_PATH)" $(APP_SIGNED_V1_EXE)
+	$(TOOLS_RUNTIME) $(TEST_RUNNER) $(TEST_RUNNER_ARGS) --testsuite-name "testing_gac_$@" --mono-path "unsigned_v2$(PLATFORM_PATH_SEPARATOR)signed_v1$(PLATFORM_PATH_SEPARATOR)$(BASE_MONO_PATH)" $(APP_SIGNED_V1_EXE)
 
 test-signed-v1-app-mp-signed-v2-signed-v1: $(APP_SIGNED_V1_EXE) prereqs
-	$(TOOLS_RUNTIME) $(TEST_RUNNER) $(TEST_RUNNER_ARGS) --testsuite-name "testing_gac_$@" --mono-path "signed_v2:signed_v1:$(BASE_MONO_PATH)" $(APP_SIGNED_V1_EXE)
+	$(TOOLS_RUNTIME) $(TEST_RUNNER) $(TEST_RUNNER_ARGS) --testsuite-name "testing_gac_$@" --mono-path "signed_v2$(PLATFORM_PATH_SEPARATOR)signed_v1$(PLATFORM_PATH_SEPARATOR)$(BASE_MONO_PATH)" $(APP_SIGNED_V1_EXE)
 
 .PHONY: gacinstall
 
