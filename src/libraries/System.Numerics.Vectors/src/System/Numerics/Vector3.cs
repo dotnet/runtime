@@ -116,12 +116,12 @@ namespace System.Numerics
             if (Vector.IsHardwareAccelerated)
             {
                 float ls = Vector3.Dot(this, this);
-                return (float)System.Math.Sqrt(ls);
+                return MathF.Sqrt(ls);
             }
             else
             {
                 float ls = X * X + Y * Y + Z * Z;
-                return (float)System.Math.Sqrt(ls);
+                return MathF.Sqrt(ls);
             }
         }
 
@@ -157,7 +157,7 @@ namespace System.Numerics
             {
                 Vector3 difference = value1 - value2;
                 float ls = Vector3.Dot(difference, difference);
-                return (float)System.Math.Sqrt(ls);
+                return MathF.Sqrt(ls);
             }
             else
             {
@@ -167,7 +167,7 @@ namespace System.Numerics
 
                 float ls = dx * dx + dy * dy + dz * dz;
 
-                return (float)System.Math.Sqrt((double)ls);
+                return MathF.Sqrt(ls);
             }
         }
 
@@ -211,7 +211,7 @@ namespace System.Numerics
             else
             {
                 float ls = value.X * value.X + value.Y * value.Y + value.Z * value.Z;
-                float length = (float)System.Math.Sqrt(ls);
+                float length = MathF.Sqrt(ls);
                 return new Vector3(value.X / length, value.Y / length, value.Z / length);
             }
         }

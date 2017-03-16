@@ -207,7 +207,7 @@ namespace System.Numerics
             }
             else
             {
-                zaxis = Vector3.Multiply(zaxis, 1.0f / (float)Math.Sqrt(norm));
+                zaxis = Vector3.Multiply(zaxis, 1.0f / MathF.Sqrt(norm));
             }
 
             Vector3 xaxis = Vector3.Normalize(Vector3.Cross(cameraUpVector, zaxis));
@@ -249,7 +249,7 @@ namespace System.Numerics
         public static Matrix4x4 CreateConstrainedBillboard(Vector3 objectPosition, Vector3 cameraPosition, Vector3 rotateAxis, Vector3 cameraForwardVector, Vector3 objectForwardVector)
         {
             const float epsilon = 1e-4f;
-            const float minAngle = 1.0f - (0.1f * ((float)Math.PI / 180.0f)); // 0.1 degrees
+            const float minAngle = 1.0f - (0.1f * (MathF.PI / 180.0f)); // 0.1 degrees
 
             // Treat the case when object and camera positions are too close.
             Vector3 faceDir = new Vector3(
@@ -265,7 +265,7 @@ namespace System.Numerics
             }
             else
             {
-                faceDir = Vector3.Multiply(faceDir, (1.0f / (float)Math.Sqrt(norm)));
+                faceDir = Vector3.Multiply(faceDir, (1.0f / MathF.Sqrt(norm)));
             }
 
             Vector3 yaxis = rotateAxis;
@@ -275,16 +275,16 @@ namespace System.Numerics
             // Treat the case when angle between faceDir and rotateAxis is too close to 0.
             float dot = Vector3.Dot(rotateAxis, faceDir);
 
-            if (Math.Abs(dot) > minAngle)
+            if (MathF.Abs(dot) > minAngle)
             {
                 zaxis = objectForwardVector;
 
                 // Make sure passed values are useful for compute.
                 dot = Vector3.Dot(rotateAxis, zaxis);
 
-                if (Math.Abs(dot) > minAngle)
+                if (MathF.Abs(dot) > minAngle)
                 {
-                    zaxis = (Math.Abs(rotateAxis.Z) > minAngle) ? new Vector3(1, 0, 0) : new Vector3(0, 0, -1);
+                    zaxis = (MathF.Abs(rotateAxis.Z) > minAngle) ? new Vector3(1, 0, 0) : new Vector3(0, 0, -1);
                 }
 
                 xaxis = Vector3.Normalize(Vector3.Cross(rotateAxis, zaxis));
@@ -583,8 +583,8 @@ namespace System.Numerics
         {
             Matrix4x4 result;
 
-            float c = (float)Math.Cos(radians);
-            float s = (float)Math.Sin(radians);
+            float c = MathF.Cos(radians);
+            float s = MathF.Sin(radians);
 
             // [  1  0  0  0 ]
             // [  0  c  s  0 ]
@@ -620,8 +620,8 @@ namespace System.Numerics
         {
             Matrix4x4 result;
 
-            float c = (float)Math.Cos(radians);
-            float s = (float)Math.Sin(radians);
+            float c = MathF.Cos(radians);
+            float s = MathF.Sin(radians);
 
             float y = centerPoint.Y * (1 - c) + centerPoint.Z * s;
             float z = centerPoint.Z * (1 - c) - centerPoint.Y * s;
@@ -659,8 +659,8 @@ namespace System.Numerics
         {
             Matrix4x4 result;
 
-            float c = (float)Math.Cos(radians);
-            float s = (float)Math.Sin(radians);
+            float c = MathF.Cos(radians);
+            float s = MathF.Sin(radians);
 
             // [  c  0 -s  0 ]
             // [  0  1  0  0 ]
@@ -696,8 +696,8 @@ namespace System.Numerics
         {
             Matrix4x4 result;
 
-            float c = (float)Math.Cos(radians);
-            float s = (float)Math.Sin(radians);
+            float c = MathF.Cos(radians);
+            float s = MathF.Sin(radians);
 
             float x = centerPoint.X * (1 - c) - centerPoint.Z * s;
             float z = centerPoint.Z * (1 - c) + centerPoint.X * s;
@@ -735,8 +735,8 @@ namespace System.Numerics
         {
             Matrix4x4 result;
 
-            float c = (float)Math.Cos(radians);
-            float s = (float)Math.Sin(radians);
+            float c = MathF.Cos(radians);
+            float s = MathF.Sin(radians);
 
             // [  c  s  0  0 ]
             // [ -s  c  0  0 ]
@@ -772,8 +772,8 @@ namespace System.Numerics
         {
             Matrix4x4 result;
 
-            float c = (float)Math.Cos(radians);
-            float s = (float)Math.Sin(radians);
+            float c = MathF.Cos(radians);
+            float s = MathF.Sin(radians);
 
             float x = centerPoint.X * (1 - c) + centerPoint.Y * s;
             float y = centerPoint.Y * (1 - c) - centerPoint.X * s;
@@ -836,7 +836,7 @@ namespace System.Numerics
             //     [ zx-cosa*zx-sina*y zy-cosa*zy+sina*x   zz+cosa*(1-zz)  ]
             //
             float x = axis.X, y = axis.Y, z = axis.Z;
-            float sa = (float)Math.Sin(angle), ca = (float)Math.Cos(angle);
+            float sa = MathF.Sin(angle), ca = MathF.Cos(angle);
             float xx = x * x, yy = y * y, zz = z * z;
             float xy = x * y, xz = x * z, yz = y * z;
 
@@ -872,7 +872,7 @@ namespace System.Numerics
         /// <returns>The perspective projection matrix.</returns>
         public static Matrix4x4 CreatePerspectiveFieldOfView(float fieldOfView, float aspectRatio, float nearPlaneDistance, float farPlaneDistance)
         {
-            if (fieldOfView <= 0.0f || fieldOfView >= Math.PI)
+            if (fieldOfView <= 0.0f || fieldOfView >= MathF.PI)
                 throw new ArgumentOutOfRangeException(nameof(fieldOfView));
 
             if (nearPlaneDistance <= 0.0f)
@@ -884,7 +884,7 @@ namespace System.Numerics
             if (nearPlaneDistance >= farPlaneDistance)
                 throw new ArgumentOutOfRangeException(nameof(nearPlaneDistance));
 
-            float yScale = 1.0f / (float)Math.Tan(fieldOfView * 0.5f);
+            float yScale = 1.0f / MathF.Tan(fieldOfView * 0.5f);
             float xScale = yScale / aspectRatio;
 
             Matrix4x4 result;
@@ -1418,7 +1418,7 @@ namespace System.Numerics
 
             float det = a * a11 + b * a12 + c * a13 + d * a14;
 
-            if (Math.Abs(det) < float.Epsilon)
+            if (MathF.Abs(det) < float.Epsilon)
             {
                 result = new Matrix4x4(float.NaN, float.NaN, float.NaN, float.NaN,
                                        float.NaN, float.NaN, float.NaN, float.NaN,
@@ -1596,9 +1596,9 @@ namespace System.Numerics
                         uint cc;
                         float fAbsX, fAbsY, fAbsZ;
 
-                        fAbsX = (float)Math.Abs(pVectorBasis[a]->X);
-                        fAbsY = (float)Math.Abs(pVectorBasis[a]->Y);
-                        fAbsZ = (float)Math.Abs(pVectorBasis[a]->Z);
+                        fAbsX = MathF.Abs(pVectorBasis[a]->X);
+                        fAbsY = MathF.Abs(pVectorBasis[a]->Y);
+                        fAbsZ = MathF.Abs(pVectorBasis[a]->Z);
 
                         #region Ranking
                         if (fAbsX < fAbsY)

@@ -47,6 +47,10 @@
     </Compile>
     <Compile Include="System\Numerics\Vector_Operations.cs" />
   </ItemGroup>
+  <!-- NetFX version only -->
+  <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
+    <Compile Include="System\MathF.cs" />
+  </ItemGroup>
   <!-- Portable version only -->
   <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp' or '$(TargetGroup)' == 'uap'">
     <Compile Include="System\Numerics\Matrix3x2.cs" />
