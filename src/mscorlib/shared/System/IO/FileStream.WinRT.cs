@@ -7,7 +7,6 @@ using System.Runtime.InteropServices;
 
 namespace System.IO
 {
-    [Internal.Runtime.CompilerServices.RelocatedTypeAttribute("System.IO.FileSystem")]
     public partial class FileStream : Stream
     {
         private SafeFileHandle OpenHandle(FileMode mode, FileShare share, FileOptions options)
