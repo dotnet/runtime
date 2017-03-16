@@ -1,0 +1,5 @@
+# top-most EditorConfig file
+root = true
+
+[*.cs]
+indent_style = tab
