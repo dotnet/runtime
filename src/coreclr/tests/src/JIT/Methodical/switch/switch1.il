@@ -30,7 +30,7 @@
     IL_0012:  br.s       IL_0033
 
     IL_0014:  ldc.i4.s   100
-    IL_0016:  call       void ['mscorlib']System.Environment::set_ExitCode(int32)
+    IL_0016:  call       void ['system.runtime.extensions']System.Environment::set_ExitCode(int32)
     IL_001b:  ldstr      "Test passed"
     IL_0020:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
     IL_0025:  br.s       IL_003f
@@ -52,8 +52,8 @@
     .maxstack  8
     IL_0000:  ldc.i4.1
     IL_0001:  call       void Test::DoSwitch(int32)
-    IL_0006:  call       int32 ['mscorlib']System.Environment::get_ExitCode()
-              call       void ['mscorlib']System.Environment::Exit(int32)
+    IL_0006:  call       int32 ['system.runtime.extensions']System.Environment::get_ExitCode()
+              call       void ['system.runtime.extensions']System.Environment::Exit(int32)
               ret
   } 
 

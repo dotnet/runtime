@@ -2989,12 +2989,12 @@ call void Thread_EA::Dispatch(method explicit instance void *(int32), int32)
 {
   .maxstack  4
   .entrypoint
-  .locals (class [mscorlib]System.Threading.Thread[] thrd,
+  .locals (class [System.Threading.Thread]System.Threading.Thread[] thrd,
            class Thread_EA ThdObj,
            int32 V_2)
 
   IL_0000:  ldc.i4     0xa
-  IL_0005:  newarr     [mscorlib]System.Threading.Thread
+  IL_0005:  newarr     [System.Threading.Thread]System.Threading.Thread
   IL_000a:  stloc.0
   IL_000b:  newobj     instance void Thread_EA::.ctor()
   IL_0010:  stloc.1
@@ -3018,13 +3018,13 @@ call void Thread_EA::Dispatch(method explicit instance void *(int32), int32)
   IL_0044:  ldloc.2
   IL_0045:  ldloc.1
   IL_0046:  ldftn      instance void Thread_EA::Run()
-  IL_004c:  newobj     instance void [mscorlib]System.Threading.ThreadStart::.ctor(class [mscorlib]System.Object,native int)
-  IL_0051:  newobj     instance void [mscorlib]System.Threading.Thread::.ctor(class [mscorlib]System.Threading.ThreadStart)
+  IL_004c:  newobj     instance void [System.Threading.Thread]System.Threading.ThreadStart::.ctor(class [mscorlib]System.Object,native int)
+  IL_0051:  newobj     instance void [System.Threading.Thread]System.Threading.Thread::.ctor(class [System.Threading.Thread]System.Threading.ThreadStart)
   IL_0056:  stelem.ref
   IL_0057:  ldloc.0
   IL_0058:  ldloc.2
   IL_0059:  ldelem.ref
-  IL_005a:  callvirt   instance void [mscorlib]System.Threading.Thread::Start()
+  IL_005a:  callvirt   instance void [System.Threading.Thread]System.Threading.Thread::Start()
   IL_005f:  br         IL_0030
 
   IL_0064:  ldc.i4     0x0
@@ -3042,7 +3042,7 @@ call void Thread_EA::Dispatch(method explicit instance void *(int32), int32)
   IL_0082:  ldloc.0
   IL_0083:  ldloc.2
   IL_0084:  ldelem.ref
-  IL_0085:  callvirt   instance void [mscorlib]System.Threading.Thread::Join()
+  IL_0085:  callvirt   instance void [System.Threading.Thread]System.Threading.Thread::Join()
   IL_008a:  br         IL_006f
 
   IL_008f:  call       class [mscorlib]System.IO.TextWriter [System.Console]System.Console::get_Out()

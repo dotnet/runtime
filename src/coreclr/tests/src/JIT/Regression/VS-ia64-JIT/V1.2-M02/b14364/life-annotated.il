@@ -174,7 +174,7 @@
     IL_001d:  stloc.s    V_4
     IL_001f:  ldsfld     class a $::c$PST0400000E
     IL_0024:  stloc.s    V_5
-    IL_0026:  call       int32 [mscorlib]System.Environment::get_TickCount()
+    IL_0026:  call       int32 [system.runtime.extensions]System.Environment::get_TickCount()
     IL_002b:  stloc.s    V_6
     IL_002d:  ldloc.s    V_6
     IL_002f:  conv.i8
@@ -214,7 +214,7 @@
     IL_007a:  ldloc.s    V_37
     IL_007c:  call       void $::b(class a,
                                    class g)
-    IL_0081:  call       int32 [mscorlib]System.Environment::get_TickCount()
+    IL_0081:  call       int32 [system.runtime.extensions]System.Environment::get_TickCount()
     IL_0086:  stloc.s    V_38
     IL_0088:  ldloc.s    V_38
     IL_008a:  conv.i8

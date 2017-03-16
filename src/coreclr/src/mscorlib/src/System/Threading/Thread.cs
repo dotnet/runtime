@@ -100,7 +100,7 @@ namespace System.Threading
         }
     }
 
-    public sealed class Thread : RuntimeThread
+    internal sealed class Thread : RuntimeThread
     {
         /*=========================================================================
         ** Data accessed from managed code that needs to be defined in

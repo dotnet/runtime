@@ -42,7 +42,7 @@
                                                                                class System.String)
       IL_0039:  call       void [System.Console]System.Console::WriteLine(class System.String)
       IL_003e:  ldc.i4     0x65
-      IL_0043:  call       void [mscorlib]System.Environment::Exit(int32)
+      IL_0043:  call       void [system.runtime.extensions]System.Environment::Exit(int32)
       IL_0048:  ret
 
       IL_0049:  ldsfld     int32 JitTest.Test::m

@@ -23,7 +23,7 @@
 
 .try
 {
-call int32 [mscorlib]System.Environment::get_TickCount()
+call int32 [system.runtime.extensions]System.Environment::get_TickCount()
 conv.i8
 ldc.i8 0x80000000
 or

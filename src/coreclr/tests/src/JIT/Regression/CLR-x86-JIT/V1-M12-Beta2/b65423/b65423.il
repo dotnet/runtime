@@ -248,11 +248,11 @@
                                                                                class System.String)
 	IL_003d:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
 	IL_0042:  ldsfld     int32 b1904::Count
-	IL_0047:  call       void ['mscorlib']System.Environment::set_ExitCode(int32)
+	IL_0047:  call       void ['system.runtime.extensions']System.Environment::set_ExitCode(int32)
 	IL_004c:  leave.s    IL_0083 
     }
-    IL_0083:  call       int32 ['mscorlib']System.Environment::get_ExitCode()
-              call       void ['mscorlib']System.Environment::Exit(int32)
+    IL_0083:  call       int32 ['system.runtime.extensions']System.Environment::get_ExitCode()
+              call       void ['system.runtime.extensions']System.Environment::Exit(int32)
               ret
   } 
 

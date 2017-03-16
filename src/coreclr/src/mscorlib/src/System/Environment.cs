@@ -39,7 +39,7 @@ namespace System
         Machine = 2,
     }
 
-    public static partial class Environment
+    internal static partial class Environment
     {
         // Assume the following constants include the terminating '\0' - use <, not <=
         private const int MaxEnvVariableValueLength = 32767;  // maximum length for environment variable name and value

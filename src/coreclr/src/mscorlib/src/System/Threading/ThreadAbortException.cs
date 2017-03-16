@@ -22,7 +22,7 @@ using System.Runtime.CompilerServices;
 namespace System.Threading
 {
     [Serializable]
-    public sealed class ThreadAbortException : SystemException
+    internal sealed class ThreadAbortException : SystemException
     {
         private ThreadAbortException()
             : base(GetMessageFromNativeResources(ExceptionMessageKind.ThreadAbort))

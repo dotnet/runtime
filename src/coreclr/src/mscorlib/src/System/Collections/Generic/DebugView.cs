@@ -121,30 +121,4 @@ namespace System.Collections.Generic
         }
     }
 
-    internal sealed class Mscorlib_KeyedCollectionDebugView<K, T>
-    {
-        private KeyedCollection<K, T> kc;
-
-        public Mscorlib_KeyedCollectionDebugView(KeyedCollection<K, T> keyedCollection)
-        {
-            if (keyedCollection == null)
-            {
-                throw new ArgumentNullException(nameof(keyedCollection));
-            }
-            Contract.EndContractBlock();
-
-            kc = keyedCollection;
-        }
-
-        [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-        public T[] Items
-        {
-            get
-            {
-                T[] items = new T[kc.Count];
-                kc.CopyTo(items, 0);
-                return items;
-            }
-        }
-    }
 }

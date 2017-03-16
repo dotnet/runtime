@@ -25,12 +25,12 @@
     IL_0002:  br.s       IL_0004
 
     IL_0004:  ldc.i4.s   100
-    IL_0006:  call       void ['mscorlib']System.Environment::set_ExitCode(int32)
+    IL_0006:  call       void ['system.runtime.extensions']System.Environment::set_ExitCode(int32)
     IL_000b:  ldstr      "Test passed"
     IL_0010:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
     IL_0015:  pop
-              call       int32 ['mscorlib']System.Environment::get_ExitCode()
-              call       void ['mscorlib']System.Environment::Exit(int32)
+              call       int32 ['system.runtime.extensions']System.Environment::get_ExitCode()
+              call       void ['system.runtime.extensions']System.Environment::Exit(int32)
               ret
   } 
 
