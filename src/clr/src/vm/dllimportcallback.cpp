@@ -1375,15 +1375,9 @@ VOID UMThunkMarshInfo::RunTimeInit()
 
         }
     }
-    //
-    // m_cbActualArgSize gets the number of arg bytes for the NATIVE signature
-    //
-    m_cbActualArgSize =
-        (pStubMD != NULL) ? pStubMD->AsDynamicMethodDesc()->GetNativeStackArgSize() : pMD->SizeOfArgStack();
 
 #if defined(_TARGET_X86_)
     MetaSig sig(pMD);
-    ArgIterator argit(&sig);
     int numRegistersUsed = 0;
 
     //
@@ -1407,11 +1401,14 @@ VOID UMThunkMarshInfo::RunTimeInit()
             m_cbStackArgSize += StackElemSize(cbSize);
         }
     }
+    m_cbActualArgSize = (pStubMD != NULL) ? pStubMD->AsDynamicMethodDesc()->GetNativeStackArgSize() : offs;
+
     PInvokeStaticSigInfo sigInfo;
     if (pMD != NULL)
         new (&sigInfo) PInvokeStaticSigInfo(pMD);
     else
         new (&sigInfo) PInvokeStaticSigInfo(GetSignature(), GetModule());
+
     if (sigInfo.GetCallConv() == pmCallConvCdecl)
     {
         // caller pop
@@ -1422,6 +1419,13 @@ VOID UMThunkMarshInfo::RunTimeInit()
         // callee pop
         m_cbRetPop = static_cast<UINT16>(m_cbActualArgSize);
     }
+#else // _TARGET_X86_
+    //
+    // m_cbActualArgSize gets the number of arg bytes for the NATIVE signature
+    //
+    m_cbActualArgSize =
+        (pStubMD != NULL) ? pStubMD->AsDynamicMethodDesc()->GetNativeStackArgSize() : pMD->SizeOfArgStack();
+
 #endif // _TARGET_X86_
 
 #endif // _TARGET_X86_ && !FEATURE_STUBS_AS_IL
