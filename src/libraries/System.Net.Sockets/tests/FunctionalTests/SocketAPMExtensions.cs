@@ -29,12 +29,17 @@ namespace System.Net.Sockets.Tests
             socket.BeginReceive(buffer, offset, count, flags, callback, socket);
         }
 
-        public static void SendFileAPM(this Socket socket, string filename, byte[] preBuffer, byte[] postBuffer, TransmitFileOptions flags, Action handler)
+        public static void SendFileAPM(this Socket socket, string filename, byte[] preBuffer, byte[] postBuffer, TransmitFileOptions flags, Action<Exception> handler)
         {
             var callback = new AsyncCallback(asyncResult =>
             {
-                ((Socket)asyncResult.AsyncState).EndSendFile(asyncResult);
-                handler();
+                Exception exc = null;
+                try
+                {
+                    ((Socket)asyncResult.AsyncState).EndSendFile(asyncResult);
+                }
+                catch (Exception e) { exc = e; }
+                handler(exc);
             });
             socket.BeginSendFile(filename, preBuffer, postBuffer, flags, callback, socket);
         }
