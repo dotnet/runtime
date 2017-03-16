@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.ComponentModel;
 using System.Numerics.Hashing;
 
 namespace System.Drawing
@@ -40,6 +41,7 @@ namespace System.Drawing
         ///       Gets a value indicating whether this <see cref='System.Drawing.PointF'/> is empty.
         ///    </para>
         /// </summary>
+        [Browsable(false)]
         public bool IsEmpty => _x == 0f && _y == 0f;
 
         /// <summary>
