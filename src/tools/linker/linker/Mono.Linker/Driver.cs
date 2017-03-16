@@ -136,9 +136,13 @@ namespace Mono.Linker {
 						p.PrependStep (new ResolveFromXmlStep (new XPathDocument (file)));
 					resolver = true;
 					break;
+				case 'r':
 				case 'a':
+					var rootVisibility = (token[1] == 'r')
+							? ResolveFromAssemblyStep.RootVisibility.PublicAndFamily
+							: ResolveFromAssemblyStep.RootVisibility.Any;
 					foreach (string file in GetFiles (GetParam ()))
-						p.PrependStep (new ResolveFromAssemblyStep (file));
+						p.PrependStep (new ResolveFromAssemblyStep (file, rootVisibility));
 					resolver = true;
 					break;
 				case 'i':
@@ -294,6 +298,7 @@ namespace Mono.Linker {
 			Console.WriteLine ("                 default is all");
 			Console.WriteLine ("   -x          Link from an XML descriptor");
 			Console.WriteLine ("   -a          Link from a list of assemblies");
+			Console.WriteLine ("   -r          Link from a list of assemblies using roots visible outside of the assembly");
 			Console.WriteLine ("   -i          Link from an mono-api-info descriptor");
 			Console.WriteLine ("");
 

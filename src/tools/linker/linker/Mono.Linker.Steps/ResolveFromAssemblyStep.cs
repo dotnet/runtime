@@ -26,6 +26,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System;
 using System.Collections;
 using Mono.Cecil;
 
@@ -35,10 +36,20 @@ namespace Mono.Linker.Steps {
 
 		AssemblyDefinition _assembly;
 		string _file;
+		RootVisibility _rootVisibility;
 
-		public ResolveFromAssemblyStep (string assembly)
+		public enum RootVisibility
+		{
+			Any = 0,
+			PublicAndFamily = 1,
+			PublicAndFamilyAndAssembly = 2
+		}
+
+
+		public ResolveFromAssemblyStep (string assembly, RootVisibility rootVisibility = RootVisibility.Any)
 		{
 			_file = assembly;
+			_rootVisibility = rootVisibility;
 		}
 
 		public ResolveFromAssemblyStep (AssemblyDefinition assembly)
@@ -53,9 +64,13 @@ namespace Mono.Linker.Steps {
 
 			AssemblyDefinition assembly = _assembly ?? Context.Resolve (_file);
 
+			if (_rootVisibility != RootVisibility.Any && HasInternalsVisibleTo (assembly)) {
+				_rootVisibility = RootVisibility.PublicAndFamilyAndAssembly;
+			}
+
 			switch (assembly.MainModule.Kind) {
 			case ModuleKind.Dll:
-				ProcessLibrary (Context, assembly);
+				ProcessLibrary (Context, assembly, _rootVisibility);
 				break;
 			default:
 				ProcessExecutable (assembly);
@@ -75,14 +90,15 @@ namespace Mono.Linker.Steps {
 			context.SafeReadSymbols (assembly);
 		}
 
-		public static void ProcessLibrary (LinkContext context, AssemblyDefinition assembly)
+		public static void ProcessLibrary (LinkContext context, AssemblyDefinition assembly, RootVisibility rootVisibility)
 		{
-			SetAction (context, assembly, AssemblyAction.Copy);
+			var action = rootVisibility == RootVisibility.Any ? AssemblyAction.Copy : AssemblyAction.Link;
+			SetAction (context, assembly, action);
 
 			context.Annotations.Push (assembly);
 
 			foreach (TypeDefinition type in assembly.MainModule.Types)
-				MarkType (context, type);
+				MarkType (context, type, rootVisibility);
 
 			if (assembly.MainModule.HasExportedTypes) {
 				foreach (var exported in assembly.MainModule.ExportedTypes) {
@@ -103,7 +119,7 @@ namespace Mono.Linker.Steps {
 						continue;
 					}
 					context.Resolve (resolvedExportedType.Scope);
-					MarkType (context, resolvedExportedType);
+					MarkType (context, resolvedExportedType, rootVisibility);
 					context.Annotations.Mark (exported);
 					if (context.KeepTypeForwarderOnlyAssemblies) {
 						context.Annotations.Mark (assembly.MainModule);
@@ -114,19 +130,34 @@ namespace Mono.Linker.Steps {
 			context.Annotations.Pop ();
 		}
 
-		static void MarkType (LinkContext context, TypeDefinition type)
+		static void MarkType (LinkContext context, TypeDefinition type, RootVisibility rootVisibility)
 		{
+			bool markType;
+			switch (rootVisibility) {
+				default:
+					markType = true;
+					break;
+
+				case RootVisibility.PublicAndFamily:
+					markType = type.IsPublic || type.IsNestedFamily || type.IsNestedFamilyOrAssembly;
+					break;
+			}
+
+			if (!markType) {
+				return;
+			}
+
 			context.Annotations.Mark (type);
 
 			context.Annotations.Push (type);
 
 			if (type.HasFields)
-				MarkFields (context, type.Fields);
+				MarkFields (context, type.Fields, rootVisibility);
 			if (type.HasMethods)
-				MarkMethods (context, type.Methods);
+				MarkMethods (context, type.Methods, rootVisibility);
 			if (type.HasNestedTypes)
 				foreach (var nested in type.NestedTypes)
-					MarkType (context, nested);
+					MarkType (context, nested, rootVisibility);
 
 			context.Annotations.Pop ();
 		}
@@ -138,27 +169,73 @@ namespace Mono.Linker.Steps {
 			Annotations.Push (assembly);
 
 			Annotations.Mark (assembly.EntryPoint.DeclaringType);
-			MarkMethod (Context, assembly.EntryPoint, MethodAction.Parse);
+
+			MarkMethod (Context, assembly.EntryPoint, MethodAction.Parse, RootVisibility.Any);
 
 			Annotations.Pop ();
 		}
 
-		static void MarkFields (LinkContext context, ICollection fields)
+		static void MarkFields (LinkContext context, ICollection fields, RootVisibility rootVisibility)
 		{
-			foreach (FieldDefinition field in fields)
-				context.Annotations.Mark (field);
+			foreach (FieldDefinition field in fields) {
+				bool markField;
+				switch (rootVisibility) {
+					default:
+						markField = true;
+						break;
+
+					case RootVisibility.PublicAndFamily:
+						markField = field.IsPublic || field.IsFamily || field.IsFamilyOrAssembly;
+						break;
+
+					case RootVisibility.PublicAndFamilyAndAssembly:
+						markField = field.IsPublic || field.IsFamily || field.IsFamilyOrAssembly || field.IsAssembly || field.IsFamilyAndAssembly;
+						break;
+				}
+				if (markField) {
+					context.Annotations.Mark (field);
+				}
+			}
 		}
 
-		static void MarkMethods (LinkContext context, ICollection methods)
+		static void MarkMethods (LinkContext context, ICollection methods, RootVisibility rootVisibility)
 		{
 			foreach (MethodDefinition method in methods)
-				MarkMethod (context, method, MethodAction.ForceParse);
+				MarkMethod (context, method, MethodAction.ForceParse, rootVisibility);
 		}
 
-		static void MarkMethod (LinkContext context, MethodDefinition method, MethodAction action)
+		static void MarkMethod (LinkContext context, MethodDefinition method, MethodAction action, RootVisibility rootVisibility)
 		{
-			context.Annotations.Mark (method);
-			context.Annotations.SetAction (method, action);
+			bool markMethod;
+			switch (rootVisibility) {
+				default:
+					markMethod = true;
+					break;
+
+				case RootVisibility.PublicAndFamily:
+					markMethod = method.IsPublic || method.IsFamily || method.IsFamilyOrAssembly;
+					break;
+
+				case RootVisibility.PublicAndFamilyAndAssembly:
+					markMethod = method.IsPublic || method.IsFamily || method.IsFamilyOrAssembly || method.IsAssembly || method.IsFamilyAndAssembly;
+					break;
+			}
+
+			if (markMethod) {
+				context.Annotations.Mark (method);
+				context.Annotations.SetAction (method, action);
+			}
+		}
+
+		static bool HasInternalsVisibleTo (AssemblyDefinition assembly)
+		{
+			foreach (CustomAttribute attribute in assembly.CustomAttributes) {
+				if (attribute.Constructor.DeclaringType.FullName ==
+					"System.Runtime.CompilerServices.InternalsVisibleToAttribute")
+					return true;
+			}
+
+			return false;
 		}
 	}
 }
