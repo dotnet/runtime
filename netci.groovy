@@ -18,7 +18,7 @@ def static getOSGroup(def os) {
         'Ubuntu16.10': 'Linux',
         'Debian8.4':'Linux',
         'Fedora23':'Linux',
-        'OSX':'OSX',
+        'OSX10.12':'OSX',
         'Windows_NT':'Windows_NT',
         'FreeBSD':'FreeBSD',
         'CentOS7.1': 'Linux',
@@ -40,7 +40,7 @@ class Constants {
     def static osList = [
                'Ubuntu',
                'Debian8.4',
-               'OSX',
+               'OSX10.12',
                'Windows_NT',
                'Windows_NT_BuildOnly',
                'FreeBSD',
@@ -53,7 +53,7 @@ class Constants {
                'Tizen',
                'Fedora23']
 
-    def static crossList = ['Ubuntu', 'OSX', 'CentOS7.1', 'RHEL7.2', 'Debian8.4']
+    def static crossList = ['Ubuntu', 'OSX10.12', 'CentOS7.1', 'RHEL7.2', 'Debian8.4']
 
     // This is a set of JIT stress modes combined with the set of variables that
     // need to be set to actually enable that stress mode.  The key of the map is the stress mode and
@@ -409,13 +409,13 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
             //pri1 r2r gets a push trigger for checked/release
             if (configuration == 'Checked' || configuration == 'Release') {
                 assert (os == 'Windows_NT') || (os in Constants.crossList)
-                if (architecture == 'x64' && os != 'OSX') {
-                    //Flow jobs should be Windows, Ubuntu, OSX, or CentOS
+                if (architecture == 'x64' && os != 'OSX10.12') {
+                    //Flow jobs should be Windows, Ubuntu, OSX0.12, or CentOS
                     if (isFlowJob || os == 'Windows_NT') {
                         Utilities.addGithubPushTrigger(job)
                     }
-                // OSX pri1r2r jobs should only run every 12 hours, not daily.
-                } else if (architecture == 'x64' && os == 'OSX'){
+                // OSX10.12 pri1r2r jobs should only run every 12 hours, not daily.
+                } else if (architecture == 'x64' && os == 'OSX10.12'){
                     if (isFlowJob) {
                         Utilities.addPeriodicTrigger(job, 'H H/12 * * *')
                     }
@@ -452,7 +452,7 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
             assert !(os in bidailyCrossList)
 
             // GCStress=C is currently not supported on OS X
-            if (os == 'OSX' && isGCStressRelatedTesting(scenario)) {
+            if (os == 'OSX10.12' && isGCStressRelatedTesting(scenario)) {
                 break
             }
 
@@ -460,7 +460,7 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
             if (configuration == 'Checked' || configuration == 'Release') {
                 assert (os == 'Windows_NT') || (os in Constants.crossList)
                 if (architecture == 'x64') {
-                    //Flow jobs should be Windows, Ubuntu, OSX, or CentOS
+                    //Flow jobs should be Windows, Ubuntu, OSX10.12, or CentOS
                     if (isFlowJob || os == 'Windows_NT') {
                         // Add a weekly periodic trigger
                         Utilities.addPeriodicTrigger(job, 'H H * * 3,6') // some time every Wednesday and Saturday
@@ -475,7 +475,7 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
             }
             break
         case 'longgc':
-            assert (os == 'Ubuntu' || os == 'Windows_NT' || os == 'OSX')
+            assert (os == 'Ubuntu' || os == 'Windows_NT' || os == 'OSX10.12')
             assert configuration == 'Release'
             assert architecture == 'x64'
             Utilities.addPeriodicTrigger(job, '@daily')
@@ -483,7 +483,7 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
             // addEmailPublisher(job, 'dotnetgctests@microsoft.com')
             break
         case 'gcsimulator':
-            assert (os == 'Ubuntu' || os == 'Windows_NT' || os == 'OSX')
+            assert (os == 'Ubuntu' || os == 'Windows_NT' || os == 'OSX10.12')
             assert configuration == 'Release'
             assert architecture == 'x64'
             Utilities.addPeriodicTrigger(job, 'H H * * 3,6') // some time every Wednesday and Saturday
@@ -491,7 +491,7 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
             // addEmailPublisher(job, 'dotnetgctests@microsoft.com')
             break
         case 'standalone_gc':
-            assert (os == 'Ubuntu' || os == 'Windows_NT' || os == 'OSX')
+            assert (os == 'Ubuntu' || os == 'Windows_NT' || os == 'OSX10.12')
             assert (configuration == 'Release' || configuration == 'Checked')
             // TODO: Add once external email sending is available again
             // addEmailPublisher(job, 'dotnetgctests@microsoft.com')
@@ -509,7 +509,7 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
             }
             break
         case 'jitdiff':
-            assert (os == 'Ubuntu' || os == 'Windows_NT' || os == 'OSX')
+            assert (os == 'Ubuntu' || os == 'Windows_NT' || os == 'OSX10.12')
             assert configuration == 'Checked'
             assert (architecture == 'x64' || architecture == 'x86')
             Utilities.addGithubPushTrigger(job)
@@ -588,7 +588,7 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
         case 'gcstress0xc_jitstress2':
         case 'gcstress0xc_minopts_heapverify1':
             // GCStress=C is currently not supported on OS X
-            if (os != 'CentOS7.1' && os != 'OSX' && !(os in bidailyCrossList)) {
+            if (os != 'CentOS7.1' && os != 'OSX10.12' && !(os in bidailyCrossList)) {
                 assert (os == 'Windows_NT') || (os in Constants.crossList)
                 if (architecture == 'arm64') {
                     assert (os == 'Windows_NT')
@@ -612,7 +612,7 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
 
 // **************************
 // Define the basic inner loop builds for PR and commit.  This is basically just the set
-// of coreclr builds over linux/osx/freebsd/windows and debug/release/checked.  In addition, the windows
+// of coreclr builds over linux/osx 10.12/freebsd/windows and debug/release/checked.  In addition, the windows
 // builds will do a couple extra steps.
 // **************************
 
@@ -674,7 +674,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                     Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Build", "(?i).*test\\W+${os}\\W+.*")
                     break
                 case 'Ubuntu':
-                case 'OSX':
+                case 'OSX10.12':
                     // Triggers on the non-flow jobs aren't necessary here
                     // Corefx testing uses non-flow jobs.
                     if (!isFlowJob && !isCorefxTesting(scenario)) {
@@ -1634,7 +1634,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
         case 'Ubuntu16.04':
         case 'Ubuntu16.10':
         case 'Debian8.4':
-        case 'OSX':
+        case 'OSX10.12':
         case 'FreeBSD':
         case 'CentOS7.1':
         case 'RHEL7.2':
@@ -1963,7 +1963,7 @@ combinedScenarios.each { scenario ->
                                 }
                                 break
                             case 'jitdiff':
-                                if (os != 'Windows_NT' && os != 'Ubuntu' && os != 'OSX') {
+                                if (os != 'Windows_NT' && os != 'Ubuntu' && os != 'OSX10.12') {
                                     return
                                 }
                                 if (architecture != 'x64') {
@@ -2019,7 +2019,7 @@ combinedScenarios.each { scenario ->
                                 break
                             case 'longgc':
                             case 'gcsimulator':
-                                if (os != 'Windows_NT' && os != 'Ubuntu' && os != 'OSX') {
+                                if (os != 'Windows_NT' && os != 'Ubuntu' && os != 'OSX10.12') {
                                     return
                                 }
                                 if (architecture != 'x64') {
@@ -2030,7 +2030,7 @@ combinedScenarios.each { scenario ->
                                 }
                                 break
                             case 'standalone_gc':
-                                if (os != 'Windows_NT' && os != 'Ubuntu' && os != 'OSX') {
+                                if (os != 'Windows_NT' && os != 'Ubuntu' && os != 'OSX10.12') {
                                     return
                                 }
 
@@ -2560,7 +2560,13 @@ combinedScenarios.each { scenario ->
                                 def corefxFolder = Utilities.getFolderName('dotnet/corefx') + '/' + Utilities.getFolderName(branch)
 
                                 // Corefx components.  We now have full stack builds on all distros we test here, so we can copy straight from CoreFX jobs.
-                                def osJobName = (os == 'Ubuntu') ? 'ubuntu14.04' : os.toLowerCase()
+                                def osJobName
+                                if (os == 'Ubuntu') {
+                                    osJobName = 'ubuntu14.04'
+                                }
+                                else {
+                                    osJobName = os.toLowerCase()
+                                }
                                 copyArtifacts("${corefxFolder}/${osJobName}_release") {
                                     includePatterns('bin/build.tar.gz')
                                     buildSelector {
