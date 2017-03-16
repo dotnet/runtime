@@ -479,7 +479,7 @@ public:
 #else
 
 // Disable use of Volatile<T> for GC/HandleTable code except on platforms where it's absolutely necessary.
-#if defined(_MSC_VER) && !defined(_ARM_)
+#if defined(_MSC_VER) && !defined(_ARM_) && !defined(_ARM64_)
 #define VOLATILE(T) T RAW_KEYWORD(volatile)
 #else
 #define VOLATILE(T) Volatile<T>
