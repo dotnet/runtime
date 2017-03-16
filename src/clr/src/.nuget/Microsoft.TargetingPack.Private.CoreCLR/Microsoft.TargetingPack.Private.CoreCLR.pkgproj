@@ -7,9 +7,6 @@
     <OutputPath>$(PackagesOutputPath)</OutputPath>
   </PropertyGroup>
   <ItemGroup>
-    <File Include="$(BinDir)/ref/mscorlib.dll">
-      <TargetPath>lib/netstandard1.0</TargetPath>
-    </File>
     <File Include="$(BinDir)/System.Private.CoreLib.dll">
       <TargetPath>lib/netstandard1.0</TargetPath>
     </File>

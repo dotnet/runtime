@@ -210,6 +210,8 @@ if not exist %XunitTestBinBase% (
 echo %__MsgPrefix%CORE_ROOT that will be used is: %CORE_ROOT%
 echo %__MsgPrefix%Starting the test run ...
 
+del %CORE_ROOT%\mscorlib.ni.dll
+
 set __BuildLogRootName=TestRunResults
 call :msbuild "%__ProjectFilesDir%\runtest.proj" /p:Runtests=true /clp:showcommandline
 

@@ -10,6 +10,8 @@ using System.Reflection.Emit;
 using System.Runtime.InteropServices;
 using System.Threading;
 
+using Console = Internal.Console;
+
 public class Program
 {
     public static class NativeMethods

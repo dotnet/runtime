@@ -372,13 +372,6 @@ build_CoreLib_ni()
             exit 1
         fi
 
-        echo "Generating native image for MScorlib Facade."
-        $__BinDir/crossgen $__BinDir/mscorlib.dll
-        if [ $? -ne 0 ]; then
-            echo "Failed to generate native image for mscorlib facade."
-            exit 1
-        fi
-
         if [ "$__BuildOS" == "Linux" ]; then
             echo "Generating symbol file for System.Private.CoreLib."
             $__BinDir/crossgen /CreatePerfMap $__BinDir $__BinDir/System.Private.CoreLib.ni.dll
