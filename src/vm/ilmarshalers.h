@@ -607,12 +607,15 @@ public:
 
             // for X86 and AMD64-Windows we bash the return type from struct to U1, U2, U4 or U8
             // and use byrefNativeReturn for all other structs.
+            // for UNIX_X86_ABI, we always need a return buffer argument for any size of structs.
             switch (nativeSize)
             {
+#ifndef UNIX_X86_ABI
                 case 1: typ = ELEMENT_TYPE_U1; break;
                 case 2: typ = ELEMENT_TYPE_U2; break;
                 case 4: typ = ELEMENT_TYPE_U4; break;
                 case 8: typ = ELEMENT_TYPE_U8; break;
+#endif
                 default: byrefNativeReturn = true; break;
             }
 #endif
