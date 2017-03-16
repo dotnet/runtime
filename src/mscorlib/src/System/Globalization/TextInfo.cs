@@ -473,6 +473,8 @@ namespace System.Globalization
 
             StringBuilder result = new StringBuilder();
             string lowercaseData = null;
+            // Store if the current culture is Dutch (special case)
+            bool isDutchCulture = CultureName.StartsWith("nl-", StringComparison.OrdinalIgnoreCase);
 
             for (int i = 0; i < str.Length; i++)
             {
@@ -482,8 +484,18 @@ namespace System.Globalization
                 charType = CharUnicodeInfo.InternalGetUnicodeCategory(str, i, out charLen);
                 if (Char.CheckLetter(charType))
                 {
-                    // Do the titlecasing for the first character of the word.
-                    i = AddTitlecaseLetter(ref result, ref str, i, charLen) + 1;
+                    // Special case to check for Dutch specific titlecasing with "IJ" characters 
+                    // at the beginning of a word
+                    if (isDutchCulture && i < str.Length - 1 && (str[i] == 'i' || str[i] == 'I') && (str[i+1] == 'j' || str[i+1] == 'J'))
+                    {
+                        result.Append("IJ");
+                        i += 2;
+                    }
+                    else
+                    {
+                        // Do the titlecasing for the first character of the word.
+                        i = AddTitlecaseLetter(ref result, ref str, i, charLen) + 1;
+                    }
 
                     //
                     // Convert the characters until the end of the this word
