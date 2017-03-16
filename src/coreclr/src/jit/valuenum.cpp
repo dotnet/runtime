@@ -3182,10 +3182,10 @@ bool ValueNumStore::IsVNArrLenUnsignedBound(ValueNum vn, ArrLenUnsignedBoundInfo
 
     if (GetVNFunc(vn, &funcApp))
     {
-        if (IsVNArrLen(funcApp.m_args[1]))
+        if ((funcApp.m_func == VNF_LT_UN) || (funcApp.m_func == VNF_GE_UN))
         {
             // We only care about "(uint)i < (uint)a.len" and its negation "(uint)i >= (uint)a.len"
-            if ((funcApp.m_func == VNF_LT_UN) || (funcApp.m_func == VNF_GE_UN))
+            if (IsVNArrLen(funcApp.m_args[1]))
             {
                 info->vnIdx   = funcApp.m_args[0];
                 info->cmpOper = funcApp.m_func;
@@ -3193,10 +3193,10 @@ bool ValueNumStore::IsVNArrLenUnsignedBound(ValueNum vn, ArrLenUnsignedBoundInfo
                 return true;
             }
         }
-        else if (IsVNArrLen(funcApp.m_args[0]))
+        else if ((funcApp.m_func == VNF_GT_UN) || (funcApp.m_func == VNF_LE_UN))
         {
             // We only care about "(uint)a.len > (uint)i" and its negation "(uint)a.len <= (uint)i"
-            if ((funcApp.m_func == VNF_GT_UN) || (funcApp.m_func == VNF_LE_UN))
+            if (IsVNArrLen(funcApp.m_args[0]))
             {
                 info->vnIdx = funcApp.m_args[1];
                 // Let's keep a consistent operand order - it's always i < a.len, never a.len > i
