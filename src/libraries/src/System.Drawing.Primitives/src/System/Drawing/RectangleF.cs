@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.ComponentModel;
 using System.Diagnostics.Contracts;
 using System.Numerics.Hashing;
 
@@ -70,6 +71,7 @@ namespace System.Drawing
         ///       the rectangular region represented by this <see cref='System.Drawing.RectangleF'/>.
         ///    </para>
         /// </summary>
+        [Browsable(false)]
         public PointF Location
         {
             get { return new PointF(X, Y); }
@@ -85,6 +87,7 @@ namespace System.Drawing
         ///       Gets or sets the size of this <see cref='System.Drawing.RectangleF'/>.
         ///    </para>
         /// </summary>
+        [Browsable(false)]
         public SizeF Size
         {
             get { return new SizeF(Width, Height); }
@@ -149,6 +152,7 @@ namespace System.Drawing
         ///       rectangular region defined by this <see cref='System.Drawing.RectangleF'/> .
         ///    </para>
         /// </summary>
+        [Browsable(false)]
         public float Left => X;
 
         /// <summary>
@@ -157,6 +161,7 @@ namespace System.Drawing
         ///       rectangular region defined by this <see cref='System.Drawing.RectangleF'/>.
         ///    </para>
         /// </summary>
+        [Browsable(false)]
         public float Top => Y;
 
         /// <summary>
@@ -165,6 +170,7 @@ namespace System.Drawing
         ///       rectangular region defined by this <see cref='System.Drawing.RectangleF'/>.
         ///    </para>
         /// </summary>
+        [Browsable(false)]
         public float Right => X + Width;
 
         /// <summary>
@@ -173,6 +179,7 @@ namespace System.Drawing
         ///       rectangular region defined by this <see cref='System.Drawing.RectangleF'/>.
         ///    </para>
         /// </summary>
+        [Browsable(false)]
         public float Bottom => Y + Height;
 
         /// <summary>
@@ -180,6 +187,7 @@ namespace System.Drawing
         ///       Tests whether this <see cref='System.Drawing.RectangleF'/> has a <see cref='System.Drawing.RectangleF.Width'/> or a <see cref='System.Drawing.RectangleF.Height'/> of 0.
         ///    </para>
         /// </summary>
+        [Browsable(false)]
         public bool IsEmpty => (Width <= 0) || (Height <= 0);
 
         /// <summary>
