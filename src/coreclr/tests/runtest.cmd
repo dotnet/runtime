@@ -44,6 +44,7 @@ set __LongGCTests=
 set __GCSimulatorTests=
 set __AgainstPackages=
 set __JitDisasm=
+set __CollectDumps=
 
 :Arg_Loop
 if "%1" == "" goto ArgsDone
@@ -84,6 +85,7 @@ if /i "%1" == "link"                  (set DoLink=true&set ILLINK=%2&shift&shift
 
 REM change it to COMPlus_GCStress when we stop using xunit harness
 if /i "%1" == "gcstresslevel"         (set __GCSTRESSLEVEL=%2&set __TestTimeout=1800000&shift&shift&goto Arg_Loop)
+if /i "%1" == "collectdumps"          (set __CollectDumps=true&shift&goto Arg_Loop)
 
 if /i not "%1" == "msbuildargs" goto SkipMsbuildArgs
 :: All the rest of the args will be collected and passed directly to msbuild.
@@ -207,11 +209,32 @@ if not exist %XunitTestBinBase% (
     echo %__MsgPrefix%Run "buildtest.cmd %__BuildArch% %__BuildType%" to build the tests first.
     exit /b 1
 )
+
+if "%__CollectDumps%"=="true" (
+    :: Install dumpling
+    set "__DumplingHelperPath=%__ProjectDir%\..\Tools\DumplingHelper.py"
+    python "!__DumplingHelperPath!" install_dumpling
+
+    :: Create the crash dump folder if necessary
+    set "__CrashDumpFolder=%tmp%\CoreCLRTestCrashDumps"
+    if not exist "!__CrashDumpFolder!" (
+        mkdir "!__CrashDumpFolder!"
+    )
+
+    :: Grab the current time before execution begins. This will be used to determine which crash dumps
+    :: will be uploaded.
+    for /f "delims=" %%a in ('python !__DumplingHelperPath! get_timestamp') do @set __StartTime=%%a
+)
+
 echo %__MsgPrefix%CORE_ROOT that will be used is: %CORE_ROOT%
 echo %__MsgPrefix%Starting the test run ...
 
 set __BuildLogRootName=TestRunResults
 call :msbuild "%__ProjectFilesDir%\runtest.proj" /p:Runtests=true /clp:showcommandline
+
+if "%__CollectDumps%"=="true" (
+    python "%__DumplingHelperPath%" collect_dump %errorlevel% "%__CrashDumpFolder%" %__StartTime% "CoreCLR_Tests"
+)
 
 if errorlevel 1 (
     echo Test Run failed. Refer to the following:
