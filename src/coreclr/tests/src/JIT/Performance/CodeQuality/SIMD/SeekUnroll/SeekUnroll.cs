@@ -140,7 +140,7 @@ public static class SeekUnroll
 
 
     // Main method entrypoint runs the manual timer loop
-    public static int Main()
+    public static int Main(string[] args)
     {
         int failures = 0;
 
@@ -151,9 +151,10 @@ public static class SeekUnroll
             InnerIterations = 100000;
         }
 
+        int manualLoopCount = (args != null && args.Length >= 1) ? int.Parse(args[0]) : 1;
         foreach(int index in IndicesToTest)
         {
-            ManualLoopTimes = new long[10];
+            ManualLoopTimes = new long[manualLoopCount];
             bool passed = Test(index, false);
             if (!passed)
             {
