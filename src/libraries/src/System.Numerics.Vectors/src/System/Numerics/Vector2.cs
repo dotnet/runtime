@@ -107,12 +107,12 @@ namespace System.Numerics
             if (Vector.IsHardwareAccelerated)
             {
                 float ls = Vector2.Dot(this, this);
-                return (float)Math.Sqrt(ls);
+                return MathF.Sqrt(ls);
             }
             else
             {
                 float ls = X * X + Y * Y;
-                return (float)Math.Sqrt((double)ls);
+                return MathF.Sqrt(ls);
             }
         }
 
@@ -148,7 +148,7 @@ namespace System.Numerics
             {
                 Vector2 difference = value1 - value2;
                 float ls = Vector2.Dot(difference, difference);
-                return (float)System.Math.Sqrt(ls);
+                return MathF.Sqrt(ls);
             }
             else
             {
@@ -157,7 +157,7 @@ namespace System.Numerics
 
                 float ls = dx * dx + dy * dy;
 
-                return (float)Math.Sqrt((double)ls);
+                return MathF.Sqrt(ls);
             }
         }
 
@@ -200,7 +200,7 @@ namespace System.Numerics
             else
             {
                 float ls = value.X * value.X + value.Y * value.Y;
-                float invNorm = 1.0f / (float)Math.Sqrt((double)ls);
+                float invNorm = 1.0f / MathF.Sqrt(ls);
 
                 return new Vector2(
                     value.X * invNorm,
