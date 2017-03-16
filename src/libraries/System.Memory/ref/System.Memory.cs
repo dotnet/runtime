@@ -87,27 +87,21 @@ namespace System
     {
          public static int IndexOf<T>(this Span<T> span, T value) where T:struct, IEquatable<T> { throw null; }
          public static int IndexOf(this Span<byte> span, byte value) { throw null; }
-         public static int IndexOf(this Span<char> span, char value) { throw null; }
 
          public static bool SequenceEqual<T>(this Span<T> first, ReadOnlySpan<T> second) where T:struct, IEquatable<T> { throw null; }
          public static bool SequenceEqual(this Span<byte> first, ReadOnlySpan<byte> second) { throw null; }
-         public static bool SequenceEqual(this Span<char> first, ReadOnlySpan<char> second) { throw null; }
 
          public static int IndexOf<T>(this Span<T> span, ReadOnlySpan<T> value) where T : struct, IEquatable<T> { throw null; }
          public static int IndexOf(this Span<byte> span, ReadOnlySpan<byte> value) { throw null; }
-         public static int IndexOf(this Span<char> span, ReadOnlySpan<char> value) { throw null; }
 
         public static int IndexOf<T>(this ReadOnlySpan<T> span, T value) where T : struct, IEquatable<T> { throw null; }
         public static int IndexOf(this ReadOnlySpan<byte> span, byte value) { throw null; }
-        public static int IndexOf(this ReadOnlySpan<char> span, char value) { throw null; }
 
         public static bool SequenceEqual<T>(this ReadOnlySpan<T> first, ReadOnlySpan<T> second) where T : struct, IEquatable<T> { throw null; }
         public static bool SequenceEqual(this ReadOnlySpan<byte> first, ReadOnlySpan<byte> second) { throw null; }
-        public static bool SequenceEqual(this ReadOnlySpan<char> first, ReadOnlySpan<char> second) { throw null; }
 
         public static int IndexOf<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value) where T : struct, IEquatable<T> { throw null; }
         public static int IndexOf(this ReadOnlySpan<byte> span, ReadOnlySpan<byte> value) { throw null; }
-        public static int IndexOf(this ReadOnlySpan<char> span, ReadOnlySpan<char> value) { throw null; }
     }
 }
 
