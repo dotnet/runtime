@@ -21,7 +21,7 @@
 #include <unistd.h>
 #endif
 
-#include <mono/metadata/assembly.h>
+#include <mono/metadata/assembly-internals.h>
 #include <mono/metadata/loader.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/class.h>
@@ -536,7 +536,7 @@ mini_regression_list (int verbose, int count, char *images [])
 	
 	total_run =  total = 0;
 	for (i = 0; i < count; ++i) {
-		ass = mono_assembly_open (images [i], NULL);
+		ass = mono_assembly_open_predicate (images [i], FALSE, FALSE, NULL, NULL, NULL);
 		if (!ass) {
 			g_warning ("failed to load assembly: %s", images [i]);
 			continue;
@@ -1122,7 +1122,7 @@ load_agent (MonoDomain *domain, char *desc)
 		args = NULL;
 	}
 
-	agent_assembly = mono_assembly_open (agent, &open_status);
+	agent_assembly = mono_assembly_open_predicate (agent, FALSE, FALSE, NULL, NULL, &open_status);
 	if (!agent_assembly) {
 		fprintf (stderr, "Cannot open agent assembly '%s': %s.\n", agent, mono_image_strerror (open_status));
 		g_free (agent);
@@ -2121,7 +2121,7 @@ mono_main (int argc, char* argv[])
 		jit_info_table_test (domain);
 #endif
 
-	assembly = mono_assembly_open (aname, &open_status);
+	assembly = mono_assembly_open_predicate (aname, FALSE, FALSE, NULL, NULL, &open_status);
 	if (!assembly) {
 		fprintf (stderr, "Cannot open assembly '%s': %s.\n", aname, mono_image_strerror (open_status));
 		mini_cleanup (domain);

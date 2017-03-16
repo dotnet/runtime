@@ -1,4 +1,4 @@
-SUBDIRS = assemblyresolve gc-descriptors
+SUBDIRS = assemblyresolve gc-descriptors . testing_gac
 
 if FULL_AOT_TESTS
 FEATUREFUL_RUNTIME_TEST =  
@@ -7,7 +7,7 @@ FEATUREFUL_RUNTIME_TEST = test-appdomain-unload
 endif
 
 check-local: assemblyresolve/test/asm.dll testjit test-generic-sharing test-type-load test-multi-netmodule test-cattr-type-load test-reflection-load-with-context test_platform	\
-		 test-console-output test-messages test-env-options test-unhandled-exception-2 $(FEATUREFUL_RUNTIME_TEST) test-process-stress test-pedump rm-empty-logs
+		 test-console-output test-env-options test-unhandled-exception-2 $(FEATUREFUL_RUNTIME_TEST) test-process-stress test-pedump rm-empty-logs runtest-gac-loading
 check-full: test-sgen check-local
 check-parallel: compile-tests check-full
 
@@ -481,7 +481,8 @@ BASE_TEST_CS_SRC=		\
 	thread6.cs	\
 	appdomain-threadpool-unload.cs	\
 	process-unref-race.cs	\
-	bug-46661.cs
+	bug-46661.cs	\
+	w32message.cs
 
 TEST_CS_SRC_DIST=	\
 	$(BASE_TEST_CS_SRC)	\
@@ -580,6 +581,11 @@ TEST_IL_SRC=			\
 if AMD64
 # #651684
 PLATFORM_DISABLED_TESTS = finally_guard.exe
+
+if HOST_WIN32
+PLATFORM_DISABLED_TESTS += w32message.exe
+endif
+
 endif
 
 if IA64
@@ -592,7 +598,7 @@ if X86
 
 if HOST_WIN32
 PLATFORM_DISABLED_TESTS=async-exc-compilation.exe finally_guard.exe finally_block_ending_in_dead_bb.exe \
-	bug-18026.exe monitor.exe threadpool-exceptions5.exe process-unref-race.exe
+	bug-18026.exe monitor.exe threadpool-exceptions5.exe process-unref-race.exe w32message.exe
 endif
 
 endif
@@ -642,6 +648,8 @@ PLATFORM_DISABLED_TESTS= abort-stress-1.exe \
                          thread6.exe \
                          threadpool-exceptions5.exe \
                          threadpool-exceptions6.exe
+
+PLATFORM_DISABLED_TESTS+= w32message.exe
 
 # Tests that rely on AppDomain.Unload
 PLATFORM_DISABLED_TESTS+= appdomain-async-invoke.exe \
@@ -1188,22 +1196,6 @@ test-eglib-remap:
 	@if which nm > /dev/null; then if nm $(top_builddir)/mono/mini/mono | grep -v $(OK_G_SYMBOLS) | grep 't g_'; then exit 1; else exit 0; fi; fi
 endif
 
-#
-# Tests that the internals in mono/io-layer/messages.c are ok by triggering the 
-# code that checks that the table is properly sorted
-#
-if NACL_CODEGEN
-test-messages:
-else
-if HOST_WIN32
-test-messages:
-else
-test-messages: w32message.exe
-	> test_messages.zero
-	$(with_mono_path) $(JITTEST_PROG_RUN) w32message.exe > w32message.allout 2>&1 && cmp test_messages.zero w32message.allout
-endif
-endif
-
 test-env-options:
 	MONO_ENV_OPTIONS="--version" $(RUNTIME) array-init.exe | grep -q Architecture:
 
@@ -1211,7 +1203,7 @@ test-sgen : sgen-tests
 
 # Precompile the test assemblies in parallel
 compile-tests:
-	$(MAKE) -j4 $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la $(PREREQSI_IL) $(PREREQSI_CS)
+	$(MAKE) -j4 $(TESTSI_CS) $(TESTSI_IL) $(TESTBS) libtest.la $(PREREQSI_IL) $(PREREQSI_CS) compile-gac-loading
 if FULL_AOT_TESTS
 	$(MAKE) $(PREREQSI_IL_AOT) $(PREREQSI_CS_AOT) $(AOT_EXTRA_LIBS)
 endif
@@ -1731,9 +1723,15 @@ EXTRA_DIST += bug-17537-helper.cs
 bug-17537-helper.exe: bug-17537-helper.cs
 	$(MCS) -out:$@ $(srcdir)/bug-17537-helper.cs
 	chmod -x $@
+if FULL_AOT_TESTS
+	$(RUNTIME) $(AOT_BUILD_FLAGS) $@
+endif
+if HYBRID_AOT_TESTS
+	$(RUNTIME) $(AOT_BUILD_FLAGS) $@
+endif
 
 bug-17537.exe: bug-17537.cs bug-17537-helper.exe
-	$(MCS) -r:System.dll -out:$@ $(srcdir)/bug-17537.cs
+	$(MCS) -r:$(CLASS)/System.dll -out:$@ $(srcdir)/bug-17537.cs
 
 EXTRA_DIST += coreclr-security.cs
 
@@ -1785,7 +1783,7 @@ generic-delegate2.2.exe : generic-delegate2.2.cs generic-delegate2-lib.2.dll
 	$(MCS) -r:generic-delegate2-lib.2.dll -out:$@ $(srcdir)/generic-delegate2.2.cs
 
 bug-3903.exe: bug-3903.cs
-	$(MCS_NO_LIB)  $(srcdir)/bug-3903.cs -r:$(srcdir)/../../external/binary-reference-assemblies/v2.0/System.Core.dll -out:$@
+	$(MCS_NO_LIB)  $(srcdir)/bug-3903.cs -nostdlib -r:$(srcdir)/../../external/binary-reference-assemblies/v2.0/mscorlib.dll -r:$(srcdir)/../../external/binary-reference-assemblies/v2.0/System.Core.dll -out:$@
 
 gshared: test-generic-sharing
 
@@ -1971,6 +1969,14 @@ test-console-output: console-output.exe
 
 test-pedump: test-runner.exe
 	$(with_mono_path) $(mono_build_root)/tools/pedump/pedump --verify error test-runner.exe
+
+.PHONY: test-gac-loading
+
+runtest-gac-loading: test-runner.exe
+	$(MAKE) -C testing_gac runtest
+
+compile-gac-loading:
+	$(MAKE) -C testing_gac compile-tests
 
 PROCESS_STRESS_TESTS=	\
 		process-stress-1.exe	\

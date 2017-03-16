@@ -528,7 +528,7 @@ mono_assembly_names_equal (MonoAssemblyName *l, MonoAssemblyName *r)
 }
 
 static MonoAssembly *
-load_in_path (const char *basename, const char** search_path, MonoImageOpenStatus *status, MonoBoolean refonly)
+load_in_path (const char *basename, const char** search_path, MonoImageOpenStatus *status, MonoBoolean refonly, MonoAssemblyCandidatePredicate predicate, gpointer user_data)
 {
 	int i;
 	char *fullpath;
@@ -536,7 +536,7 @@ load_in_path (const char *basename, const char** search_path, MonoImageOpenStatu
 
 	for (i = 0; search_path [i]; ++i) {
 		fullpath = g_build_filename (search_path [i], basename, NULL);
-		result = mono_assembly_open_full (fullpath, status, refonly);
+		result = mono_assembly_open_predicate (fullpath, refonly, FALSE, predicate, user_data, status);
 		g_free (fullpath);
 		if (result)
 			return result;
@@ -1125,6 +1125,16 @@ mono_assembly_remap_version (MonoAssemblyName *aname, MonoAssemblyName *dest_ana
 		dest_aname->minor = vset->minor;
 		dest_aname->build = vset->build;
 		dest_aname->revision = vset->revision;
+		if (current_runtime->public_key_token != NULL &&
+		    dest_aname->public_key_token [0] != 0 &&
+		    !mono_public_tokens_are_equal (dest_aname->public_key_token, (const mono_byte *)current_runtime->public_key_token)) {
+			mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_ASSEMBLY,
+				    "The request for assembly name '%s' with PublicKeyToken=%s was remapped to PublicKeyToken=%s",
+				    dest_aname->name,
+				    dest_aname->public_key_token,
+				    current_runtime->public_key_token);
+			memcpy (dest_aname->public_key_token, current_runtime->public_key_token, MONO_PUBLIC_KEY_TOKEN_LENGTH);
+		}
 		if (vmap->new_assembly_name != NULL) {
 			dest_aname->name = vmap->new_assembly_name;
 			mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_ASSEMBLY,
@@ -1677,7 +1687,16 @@ mono_assembly_open_full (const char *filename, MonoImageOpenStatus *status, gboo
 MonoAssembly *
 mono_assembly_open_a_lot (const char *filename, MonoImageOpenStatus *status, gboolean refonly, gboolean load_from_context)
 {
+	return mono_assembly_open_predicate (filename, refonly, load_from_context, NULL, NULL, status);
+}
 
+MonoAssembly *
+mono_assembly_open_predicate (const char *filename, gboolean refonly,
+			      gboolean load_from_context,
+			      MonoAssemblyCandidatePredicate predicate,
+			      gpointer user_data,
+			      MonoImageOpenStatus *status)
+{
 	MonoImage *image;
 	MonoAssembly *ass;
 	MonoImageOpenStatus def_status;
@@ -1770,7 +1789,7 @@ mono_assembly_open_a_lot (const char *filename, MonoImageOpenStatus *status, gbo
 		return image->assembly;
 	}
 
-	ass = mono_assembly_load_from_full (image, fname, status, refonly);
+	ass = mono_assembly_load_from_predicate (image, fname, refonly, predicate, user_data, status);
 
 	if (ass) {
 		if (!loaded_from_bundle)
@@ -1948,7 +1967,7 @@ mono_assembly_has_reference_assembly_attribute (MonoAssembly *assembly, MonoErro
 MonoAssembly *
 mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 {
-	return mono_assembly_open_full (filename, status, FALSE);
+	return mono_assembly_open_predicate (filename, FALSE, FALSE, NULL, NULL, status);
 }
 
 /**
@@ -1973,6 +1992,16 @@ mono_assembly_open (const char *filename, MonoImageOpenStatus *status)
 MonoAssembly *
 mono_assembly_load_from_full (MonoImage *image, const char*fname, 
 			      MonoImageOpenStatus *status, gboolean refonly)
+{
+	return mono_assembly_load_from_predicate (image, fname, refonly, NULL, NULL, status);
+}
+
+MonoAssembly *
+mono_assembly_load_from_predicate (MonoImage *image, const char *fname,
+				   gboolean refonly,
+				   MonoAssemblyCandidatePredicate predicate,
+				   gpointer user_data,
+				   MonoImageOpenStatus *status)
 {
 	MonoAssembly *ass, *ass2;
 	char *base_dir;
@@ -2060,6 +2089,15 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 			return NULL;
 		}
 		mono_error_cleanup (&refasm_error);
+	}
+
+	if (predicate && !predicate (ass, user_data)) {
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Predicate returned FALSE, skipping '%s' (%s)\n", ass->aname.name, image->name);
+		g_free (ass);
+		g_free (base_dir);
+		mono_image_close (image);
+		*status = MONO_IMAGE_IMAGE_INVALID;
+		return NULL;
 	}
 
 	mono_assemblies_lock ();
@@ -2673,7 +2711,7 @@ probe_for_partial_name (const char *basepath, const char *fullname, MonoAssembly
 	if (fullpath == NULL)
 		return NULL;
 	else {
-		MonoAssembly *res = mono_assembly_open (fullpath, status);
+		MonoAssembly *res = mono_assembly_open_predicate (fullpath, FALSE, FALSE, NULL, NULL, status);
 		g_free (fullpath);
 		return res;
 	}
@@ -3196,7 +3234,7 @@ mono_assembly_load_from_gac (MonoAssemblyName *aname,  gchar *filename, MonoImag
 		paths = extra_gac_paths;
 		while (!result && *paths) {
 			fullpath = g_build_path (G_DIR_SEPARATOR_S, *paths, "lib", "mono", "gac", subpath, NULL);
-			result = mono_assembly_open_full (fullpath, status, refonly);
+			result = mono_assembly_open_predicate (fullpath, refonly, FALSE, NULL, NULL, status);
 			g_free (fullpath);
 			paths++;
 		}
@@ -3210,7 +3248,7 @@ mono_assembly_load_from_gac (MonoAssemblyName *aname,  gchar *filename, MonoImag
 
 	fullpath = g_build_path (G_DIR_SEPARATOR_S, mono_assembly_getrootdir (),
 			"mono", "gac", subpath, NULL);
-	result = mono_assembly_open_full (fullpath, status, refonly);
+	result = mono_assembly_open_predicate (fullpath, refonly, FALSE, NULL, NULL, status);
 	g_free (fullpath);
 
 	if (result)
@@ -3259,7 +3297,7 @@ mono_assembly_load_corlib (const MonoRuntimeInfo *runtime, MonoImageOpenStatus *
 
 	// This unusual directory layout can occur if mono is being built and run out of its own source repo
 	if (assemblies_path) { // Custom assemblies path set via MONO_PATH or mono_set_assemblies_path
-		corlib = load_in_path ("mscorlib.dll", (const char**)assemblies_path, status, FALSE);
+		corlib = load_in_path ("mscorlib.dll", (const char**)assemblies_path, status, FALSE, NULL, NULL);
 		if (corlib)
 			goto return_corlib_and_facades;
 	}
@@ -3267,13 +3305,13 @@ mono_assembly_load_corlib (const MonoRuntimeInfo *runtime, MonoImageOpenStatus *
 	/* Normal case: Load corlib from mono/<version> */
 	corlib_file = g_build_filename ("mono", runtime->framework_version, "mscorlib.dll", NULL);
 	if (assemblies_path) { // Custom assemblies path
-		corlib = load_in_path (corlib_file, (const char**)assemblies_path, status, FALSE);
+		corlib = load_in_path (corlib_file, (const char**)assemblies_path, status, FALSE, NULL, NULL);
 		if (corlib) {
 			g_free (corlib_file);
 			goto return_corlib_and_facades;
 		}
 	}
-	corlib = load_in_path (corlib_file, default_path, status, FALSE);
+	corlib = load_in_path (corlib_file, default_path, status, FALSE, NULL, NULL);
 	g_free (corlib_file);
 
 return_corlib_and_facades:
@@ -3293,6 +3331,44 @@ prevent_reference_assembly_from_running (MonoAssembly* candidate, gboolean refon
 	}
 	mono_error_cleanup (&refasm_error);
 	return candidate;
+}
+
+gboolean
+mono_assembly_candidate_predicate_sn_same_name (MonoAssembly *candidate, gpointer ud)
+{
+	MonoAssemblyName *wanted_name = (MonoAssemblyName*)ud;
+	MonoAssemblyName *candidate_name = &candidate->aname;
+
+	g_assert (wanted_name != NULL);
+	g_assert (candidate_name != NULL);
+
+	if (mono_trace_is_traced (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY)) {
+		char * s = mono_stringify_assembly_name (wanted_name);
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Predicate: wanted = %s\n", s);
+		g_free (s);
+		s = mono_stringify_assembly_name (candidate_name);
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Predicate: candidate = %s\n", s);
+		g_free (s);
+	}
+
+	/* No wanted token, bail. */
+	if (0 == wanted_name->public_key_token [0]) {
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Predicate: wanted has no token, returning TRUE\n");
+		return TRUE;
+	}
+
+	if (0 == candidate_name->public_key_token [0]) {
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Predicate: candidate has no token, returning FALSE\n");
+		return FALSE;
+	}
+
+
+	gboolean result = mono_assembly_names_equal (wanted_name, candidate_name);
+
+	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Predicate: candidate and wanted names %s\n",
+		    result ? "match, returning TRUE" : "don't match, returning FALSE");
+	return result;
+
 }
 
 
@@ -3352,7 +3428,7 @@ mono_assembly_load_full_nosearch (MonoAssemblyName *aname,
 
 		if (basedir) {
 			fullpath = g_build_filename (basedir, filename, NULL);
-			result = mono_assembly_open_full (fullpath, status, refonly);
+			result = mono_assembly_open_predicate (fullpath, refonly, FALSE, NULL, NULL, status);
 			g_free (fullpath);
 			if (result) {
 				result->in_gac = FALSE;
@@ -3361,7 +3437,7 @@ mono_assembly_load_full_nosearch (MonoAssemblyName *aname,
 			}
 		}
 
-		result = load_in_path (filename, default_path, status, refonly);
+		result = load_in_path (filename, default_path, status, refonly, NULL, NULL);
 		if (result)
 			result->in_gac = FALSE;
 		g_free (filename);

@@ -32,7 +32,7 @@
 #include <mono/metadata/domain-internals.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/debug-internals.h>
-#include <mono/metadata/assembly.h>
+#include <mono/metadata/assembly-internals.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/appdomain.h>
@@ -98,9 +98,9 @@ static const MonoRuntimeInfo *current_runtime = NULL;
 /* This is the list of runtime versions supported by this JIT.
  */
 static const MonoRuntimeInfo supported_runtimes[] = {
-	{"v4.0.30319","4.5", { {4,0,0,0}, {10,0,0,0}, {4,0,0,0}, {4,0,0,0}, {4,0,0,0} } },
-	{"mobile",    "2.1", { {2,0,5,0}, {10,0,0,0}, {2,0,5,0}, {2,0,5,0}, {4,0,0,0} } },
-	{"moonlight", "2.1", { {2,0,5,0}, { 9,0,0,0}, {3,5,0,0}, {3,0,0,0}, NOT_AVAIL } },
+	{"v4.0.30319","4.5",               NULL, { {4,0,0,0}, {10,0,0,0}, {4,0,0,0}, {4,0,0,0}, {4,0,0,0} } },
+	{"mobile",    "2.1", "7cec85d7bea7798e", { {2,0,5,0}, {10,0,0,0}, {2,0,5,0}, {2,0,5,0}, {4,0,0,0} } },
+	{"moonlight", "2.1",               NULL, { {2,0,5,0}, { 9,0,0,0}, {3,5,0,0}, {3,0,0,0}, NOT_AVAIL } },
 };
 
 #undef NOT_AVAIL
@@ -992,10 +992,10 @@ mono_domain_assembly_open (MonoDomain *domain, const char *name)
 		current = mono_domain_get ();
 
 		mono_domain_set (domain, FALSE);
-		ass = mono_assembly_open (name, NULL);
+		ass = mono_assembly_open_predicate (name, FALSE, FALSE, NULL, NULL, NULL);
 		mono_domain_set (current, FALSE);
 	} else {
-		ass = mono_assembly_open (name, NULL);
+		ass = mono_assembly_open_predicate (name, FALSE, FALSE, NULL, NULL, NULL);
 	}
 
 	return ass;
