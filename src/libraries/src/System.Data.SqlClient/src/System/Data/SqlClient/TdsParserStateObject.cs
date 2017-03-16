@@ -774,7 +774,7 @@ namespace System.Data.SqlClient
 
         protected abstract void RemovePacketFromPendingList(object pointer);
 
-        internal abstract uint GenerateSspiClientContext(byte[] receivedBuff, uint receivedLength, byte[] sendBuff, ref uint sendLength, byte[] _sniSpnBuffer);
+        internal abstract uint GenerateSspiClientContext(byte[] receivedBuff, uint receivedLength, ref byte[] sendBuff, ref uint sendLength, byte[] _sniSpnBuffer);
 
         internal bool Deactivate()
         {
