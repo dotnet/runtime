@@ -40,7 +40,7 @@
       .maxstack  4
       .locals (int32 V_0)
       ldc.i4.1
-      call       void [mscorlib]System.Environment::set_ExitCode(int32)
+      call       void [system.runtime.extensions]System.Environment::set_ExitCode(int32)
       ldsfld     int32 JitTest.Test::n
       ldc.i4.1
       bne.un.s   IL_0047

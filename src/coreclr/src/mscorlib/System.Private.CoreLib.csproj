@@ -143,10 +143,8 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\UnsafeValueTypeAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\AssemblySettingAttributes.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\TypeDependencyAttribute.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CompilerMarshalOverride.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\jithelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\Unsafe.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\SpecialNameAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\SuppressMergeCheckAttribute.cs" />
     <Compile Condition="'$(FeatureICastable)' == 'true'" Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\ICastable.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\SuppressIldasmAttribute.cs" />
@@ -177,7 +175,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\GcSettings.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\Collections\CollectionBase.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\ArrayList.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\Comparer.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\CompatibleComparer.cs" />
@@ -185,7 +182,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Collections\EmptyReadOnlyDictionaryInternal.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\Hashtable.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\IHashCodeProvider.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Collections\StructuralComparisons.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\ArrayWithOffset.cs" />
@@ -382,7 +378,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Int64.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IntPtr.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Internal.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\IServiceObjectProvider.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Math.cs" />
     <Compile Include="$(BclSourcesRoot)\System\MathF.cs" />
     <Compile Include="$(BclSourcesRoot)\System\mda.cs" />
@@ -468,7 +463,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\ICustomAttributeProvider.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\IReflectableType.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\IntrospectionExtensions.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeReflectionExtensions.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\InterfaceMapping.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\InvalidFilterCriteriaException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\INVOCATION_FLAGS.cs" />
@@ -685,7 +679,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Threading\ApartmentState.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\SpinLock.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\SpinWait.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\CountdownEvent.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\LazyInitializer.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadLocal.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\SemaphoreSlim.cs" />
@@ -925,7 +918,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Collections\ObjectModel\Collection.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\ObjectModel\ReadOnlyCollection.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\ObjectModel\ReadOnlyDictionary.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Collections\ObjectModel\KeyedCollection.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\Concurrent\ConcurrentStack.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\Concurrent\IProducerConsumerCollection.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\Concurrent\ConcurrentDictionary.cs" />

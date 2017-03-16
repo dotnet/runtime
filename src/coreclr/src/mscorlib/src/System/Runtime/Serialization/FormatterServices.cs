@@ -29,7 +29,7 @@ using System.Diagnostics.Contracts;
 
 namespace System.Runtime.Serialization
 {
-    public static class FormatterServices
+    internal static class FormatterServices
     {
         // Gets a new instance of the object.  The entire object is initalized to 0 and no 
         // constructors have been run. **THIS MEANS THAT THE OBJECT MAY NOT BE IN A STATE

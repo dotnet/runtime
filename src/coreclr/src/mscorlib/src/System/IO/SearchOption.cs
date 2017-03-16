@@ -21,7 +21,7 @@ using System;
 namespace System.IO
 {
     [Serializable]
-    public enum SearchOption
+    internal enum SearchOption
     {
         // Include only the current directory in the search operation
         TopDirectoryOnly,

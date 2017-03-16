@@ -218,34 +218,34 @@
     .entrypoint
     .maxstack  5
     .locals init (class cs1 V_0,
-             class [mscorlib]System.Threading.Thread V_1,
+             class [System.Threading.Thread]System.Threading.Thread V_1,
              class [mscorlib]System.Threading.Timer V_2,
-             class [mscorlib]System.Threading.Thread V_flip
+             class [System.Threading.Thread]System.Threading.Thread V_flip
 		)
     IL_0000:  nop
     IL_0001:  newobj     instance void cs1::.ctor()
     IL_0006:  stloc.0
     IL_0007:  ldloc.0
     IL_0008:  ldftn      instance void cs1::CheckVal()
-    IL_000e:  newobj     instance void [mscorlib]System.Threading.ThreadStart::.ctor(object,
+    IL_000e:  newobj     instance void [System.Threading.Thread]System.Threading.ThreadStart::.ctor(object,
                                                                                      native int)
-    IL_0013:  newobj     instance void [mscorlib]System.Threading.Thread::.ctor(class [mscorlib]System.Threading.ThreadStart)
+    IL_0013:  newobj     instance void [System.Threading.Thread]System.Threading.Thread::.ctor(class [System.Threading.Thread]System.Threading.ThreadStart)
     IL_0018:  stloc.1
     IL_0019:  ldloc.1
-    IL_001a:  callvirt   instance void [mscorlib]System.Threading.Thread::Start()
+    IL_001a:  callvirt   instance void [System.Threading.Thread]System.Threading.Thread::Start()
     IL_001f:  nop
     IL_0020:  ldc.i4.0
-    IL_0021:  call       void [mscorlib]System.Threading.Thread::Sleep(int32)
+    IL_0021:  call       void [System.Threading.Thread]System.Threading.Thread::Sleep(int32)
     IL_0026:  nop
     IL_0027:  ldloc.0
 
     ldftn      instance void cs1::Flip()
-    newobj     instance void [mscorlib]System.Threading.ThreadStart::.ctor(object,
+    newobj     instance void [System.Threading.Thread]System.Threading.ThreadStart::.ctor(object,
                                                                                      native int)
-    newobj     instance void [mscorlib]System.Threading.Thread::.ctor(class [mscorlib]System.Threading.ThreadStart)
+    newobj     instance void [System.Threading.Thread]System.Threading.Thread::.ctor(class [System.Threading.Thread]System.Threading.ThreadStart)
     stloc V_flip
     ldloc V_flip
-    callvirt   instance void [mscorlib]System.Threading.Thread::Start()
+    callvirt   instance void [System.Threading.Thread]System.Threading.Thread::Start()
     nop
 
 
@@ -263,11 +263,11 @@
                                                                                int32)
     IL_0046:  stloc.2
     IL_0047:  ldloc.1
-    IL_0048:  callvirt   instance void [mscorlib]System.Threading.Thread::Join()
+    IL_0048:  callvirt   instance void [System.Threading.Thread]System.Threading.Thread::Join()
     IL_004d:  nop
 
     ldloc V_flip
-    callvirt   instance void [mscorlib]System.Threading.Thread::Join()
+    callvirt   instance void [System.Threading.Thread]System.Threading.Thread::Join()
     nop
 
     IL_004e:  ldstr      "Test SUCCESS"
