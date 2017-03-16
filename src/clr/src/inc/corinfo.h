@@ -231,11 +231,11 @@ TODO: Talk about initializing strutures before use
 #if COR_JIT_EE_VERSION > 460
 
 // Update this one
-SELECTANY const GUID JITEEVersionIdentifier = { /* cda334f7-0020-4622-a4a5-8b8ac71ee5cf */
-    0xcda334f7,
-    0x0020,
-    0x4622,
-    {0xa4, 0xa5, 0x8b, 0x8a, 0xc7, 0x1e, 0xe5, 0xcf}
+SELECTANY const GUID JITEEVersionIdentifier = { /* 3d43decb-a611-4413-a0af-a24278a00e2d */
+    0x3d43decb,
+    0xa611,
+    0x4413,
+    {0xa0, 0xaf, 0xa2, 0x42, 0x78, 0xa0, 0x0e, 0x2d}
   };
 
 #else
@@ -2117,12 +2117,17 @@ public:
             ) = 0;
 
 #if COR_JIT_EE_VERSION > 460
-    // Find the virtual method in implementingClass that overrides virtualMethod.
-    // Return null if devirtualization is not possible.
+    // Find the virtual method in implementingClass that overrides virtualMethod,
+    // or the method in implementingClass that implements the interface method
+    // represented by virtualMethod.
+    //
+    // Return null if devirtualization is not possible. Owner type is optional
+    // and provides additional context for shared interface devirtualization.
     virtual CORINFO_METHOD_HANDLE resolveVirtualMethod(
-        CORINFO_METHOD_HANDLE virtualMethod,        /* IN */
-        CORINFO_CLASS_HANDLE implementingClass      /* IN */
-        ) = 0;
+            CORINFO_METHOD_HANDLE       virtualMethod,          /* IN */
+            CORINFO_CLASS_HANDLE        implementingClass,      /* IN */
+            CORINFO_CONTEXT_HANDLE      ownerType = NULL        /* IN */
+            ) = 0;
 #endif
 
     // If a method's attributes have (getMethodAttribs) CORINFO_FLG_INTRINSIC set,
