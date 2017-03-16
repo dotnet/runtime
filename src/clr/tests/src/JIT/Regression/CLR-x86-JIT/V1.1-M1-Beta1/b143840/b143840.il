@@ -43,7 +43,7 @@
   {
     .entrypoint
     .maxstack  3
-    .locals init (class [mscorlib]System.Threading.Thread V_0,
+    .locals init (class [System.Threading.Thread]System.Threading.Thread V_0,
              class ExternalException V_1,
              int32 V_2)
     IL_0000:  newobj     instance void ExternalException::.ctor()
@@ -54,14 +54,14 @@
 
     IL_000a:  ldloc.1
     IL_000b:  ldftn      instance void ExternalException::runtest()
-    IL_0011:  newobj     instance void [mscorlib]System.Threading.ThreadStart::.ctor(object,
+    IL_0011:  newobj     instance void [System.Threading.Thread]System.Threading.ThreadStart::.ctor(object,
                                                                                      native int)
-    IL_0016:  newobj     instance void [mscorlib]System.Threading.Thread::.ctor(class [mscorlib]System.Threading.ThreadStart)
+    IL_0016:  newobj     instance void [System.Threading.Thread]System.Threading.Thread::.ctor(class [System.Threading.Thread]System.Threading.ThreadStart)
     IL_001b:  stloc.0
     .try
     {
       IL_001c:  ldloc.0
-      IL_001d:  callvirt   instance void [mscorlib]System.Threading.Thread::Start()
+      IL_001d:  callvirt   instance void [System.Threading.Thread]System.Threading.Thread::Start()
       IL_0022:  leave.s    IL_0031
 
     }  
@@ -174,7 +174,7 @@
       IL_0047:  ldstr      "TryCatch Test Passed"
       IL_004c:  call       void [System.Console]System.Console::WriteLine(string)
       IL_0051:  ldc.i4 100
-      IL_0052:  call       void [mscorlib]System.Environment::set_ExitCode(int32)
+      IL_0052:  call       void [system.runtime.extensions]System.Environment::set_ExitCode(int32)
       IL_0057:  leave.s    IL_0060
 
     }  
@@ -197,7 +197,7 @@
       IL_0074:  ldloc.0
       IL_0075:  call       void [System.Console]System.Console::WriteLine(int32)
       IL_007a:  ldc.i4.1
-      IL_007b:  call       void [mscorlib]System.Environment::set_ExitCode(int32)
+      IL_007b:  call       void [system.runtime.extensions]System.Environment::set_ExitCode(int32)
       IL_0080:  leave.s    IL_0089
 
     }  

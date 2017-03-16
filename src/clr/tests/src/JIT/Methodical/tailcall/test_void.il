@@ -31,7 +31,7 @@
       ldstr      "PASSED: 10! == 3628800"
       call       void [System.Console]System.Console::WriteLine(class System.String)
       ldc.i4.s   100
-      call       void [mscorlib]System.Environment::Exit(int32)
+      call       void [system.runtime.extensions]System.Environment::Exit(int32)
       ret
 
 IL_0029:
@@ -41,7 +41,7 @@ IL_0029:
       call       class System.String [mscorlib]System.String::Concat(class System.String, class System.String)
       call       void [System.Console]System.Console::WriteLine(class System.String)
       ldc.i4.s   101
-      call       void [mscorlib]System.Environment::Exit(int32)
+      call       void [system.runtime.extensions]System.Environment::Exit(int32)
       ret
 
 IL_0047:

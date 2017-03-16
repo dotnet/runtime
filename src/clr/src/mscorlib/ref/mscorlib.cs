@@ -1876,35 +1876,6 @@ namespace System
         public static bool TryParse<TEnum>(string value, bool ignoreCase, out TEnum result) where TEnum : struct { result = default(TEnum); throw null; }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public static partial class Environment
-    {
-        public static int CurrentManagedThreadId { get { throw null; } }
-        public static int ExitCode { [System.Security.SecuritySafeCriticalAttribute][System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]get { throw null; } [System.Security.SecuritySafeCriticalAttribute][System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]set { } }
-        public static bool HasShutdownStarted { [System.Security.SecuritySafeCriticalAttribute][System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]get { throw null; } }
-        public static string MachineName { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
-        public static string NewLine { get { throw null; } }
-        public static int ProcessorCount { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
-        public static string StackTrace { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
-        public static int TickCount { [System.Security.SecuritySafeCriticalAttribute][System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]get { throw null; } }
-        public static System.Version Version { get { throw null; } }
-        [System.Security.SecuritySafeCriticalAttribute]
-        public static void Exit(int exitCode) { }
-        [System.Security.SecuritySafeCriticalAttribute]
-        public static string ExpandEnvironmentVariables(string name) { throw null; }
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.Security.SecurityCriticalAttribute]
-        public static void FailFast(string message) { }
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.Security.SecurityCriticalAttribute]
-        public static void FailFast(string message, System.Exception exception) { }
-        [System.Security.SecuritySafeCriticalAttribute]
-        public static string[] GetCommandLineArgs() { throw null; }
-        [System.Security.SecuritySafeCriticalAttribute]
-        public static string GetEnvironmentVariable(string variable) { throw null; }
-        [System.Security.SecuritySafeCriticalAttribute]
-        public static System.Collections.IDictionary GetEnvironmentVariables() { throw null; }
-        [System.Security.SecuritySafeCriticalAttribute]
-        public static void SetEnvironmentVariable(string variable, string value) { }
-    }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class EventArgs
     {
         public static readonly System.EventArgs Empty;
@@ -2392,10 +2363,6 @@ namespace System
     public partial interface IProgress<in T>
     {
         void Report(T value);
-    }
-    public partial interface IServiceProvider
-    {
-        object GetService(System.Type serviceType);
     }
     [System.Diagnostics.DebuggerDisplayAttribute("ThreadSafetyMode={Mode}, IsValueCreated={IsValueCreated}, IsValueFaulted={IsValueFaulted}, Value={ValueForDebugDisplay}")]
     [System.Runtime.InteropServices.ComVisibleAttribute(false)]
@@ -4234,27 +4201,6 @@ namespace System
 namespace System.Collections
 {
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public abstract partial class CollectionBase : System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList
-    {
-        protected CollectionBase() { }
-        public int Count { get { throw null; } }
-        protected System.Collections.IList List { get { throw null; } }
-        bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
-        object System.Collections.ICollection.SyncRoot { get { throw null; } }
-        bool System.Collections.IList.IsFixedSize { get { throw null; } }
-        bool System.Collections.IList.IsReadOnly { get { throw null; } }
-        object System.Collections.IList.this[int index] { get { throw null; } set { } }
-        public void Clear() { }
-        public System.Collections.IEnumerator GetEnumerator() { throw null; }
-        public void RemoveAt(int index) { }
-        void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
-        int System.Collections.IList.Add(object value) { throw null; }
-        bool System.Collections.IList.Contains(object value) { throw null; }
-        int System.Collections.IList.IndexOf(object value) { throw null; }
-        void System.Collections.IList.Insert(int index, object value) { }
-        void System.Collections.IList.Remove(object value) { }
-    }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct DictionaryEntry
     {
@@ -4339,11 +4285,6 @@ namespace System.Collections
     {
         bool Equals(object other, System.Collections.IEqualityComparer comparer);
         int GetHashCode(System.Collections.IEqualityComparer comparer);
-    }
-    public static partial class StructuralComparisons
-    {
-        public static System.Collections.IComparer StructuralComparer { get { throw null; } }
-        public static System.Collections.IEqualityComparer StructuralEqualityComparer { get { throw null; } }
     }
 }
 namespace System.Collections.Generic
@@ -4679,25 +4620,6 @@ namespace System.Collections.ObjectModel
     }
     [System.Diagnostics.DebuggerDisplayAttribute("Count = {Count}")]
     [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-    public abstract partial class KeyedCollection<TKey, TItem> : System.Collections.ObjectModel.Collection<TItem>
-    {
-        protected KeyedCollection() { }
-        protected KeyedCollection(System.Collections.Generic.IEqualityComparer<TKey> comparer) { }
-        protected KeyedCollection(System.Collections.Generic.IEqualityComparer<TKey> comparer, int dictionaryCreationThreshold) { }
-        public System.Collections.Generic.IEqualityComparer<TKey> Comparer { get { throw null; } }
-        protected System.Collections.Generic.IDictionary<TKey, TItem> Dictionary { get { throw null; } }
-        public TItem this[TKey key] { get { throw null; } }
-        protected void ChangeItemKey(TItem item, TKey newKey) { }
-        protected override void ClearItems() { }
-        public bool Contains(TKey key) { throw null; }
-        protected abstract TKey GetKeyForItem(TItem item);
-        protected override void InsertItem(int index, TItem item) { }
-        public bool Remove(TKey key) { throw null; }
-        protected override void RemoveItem(int index) { }
-        protected override void SetItem(int index, TItem item) { }
-    }
-    [System.Diagnostics.DebuggerDisplayAttribute("Count = {Count}")]
-    [System.Runtime.InteropServices.ComVisibleAttribute(false)]
     public partial class ReadOnlyCollection<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IList<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList
     {
         public ReadOnlyCollection(System.Collections.Generic.IList<T> list) { }
@@ -4729,80 +4651,6 @@ namespace System.Collections.ObjectModel
         void System.Collections.IList.Insert(int index, object value) { }
         void System.Collections.IList.Remove(object value) { }
         void System.Collections.IList.RemoveAt(int index) { }
-    }
-    [System.Diagnostics.DebuggerDisplayAttribute("Count = {Count}")]
-    public partial class ReadOnlyDictionary<TKey, TValue> : System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IDictionary<TKey, TValue>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>, System.Collections.ICollection, System.Collections.IDictionary, System.Collections.IEnumerable
-    {
-        public ReadOnlyDictionary(System.Collections.Generic.IDictionary<TKey, TValue> dictionary) { }
-        public int Count { get { throw null; } }
-        protected System.Collections.Generic.IDictionary<TKey, TValue> Dictionary { get { throw null; } }
-        public TValue this[TKey key] { get { throw null; } }
-        public System.Collections.ObjectModel.ReadOnlyDictionary<TKey, TValue>.KeyCollection Keys { get { throw null; } }
-        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey,TValue>>.IsReadOnly { get { throw null; } }
-        TValue System.Collections.Generic.IDictionary<TKey,TValue>.this[TKey key] { get { throw null; } set { } }
-        System.Collections.Generic.ICollection<TKey> System.Collections.Generic.IDictionary<TKey,TValue>.Keys { get { throw null; } }
-        System.Collections.Generic.ICollection<TValue> System.Collections.Generic.IDictionary<TKey,TValue>.Values { get { throw null; } }
-        System.Collections.Generic.IEnumerable<TKey> System.Collections.Generic.IReadOnlyDictionary<TKey,TValue>.Keys { get { throw null; } }
-        System.Collections.Generic.IEnumerable<TValue> System.Collections.Generic.IReadOnlyDictionary<TKey,TValue>.Values { get { throw null; } }
-        bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
-        object System.Collections.ICollection.SyncRoot { get { throw null; } }
-        bool System.Collections.IDictionary.IsFixedSize { get { throw null; } }
-        bool System.Collections.IDictionary.IsReadOnly { get { throw null; } }
-        object System.Collections.IDictionary.this[object key] { get { throw null; } set { } }
-        System.Collections.ICollection System.Collections.IDictionary.Keys { get { throw null; } }
-        System.Collections.ICollection System.Collections.IDictionary.Values { get { throw null; } }
-        public System.Collections.ObjectModel.ReadOnlyDictionary<TKey, TValue>.ValueCollection Values { get { throw null; } }
-        public bool ContainsKey(TKey key) { throw null; }
-        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<TKey, TValue>> GetEnumerator() { throw null; }
-        void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey,TValue>>.Add(System.Collections.Generic.KeyValuePair<TKey, TValue> item) { }
-        void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey,TValue>>.Clear() { }
-        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey,TValue>>.Contains(System.Collections.Generic.KeyValuePair<TKey, TValue> item) { throw null; }
-        void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey,TValue>>.CopyTo(System.Collections.Generic.KeyValuePair<TKey, TValue>[] array, int arrayIndex) { }
-        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey,TValue>>.Remove(System.Collections.Generic.KeyValuePair<TKey, TValue> item) { throw null; }
-        void System.Collections.Generic.IDictionary<TKey,TValue>.Add(TKey key, TValue value) { }
-        bool System.Collections.Generic.IDictionary<TKey,TValue>.Remove(TKey key) { throw null; }
-        void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
-        void System.Collections.IDictionary.Add(object key, object value) { }
-        void System.Collections.IDictionary.Clear() { }
-        bool System.Collections.IDictionary.Contains(object key) { throw null; }
-        System.Collections.IDictionaryEnumerator System.Collections.IDictionary.GetEnumerator() { throw null; }
-        void System.Collections.IDictionary.Remove(object key) { }
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
-        public bool TryGetValue(TKey key, out TValue value) { value = default(TValue); throw null; }
-        [System.Diagnostics.DebuggerDisplayAttribute("Count = {Count}")]
-        public sealed partial class KeyCollection : System.Collections.Generic.ICollection<TKey>, System.Collections.Generic.IEnumerable<TKey>, System.Collections.Generic.IReadOnlyCollection<TKey>, System.Collections.ICollection, System.Collections.IEnumerable
-        {
-            internal KeyCollection() { }
-            public int Count { get { throw null; } }
-            bool System.Collections.Generic.ICollection<TKey>.IsReadOnly { get { throw null; } }
-            bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
-            object System.Collections.ICollection.SyncRoot { get { throw null; } }
-            public void CopyTo(TKey[] array, int arrayIndex) { }
-            public System.Collections.Generic.IEnumerator<TKey> GetEnumerator() { throw null; }
-            void System.Collections.Generic.ICollection<TKey>.Add(TKey item) { }
-            void System.Collections.Generic.ICollection<TKey>.Clear() { }
-            bool System.Collections.Generic.ICollection<TKey>.Contains(TKey item) { throw null; }
-            bool System.Collections.Generic.ICollection<TKey>.Remove(TKey item) { throw null; }
-            void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
-            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
-        }
-        [System.Diagnostics.DebuggerDisplayAttribute("Count = {Count}")]
-        public sealed partial class ValueCollection : System.Collections.Generic.ICollection<TValue>, System.Collections.Generic.IEnumerable<TValue>, System.Collections.Generic.IReadOnlyCollection<TValue>, System.Collections.ICollection, System.Collections.IEnumerable
-        {
-            internal ValueCollection() { }
-            public int Count { get { throw null; } }
-            bool System.Collections.Generic.ICollection<TValue>.IsReadOnly { get { throw null; } }
-            bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
-            object System.Collections.ICollection.SyncRoot { get { throw null; } }
-            public void CopyTo(TValue[] array, int arrayIndex) { }
-            public System.Collections.Generic.IEnumerator<TValue> GetEnumerator() { throw null; }
-            void System.Collections.Generic.ICollection<TValue>.Add(TValue item) { }
-            void System.Collections.Generic.ICollection<TValue>.Clear() { }
-            bool System.Collections.Generic.ICollection<TValue>.Contains(TValue item) { throw null; }
-            bool System.Collections.Generic.ICollection<TValue>.Remove(TValue item) { throw null; }
-            void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
-            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
-        }
     }
 }
 namespace System.Configuration.Assemblies
@@ -4951,35 +4799,33 @@ namespace System.Diagnostics
         [System.Security.SecuritySafeCriticalAttribute]
         public override string ToString() { throw null; }
     }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public partial class StackTrace
-    {
-        public const int METHODS_TO_SKIP = 0;
-        [System.Security.SecuritySafeCriticalAttribute]
-        public StackTrace() { }
-        [System.Security.SecurityCriticalAttribute]
-        public StackTrace(bool fNeedFileInfo) { }
-        public StackTrace(System.Diagnostics.StackFrame frame) { }
-        public StackTrace(System.Exception e) { }
-        [System.Security.SecurityCriticalAttribute]
-        public StackTrace(System.Exception e, bool fNeedFileInfo) { }
-        [System.Security.SecurityCriticalAttribute]
-        public StackTrace(System.Exception e, int skipFrames) { }
-        [System.Security.SecurityCriticalAttribute]
-        public StackTrace(System.Exception e, int skipFrames, bool fNeedFileInfo) { }
-        [System.Security.SecurityCriticalAttribute]
-        public StackTrace(int skipFrames) { }
-        [System.Security.SecurityCriticalAttribute]
-        public StackTrace(int skipFrames, bool fNeedFileInfo) { }
-        [System.ObsoleteAttribute("This constructor has been deprecated.  Please use a constructor that does not require a Thread parameter.  http://go.microsoft.com/fwlink/?linkid=14202")]
-        [System.Security.SecurityCriticalAttribute]
-        public StackTrace(System.Threading.Thread targetThread, bool needFileInfo) { }
-        public virtual int FrameCount { get { throw null; } }
-        public virtual System.Diagnostics.StackFrame GetFrame(int index) { throw null; }
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-        public virtual System.Diagnostics.StackFrame[] GetFrames() { throw null; }
-        [System.Security.SecuritySafeCriticalAttribute]
-        public override string ToString() { throw null; }
+
+    [System.Runtime.InteropServices.ComVisibleAttribute(true)]		
+    public partial class StackTrace		
+    {		
+        public const int METHODS_TO_SKIP = 0;		
+        [System.Security.SecuritySafeCriticalAttribute]		
+        public StackTrace() { }		
+        [System.Security.SecurityCriticalAttribute]		
+        public StackTrace(bool fNeedFileInfo) { }		
+        public StackTrace(System.Diagnostics.StackFrame frame) { }		
+        public StackTrace(System.Exception e) { }		
+        [System.Security.SecurityCriticalAttribute]		
+        public StackTrace(System.Exception e, bool fNeedFileInfo) { }		
+        [System.Security.SecurityCriticalAttribute]		
+        public StackTrace(System.Exception e, int skipFrames) { }		
+        [System.Security.SecurityCriticalAttribute]		
+        public StackTrace(System.Exception e, int skipFrames, bool fNeedFileInfo) { }		
+        [System.Security.SecurityCriticalAttribute]		
+        public StackTrace(int skipFrames) { }		
+        [System.Security.SecurityCriticalAttribute]		
+        public StackTrace(int skipFrames, bool fNeedFileInfo) { }		
+        public virtual int FrameCount { get { throw null; } }		
+        public virtual System.Diagnostics.StackFrame GetFrame(int index) { throw null; }		
+        [System.Runtime.InteropServices.ComVisibleAttribute(false)]		
+        public virtual System.Diagnostics.StackFrame[] GetFrames() { throw null; }		
+        [System.Security.SecuritySafeCriticalAttribute]		
+        public override string ToString() { throw null; }		
     }
 }
 namespace System.Diagnostics.CodeAnalysis
@@ -8219,20 +8065,6 @@ namespace System.Reflection
         ContainedInManifestFile = 4,
         Embedded = 1,
     }
-    public static partial class RuntimeReflectionExtensions
-    {
-        public static System.Reflection.MethodInfo GetMethodInfo(this System.Delegate del) { throw null; }
-        public static System.Reflection.MethodInfo GetRuntimeBaseDefinition(this System.Reflection.MethodInfo method) { throw null; }
-        public static System.Reflection.EventInfo GetRuntimeEvent(this System.Type type, string name) { throw null; }
-        public static System.Collections.Generic.IEnumerable<System.Reflection.EventInfo> GetRuntimeEvents(this System.Type type) { throw null; }
-        public static System.Reflection.FieldInfo GetRuntimeField(this System.Type type, string name) { throw null; }
-        public static System.Collections.Generic.IEnumerable<System.Reflection.FieldInfo> GetRuntimeFields(this System.Type type) { throw null; }
-        public static System.Reflection.InterfaceMapping GetRuntimeInterfaceMap(this System.Reflection.TypeInfo typeInfo, System.Type interfaceType) { throw null; }
-        public static System.Reflection.MethodInfo GetRuntimeMethod(this System.Type type, string name, System.Type[] parameters) { throw null; }
-        public static System.Collections.Generic.IEnumerable<System.Reflection.MethodInfo> GetRuntimeMethods(this System.Type type) { throw null; }
-        public static System.Collections.Generic.IEnumerable<System.Reflection.PropertyInfo> GetRuntimeProperties(this System.Type type) { throw null; }
-        public static System.Reflection.PropertyInfo GetRuntimeProperty(this System.Type type, string name) { throw null; }
-    }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class TargetException : System.ApplicationException
     {
@@ -9867,9 +9699,6 @@ namespace System.Runtime.CompilerServices
     {
         public CompilerGlobalScopeAttribute() { }
     }
-    public static partial class CompilerMarshalOverride
-    {
-    }
     [System.Runtime.InteropServices.ComVisibleAttribute(false)]
     public sealed partial class ConditionalWeakTable<TKey, TValue> where TKey : class where TValue : class
     {
@@ -10129,11 +9958,6 @@ namespace System.Runtime.CompilerServices
         [System.Security.SecurityCriticalAttribute]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(972))]
-    public sealed partial class SpecialNameAttribute : System.Attribute
-    {
-        public SpecialNameAttribute() { }
-    }
     [System.AttributeUsageAttribute((System.AttributeTargets)(1), Inherited=false)]
     public sealed partial class StringFreezingAttribute : System.Attribute
     {
@@ -10256,11 +10080,6 @@ namespace System.Runtime.ExceptionServices
 }
 namespace System.Runtime.InteropServices
 {
-    [System.AttributeUsageAttribute((System.AttributeTargets)(64), AllowMultiple=false, Inherited=false)]
-    public sealed partial class AllowReversePInvokeCallsAttribute : System.Attribute
-    {
-        public AllowReversePInvokeCallsAttribute() { }
-    }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct ArrayWithOffset
@@ -11803,12 +11622,6 @@ namespace System.Runtime.Remoting
 namespace System.Runtime.Serialization
 {
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public static partial class FormatterServices
-    {
-        [System.Security.SecurityCriticalAttribute]
-        public static object GetUninitializedObject(System.Type type) { throw null; }
-    }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial interface IDeserializationCallback
     {
         void OnDeserialization(object sender);
@@ -12080,14 +11893,6 @@ namespace System.Security
     public sealed partial class SecuritySafeCriticalAttribute : System.Attribute
     {
         public SecuritySafeCriticalAttribute() { }
-    }
-    [System.Security.SecurityCriticalAttribute]
-    public abstract partial class SecurityState
-    {
-        protected SecurityState() { }
-        public abstract void EnsureState();
-        [System.Security.SecurityCriticalAttribute]
-        public bool IsStateAvailable() { throw null; }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(1), AllowMultiple=false, Inherited=false)]
     public sealed partial class SecurityTransparentAttribute : System.Attribute
@@ -12824,32 +12629,6 @@ namespace System.Threading
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     [System.Security.SecurityCriticalAttribute]
     public delegate void ContextCallback(object state);
-    [System.Diagnostics.DebuggerDisplayAttribute("Initial Count={InitialCount}, Current Count={CurrentCount}")]
-    [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-    public partial class CountdownEvent : System.IDisposable
-    {
-        public CountdownEvent(int initialCount) { }
-        public int CurrentCount { get { throw null; } }
-        public int InitialCount { get { throw null; } }
-        public bool IsSet { get { throw null; } }
-        public System.Threading.WaitHandle WaitHandle { get { throw null; } }
-        public void AddCount() { }
-        public void AddCount(int signalCount) { }
-        public void Dispose() { }
-        protected virtual void Dispose(bool disposing) { }
-        public void Reset() { }
-        public void Reset(int count) { }
-        public bool Signal() { throw null; }
-        public bool Signal(int signalCount) { throw null; }
-        public bool TryAddCount() { throw null; }
-        public bool TryAddCount(int signalCount) { throw null; }
-        public void Wait() { }
-        public bool Wait(int millisecondsTimeout) { throw null; }
-        public bool Wait(int millisecondsTimeout, System.Threading.CancellationToken cancellationToken) { throw null; }
-        public void Wait(System.Threading.CancellationToken cancellationToken) { }
-        public bool Wait(System.TimeSpan timeout) { throw null; }
-        public bool Wait(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) { throw null; }
-    }
     [System.Runtime.InteropServices.ComVisibleAttribute(false)]
     public enum EventResetMode
     {
@@ -13160,40 +12939,6 @@ namespace System.Threading
         public SynchronizationLockException(string message) { }
         public SynchronizationLockException(string message, System.Exception innerException) { }
         protected SynchronizationLockException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
-    }
-    [System.Runtime.InteropServices.ClassInterfaceAttribute((System.Runtime.InteropServices.ClassInterfaceType)(0))]
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public sealed partial class Thread : Internal.Runtime.Augments.RuntimeThread
-    {
-        [System.Security.SecuritySafeCriticalAttribute]
-        public Thread(System.Threading.ParameterizedThreadStart start) { }
-        [System.Security.SecuritySafeCriticalAttribute]
-        public Thread(System.Threading.ThreadStart start) { }
-        public System.Globalization.CultureInfo CurrentCulture { get { throw null; } [System.Security.SecuritySafeCriticalAttribute]set { } }
-        public static new System.Threading.Thread CurrentThread { [System.Security.SecuritySafeCriticalAttribute]get { throw null; } }
-        public System.Globalization.CultureInfo CurrentUICulture { get { throw null; } [System.Security.SecuritySafeCriticalAttribute]set { } }
-        public new int ManagedThreadId { [System.Security.SecuritySafeCriticalAttribute][System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)]get { throw null; } }
-        public new string Name { get { throw null; } [System.Security.SecuritySafeCriticalAttribute]set { } }
-        ~Thread() { }
-        [System.Security.SecuritySafeCriticalAttribute]
-        [System.Runtime.InteropServices.ComVisibleAttribute(false)]
-        public override int GetHashCode() { throw null; }
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.InternalCall)][System.Security.SecuritySafeCriticalAttribute]
-        public static void MemoryBarrier() { }
-        [System.Security.SecuritySafeCriticalAttribute]
-        public static new void Sleep(int millisecondsTimeout) { }
-        public static void Sleep(System.TimeSpan timeout) { }
-        [System.Security.SecuritySafeCriticalAttribute]
-        public static new void SpinWait(int iterations) { }
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-        public new void Start() { }
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-        public new void Start(object parameter) { }
-    }
-    [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public sealed partial class ThreadAbortException : System.SystemException
-    {
-        internal ThreadAbortException() { }
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
     public partial class ThreadInterruptedException : System.SystemException

@@ -207,7 +207,7 @@
     IL_0015:  ldsfld     string [mscorlib]System.String::Empty
     IL_001a:  br.s       IL_0039
 
-    IL_001c:  call       string [mscorlib]System.Environment::get_NewLine()
+    IL_001c:  call       string [system.runtime.extensions]System.Environment::get_NewLine()
     IL_0021:  ldarg.0
     IL_0022:  call       instance class [mscorlib]System.Exception [mscorlib]System.Exception::get_InnerException()
     IL_0027:  castclass  MCCTest.ResultVerificationException

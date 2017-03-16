@@ -34,7 +34,7 @@
       call       string [mscorlib]System.String::Concat(string, string)
       call       void [System.Console]System.Console::WriteLine(string)
       ldc.i4.s   101
-      call       void [mscorlib]System.Environment::Exit(int32)
+      call       void [system.runtime.extensions]System.Environment::Exit(int32)
       IL_EXIT:
       ret
     }

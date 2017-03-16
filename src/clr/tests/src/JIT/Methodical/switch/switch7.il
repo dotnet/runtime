@@ -78,17 +78,17 @@
     IL_0018:  bne.un.s   IL_002d
 
     IL_001a:  ldc.i4.s   100
-    IL_001c:  call       void ['mscorlib']System.Environment::set_ExitCode(int32)
+    IL_001c:  call       void ['system.runtime.extensions']System.Environment::set_ExitCode(int32)
     IL_0021:  ldstr      "Test passed"
     IL_0026:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
     IL_002b:  br.s       IL_003d
 
     IL_002d:  ldc.i4.1
-    IL_002e:  call       void ['mscorlib']System.Environment::set_ExitCode(int32)
+    IL_002e:  call       void ['system.runtime.extensions']System.Environment::set_ExitCode(int32)
     IL_0033:  ldstr      "Test failed"
     IL_0038:  call       void ['mscorlib']System.Console::WriteLine(class System.String)
-    IL_003d:  call       int32 ['mscorlib']System.Environment::get_ExitCode()
-              call       void ['mscorlib']System.Environment::Exit(int32)
+    IL_003d:  call       int32 ['system.runtime.extensions']System.Environment::get_ExitCode()
+              call       void ['system.runtime.extensions']System.Environment::Exit(int32)
               ret
   } 
 

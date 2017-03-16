@@ -385,17 +385,6 @@ namespace System.Diagnostics
         }
 
 
-        // Constructs a stack trace for the given thread
-        //
-        [Obsolete("This constructor has been deprecated.  Please use a constructor that does not require a Thread parameter.  http://go.microsoft.com/fwlink/?linkid=14202")]
-        public StackTrace(Thread targetThread, bool needFileInfo)
-        {
-            m_iNumOfFrames = 0;
-            m_iMethodsToSkip = 0;
-
-            CaptureStackTrace(METHODS_TO_SKIP, needFileInfo, targetThread, null);
-        }
-
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void GetStackFramesInternal(StackFrameHelper sfh, int iSkip, bool fNeedFileInfo, Exception e);
 

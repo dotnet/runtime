@@ -122,7 +122,7 @@
     IL_0014:  ldc.i4.s   100
     IL_0016:  bne.un.s   IL_0051
 
-    IL_0018:  call       string [mscorlib]System.Environment::get_StackTrace()
+    IL_0018:  call       string [system.runtime.extensions]System.Environment::get_StackTrace()
     IL_001d:  stloc.0
     IL_001e:  ldloc.0
     IL_001f:  ldstr      "Main"
@@ -138,7 +138,7 @@
     IL_003c:  ldstr      "Test Failed"
     IL_0041:  call       void [System.Console]System.Console::WriteLine(string)
     IL_0046:  ldc.i4.0
-    IL_0047:  call       void [mscorlib]System.Environment::Exit(int32)
+    IL_0047:  call       void [system.runtime.extensions]System.Environment::Exit(int32)
     IL_004c:  call       void [mscorlib]System.GC::Collect()
     IL_0051:  ldarg.0
     IL_0052:  dup
@@ -225,7 +225,7 @@
     IL_0019:  bne.un.s   IL_0054
 
     IL_001b:  call       void [mscorlib]System.GC::Collect()
-    IL_0020:  call       string [mscorlib]System.Environment::get_StackTrace()
+    IL_0020:  call       string [system.runtime.extensions]System.Environment::get_StackTrace()
     IL_0025:  stloc.0
     IL_0026:  ldloc.0
     IL_0027:  ldstr      "Main"
@@ -241,7 +241,7 @@
     IL_0044:  ldstr      "Test Failed"
     IL_0049:  call       void [System.Console]System.Console::WriteLine(string)
     IL_004e:  ldc.i4.0
-    IL_004f:  call       void [mscorlib]System.Environment::Exit(int32)
+    IL_004f:  call       void [system.runtime.extensions]System.Environment::Exit(int32)
     IL_0054:  ldarg.0
     IL_0055:  dup
     IL_0056:  ldfld      int32 Class1::'value'
