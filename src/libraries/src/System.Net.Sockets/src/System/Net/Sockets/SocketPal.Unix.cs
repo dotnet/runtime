@@ -500,6 +500,12 @@ namespace System.Net.Sockets
             Debug.Assert(socketAddress != null, "Expected non-null socketAddress");
             Debug.Assert(socketAddressLen > 0, $"Unexpected socketAddressLen: {socketAddressLen}");
 
+            if (socket.IsDisconnected)
+            {
+                errorCode = SocketError.IsConnected;
+                return true;
+            }
+
             Interop.Error err;
             fixed (byte* rawSocketAddress = socketAddress)
             {
@@ -1648,6 +1654,8 @@ namespace System.Net.Sockets
 
         internal static SocketError Disconnect(Socket socket, SafeCloseSocket handle, bool reuseSocket)
         {
+            handle.SetToDisconnected();
+
             socket.Shutdown(SocketShutdown.Both);
             return reuseSocket ?
                 socket.ReplaceHandle() :
