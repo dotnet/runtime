@@ -2713,6 +2713,11 @@ namespace System
 
             Contract.EndContractBlock();
 
+            if (inArray.Length == 0)
+            {
+                return Array.Empty<byte>();
+            }
+
             unsafe
             {
                 fixed (Char* inArrayPtr = &inArray[0])
