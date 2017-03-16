@@ -1,0 +1,12 @@
+{
+    "dependencies": {
+        "optimization.IBC.CoreCLR": "99.99.99-test",
+        "optimization.PGO.CoreCLR": "99.99.99-test"
+    },
+    "frameworks": {
+        "netstandard": {}
+    },
+    "runtimes": {
+        "win7-x64": {}
+    }
+}
