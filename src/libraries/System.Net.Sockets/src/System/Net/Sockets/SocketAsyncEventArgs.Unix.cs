@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.IO;
+using System.Threading.Tasks;
 
 namespace System.Net.Sockets
 {
@@ -13,7 +15,7 @@ namespace System.Net.Sockets
         private SocketFlags _receivedFlags;
         private Action<int, byte[], int, SocketFlags, SocketError> _transferCompletionCallback;
 
-        internal int? SendPacketsDescriptorCount { get { return null; } }
+        internal int? SendPacketsDescriptorCount => _sendPacketsElements?.Length;
 
         private void InitializeInternals()
         {
@@ -277,12 +279,66 @@ namespace System.Net.Sockets
 
         private void InnerStartOperationSendPackets()
         {
-            throw new PlatformNotSupportedException();
+            // nop
         }
 
         internal SocketError DoOperationSendPackets(Socket socket, SafeCloseSocket handle)
         {
-            throw new PlatformNotSupportedException();
+            Debug.Assert(_sendPacketsElements != null);
+            SendPacketsElement[] elements = (SendPacketsElement[])_sendPacketsElements.Clone();
+            FileStream[] files = new FileStream[elements.Length];
+
+            // Open all files synchronously ahead of time so that any exceptions are propagated
+            // to the caller, to match Windows behavior.
+            try
+            {
+                for (int i = 0; i < elements.Length; i++)
+                {
+                    string path = elements[i]?.FilePath;
+                    if (path != null)
+                    {
+                        files[i] = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 0x1000, useAsync: true);
+                    }
+                }
+            }
+            catch (Exception exc)
+            {
+                // Clean up any files that were already opened.
+                foreach (FileStream s in files)
+                {
+                    s?.Dispose();
+                }
+
+                // Windows differentiates the directory not being found from the file not being found.
+                // Approximate this by checking to see if the directory exists; this is only best-effort,
+                // as there are various things that could affect this, e.g. directory creation racing with
+                // this check, but it's good enough for most situations.
+                if (exc is FileNotFoundException fnfe)
+                {
+                    string dirname = Path.GetDirectoryName(fnfe.FileName);
+                    if (!string.IsNullOrEmpty(dirname) && !Directory.Exists(dirname))
+                    {
+                        throw new DirectoryNotFoundException(fnfe.Message);
+                    }
+                }
+
+                // Otherwise propagate the original error.
+                throw;
+            }
+
+            SocketPal.SendPacketsAsync(socket, SendPacketsFlags, elements, files, (bytesTransferred, error) =>
+            {
+                if (error == SocketError.Success)
+                {
+                    FinishOperationAsyncSuccess((int)bytesTransferred, SocketFlags.None);
+                }
+                else
+                {
+                    FinishOperationAsyncFailure(error, (int)bytesTransferred, SocketFlags.None);
+                }
+            });
+
+            return SocketError.IOPending;
         }
 
         private void InnerStartOperationSendTo()
@@ -333,7 +389,20 @@ namespace System.Net.Sockets
 
         internal void LogSendPacketsBuffers(int size)
         {
-            throw new PlatformNotSupportedException();
+            foreach (SendPacketsElement spe in _sendPacketsElements)
+            {
+                if (spe != null)
+                {
+                    if (spe.Buffer != null && spe.Count > 0)
+                    {
+                        NetEventSource.DumpBuffer(this, spe.Buffer, spe.Offset, Math.Min(spe.Count, size));
+                    }
+                    else if (spe.FilePath != null)
+                    {
+                        NetEventSource.NotLoggedFile(spe.FilePath, _currentSocket, _completedOperation);
+                    }
+                }
+            }
         }
 
         private SocketError FinishOperationAccept(Internals.SocketAddress remoteSocketAddress)
@@ -363,7 +432,7 @@ namespace System.Net.Sockets
 
         private void FinishOperationSendPackets()
         {
-            throw new PlatformNotSupportedException();
+            // No-op for *nix.
         }
 
         private void CompletionCallback(int bytesTransferred, SocketFlags flags, SocketError socketError)
