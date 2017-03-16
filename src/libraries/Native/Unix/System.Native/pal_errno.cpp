@@ -8,8 +8,8 @@
 
 #include <errno.h>
 
-// ENODATA is not defined on FreeBSD.
-#if defined(__FreeBSD__)
+// ENODATA is not defined in FreeBSD 10.3 but is defined in 11.0
+#if defined(__FreeBSD__) & !defined(ENODATA)
 #define ENODATA ENOATTR
 #endif
 
