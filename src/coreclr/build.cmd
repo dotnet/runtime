@@ -445,23 +445,8 @@ if %__BuildNativeCoreLib% EQU 1 (
         goto CrossgenFailure
     )
 
-    echo %__MsgPrefix%Generating native image of MScorlib facade for %__BuildOS%.%__BuildArch%.%__BuildType%
-
-    set "__CrossGenCoreLibLog=%__LogsDir%\CrossgenMSCoreLib_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
-    set "__CrossgenExe=%__CrossComponentBinDir%\crossgen.exe"
-
-    "!__CrossgenExe!" /Platform_Assemblies_Paths "%__BinDir%" /out "%__BinDir%\mscorlib.ni.dll" "%__BinDir%\mscorlib.dll" > "!__CrossGenCoreLibLog!" 2>&1
-    set err=!errorlevel!
-
     if "%__CompatJitCrossgen%"=="1" (
         set COMPlus_UseWindowsX86CoreLegacyJit=
-    )
-
-    if NOT !err! == 0 (
-        echo %__MsgPrefix%Error: CrossGen mscorlib facade build failed. Refer to !__CrossGenCoreLibLog!
-        :: Put it in the same log, helpful for Jenkins
-        type %__CrossGenCoreLibLog%        
-        goto CrossgenFailure
     )
 )
 

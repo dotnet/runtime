@@ -246,11 +246,6 @@ function copy_to_emulator {
     __testNativeBinDirBase="$__ARMEmulCoreclr/$__testNativeBinDirBase"
 
     sudo cp -R "./$__coreClrBinDirBase" "$__ARMRootfsCoreclrPath/$__coreClrBinDirBase"
-    if [ ! -z "$__mscorlibDir" ]; then
-        sudo cp "$__mscorlibDir/mscorlib.dll" "$__ARMRootfsCoreclrPath/$__coreClrBinDirBase/"
-    else
-        sudo cp "./$__coreClrBinDirBase/mscorlib.dll" "$__ARMRootfsCoreclrPath/$__coreClrBinDirBase/"
-    fi
     __coreClrBinDirBase="$__ARMEmulCoreclr/$__coreClrBinDirBase"
     __mscorlibDirBase="$__coreClrBinDirBase"
 

@@ -3,12 +3,12 @@
 // See the LICENSE file in the project root for more information.
 //
 
-using System;
+using Internal;
 class C
 {
     static int Main()
     {
-        LowLevelConsole.WriteLine("Hello " + "world");
+        Console.WriteLine("Hello " + "world");
         return 100;
     }
 }
