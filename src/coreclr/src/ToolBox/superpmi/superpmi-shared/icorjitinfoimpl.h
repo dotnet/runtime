@@ -129,7 +129,8 @@ public:
     // Return null if devirtualization is not possible.
     CORINFO_METHOD_HANDLE resolveVirtualMethod(
         CORINFO_METHOD_HANDLE virtualMethod,
-        CORINFO_CLASS_HANDLE implementingClass
+        CORINFO_CLASS_HANDLE implementingClass,
+        CORINFO_CONTEXT_HANDLE ownerType
         );
 
     // If a method's attributes have (getMethodAttribs) CORINFO_FLG_INTRINSIC set,
