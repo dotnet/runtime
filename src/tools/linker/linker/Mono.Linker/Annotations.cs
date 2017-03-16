@@ -78,6 +78,11 @@ namespace Mono.Linker {
 			writer.WriteEndAttribute ();
 		}
 
+		public ICollection<AssemblyDefinition> GetAssemblies ()
+		{
+			return assembly_actions.Keys;
+		}
+
 		public AssemblyAction GetAction (AssemblyDefinition assembly)
 		{
 			AssemblyAction action;
