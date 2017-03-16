@@ -161,6 +161,13 @@ namespace System.Net.Sockets
             }
         }
 
+        public bool IsDisconnected { get; private set; } = false;
+
+        public void SetToDisconnected()
+        {
+            IsDisconnected = true;
+        }
+
         public static unsafe SafeCloseSocket CreateSocket(IntPtr fileDescriptor)
         {
             return CreateSocket(InnerSafeCloseSocket.CreateSocket(fileDescriptor));
