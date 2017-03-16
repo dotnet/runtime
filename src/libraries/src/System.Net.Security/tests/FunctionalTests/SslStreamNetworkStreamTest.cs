@@ -17,6 +17,7 @@ namespace System.Net.Security.Tests
     public class SslStreamNetworkStreamTest
     {
         [Fact]
+        [ActiveIssue(16516, TestPlatforms.Windows)]
         public async Task SslStream_SendReceiveOverNetworkStream_Ok()
         {
             TcpListener listener = new TcpListener(IPAddress.Loopback, 0);
