@@ -48,13 +48,12 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Theory]
-        [InlineData(ClientCertificateOption.Automatic)]
-        public void ClientCertificates_ClientCertificateOptionsAutomatic_ThrowsException(ClientCertificateOption option)
+        [Fact]
+        public void ClientCertificates_ClientCertificateOptionsAutomatic_ThrowsException()
         {
             using (var handler = new HttpClientHandler())
             {
-                handler.ClientCertificateOptions = option;
+                handler.ClientCertificateOptions = ClientCertificateOption.Automatic;
                 Assert.Throws<InvalidOperationException>(() => handler.ClientCertificates);
             }
         }
