@@ -1515,7 +1515,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                             gcTestArguments = "${scenario} sequential"
                         }
 
-                        runtestArguments = "${lowerConfiguration} ${arch} ${gcstressStr} ${crossgenStr} ${runcrossgentestsStr} ${runjitstressStr} ${runjitstressregsStr} ${runjitmioptsStr} ${runjitforcerelocsStr} ${runjitdisasmStr} ${gcTestArguments}"
+                        runtestArguments = "${lowerConfiguration} ${arch} ${gcstressStr} ${crossgenStr} ${runcrossgentestsStr} ${runjitstressStr} ${runjitstressregsStr} ${runjitmioptsStr} ${runjitforcerelocsStr} ${runjitdisasmStr} ${gcTestArguments} collectdumps"
 
                         if (Constants.jitStressModeScenarios.containsKey(scenario)) {
                             def stepScriptLocation = "%WORKSPACE%\\SetStressModes.bat"
