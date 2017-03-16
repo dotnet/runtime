@@ -123,6 +123,7 @@ namespace Microsoft.DotNet.Host.Build
             FixPermissions(sharedFxRoot);
 
             c.BuildContext["SharedFrameworkPublishRoot"] = sharedFxRoot;
+            c.BuildContext["SharedFrameworkPublishSymbolsRoot"] = $"{Dirs.SharedFrameworkPublish}.symbols";
             return c.Success();
         }
 
@@ -170,6 +171,11 @@ namespace Microsoft.DotNet.Host.Build
             CreateZipFromDirectory(
                 c.BuildContext.Get<string>("SharedFrameworkPublishRoot"), 
                 c.BuildContext.Get<string>("SharedFrameworkCompressedFile"));
+
+            CreateZipFromDirectory(
+                c.BuildContext.Get<string>("SharedFrameworkPublishSymbolsRoot"),
+                c.BuildContext.Get<string>("SharedFrameworkSymbolsCompressedFile"));
+
             return c.Success();
         }
 
@@ -188,6 +194,11 @@ namespace Microsoft.DotNet.Host.Build
             CreateTarBallFromDirectory(
                 c.BuildContext.Get<string>("SharedFrameworkPublishRoot"), 
                 c.BuildContext.Get<string>("SharedFrameworkCompressedFile"));
+
+            CreateTarBallFromDirectory(
+                c.BuildContext.Get<string>("SharedFrameworkPublishSymbolsRoot"),
+                c.BuildContext.Get<string>("SharedFrameworkSymbolsCompressedFile"));
+
             return c.Success();
         }
 
