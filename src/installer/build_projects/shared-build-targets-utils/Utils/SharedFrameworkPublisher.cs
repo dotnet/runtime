@@ -160,6 +160,14 @@ namespace Microsoft.DotNet.Cli.Build
             var content = $@"{commitHash}{Environment.NewLine}{version}{Environment.NewLine}";
             File.WriteAllText(Path.Combine(sharedFrameworkNameAndVersionRoot, ".version"), content);
 
+            // Populate symbols publish folder
+            string sharedFrameworkNameAndVersionWithSymbolsRoot = $"{outputRootDirectory}.symbols";
+            if (Directory.Exists(sharedFrameworkNameAndVersionWithSymbolsRoot))
+            {
+                Utils.DeleteDirectory(sharedFrameworkNameAndVersionWithSymbolsRoot);
+            }
+            Directory.CreateDirectory(sharedFrameworkNameAndVersionWithSymbolsRoot);
+
             // Copy symbols to publish folder
             List<string> pdbFiles = new List<string>();
             string symbolsRoot = Path.Combine(_repoRoot, "pkg", "bin", "symbols");
@@ -180,7 +188,7 @@ namespace Microsoft.DotNet.Cli.Build
             }
             foreach (string pdbFile in pdbFiles)
             {
-                string destinationPath = Path.Combine(sharedFrameworkNameAndVersionRoot, Path.GetFileName(pdbFile));
+                string destinationPath = Path.Combine(sharedFrameworkNameAndVersionWithSymbolsRoot, Path.GetFileName(pdbFile));
                 if (!File.Exists(destinationPath))
                 {
                     File.Copy(pdbFile, destinationPath);
