@@ -934,5 +934,8 @@ mono_find_image_set_owner (void *ptr);
 void
 mono_loader_register_module (const char *name, MonoDl *module);
 
+gboolean
+mono_assembly_is_problematic_version (const char *name, guint16 major, guint16 minor, guint16 build, guint16 revision);
+
 #endif /* __MONO_METADATA_INTERNALS_H__ */
 

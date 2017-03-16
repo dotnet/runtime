@@ -2966,6 +2966,12 @@ assembly_binding_info_parsed (MonoAssemblyBindingInfo *info, void *user_data)
 	if (!domain)
 		return;
 
+	if (info->has_new_version && mono_assembly_is_problematic_version (info->name, info->new_version.major, info->new_version.minor, info->new_version.build, info->new_version.revision)) {
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Discarding assembly binding to problematic version %s v%d.%d.%d.%d",
+			info->name, info->new_version.major, info->new_version.minor, info->new_version.build, info->new_version.revision);
+		return;
+	}
+
 	for (tmp = domain->assembly_bindings; tmp; tmp = tmp->next) {
 		info_tmp = (MonoAssemblyBindingInfo *)tmp->data;
 		if (strcmp (info->name, info_tmp->name) == 0 && info_versions_equal (info, info_tmp))
@@ -3305,7 +3311,7 @@ mono_assembly_load_full_nosearch (MonoAssemblyName *aname,
 	int len;
 
 	aname = mono_assembly_remap_version (aname, &maped_aname);
-	
+
 	/* Reflection only assemblies don't get assembly binding */
 	if (!refonly)
 		aname = mono_assembly_apply_binding (aname, &maped_name_pp);
