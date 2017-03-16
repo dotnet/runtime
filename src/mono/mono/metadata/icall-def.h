@@ -604,7 +604,7 @@ ICALL(MCMETH_2, "InternalInvoke", ves_icall_InternalInvoke)
 HANDLES(ICALL(MCMETH_3, "get_core_clr_security_level", ves_icall_MonoMethod_get_core_clr_security_level))
 
 ICALL_TYPE(MEVIN, "System.Reflection.MonoEventInfo", MEVIN_1)
-ICALL(MEVIN_1, "get_event_info", ves_icall_MonoEventInfo_get_event_info)
+HANDLES(ICALL(MEVIN_1, "get_event_info", ves_icall_MonoEventInfo_get_event_info))
 
 ICALL_TYPE(MFIELD, "System.Reflection.MonoField", MFIELD_1)
 ICALL(MFIELD_1, "GetFieldOffset", ves_icall_MonoField_GetFieldOffset)
