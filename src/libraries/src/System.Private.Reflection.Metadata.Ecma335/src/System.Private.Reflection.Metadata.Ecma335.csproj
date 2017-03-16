@@ -243,7 +243,6 @@
     <Compile Include="Shims\Marshal.cs" />
     <Compile Include="Shims\MiniLinq.cs" />
     <Compile Include="Shims\StrongBox.cs" />
-    <Compile Include="Shims\Path.cs" />
     <Compile Include="Shims\RuntimeReflectionExtensions.cs" />
     <Compile Include="..\..\Common\src\System\Diagnostics\CodeAnalysis\ExcludeFromCodeCoverageAttribute.cs" />
     <Compile Include="..\..\Common\src\System\Runtime\Versioning\NonVersionableAttribute.cs" />
