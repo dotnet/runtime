@@ -598,7 +598,7 @@
     .maxstack  3
     .locals init ([0] class TailcallVerify.Condition16 con,
              [1] class [mscorlib]System.Exception e,
-             [2] class [mscorlib]System.Threading.Thread t)
+             [2] class [System.Threading.Thread]System.Threading.Thread t)
     IL_0000:  ldstr      "Executing Condition16.Test1 - Caller: Arguments: N"
     + "one - ReturnType: void; Callee: Arguments: None - ReturnType: void"
     IL_0005:  call       void [System.Console]System.Console::WriteLine(string)
@@ -650,13 +650,13 @@
                                                                                                     native int)
       IL_008a:  stsfld     class [mscorlib]System.Threading.ParameterizedThreadStart TailcallVerify.Condition16::'CS$<>9__CachedAnonymousMethodDelegate1'
       IL_008f:  ldsfld     class [mscorlib]System.Threading.ParameterizedThreadStart TailcallVerify.Condition16::'CS$<>9__CachedAnonymousMethodDelegate1'
-      IL_0094:  newobj     instance void [mscorlib]System.Threading.Thread::.ctor(class [mscorlib]System.Threading.ParameterizedThreadStart)
+      IL_0094:  newobj     instance void [System.Threading.Thread]System.Threading.Thread::.ctor(class [mscorlib]System.Threading.ParameterizedThreadStart)
       IL_0099:  stloc.2
       IL_009a:  ldloc.2
       IL_009b:  ldloc.0
-      IL_009c:  callvirt   instance void [mscorlib]System.Threading.Thread::Start(object)
+      IL_009c:  callvirt   instance void [System.Threading.Thread]System.Threading.Thread::Start(object)
       IL_00a1:  ldloc.2
-      IL_00a2:  callvirt   instance void [mscorlib]System.Threading.Thread::Join()
+      IL_00a2:  callvirt   instance void [System.Threading.Thread]System.Threading.Thread::Join()
       IL_00a7:  leave.s    IL_00a9
 
     }  // end handler
@@ -704,7 +704,7 @@
   {
     // Code size       59 (0x3b)
     .maxstack  3
-    .locals init ([0] class [mscorlib]System.Threading.Thread t)
+    .locals init ([0] class [System.Threading.Thread]System.Threading.Thread t)
     IL_0000:  ldsfld     class [mscorlib]System.Threading.ParameterizedThreadStart TailcallVerify.Condition16::'CS$<>9__CachedAnonymousMethodDelegate3'
     IL_0005:  brtrue.s   IL_0018
 
@@ -714,13 +714,13 @@
                                                                                                   native int)
     IL_0013:  stsfld     class [mscorlib]System.Threading.ParameterizedThreadStart TailcallVerify.Condition16::'CS$<>9__CachedAnonymousMethodDelegate3'
     IL_0018:  ldsfld     class [mscorlib]System.Threading.ParameterizedThreadStart TailcallVerify.Condition16::'CS$<>9__CachedAnonymousMethodDelegate3'
-    IL_001d:  newobj     instance void [mscorlib]System.Threading.Thread::.ctor(class [mscorlib]System.Threading.ParameterizedThreadStart)
+    IL_001d:  newobj     instance void [System.Threading.Thread]System.Threading.Thread::.ctor(class [mscorlib]System.Threading.ParameterizedThreadStart)
     IL_0022:  stloc.0
     IL_0023:  ldloc.0
     IL_0024:  ldarg.0
-    IL_0025:  callvirt   instance void [mscorlib]System.Threading.Thread::Start(object)
+    IL_0025:  callvirt   instance void [System.Threading.Thread]System.Threading.Thread::Start(object)
     IL_002a:  ldloc.0
-    IL_002b:  callvirt   instance void [mscorlib]System.Threading.Thread::Join()
+    IL_002b:  callvirt   instance void [System.Threading.Thread]System.Threading.Thread::Join()
     IL_0030:  ldc.i4.1
     IL_0031:  volatile.
     IL_0033:  ldsfld     int32 modreq([mscorlib]System.Runtime.CompilerServices.IsVolatile) TailcallVerify.Condition16::zero
@@ -4103,7 +4103,7 @@
   {
     // Code size       394 (0x18a)
     .maxstack  3
-    .locals init ([0] class [mscorlib]System.Threading.Thread t1,
+    .locals init ([0] class [System.Threading.Thread]System.Threading.Thread t1,
              [1] class [mscorlib]System.Exception e,
              [2] int64 l,
              [3] int64 V_3,
@@ -4124,14 +4124,14 @@
     {
       IL_0025:  ldnull
       IL_0026:  ldftn      void TailcallVerify.Condition21::Caller3()
-      IL_002c:  newobj     instance void [mscorlib]System.Threading.ThreadStart::.ctor(object,
+      IL_002c:  newobj     instance void [System.Threading.Thread]System.Threading.ThreadStart::.ctor(object,
                                                                                        native int)
-      IL_0031:  newobj     instance void [mscorlib]System.Threading.Thread::.ctor(class [mscorlib]System.Threading.ThreadStart)
+      IL_0031:  newobj     instance void [System.Threading.Thread]System.Threading.Thread::.ctor(class [System.Threading.Thread]System.Threading.ThreadStart)
       IL_0036:  stloc.0
       IL_0037:  ldloc.0
-      IL_0038:  callvirt   instance void [mscorlib]System.Threading.Thread::Start()
+      IL_0038:  callvirt   instance void [System.Threading.Thread]System.Threading.Thread::Start()
       IL_003d:  ldloc.0
-      IL_003e:  callvirt   instance void [mscorlib]System.Threading.Thread::Join()
+      IL_003e:  callvirt   instance void [System.Threading.Thread]System.Threading.Thread::Join()
       IL_0043:  leave.s    IL_009c
 
     }  // end .try
@@ -4799,8 +4799,8 @@
     .maxstack  3
     .locals init ([0] class TailcallVerify.Condition21 con1,
              [1] class TailcallVerify.Condition21 con2,
-             [2] class [mscorlib]System.Threading.Thread t1,
-             [3] class [mscorlib]System.Threading.Thread t2,
+             [2] class [System.Threading.Thread]System.Threading.Thread t1,
+             [3] class [System.Threading.Thread]System.Threading.Thread t2,
              [4] class [mscorlib]System.Exception ex,
              [5] int32 i,
              [6] int32 V_6)
@@ -4815,26 +4815,26 @@
     IL_001c:  stloc.1
     IL_001d:  ldloc.0
     IL_001e:  ldftn      instance void TailcallVerify.Condition21::Caller5()
-    IL_0024:  newobj     instance void [mscorlib]System.Threading.ThreadStart::.ctor(object,
+    IL_0024:  newobj     instance void [System.Threading.Thread]System.Threading.ThreadStart::.ctor(object,
                                                                                      native int)
-    IL_0029:  newobj     instance void [mscorlib]System.Threading.Thread::.ctor(class [mscorlib]System.Threading.ThreadStart)
+    IL_0029:  newobj     instance void [System.Threading.Thread]System.Threading.Thread::.ctor(class [System.Threading.Thread]System.Threading.ThreadStart)
     IL_002e:  stloc.2
     IL_002f:  ldloc.1
     IL_0030:  ldftn      instance void TailcallVerify.Condition21::Caller5()
-    IL_0036:  newobj     instance void [mscorlib]System.Threading.ThreadStart::.ctor(object,
+    IL_0036:  newobj     instance void [System.Threading.Thread]System.Threading.ThreadStart::.ctor(object,
                                                                                      native int)
-    IL_003b:  newobj     instance void [mscorlib]System.Threading.Thread::.ctor(class [mscorlib]System.Threading.ThreadStart)
+    IL_003b:  newobj     instance void [System.Threading.Thread]System.Threading.Thread::.ctor(class [System.Threading.Thread]System.Threading.ThreadStart)
     IL_0040:  stloc.3
     .try
     {
       IL_0041:  ldloc.2
-      IL_0042:  callvirt   instance void [mscorlib]System.Threading.Thread::Start()
+      IL_0042:  callvirt   instance void [System.Threading.Thread]System.Threading.Thread::Start()
       IL_0047:  ldloc.3
-      IL_0048:  callvirt   instance void [mscorlib]System.Threading.Thread::Start()
+      IL_0048:  callvirt   instance void [System.Threading.Thread]System.Threading.Thread::Start()
       IL_004d:  ldloc.2
-      IL_004e:  callvirt   instance void [mscorlib]System.Threading.Thread::Join()
+      IL_004e:  callvirt   instance void [System.Threading.Thread]System.Threading.Thread::Join()
       IL_0053:  ldloc.3
-      IL_0054:  callvirt   instance void [mscorlib]System.Threading.Thread::Join()
+      IL_0054:  callvirt   instance void [System.Threading.Thread]System.Threading.Thread::Join()
       IL_0059:  leave.s    IL_007c
 
     }  // end .try

@@ -161,7 +161,7 @@
     IL_001d:  callvirt   instance bool [mscorlib]System.Threading.WaitHandle::WaitOne()
     IL_0022:  pop
     IL_0023:  ldc.i4     0x3e8
-    IL_0028:  call       void [mscorlib]System.Threading.Thread::Sleep(int32)
+    IL_0028:  call       void [System.Threading.Thread]System.Threading.Thread::Sleep(int32)
     IL_002d:  nop
     IL_002e:  call       void [mscorlib]System.GC::Collect()
     IL_0033:  nop
@@ -178,22 +178,22 @@
   {
     .entrypoint
     .maxstack  3
-    .locals init (class [mscorlib]System.Threading.Thread V_0,
+    .locals init (class [System.Threading.Thread]System.Threading.Thread V_0,
              int32 V_1)
     IL_0000:  nop
     IL_0001:  ldnull
     IL_0002:  ldftn      void Repro::GCHole()
-    IL_0008:  newobj     instance void [mscorlib]System.Threading.ThreadStart::.ctor(object,
+    IL_0008:  newobj     instance void [System.Threading.Thread]System.Threading.ThreadStart::.ctor(object,
                                                                                      native int)
-    IL_000d:  newobj     instance void [mscorlib]System.Threading.Thread::.ctor(class [mscorlib]System.Threading.ThreadStart)
+    IL_000d:  newobj     instance void [System.Threading.Thread]System.Threading.Thread::.ctor(class [System.Threading.Thread]System.Threading.ThreadStart)
     IL_0012:  stloc.0
     IL_0013:  ldloc.0
-    IL_0014:  callvirt   instance void [mscorlib]System.Threading.Thread::Start()
+    IL_0014:  callvirt   instance void [System.Threading.Thread]System.Threading.Thread::Start()
     IL_0019:  nop
     IL_001a:  call       void Repro::Trigger()
     IL_001f:  nop
     IL_0020:  ldloc.0
-    IL_0021:  callvirt   instance void [mscorlib]System.Threading.Thread::Join()
+    IL_0021:  callvirt   instance void [System.Threading.Thread]System.Threading.Thread::Join()
     IL_0026:  nop
     IL_0027:  ldc.i4.s   100
     IL_0029:  stloc.1

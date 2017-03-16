@@ -46,11 +46,11 @@
     .maxstack  8
     IL_0000:  nop
     IL_0001:  ldc.i4     0x7d0
-    IL_0006:  call       void [mscorlib]System.Threading.Thread::Sleep(int32)
+    IL_0006:  call       void [System.Threading.Thread]System.Threading.Thread::Sleep(int32)
     IL_000b:  nop
     IL_000c:  ldstr      "In A.cctor: thread {0}: B.i {1}"
-    IL_0011:  call       class [mscorlib]System.Threading.Thread [mscorlib]System.Threading.Thread::get_CurrentThread()
-    IL_0016:  callvirt   instance string [mscorlib]System.Threading.Thread::get_Name()
+    IL_0011:  call       class [System.Threading.Thread]System.Threading.Thread [System.Threading.Thread]System.Threading.Thread::get_CurrentThread()
+    IL_0016:  callvirt   instance string [System.Threading.Thread]System.Threading.Thread::get_Name()
     IL_001b:  ldsfld     int32 B::i
     IL_0020:  box        [mscorlib]System.Int32
     IL_0025:  call       void [System.Console]System.Console::WriteLine(string,
@@ -68,8 +68,8 @@
     .maxstack  8
     IL_0000:  nop
     IL_0001:  ldstr      "In MyClass.SomeMethod(): thread {0}"
-    IL_0006:  call       class [mscorlib]System.Threading.Thread [mscorlib]System.Threading.Thread::get_CurrentThread()
-    IL_000b:  callvirt   instance string [mscorlib]System.Threading.Thread::get_Name()
+    IL_0006:  call       class [System.Threading.Thread]System.Threading.Thread [System.Threading.Thread]System.Threading.Thread::get_CurrentThread()
+    IL_000b:  callvirt   instance string [System.Threading.Thread]System.Threading.Thread::get_Name()
     IL_0010:  call       void [System.Console]System.Console::WriteLine(string,
                                                                   object)
     IL_0015:  nop
@@ -89,8 +89,8 @@
     .maxstack  8
     IL_0000:  nop
     IL_0001:  ldstr      "In B.cctor: thread {0}: C.i {1}"
-    IL_0006:  call       class [mscorlib]System.Threading.Thread [mscorlib]System.Threading.Thread::get_CurrentThread()
-    IL_000b:  callvirt   instance string [mscorlib]System.Threading.Thread::get_Name()
+    IL_0006:  call       class [System.Threading.Thread]System.Threading.Thread [System.Threading.Thread]System.Threading.Thread::get_CurrentThread()
+    IL_000b:  callvirt   instance string [System.Threading.Thread]System.Threading.Thread::get_Name()
     IL_0010:  ldsfld     int32 C::i
     IL_0015:  box        [mscorlib]System.Int32
     IL_001a:  call       void [System.Console]System.Console::WriteLine(string,
@@ -108,8 +108,8 @@
     .maxstack  8
     IL_0000:  nop
     IL_0001:  ldstr      "In MyClass.SomeMethod(): thread {0}"
-    IL_0006:  call       class [mscorlib]System.Threading.Thread [mscorlib]System.Threading.Thread::get_CurrentThread()
-    IL_000b:  callvirt   instance string [mscorlib]System.Threading.Thread::get_Name()
+    IL_0006:  call       class [System.Threading.Thread]System.Threading.Thread [System.Threading.Thread]System.Threading.Thread::get_CurrentThread()
+    IL_000b:  callvirt   instance string [System.Threading.Thread]System.Threading.Thread::get_Name()
     IL_0010:  call       void [System.Console]System.Console::WriteLine(string,
                                                                   object)
     IL_0015:  nop
@@ -141,11 +141,11 @@
     .maxstack  8
     IL_0000:  nop
     IL_0001:  ldc.i4     0x7d0
-    IL_0006:  call       void [mscorlib]System.Threading.Thread::Sleep(int32)
+    IL_0006:  call       void [System.Threading.Thread]System.Threading.Thread::Sleep(int32)
     IL_000b:  nop
     IL_000c:  ldstr      "In C.cctor: thread {0}: D.i {1}"
-    IL_0011:  call       class [mscorlib]System.Threading.Thread [mscorlib]System.Threading.Thread::get_CurrentThread()
-    IL_0016:  callvirt   instance string [mscorlib]System.Threading.Thread::get_Name()
+    IL_0011:  call       class [System.Threading.Thread]System.Threading.Thread [System.Threading.Thread]System.Threading.Thread::get_CurrentThread()
+    IL_0016:  callvirt   instance string [System.Threading.Thread]System.Threading.Thread::get_Name()
     IL_001b:  ldsfld     int32 D::i
     IL_0020:  box        [mscorlib]System.Int32
     IL_0025:  call       void [System.Console]System.Console::WriteLine(string,
@@ -163,8 +163,8 @@
     .maxstack  8
     IL_0000:  nop
     IL_0001:  ldstr      "In MyClass.SomeMethod(): thread {0}"
-    IL_0006:  call       class [mscorlib]System.Threading.Thread [mscorlib]System.Threading.Thread::get_CurrentThread()
-    IL_000b:  callvirt   instance string [mscorlib]System.Threading.Thread::get_Name()
+    IL_0006:  call       class [System.Threading.Thread]System.Threading.Thread [System.Threading.Thread]System.Threading.Thread::get_CurrentThread()
+    IL_000b:  callvirt   instance string [System.Threading.Thread]System.Threading.Thread::get_Name()
     IL_0010:  call       void [System.Console]System.Console::WriteLine(string,
                                                                   object)
     IL_0015:  nop
@@ -184,11 +184,11 @@
     .maxstack  8
     IL_0000:  nop
     IL_0001:  ldc.i4     0x1388
-    IL_0006:  call       void [mscorlib]System.Threading.Thread::Sleep(int32)
+    IL_0006:  call       void [System.Threading.Thread]System.Threading.Thread::Sleep(int32)
     IL_000b:  nop
     IL_000c:  ldstr      "In D.cctor: thread {0}: E.i {1}"
-    IL_0011:  call       class [mscorlib]System.Threading.Thread [mscorlib]System.Threading.Thread::get_CurrentThread()
-    IL_0016:  callvirt   instance string [mscorlib]System.Threading.Thread::get_Name()
+    IL_0011:  call       class [System.Threading.Thread]System.Threading.Thread [System.Threading.Thread]System.Threading.Thread::get_CurrentThread()
+    IL_0016:  callvirt   instance string [System.Threading.Thread]System.Threading.Thread::get_Name()
     IL_001b:  ldsfld     int32 E::i
     IL_0020:  box        [mscorlib]System.Int32
     IL_0025:  call       void [System.Console]System.Console::WriteLine(string,
@@ -206,8 +206,8 @@
     .maxstack  8
     IL_0000:  nop
     IL_0001:  ldstr      "In MyClass.SomeMethod(): thread {0}"
-    IL_0006:  call       class [mscorlib]System.Threading.Thread [mscorlib]System.Threading.Thread::get_CurrentThread()
-    IL_000b:  callvirt   instance string [mscorlib]System.Threading.Thread::get_Name()
+    IL_0006:  call       class [System.Threading.Thread]System.Threading.Thread [System.Threading.Thread]System.Threading.Thread::get_CurrentThread()
+    IL_000b:  callvirt   instance string [System.Threading.Thread]System.Threading.Thread::get_Name()
     IL_0010:  call       void [System.Console]System.Console::WriteLine(string,
                                                                   object)
     IL_0015:  nop
@@ -239,8 +239,8 @@
     .maxstack  8
     IL_0000:  nop
     IL_0001:  ldstr      "In E.cctor: thread {0}: A.i {1}"
-    IL_0006:  call       class [mscorlib]System.Threading.Thread [mscorlib]System.Threading.Thread::get_CurrentThread()
-    IL_000b:  callvirt   instance string [mscorlib]System.Threading.Thread::get_Name()
+    IL_0006:  call       class [System.Threading.Thread]System.Threading.Thread [System.Threading.Thread]System.Threading.Thread::get_CurrentThread()
+    IL_000b:  callvirt   instance string [System.Threading.Thread]System.Threading.Thread::get_Name()
     IL_0010:  ldsfld     int32 A::i
     IL_0015:  box        [mscorlib]System.Int32
     IL_001a:  call       void [System.Console]System.Console::WriteLine(string,
@@ -258,8 +258,8 @@
     .maxstack  8
     IL_0000:  nop
     IL_0001:  ldstr      "In MyClass.SomeMethod(): thread {0}"
-    IL_0006:  call       class [mscorlib]System.Threading.Thread [mscorlib]System.Threading.Thread::get_CurrentThread()
-    IL_000b:  callvirt   instance string [mscorlib]System.Threading.Thread::get_Name()
+    IL_0006:  call       class [System.Threading.Thread]System.Threading.Thread [System.Threading.Thread]System.Threading.Thread::get_CurrentThread()
+    IL_000b:  callvirt   instance string [System.Threading.Thread]System.Threading.Thread::get_Name()
     IL_0010:  call       void [System.Console]System.Console::WriteLine(string,
                                                                   object)
     IL_0015:  nop
@@ -316,85 +316,85 @@
     .entrypoint
     // Code size       302 (0x12e)
     .maxstack  3
-    .locals init (class [mscorlib]System.Threading.Thread V_0,
-             class [mscorlib]System.Threading.Thread V_1,
-             class [mscorlib]System.Threading.Thread V_2,
-             class [mscorlib]System.Threading.Thread V_3,
+    .locals init (class [System.Threading.Thread]System.Threading.Thread V_0,
+             class [System.Threading.Thread]System.Threading.Thread V_1,
+             class [System.Threading.Thread]System.Threading.Thread V_2,
+             class [System.Threading.Thread]System.Threading.Thread V_3,
              int32 V_4,
              bool V_5)
     IL_0000:  nop
     IL_0001:  ldnull
     IL_0002:  ldftn      void Test::RunGetA()
-    IL_0008:  newobj     instance void [mscorlib]System.Threading.ThreadStart::.ctor(object,
+    IL_0008:  newobj     instance void [System.Threading.Thread]System.Threading.ThreadStart::.ctor(object,
                                                                                      native int)
-    IL_000d:  newobj     instance void [mscorlib]System.Threading.Thread::.ctor(class [mscorlib]System.Threading.ThreadStart)
+    IL_000d:  newobj     instance void [System.Threading.Thread]System.Threading.Thread::.ctor(class [System.Threading.Thread]System.Threading.ThreadStart)
     IL_0012:  stloc.0
     IL_0013:  ldloc.0
     IL_0014:  ldstr      "T1"
-    IL_0019:  callvirt   instance void [mscorlib]System.Threading.Thread::set_Name(string)
+    IL_0019:  callvirt   instance void [System.Threading.Thread]System.Threading.Thread::set_Name(string)
     IL_001e:  nop
     IL_001f:  ldnull
     IL_0020:  ldftn      void Test::RunGetC()
-    IL_0026:  newobj     instance void [mscorlib]System.Threading.ThreadStart::.ctor(object,
+    IL_0026:  newobj     instance void [System.Threading.Thread]System.Threading.ThreadStart::.ctor(object,
                                                                                      native int)
-    IL_002b:  newobj     instance void [mscorlib]System.Threading.Thread::.ctor(class [mscorlib]System.Threading.ThreadStart)
+    IL_002b:  newobj     instance void [System.Threading.Thread]System.Threading.Thread::.ctor(class [System.Threading.Thread]System.Threading.ThreadStart)
     IL_0030:  stloc.1
     IL_0031:  ldloc.1
     IL_0032:  ldstr      "T2"
-    IL_0037:  callvirt   instance void [mscorlib]System.Threading.Thread::set_Name(string)
+    IL_0037:  callvirt   instance void [System.Threading.Thread]System.Threading.Thread::set_Name(string)
     IL_003c:  nop
     IL_003d:  ldnull
     IL_003e:  ldftn      void Test::RunGetD()
-    IL_0044:  newobj     instance void [mscorlib]System.Threading.ThreadStart::.ctor(object,
+    IL_0044:  newobj     instance void [System.Threading.Thread]System.Threading.ThreadStart::.ctor(object,
                                                                                      native int)
-    IL_0049:  newobj     instance void [mscorlib]System.Threading.Thread::.ctor(class [mscorlib]System.Threading.ThreadStart)
+    IL_0049:  newobj     instance void [System.Threading.Thread]System.Threading.Thread::.ctor(class [System.Threading.Thread]System.Threading.ThreadStart)
     IL_004e:  stloc.2
     IL_004f:  ldloc.2
     IL_0050:  ldstr      "T3"
-    IL_0055:  callvirt   instance void [mscorlib]System.Threading.Thread::set_Name(string)
+    IL_0055:  callvirt   instance void [System.Threading.Thread]System.Threading.Thread::set_Name(string)
     IL_005a:  nop
     IL_005b:  ldnull
     IL_005c:  ldftn      void Test::RunGetE()
-    IL_0062:  newobj     instance void [mscorlib]System.Threading.ThreadStart::.ctor(object,
+    IL_0062:  newobj     instance void [System.Threading.Thread]System.Threading.ThreadStart::.ctor(object,
                                                                                      native int)
-    IL_0067:  newobj     instance void [mscorlib]System.Threading.Thread::.ctor(class [mscorlib]System.Threading.ThreadStart)
+    IL_0067:  newobj     instance void [System.Threading.Thread]System.Threading.Thread::.ctor(class [System.Threading.Thread]System.Threading.ThreadStart)
     IL_006c:  stloc.3
     IL_006d:  ldloc.3
     IL_006e:  ldstr      "T4"
-    IL_0073:  callvirt   instance void [mscorlib]System.Threading.Thread::set_Name(string)
+    IL_0073:  callvirt   instance void [System.Threading.Thread]System.Threading.Thread::set_Name(string)
     IL_0078:  nop
     IL_0079:  ldloc.0
-    IL_007a:  callvirt   instance void [mscorlib]System.Threading.Thread::Start()
+    IL_007a:  callvirt   instance void [System.Threading.Thread]System.Threading.Thread::Start()
     IL_007f:  nop
     IL_0080:  ldc.i4     0x3e8
-    IL_0085:  call       void [mscorlib]System.Threading.Thread::Sleep(int32)
+    IL_0085:  call       void [System.Threading.Thread]System.Threading.Thread::Sleep(int32)
     IL_008a:  nop
     IL_008b:  ldloc.1
-    IL_008c:  callvirt   instance void [mscorlib]System.Threading.Thread::Start()
+    IL_008c:  callvirt   instance void [System.Threading.Thread]System.Threading.Thread::Start()
     IL_0091:  nop
     IL_0092:  ldc.i4     0x3e8
-    IL_0097:  call       void [mscorlib]System.Threading.Thread::Sleep(int32)
+    IL_0097:  call       void [System.Threading.Thread]System.Threading.Thread::Sleep(int32)
     IL_009c:  nop
     IL_009d:  ldloc.2
-    IL_009e:  callvirt   instance void [mscorlib]System.Threading.Thread::Start()
+    IL_009e:  callvirt   instance void [System.Threading.Thread]System.Threading.Thread::Start()
     IL_00a3:  nop
     IL_00a4:  ldc.i4     0x3e8
-    IL_00a9:  call       void [mscorlib]System.Threading.Thread::Sleep(int32)
+    IL_00a9:  call       void [System.Threading.Thread]System.Threading.Thread::Sleep(int32)
     IL_00ae:  nop
     IL_00af:  ldloc.3
-    IL_00b0:  callvirt   instance void [mscorlib]System.Threading.Thread::Start()
+    IL_00b0:  callvirt   instance void [System.Threading.Thread]System.Threading.Thread::Start()
     IL_00b5:  nop
     IL_00b6:  ldloc.3
-    IL_00b7:  callvirt   instance void [mscorlib]System.Threading.Thread::Join()
+    IL_00b7:  callvirt   instance void [System.Threading.Thread]System.Threading.Thread::Join()
     IL_00bc:  nop
     IL_00bd:  ldloc.2
-    IL_00be:  callvirt   instance void [mscorlib]System.Threading.Thread::Join()
+    IL_00be:  callvirt   instance void [System.Threading.Thread]System.Threading.Thread::Join()
     IL_00c3:  nop
     IL_00c4:  ldloc.1
-    IL_00c5:  callvirt   instance void [mscorlib]System.Threading.Thread::Join()
+    IL_00c5:  callvirt   instance void [System.Threading.Thread]System.Threading.Thread::Join()
     IL_00ca:  nop
     IL_00cb:  ldloc.0
-    IL_00cc:  callvirt   instance void [mscorlib]System.Threading.Thread::Join()
+    IL_00cc:  callvirt   instance void [System.Threading.Thread]System.Threading.Thread::Join()
     IL_00d1:  nop
     IL_00d2:  ldsfld     int32 A::i
     IL_00d7:  ldc.i4.5

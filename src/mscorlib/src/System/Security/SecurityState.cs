@@ -7,7 +7,7 @@ using System.Security;
 
 namespace System.Security
 {
-    public abstract class SecurityState
+    internal abstract class SecurityState
     {
         protected SecurityState() { }
 

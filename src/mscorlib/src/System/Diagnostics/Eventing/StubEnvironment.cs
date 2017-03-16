@@ -344,7 +344,7 @@ namespace Microsoft.Reflection
 #if ES_BUILD_PCL || PROJECTN
 namespace System.Security
 {
-    class SuppressUnmanagedCodeSecurityAttribute : Attribute { }
+    internal class SuppressUnmanagedCodeSecurityAttribute : Attribute { }
 
     enum SecurityAction { Demand }
 }

@@ -26,7 +26,7 @@
       .maxstack  8
       IL_0002:  call       void [mscorlib]System.GC::Collect()
                 ldc.i4 100
-                call       void [mscorlib]System.Threading.Thread::Sleep(int32)
+                call       void [System.Threading.Thread]System.Threading.Thread::Sleep(int32)
                 volatile.
                 ldsfld     bool Test.App::signal
                 brfalse.s  IL_0002
@@ -39,8 +39,8 @@
       .entrypoint
       .maxstack  3
       .locals ([0] class Test.App app,
-               [1] class [mscorlib]System.Threading.ThreadStart ts,
-               [2] class [mscorlib]System.Threading.Thread th,
+               [1] class [System.Threading.Thread]System.Threading.ThreadStart ts,
+               [2] class [System.Threading.Thread]System.Threading.Thread th,
                [3] class System.Object obj,
                [4] class System.Object I,
                [5] float64 V_5,
@@ -49,16 +49,16 @@
       IL_0005:  stloc.0
       IL_0006:  ldloc.0
       IL_0007:  ldftn      instance void Test.App::Func()
-      IL_000d:  newobj     instance void [mscorlib]System.Threading.ThreadStart::.ctor(class System.Object,native int)
+      IL_000d:  newobj     instance void [System.Threading.Thread]System.Threading.ThreadStart::.ctor(class System.Object,native int)
       IL_0012:  stloc.1
       IL_0013:  ldloc.1
-      IL_0014:  newobj     instance void [mscorlib]System.Threading.Thread::.ctor(class [mscorlib]System.Threading.ThreadStart)
+      IL_0014:  newobj     instance void [System.Threading.Thread]System.Threading.Thread::.ctor(class [System.Threading.Thread]System.Threading.ThreadStart)
       IL_0019:  stloc.2
                 ldc.i4.0
                 volatile.
                 stsfld     bool  Test.App::signal
       IL_001a:  ldloc.2     
-      IL_001b:  call       instance void [mscorlib]System.Threading.Thread::Start()
+      IL_001b:  call       instance void [System.Threading.Thread]System.Threading.Thread::Start()
       IL_0020:  ldc.r8     11.
       IL_0029:  stloc.s    V_5
       IL_002b:  ldloc.s   V_5
