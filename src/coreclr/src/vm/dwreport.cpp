@@ -2468,7 +2468,7 @@ FaultReportResult DoFaultReportWorker(      // Was Watson attempted, successful?
             {   // Look for final '\'
                 pName = wcsrchr(buf, W('\\'));
                 // If found, skip it; if not, point to full name.
-                pName = pName ? pName+1 : buf;
+                pName = pName ? pName+1 : (LPCWSTR)buf;
             }
         }
 

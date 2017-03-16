@@ -64,7 +64,7 @@ EventReporter::EventReporter(EventReporterType type)
     {
         // If app name has a '\', consider the part after that; otherwise consider whole name.
         LPCWSTR appName =  wcsrchr(appPath, W('\\'));
-        appName = appName ? appName+1 : appPath;
+        appName = appName ? appName+1 : (LPCWSTR)appPath;
         m_Description.Append(appName);
         m_Description.Append(W("\n"));
     }
