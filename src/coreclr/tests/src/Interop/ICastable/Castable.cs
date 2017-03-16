@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
+using Console = Internal.Console;
+
 public interface IRetArg<T>
 {
     T ReturnArg(T t);
