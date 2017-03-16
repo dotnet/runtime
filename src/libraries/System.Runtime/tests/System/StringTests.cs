@@ -1650,7 +1650,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Join_ObjectArray_TestData))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp | TargetFrameworkMonikers.Uap)]
         public static void Join_ObjectArray_WithNullIssue(string separator, object[] values, string expected)
         {
             string enumerableExpected = expected;

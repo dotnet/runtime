@@ -231,7 +231,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp | TargetFrameworkMonikers.Uap)]
         public void InsertAfterThrowsArgumentOutOfRangeExceptionForDupRefAttrAtTheEnd_OldBehavior()
         {
             const string attributeName = "existingAttr";
@@ -276,7 +276,7 @@ namespace System.Xml.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp | TargetFrameworkMonikers.Uap)]
         public void InsertAfterDoesNotReplaceDupRefAttr_OldBehavior()
         {
             const string attributeName = "existingAttr";
