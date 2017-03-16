@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -278,6 +278,7 @@ namespace Microsoft.DotNet.Host.Build
         [Target(
             nameof(PublishTargets.PublishHostFxrArchiveToAzure),
             nameof(PublishTargets.PublishSharedFrameworkArchiveToAzure),
+            nameof(PublishTargets.PublishSharedFrameworkSymbolsArchiveToAzure),
             nameof(PublishTargets.PublishCombinedMuxerHostFxrFrameworkArchiveToAzure))]
         public static BuildTargetResult PublishArchivesToAzure(BuildTargetContext c) => c.Success();
 
@@ -420,6 +421,15 @@ namespace Microsoft.DotNet.Host.Build
             return c.Success();
         }
 
+        [Target]
+        public static BuildTargetResult PublishSharedFrameworkSymbolsArchiveToAzure(BuildTargetContext c)
+        {
+            var version = SharedFrameworkNugetVersion;
+            var archiveFile = c.BuildContext.Get<string>("SharedFrameworkSymbolsCompressedFile");
+
+            AzurePublisherTool.PublishArchive(archiveFile, Channel, version);
+            return c.Success();
+        }
         [Target]
         [BuildPlatforms(BuildPlatform.Ubuntu, BuildPlatform.Debian)]
         public static BuildTargetResult PublishSharedFrameworkDebToDebianRepo(BuildTargetContext c)
