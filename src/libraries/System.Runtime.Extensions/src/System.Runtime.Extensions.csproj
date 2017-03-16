@@ -268,7 +268,6 @@
   <ItemGroup Condition="'$(TargetGroup)' == 'uapaot'">
     <Compile Include="System\Environment.Uap.cs" />
     <Compile Include="System\IO\FileStreamHelpers.Uap.cs" />
-    <Compile Include="System\IO\Path.Uap.cs" />
     <Compile Include="System\IO\PathHelper.Uap.cs" />
     <Compile Include="$(CommonPath)\System\IO\PathInternal.Windows.StringBuffer.cs">
       <Link>Common\System\IO\PathInternal.Windows.StringBuffer.cs</Link>
