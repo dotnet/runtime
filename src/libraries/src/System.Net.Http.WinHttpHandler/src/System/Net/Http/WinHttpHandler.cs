@@ -259,6 +259,11 @@ namespace System.Net.Http
         {
             get
             {
+                if (_clientCertificateOption != ClientCertificateOption.Manual)
+                {
+                    throw new InvalidOperationException(SR.Format(SR.net_http_invalid_enable_first, "ClientCertificateOptions", "Manual"));
+                }
+
                 if (_clientCertificates == null)
                 {
                     _clientCertificates = new X509Certificate2Collection();
@@ -716,7 +721,7 @@ namespace System.Net.Http
                             Interop.WinHttp.WINHTTP_NO_PROXY_NAME,
                             Interop.WinHttp.WINHTTP_NO_PROXY_BYPASS,
                             (int)Interop.WinHttp.WINHTTP_FLAG_ASYNC);
-                            
+
                         if (sessionHandle.IsInvalid)
                         {
                             int lastError = Marshal.GetLastWin32Error();
@@ -842,7 +847,7 @@ namespace System.Net.Http
                 // will have the side-effect of WinHTTP cancelling any pending I/O and accelerating its callbacks
                 // on the handle and thus releasing the awaiting tasks in the loop below. This helps to provide
                 // a more timely, cooperative, cancellation pattern.
-                using (state.CancellationToken.Register(s => ((WinHttpRequestState)s).RequestHandle.Dispose(), state))                
+                using (state.CancellationToken.Register(s => ((WinHttpRequestState)s).RequestHandle.Dispose(), state))
                 {
                     do
                     {
@@ -912,7 +917,7 @@ namespace System.Net.Http
         private void SetSessionHandleTlsOptions(SafeWinHttpHandle sessionHandle)
         {
             uint optionData = 0;
-            SslProtocols sslProtocols = 
+            SslProtocols sslProtocols =
                 (_sslProtocols == SslProtocols.None) ? SecurityProtocol.DefaultSecurityProtocols : _sslProtocols;
 
             if ((sslProtocols & SslProtocols.Tls) != 0)
@@ -1071,7 +1076,7 @@ namespace System.Net.Http
                     ref optionData);
             }
 
-            optionData = _automaticRedirection ? 
+            optionData = _automaticRedirection ?
                 Interop.WinHttp.WINHTTP_OPTION_REDIRECT_POLICY_DISALLOW_HTTPS_TO_HTTP :
                 Interop.WinHttp.WINHTTP_OPTION_REDIRECT_POLICY_NEVER;
             SetWinHttpOption(requestHandle, Interop.WinHttp.WINHTTP_OPTION_REDIRECT_POLICY, ref optionData);
@@ -1089,7 +1094,7 @@ namespace System.Net.Http
 
         private void SetRequestHandleTlsOptions(SafeWinHttpHandle requestHandle)
         {
-            // If we have a custom server certificate validation callback method then 
+            // If we have a custom server certificate validation callback method then
             // we need to have WinHTTP ignore some errors so that the callback method
             // will have a chance to be called.
             uint optionData;
@@ -1246,7 +1251,7 @@ namespace System.Net.Http
             }
             else if (ex is WinHttpException || ex is IOException)
             {
-                // Wrap expected exceptions as HttpRequestExceptions since this is considered an error during 
+                // Wrap expected exceptions as HttpRequestExceptions since this is considered an error during
                 // execution. All other exception types, including ArgumentExceptions and ProtocolViolationExceptions
                 // are 'unexpected' or caused by user error and should not be wrapped.
                 state.Tcs.TrySetException(new HttpRequestException(SR.net_http_client_execution_error, ex));
@@ -1307,7 +1312,7 @@ namespace System.Net.Http
                 }
             }
         }
-        
+
         private void ThrowOnInvalidHandle(SafeWinHttpHandle handle)
         {
             if (handle.IsInvalid)
@@ -1317,7 +1322,7 @@ namespace System.Net.Http
                 throw WinHttpException.CreateExceptionUsingError(lastError);
             }
         }
-        
+
         private RendezvousAwaitable<int> InternalSendRequestAsync(WinHttpRequestState state)
         {
             lock (state.Lock)
@@ -1342,7 +1347,7 @@ namespace System.Net.Http
 
             return state.LifecycleAwaitable;
         }
-        
+
         private async Task InternalSendRequestBodyAsync(WinHttpRequestState state, bool chunkedModeForSend)
         {
             using (var requestStream = new WinHttpRequestStream(state, chunkedModeForSend))
@@ -1353,7 +1358,7 @@ namespace System.Net.Http
                 await requestStream.EndUploadAsync(state.CancellationToken).ConfigureAwait(false);
             }
         }
-        
+
         private RendezvousAwaitable<int> InternalReceiveResponseHeadersAsync(WinHttpRequestState state)
         {
             lock (state.Lock)
