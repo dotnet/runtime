@@ -11999,7 +11999,7 @@ void Compiler::gtDispTreeRange(LIR::Range& containingRange, GenTree* tree)
 void Compiler::gtDispLIRNode(GenTree* node, const char* prefixMsg /* = nullptr */)
 {
     auto displayOperand = [](GenTree* operand, const char* message, IndentInfo operandArc, IndentStack& indentStack,
-                             size_t prefixIndent = 0) {
+                             size_t prefixIndent) {
         assert(operand != nullptr);
         assert(message != nullptr);
 
