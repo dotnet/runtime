@@ -29,12 +29,12 @@ namespace System.Net.Sockets
         /// was previously created but is currently being used by another concurrent operation.
         /// </summary>
         private static readonly Int32TaskSocketAsyncEventArgs s_rentedSentinel = new Int32TaskSocketAsyncEventArgs();
+        /// <summary>Cached task with a 0 value.</summary>
+        private static readonly Task<int> s_zeroTask = Task.FromResult(0);
         /// <summary>Cached SocketAsyncEventArgs for Task-based ReceiveAsync APIs.</summary>
         private Int32TaskSocketAsyncEventArgs _cachedReceiveEventArgs;
         /// <summary>Cached SocketAsyncEventArgs for Task-based SendAsync APIs.</summary>
         private Int32TaskSocketAsyncEventArgs _cachedSendEventArgs;
-
-        internal Task<Socket> AcceptAsync() => AcceptAsync((Socket)null);
 
         internal Task<Socket> AcceptAsync(Socket acceptSocket)
         {
@@ -112,7 +112,7 @@ namespace System.Net.Sockets
             return tcs.Task;
         }
 
-        internal Task<int> ReceiveAsync(ArraySegment<byte> buffer, SocketFlags socketFlags, bool wrapExceptionsInIOExceptions)
+        internal Task<int> ReceiveAsync(ArraySegment<byte> buffer, SocketFlags socketFlags, bool fromNetworkStream)
         {
             // Validate the arguments.
             ValidateBuffer(buffer);
@@ -121,8 +121,8 @@ namespace System.Net.Sockets
             if (saea != null)
             {
                 // We got a cached instance. Configure the buffer and initate the operation.
-                ConfigureBuffer(saea, buffer, socketFlags, wrapExceptionsInIOExceptions);
-                return GetTaskForSendReceive(ReceiveAsync(saea), saea, wrapExceptionsInIOExceptions, isReceive: true);
+                ConfigureBuffer(saea, buffer, socketFlags, wrapExceptionsInIOExceptions: fromNetworkStream);
+                return GetTaskForSendReceive(ReceiveAsync(saea), saea, fromNetworkStream, isReceive: true);
             }
             else
             {
@@ -155,7 +155,7 @@ namespace System.Net.Sockets
             {
                 // We got a cached instance. Configure the buffer list and initate the operation.
                 ConfigureBufferList(saea, buffers, socketFlags);
-                return GetTaskForSendReceive(ReceiveAsync(saea), saea, wrapExceptionsInIOExceptions: false, isReceive: true);
+                return GetTaskForSendReceive(ReceiveAsync(saea), saea, fromNetworkStream: false, isReceive: true);
             }
             else
             {
@@ -221,7 +221,7 @@ namespace System.Net.Sockets
             return tcs.Task;
         }
 
-        internal Task<int> SendAsync(ArraySegment<byte> buffer, SocketFlags socketFlags, bool wrapExceptionsInIOExceptions)
+        internal Task<int> SendAsync(ArraySegment<byte> buffer, SocketFlags socketFlags, bool fromNetworkStream)
         {
             // Validate the arguments.
             ValidateBuffer(buffer);
@@ -230,8 +230,8 @@ namespace System.Net.Sockets
             if (saea != null)
             {
                 // We got a cached instance. Configure the buffer and initate the operation.
-                ConfigureBuffer(saea, buffer, socketFlags, wrapExceptionsInIOExceptions);
-                return GetTaskForSendReceive(SendAsync(saea), saea, wrapExceptionsInIOExceptions, isReceive: false);
+                ConfigureBuffer(saea, buffer, socketFlags, wrapExceptionsInIOExceptions: fromNetworkStream);
+                return GetTaskForSendReceive(SendAsync(saea), saea, fromNetworkStream, isReceive: false);
             }
             else
             {
@@ -264,7 +264,7 @@ namespace System.Net.Sockets
             {
                 // We got a cached instance. Configure the buffer list and initate the operation.
                 ConfigureBufferList(saea, buffers, socketFlags);
-                return GetTaskForSendReceive(SendAsync(saea), saea, wrapExceptionsInIOExceptions: false, isReceive: false);
+                return GetTaskForSendReceive(SendAsync(saea), saea, fromNetworkStream: false, isReceive: false);
             }
             else
             {
@@ -357,9 +357,14 @@ namespace System.Net.Sockets
         /// <summary>Gets a task to represent the operation.</summary>
         /// <param name="pending">true if the operation completes asynchronously; false if it completed synchronously.</param>
         /// <param name="saea">The event args instance used with the operation.</param>
-        /// <param name="wrapExceptionsInIOExceptions">true if SocketExceptions should be wrapped in IOExceptions; otherwise, false.</param>
+        /// <param name="fromNetworkStream">
+        /// true if the request is coming from NetworkStream, which has special semantics for
+        /// exceptions and cached tasks; otherwise, false.
+        /// </param>
         /// <param name="isReceive">true if this is a receive; false if this is a send.</param>
-        private Task<int> GetTaskForSendReceive(bool pending, Int32TaskSocketAsyncEventArgs saea, bool wrapExceptionsInIOExceptions, bool isReceive)
+        private Task<int> GetTaskForSendReceive(
+            bool pending, Int32TaskSocketAsyncEventArgs saea,
+            bool fromNetworkStream, bool isReceive)
         {
             Task<int> t;
 
@@ -385,20 +390,30 @@ namespace System.Net.Sockets
                     // Get the number of bytes successfully received/sent.
                     int bytesTransferred = saea.BytesTransferred;
 
-                    // And get any cached, successfully-completed cached task that may exist on this SAEA.
-                    Task<int> lastTask = saea._successfullyCompletedTask;
-                    Debug.Assert(lastTask == null || lastTask.Status == TaskStatus.RanToCompletion);
+                    // For zero bytes transferred, we can return our cached 0 task.
+                    // We can also do so if the request came from network stream and is a send,
+                    // as for that we can return any value because it returns a non-generic Task.
+                    if (bytesTransferred == 0 || (fromNetworkStream & !isReceive))
+                    {
+                        t = s_zeroTask;
+                    }
+                    else
+                    {
+                        // Get any cached, successfully-completed cached task that may exist on this SAEA.
+                        Task<int> lastTask = saea._successfullyCompletedTask;
+                        Debug.Assert(lastTask == null || lastTask.Status == TaskStatus.RanToCompletion);
 
-                    // If there is a task and if it has the desired result, simply reuse it.
-                    // Otherwise, create a new one for this result value, and in addition to returning it,
-                    // also store it into the SAEA for potential future reuse.
-                    t = lastTask != null && lastTask.Result == bytesTransferred ?
-                        lastTask :
-                        (saea._successfullyCompletedTask = Task.FromResult(bytesTransferred));
+                        // If there is a task and if it has the desired result, simply reuse it.
+                        // Otherwise, create a new one for this result value, and in addition to returning it,
+                        // also store it into the SAEA for potential future reuse.
+                        t = lastTask != null && lastTask.Result == bytesTransferred ?
+                            lastTask :
+                            (saea._successfullyCompletedTask = Task.FromResult(bytesTransferred));
+                    }
                 }
                 else
                 {
-                    t = Task.FromException<int>(GetException(saea.SocketError, wrapExceptionsInIOExceptions));
+                    t = Task.FromException<int>(GetException(saea.SocketError, wrapExceptionsInIOExceptions: fromNetworkStream));
                 }
 
                 // There won't be a callback, and we're done with the SAEA, so return it to the pool.
