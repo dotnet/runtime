@@ -387,27 +387,6 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal("urn:foo", doc.DocumentElement.GetAttribute("xmlns"));
         }
 
-        [Fact(Skip = "https://github.com/dotnet/corefx/issues/16798")]
-        public void PropagatedNamespaces()
-        {
-            XmlDocument doc = new XmlDocument();
-            doc.AppendChild(doc.CreateElement("foo", "urn:foo"));
-            doc.DocumentElement.AppendChild(doc.CreateElement("bar", "urn:bar"));
-            Assert.Equal(String.Empty, doc.DocumentElement.GetAttribute("xmlns:f"));
-            XmlDsigExcC14NTransform t = new XmlDsigExcC14NTransform();
-            t.LoadInput(doc);
-            t.PropagatedNamespaces.Add("f", "urn:foo");
-            t.PropagatedNamespaces.Add("b", "urn:bar");
-            using (Stream s = t.GetOutput() as Stream)
-            using (StreamReader streamReader = new StreamReader(s, Encoding.UTF8))
-            {
-                string result = streamReader.ReadToEnd();
-                Assert.Equal(result,
-                    "<foo xmlns=\"urn:foo\"><bar xmlns=\"urn:bar\"></bar></foo>");
-                Assert.Equal("urn:foo", doc.DocumentElement.NamespaceURI);
-            }
-        }
-
         [Fact]
         public void GetDigestedOutput_Null()
         {
