@@ -686,7 +686,7 @@ namespace System.Net.Sockets
                 return _streamSocket.ReceiveAsync(
                     new ArraySegment<byte>(buffer, offset, size),
                     SocketFlags.None,
-                    wrapExceptionsInIOExceptions: true);
+                    fromNetworkStream: true);
             }
             catch (Exception exception) when (!(exception is OutOfMemoryException))
             {
@@ -747,7 +747,7 @@ namespace System.Net.Sockets
                 return _streamSocket.SendAsync(
                     new ArraySegment<byte>(buffer, offset, size),
                     SocketFlags.None,
-                    wrapExceptionsInIOExceptions: true);
+                    fromNetworkStream: true);
             }
             catch (Exception exception) when (!(exception is OutOfMemoryException))
             {
