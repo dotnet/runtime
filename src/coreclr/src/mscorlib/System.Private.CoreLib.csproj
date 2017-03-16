@@ -81,10 +81,9 @@
     <DebugType>pdbOnly</DebugType>
     <DefineConstants>TRACE;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
-  <!-- Roslyn does not support writing PDBs on Unix -->
+  <!-- Make portable PDBs on Unix -->
   <PropertyGroup Condition="'$(OsEnvironment)' == 'Unix'">
-    <DebugSymbols>false</DebugSymbols>
-    <DebugType>none</DebugType>
+    <DebugType>portable</DebugType>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetsOSX)' == 'true'">
