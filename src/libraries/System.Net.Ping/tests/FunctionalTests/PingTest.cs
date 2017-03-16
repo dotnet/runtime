@@ -397,12 +397,16 @@ namespace System.Net.NetworkInformation.Tests
                     reset();
                     p.SendAsync(TestSettings.LocalHost, null);
                     p.SendAsyncCancel(); // will block until operation can be started again
+                    await tcs.Task;
+
+                    bool cancelled = ea.Cancelled;
+                    Exception error = ea.Error;
+                    PingReply reply = ea.Reply;
+                    Assert.True(cancelled ^ (error != null) ^ (reply != null),
+                        "Cancelled: " + cancelled +
+                        (error == null ? "" : (Environment.NewLine + "Error Message: " + error.Message + Environment.NewLine + "Error Inner Exception: " + error.InnerException)) +
+                        (reply == null ? "" : (Environment.NewLine + "Reply Address: " + reply.Address + Environment.NewLine + "Reply Status: " + reply.Status)));
                 }
-                await tcs.Task;
-                Assert.True(ea.Cancelled ^ (ea.Error != null) ^ (ea.Reply != null),
-                    "Cancelled: " + ea.Cancelled +
-                    (ea.Error == null ? "" : (Environment.NewLine + "Error Message: " + ea.Error.Message + Environment.NewLine + "Error Inner Exception: " + ea.Error.InnerException)) +
-                    (ea.Reply == null ? "" : (Environment.NewLine + "Reply Address: " + ea.Reply.Address + Environment.NewLine + "Reply Status: " + ea.Reply.Status)));
             }
         }
 
