@@ -204,3 +204,36 @@ which should make things work (but is fragile, confirm file timestamps that you 
 The instructions above were only about updates to the binaries that are part of Microsoft.NETCore.App, if you want to test a package
 for library that ships in its own nuget package you can follow the same steps above but instead add a package reference to the
 individual library package from your `bin\packages\Debug` folder.
+
+## Consuming non-NetStandard assets in a .NET Core 2.0 application
+
+Currently if you reference a NuGet package that does not have a NETStandard asset in your .NET Core 2.0 application, you will hit package
+incompatibility errors when trying to restore packages. You can resolve this issue by adding `PackageTargetFallback` property
+(MSBuild equivalent of `imports`) to your .csproj:
+
+```XML
+  <PackageTargetFallback>$(PackageTargetFallback);net45</PackageTargetFallback>
+```
+
+Note that this can fix the problem if the package is actually compatible with netcoreapp2.0 (meaning it does not use types/APIs
+that are not available in netcoreapp2.0)
+
+For final release, we are considering modifying NuGet behavior to automatically consume the non-netstandard asset if there is no netstandard available.
+
+
+## Creating a .NET Core 2.0 console application from Visual Studio 2017
+
+File > New > Project > Console App (.NET Core)
+
+By default, Visual Studio creates a netcoreapp1.1 application. After installing the prerequisites mentioned above, you will
+need to modify your .csproj to target netcoreapp2.0 and reference the nightly build of Microsoft.NETCore.APP
+
+```XML
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp2.0</TargetFramework> <!-- this line -->
+    <RuntimeFrameworkVersion>2.0.0-beta-xyz-00</RuntimeFrameworkVersion> <!-- this line -->
+  </PropertyGroup>
+```
+
+In a future update to Visual Studio, it will no longer be necessary to make this edit.
