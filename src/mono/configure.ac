@@ -29,6 +29,24 @@ AC_PROG_LN_S
 
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
+MONO_VERSION_MAJOR=`echo $VERSION | cut -d . -f 1`
+MONO_VERSION_MINOR=`echo $VERSION | cut -d . -f 2`
+MONO_VERSION_BUILD=`echo $VERSION | cut -d . -f 3`
+
+# This is the version number of the corlib-runtime interface. When
+# making changes to this interface (by changing the layout
+# of classes the runtime knows about, changing icall signature or
+# semantics etc), increment this variable.
+#
+# This can be reset to 0 when Mono's version number is bumped
+# since it's part of the corlib version (the prefix '1' in the full
+# version number is to ensure the number isn't treated as octal in C)
+MONO_CORLIB_COUNTER=0
+MONO_CORLIB_VERSION=`printf "1%02d%02d%02d%03d" $MONO_VERSION_MAJOR $MONO_VERSION_MINOR $MONO_VERSION_BUILD $MONO_CORLIB_COUNTER`
+
+AC_DEFINE_UNQUOTED(MONO_CORLIB_VERSION,$MONO_CORLIB_VERSION,[Version of the corlib-runtime interface])
+AC_SUBST(MONO_CORLIB_VERSION)
+
 case $host_os in
 *cygwin* )
 		 echo "Run configure using ./configure --host=i686-pc-mingw32"
@@ -4535,6 +4553,7 @@ fi
     }')]
 
     echo "MONO_VERSION = $myver" >> $mcs_topdir/build/config.make
+    echo "MONO_CORLIB_VERSION = $MONO_CORLIB_VERSION" >> $mcs_topdir/build/config.make
 
     if test x$host_darwin = xyes; then
       echo "PLATFORM = darwin" >> $mcs_topdir/build/config.make

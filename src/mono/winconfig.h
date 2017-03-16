@@ -672,4 +672,8 @@
 
 /* Version number of package */
 #define VERSION "#MONO_VERSION#"
+
+/* Version of the corlib-runtime interface */
+#define MONO_CORLIB_VERSION #MONO_CORLIB_VERSION#
+
 #endif
