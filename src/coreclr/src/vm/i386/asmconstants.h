@@ -431,12 +431,6 @@ ASMCONSTANTS_C_ASSERT(UMThunkMarshInfo__m_cbActualArgSize == offsetof(UMThunkMar
 #ifdef FEATURE_STUBS_AS_IL
 #define               UMThunkMarshInfo__m_cbRetPop   0x08
 ASMCONSTANTS_C_ASSERT(UMThunkMarshInfo__m_cbRetPop == offsetof(UMThunkMarshInfo, m_cbRetPop))
-
-#define               UMThunkMarshInfo__m_ecxArgOffset   0xc
-ASMCONSTANTS_C_ASSERT(UMThunkMarshInfo__m_ecxArgOffset == offsetof(UMThunkMarshInfo, m_ecxArgOffset))
-
-#define               UMThunkMarshInfo__m_edxArgOffset  0x10
-ASMCONSTANTS_C_ASSERT(UMThunkMarshInfo__m_edxArgOffset == offsetof(UMThunkMarshInfo, m_edxArgOffset))
 #endif //FEATURE_STUBS_AS_IL
 
 #ifndef CROSSGEN_COMPILE
