@@ -6,7 +6,8 @@
       <SupportedFramework>net45;netcore45;netcoreapp1.0;wp8;wpa81;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.ValueTuple.csproj" />
-
+    <InboxOnTargetFramework Include="$(AllXamarinFrameworks)" />
+    
     <!-- a bug in previous version of the package included these bogus files -->
     <HarvestExcludePaths Include="lib/portable-net40+sl4+win8+wp8/.xml" />
     <HarvestExcludePaths Include="lib/netstandard1.0/.xml" />
