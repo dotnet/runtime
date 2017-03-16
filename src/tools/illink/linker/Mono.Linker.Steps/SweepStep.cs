@@ -29,6 +29,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Mono.Cecil;
 using Mono.Collections.Generic;
 using Mono.Cecil.Cil;
@@ -48,7 +49,7 @@ namespace Mono.Linker.Steps {
 
 		protected override void Process ()
 		{
-			assemblies = Context.GetAssemblies ();
+			assemblies = Context.Annotations.GetAssemblies ().ToArray ();
 			foreach (var assembly in assemblies) {
 				SweepAssembly (assembly);
 				if ((Annotations.GetAction (assembly) == AssemblyAction.Copy) &&
