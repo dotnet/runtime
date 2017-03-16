@@ -151,10 +151,7 @@ namespace System.Net.Sockets
 
             if (errorCode != SocketError.Success)
             {
-                SocketException socketException = new SocketException((int)errorCode);
-                UpdateStatusAfterSocketError(socketException);
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, socketException);
-                throw socketException;
+                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
             }
 
             // Send the postBuffer, if any
@@ -181,34 +178,18 @@ namespace System.Net.Sockets
                 // Send the file, if any
                 if (fileStream != null)
                 {
-                    var tcs = new TaskCompletionSource<bool>();
-
-                    // This can throw ObjectDisposedException.
-                    errorCode = SocketPal.SendFileAsync(_handle, fileStream, (bytesTransferred, socketError) => 
+                    var tcs = new TaskCompletionSource<SocketError>();
+                    errorCode = SocketPal.SendFileAsync(_handle, fileStream, (_, socketError) => tcs.SetResult(socketError));
+                    if (errorCode == SocketError.IOPending)
                     {
-                        if (socketError != SocketError.Success)
-                        {
-                            // Synchronous exception from SendFileAsync
-                            SocketException socketException = new SocketException((int)errorCode);
-                            UpdateStatusAfterSocketError(socketException);
-                            if (NetEventSource.IsEnabled) NetEventSource.Error(this, socketException);
-                            tcs.SetException(socketException);
-                        }
-
-                        tcs.SetResult(true);
-                    });
-
-                    await tcs.Task.ConfigureAwait(false);
+                        errorCode = await tcs.Task.ConfigureAwait(false);
+                    }
                 }
             }
 
             if (errorCode != SocketError.Success)
             {
-                // Synchronous exception from SendFileAsync
-                SocketException socketException = new SocketException((int)errorCode);
-                UpdateStatusAfterSocketError(socketException);
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, socketException);
-                throw socketException;
+                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
             }
 
             // Send the postBuffer, if any
