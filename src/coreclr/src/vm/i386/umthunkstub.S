@@ -143,54 +143,35 @@ LOCAL_LABEL(DoTrapReturningThreadsTHROW):
 
 LOCAL_LABEL(UMThunkStub_CopyStackArgs):
 
-    // eax = m_cbActualArgSize, in bytes
-    // esi = src
-    // edi = dest
-    // ebx = scratch
-    lea     esi, [ebp + 0x8]
+    // eax = m_cbActualArgSize (in bytes)
 
     sub     esp, eax
-    and     esp, -16    // align with 16 byte
-    lea     edi, [esp]
+    and     esp, -16          // align with 16 byte
+    lea     edi, [esp]        // edi = dest
 
-    // First, we copy arguments to ecx and edx registers (if needed).
-    mov     edx, dword ptr [ebp - UMThunkStub_UMENTRYTHUNK_OFFSET]
-    mov     edx, dword ptr [edx + UMEntryThunk__m_pUMThunkMarshInfo]
-    mov     ebx, dword ptr [edx + UMThunkMarshInfo__m_ecxArgOffset]
-    cmp     ebx, -1
-    je      LOCAL_LABEL(InitCopyStack)
-    mov     ecx, dword ptr [esi + ebx]
-    add     eax, -4
-    jz      LOCAL_LABEL(UMThunkStub_ArgumentsSetup)
+    lea     esi, [ebp + 0x8]  // esi = src
 
-    mov     ebx, dword ptr [edx + UMThunkMarshInfo__m_edxArgOffset]
-    cmp     ebx, -1
-    je      LOCAL_LABEL(InitCopyStack)
-    mov     edx, dword ptr [esi + ebx]
-    add     eax, -4
-    jz      LOCAL_LABEL(UMThunkStub_ArgumentsSetup)
-
-LOCAL_LABEL(InitCopyStack):
-    push    ecx
+    //
+    // EXTERN_C VOID STDCALL UMThunkStubSetupArgumentsWorker(UMThunkMarshInfo *pMarshInfo,
+    //                                                       char *pSrc,
+    //                                                       UMThunkMarshInfo::ArgumentRegisters *pArgRegs,
+    //                                                       char *pDst)
     push    edx
-    mov     edx, dword ptr [ebp - UMThunkStub_UMENTRYTHUNK_OFFSET]
-    mov     edx, dword ptr [edx + UMEntryThunk__m_pUMThunkMarshInfo]
-    mov     ebx, [edx + UMThunkMarshInfo__m_cbActualArgSize]
-    add     ebx, -4
-LOCAL_LABEL(CopyStack):
-    cmp     ebx, dword ptr [edx + UMThunkMarshInfo__m_ecxArgOffset]
-    je      LOCAL_LABEL(IncreaseOffset)
-    cmp     ebx, dword ptr [edx + UMThunkMarshInfo__m_edxArgOffset]
-    je      LOCAL_LABEL(IncreaseOffset)
-    add     eax, -4
-    mov     ecx, dword ptr [esi + ebx]
-    mov     dword ptr [edi + eax], ecx
-LOCAL_LABEL(IncreaseOffset):
-    add     ebx, -4
-    jc      LOCAL_LABEL(CopyStack)
+    push    ecx
+    lea     ecx, [esp]
 
-    pop     edx
+    sub     esp, 8  // Pad
+    push    edi     // pSrc
+    push    ecx     // pArgRegs
+    push    esi     // pSrc
+    mov     ecx, dword ptr [ebp - UMThunkStub_UMENTRYTHUNK_OFFSET]
+    mov     ecx, dword ptr [ecx + UMEntryThunk__m_pUMThunkMarshInfo]
+    push    ecx     // pMarshInfo
+    CHECK_STACK_ALIGNMENT
+    call    C_FUNC(UMThunkStubSetupArgumentsWorker)
+    add     esp, 8
     pop     ecx
+    pop     edx
     jmp     LOCAL_LABEL(UMThunkStub_ArgumentsSetup)
 
 #if _DEBUG
