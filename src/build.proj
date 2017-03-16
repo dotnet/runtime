@@ -5,17 +5,11 @@
   <ItemGroup>
     <Project Include="ToolBox\SOS\NETCore\SOS.NETCore.csproj" />
     <Project Include="mscorlib\System.Private.CoreLib.csproj" />
-    <Project Include="mscorlib\facade\mscorlib.csproj" />
-    <Project Include="mscorlib\ref\mscorlib.csproj" />
   </ItemGroup>
 
   <Import Project="..\dir.targets" />
 
   <Import Project="..\dir.traversal.targets" />
-
-  <ItemGroup>
-    <BinariesToMove Include="$(BinDir)\facade\mscorlib.dll"/>
-  </ItemGroup>
 
   <Target Name="MovePostBuildBinaries" AfterTargets="Build">
     <Move SourceFiles="@(BinariesToMove)"
@@ -23,7 +17,6 @@
   </Target>
 
   <ItemGroup>
-    <PDBSToMove Include="$(BinDir)\facade\mscorlib.pdb"/>
     <PDBSToMove Include="$(BinDir)System.Private.CoreLib.pdb"/>
   </ItemGroup>
 

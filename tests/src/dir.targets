@@ -50,7 +50,7 @@
     <_CLRTestNeedsProjectToRun Condition=" '$(_CLRTestNeedsToRun)' and '!$(_CLRTestBuildsExecutable)' ">true</_CLRTestNeedsProjectToRun>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(ReferenceLocalMscorlib)' == 'true'">
+  <PropertyGroup Condition="'$(ReferenceSystemPrivateCoreLib)' == 'true'">
     <ProjectJson>$(SourceDir)Common/empty/project.json</ProjectJson>
     <ProjectLockJson>$(SourceDir)Common/empty/project.lock.json</ProjectLockJson>
   </PropertyGroup>

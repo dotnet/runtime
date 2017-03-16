@@ -29,7 +29,7 @@ using System.Runtime.InteropServices.WindowsRuntime;
 
 namespace System
 {
-    internal static class Internal
+    static class CommonlyUsedGenericInstantiations
     {
         // This method is purely an aid for NGen to statically deduce which
         // instantiations to save in the ngen image.
@@ -45,7 +45,7 @@ namespace System
         // instantiation closure process is driven by "fixup" references 
         // left in the final code stream.
         [MethodImplAttribute(MethodImplOptions.NoOptimization)]
-        private static void CommonlyUsedGenericInstantiations()
+        static CommonlyUsedGenericInstantiations()
         {
             // Make absolutely sure we include some of the most common 
             // instantiations here in mscorlib's ngen image.

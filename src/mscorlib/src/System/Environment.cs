@@ -580,7 +580,7 @@ namespace System
             get
             {
                 Contract.Ensures(Contract.Result<String>() != null);
-                return global::Internal.Runtime.Augments.EnvironmentAugments.StackTrace;
+                return Internal.Runtime.Augments.EnvironmentAugments.StackTrace;
             }
         }
 

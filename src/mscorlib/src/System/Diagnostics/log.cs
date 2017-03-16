@@ -14,6 +14,7 @@ namespace System.Diagnostics
     using System.Diagnostics.Contracts;
     using System.Diagnostics.CodeAnalysis;
 
+    using Console = Internal.Console;
 
     // LogSwitchLevelHandlers are triggered when the level of a LogSwitch is modified
     // NOTE: These are NOT triggered when the log switch setting is changed from the 
