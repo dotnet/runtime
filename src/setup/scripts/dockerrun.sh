@@ -37,7 +37,7 @@ while [[ $# > 0 ]]; do
             echo "Usage: $0 [-d|--dockerfile <Dockerfile>] [-i|--image <ImageName>] <Command>"
             echo ""
             echo "Options:"
-            echo "  <Dockerfile>    The path to the Dockerfile to use to create the build container"
+            echo "  <Dockerfile>    The path to the folder that contains Dockerfile to use to create the build container"
             echo "  <ImageName>     The name of an existing Dockerfile folder under scripts/docker to use as the Dockerfile"
             echo "  <Command>  The command to run once inside the container (/opt/code is mapped to the repo root; defaults to nothing, which runs the default shell)"
             exit 0
