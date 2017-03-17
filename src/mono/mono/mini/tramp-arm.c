@@ -84,6 +84,13 @@ mono_arch_patch_plt_entry (guint8 *code, gpointer *got, mgreg_t *regs, guint8 *a
 	*(guint8**)jump_entry = addr;
 }
 
+gpointer
+mono_arm_handler_block_trampoline_helper (gpointer *ptr)
+{
+	MonoJitTlsData *jit_tls = mono_tls_get_jit_tls ();
+	return jit_tls->handler_block_return_address;
+}
+
 #ifndef DISABLE_JIT
 
 #define arm_is_imm12(v) ((int)(v) > -4096 && (int)(v) < 4096)
@@ -678,13 +685,6 @@ mono_arch_create_general_rgctx_lazy_fetch_trampoline (MonoTrampInfo **info, gboo
 	*info = mono_tramp_info_create ("rgctx_fetch_trampoline_general", buf, code - buf, ji, unwind_ops);
 
 	return buf;
-}
-
-gpointer
-mono_arm_handler_block_trampoline_helper (gpointer *ptr)
-{
-	MonoJitTlsData *jit_tls = mono_tls_get_jit_tls ();
-	return jit_tls->handler_block_return_address;
 }
 
 gpointer
