@@ -91,6 +91,9 @@
   <data name="net_http_chunked_not_allowed_with_empty_content" xml:space="preserve">
     <value>'Transfer-Encoding: chunked' header can not be used when content object is not specified.</value>
   </data>
+  <data name="net_http_invalid_enable_first" xml:space="preserve">
+    <value>The {0} property must be set to '{1}' to use this property.</value>
+  </data>
   <data name="net_http_value_must_be_greater_than" xml:space="preserve">
     <value>The specified value must be greater than {0}.</value>
   </data>
