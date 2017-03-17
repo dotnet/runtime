@@ -9,10 +9,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
-    <Compile Include="Generic\SortedSet\SortedSet.Generic.netcoreapp.Tests.cs" />
-    <Compile Include="Generic\HashSet\HashSet.Generic.netcoreapp.Tests.cs" />
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
       <Link>Common\System\AssertExtensions.cs</Link>
@@ -138,6 +134,7 @@
     <Compile Include="Generic\SortedList\SortedList.Generic.Tests.cs" />
     <Compile Include="Generic\SortedSet\SortedSet.Generic.cs" />
     <Compile Include="Generic\SortedSet\SortedSet.Generic.Tests.cs" />
+    <Compile Include="Generic\SortedSet\SortedSet.Generic.Tests.netcoreapp.cs" Condition="'$(TargetGroup)'=='netcoreapp'" />
     <Compile Include="Generic\SortedSet\SortedSet.Tests.cs" />
     <Compile Include="Generic\Stack\Stack.Tests.cs" />
     <Compile Include="Generic\Stack\Stack.Generic.cs" />
