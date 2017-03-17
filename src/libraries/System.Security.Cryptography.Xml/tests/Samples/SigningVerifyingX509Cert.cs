@@ -59,7 +59,10 @@ namespace System.Security.Cryptography.Xml.Tests
                 var xmlDoc = new XmlDocument();
                 xmlDoc.PreserveWhitespace = true;
                 xmlDoc.LoadXml(ExampleXml);
-                SignXml(xmlDoc, x509cert.PrivateKey);
+                using (RSA key = x509cert.GetRSAPrivateKey())
+                {
+                    SignXml(xmlDoc, key);
+                }
 
                 Assert.True(VerifyXml(xmlDoc.OuterXml, x509cert));
             }
