@@ -54,5 +54,22 @@ namespace System.IO
 
             return fileHandle;
         }
+
+        // TODO: These internal methods should be removed once we start consuming updated CoreFX builds
+        internal static FileStream InternalOpen(string path, int bufferSize = 4096, bool useAsync = true)
+        {
+            return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize, useAsync);
+        }
+
+        internal static FileStream InternalCreate(string path, int bufferSize = 4096, bool useAsync = true)
+        {
+            return new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read, bufferSize, useAsync);
+        }
+
+        internal static FileStream InternalAppend(string path, int bufferSize = 4096, bool useAsync = true)
+        {
+            return new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.Read, bufferSize, useAsync);
+        }
+
     }
 }
