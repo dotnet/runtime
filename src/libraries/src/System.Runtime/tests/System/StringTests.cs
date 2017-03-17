@@ -816,7 +816,7 @@ namespace System.Tests
         }
 
         [Theory]
-        [ActiveIssue("dotnet/coreclr#2051", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/coreclr/issues/2051", TestPlatforms.AnyUnix)]
         [InlineData(StringComparison.CurrentCulture)]
         [InlineData(StringComparison.CurrentCultureIgnoreCase)]
         [InlineData(StringComparison.Ordinal)]
@@ -1234,7 +1234,7 @@ namespace System.Tests
         }
 
         [Theory]
-        [ActiveIssue("dotnet/coreclr#2051", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/coreclr/issues/2051", TestPlatforms.AnyUnix)]
         [InlineData("He\0lo", "He\0lo", 0)]
         [InlineData("He\0lo", "He\0", 0)]
         [InlineData("He\0lo", "\0", 2)]
@@ -1650,7 +1650,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Join_ObjectArray_TestData))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp | TargetFrameworkMonikers.Uap)]
         public static void Join_ObjectArray_WithNullIssue(string separator, object[] values, string expected)
         {
             string enumerableExpected = expected;
@@ -1703,7 +1703,7 @@ namespace System.Tests
         }
 
         [Theory]
-        [ActiveIssue("dotnet/coreclr#2051", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/coreclr/issues/2051", TestPlatforms.AnyUnix)]
         [InlineData("He\0lo", "He\0lo", 0)]
         [InlineData("He\0lo", "He\0", 0)]
         [InlineData("He\0lo", "\0", 2)]
@@ -2097,7 +2097,7 @@ namespace System.Tests
         }
 
         [Theory]
-        [ActiveIssue("dotnet/coreclr#2051", TestPlatforms.AnyUnix)]
+        [ActiveIssue("https://github.com/dotnet/coreclr/issues/2051", TestPlatforms.AnyUnix)]
         [InlineData(StringComparison.CurrentCulture)]
         [InlineData(StringComparison.CurrentCultureIgnoreCase)]
         [InlineData(StringComparison.Ordinal)]

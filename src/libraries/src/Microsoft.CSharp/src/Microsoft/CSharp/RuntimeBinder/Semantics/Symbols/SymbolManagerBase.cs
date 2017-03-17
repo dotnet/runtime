@@ -139,18 +139,18 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 return BetterType.Same;
             }
-            if (ta1.Size != ta2.Size)
+            if (ta1.Count != ta2.Count)
             {
                 // The one with more parameters is more specific.
-                return ta1.Size > ta2.Size ? BetterType.Left : BetterType.Right;
+                return ta1.Count > ta2.Count ? BetterType.Left : BetterType.Right;
             }
 
             BetterType nTot = BetterType.Neither;
 
-            for (int i = 0; i < ta1.Size; i++)
+            for (int i = 0; i < ta1.Count; i++)
             {
-                CType type1 = ta1.Item(i);
-                CType type2 = ta2.Item(i);
+                CType type1 = ta1[i];
+                CType type2 = ta2[i];
                 BetterType nParam = BetterType.Neither;
 
             LAgain:
@@ -372,7 +372,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public TypeArray AllocParams(int ctype, TypeArray array, int offset)
         {
-            CType[] types = array.ToArray();
+            CType[] types = array.Items;
             CType[] newTypes = new CType[ctype];
             Array.ConstrainedCopy(types, offset, newTypes, 0, ctype);
             return AllocParams(newTypes);
@@ -404,7 +404,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public TypeArray ConcatParams(TypeArray pta1, TypeArray pta2)
         {
-            return ConcatParams(pta1.ToArray(), pta2.ToArray());
+            return ConcatParams(pta1.Items, pta2.Items);
         }
     }
 }

@@ -22,27 +22,12 @@ namespace Internal.Cryptography.Pal
             }
         }
 
-        public AsymmetricAlgorithm GetPrivateKey()
-        {
-            switch (KeyAlgorithm)
-            {
-                case Oids.RsaRsa:
-                    return GetRSAPrivateKey();
-                case Oids.DsaDsa:
-                    return GetDSAPrivateKey();
-                case Oids.Ecc:
-                    return GetECDsaPrivateKey();
-            }
-
-            throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
-        }
-
         public RSA GetRSAPrivateKey()
         {
             return GetPrivateKey<RSA>(
                 delegate (CspParameters csp)
                 {
-#if NETNATIVE
+#if uap
                     // In .NET Native (UWP) we don't have access to CAPI, so it's CNG-or-nothing.
                     // But we don't expect to get here, so it shouldn't be a problem.
     
@@ -64,7 +49,7 @@ namespace Internal.Cryptography.Pal
             return GetPrivateKey<DSA>(
                 delegate (CspParameters csp)
                 {
-#if NETNATIVE
+#if uap
                     // In .NET Native (UWP) we don't have access to CAPI, so it's CNG-or-nothing.
                     // But we don't expect to get here, so it shouldn't be a problem.
     
@@ -122,7 +107,7 @@ namespace Internal.Cryptography.Pal
             else
             {
                 // ProviderType being non-zero signifies that this is a CAPI key.
-#if NETNATIVE
+#if uap
                 // In .NET Native (UWP) we don't have access to CAPI, so it's CNG-or-nothing.
                 // But we don't expect to get here, so it shouldn't be a problem.
     

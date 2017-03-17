@@ -169,14 +169,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             List<Type> list = new List<Type>();
 
             // Get each type arg.
-            for (int i = 0; i < typeArgs.size; i++)
+            for (int i = 0; i < typeArgs.Count; i++)
             {
                 // Unnamed type parameter types are just placeholders.
-                if (typeArgs.Item(i).IsTypeParameterType() && typeArgs.Item(i).AsTypeParameterType().GetTypeParameterSymbol().name == null)
+                if (typeArgs[i].IsTypeParameterType() && typeArgs[i].AsTypeParameterType().GetTypeParameterSymbol().name == null)
                 {
                     return null;
                 }
-                list.Add(typeArgs.Item(i).AssociatedSystemType);
+                list.Add(typeArgs[i].AssociatedSystemType);
             }
 
             Type[] systemTypeArgs = list.ToArray();
@@ -244,9 +244,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 case TypeKind.TK_AggregateType:
                     fBogus = AsAggregateType().getAggregate().computeCurrentBogusState();
-                    for (int i = 0; !fBogus && i < AsAggregateType().GetTypeArgsAll().size; i++)
+                    for (int i = 0; !fBogus && i < AsAggregateType().GetTypeArgsAll().Count; i++)
                     {
-                        fBogus |= AsAggregateType().GetTypeArgsAll().Item(i).computeCurrentBogusState();
+                        fBogus |= AsAggregateType().GetTypeArgsAll()[i].computeCurrentBogusState();
                     }
                     break;
 
@@ -655,7 +655,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         }
 
                         // Generics are always managed.
-                        if (aggT.GetTypeVarsAll().size > 0)
+                        if (aggT.GetTypeVarsAll().Count > 0)
                         {
                             aggT.SetManagedStruct(true);
                             return true;
@@ -698,7 +698,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             if (isPredefType(PredefinedType.PT_G_EXPRESSION))
             {
-                return AsAggregateType().GetTypeArgsThis().Item(0);
+                return AsAggregateType().GetTypeArgsThis()[0];
             }
 
             return this;

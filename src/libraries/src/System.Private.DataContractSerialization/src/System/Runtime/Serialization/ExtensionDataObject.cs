@@ -13,7 +13,7 @@ namespace System.Runtime.Serialization
     {
         private IList<ExtensionDataMember> _members;
 
-#if USE_REFEMIT || NET_NATIVE
+#if USE_REFEMIT || uapaot
         public ExtensionDataObject()
 #else
         internal ExtensionDataObject()
@@ -21,7 +21,7 @@ namespace System.Runtime.Serialization
         {
         }
 
-#if USE_REFEMIT || NET_NATIVE
+#if USE_REFEMIT || uapaot
         public IList<ExtensionDataMember> Members
 #else
         internal IList<ExtensionDataMember> Members
@@ -32,7 +32,7 @@ namespace System.Runtime.Serialization
         }
     }
 
-#if USE_REFEMIT || NET_NATIVE
+#if USE_REFEMIT || uapaot
     public class ExtensionDataMember
 #else
     internal class ExtensionDataMember
@@ -67,7 +67,7 @@ namespace System.Runtime.Serialization
         }
     }
 
-#if USE_REFEMIT || NET_NATIVE
+#if USE_REFEMIT || uapaot
     public interface IDataNode
 #else
     internal interface IDataNode

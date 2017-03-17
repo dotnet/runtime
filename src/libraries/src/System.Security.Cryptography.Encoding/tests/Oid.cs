@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.Security.Cryptography.Encoding.Tests
@@ -263,8 +264,28 @@ namespace System.Security.Cryptography.Encoding.Tests
             // This needs to be an OID not in the static lookup table.  The purpose is to verify the
             // NativeOidToFriendlyName fallback for Unix.  For Windows this is accomplished by
             // using FromOidValue with an OidGroup other than OidGroup.All.
-            
-            Oid oid = Oid.FromOidValue(ObsoleteSmime3desWrap_Oid, OidGroup.All);
+
+            Oid oid;
+
+            try
+            {
+                oid = Oid.FromOidValue(ObsoleteSmime3desWrap_Oid, OidGroup.All);
+            }
+            catch (CryptographicException)
+            {
+                bool isMac = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
+
+                Assert.True(isMac, "Exception is only raised on macOS");
+
+                if (isMac)
+                {
+                    return;
+                }
+                else
+                {
+                    throw;
+                }
+            }
 
             Assert.Equal(ObsoleteSmime3desWrap_Oid, oid.Value);
             Assert.Equal(ObsoleteSmime3desWrap_Name, oid.FriendlyName);
@@ -277,7 +298,27 @@ namespace System.Security.Cryptography.Encoding.Tests
             // This needs to be a name not in the static lookup table.  The purpose is to verify the
             // NativeFriendlyNameToOid fallback for Unix.  For Windows this is accomplished by
             // using FromOidValue with an OidGroup other than OidGroup.All.
-            Oid oid = Oid.FromFriendlyName(ObsoleteSmime3desWrap_Name, OidGroup.All);
+            Oid oid;
+
+            try
+            {
+                oid = Oid.FromFriendlyName(ObsoleteSmime3desWrap_Name, OidGroup.All);
+            }
+            catch (CryptographicException)
+            {
+                bool isMac = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
+
+                Assert.True(isMac, "Exception is only raised on macOS");
+
+                if (isMac)
+                {
+                    return;
+                }
+                else
+                {
+                    throw;
+                }
+            }
 
             Assert.Equal(ObsoleteSmime3desWrap_Oid, oid.Value);
             Assert.Equal(ObsoleteSmime3desWrap_Name, oid.FriendlyName);

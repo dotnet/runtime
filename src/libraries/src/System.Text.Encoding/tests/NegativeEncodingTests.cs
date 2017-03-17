@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Text.Tests
 {
-    public static class NegativeEncodingTests
+    public static partial class NegativeEncodingTests
     {
         public static IEnumerable<object[]> Encodings_TestData()
         {
@@ -40,10 +40,12 @@ namespace System.Text.Tests
             // Chars is null
             Assert.Throws<ArgumentNullException>(encoding is ASCIIEncoding ? "chars" : "s", () => encoding.GetByteCount((string)null));
             Assert.Throws<ArgumentNullException>("chars", () => encoding.GetByteCount((char[])null));
-            Assert.Throws<ArgumentNullException>("chars", () => encoding.GetByteCount(null, 0, 0));
+            Assert.Throws<ArgumentNullException>("chars", () => encoding.GetByteCount((char[])null, 0, 0));
 
-            // Index or count < 0
+            // Index < 0
             Assert.Throws<ArgumentOutOfRangeException>("index", () => encoding.GetByteCount(new char[3], -1, 0));
+
+            // Count < 0
             Assert.Throws<ArgumentOutOfRangeException>("count", () => encoding.GetByteCount(new char[3], 0, -1));
 
             // Index + count > chars.Length
@@ -71,7 +73,7 @@ namespace System.Text.Tests
             // Source is null
             Assert.Throws<ArgumentNullException>("s", () => encoding.GetBytes((string)null));
             Assert.Throws<ArgumentNullException>("chars", () => encoding.GetBytes((char[])null));
-            Assert.Throws<ArgumentNullException>("chars", () => encoding.GetBytes(null, 0, 0));
+            Assert.Throws<ArgumentNullException>("chars", () => encoding.GetBytes((char[])null, 0, 0));
             Assert.Throws<ArgumentNullException>(expectedStringParamName, () => encoding.GetBytes((string)null, 0, 0, new byte[1], 0));
             Assert.Throws<ArgumentNullException>("chars", () => encoding.GetBytes((char[])null, 0, 0, new byte[1], 0));
 
@@ -308,6 +310,9 @@ namespace System.Text.Tests
                 Assert.Throws<EncoderFallbackException>(() => encoding.GetBytes(chars));
                 Assert.Throws<EncoderFallbackException>(() => encoding.GetBytes(charsArray));
             }
+
+            Assert.Throws<EncoderFallbackException>(() => encoding.GetByteCount(charsArray, index, count));
+
             Assert.Throws<EncoderFallbackException>(() => encoding.GetBytes(charsArray, index, count));
 
             Assert.Throws<EncoderFallbackException>(() => encoding.GetBytes(chars, index, count, bytes, 0));

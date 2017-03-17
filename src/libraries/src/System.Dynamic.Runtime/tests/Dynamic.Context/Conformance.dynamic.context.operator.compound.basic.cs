@@ -6,14 +6,12 @@ using Xunit;
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.basic.field01.field01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.basic.field01.field01;
     // <Title> Compound operator in field.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -81,14 +79,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.basic.field02.field02
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.basic.field02.field02;
     // <Title> Compound operator in field.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -159,8 +155,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.basic.field03.field03
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.basic.field03.field03;
-
     public class Test
     {
         public static dynamic count1 = 1;
@@ -184,14 +178,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.basic.property01.property01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.basic.property01.property01;
     // <Title> Compound operator in property.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -242,14 +234,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.basic.property02.property02
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.basic.property02.property02;
     // <Title> Compound operator in property.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -303,14 +293,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.basic.property03.property03
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.basic.property03.property03;
     // <Title> Compound operator with property.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class C
     {
@@ -354,14 +342,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.basic.indexer01.indexer01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.basic.indexer01.indexer01;
     // <Title> Compound operator in indexer.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -442,14 +428,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.basic.indexer02.indexer02
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.basic.indexer02.indexer02;
     // <Title> Compound operator in indexer.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -533,14 +517,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.basic.order01.order01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.basic.order01.order01;
     // <Title> Compound operator execute orders.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -568,14 +550,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.basic.order02.order02
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.basic.order02.order02;
     // <Title> Compound operator execute orders.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -619,14 +599,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.basic.order03.order03
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.basic.order03.order03;
     // <Title> Compound operator execute orders.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -667,14 +645,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.basic.order04.order04
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.basic.order04.order04;
     // <Title> Compound operator execute orders.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -736,14 +712,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.basic.order05.order05
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.basic.order05.order05;
     // <Title> Compound operator execute orders.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -805,14 +779,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.basic.order06.order06
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.basic.order06.order06;
     // <Title> Compound operator execute orders.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -875,7 +847,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.basic.context01.context01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.basic.context01.context01;
     // <Title> Compound operator</Title>
     // <Description>context
     // </Description>
@@ -972,13 +943,11 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.basic.context02b.context02b
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.basic.context02b.context02b;
     // <Title> Compound operator</Title>
     // <Description>context
     // </Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
-    using System;
     using System.Linq;
     using System.Collections.Generic;
 
@@ -1089,13 +1058,11 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.basic.context02c.context02c
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.basic.context02c.context02c;
     // <Title> Compound operator</Title>
     // <Description>context
     // </Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
-    using System;
     using System.Linq;
     using System.Collections.Generic;
 
@@ -1206,13 +1173,11 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.basic.context03.context03
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.basic.context03.context03;
     // <Title> Compound operator (Regression) </Title>
     // <Description>context
     // </Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
-    using System;
 
     public class Test
     {
@@ -1251,13 +1216,11 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.basic.bug741491array.bug741491array
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.basic.bug741491array.bug741491array;
     // <Title> Compound operator (Regression) </Title>
     // <Description>LHS of compound op with dynamic array/index access
     // </Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
-    using System;
 
     public class Test
     {
@@ -1370,7 +1333,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.basic.using01.using01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.basic.using01.using01;
     // <Title> Dynamic modification of a using variable </Title>
     // <Description>
     // Different from static behavior, no exception.

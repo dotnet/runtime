@@ -875,18 +875,18 @@ namespace System.Linq.Tests
             object proxyObject = DebuggerAttributes.GetProxyObject(grouping);
             
             // Validate proxy fields
-            Assert.Empty(DebuggerAttributes.GetDebuggerVisibleFields(proxyObject));
+            Assert.Empty(DebuggerAttributes.GetDebuggerVisibleFields(proxyObject.GetType()));
 
             // Validate proxy properties
-            IDictionary<string, PropertyInfo> properties = DebuggerAttributes.GetDebuggerVisibleProperties(proxyObject);
-            Assert.Equal(2, properties.Count);
+            IEnumerable<PropertyInfo> properties = DebuggerAttributes.GetDebuggerVisibleProperties(proxyObject.GetType());
+            Assert.Equal(2, properties.Count());
             
             // Key
-            TKey key = (TKey)properties["Key"].GetValue(proxyObject);
+            TKey key = (TKey)properties.Single(property => property.Name == "Key").GetValue(proxyObject);
             Assert.Equal(grouping.Key, key);
 
             // Values
-            PropertyInfo valuesProperty = properties["Values"];
+            PropertyInfo valuesProperty = properties.Single(property => property.Name == "Values");
             Assert.Equal(DebuggerBrowsableState.RootHidden, DebuggerAttributes.GetDebuggerBrowsableState(valuesProperty));
             TElement[] values = (TElement[])valuesProperty.GetValue(proxyObject);
             Assert.IsType<TElement[]>(values); // Arrays can be covariant / of assignment-compatible types

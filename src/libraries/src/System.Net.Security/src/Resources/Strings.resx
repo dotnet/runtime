@@ -58,9 +58,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
-    <value>Index is less than zero.</value>
-  </data>
   <data name="net_noseek" xml:space="preserve">
     <value>This stream does not support seek operations.</value>
   </data>
@@ -187,9 +184,6 @@
   <data name="net_invalid_enum" xml:space="preserve">
     <value>The specified value is not valid in the '{0}' enumeration.</value>
   </data>
-  <data name="net_log_exception" xml:space="preserve">
-    <value>Exception in {0}::{1} - {2}.</value>
-  </data>
   <data name="event_EnumerateSecurityPackages" xml:space="preserve">
     <value>Enumerating security packages:</value>
   </data>
@@ -289,15 +283,6 @@
   <data name="security_ServiceNameCollection_EmptyServiceName" xml:space="preserve">
     <value>A service name must not be null or empty.</value>
   </data>
-  <data name="ObjectDisposed_StreamIsClosed" xml:space="preserve">
-    <value>Cannot access a closed Stream.</value>
-  </data>
-  <data name="NotSupported_UnreadableStream" xml:space="preserve">
-    <value>Stream does not support reading.</value>
-  </data>
-  <data name="NotSupported_UnwritableStream" xml:space="preserve">
-    <value>Stream does not support writing.</value>
-  </data>
   <data name="net_allocate_ssl_context_failed" xml:space="preserve">
     <value>Failed to allocate SSL/TLS context, OpenSSL error - {0}.</value>
   </data>
@@ -369,5 +354,11 @@
   </data>
   <data name="net_nego_not_supported_empty_target_with_defaultcreds" xml:space="preserve">
     <value>Target name should be non empty if default credentials are passed.</value>
+  </data>
+  <data name="net_security_sslprotocol_contiguous">
+    <value>The requested combination of SslProtocols ({0}) is not valid for this platform because it skips intermediate versions.</value>
+  </data>
+  <data name="net_encryptionpolicy_notsupported" xml:space="preserve">
+    <value>The '{0}' encryption policy is not supported on this platform.</value>
   </data>
 </root>

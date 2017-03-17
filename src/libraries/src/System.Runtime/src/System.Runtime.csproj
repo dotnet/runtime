@@ -5,7 +5,7 @@
     <ProjectGuid>{56B9D0A9-44D3-488E-8B42-C14A6E30CAB2}</ProjectGuid>
     <AssemblyName>System.Runtime</AssemblyName>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <GenFacadesIgnoreMissingTypes Condition="'$(TargetGroup)' == 'uapaot' Or '$(TargetGroup)' == 'netcoreapp1.2corert'">true</GenFacadesIgnoreMissingTypes>
+    <GenFacadesIgnoreMissingTypes Condition="'$(TargetGroup)' == 'uapaot'">true</GenFacadesIgnoreMissingTypes>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
@@ -31,7 +31,6 @@
     <Compile Include="System\Runtime\ConstrainedExecution\PrePrepareMethodAttribute.cs" />
     <Compile Include="System\Runtime\CompilerServices\SpecialNameAttribute.cs" />
     <Compile Include="System\Threading\WaitHandleExtensions.cs" />
-    <Compile Include="System\IO\FileStream.cs" Condition="'$(TargetGroup)' == 'uapaot'" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap'">
     <Compile Include="System\ComponentModel\DefaultValueAttribute.cs" />

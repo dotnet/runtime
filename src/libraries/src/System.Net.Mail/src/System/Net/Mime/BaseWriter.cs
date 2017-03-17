@@ -5,6 +5,7 @@
 using System.IO;
 using System.Collections.Specialized;
 using System.Net.Mail;
+using System.Runtime.ExceptionServices;
 
 namespace System.Net.Mime
 {
@@ -146,9 +147,9 @@ namespace System.Net.Mime
         internal Stream EndGetContentStream(IAsyncResult result)
         {
             object o = MultiAsyncResult.End(result);
-            if (o is Exception)
+            if (o is Exception e)
             {
-                throw (Exception)o;
+                ExceptionDispatchInfo.Capture(e).Throw();
             }
             return (Stream)o;
         }

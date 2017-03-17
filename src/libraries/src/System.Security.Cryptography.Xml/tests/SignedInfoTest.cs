@@ -138,7 +138,7 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal(result, el.OuterXml);
         }
 
-        [Fact(Skip = "TODO: fix me")]
+        [Fact(Skip = "https://github.com/dotnet/corefx/issues/16685")]
         public void GetXmlWithSetProperty()
         {
             XmlDocument doc = new XmlDocument();

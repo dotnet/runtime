@@ -14,7 +14,7 @@ using System.Security;
 
 namespace System.Runtime.Serialization
 {
-#if USE_REFEMIT || NET_NATIVE
+#if USE_REFEMIT || uapaot
     public delegate object XmlFormatClassReaderDelegate(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString[] memberNames, XmlDictionaryString[] memberNamespaces);
     public delegate object XmlFormatCollectionReaderDelegate(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString itemName, XmlDictionaryString itemNamespace, CollectionDataContract collectionContract);
     public delegate void XmlFormatGetOnlyCollectionReaderDelegate(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString itemName, XmlDictionaryString itemNamespace, CollectionDataContract collectionContract);
@@ -57,7 +57,7 @@ namespace System.Runtime.Serialization
         /// </SecurityNote>
         private class CriticalHelper
         {
-#if !NET_NATIVE
+#if !uapaot
             private CodeGenerator _ilg;
             private LocalBuilder _objectLocal;
             private Type _objectType;
@@ -74,7 +74,7 @@ namespace System.Runtime.Serialization
                 {
                     return new ReflectionXmlClassReader(classContract).ReflectionReadClass;
                 }
-#if NET_NATIVE
+#if uapaot
                 else if (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup)
                 {
                     return new ReflectionXmlClassReader(classContract).ReflectionReadClass;
@@ -82,7 +82,7 @@ namespace System.Runtime.Serialization
 #endif
                 else
                 {
-#if NET_NATIVE
+#if uapaot
                     throw new InvalidOperationException("Cannot generate class reader");
 #else
                     _ilg = new CodeGenerator();
@@ -159,7 +159,7 @@ namespace System.Runtime.Serialization
                 {
                     return new ReflectionXmlCollectionReader().ReflectionReadCollection;
                 }
-#if NET_NATIVE
+#if uapaot
                 else if (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup)
                 {
                     return new ReflectionXmlCollectionReader().ReflectionReadCollection;
@@ -167,7 +167,7 @@ namespace System.Runtime.Serialization
 #endif
                 else
                 {
-#if NET_NATIVE
+#if uapaot
                     throw new InvalidOperationException("Cannot generate class reader");
 #else
                     _ilg = GenerateCollectionReaderHelper(collectionContract, false /*isGetOnlyCollection*/);
@@ -185,7 +185,7 @@ namespace System.Runtime.Serialization
                 {
                     return new ReflectionXmlCollectionReader().ReflectionReadGetOnlyCollection;
                 }
-#if NET_NATIVE
+#if uapaot
                 else if (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup)
                 {
                     return new ReflectionXmlCollectionReader().ReflectionReadGetOnlyCollection;
@@ -193,7 +193,7 @@ namespace System.Runtime.Serialization
 #endif
                 else
                 {
-#if NET_NATIVE
+#if uapaot
                     throw new InvalidOperationException("Cannot generate class reader");
 #else
                     _ilg = GenerateCollectionReaderHelper(collectionContract, true /*isGetOnlyCollection*/);
@@ -203,7 +203,7 @@ namespace System.Runtime.Serialization
                 }
             }
 
-#if !NET_NATIVE
+#if !uapaot
             private CodeGenerator GenerateCollectionReaderHelper(CollectionDataContract collectionContract, bool isGetOnlyCollection)
             {
                 _ilg = new CodeGenerator();

@@ -19,12 +19,6 @@ namespace System.Reflection
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        internal static void LitteEndianArchitectureRequired()
-        {
-            throw new PlatformNotSupportedException(SR.LitteEndianArchitectureRequired);
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
         internal static void InvalidArgument(string message, string parameterName)
         {
             throw new ArgumentException(message, parameterName);

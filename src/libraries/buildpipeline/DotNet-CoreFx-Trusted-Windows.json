@@ -176,10 +176,10 @@
         "definitionType": "task"
       },
       "inputs": {
-        "solution": "$(Build.SourcesDirectory)\\corefx\\src\\tests.builds",
+        "solution": "$(Build.SourcesDirectory)\\corefx\\src\\upload-tests.proj",
         "platform": "",
         "configuration": "",
-        "msbuildArguments": "$(PB_CreateHelixArguments) /p:\"Branch=$(SourceBranch)\" /p:\"CloudDropAccountName=$(PB_CloudDropAccountName)\" /p:\"CloudResultsAccountName=$(PB_CloudResultsAccountName)\" /p:\"CloudDropAccessToken=$(CloudDropAccessToken)\" /p:\"CloudResultsAccessToken=$(OutputCloudResultsAccessToken)\" /p:\"HelixApiAccessKey=$(HelixApiAccessKey)\" /p:\"HelixApiEndpoint=$(PB_HelixApiEndPoint)\" /p:\"OfficialBuildId=$(OfficialBuildId)\"",
+        "msbuildArguments": "$(PB_CreateHelixArguments) /p:\"Branch=$(SourceBranch)\" /p:\"CloudDropConnectionString=DefaultEndpointsProtocol=https;AccountName=$(PB_CloudDropAccountName);AccountKey=$(CloudDropAccessToken);EndpointSuffix=core.windows.net\" /p:\"CloudResultsConnectionString=DefaultEndpointsProtocol=https;AccountName=$(PB_CloudResultsAccountName);AccountKey=$(OutputCloudResultsAccessToken);EndpointSuffix=core.windows.net\" /p:\"HelixApiAccessKey=$(HelixApiAccessKey)\" /p:\"HelixApiEndpoint=$(PB_HelixApiEndPoint)\" /p:\"OfficialBuildId=$(OfficialBuildId)\"",
         "clean": "false",
         "maximumCpuCount": "false",
         "restoreNugetPackages": "false",
@@ -189,29 +189,6 @@
         "msbuildVersion": "14.0",
         "msbuildArchitecture": "x64",
         "msbuildLocation": ""
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Index symbol file sources",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "0675668a-7bba-4ccb-901d-5ad6554ca653",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "SymbolsPath": "",
-        "SearchPattern": "corefx\\bin\\*$(PB_Platform).$(PB_ConfigurationGroup)\\**\\*.pdb",
-        "SymbolsFolder": "",
-        "SkipIndexing": "false",
-        "TreatNotIndexedAsWarning": "false",
-        "SymbolsMaximumWaitTime": "",
-        "SymbolsProduct": "",
-        "SymbolsVersion": "",
-        "SymbolsArtifactName": "Symbols_$(PB_ConfigurationGroup)"
       }
     },
     {
@@ -249,6 +226,68 @@
         "ArtifactName": "BuildLogs",
         "ArtifactType": "Container",
         "TargetPath": "\\\\my\\share\\$(Build.DefinitionName)\\$(Build.BuildNumber)"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Publish symbols path: \\\\cpvsbuild\\drops\\DotNetCore\\$(PB_SymbolsBuildIdRoot)$(System.DefinitionId)\\$(Build.BuildNumber)\\symbols",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "0675668a-7bba-4ccb-901d-5ad6554ca653",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "SymbolsPath": "\\\\cpvsbuild\\drops\\DotNetCore\\$(PB_SymbolsBuildIdRoot)$(System.DefinitionId)\\$(Build.BuildNumber)\\symbols",
+        "SearchPattern": "corefx\\bin\\*$(PB_Platform).$(PB_ConfigurationGroup)\\**\\*.pdb",
+        "SymbolsFolder": "",
+        "SkipIndexing": "false",
+        "TreatNotIndexedAsWarning": "false",
+        "SymbolsMaximumWaitTime": "",
+        "SymbolsProduct": "",
+        "SymbolsVersion": "",
+        "SymbolsArtifactName": "Symbols_$(PB_ConfigurationGroup)"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Index symbols on http://symweb",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "af503aa3-9d06-44b6-a549-d063a544a5c5",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "symbolStore": "\\\\cpvsbuild\\drops\\DotNetCore\\$(PB_SymbolsBuildIdRoot)$(System.DefinitionId)\\$(Build.BuildNumber)\\symbols",
+        "contacts": "jhendrix;mawilkie",
+        "project": "DDE"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Publish to Symbols to Artifact Services",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "29827cd1-5c33-4ff0-a817-abd46970ffc4",
+        "versionSpec": "0.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "symbolServiceURI": "https://devdiv.artifacts.visualstudio.com/DefaultCollection",
+        "requestName": "$(system.teamProject)/$(Build.BuildNumber)/$(Build.BuildId)",
+        "sourcePath": "$(Build.SourcesDirectory)\\corefx\\bin",
+        "assemblyPath": "",
+        "toLowerCase": "true",
+        "detailedLog": "true",
+        "expirationInDays": "",
+        "usePat": "true"
       }
     },
     {
@@ -486,6 +525,6 @@
     "description": "Visual Studio and DevDiv team project for git source code repositories.  Work items will be added for Adams, Dev14 work items are tracked in vstfdevdiv.  ",
     "url": "https://devdiv.visualstudio.com/DefaultCollection/_apis/projects/0bdbc590-a062-4c3f-b0f6-9383f67865ee",
     "state": "wellFormed",
-    "revision": 418097459
+    "revision": 418097568
   }
 }

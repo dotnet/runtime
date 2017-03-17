@@ -52,7 +52,7 @@ namespace System.Net.Sockets.Tests
                 var readList = new List<Socket>(readPairs.Select(p => p.Key).ToArray());
                 var writeList = new List<Socket>(writePairs.Select(p => p.Key).ToArray());
 
-                Socket.Select(readList, writeList, null, FailTimeoutMicroseconds);
+                Socket.Select(readList, writeList, null, -1); // using -1 to test wait code path, but should complete instantly
 
                 // Since no buffers are full, all writes should be available.
                 Assert.Equal(writePairs.Length, writeList.Count);

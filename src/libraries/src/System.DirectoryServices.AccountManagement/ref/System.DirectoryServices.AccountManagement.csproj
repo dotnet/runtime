@@ -4,6 +4,8 @@
   <PropertyGroup>
     <ProjectGuid>{404455B6-466C-4F78-9DCC-C37DCC0B75DA}</ProjectGuid>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System.DirectoryServices.AccountManagement.cs" />
   </ItemGroup>

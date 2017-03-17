@@ -63,5 +63,36 @@ namespace System.Net
         [Event(HandlerMessageId, Keywords = Keywords.Debug, Level = EventLevel.Verbose)]
         public void HandlerMessage(int workerId, int requestId, string memberName, string message) =>
             WriteEvent(HandlerMessageId, workerId, requestId, memberName, message);
+
+        [NonEvent]
+        private unsafe void WriteEvent(int eventId, int arg1, int arg2, string arg3, string arg4)
+        {
+            if (IsEnabled())
+            {
+                if (arg3 == null) arg3 = "";
+                if (arg4 == null) arg4 = "";
+
+                fixed (char* string3Bytes = arg3)
+                fixed (char* string4Bytes = arg4)
+                {
+                    const int NumEventDatas = 4;
+                    var descrs = stackalloc EventData[NumEventDatas];
+
+                    descrs[0].DataPointer = (IntPtr)(&arg1);
+                    descrs[0].Size = sizeof(int);
+
+                    descrs[1].DataPointer = (IntPtr)(&arg2);
+                    descrs[1].Size = sizeof(int);
+
+                    descrs[2].DataPointer = (IntPtr)string3Bytes;
+                    descrs[2].Size = ((arg3.Length + 1) * 2);
+
+                    descrs[3].DataPointer = (IntPtr)string4Bytes;
+                    descrs[3].Size = ((arg4.Length + 1) * 2);
+
+                    WriteEventCore(eventId, NumEventDatas, descrs);
+                }
+            }
+        }
     }
 }

@@ -3,12 +3,14 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
+using Test.Cryptography;
 
 namespace System.Security.Cryptography.EcDsa.Tests
 {
     public class ECDsaImportExportTests : ECDsaTestsBase
     {
-        [Theory, MemberData(nameof(TestCurvesFull))]
+        [Theory]
+        [MemberData(nameof(TestCurvesFull))]
         public static void TestNamedCurves(CurveDef curveDef)
         {
             using (ECDsa ec1 = ECDsaFactory.Create(curveDef.Curve))

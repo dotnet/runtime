@@ -11,23 +11,50 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
   <ItemGroup>
-    <Compile Include="HashCodeTest.cs" />
-    <Compile Include="Perf.Vector2.cs" />
-    <Compile Include="Perf.Vector3.cs" />
-    <Compile Include="Perf.Vector4.cs" />
-    <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
-      <Link>Common\System\PerfUtils.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\..\src\System\Numerics\ConstantHelper.tt">
-      <Link>ConstantHelper.tt</Link>
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>ConstantHelper.cs</LastGenOutput>
-    </None>
-    <None Include="..\..\src\System\Numerics\GenerationConfig.ttinclude">
-      <Link>GenerationConfig.ttinclude</Link>
-    </None>
+    <Compile Include="Vector2\Distance.cs" />
+    <Compile Include="Vector2\GetHashCode.cs" />
+    <Compile Include="Vector2\Length.cs" />
+    <Compile Include="Vector3\Cross.cs" />
+    <Compile Include="Vector3\Distance.cs" />
+    <Compile Include="Vector3\GetHashCode.cs" />
+    <Compile Include="Vector3\Length.cs" />
+    <Compile Include="Vector4\AddFunction.cs" />
+    <Compile Include="Vector4\AddOperator.cs" />
+    <Compile Include="Vector4\Distance.cs" />
+    <Compile Include="Vector4\DistanceSquared.cs" />
+    <Compile Include="Vector4\Dot.cs" />
+    <Compile Include="Vector4\GetHashCode.cs" />
+    <Compile Include="Vector4\Length.cs" />
+    <Compile Include="Vector4\LengthSquared.cs" />
+    <Compile Include="Vector4\MultiplyFunction.cs" />
+    <Compile Include="Vector4\MultiplyOperator.cs" />
+    <Compile Include="Vector4\Normalize.cs" />
+    <Compile Include="Vector4\SquareRoot.cs" />
+    <Compile Include="Vector4\SubtractFunction.cs" />
+    <Compile Include="Vector4\SubtractOperator.cs" />
+    <Compile Include="Vector3\AddFunction.cs" />
+    <Compile Include="Vector3\AddOperator.cs" />
+    <Compile Include="Vector3\DistanceSquared.cs" />
+    <Compile Include="Vector3\Dot.cs" />
+    <Compile Include="Vector3\LengthSquared.cs" />
+    <Compile Include="Vector3\MultiplyFunction.cs" />
+    <Compile Include="Vector3\MultiplyOperator.cs" />
+    <Compile Include="Vector3\Normalize.cs" />
+    <Compile Include="Vector3\SquareRoot.cs" />
+    <Compile Include="Vector3\SubtractFunction.cs" />
+    <Compile Include="Vector3\SubtractOperator.cs" />
+    <Compile Include="Vector2\DistanceSquared.cs" />
+    <Compile Include="Vector2\Normalize.cs" />
+    <Compile Include="Vector2\LengthSquared.cs" />
+    <Compile Include="Vector2\SquareRoot.cs" />
+    <Compile Include="Vector2\Dot.cs" />
+    <Compile Include="Vector2\MultiplyFunction.cs" />
+    <Compile Include="Vector2\SubtractFunction.cs" />
+    <Compile Include="Vector2\AddFunction.cs" />
+    <Compile Include="Vector2\MultiplyOperator.cs" />
+    <Compile Include="Vector2\SubtractOperator.cs" />
+    <Compile Include="Vector2\AddOperator.cs" />
+    <Compile Include="VectorTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonPath)\..\perf\PerfRunner\PerfRunner.csproj">

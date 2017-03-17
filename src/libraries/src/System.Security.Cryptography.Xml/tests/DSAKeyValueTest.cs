@@ -12,6 +12,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Xml;
 using Xunit;
 
@@ -50,9 +51,9 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue(17001, TestPlatforms.OSX)]
         public void GetXml()
         {
-
             DSAKeyValue dsa = new DSAKeyValue();
             XmlElement xmlkey = dsa.GetXml();
 
@@ -78,6 +79,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
+        [ActiveIssue(17001, TestPlatforms.OSX)]
         public void GetXml_SameDsa()
         {
             using (DSA dsa = DSA.Create())
@@ -88,7 +90,7 @@ namespace System.Security.Cryptography.Xml.Tests
             }
         }
 
-        [Fact(Skip = "TODO: fix me")]
+        [Fact(Skip = "https://github.com/dotnet/corefx/issues/16779")]
         public void LoadXml()
         {
             const string pValue = "oDZlcdJA1Kf6UeNEIZqm4KDqA6zpX7CmEtAGWi9pgnBhWOUDVEfhswfsvTLR5BCbKfE6KoHvt5Hh8D1RcAko//iZkLZ+gds9y/5Oxape8tu3TUi1BnNPWu8ieXjMtdnpyudKFsCymssJked1rBeRePG23HTVwOV1DpopjRkjBEU=";
@@ -110,6 +112,7 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal(Convert.ToBase64String(parameters.Q), qValue);
             Assert.Equal(Convert.ToBase64String(parameters.G), gValue);
             Assert.Equal(Convert.ToBase64String(parameters.Y), yValue);
+            Assert.NotNull(parameters.Seed);
             Assert.Equal(Convert.ToBase64String(parameters.Seed), seedValue);
             Assert.Equal(BitConverter.GetBytes(parameters.Counter)[0], Convert.FromBase64String(pgenCounterValue)[0]);
         }

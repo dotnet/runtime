@@ -14,7 +14,7 @@ namespace System.Net.Sockets
     // The Task-based APIs are currently wrappers over either the APM APIs (e.g. BeginConnect)
     // or the SocketAsyncEventArgs APIs (e.g. ReceiveAsync(SocketAsyncEventArgs)).  The latter
     // are much more efficient when the SocketAsyncEventArg instances can be reused; as such,
-    // at present we use them for ReceiveAsync and Send{To}Async, caching an instance for each.
+    // at present we use them for ReceiveAsync and SendAsync, caching an instance for each.
     // In the future we could potentially maintain a global cache of instances used for accepts
     // and connects, and potentially separate per-socket instances for Receive{Message}FromAsync,
     // which would need different instances from ReceiveAsync due to having different results
@@ -29,12 +29,12 @@ namespace System.Net.Sockets
         /// was previously created but is currently being used by another concurrent operation.
         /// </summary>
         private static readonly Int32TaskSocketAsyncEventArgs s_rentedSentinel = new Int32TaskSocketAsyncEventArgs();
+        /// <summary>Cached task with a 0 value.</summary>
+        private static readonly Task<int> s_zeroTask = Task.FromResult(0);
         /// <summary>Cached SocketAsyncEventArgs for Task-based ReceiveAsync APIs.</summary>
         private Int32TaskSocketAsyncEventArgs _cachedReceiveEventArgs;
         /// <summary>Cached SocketAsyncEventArgs for Task-based SendAsync APIs.</summary>
         private Int32TaskSocketAsyncEventArgs _cachedSendEventArgs;
-
-        internal Task<Socket> AcceptAsync() => AcceptAsync((Socket)null);
 
         internal Task<Socket> AcceptAsync(Socket acceptSocket)
         {
@@ -112,54 +112,37 @@ namespace System.Net.Sockets
             return tcs.Task;
         }
 
-        internal Task<int> ReceiveAsync(ArraySegment<byte> buffer, SocketFlags socketFlags, bool wrapExceptionsInIOExceptions)
+        internal Task<int> ReceiveAsync(ArraySegment<byte> buffer, SocketFlags socketFlags, bool fromNetworkStream)
         {
             // Validate the arguments.
             ValidateBuffer(buffer);
 
-            // Get the SocketAsyncEventArgs to use for the operation.
             Int32TaskSocketAsyncEventArgs saea = RentSocketAsyncEventArgs(isReceive: true);
-            if (saea == null)
+            if (saea != null)
             {
-                // We couldn't get a cached instance, which means there's already a receive operation
-                // happening on this socket.  Fall back to wrapping APM.
-                var tcs = new TaskCompletionSource<int>(this);
-                BeginReceive(buffer.Array, buffer.Offset, buffer.Count, socketFlags, iar =>
-                {
-                    var innerTcs = (TaskCompletionSource<int>)iar.AsyncState;
-                    try { innerTcs.TrySetResult(((Socket)innerTcs.Task.AsyncState).EndReceive(iar)); }
-                    catch (Exception e) { innerTcs.TrySetException(e); }
-                }, tcs);
-                return tcs.Task;
-            }
-
-            // Configure the buffer.  We don't clear the buffers when returning the SAEA to the pool,
-            // so as to minimize overhead if the same buffer is used for subsequent operations (which is likely).
-            // But SAEA doesn't support having both a buffer and a buffer list configured, so clear out a buffer list
-            // if there is one before we set the desired buffer.
-            if (saea.BufferList != null) saea.BufferList = null;
-            saea.SetBuffer(buffer.Array, buffer.Offset, buffer.Count);
-            saea.SocketFlags = socketFlags;
-            saea.WrapExceptionsInIOExceptions = wrapExceptionsInIOExceptions;
-
-            // Initiate the receive
-            Task<int> t;
-            if (!ReceiveAsync(saea))
-            {
-                // The operation completed synchronously.  Get a task for it and return the SAEA for future use.
-                t = saea.SocketError == SocketError.Success ?
-                    GetSuccessTask(saea) :
-                    Task.FromException<int>(GetException(saea.SocketError, wrapExceptionsInIOExceptions));
-                ReturnSocketAsyncEventArgs(saea, isReceive: true);
+                // We got a cached instance. Configure the buffer and initate the operation.
+                ConfigureBuffer(saea, buffer, socketFlags, wrapExceptionsInIOExceptions: fromNetworkStream);
+                return GetTaskForSendReceive(ReceiveAsync(saea), saea, fromNetworkStream, isReceive: true);
             }
             else
             {
-                // The operation completed asynchronously.  Get the task for the operation,
-                // with appropriate synchronization to coordinate with the async callback
-                // that'll be completing the task.
-                t = saea.GetTaskSafe();
+                // We couldn't get a cached instance, due to a concurrent receive operation on the socket.
+                // Fall back to wrapping APM.
+                return ReceiveAsyncApm(buffer, socketFlags);
             }
-            return t;
+        }
+
+        /// <summary>Implements Task-returning ReceiveAsync on top of Begin/EndReceive.</summary>
+        private Task<int> ReceiveAsyncApm(ArraySegment<byte> buffer, SocketFlags socketFlags)
+        {
+            var tcs = new TaskCompletionSource<int>(this);
+            BeginReceive(buffer.Array, buffer.Offset, buffer.Count, socketFlags, iar =>
+            {
+                var innerTcs = (TaskCompletionSource<int>)iar.AsyncState;
+                try { innerTcs.TrySetResult(((Socket)innerTcs.Task.AsyncState).EndReceive(iar)); }
+                catch (Exception e) { innerTcs.TrySetException(e); }
+            }, tcs);
+            return tcs.Task;
         }
 
         internal Task<int> ReceiveAsync(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags)
@@ -167,48 +150,32 @@ namespace System.Net.Sockets
             // Validate the arguments.
             ValidateBuffersList(buffers);
 
-            // Get the SocketAsyncEventArgs instance to use for the operation.
             Int32TaskSocketAsyncEventArgs saea = RentSocketAsyncEventArgs(isReceive: true);
-            if (saea == null)
+            if (saea != null)
             {
-                // We couldn't get a cached instance, which means there's already a receive operation
-                // happening on this socket.  Fall back to wrapping APM.
-                var tcs = new TaskCompletionSource<int>(this);
-                BeginReceive(buffers, socketFlags, iar =>
-                {
-                    var innerTcs = (TaskCompletionSource<int>)iar.AsyncState;
-                    try { innerTcs.TrySetResult(((Socket)innerTcs.Task.AsyncState).EndReceive(iar)); }
-                    catch (Exception e) { innerTcs.TrySetException(e); }
-                }, tcs);
-                return tcs.Task;
-            }
-
-            // Configure the buffer list.  We don't clear the buffers when returning the SAEA to the pool,
-            // so as to minimize overhead if the same buffers are used for subsequent operations (which is likely).
-            // But SAEA doesn't support having both a buffer and a buffer list configured, so clear out a buffer
-            // if there is one before we set the desired buffer list.
-            if (saea.Buffer != null) saea.SetBuffer(null, 0, 0);
-            saea.BufferList = buffers;
-            saea.SocketFlags = socketFlags;
-
-            // Initiate the receive
-            Task<int> t;
-            if (!ReceiveAsync(saea))
-            {
-                // The operation completed synchronously.  Get a task for it and return the SAEA for future use.
-                t = saea.SocketError == SocketError.Success ?
-                    GetSuccessTask(saea) :
-                    Task.FromException<int>(new SocketException((int)saea.SocketError));
-                ReturnSocketAsyncEventArgs(saea, isReceive: true);
+                // We got a cached instance. Configure the buffer list and initate the operation.
+                ConfigureBufferList(saea, buffers, socketFlags);
+                return GetTaskForSendReceive(ReceiveAsync(saea), saea, fromNetworkStream: false, isReceive: true);
             }
             else
             {
-                // The operation completed asynchronously.  Get the task for the operation,
-                // with appropriate synchronization to coordinate with the async callback
-                // that'll be completing the task.
-                t = saea.GetTaskSafe();
+                // We couldn't get a cached instance, due to a concurrent receive operation on the socket.
+                // Fall back to wrapping APM.
+                return ReceiveAsyncApm(buffers, socketFlags);
             }
-            return t;
+        }
+
+        /// <summary>Implements Task-returning ReceiveAsync on top of Begin/EndReceive.</summary>
+        private Task<int> ReceiveAsyncApm(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags)
+        {
+            var tcs = new TaskCompletionSource<int>(this);
+            BeginReceive(buffers, socketFlags, iar =>
+            {
+                var innerTcs = (TaskCompletionSource<int>)iar.AsyncState;
+                try { innerTcs.TrySetResult(((Socket)innerTcs.Task.AsyncState).EndReceive(iar)); }
+                catch (Exception e) { innerTcs.TrySetException(e); }
+            }, tcs);
+            return tcs.Task;
         }
 
         internal Task<SocketReceiveFromResult> ReceiveFromAsync(ArraySegment<byte> buffer, SocketFlags socketFlags, EndPoint remoteEndPoint)
@@ -254,54 +221,37 @@ namespace System.Net.Sockets
             return tcs.Task;
         }
 
-        internal Task<int> SendAsync(ArraySegment<byte> buffer, SocketFlags socketFlags, bool wrapExceptionsInIOExceptions)
+        internal Task<int> SendAsync(ArraySegment<byte> buffer, SocketFlags socketFlags, bool fromNetworkStream)
         {
             // Validate the arguments.
             ValidateBuffer(buffer);
-
-            // Get the SocketAsyncEventArgs instance to use for the operation.
+            
             Int32TaskSocketAsyncEventArgs saea = RentSocketAsyncEventArgs(isReceive: false);
-            if (saea == null)
+            if (saea != null)
             {
-                // We couldn't get a cached instance, which means there's already a receive operation
-                // happening on this socket.  Fall back to wrapping APM.
-                var tcs = new TaskCompletionSource<int>(this);
-                BeginSend(buffer.Array, buffer.Offset, buffer.Count, socketFlags, iar =>
-                {
-                    var innerTcs = (TaskCompletionSource<int>)iar.AsyncState;
-                    try { innerTcs.TrySetResult(((Socket)innerTcs.Task.AsyncState).EndSend(iar)); }
-                    catch (Exception e) { innerTcs.TrySetException(e); }
-                }, tcs);
-                return tcs.Task;
-            }
-
-            // Configure the buffer.  We don't clear the buffers when returning the SAEA to the pool,
-            // so as to minimize overhead if the same buffer is used for subsequent operations (which is likely).
-            // But SAEA doesn't support having both a buffer and a buffer list configured, so clear out a buffer list
-            // if there is one before we set the desired buffer.
-            if (saea.BufferList != null) saea.BufferList = null;
-            saea.SetBuffer(buffer.Array, buffer.Offset, buffer.Count);
-            saea.SocketFlags = socketFlags;
-            saea.WrapExceptionsInIOExceptions = wrapExceptionsInIOExceptions;
-
-            // Initiate the send
-            Task<int> t;
-            if (!SendAsync(saea))
-            {
-                // The operation completed synchronously.  Get a task for it and return the SAEA for future use.
-                t = saea.SocketError == SocketError.Success ?
-                    GetSuccessTask(saea) :
-                    Task.FromException<int>(GetException(saea.SocketError, wrapExceptionsInIOExceptions));
-                ReturnSocketAsyncEventArgs(saea, isReceive: false);
+                // We got a cached instance. Configure the buffer and initate the operation.
+                ConfigureBuffer(saea, buffer, socketFlags, wrapExceptionsInIOExceptions: fromNetworkStream);
+                return GetTaskForSendReceive(SendAsync(saea), saea, fromNetworkStream, isReceive: false);
             }
             else
             {
-                // The operation completed asynchronously.  Get the task for the operation,
-                // with appropriate synchronization to coordinate with the async callback
-                // that'll be completing the task.
-                t = saea.GetTaskSafe();
+                // We couldn't get a cached instance, due to a concurrent send operation on the socket.
+                // Fall back to wrapping APM.
+                return SendAsyncApm(buffer, socketFlags);
             }
-            return t;
+        }
+
+        /// <summary>Implements Task-returning SendAsync on top of Begin/EndSend.</summary>
+        private Task<int> SendAsyncApm(ArraySegment<byte> buffer, SocketFlags socketFlags)
+        {
+            var tcs = new TaskCompletionSource<int>(this);
+            BeginSend(buffer.Array, buffer.Offset, buffer.Count, socketFlags, iar =>
+            {
+                var innerTcs = (TaskCompletionSource<int>)iar.AsyncState;
+                try { innerTcs.TrySetResult(((Socket)innerTcs.Task.AsyncState).EndSend(iar)); }
+                catch (Exception e) { innerTcs.TrySetException(e); }
+            }, tcs);
+            return tcs.Task;
         }
 
         internal Task<int> SendAsync(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags)
@@ -309,48 +259,32 @@ namespace System.Net.Sockets
             // Validate the arguments.
             ValidateBuffersList(buffers);
 
-            // Get the SocketAsyncEventArgs instance to use for the operation.
             Int32TaskSocketAsyncEventArgs saea = RentSocketAsyncEventArgs(isReceive: false);
-            if (saea == null)
+            if (saea != null)
             {
-                // We couldn't get a cached instance, which means there's already a receive operation
-                // happening on this socket.  Fall back to wrapping APM.
-                var tcs = new TaskCompletionSource<int>(this);
-                BeginSend(buffers, socketFlags, iar =>
-                {
-                    var innerTcs = (TaskCompletionSource<int>)iar.AsyncState;
-                    try { innerTcs.TrySetResult(((Socket)innerTcs.Task.AsyncState).EndSend(iar)); }
-                    catch (Exception e) { innerTcs.TrySetException(e); }
-                }, tcs);
-                return tcs.Task;
-            }
-
-            // Configure the buffer list.  We don't clear the buffers when returning the SAEA to the pool,
-            // so as to minimize overhead if the same buffers are used for subsequent operations (which is likely).
-            // But SAEA doesn't support having both a buffer and a buffer list configured, so clear out a buffer
-            // if there is one before we set the desired buffer list.
-            if (saea.Buffer != null) saea.SetBuffer(null, 0, 0);
-            saea.BufferList = buffers;
-            saea.SocketFlags = socketFlags;
-
-            // Initiate the send
-            Task<int> t;
-            if (!SendAsync(saea))
-            {
-                // The operation completed synchronously.  Get a task for it and return the SAEA for future use.
-                t = saea.SocketError == SocketError.Success ?
-                    GetSuccessTask(saea) :
-                    Task.FromException<int>(new SocketException((int)saea.SocketError));
-                ReturnSocketAsyncEventArgs(saea, isReceive: false);
+                // We got a cached instance. Configure the buffer list and initate the operation.
+                ConfigureBufferList(saea, buffers, socketFlags);
+                return GetTaskForSendReceive(SendAsync(saea), saea, fromNetworkStream: false, isReceive: false);
             }
             else
             {
-                // The operation completed asynchronously.  Get the task for the operation,
-                // with appropriate synchronization to coordinate with the async callback
-                // that'll be completing the task.
-                t = saea.GetTaskSafe();
+                // We couldn't get a cached instance, due to a concurrent send operation on the socket.
+                // Fall back to wrapping APM.
+                return SendAsyncApm(buffers, socketFlags);
             }
-            return t;
+        }
+
+        /// <summary>Implements Task-returning SendAsync on top of Begin/EndSend.</summary>
+        private Task<int> SendAsyncApm(IList<ArraySegment<byte>> buffers, SocketFlags socketFlags)
+        {
+            var tcs = new TaskCompletionSource<int>(this);
+            BeginSend(buffers, socketFlags, iar =>
+            {
+                var innerTcs = (TaskCompletionSource<int>)iar.AsyncState;
+                try { innerTcs.TrySetResult(((Socket)innerTcs.Task.AsyncState).EndSend(iar)); }
+                catch (Exception e) { innerTcs.TrySetException(e); }
+            }, tcs);
+            return tcs.Task;
         }
 
         internal Task<int> SendToAsync(ArraySegment<byte> buffer, SocketFlags socketFlags, EndPoint remoteEP)
@@ -395,20 +329,118 @@ namespace System.Net.Sockets
             }
         }
 
+        private static void ConfigureBuffer(
+            Int32TaskSocketAsyncEventArgs saea, ArraySegment<byte> buffer, SocketFlags socketFlags, bool wrapExceptionsInIOExceptions)
+        {
+            // Configure the buffer.  We don't clear the buffers when returning the SAEA to the pool,
+            // so as to minimize overhead if the same buffer is used for subsequent operations (which is likely).
+            // But SAEA doesn't support having both a buffer and a buffer list configured, so clear out a buffer list
+            // if there is one before we set the desired buffer.
+            if (saea.BufferList != null) saea.BufferList = null;
+            saea.SetBuffer(buffer.Array, buffer.Offset, buffer.Count);
+            saea.SocketFlags = socketFlags;
+            saea._wrapExceptionsInIOExceptions = wrapExceptionsInIOExceptions;
+        }
+
+        private static void ConfigureBufferList(
+            Int32TaskSocketAsyncEventArgs saea, IList<ArraySegment<byte>> buffers, SocketFlags socketFlags)
+        {
+            // Configure the buffer list.  We don't clear the buffers when returning the SAEA to the pool,
+            // so as to minimize overhead if the same buffers are used for subsequent operations (which is likely).
+            // But SAEA doesn't support having both a buffer and a buffer list configured, so clear out a buffer
+            // if there is one before we set the desired buffer list.
+            if (saea.Buffer != null) saea.SetBuffer(null, 0, 0);
+            saea.BufferList = buffers;
+            saea.SocketFlags = socketFlags;
+        }
+
+        /// <summary>Gets a task to represent the operation.</summary>
+        /// <param name="pending">true if the operation completes asynchronously; false if it completed synchronously.</param>
+        /// <param name="saea">The event args instance used with the operation.</param>
+        /// <param name="fromNetworkStream">
+        /// true if the request is coming from NetworkStream, which has special semantics for
+        /// exceptions and cached tasks; otherwise, false.
+        /// </param>
+        /// <param name="isReceive">true if this is a receive; false if this is a send.</param>
+        private Task<int> GetTaskForSendReceive(
+            bool pending, Int32TaskSocketAsyncEventArgs saea,
+            bool fromNetworkStream, bool isReceive)
+        {
+            Task<int> t;
+
+            if (pending)
+            {
+                // The operation is completing asynchronously (it may have already completed).
+                // Get the task for the operation, with appropriate synchronization to coordinate
+                // with the async callback that'll be completing the task.
+                bool responsibleForReturningToPool;
+                t = saea.GetCompletionResponsibility(out responsibleForReturningToPool).Task;
+                if (responsibleForReturningToPool)
+                {
+                    // We're responsible for returning it only if the callback has already been invoked
+                    // and gotten what it needs from the SAEA; otherwise, the callback will return it.
+                    ReturnSocketAsyncEventArgs(saea, isReceive);
+                }
+            }
+            else
+            {
+                // The operation completed synchronously.  Get a task for it.
+                if (saea.SocketError == SocketError.Success)
+                {
+                    // Get the number of bytes successfully received/sent.
+                    int bytesTransferred = saea.BytesTransferred;
+
+                    // For zero bytes transferred, we can return our cached 0 task.
+                    // We can also do so if the request came from network stream and is a send,
+                    // as for that we can return any value because it returns a non-generic Task.
+                    if (bytesTransferred == 0 || (fromNetworkStream & !isReceive))
+                    {
+                        t = s_zeroTask;
+                    }
+                    else
+                    {
+                        // Get any cached, successfully-completed cached task that may exist on this SAEA.
+                        Task<int> lastTask = saea._successfullyCompletedTask;
+                        Debug.Assert(lastTask == null || lastTask.Status == TaskStatus.RanToCompletion);
+
+                        // If there is a task and if it has the desired result, simply reuse it.
+                        // Otherwise, create a new one for this result value, and in addition to returning it,
+                        // also store it into the SAEA for potential future reuse.
+                        t = lastTask != null && lastTask.Result == bytesTransferred ?
+                            lastTask :
+                            (saea._successfullyCompletedTask = Task.FromResult(bytesTransferred));
+                    }
+                }
+                else
+                {
+                    t = Task.FromException<int>(GetException(saea.SocketError, wrapExceptionsInIOExceptions: fromNetworkStream));
+                }
+
+                // There won't be a callback, and we're done with the SAEA, so return it to the pool.
+                ReturnSocketAsyncEventArgs(saea, isReceive);
+            }
+
+            return t;
+        }
+
         /// <summary>Completes the SocketAsyncEventArg's Task with the result of the send or receive, and returns it to the specified pool.</summary>
         private static void CompleteSendReceive(Int32TaskSocketAsyncEventArgs saea, bool isReceive)
         {
-            // Synchronize with the initiating thread accessing the task from the builder.
-            saea.GetTaskSafe();
-
-            // Pull the relevant state off of the SAEA and only then return it to the pool.
+            // Pull the relevant state off of the SAEA
             Socket s = (Socket)saea.UserToken;
-            AsyncTaskMethodBuilder<int> builder = saea.Builder;
             SocketError error = saea.SocketError;
             int bytesTransferred = saea.BytesTransferred;
-            bool wrapExceptionsInIOExceptions = saea.WrapExceptionsInIOExceptions;
+            bool wrapExceptionsInIOExceptions = saea._wrapExceptionsInIOExceptions;
 
-            s.ReturnSocketAsyncEventArgs(saea, isReceive);
+            // Synchronize with the initiating thread. If the synchronous caller already got what
+            // it needs from the SAEA, then we can return it to the pool now. Otherwise, it'll be
+            // responsible for returning it once it's gotten what it needs from it.
+            bool responsibleForReturningToPool;
+            AsyncTaskMethodBuilder<int> builder = saea.GetCompletionResponsibility(out responsibleForReturningToPool);
+            if (responsibleForReturningToPool)
+            {
+                s.ReturnSocketAsyncEventArgs(saea, isReceive);
+            }
 
             // Complete the builder/task with the results.
             if (error == SocketError.Success)
@@ -419,24 +451,6 @@ namespace System.Net.Sockets
             {
                 builder.SetException(GetException(error, wrapExceptionsInIOExceptions));
             }
-        }
-
-        /// <summary>Gets a <see cref="Task{Int32}"/> that represents the BytesTransferred from a successful send/receive.</summary>
-        private static Task<int> GetSuccessTask(Int32TaskSocketAsyncEventArgs saea)
-        {
-            // Get the number of bytes successfully received/sent.
-            int bytesTransferred = saea.BytesTransferred;
-
-            // And get any cached, successfully-completed cached task that may exist on this SAEA.
-            Task<int> lastTask = saea.SuccessfullyCompletedTask;
-            Debug.Assert(lastTask == null || lastTask.Status == TaskStatus.RanToCompletion);
-
-            // If there is a task and if it has the desired result, simply reuse it.
-            // Otherwise, create a new one for this result value, and in addition to returning it,
-            // also store it into the SAEA for potential future reuse.
-            return lastTask != null && lastTask.Result == bytesTransferred ?
-                lastTask :
-                (saea.SuccessfullyCompletedTask = Task.FromResult(bytesTransferred));
         }
 
         /// <summary>Gets a SocketException or an IOException wrapping a SocketException for the specified error.</summary>
@@ -492,8 +506,9 @@ namespace System.Net.Sockets
             // if necessary by the consumer, but we want to keep the buffers due to likely subsequent reuse
             // and the costs associated with changing them.
             saea.UserToken = null;
-            saea.Builder = default(AsyncTaskMethodBuilder<int>);
-            saea.WrapExceptionsInIOExceptions = false;
+            saea._accessed = false;
+            saea._builder = default(AsyncTaskMethodBuilder<int>);
+            saea._wrapExceptionsInIOExceptions = false;
 
             // Write this instance back as a cached instance.  It should only ever be overwriting the sentinel,
             // never null or another instance.
@@ -537,36 +552,33 @@ namespace System.Net.Sockets
         internal sealed class Int32TaskSocketAsyncEventArgs : SocketAsyncEventArgs
         {
             /// <summary>A cached, successfully completed task.</summary>
-            internal Task<int> SuccessfullyCompletedTask;
+            internal Task<int> _successfullyCompletedTask;
             /// <summary>
             /// The builder used to create the Task representing the result of the async operation.
             /// This is a mutable struct.
             /// </summary>
-            internal AsyncTaskMethodBuilder<int> Builder;
+            internal AsyncTaskMethodBuilder<int> _builder;
             /// <summary>Whether exceptions that emerge should be wrapped in IOExceptions.</summary>
-            internal bool WrapExceptionsInIOExceptions;
+            internal bool _wrapExceptionsInIOExceptions;
             /// <summary>
-            /// The lock used to protect initialization fo the Builder's Task.  AsyncTaskMethodBuilder
-            /// expects a particular access pattern as generated by the language compiler, such that
-            /// its Task property is always accessed in a serialized manner and no synchronization is
-            /// needed.  As such, since in our pattern here the initiater of the async operation may race
-            /// with asynchronous completion to access the Task, we need to synchronize on its initial
-            /// access so that the same Task is published/accessed by both sides.
+            /// Whether the instance was already accessed as part of the operation.  We expect
+            /// at most two accesses: one from the synchronous caller to initiate the operation,
+            /// and one from the callback if the operation completes asynchronously.  If it completes
+            /// synchronously, then it's the initiator's responsbility to return the instance to
+            /// the pool.  If it completes asynchronously, then it's the responsibility of whoever
+            /// accesses this second, so we track whether it's already been accessed.
             /// </summary>
-            private SpinLock BuilderTaskLock = new SpinLock(enableThreadOwnerTracking: false);
+            internal bool _accessed = false;
 
             /// <summary>Gets the builder's task with appropriate synchronization.</summary>
-            internal Task<int> GetTaskSafe()
+            internal AsyncTaskMethodBuilder<int> GetCompletionResponsibility(out bool responsibleForReturningToPool)
             {
-                bool lockTaken = false;
-                try
+                lock (this)
                 {
-                    BuilderTaskLock.Enter(ref lockTaken);
-                    return Builder.Task;
-                }
-                finally
-                {
-                    if (lockTaken) BuilderTaskLock.Exit(useMemoryBarrier: false);
+                    responsibleForReturningToPool = _accessed;
+                    _accessed = true;
+                    var ignored = _builder.Task; // force initialization under the lock (builder itself lazily initializes w/o synchronization)
+                    return _builder;
                 }
             }
         }

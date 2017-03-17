@@ -11,7 +11,7 @@ namespace System.Diagnostics.Tests
 {
     public class Perf_Process : ProcessTestBase
     {
-        [Benchmark]
+        [Benchmark(Skip="Issue 16653")]
         public void Kill()
         {
             const int inneriterations = 500;
@@ -39,7 +39,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Benchmark]
+        [Benchmark(Skip="Issue 16653")]
         public void GetProcessesByName()
         {
             // To offset a different number of processes on a different machine, I create dummy processes
@@ -73,7 +73,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Benchmark]
+        [Benchmark(Skip="Issue 16653")]
         public void GetId()
         {
             int id;
@@ -102,7 +102,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Benchmark]
+        [Benchmark(Skip="Issue 16653")]
         public void Start()
         {
             foreach (var iteration in Benchmark.Iterations)
@@ -130,7 +130,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Benchmark]
+        [Benchmark(Skip="Issue 16653")]
         public void GetHasExited()
         {
             bool result;
@@ -160,7 +160,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Benchmark]
+        [Benchmark(Skip="Issue 16653")]
         public void GetExitCode()
         {
             int result;
@@ -188,7 +188,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Benchmark]
+        [Benchmark(Skip="Issue 16653")]
         public void GetStartInfo()
         {
             ProcessStartInfo result;
@@ -218,7 +218,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [Benchmark]
+        [Benchmark(Skip="Issue 16653")]
         public void GetStandardOutput()
         {
             const int innerIterations = 200;

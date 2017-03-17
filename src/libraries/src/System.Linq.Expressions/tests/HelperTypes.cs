@@ -457,7 +457,9 @@ namespace System.Linq.Expressions.Tests
             expression.VerifyIL(il);
 #endif
 
-#if FEATURE_INTERPRET
+            // FEATURE_COMPILE is not directly required, 
+            // but this functionality relies on private reflection and that would not work with AOT
+#if FEATURE_INTERPRET && FEATURE_COMPILE
             expression.VerifyInstructions(instructions);
 #endif
         }

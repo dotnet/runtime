@@ -226,9 +226,6 @@
   <data name="ImageTooSmallOrContainsInvalidOffsetOrCount" xml:space="preserve">
     <value>Image is either too small or contains an invalid byte offset or count.</value>
   </data>
-  <data name="LitteEndianArchitectureRequired" xml:space="preserve">
-    <value>Little-endian architecture required.</value>
-  </data>
   <data name="MetadataStringDecoderEncodingMustBeUtf8" xml:space="preserve">
     <value>The MetadataStringDecoder instance used to instantiate the Metadata reader must have a UTF8 encoding.</value>
   </data>

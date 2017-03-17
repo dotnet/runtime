@@ -248,7 +248,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
-        public void GetDecryptionIV_StringNullWithEncryptionMethod()
+        public void GetDecryptionIV_StringNull()
         {
             EncryptedXml ex = new EncryptedXml();
             EncryptedData encryptedData = new EncryptedData();

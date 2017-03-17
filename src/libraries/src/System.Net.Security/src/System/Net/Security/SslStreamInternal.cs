@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -41,8 +42,6 @@ namespace System.Net.Security
         private int _internalOffset;
         private int _internalBufferCount;
 
-        private FixedSizeReader _reader;
-
         internal SslStreamInternal(SslState sslState)
         {
             if (PinnableBufferCacheEventSource.Log.IsEnabled())
@@ -51,7 +50,6 @@ namespace System.Net.Security
             }
 
             _sslState = sslState;
-            _reader = new FixedSizeReader(_sslState.InnerStream);
         }
 
         // If we have a read buffer from the pinnable cache, return it.
@@ -201,14 +199,14 @@ namespace System.Net.Security
             // No "artificial" timeouts implemented so far, InnerStream controls timeout.
             lazyResult.InternalWaitForCompletion();
 
-            if (lazyResult.Result is Exception)
+            if (lazyResult.Result is Exception e)
             {
-                if (lazyResult.Result is IOException)
+                if (e is IOException)
                 {
-                    throw (Exception)lazyResult.Result;
+                    ExceptionDispatchInfo.Capture(e).Throw();
                 }
 
-                throw new IOException(SR.net_io_write, (Exception)lazyResult.Result);
+                throw new IOException(SR.net_io_write, e);
             }
         }
 
@@ -612,7 +610,7 @@ namespace System.Net.Security
             if (asyncRequest != null)
             {
                 asyncRequest.SetNextRequest(InternalBuffer, 0, SecureChannel.ReadHeaderSize, s_readHeaderCallback);
-                _reader.AsyncReadPacket(asyncRequest);
+                FixedSizeReader.ReadPacketAsync(_sslState.InnerStream, asyncRequest);
 
                 if (!asyncRequest.MustCompleteSynchronously)
                 {
@@ -623,7 +621,7 @@ namespace System.Net.Security
             }
             else
             {
-                readBytes = _reader.ReadPacket(InternalBuffer, 0, SecureChannel.ReadHeaderSize);
+                readBytes = FixedSizeReader.ReadPacket(_sslState.InnerStream, InternalBuffer, 0, SecureChannel.ReadHeaderSize);
             }
 
             return StartFrameBody(readBytes, buffer, offset, count, asyncRequest);
@@ -654,7 +652,7 @@ namespace System.Net.Security
             {
                 asyncRequest.SetNextRequest(InternalBuffer, SecureChannel.ReadHeaderSize, readBytes, s_readFrameCallback);
 
-                _reader.AsyncReadPacket(asyncRequest);
+                FixedSizeReader.ReadPacketAsync(_sslState.InnerStream, asyncRequest);
 
                 if (!asyncRequest.MustCompleteSynchronously)
                 {
@@ -665,7 +663,7 @@ namespace System.Net.Security
             }
             else
             {
-                readBytes = _reader.ReadPacket(InternalBuffer, SecureChannel.ReadHeaderSize, readBytes);
+                readBytes = FixedSizeReader.ReadPacket(_sslState.InnerStream, InternalBuffer, SecureChannel.ReadHeaderSize, readBytes);
             }
             
             return ProcessFrameBody(readBytes, buffer, offset, count, asyncRequest);

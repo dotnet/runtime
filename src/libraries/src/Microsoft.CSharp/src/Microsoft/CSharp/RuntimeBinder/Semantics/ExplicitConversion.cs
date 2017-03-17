@@ -235,7 +235,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 Debug.Assert(_typeDest != null);
 
                 if (!_typeSrc.IsArrayType() || _typeSrc.AsArrayType().rank != 1 ||
-                    !_typeDest.isInterfaceType() || _typeDest.AsAggregateType().GetTypeArgsAll().Size != 1)
+                    !_typeDest.isInterfaceType() || _typeDest.AsAggregateType().GetTypeArgsAll().Count != 1)
                 {
                     return false;
                 }
@@ -252,7 +252,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
 
                 CType typeArr = _typeSrc.AsArrayType().GetElementType();
-                CType typeLst = _typeDest.AsAggregateType().GetTypeArgsAll().Item(0);
+                CType typeLst = _typeDest.AsAggregateType().GetTypeArgsAll()[0];
 
                 if (!CConversions.FExpRefConv(GetSymbolLoader(), typeArr, typeLst))
                 {
@@ -320,7 +320,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 //   are the same type or there is an implicit or explicit reference conversion from S to T.
 
                 if (arrayDest.rank != 1 || !_typeSrc.isInterfaceType() ||
-                    _typeSrc.AsAggregateType().GetTypeArgsAll().Size != 1)
+                    _typeSrc.AsAggregateType().GetTypeArgsAll().Count != 1)
                 {
                     return false;
                 }
@@ -337,7 +337,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
 
                 CType typeArr = arrayDest.GetElementType();
-                CType typeLst = _typeSrc.AsAggregateType().GetTypeArgsAll().Item(0);
+                CType typeLst = _typeSrc.AsAggregateType().GetTypeArgsAll()[0];
 
                 Debug.Assert(!typeArr.IsNeverSameType());
                 if (typeArr != typeLst && !CConversions.FExpRefConv(GetSymbolLoader(), typeArr, typeLst))

@@ -9,7 +9,7 @@ namespace System.Security.Cryptography.Dsa.Tests
 {
     public partial class DSASignVerify
     {
-        [Fact]
+        [ConditionalFact(nameof(SupportsKeyGeneration))]
         public static void InvalidKeySize_DoesNotInvalidateKey()
         {
             using (DSA dsa = DSAFactory.Create())
@@ -23,7 +23,7 @@ namespace System.Security.Cryptography.Dsa.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(SupportsKeyGeneration))]
         public static void SignAndVerifyDataNew1024()
         {
             using (DSA dsa = DSAFactory.Create(1024))
@@ -188,5 +188,6 @@ namespace System.Security.Cryptography.Dsa.Tests
                 return DSAFactory.SupportsFips186_3;
             }
         }
+        public static bool SupportsKeyGeneration => DSAFactory.SupportsKeyGeneration;
     }
 }

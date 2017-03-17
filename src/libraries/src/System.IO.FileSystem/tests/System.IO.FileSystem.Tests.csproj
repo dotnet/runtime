@@ -96,7 +96,6 @@
     <Compile Include="File\ReadWriteAllLines.cs" />
     <Compile Include="PathFeatures.cs" />
     <Compile Include="TestData.cs" />
-    <Compile Include="Tfm.cs" />
     <Compile Include="UnseekableFileStream.cs" />
     <Compile Include="FSAssert.cs" />
     <Compile Include="FileSystemTest.cs" />

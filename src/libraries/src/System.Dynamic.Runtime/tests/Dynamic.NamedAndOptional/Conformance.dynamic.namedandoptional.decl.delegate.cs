@@ -6,8 +6,6 @@ using Xunit;
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.dlgate.dlgate01.dlgate01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.dlgate.dlgate01.dlgate01;
-
     // <Area>Declaration of Methods with Optional Parameters</Area>
     // <Title>Declaration of delegates Optional Params</Title>
     // <Description>Simple Declaration of a delegate with optional parameters</Description>
@@ -40,8 +38,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.d
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.dlgate.dlgate01a.dlgate01a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.dlgate.dlgate01a.dlgate01a;
-
     // <Area>Declaration of Methods with Optional Parameters</Area>
     // <Title>Declaration of delegates Optional Params</Title>
     // <Description>Simple Declaration of a delegate with optional parameters</Description>
@@ -74,8 +70,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.d
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.dlgate.dlgate02a.dlgate02a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.dlgate.dlgate02a.dlgate02a;
-
     // <Area>Declaration of Methods with Optional Parameters</Area>
     // <Title>Declaration of delegates Optional Params</Title>
     // <Description>Simple Declaration of a delegate with optional parameters</Description>
@@ -119,8 +113,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.d
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.dlgate.dlgate03.dlgate03
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.dlgate.dlgate03.dlgate03;
-
     // <Area>Declaration of Methods with Optional Parameters</Area>
     // <Title>Declaration of delegates Optional Params</Title>
     // <Description>Simple Declaration of a delegate with optional parameters</Description>
@@ -153,8 +145,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.d
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.dlgate.dlgate03a.dlgate03a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.dlgate.dlgate03a.dlgate03a;
-
     // <Area>Declaration of Methods with Optional Parameters</Area>
     // <Title>Declaration of delegates Optional Params</Title>
     // <Description>Simple Declaration of a delegate with optional parameters</Description>
@@ -187,8 +177,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.d
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.dlgate.dlgate04a.dlgate04a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.dlgate.dlgate04a.dlgate04a;
-
     // <Area>Declaration of Methods with Optional Parameters</Area>
     // <Title>Declaration of delegates Optional Params</Title>
     // <Description>Simple Declaration of a delegate with optional parameters</Description>
@@ -225,8 +213,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.d
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.dlgate.dlgate05.dlgate05
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.dlgate.dlgate05.dlgate05;
-
     // <Area>Declaration of Methods with Optional Parameters</Area>
     // <Title>Declaration of delegates Optional Params</Title>
     // <Description>Simple Declaration of a delegate with optional parameters</Description>
@@ -263,8 +249,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.d
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.dlgate.dlgate05a.dlgate05a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.dlgate.dlgate05a.dlgate05a;
-
     // <Area>Declaration of Methods with Optional Parameters</Area>
     // <Title>Declaration of delegates Optional Params</Title>
     // <Description>Simple Declaration of a delegate with optional parameters</Description>
@@ -302,8 +286,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.d
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.dlgate.dlgate06a.dlgate06a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.dlgate.dlgate06a.dlgate06a;
-
     // <Area>Declaration of Methods with Optional Parameters</Area>
     // <Title>Declaration of delegates Optional Params</Title>
     // <Description>Simple Declaration of a delegate with optional parameters</Description>
@@ -341,8 +323,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.d
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.dlgate.evnt01.evnt01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.dlgate.evnt01.evnt01;
-
     // <Area>Declaration of Methods with Optional Parameters</Area>
     // <Title>Declaration of delegates Optional Params</Title>
     // <Description>Simple Declaration of a delegate with optional parameters
@@ -379,8 +359,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.d
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.dlgate.evnt01a.evnt01a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.dlgate.evnt01a.evnt01a;
-
     // <Area>Declaration of Methods with Optional Parameters</Area>
     // <Title>Declaration of delegates Optional Params</Title>
     // <Description>Simple Declaration of a delegate with optional parameters
@@ -420,8 +398,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.d
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.dlgate.evnt02.evnt02
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.dlgate.evnt02.evnt02;
-
     // <Area>Declaration of Methods with Optional Parameters</Area>
     // <Title>Declaration of delegates Optional Params</Title>
     // <Description>Simple Declaration of a delegate with optional parameters
@@ -470,8 +446,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.d
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.dlgate.evnt02a.evnt02a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.dlgate.evnt02a.evnt02a;
-
     // <Area>Declaration of Methods with Optional Parameters</Area>
     // <Title>Declaration of delegates Optional Params</Title>
     // <Description>Simple Declaration of a delegate with optional parameters
@@ -518,8 +492,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.d
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.dlgate.evnt03a.evnt03a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.dlgate.evnt03a.evnt03a;
-
     // <Area>Declaration of Methods with Optional Parameters</Area>
     // <Title>Declaration of delegates Optional Params</Title>
     // <Description>Simple Declaration of a delegate with optional parameters

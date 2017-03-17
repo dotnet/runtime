@@ -53,8 +53,7 @@ namespace System
             {
                 EnsureInitialized();
 
-                return Volatile.Read(ref s_stdInReader) ??
-                    Console.EnsureInitialized(
+                return Console.EnsureInitialized(
                         ref s_stdInReader,
                         () => SyncTextReader.GetSynchronizedTextReader(
                             new StdInReader(

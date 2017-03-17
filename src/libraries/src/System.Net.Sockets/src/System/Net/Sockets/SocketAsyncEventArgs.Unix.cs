@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.IO;
+using System.Threading.Tasks;
 
 namespace System.Net.Sockets
 {
@@ -13,7 +15,7 @@ namespace System.Net.Sockets
         private SocketFlags _receivedFlags;
         private Action<int, byte[], int, SocketFlags, SocketError> _transferCompletionCallback;
 
-        internal int? SendPacketsDescriptorCount { get { return null; } }
+        internal int? SendPacketsDescriptorCount => _sendPacketsElements?.Length;
 
         private void InitializeInternals()
         {
@@ -43,6 +45,20 @@ namespace System.Net.Sockets
         private void InnerComplete()
         {
             // No-op for *nix.
+        }
+
+        private void FinishOperationSync(SocketError socketError, int bytesTransferred, SocketFlags flags)
+        {
+            Debug.Assert(socketError != SocketError.IOPending);
+
+            if (socketError == SocketError.Success)
+            {
+                FinishOperationSyncSuccess(bytesTransferred, flags);
+            }
+            else
+            {
+                FinishOperationSyncFailure(socketError, bytesTransferred, flags);
+            }
         }
 
         private void InnerStartOperationAccept(bool userSuppliedBuffer)
@@ -108,12 +124,13 @@ namespace System.Net.Sockets
 
         internal SocketError DoOperationDisconnect(Socket socket, SafeCloseSocket handle)
         {
-            throw new PlatformNotSupportedException(SR.net_sockets_disconnect_notsupported);
+            SocketError socketError = SocketPal.Disconnect(socket, handle, _disconnectReuseSocket);
+            FinishOperationSync(socketError, 0, SocketFlags.None);
+            return socketError;
         }
 
         private void InnerStartOperationDisconnect()
         {
-            throw new PlatformNotSupportedException(SR.net_sockets_disconnect_notsupported);
         }
 
         private Action<int, byte[], int, SocketFlags, SocketError> TransferCompletionCallback =>
@@ -223,7 +240,7 @@ namespace System.Net.Sockets
             int bytesReceived;
             SocketFlags receivedFlags;
             IPPacketInformation ipPacketInformation;
-            SocketError socketError = handle.AsyncContext.ReceiveMessageFromAsync(_buffer, _offset, _count, _socketFlags, _socketAddress.Buffer, ref socketAddressSize, isIPv4, isIPv6, out bytesReceived, out receivedFlags, out ipPacketInformation, ReceiveMessageFromCompletionCallback);
+            SocketError socketError = handle.AsyncContext.ReceiveMessageFromAsync(_buffer, _bufferListInternal, _offset, _count, _socketFlags, _socketAddress.Buffer, ref socketAddressSize, isIPv4, isIPv6, out bytesReceived, out receivedFlags, out ipPacketInformation, ReceiveMessageFromCompletionCallback);
             if (socketError != SocketError.IOPending)
             {
                 CompleteReceiveMessageFromOperation(bytesReceived, _socketAddress.Buffer, socketAddressSize, receivedFlags, ipPacketInformation, socketError);
@@ -262,12 +279,66 @@ namespace System.Net.Sockets
 
         private void InnerStartOperationSendPackets()
         {
-            throw new PlatformNotSupportedException();
+            // nop
         }
 
         internal SocketError DoOperationSendPackets(Socket socket, SafeCloseSocket handle)
         {
-            throw new PlatformNotSupportedException();
+            Debug.Assert(_sendPacketsElements != null);
+            SendPacketsElement[] elements = (SendPacketsElement[])_sendPacketsElements.Clone();
+            FileStream[] files = new FileStream[elements.Length];
+
+            // Open all files synchronously ahead of time so that any exceptions are propagated
+            // to the caller, to match Windows behavior.
+            try
+            {
+                for (int i = 0; i < elements.Length; i++)
+                {
+                    string path = elements[i]?.FilePath;
+                    if (path != null)
+                    {
+                        files[i] = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 0x1000, useAsync: true);
+                    }
+                }
+            }
+            catch (Exception exc)
+            {
+                // Clean up any files that were already opened.
+                foreach (FileStream s in files)
+                {
+                    s?.Dispose();
+                }
+
+                // Windows differentiates the directory not being found from the file not being found.
+                // Approximate this by checking to see if the directory exists; this is only best-effort,
+                // as there are various things that could affect this, e.g. directory creation racing with
+                // this check, but it's good enough for most situations.
+                if (exc is FileNotFoundException fnfe)
+                {
+                    string dirname = Path.GetDirectoryName(fnfe.FileName);
+                    if (!string.IsNullOrEmpty(dirname) && !Directory.Exists(dirname))
+                    {
+                        throw new DirectoryNotFoundException(fnfe.Message);
+                    }
+                }
+
+                // Otherwise propagate the original error.
+                throw;
+            }
+
+            SocketPal.SendPacketsAsync(socket, SendPacketsFlags, elements, files, (bytesTransferred, error) =>
+            {
+                if (error == SocketError.Success)
+                {
+                    FinishOperationAsyncSuccess((int)bytesTransferred, SocketFlags.None);
+                }
+                else
+                {
+                    FinishOperationAsyncFailure(error, (int)bytesTransferred, SocketFlags.None);
+                }
+            });
+
+            return SocketError.IOPending;
         }
 
         private void InnerStartOperationSendTo()
@@ -301,7 +372,10 @@ namespace System.Net.Sockets
 
         internal void LogBuffer(int size)
         {
-            if (!NetEventSource.IsEnabled) return;
+            // This should only be called if tracing is enabled. However, there is the potential for a race
+            // condition where tracing is disabled between a calling check and here, in which case the assert
+            // may fire erroneously.
+            Debug.Assert(NetEventSource.IsEnabled);
 
             if (_buffer != null)
             {
@@ -315,7 +389,20 @@ namespace System.Net.Sockets
 
         internal void LogSendPacketsBuffers(int size)
         {
-            throw new PlatformNotSupportedException();
+            foreach (SendPacketsElement spe in _sendPacketsElements)
+            {
+                if (spe != null)
+                {
+                    if (spe.Buffer != null && spe.Count > 0)
+                    {
+                        NetEventSource.DumpBuffer(this, spe.Buffer, spe.Offset, Math.Min(spe.Count, size));
+                    }
+                    else if (spe.FilePath != null)
+                    {
+                        NetEventSource.NotLoggedFile(spe.FilePath, _currentSocket, _completedOperation);
+                    }
+                }
+            }
         }
 
         private SocketError FinishOperationAccept(Internals.SocketAddress remoteSocketAddress)
@@ -345,7 +432,7 @@ namespace System.Net.Sockets
 
         private void FinishOperationSendPackets()
         {
-            throw new PlatformNotSupportedException();
+            // No-op for *nix.
         }
 
         private void CompletionCallback(int bytesTransferred, SocketFlags flags, SocketError socketError)

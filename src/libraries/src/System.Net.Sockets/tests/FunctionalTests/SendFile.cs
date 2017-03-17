@@ -8,19 +8,25 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
-using Xunit.Abstractions;
 
 namespace System.Net.Sockets.Tests
 {
-    public class SendFile
+    public class SendFileTest
     {
-        public static readonly object[][] SendFile_MemberData = new object[][]
+        public static IEnumerable<object[]> SendFile_MemberData_Small() => SendFile_MemberData(1024);
+
+        public static IEnumerable<object[]> SendFile_MemberData_Large() => SendFile_MemberData(12345678);
+
+        public static IEnumerable<object[]> SendFile_MemberData(int bytesToSend)
         {
-            new object[] { IPAddress.IPv6Loopback, true },
-            new object[] { IPAddress.IPv6Loopback, false },
-            new object[] { IPAddress.Loopback, true },
-            new object[] { IPAddress.Loopback, false },
-        };
+            foreach (IPAddress listenAt in new[] { IPAddress.Loopback, IPAddress.IPv6Loopback })
+            {
+                foreach (bool sendPreAndPostBuffers in new[] { true, false })
+                {
+                    yield return new object[] { listenAt, sendPreAndPostBuffers, bytesToSend };
+                }
+            }
+        }
 
         private string CreateFileToSend(int size, bool sendPreAndPostBuffers, out byte[] preBuffer, out byte[] postBuffer, out Fletcher32 checksum)
         {
@@ -57,12 +63,45 @@ namespace System.Net.Sockets.Tests
             return path;
         }
 
+        [Fact]
+        public void Disposed_ThrowsException()
+        {
+            using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                s.Dispose();
+                Assert.Throws<ObjectDisposedException>(() => s.SendFile(null));
+                Assert.Throws<ObjectDisposedException>(() => s.BeginSendFile(null, null, null));
+                Assert.Throws<ObjectDisposedException>(() => s.BeginSendFile(null, null, null, TransmitFileOptions.UseDefaultWorkerThread, null, null));
+                Assert.Throws<ObjectDisposedException>(() => s.EndSendFile(null));
+            }
+        }
+
+        [Fact]
+        public void EndSendFile_NullAsyncResult_Throws()
+        {
+            using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                Assert.Throws<ArgumentNullException>(() => s.EndSendFile(null));
+            }
+        }
+
+        [Fact]
+        public void NotConnected_ThrowsException()
+        {
+            using (Socket s = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                Assert.Throws<NotSupportedException>(() => s.SendFile(null));
+                Assert.Throws<NotSupportedException>(() => s.BeginSendFile(null, null, null));
+                Assert.Throws<NotSupportedException>(() => s.BeginSendFile(null, null, null, TransmitFileOptions.UseDefaultWorkerThread, null, null));
+            }
+        }
+
         [OuterLoop] // TODO: Issue #11345
         [Theory]
-        [MemberData(nameof(SendFile_MemberData))]
-        private void SendFile_Synchronous(IPAddress listenAt, bool sendPreAndPostBuffers)
+        [MemberData(nameof(SendFile_MemberData_Small))]
+        [MemberData(nameof(SendFile_MemberData_Large))]
+        public void SendFile_Synchronous(IPAddress listenAt, bool sendPreAndPostBuffers, int bytesToSend)
         {
-            const int BytesToSend = 123456;
             const int ListenBacklog = 1;
             const int LingerTime = 10;
             const int TestTimeout = 30000;
@@ -71,7 +110,7 @@ namespace System.Net.Sockets.Tests
             byte[] preBuffer;
             byte[] postBuffer;
             Fletcher32 sentChecksum;
-            string filename = CreateFileToSend(BytesToSend, sendPreAndPostBuffers, out preBuffer, out postBuffer, out sentChecksum);
+            string filename = CreateFileToSend(bytesToSend, sendPreAndPostBuffers, out preBuffer, out postBuffer, out sentChecksum);
 
             // Start server
             var server = new Socket(listenAt.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
@@ -121,7 +160,7 @@ namespace System.Net.Sockets.Tests
 
             Assert.True(serverThread.Join(TestTimeout), "Completed within allowed time");
 
-            Assert.Equal(BytesToSend, bytesReceived);
+            Assert.Equal(bytesToSend, bytesReceived);
             Assert.Equal(sentChecksum.Sum, receivedChecksum.Sum);
 
             // Clean up the file we created
@@ -130,10 +169,16 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Theory]
-        [MemberData(nameof(SendFile_MemberData))]
-        private void SendFile_APM(IPAddress listenAt, bool sendPreAndPostBuffers)
+        [MemberData(nameof(SendFile_MemberData_Large))]
+        [ActiveIssue(17188, TestPlatforms.OSX)] // recombine into SendFile_APM once fixed
+        public void SendFile_APM_Large(IPAddress listenAt, bool sendPreAndPostBuffers, int bytesToSend) =>
+            SendFile_APM(listenAt, sendPreAndPostBuffers, bytesToSend);
+
+        [OuterLoop] // TODO: Issue #11345
+        [Theory]
+        [MemberData(nameof(SendFile_MemberData_Small))]
+        public void SendFile_APM(IPAddress listenAt, bool sendPreAndPostBuffers, int bytesToSend)
         {
-            const int BytesToSend = 123456;
             const int ListenBacklog = 1;
             const int LingerTime = 10;
             const int TestTimeout = 30000;
@@ -142,7 +187,7 @@ namespace System.Net.Sockets.Tests
             byte[] preBuffer;
             byte[] postBuffer;
             Fletcher32 sentChecksum;
-            string filename = CreateFileToSend(BytesToSend, sendPreAndPostBuffers, out preBuffer, out postBuffer, out sentChecksum);
+            string filename = CreateFileToSend(bytesToSend, sendPreAndPostBuffers, out preBuffer, out postBuffer, out sentChecksum);
 
             // Start server
             var server = new Socket(listenAt.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
@@ -190,18 +235,29 @@ namespace System.Net.Sockets.Tests
             EndPoint clientEndpoint = server.LocalEndPoint;
             var client = new Socket(clientEndpoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
 
+            var clientFinished = new TaskCompletionSource<bool>();
             client.ConnectAPM(clientEndpoint, () =>
             {
-                client.SendFileAPM(filename, preBuffer, postBuffer, TransmitFileOptions.UseDefaultWorkerThread, () =>
+                client.SendFileAPM(filename, preBuffer, postBuffer, TransmitFileOptions.UseDefaultWorkerThread, ex =>
                 {
                     client.LingerState = new LingerOption(true, LingerTime);
                     client.Dispose();
+
+                    if (ex != null)
+                    {
+                        clientFinished.SetException(ex);
+                    }
+                    else
+                    {
+                        clientFinished.SetResult(true);
+                    }
                 });
             });
 
+            Assert.True(clientFinished.Task.Wait(TestTimeout), "Completed within allowed time");
             Assert.True(serverFinished.Task.Wait(TestTimeout), "Completed within allowed time");
 
-            Assert.Equal(BytesToSend, bytesReceived);
+            Assert.Equal(bytesToSend, bytesReceived);
             Assert.Equal(sentChecksum.Sum, receivedChecksum.Sum);
 
             // Clean up the file we created

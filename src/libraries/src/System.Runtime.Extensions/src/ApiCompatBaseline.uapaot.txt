@@ -1,5 +1,26 @@
 Compat issues with assembly System.Runtime.Extensions:
-TypesMustExist : Type 'System.AppDomain' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.AppDomain.add_AssemblyLoad(System.AssemblyLoadEventHandler)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.AppDomain.add_AssemblyResolve(System.ResolveEventHandler)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.AppDomain.add_FirstChanceException(System.EventHandler<System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs>)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.AppDomain.add_ProcessExit(System.EventHandler)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.AppDomain.add_ReflectionOnlyAssemblyResolve(System.ResolveEventHandler)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.AppDomain.add_ResourceResolve(System.ResolveEventHandler)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.AppDomain.add_TypeResolve(System.ResolveEventHandler)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.AppDomain.add_UnhandledException(System.UnhandledExceptionEventHandler)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.AppDomain.BaseDirectory.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.AppDomain.GetAssemblies()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.AppDomain.GetData(System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.AppDomain.IsCompatibilitySwitchSet(System.String)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.AppDomain.RelativeSearchPath.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.AppDomain.remove_AssemblyLoad(System.AssemblyLoadEventHandler)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.AppDomain.remove_AssemblyResolve(System.ResolveEventHandler)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.AppDomain.remove_FirstChanceException(System.EventHandler<System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs>)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.AppDomain.remove_ProcessExit(System.EventHandler)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.AppDomain.remove_ReflectionOnlyAssemblyResolve(System.ResolveEventHandler)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.AppDomain.remove_ResourceResolve(System.ResolveEventHandler)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.AppDomain.remove_TypeResolve(System.ResolveEventHandler)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.AppDomain.remove_UnhandledException(System.UnhandledExceptionEventHandler)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.AppDomain.SetData(System.String, System.Object)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.AssemblyLoadEventArgs' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.AssemblyLoadEventHandler' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Base64FormattingOptions' does not exist in the implementation but it does exist in the contract.
@@ -62,7 +83,6 @@ MembersMustExist : Member 'System.Math.Clamp(System.UInt64, System.UInt64, Syste
 MembersMustExist : Member 'System.Math.DivRem(System.Int32, System.Int32, System.Int32)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Math.DivRem(System.Int64, System.Int64, System.Int64)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.MathF' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Progress<T>' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.ResolveEventHandler' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.StringComparer.Compare(System.Object, System.Object)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.StringComparer.Create(System.Globalization.CultureInfo, System.Boolean)' does not exist in the implementation but it does exist in the contract.
@@ -70,8 +90,5 @@ MembersMustExist : Member 'System.StringComparer.GetHashCode(System.Object)' doe
 MembersMustExist : Member 'System.StringComparer.InvariantCulture.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.StringComparer.InvariantCultureIgnoreCase.get()' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.IO.BufferedStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.IO.EndOfStreamException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.IO.MemoryStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.IO.TextReader.Synchronized(System.IO.TextReader)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.IO.TextWriter.Synchronized(System.IO.TextWriter)' does not exist in the implementation but it does exist in the contract.
-Total Issues: 75
+Total Issues: 92

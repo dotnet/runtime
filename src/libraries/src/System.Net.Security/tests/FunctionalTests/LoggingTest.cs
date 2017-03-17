@@ -24,6 +24,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [ActiveIssue(16516, TestPlatforms.Windows)]
         public void EventSource_EventsRaisedAsExpected()
         {
             RemoteInvoke(() =>

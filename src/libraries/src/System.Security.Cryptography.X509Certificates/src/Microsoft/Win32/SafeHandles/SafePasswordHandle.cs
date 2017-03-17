@@ -41,6 +41,25 @@ namespace Microsoft.Win32.SafeHandles
             return true;
         }
 
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && SafeHandleCache<SafePasswordHandle>.IsCachedInvalidHandle(this))
+            {
+                return;
+            }
+
+            base.Dispose(disposing);
+        }
+
         public override bool IsInvalid => handle == (IntPtr)(-1);
+
+        public static SafePasswordHandle InvalidHandle =>
+            SafeHandleCache<SafePasswordHandle>.GetInvalidHandle(
+                () =>
+                {
+                    var handle = new SafePasswordHandle((string)null);
+                    handle.handle = (IntPtr)(-1);
+                    return handle;
+                });
     }
 }

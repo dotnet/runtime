@@ -272,8 +272,8 @@
     APIs in libraries that include this. The attribute can also be applied to individual public APIs to similarly block them.
   -->
   <PropertyGroup>
-    <BlockReflectionAttribute Condition="'$(BlockReflectionAttribute)'=='' and ('$(TargetGroup)'=='netcore50' or '$(TargetGroup)'=='netcore50aot')">true</BlockReflectionAttribute>
-    <BlockReflectionAttribute Condition="'$(MSBuildProjectExtension)' == '.vbproj'">false</BlockReflectionAttribute>
+    <BlockReflectionAttribute Condition="'$(BlockReflectionAttribute)' == '' and '$(UWPCompatible)' == 'true'">true</BlockReflectionAttribute>
+    <BlockReflectionAttribute Condition="'$(MSBuildProjectExtension)' != '.csproj'">false</BlockReflectionAttribute>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(BlockReflectionAttribute)'=='true'">

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 
 using Xunit;
@@ -31,6 +30,13 @@ namespace System.Net.Sockets.Tests
         public void Available_Throws_ObjectDisposed()
         {
             Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().Available);
+        }
+
+        [Fact]
+        public void IOControl_Throws_ObjectDisposed()
+        {
+            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().IOControl(0, null, null));
+            Assert.Throws<ObjectDisposedException>(() => GetDisposedSocket().IOControl(IOControlCode.AsyncIO, null, null));
         }
 
         [Fact]

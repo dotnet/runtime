@@ -6,16 +6,13 @@
     <AssemblyName>System.Data.SqlClient</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'net463'">true</IsPartialFacadeAssembly>
+    <!-- Although we have a NS configuration, we know we use API that's not currently whitelisted: just validate against OneCore -->
+    <UWPCompatible>false</UWPCompatible>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(TargetsWindows)' != 'true' ">
-    <DefineConstants>$(DefineConstants);MANAGED_SNI</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Unix-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Unix-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="System.Data.SqlClient.TypeForwards.cs" />
     <Compile Include="Microsoft\SqlServer\Server\ITypedGetters.cs" />
@@ -123,22 +120,36 @@
     <Compile Include="System\Data\SqlTypes\SqlTypeWorkarounds.cs" />
     <Compile Include="System\Data\SqlTypes\SQLResource.cs" />
     <Compile Include="$(CommonPath)\System\NotImplemented.cs" />
-    <Compile Include="$(CommonPath)\System\Data\Locale\Locale.cs">
-      <Link>System\Data\Locale\Locale.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
       <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
+    <Compile Include="System\Data\SqlClient\SNI\SNIError.cs" />
+    <Compile Include="System\Data\SqlClient\SNI\SNIHandle.cs" />
+    <Compile Include="System\Data\SqlClient\SNI\SNILoadHandle.cs" />
+    <Compile Include="System\Data\SqlClient\SNI\SNIMarsConnection.cs" />
+    <Compile Include="System\Data\SqlClient\SNI\SNIMarsHandle.cs" />
+    <Compile Include="System\Data\SqlClient\SNI\SNIMarsManager.cs" />
+    <Compile Include="System\Data\SqlClient\SNI\SNIMarsQueuedPacket.cs" />
+    <Compile Include="System\Data\SqlClient\SNI\SNINpHandle.cs" />
+    <Compile Include="System\Data\SqlClient\SNI\SNIPacket.cs" />
+    <Compile Include="System\Data\SqlClient\SNI\SNIProxy.cs" />
+    <Compile Include="System\Data\SqlClient\SNI\SNITcpHandle.cs" />
+    <Compile Include="System\Data\SqlClient\SNI\SslOverTdsStream.cs" />
+    <Compile Include="System\Data\SqlClient\SNI\SNICommon.cs" />
+    <Compile Include="System\Data\SqlClient\SNI\SspiClientContextStatus.cs" />
+    <Compile Include="System\Data\SqlClient\TdsParserStateObjectManaged.cs" />
   </ItemGroup>
+  
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(IsPartialFacadeAssembly)' != 'true' ">
-    <Compile Include="$(CommonPath)\System\Data\Locale\LocaleMapper.Windows.cs">
-      <Link>System\Data\Locale\LocaleMapper.Windows.cs</Link>
-    </Compile>
     <Compile Include="System\Data\ProviderBase\DbConnectionPoolIdentity.Windows.cs" />
     <Compile Include="Interop\SNINativeMethodWrapper.Windows.cs" />
     <Compile Include="System\Data\SqlClient\TdsParserSafeHandles.cs" />
+    <Compile Include="System\Data\SqlClient\TdsParserStateObjectNative.cs" />
+    <Compile Include="System\Data\SqlClient\TdsParserStateObjectFactory.Windows.cs" />
+    <Compile Include="System\Data\SqlClient\TdsParser.Windows.cs" />
+    <Compile Include="System\Data\SqlClient\LocalDBAPI.Windows.cs" />
   </ItemGroup>
-
+  
   <!-- Windows dependencies for Integrated Authentication for MANAGED_SNI build -->
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(IsPartialFacadeAssembly)' != 'true' ">
     <Compile Include="$(CommonPath)\System\Net\Security\NegotiateStreamPal.Windows.cs">
@@ -232,7 +243,6 @@
       <Link>Common\System\Collections\Generic\BidirectionalDictionary.cs</Link>
     </Compile>
   </ItemGroup>
-
   <!-- Common (Windows and Unix) dependencies for MANAGED_SNI build -->
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="$(CommonPath)\System\Net\ContextFlagsPal.cs">
@@ -268,25 +278,8 @@
   </ItemGroup>
   
   <ItemGroup Condition=" '$(TargetsWindows)' != 'true' And '$(IsPartialFacadeAssembly)' != 'true' ">
-    <Compile Include="$(CommonPath)\System\Data\Locale\LocaleMapper.Unix.cs">
-      <Link>System\Data\Locale\LocaleMapper.Unix.cs</Link>
-    </Compile>
     <Compile Include="System\Data\ProviderBase\DbConnectionPoolIdentity.Unix.cs" />
     <Compile Include="Interop\SNINativeMethodWrapper.Unix.cs" />
-    <Compile Include="System\Data\SqlClient\SNI\SNIError.cs" />
-    <Compile Include="System\Data\SqlClient\SNI\SNIHandle.cs" />
-    <Compile Include="System\Data\SqlClient\SNI\SNILoadHandle.cs" />
-    <Compile Include="System\Data\SqlClient\SNI\SNIMarsConnection.cs" />
-    <Compile Include="System\Data\SqlClient\SNI\SNIMarsHandle.cs" />
-    <Compile Include="System\Data\SqlClient\SNI\SNIMarsManager.cs" />
-    <Compile Include="System\Data\SqlClient\SNI\SNIMarsQueuedPacket.cs" />
-    <Compile Include="System\Data\SqlClient\SNI\SNINpHandle.cs" />
-    <Compile Include="System\Data\SqlClient\SNI\SNIPacket.cs" />
-    <Compile Include="System\Data\SqlClient\SNI\SNIProxy.cs" />
-    <Compile Include="System\Data\SqlClient\SNI\SNITcpHandle.cs" />
-    <Compile Include="System\Data\SqlClient\SNI\SslOverTdsStream.cs" />
-    <Compile Include="System\Data\SqlClient\SNI\SNICommon.cs" />
-    <Compile Include="System\Data\SqlClient\SNI\SspiClientContextStatus.cs" />
     <Compile Include="$(CommonPath)\System\Net\Security\NegotiateStreamPal.Unix.cs">
       <Link>Common\System\Net\Security\NegotiateStreamPal.Unix.cs</Link>
     </Compile>
@@ -320,6 +313,9 @@
     <Compile Include="$(CommonPath)\System\Net\ContextFlagsAdapterPal.Unix.cs">
       <Link>Common\System\Net\ContextFlagsAdapterPal.Unix.cs</Link>
     </Compile>
+    <Compile Include="System\Data\SqlClient\TdsParserStateObjectFactory.Unix.cs" />
+    <Compile Include="System\Data\SqlClient\TdsParser.Unix.cs" />
+    <Compile Include="System\Data\SqlClient\LocalDBAPI.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
     <Reference Include="mscorlib" />

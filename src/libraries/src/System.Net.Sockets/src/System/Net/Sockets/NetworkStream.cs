@@ -6,7 +6,6 @@ using System.Buffers;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -443,10 +442,7 @@ namespace System.Net.Sockets
         // Returns:
         // 
         //     An IASyncResult, representing the read.
-#if !netcore50
-        override
-#endif
-        public IAsyncResult BeginRead(byte[] buffer, int offset, int size, AsyncCallback callback, Object state)
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int size, AsyncCallback callback, Object state)
         {
 #if DEBUG
             using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
@@ -505,10 +501,7 @@ namespace System.Net.Sockets
         // Returns:
         // 
         //     The number of bytes read. May throw an exception.
-#if !netcore50
-        override
-#endif
-        public int EndRead(IAsyncResult asyncResult)
+        public override int EndRead(IAsyncResult asyncResult)
         {
 #if DEBUG
             using (DebugThreadTracking.SetThreadKind(ThreadKinds.User))
@@ -554,10 +547,7 @@ namespace System.Net.Sockets
         // Returns:
         // 
         //     An IASyncResult, representing the write.
-#if !netcore50
-        override
-#endif
-        public IAsyncResult BeginWrite(byte[] buffer, int offset, int size, AsyncCallback callback, Object state)
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int size, AsyncCallback callback, Object state)
         {
 #if DEBUG
             using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
@@ -613,10 +603,7 @@ namespace System.Net.Sockets
         // This method is called when an async write is completed. All we
         // do is call through to the core socket EndSend functionality.
         // Returns:  The number of bytes read. May throw an exception.
-#if !netcore50
-        override
-#endif
-        public void EndWrite(IAsyncResult asyncResult)
+        public override void EndWrite(IAsyncResult asyncResult)
         {
 #if DEBUG
             using (DebugThreadTracking.SetThreadKind(ThreadKinds.User))
@@ -699,7 +686,7 @@ namespace System.Net.Sockets
                 return _streamSocket.ReceiveAsync(
                     new ArraySegment<byte>(buffer, offset, size),
                     SocketFlags.None,
-                    wrapExceptionsInIOExceptions: true);
+                    fromNetworkStream: true);
             }
             catch (Exception exception) when (!(exception is OutOfMemoryException))
             {
@@ -760,7 +747,7 @@ namespace System.Net.Sockets
                 return _streamSocket.SendAsync(
                     new ArraySegment<byte>(buffer, offset, size),
                     SocketFlags.None,
-                    wrapExceptionsInIOExceptions: true);
+                    fromNetworkStream: true);
             }
             catch (Exception exception) when (!(exception is OutOfMemoryException))
             {
@@ -835,7 +822,6 @@ namespace System.Net.Sockets
         internal void SetSocketTimeoutOption(SocketShutdown mode, int timeout, bool silent)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, mode, timeout, silent);
-            DebugThreadTracking.ThreadContract(ThreadKinds.Unknown, $"NetworkStream#{NetEventSource.IdOf(this)}");
 
             if (timeout < 0)
             {

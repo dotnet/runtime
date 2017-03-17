@@ -4,6 +4,9 @@
 
 using System.Collections;
 using System.Collections.Generic;
+#if uap
+using System.Net.Internal;
+#endif
 
 namespace System.Net
 {

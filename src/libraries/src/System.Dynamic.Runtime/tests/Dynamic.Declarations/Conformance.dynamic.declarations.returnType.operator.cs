@@ -6,8 +6,6 @@ using Xunit;
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.returnType.operate.binary001.binary001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.returnType.operate.binary001.binary001;
-
     public class Test
     {
         private class MyClass
@@ -40,8 +38,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.returnType
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.returnType.operate.binary002.binary002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.returnType.operate.binary002.binary002;
-
     public class Test
     {
         public class MyClass
@@ -74,8 +70,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.returnType
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.returnType.operate.binary003.binary003
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.returnType.operate.binary003.binary003;
-
     public class Test
     {
         public class MyClass
@@ -108,8 +102,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.returnType
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.returnType.operate.binary004.binary004
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.returnType.operate.binary004.binary004;
-
     public class Test
     {
         private class MyClass
@@ -142,8 +134,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.returnType
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.returnType.operate.unary002.unary002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.declarations.returnType.operate.unary002.unary002;
-
     public class Test
     {
         public class MyClass

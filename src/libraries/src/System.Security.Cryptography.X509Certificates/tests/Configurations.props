@@ -2,8 +2,10 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <BuildConfigurations>
+      netcoreapp-OSX;
       netcoreapp-Unix;
       netcoreapp-Windows_NT;
+      netstandard-OSX;
       netstandard-Unix;
       netstandard-Windows_NT;
     </BuildConfigurations>

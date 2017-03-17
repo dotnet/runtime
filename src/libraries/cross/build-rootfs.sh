@@ -5,6 +5,7 @@ usage()
     echo "Usage: $0 [BuildArch] [LinuxCodeName] [--skipunmount]"
     echo "BuildArch can be: arm(default), armel, arm64, x86"
     echo "LinuxCodeName - optional, Code name for Linux, can be: trusty(default), vivid, wily, xenial. If BuildArch is armel, LinuxCodeName is jessie(default) or tizen."
+    echo "lldbx.y - optional, LLDB version, can be: lldb3.6(default), lldb3.8, no-lldb"
     echo "--skipunmount - optional, will skip the unmount of rootfs folder."
     exit 1
 }
@@ -62,6 +63,15 @@ for i in "$@" ; do
             __BuildArch=x86
             __UbuntuArch=i386
             __UbuntuRepo="http://archive.ubuntu.com/ubuntu/"
+            ;;
+        lldb3.6)
+            __LLDB_Package="lldb-3.6-dev"
+            ;;
+        lldb3.8)
+            __LLDB_Package="lldb-3.8-dev"
+            ;;
+        no-lldb)
+            unset __LLDB_Package
             ;;
         vivid)
             if [ "$__LinuxCodeName" != "jessie" ]; then
@@ -129,6 +139,12 @@ if [[ -n $__LinuxCodeName ]]; then
 
     if [ $__SkipUnmount == 0 ]; then
         umount $__RootfsDir/*
+    fi
+
+    if [[ "$__BuildArch" == "arm" && "$__LinuxCodeName" == "trusty" ]]; then
+        pushd $__RootfsDir
+        patch -p1 < $__CrossDir/$__BuildArch/trusty.patch
+        popd
     fi
 elif [ "$__Tizen" == "tizen" ]; then
     ROOTFS_DIR=$__RootfsDir $__CrossDir/$__BuildArch/tizen-build-rootfs.sh

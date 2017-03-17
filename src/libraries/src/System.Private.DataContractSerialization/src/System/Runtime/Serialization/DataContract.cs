@@ -16,7 +16,7 @@ namespace System.Runtime.Serialization
     using System.Linq;
     using Xml.Schema;
 
-#if USE_REFEMIT || NET_NATIVE
+#if USE_REFEMIT || uapaot
     public abstract class DataContract
 #else
     internal abstract class DataContract
@@ -59,7 +59,7 @@ namespace System.Runtime.Serialization
 
         internal static DataContract GetDataContractFromGeneratedAssembly(Type type)
         {
-#if NET_NATIVE
+#if uapaot
             if (DataContractSerializer.Option == SerializationOption.ReflectionOnly)
             {
                 return null;
@@ -180,7 +180,7 @@ namespace System.Runtime.Serialization
             DataContractCriticalHelper.ThrowInvalidDataContractException(message, type);
         }
 
-#if USE_REFEMIT || NET_NATIVE
+#if USE_REFEMIT || uapaot
         internal DataContractCriticalHelper Helper
 #else
         protected DataContractCriticalHelper Helper
@@ -216,7 +216,7 @@ namespace System.Runtime.Serialization
             { return _helper.TypeForInitialization; }
         }
 
-#if NET_NATIVE
+#if uapaot
         /// <summary>
         /// Invoked once immediately before attempting to read, permitting additional setup or verification
         /// </summary>
@@ -341,7 +341,7 @@ namespace System.Runtime.Serialization
             get { return false; }
         }
 
-#if NET_NATIVE
+#if uapaot
         public bool TypeIsInterface;
         public bool TypeIsCollectionInterface;
         public Type GenericTypeDefinition;
@@ -406,7 +406,7 @@ namespace System.Runtime.Serialization
 
             internal static DataContract GetDataContractSkipValidation(int id, RuntimeTypeHandle typeHandle, Type type)
             {
-#if NET_NATIVE
+#if uapaot
                 // The generated serialization assembly uses different ids than the running code.
                 // We should have 'dataContractCache' from 'Type' to 'DataContract', since ids are not used at runtime.
                 id = GetId(typeHandle);
@@ -427,7 +427,7 @@ namespace System.Runtime.Serialization
 
             internal static DataContract GetGetOnlyCollectionDataContractSkipValidation(int id, RuntimeTypeHandle typeHandle, Type type)
             {
-#if NET_NATIVE
+#if uapaot
                 // The generated serialization assembly uses different ids than the running code.
                 // We should have 'dataContractCache' from 'Type' to 'DataContract', since ids are not used at runtime.
                 id = GetId(typeHandle);
@@ -1144,7 +1144,7 @@ namespace System.Runtime.Serialization
 
             internal virtual DataContractDictionary KnownDataContracts
             {
-#if NET_NATIVE
+#if uapaot
                 get; set;
 #else
                 get { return null; }
@@ -2094,7 +2094,6 @@ namespace System.Runtime.Serialization
                     }
                 }
 
-#if !NET_NATIVE
                 //For Json we need to add KeyValuePair<K,T> to KnownTypes if the UnderLyingType is a Dictionary<K,T>
                 try
                 {
@@ -2120,7 +2119,6 @@ namespace System.Runtime.Serialization
                     //types that may not be valid DC. This step is purely for KeyValuePair and shouldn't fail the (de)serialization.
                     //Any IDCE in this case fails the serialization/deserialization process which is not the optimal experience.
                 }
-#endif
 
                 type = type.BaseType;
             }
@@ -2259,7 +2257,7 @@ namespace System.Runtime.Serialization
             return false;
         }
 
-#if !NET_NATIVE
+#if !uapaot
         internal static string SanitizeTypeName(string typeName)
         {
             return typeName.Replace('.', '_');

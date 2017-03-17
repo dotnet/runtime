@@ -6,7 +6,11 @@
     <AssemblyName>System.DirectoryServices</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);0649</NoWarn>
+    <!-- Although we have a netstandard configuration, we know we are not currently UAP compatible-->
+    <UWPCompatible>false</UWPCompatible>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System\DirectoryServices\externdll.cs" />
     <Compile Include="System\DirectoryServices\PrivilegedConfigurationManager.cs" />
@@ -16,9 +20,9 @@
     <Compile Include="System\DirectoryServices\BinaryCompatibility.cs" />
     <Compile Include="System\DirectoryServices\DerefAlias.cs" />
     <Compile Include="System\DirectoryServices\DirectoryEntries.cs" />
-    <Compile Include="System\DirectoryServices\DirectoryEntry.cs"/>
+    <Compile Include="System\DirectoryServices\DirectoryEntry.cs" />
     <Compile Include="System\DirectoryServices\DirectoryEntryConfiguration.cs" />
-    <Compile Include="System\DirectoryServices\DirectorySearcher.cs"/>
+    <Compile Include="System\DirectoryServices\DirectorySearcher.cs" />
     <Compile Include="System\DirectoryServices\DirectorySynchronization.cs" />
     <Compile Include="System\DirectoryServices\DirectorySynchronizationFlags.cs" />
     <Compile Include="System\DirectoryServices\DirectoryVirtualListView.cs" />

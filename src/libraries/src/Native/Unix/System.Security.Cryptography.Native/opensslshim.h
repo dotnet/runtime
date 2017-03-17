@@ -87,6 +87,7 @@
     PER_FUNCTION_BLOCK(DSA_generate_key, true) \
     PER_FUNCTION_BLOCK(DSA_generate_parameters_ex, true) \
     PER_FUNCTION_BLOCK(DSA_new, true) \
+    PER_FUNCTION_BLOCK(DSA_OpenSSL, true) \
     PER_FUNCTION_BLOCK(DSA_sign, true) \
     PER_FUNCTION_BLOCK(DSA_size, true) \
     PER_FUNCTION_BLOCK(DSA_up_ref, true) \
@@ -132,6 +133,7 @@
     PER_FUNCTION_BLOCK(ERR_error_string_n, true) \
     PER_FUNCTION_BLOCK(ERR_get_error, true) \
     PER_FUNCTION_BLOCK(ERR_load_crypto_strings, true) \
+    PER_FUNCTION_BLOCK(ERR_put_error, true) \
     PER_FUNCTION_BLOCK(ERR_peek_error, true) \
     PER_FUNCTION_BLOCK(ERR_peek_last_error, true) \
     PER_FUNCTION_BLOCK(ERR_reason_error_string, true) \
@@ -381,6 +383,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define DSA_generate_key DSA_generate_key_ptr
 #define DSA_generate_parameters_ex DSA_generate_parameters_ex_ptr
 #define DSA_new DSA_new_ptr
+#define DSA_OpenSSL DSA_OpenSSL_ptr
 #define DSA_sign DSA_sign_ptr
 #define DSA_size DSA_size_ptr
 #define DSA_up_ref DSA_up_ref_ptr
@@ -428,6 +431,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define ERR_load_crypto_strings ERR_load_crypto_strings_ptr
 #define ERR_peek_error ERR_peek_error_ptr
 #define ERR_peek_last_error ERR_peek_last_error_ptr
+#define ERR_put_error ERR_put_error_ptr
 #define ERR_reason_error_string ERR_reason_error_string_ptr
 #define EVP_aes_128_cbc EVP_aes_128_cbc_ptr
 #define EVP_aes_128_ecb EVP_aes_128_ecb_ptr

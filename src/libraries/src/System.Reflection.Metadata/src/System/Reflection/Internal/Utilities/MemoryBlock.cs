@@ -35,12 +35,6 @@ namespace System.Reflection.Internal
                 throw new ArgumentNullException(nameof(buffer));
             }
 
-            // the reader performs little-endian specific operations
-            if (!BitConverter.IsLittleEndian)
-            {
-                Throw.LitteEndianArchitectureRequired();
-            }
-
             return new MemoryBlock(buffer, length);
         }
 
@@ -129,10 +123,16 @@ namespace System.Reflection.Internal
             return (int)result;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal uint PeekUInt32(int offset)
         {
             CheckBounds(offset, sizeof(uint));
-            return *(uint*)(Pointer + offset);
+
+            unchecked
+            {
+                byte* ptr = Pointer + offset;
+                return (uint)(ptr[0] | (ptr[1] << 8) | (ptr[2] << 16) | (ptr[3] << 24));
+            }
         }
 
         /// <summary>
@@ -184,10 +184,16 @@ namespace System.Reflection.Internal
             return BlobReader.InvalidCompressedInteger;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal ushort PeekUInt16(int offset)
         {
             CheckBounds(offset, sizeof(ushort));
-            return *(ushort*)(Pointer + offset);
+
+            unchecked
+            {
+                byte* ptr = Pointer + offset;
+                return (ushort)(ptr[0] | (ptr[1] << 8));
+            }
         }
 
         // When reference has tag bits.
@@ -242,15 +248,39 @@ namespace System.Reflection.Internal
         internal Guid PeekGuid(int offset)
         {
             CheckBounds(offset, sizeof(Guid));
-            return *(Guid*)(Pointer + offset);
+
+            byte* ptr = Pointer + offset;
+            if (BitConverter.IsLittleEndian)
+            {
+                return *(Guid*)ptr;
+            }
+            else
+            {
+                unchecked
+                {
+                    return new Guid(
+                        (int)(ptr[0] | (ptr[1] << 8) | (ptr[2] << 16) | (ptr[3] << 24)),
+                        (short)(ptr[4] | (ptr[5] << 8)),
+                        (short)(ptr[6] | (ptr[7] << 8)),
+                        ptr[8], ptr[9], ptr[10], ptr[11], ptr[12], ptr[13], ptr[14], ptr[15]);
+                }
+            }
         }
 
         internal string PeekUtf16(int offset, int byteCount)
         {
             CheckBounds(offset, byteCount);
 
-            // doesn't allocate a new string if byteCount == 0
-            return new string((char*)(Pointer + offset), 0, byteCount / sizeof(char));
+            byte* ptr = Pointer + offset;
+            if (BitConverter.IsLittleEndian)
+            {
+                // doesn't allocate a new string if byteCount == 0
+                return new string((char*)ptr, 0, byteCount / sizeof(char));
+            }
+            else
+            {
+                return Encoding.Unicode.GetString(ptr, byteCount);
+            }
         }
 
         internal string PeekUtf8(int offset, int byteCount)

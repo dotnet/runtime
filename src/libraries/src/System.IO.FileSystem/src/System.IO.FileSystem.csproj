@@ -7,10 +7,10 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <!--
-      Currently the uap build is broken so forcing EnableWinRT = false to use Win32 code
+      Currently the uap build is broken so forcing UWPCompatible = false to use Win32 code
       https://github.com/dotnet/corefx/issues/16422
     -->
-    <EnableWinRT>false</EnableWinRT>
+    <UWPCompatible>false</UWPCompatible>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsUnix)' == 'true'">
     <NoWarn>$(NoWarn);414</NoWarn>
@@ -190,7 +190,7 @@
     </Compile>
   </ItemGroup>
   <!-- Windows : Win32 only -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(EnableWinRT)' != 'true'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(UWPCompatible)' != 'true'">
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.UnsafeCreateFile.cs">
       <Link>Common\Interop\Windows\Interop.UnsafeCreateFile.cs</Link>
     </Compile>
@@ -222,7 +222,7 @@
     </Compile>
   </ItemGroup>
   <!-- Windows : UAP - Win32 + WinRT -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(EnableWinRT)' == 'true'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(UWPCompatible)' == 'true'">
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.UnsafeCreateFile.Uap.cs">
       <Link>Common\Interop\Windows\Interop.UnsafeCreateFile.Uap.cs</Link>
     </Compile>
@@ -384,7 +384,7 @@
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Reference Include="System.Threading" />
   </ItemGroup>
-  <ItemGroup Condition="'$(EnableWinRT)' == 'true'">
+  <ItemGroup Condition="'$(UWPCompatible)' == 'true'">
     <Reference Include="mscorlib" />
     <Reference Include="Windows" />
   </ItemGroup>

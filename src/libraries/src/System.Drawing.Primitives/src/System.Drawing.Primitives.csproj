@@ -19,6 +19,7 @@
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.ComponentModel.Primitives" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="System\Drawing\Point.cs" />

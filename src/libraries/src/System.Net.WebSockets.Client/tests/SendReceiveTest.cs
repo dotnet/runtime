@@ -245,8 +245,9 @@ namespace System.Net.WebSockets.Client.Tests
                 var rand = new Random();
                 var ctsDefault = new CancellationTokenSource(TimeOutMilliseconds);
 
-                // Values chosen close to boundaries in websockets message length handling.
-                foreach (int bufferSize in new int[] { 1, 125, 126, 127, 128, ushort.MaxValue - 1, ushort.MaxValue, ushort.MaxValue + 1, ushort.MaxValue * 2 })
+                // Values chosen close to boundaries in websockets message length handling as well
+                // as in vectors used in mask application.
+                foreach (int bufferSize in new int[] { 1, 3, 4, 5, 31, 32, 33, 125, 126, 127, 128, ushort.MaxValue - 1, ushort.MaxValue, ushort.MaxValue + 1, ushort.MaxValue * 2 })
                 {
                     byte[] sendBuffer = new byte[bufferSize];
                     rand.NextBytes(sendBuffer);

@@ -557,8 +557,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 if ((_typeDest.IsArrayType() ||
                      (_typeDest.isInterfaceType() &&
-                      _typeDest.AsAggregateType().GetTypeArgsAll().Size == 1 &&
-                      ((_typeDest.AsAggregateType().GetTypeArgsAll().Item(0) != _typeSrc.AsArrayType().GetElementType()) ||
+                      _typeDest.AsAggregateType().GetTypeArgsAll().Count == 1 &&
+                      ((_typeDest.AsAggregateType().GetTypeArgsAll()[0] != _typeSrc.AsArrayType().GetElementType()) ||
                        0 != (_flags & CONVERTTYPE.FORCECAST))))
                     &&
                     (0 != (_flags & CONVERTTYPE.FORCECAST) ||
@@ -868,11 +868,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     }
                     do
                     {
-                        if (++itype >= bnds.Size)
+                        if (++itype >= bnds.Count)
                         {
                             return false;
                         }
-                        typeTmp = bnds.Item(itype);
+                        typeTmp = bnds[itype];
                     }
                     while (!typeTmp.isInterfaceType() && !typeTmp.IsTypeParameterType());
                 }

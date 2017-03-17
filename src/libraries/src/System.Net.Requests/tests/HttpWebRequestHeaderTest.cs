@@ -38,7 +38,8 @@ namespace System.Net.Tests
         }
 
         [OuterLoop]
-        [Theory, MemberData(nameof(EchoServers))]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotFedoraOrRedHatOrCentos))] // #16201
+        [MemberData(nameof(EchoServers))]
         public WebResponse GetResponse_UseDefaultCredentials_ExpectSuccess(Uri remoteServer)
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
@@ -176,7 +177,7 @@ namespace System.Net.Tests
 
                 sw.Stop();
 
-                Assert.InRange(sw.ElapsedMilliseconds, 1, 10 * 1000); // Allow a very wide range.
+                Assert.InRange(sw.ElapsedMilliseconds, 1, 60 * 1000); // Allow a very wide range as this has taken over 10 seconds occasionally
                 Assert.Equal(WebExceptionStatus.Timeout, exception.Status);
                 Assert.Equal(null, exception.InnerException);
                 Assert.Equal(null, exception.Response);
@@ -192,6 +193,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #16928")] //Test hangs in desktop.
         public void HttpWebRequest_PreAuthenticateGetSet_Ok()
         {
             HttpWebRequest request = WebRequest.CreateHttp(Configuration.Http.RemoteEchoServer);

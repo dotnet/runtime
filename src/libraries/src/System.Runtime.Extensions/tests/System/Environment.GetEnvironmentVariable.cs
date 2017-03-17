@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using Xunit;
 
@@ -133,6 +135,7 @@ namespace System.Tests
             }
         }
 
+        [Fact]
         public void EnumerateYieldsDictionaryEntryFromIEnumerable()
         {
             // GetEnvironmentVariables has always yielded DictionaryEntry from IEnumerable
@@ -145,6 +148,41 @@ namespace System.Tests
             else
             {
                 Assert.Throws<InvalidOperationException>(() => enumerator.Current);
+            }
+        }
+
+        [Fact]
+        public void GetEnumerator_IDictionaryEnumerator_YieldsDictionaryEntries()
+        {
+            // GetEnvironmentVariables has always yielded DictionaryEntry from IDictionaryEnumerator
+            IDictionary vars = Environment.GetEnvironmentVariables();
+            IDictionaryEnumerator enumerator = vars.GetEnumerator();
+            if (enumerator.MoveNext())
+            {
+                Assert.IsType<DictionaryEntry>(enumerator.Current);
+            }
+            else
+            {
+                Assert.Throws<InvalidOperationException>(() => enumerator.Current);
+            }
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData(EnvironmentVariableTarget.User)]
+        [InlineData(EnvironmentVariableTarget.Process)]
+        [InlineData(EnvironmentVariableTarget.Machine)]
+        public void GetEnumerator_LinqOverDictionaryEntries_Success(EnvironmentVariableTarget? target)
+        {
+            IDictionary envVars = target != null ?
+                Environment.GetEnvironmentVariables(target.Value) :
+                Environment.GetEnvironmentVariables();
+
+            Assert.IsType<Hashtable>(envVars);
+
+            foreach (KeyValuePair<string, string> envVar in envVars.Cast<DictionaryEntry>().Select(de => new KeyValuePair<string, string>((string)de.Key, (string)de.Value)))
+            {
+                Assert.NotNull(envVar.Key);
             }
         }
 

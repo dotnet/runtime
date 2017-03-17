@@ -52,7 +52,8 @@ namespace System.Collections.Immutable
         /// <param name="tail">The rest of the elements on the stack.</param>
         private ImmutableStack(T head, ImmutableStack<T> tail)
         {
-            Requires.NotNull(tail, nameof(tail));
+            Debug.Assert(tail != null);
+            
             _head = head;
             _tail = tail;
         }

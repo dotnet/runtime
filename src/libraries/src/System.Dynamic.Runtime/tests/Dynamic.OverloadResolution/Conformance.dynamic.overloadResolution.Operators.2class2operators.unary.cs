@@ -6,8 +6,6 @@ using Xunit;
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Operators.Twoclass2operates.unary.overload001.overload001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Operators.Twoclass2operates.unary.overload001.overload001;
-
     // <Title> Tests overload resolution for 2 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -55,8 +53,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Oper
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Operators.Twoclass2operates.unary.overload002.overload002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Operators.Twoclass2operates.unary.overload002.overload002;
-
     // <Title> Tests overload resolution for 2 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -103,8 +99,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Oper
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Operators.Twoclass2operates.unary.overload003.overload003
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Operators.Twoclass2operates.unary.overload003.overload003;
-
     // <Title> Tests overload resolution for 2 class and 2 methods</Title>
     // <Description>
     // Select the best method to call.
@@ -156,8 +150,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Oper
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Operators.Twoclass2operates.unary.overload004.overload004
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Operators.Twoclass2operates.unary.overload004.overload004;
-
     // <Title> Tests overload resolution for 2 class and 2 methods</Title>
     // <Description>
     // Select the best method to call.
@@ -209,8 +201,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Oper
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Operators.Twoclass2operates.unary.overload005.overload005
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Operators.Twoclass2operates.unary.overload005.overload005;
-
     // <Title> Tests overload resolution for 2 class and 2 methods</Title>
     // <Description>
     // Select the best method to call.
@@ -271,8 +261,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Oper
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Operators.Twoclass2operates.unary.overload008.overload008
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Operators.Twoclass2operates.unary.overload008.overload008;
-
     // <Title> Tests overload resolution for 2 class and 2 methods</Title>
     // <Description>
     // Select the best method to call.
@@ -322,8 +310,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Oper
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Operators.Twoclass2operates.unary.overload009.overload009
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Operators.Twoclass2operates.unary.overload009.overload009;
-
     // <Title> Tests overload resolution for 2 class and 2 methods</Title>
     // <Description>
     // Select the best method to call.

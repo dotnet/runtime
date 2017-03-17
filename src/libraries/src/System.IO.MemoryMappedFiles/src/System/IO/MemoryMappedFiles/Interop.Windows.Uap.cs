@@ -17,7 +17,7 @@ internal partial class Interop
 
     public static SafeMemoryMappedFileHandle CreateFileMapping(
             SafeFileHandle hFile,
-            ref mincore.SECURITY_ATTRIBUTES securityAttributes,
+            ref Kernel32.SECURITY_ATTRIBUTES securityAttributes,
             int pageProtection,
             long maximumSize,
             string name)
@@ -27,7 +27,7 @@ internal partial class Interop
 
     public static SafeMemoryMappedFileHandle CreateFileMapping(
             IntPtr hFile,
-            ref mincore.SECURITY_ATTRIBUTES securityAttributes,
+            ref Kernel32.SECURITY_ATTRIBUTES securityAttributes,
             int pageProtection,
             long maximumSize,
             string name)
@@ -48,7 +48,7 @@ internal partial class Interop
             bool inheritHandle,
             string name)
     {
-        return Interop.Kernel32.OpenFileMappingFromApp(desiredAccess, inheritHandle, name);
+        return Interop.mincore.OpenFileMappingFromApp(desiredAccess, inheritHandle, name);
     }
     public static IntPtr VirtualAlloc(
             SafeHandle baseAddress,
@@ -56,6 +56,6 @@ internal partial class Interop
             int allocationType,
             int protection)
     {
-        return Interop.Kernel32.VirtualAllocFromApp(baseAddress, size, allocationType, protection);
+        return Interop.mincore.VirtualAllocFromApp(baseAddress, size, allocationType, protection);
     }
 }

@@ -402,7 +402,7 @@
         "4.0.0",
         "4.3.0"
       ],
-      "BaselineVersion": "4.3.0",
+      "BaselineVersion": "4.4.0",
       "InboxOn": {}
     },
     "runtime.win7-x64.runtime.native.System.Data.SqlClient.sni": {

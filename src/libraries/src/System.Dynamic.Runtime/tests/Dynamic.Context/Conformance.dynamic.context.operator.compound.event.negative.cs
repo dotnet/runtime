@@ -6,7 +6,6 @@ using Xunit;
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.evnt.negative.neg001.neg001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.evnt.negative.neg001.neg001;
     // <Area> Dynamic -- compound operator</Area>
     // <Title> compound operator +=/-= on event </Title>
     // <Description>
@@ -15,7 +14,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public delegate int Dele(int i);
     public class C
@@ -137,7 +135,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.evnt.negative.neg002.neg002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.evnt.negative.neg002.neg002;
     // <Area> Dynamic -- compound operator</Area>
     // <Title> compound operator +=/-= on event </Title>
     // <Description>
@@ -146,7 +143,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public delegate int Dele(int i);
     public class C
@@ -194,7 +190,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.evnt.negative.neg003.neg003
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.evnt.negative.neg003.neg003;
     // <Area> Dynamic -- compound operator</Area>
     // <Title> compound operator +=/-= on event </Title>
     // <Description>
@@ -265,7 +260,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.evnt.negative.neg004.neg004
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.evnt.negative.neg004.neg004;
     // <Area> Dynamic -- compound operator</Area>
     // <Title> compound operator +=/-= on event </Title>
     // <Description>
@@ -274,7 +268,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public delegate int Dele(int i);
     public class C
@@ -353,7 +346,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compoun
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.evnt.negative.neg005.neg005
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.compound.evnt.negative.neg005.neg005;
     // <Area> Dynamic -- compound operator</Area>
     // <Title> compound operator +=/-= on event </Title>
     // <Description>

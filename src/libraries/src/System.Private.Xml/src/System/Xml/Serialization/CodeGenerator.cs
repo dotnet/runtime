@@ -7,7 +7,7 @@ using System.Reflection;
 using System.Resources;
 using System.Runtime.CompilerServices;
 
-#if !NET_NATIVE
+#if !uapaot
 namespace System.Xml.Serialization
 {
     using System;

@@ -19,7 +19,7 @@ def osGroupMap = ['Ubuntu14.04':'Linux',
                   'Debian8.4':'Linux',
                   'Fedora23':'Linux',
                   'Fedora24':'Linux',
-                  'OSX':'OSX',
+                  'OSX10.12':'OSX',
                   'Windows_NT':'Windows_NT',
                   'CentOS7.1': 'Linux',
                   'OpenSUSE13.2': 'Linux',
@@ -33,7 +33,7 @@ def osShortName = ['Windows 10': 'win10',
                    'Windows 7' : 'win7',
                    'Windows_NT' : 'windows_nt',
                    'Ubuntu14.04' : 'ubuntu14.04',
-                   'OSX' : 'osx',
+                   'OSX10.12' : 'osx',
                    'Windows Nano 2016' : 'winnano16',
                    'Ubuntu16.04' : 'ubuntu16.04',
                    'Ubuntu16.10' : 'ubuntu16.10',
@@ -209,7 +209,7 @@ def buildArchConfiguration = ['Debug': 'x86',
 // Define outerloop testing for OSes that can build and run.  Run locally on each machine.
 // **************************
 [true, false].each { isPR ->
-    ['Windows 10', 'Windows 7', 'Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Ubuntu16.10', 'CentOS7.1', 'OpenSUSE13.2', 'OpenSUSE42.1', 'RHEL7.2', 'Fedora23', 'Fedora24', 'Debian8.4', 'OSX', 'PortableLinux'].each { osName ->
+    ['Windows 10', 'Windows 7', 'Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Ubuntu16.10', 'CentOS7.1', 'OpenSUSE13.2', 'OpenSUSE42.1', 'RHEL7.2', 'Fedora23', 'Fedora24', 'Debian8.4', 'OSX10.12', 'PortableLinux'].each { osName ->
         ['Debug', 'Release'].each { configurationGroup ->
 
             def osForMachineAffinity = osName
@@ -218,6 +218,7 @@ def buildArchConfiguration = ['Debug': 'x86',
                 osForMachineAffinity = "RHEL7.2"
             }
 
+            def archGroup = "x64"
             def newJobName = "outerloop_${osShortName[osName]}_${configurationGroup.toLowerCase()}"
 
             def newJob = job(Utilities.getFullJobName(project, newJobName, isPR)) {
@@ -226,7 +227,7 @@ def buildArchConfiguration = ['Debug': 'x86',
                         batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd -${configurationGroup}")
                         batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build-tests.cmd -${configurationGroup} -outerloop -- /p:IsCIBuild=true")
                     }
-                    else if (osName == 'OSX') {
+                    else if (osName == 'OSX10.12') {
                         shell("HOME=\$WORKSPACE/tempHome ./build.sh -${configurationGroup.toLowerCase()}")
                         shell("HOME=\$WORKSPACE/tempHome ./build-tests.sh -${configurationGroup.toLowerCase()} -outerloop -- /p:IsCIBuild=true")
                     }
@@ -245,7 +246,7 @@ def buildArchConfiguration = ['Debug': 'x86',
             }
 
             // Set the affinity.  OS name matches the machine affinity.
-            if (osName == 'Windows_NT' || osName == 'OSX') {
+            if (osName == 'Windows_NT' || osName == 'OSX10.12') {
                 Utilities.setMachineAffinity(newJob, osForMachineAffinity, "latest-or-auto-elevated")
             }
             else if (osGroupMap[osName] == 'Linux') {
@@ -264,7 +265,7 @@ def buildArchConfiguration = ['Debug': 'x86',
             if (isPR) {
                 // Set PR trigger.
                 // TODO: More elaborate regex trigger?
-                Utilities.addGithubPRTriggerForBranch(newJob, branch, "OuterLoop ${osName} ${configurationGroup}", "(?i).*test\\W+outerloop\\W+${osName}\\W+${configurationGroup}.*")
+                Utilities.addGithubPRTriggerForBranch(newJob, branch, "OuterLoop ${osName} ${configurationGroup} ${archGroup}", "(?i).*test\\W+outerloop\\W+${osName}\\W+${configurationGroup}.*")
             }
             else {
                 // Set a periodic trigger
@@ -293,6 +294,8 @@ def buildArchConfiguration = ['Debug': 'x86',
 
         Utilities.setMachineAffinity(newJob, 'Windows_NT', 'latest-or-auto')
 
+        Utilities.setMachineAffinity(newJob, 'Windows_NT', 'latest-or-auto')
+
         // Set up standard options.
         Utilities.standardJobSetup(newJob, project, /* isPR */ false, "*/${branch}")
 
@@ -304,10 +307,10 @@ def buildArchConfiguration = ['Debug': 'x86',
 }
 
 // **************************
-// Define uap and uapaot vertical builds that will run on every merge.
+// Define target group vertical builds that will run on every merge.
 // **************************
 [true, false].each { isPR ->
-    ['uap', 'uapaot'].each { targetGroup ->
+    ['uap', 'uapaot', 'netfx'].each { targetGroup ->
         ['Debug'].each { configurationGroup ->
             ['Windows_NT'].each { osName ->
                 def osGroup = osGroupMap[osName]
@@ -319,6 +322,7 @@ def buildArchConfiguration = ['Debug': 'x86',
                     // On Windows we use the packer to put together everything. On *nix we use tar
                     steps {
                         batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd -${configurationGroup} -framework:${targetGroup}")
+                        batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build-tests.cmd -${configurationGroup} -framework:${targetGroup} -SkipTests")
                     }
                 }
                 // Set the affinity.
@@ -378,7 +382,7 @@ def buildArchConfiguration = ['Debug': 'x86',
 [true, false].each { isPR ->
     ['netcoreapp'].each { targetGroup ->
         ['Debug', 'Release'].each { configurationGroup ->
-            ['Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Ubuntu16.10', 'Debian8.4', 'CentOS7.1', 'OpenSUSE13.2', 'OpenSUSE42.1', 'Fedora23', 'Fedora24', 'RHEL7.2', 'OSX', 'PortableLinux'].each { osName ->
+            ['Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Ubuntu16.10', 'Debian8.4', 'CentOS7.1', 'OpenSUSE13.2', 'OpenSUSE42.1', 'Fedora23', 'Fedora24', 'RHEL7.2', 'OSX10.12', 'PortableLinux'].each { osName ->
                 def osGroup = osGroupMap[osName]
                 def osForMachineAffinity = osName
                 
@@ -386,23 +390,27 @@ def buildArchConfiguration = ['Debug': 'x86',
                     // Portable Linux builds happen on RHEL7.2
                     osForMachineAffinity = "RHEL7.2"
                 }
-
+                def archGroup = "x64"
+                if (osName == 'Windows 10' || osName == 'Windows 7' || osName == 'Windows_NT') {
+                    // On Windows, use different architectures for Debug and Release.
+                    archGroup = buildArchConfiguration[configurationGroup]
+                }
                 def newJobName = "${osName.toLowerCase()}_${configurationGroup.toLowerCase()}"
 
                 def newJob = job(Utilities.getFullJobName(project, newJobName, isPR)) {
                     // On Windows we use the packer to put together everything. On *nix we use tar
                     steps {
                         if (osName == 'Windows 10' || osName == 'Windows 7' || osName == 'Windows_NT') {
-                            batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd -${configurationGroup} -os:${osGroup} -buildArch:${buildArchConfiguration[configurationGroup]} -framework:${targetGroup}")
-                            batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build-tests.cmd -${configurationGroup} -os:${osGroup} -buildArch:${buildArchConfiguration[configurationGroup]} -framework:${targetGroup} -- /p:IsCIBuild=true")
+                            batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build.cmd -${configurationGroup} -os:${osGroup} -buildArch:${archGroup} -framework:${targetGroup}")
+                            batchFile("call \"C:\\Program Files (x86)\\Microsoft Visual Studio 14.0\\VC\\vcvarsall.bat\" x86 && build-tests.cmd -${configurationGroup} -os:${osGroup} -buildArch:${archGroup} -framework:${targetGroup} -- /p:IsCIBuild=true")
                             batchFile("C:\\Packer\\Packer.exe .\\bin\\build.pack .\\bin")
                         }
                         else {
                             // Use Server GC for Ubuntu/OSX Debug PR build & test
                             def useServerGC = (configurationGroup == 'Release' && isPR) ? 'useServerGC' : ''
                             def portableLinux = (osName == 'PortableLinux') ? '-portableLinux' : ''
-                            shell("HOME=\$WORKSPACE/tempHome ./build.sh -${configurationGroup.toLowerCase()} -framework:${targetGroup} -os:${osGroup} ${portableLinux}")
-                            shell("HOME=\$WORKSPACE/tempHome ./build-tests.sh -${configurationGroup.toLowerCase()} -framework:${targetGroup} -os:${osGroup} -- ${useServerGC} /p:IsCIBuild=true")
+                            shell("HOME=\$WORKSPACE/tempHome ./build.sh -${configurationGroup.toLowerCase()} -framework:${targetGroup} -os:${osGroup} ${portableLinux} -buildArch:${archGroup}")
+                            shell("HOME=\$WORKSPACE/tempHome ./build-tests.sh -${configurationGroup.toLowerCase()} -framework:${targetGroup} -os:${osGroup} -buildArch:${archGroup} -- ${useServerGC} /p:IsCIBuild=true")
                             // Tar up the appropriate bits.
                             shell("tar -czf bin/build.tar.gz --directory=\"bin/runtime/${targetGroup}-${osGroup}-${configurationGroup}-x64\" .")
                         }
@@ -428,11 +436,11 @@ def buildArchConfiguration = ['Debug': 'x86',
                 // Set up triggers
                 if (isPR) {
                     // Set PR trigger, we run Windows_NT, Ubuntu 14.04, CentOS 7.1, PortableLinux and OSX on every PR.
-                    if ( osName == 'Windows_NT' || osName == 'Ubuntu14.04' || osName == 'CentOS7.1' || osName == 'OSX' || osName== 'PortableLinux') {
-                        Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop ${osName} ${configurationGroup} Build and Test")
+                    if ( osName == 'Windows_NT' || osName == 'Ubuntu14.04' || osName == 'CentOS7.1' || osName == 'OSX10.12' || osName== 'PortableLinux') {
+                        Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop ${osName} ${configurationGroup} ${archGroup} Build and Test")
                     }
                     else {
-                        Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop ${osName} ${configurationGroup} Build and Test", "(?i).*test\\W+innerloop\\W+${osName}\\W+${configurationGroup}.*")
+                        Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop ${osName} ${configurationGroup} ${archGroup} Build and Test", "(?i).*test\\W+innerloop\\W+${osName}\\W+${configurationGroup}.*")
                     }
                 }
                 else {

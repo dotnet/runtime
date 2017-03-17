@@ -196,7 +196,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                  aggCur != null;
                  aggCur = BSYMMGR.LookupNextSym(aggCur, bag, symbmask_t.MASK_AggregateSymbol).AsAggregateSymbol())
             {
-                if (!aggCur.InAlias(aid) || aggCur.GetTypeVarsAll().size != arity)
+                if (!aggCur.InAlias(aid) || aggCur.GetTypeVarsAll().Count != arity)
                 {
                     continue;
                 }

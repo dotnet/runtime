@@ -2,14 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
 using Xunit;
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass001.regclass001;
-    using System;
-
     public class MyClass
     {
         public int Field = 0;
@@ -673,15 +670,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass001.regclass001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass001.regclass001;
     // <Title> Tests regular class operator used in regular method body.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -714,15 +708,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass002.regclass002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass002.regclass002;
     // <Title> Tests regular class operator used in static method body.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -754,15 +745,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass002a.regclass002a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass002a.regclass002a;
     // <Title> Tests regular class operator used in static method body.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -793,15 +781,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass003.regclass003
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass003.regclass003;
     // <Title> Tests regular class operator used in generic method body.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -833,15 +818,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass004.regclass004
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass004.regclass004;
     // <Title> Tests regular class operator used in extension method body.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -876,15 +858,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass007.regclass007
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass007.regclass007;
     // <Title> Tests regular class operator used in arguments to method invocation.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -922,15 +901,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass007a.regclass007a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass007a.regclass007a;
     // <Title> Tests regular class operator used in arguments to method invocation.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -967,15 +943,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass008.regclass008
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass008.regclass008;
     // <Title> Tests regular class operator used in arguments to method invocation.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -1017,15 +990,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass008a.regclass008a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass008a.regclass008a;
     // <Title> Tests regular class operator used in arguments to method invocation.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -1066,15 +1036,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass009.regclass009
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass009.regclass009;
     // <Title> Tests regular class operator used in implicitly-typed variable initializer.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -1101,15 +1068,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass009a.regclass009a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass009a.regclass009a;
     // <Title> Tests regular class operator used in implicitly-typed variable initializer.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -1136,15 +1100,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass010.regclass010
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass010.regclass010;
     // <Title> Tests regular class operator used in array initializer.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -1177,15 +1138,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass011.regclass011
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass011.regclass011;
     // <Title> Tests regular class operator used in implicitly-typed array initializer.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -1218,15 +1176,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass012.regclass012
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass012.regclass012;
     // <Title> Tests regular class operator used in member initializer of object initializer.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -1276,15 +1231,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass013.regclass013
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass013.regclass013;
     // <Title> Tests regular class operator used in member initializer of anonymous type.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -1324,15 +1276,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass014.regclass014
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass014.regclass014;
     // <Title> Tests regular class operator used in static variable.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -1358,15 +1307,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass015.regclass015
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass015.regclass015;
     // <Title> Tests regular class operator used in property get.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -1407,15 +1353,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass016.regclass016
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass016.regclass016;
     // <Title> Tests regular class operator used in property set.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -1457,15 +1400,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass017.regclass017
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass017.regclass017;
     // <Title> Tests regular class operator used in indexer body.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -1513,17 +1453,13 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass018.regclass018
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass018.regclass018;
     // <Title> Tests regular class operator used in iterator.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
     using System.Collections;
-    using System.Collections.Generic;
 
     public class Test
     {
@@ -1567,16 +1503,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass019.regclass019
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass019.regclass019;
     // <Title> Tests regular class operator used in collection initializer list.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
-    using System.Collections;
     using System.Collections.Generic;
 
     public class Test
@@ -1620,15 +1552,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass020.regclass020
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass020.regclass020;
     // <Title> Tests regular class operator used in ctor.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -1671,15 +1600,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass021.regclass021
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass021.regclass021;
     // <Title> Tests regular class operator used in static ctor.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -1721,8 +1647,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass022.regclass022
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass022.regclass022;
     // <Title> Tests regular class operator used in checked and unchecked.</Title>
     // <Description>
     // </Description>
@@ -1768,15 +1692,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass024.regclass024
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass024.regclass024;
     // <Title> Tests regular class operator used in short-circuit boolean expression.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -1810,8 +1731,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass025.regclass025
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass025.regclass025;
     // <Title> Tests regular class operator used in dtor.</Title>
     // <Description>
     // On IA64 the GC.WaitForPendingFinalizers() does not actually work...
@@ -1889,8 +1808,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass026.regclass026
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass026.regclass026;
     // <Title> Tests regular class operator used in unsafe.</Title>
     // <Description>
     // </Description>
@@ -1917,15 +1834,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass027.regclass027
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass027.regclass027;
     // <Title> Tests regular class operator used in foreach expression.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -1965,15 +1879,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass028.regclass028
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass028.regclass028;
     // <Title> Tests regular class operator used in for loop initializer.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -2012,15 +1923,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass029.regclass029
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass029.regclass029;
     // <Title> Tests regular class operator used in lock expression.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -2057,15 +1965,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass030.regclass030
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass030.regclass030;
     // <Title> Tests regular class operator used in generic method body.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -2096,15 +2001,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass031.regclass031
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass031.regclass031;
     // <Title> Tests regular class operator used in while loop body.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -2142,15 +2044,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass032.regclass032
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass032.regclass032;
     // <Title> Tests regular class operator used in + operator.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -2177,15 +2076,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass034.regclass034
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass034.regclass034;
     // <Title> Tests regular class operator used in the for-condition.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -2236,15 +2132,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass035.regclass035
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass035.regclass035;
     // <Title> Tests regular class operator used in the for-iterator.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -2280,15 +2173,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass035a.regclass035a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass035a.regclass035a;
     // <Title> Tests regular class operator used in the for-iterator.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -2324,15 +2214,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass036.regclass036
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass036.regclass036;
     // <Title> Tests regular class operator used in while/do expression.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -2365,8 +2252,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass038.regclass038
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass038.regclass038;
     // <Title> Tests regular class operator used in anonymous type.</Title>
     // <Description>
     // anonymous type inside a query expression that introduces dynamic variables.
@@ -2374,9 +2259,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
     using System.Linq;
-    using System.Collections;
     using System.Collections.Generic;
 
     public class Test
@@ -2419,17 +2302,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass039.regclass039
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclass039.regclass039;
     // <Title> Tests regular class operator used in object initializer inside a collection initializer.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
-    using System.Linq;
-    using System.Collections;
     using System.Collections.Generic;
 
     public class Test
@@ -2475,15 +2353,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct001.regstrct001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct001.regstrct001;
     // <Title> Tests regular struct operator used in null coalescing operator.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -2511,15 +2386,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct002.regstrct002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct002.regstrct002;
     // <Title> Tests regular struct operator used in query expression.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
     using System.Linq;
     using System.Collections.Generic;
 
@@ -2573,15 +2445,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct003.regstrct003
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct003.regstrct003;
     // <Title> Tests regular struct operator used in ternary operator expression.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -2606,15 +2475,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct004.regstrct004
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct004.regstrct004;
     // <Title> Tests regular struct operator used inside #if, #else block.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -2655,8 +2521,6 @@ result = p1 < dy;
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct005.regstrct005
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct005.regstrct005;
     // <Title> Tests regular struct operator used in try/catch/finally.</Title>
     // <Description>
     // </Description>
@@ -2707,15 +2571,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct006.regstrct006
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct006.regstrct006;
     // <Title> Tests regular struct operator used in static ctor.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -2750,15 +2611,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct007.regstrct007
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct007.regstrct007;
     // <Title> Tests regular struct operator used in variable named dynamic.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -2786,15 +2644,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct008.regstrct008
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct008.regstrct008;
     // <Title> Tests regular struct operator used in this-argument of extension method.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -2833,8 +2688,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct009.regstrct009
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct009.regstrct009;
     // <Title> Tests regular struct operator used in anonymous method.</Title>
     // <Description>
     // </Description>
@@ -2882,15 +2735,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct010.regstrct010
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct010.regstrct010;
     // <Title> Tests regular struct operator used in query expression.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
     using System.Linq;
 
     public class Test
@@ -2929,8 +2779,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct011.regstrct011
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct011.regstrct011;
     // <Title> Tests regular struct operator used in lambda expression.</Title>
     // <Description>
     // </Description>
@@ -2965,15 +2813,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct012.regstrct012
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct012.regstrct012;
     // <Title> Tests regular struct operator used in field initializer outside of ctor.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -3000,15 +2845,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct013.regstrct013
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct013.regstrct013;
     // <Title> Tests regular struct operator used in volatile field initializer.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -3040,15 +2882,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct014.regstrct014
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct014.regstrct014;
     // <Title> Tests regular struct operator used in extension method body.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -3084,8 +2923,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct016.regstrct016
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct016.regstrct016;
     // <Title> Tests regular struct operator used in iterator that calls to a lambda expression.</Title>
     // <Description>
     // </Description>
@@ -3151,15 +2988,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct018.regstrct018
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct018.regstrct018;
     // <Title> Tests regular struct operator used in arguments to method invocation.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -3191,15 +3025,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct019.regstrct019
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct019.regstrct019;
     // <Title> Tests regular struct operator used in implicitly-typed variable initializer.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -3236,15 +3067,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct020.regstrct020
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct020.regstrct020;
     // <Title> Tests regular struct operator used in array initializer.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -3284,15 +3112,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct021.regstrct021
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct021.regstrct021;
     // <Title> Tests regular struct operator used in implicitly-typed array initializer.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -3332,15 +3157,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct022.regstrct022
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct022.regstrct022;
     // <Title> Tests regular struct operator used in property get.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -3380,15 +3202,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct024.regstrct024
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct024.regstrct024;
     // <Title> Tests regular struct operator used in static method body.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -3420,15 +3239,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct025.regstrct025
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct025.regstrct025;
     // <Title> Tests regular struct operator used in indexer body.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -3475,15 +3291,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct026.regstrct026
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct026.regstrct026;
     // <Title> Tests regular struct operator used in iterator.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
     using System.Collections;
 
     public class Test
@@ -3528,15 +3341,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct027.regstrct027
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct027.regstrct027;
     // <Title> Tests regular struct operator used in ctor.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -3568,15 +3378,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct028.regstrct028
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct028.regstrct028;
     // <Title> Tests regular struct operator used in ctor.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -3607,8 +3414,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct029.regstrct029
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct029.regstrct029;
     // <Title> Tests regular struct operator used in dtor.</Title>
     // <Description>
     // On IA64 the GC.WaitForPendingFinalizers() does not actually work...
@@ -3685,15 +3490,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct030.regstrct030
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct030.regstrct030;
     // <Title> Tests regular struct operator used in for body.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -3728,15 +3530,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct031.regstrct031
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct031.regstrct031;
     // <Title> Tests regular struct operator used in while\do body.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -3780,15 +3579,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct032.regstrct032
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regclassoperate.regclassoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct032.regstrct032;
     // <Title> Tests regular struct operator used in foreach expression.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -3826,10 +3622,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrctoperate.regstrctoperate
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrctoperate.regstrctoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct023.regstrct023;
-    using System;
-
     public struct MyClass
     {
         public int Field;
@@ -4493,14 +4285,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct023.regstrct023
 {
     using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrctoperate.regstrctoperate;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct023.regstrct023;
     // <Title> Tests regular struct operator used in property set.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -4541,7 +4331,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.void001.void001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.void001.void001;
     // <Title> Tests void typed dynamic expression in operators </Title>
     // <Description>
     // </Description>
@@ -4549,7 +4338,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclas
     // <Expects Status=success></Expects>
     // <Code>
     //<Expects Status=warning>\(22,14\).*CS0184</Expects>
-    using System;
 
     public class Test
     {

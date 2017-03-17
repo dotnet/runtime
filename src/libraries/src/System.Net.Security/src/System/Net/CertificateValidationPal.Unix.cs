@@ -3,21 +3,16 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Globalization;
 using Microsoft.Win32.SafeHandles;
 using System.Net.Security;
-using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using System.Threading;
 
 namespace System.Net
 {   
     internal static partial class CertificateValidationPal
     {
-        private static readonly object s_lockObject = new object();
-        private static X509Store s_userCertStore;
-
         internal static SslPolicyErrors VerifyCertificateProperties(
+            SafeDeleteContext securityContext,
             X509Chain chain,
             X509Certificate2 remoteCertificate,
             bool checkCertName,
@@ -30,9 +25,27 @@ namespace System.Net
         //
         // Extracts a remote certificate upon request.
         //
-        internal static X509Certificate2 GetRemoteCertificate(SafeDeleteContext securityContext, out X509Certificate2Collection remoteCertificateStore)
+        internal static X509Certificate2 GetRemoteCertificate(SafeDeleteContext securityContext)
         {
-            remoteCertificateStore = null;
+            return GetRemoteCertificate(securityContext, null);
+        }
+
+        internal static X509Certificate2 GetRemoteCertificate(
+            SafeDeleteContext securityContext,
+            out X509Certificate2Collection remoteCertificateStore)
+        {
+            if (securityContext == null)
+            {
+                remoteCertificateStore = null;
+                return null;
+            }
+
+            remoteCertificateStore = new X509Certificate2Collection();
+            return GetRemoteCertificate(securityContext, remoteCertificateStore);
+        }
+
+        private static X509Certificate2 GetRemoteCertificate(SafeDeleteContext securityContext, X509Certificate2Collection remoteCertificateStore)
+        {
             bool gotReference = false;
 
             if (securityContext == null)
@@ -54,24 +67,25 @@ namespace System.Net
                     result = new X509Certificate2(remoteContext.DangerousGetHandle());
                 }
 
-                remoteCertificateStore = new X509Certificate2Collection();
-
-                using (SafeSharedX509StackHandle chainStack =
-                    Interop.OpenSsl.GetPeerCertificateChain(((SafeDeleteSslContext)securityContext).SslContext))
+                if (remoteCertificateStore != null)
                 {
-                    if (!chainStack.IsInvalid)
+                    using (SafeSharedX509StackHandle chainStack =
+                        Interop.OpenSsl.GetPeerCertificateChain(((SafeDeleteSslContext)securityContext).SslContext))
                     {
-                        int count = Interop.Crypto.GetX509StackFieldCount(chainStack);
-
-                        for (int i = 0; i < count; i++)
+                        if (!chainStack.IsInvalid)
                         {
-                            IntPtr certPtr = Interop.Crypto.GetX509StackField(chainStack, i);
+                            int count = Interop.Crypto.GetX509StackFieldCount(chainStack);
 
-                            if (certPtr != IntPtr.Zero)
+                            for (int i = 0; i < count; i++)
                             {
-                                // X509Certificate2(IntPtr) calls X509_dup, so the reference is appropriately tracked.
-                                X509Certificate2 chainCert = new X509Certificate2(certPtr);
-                                remoteCertificateStore.Add(chainCert);
+                                IntPtr certPtr = Interop.Crypto.GetX509StackField(chainStack, i);
+
+                                if (certPtr != IntPtr.Zero)
+                                {
+                                    // X509Certificate2(IntPtr) calls X509_dup, so the reference is appropriately tracked.
+                                    X509Certificate2 chainCert = new X509Certificate2(certPtr);
+                                    remoteCertificateStore.Add(chainCert);
+                                }
                             }
                         }
                     }
@@ -132,49 +146,22 @@ namespace System.Net
             }
         }
 
-        internal static X509Store EnsureStoreOpened(bool isMachineStore)
+        static partial void CheckSupportsStore(StoreLocation storeLocation, ref bool hasSupport)
         {
-            if (isMachineStore)
-            {
-                // There's not currently a LocalMachine\My store on Unix, so don't bother trying
-                // and having to deal with the exception.
-                //
-                // https://github.com/dotnet/corefx/issues/3690 tracks the lack of this store.
-                return null;
-            }
-
-            return EnsureStoreOpened(ref s_userCertStore, StoreLocation.CurrentUser);
+            // There's not currently a LocalMachine\My store on Unix, so don't bother trying
+            // and having to deal with the exception.
+            //
+            // https://github.com/dotnet/corefx/issues/3690 tracks the lack of this store.
+            if (storeLocation == StoreLocation.LocalMachine)
+                hasSupport = false;
         }
 
-        private static X509Store EnsureStoreOpened(ref X509Store storeField, StoreLocation storeLocation)
+        private static X509Store OpenStore(StoreLocation storeLocation)
         {
-            X509Store store = Volatile.Read(ref storeField);
+            Debug.Assert(storeLocation == StoreLocation.CurrentUser);
 
-            if (store == null)
-            {
-                lock (s_lockObject)
-                {
-                    store = Volatile.Read(ref storeField);
-
-                    if (store == null)
-                    {
-                        try
-                        {
-                            store = new X509Store(StoreName.My, storeLocation);
-                            store.Open(OpenFlags.ReadOnly);
-
-                            Volatile.Write(ref storeField, store);
-
-                            if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"storeLocation: {storeLocation} returned store {store}");
-                        }
-                        catch (CryptographicException e)
-                        {
-                            NetEventSource.Fail(null, $"Failed to open cert store, location: {storeLocation} exception {e}");
-                            throw;
-                        }
-                    }
-                }
-            }
+            X509Store store = new X509Store(StoreName.My, storeLocation);
+            store.Open(OpenFlags.ReadOnly);
 
             return store;
         }

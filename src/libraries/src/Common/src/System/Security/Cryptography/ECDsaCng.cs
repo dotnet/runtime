@@ -13,7 +13,7 @@ namespace System.Security.Cryptography
 #endif
         public sealed partial class ECDsaCng : ECDsa
         {
-#if !NETNATIVE
+#if !uap
             /// <summary>
             /// Create an ECDsaCng algorithm with a named curve.
             /// </summary>

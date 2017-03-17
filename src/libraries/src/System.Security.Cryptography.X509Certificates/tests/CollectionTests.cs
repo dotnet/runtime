@@ -735,6 +735,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        [ActiveIssue(16705, TestPlatforms.OSX)]
         public static void ExportUnrelatedPfx()
         {
             // Export multiple certificates which are not part of any kind of certificate chain.
@@ -800,7 +801,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [ActiveIssue(2743, TestPlatforms.AnyUnix)]
+        [ActiveIssue(2743, TestPlatforms.AnyUnix & ~TestPlatforms.OSX)]
         public static void ExportMultiplePrivateKeys()
         {
             var collection = new X509Certificate2Collection();
@@ -817,6 +818,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 // Export, re-import.
                 byte[] exported;
 
+                bool expectSuccess =
+                    RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ||
+                    RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
+
                 try
                 {
                     exported = collection.Export(X509ContentType.Pkcs12);
@@ -829,7 +834,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     //
                     // If Windows gets here, or any exception other than PlatformNotSupportedException is raised,
                     // let that fail the test.
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                    if (expectSuccess)
                     {
                         throw;
                     }
@@ -839,7 +844,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 // As the other half of issue 2743, if we make it this far we better be Windows (or remove the catch
                 // above)
-                Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), "RuntimeInformation.IsOSPlatform(OSPlatform.Windows)");
+                Assert.True(expectSuccess, "Test is expected to fail on this platform");
 
                 using (ImportedCollection ic = Cert.Import(exported))
                 {
@@ -1480,17 +1485,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        public static IEnumerable<object[]> StorageFlags
-        {
-            get
-            {
-                yield return new object[] { X509KeyStorageFlags.DefaultKeySet };
-
-#if netcoreapp
-                yield return new object[] { X509KeyStorageFlags.EphemeralKeySet };
-#endif
-            }
-        }
+        public static IEnumerable<object[]> StorageFlags => CollectionImportTests.StorageFlags;
 
         private static X509Certificate2[] ToArray(this X509Certificate2Collection col)
         {

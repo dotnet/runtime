@@ -6,18 +6,17 @@
     <RootNamespace>System.Runtime.InteropServices</RootNamespace>
     <AssemblyName>System.Runtime.InteropServices.RuntimeInformation</AssemblyName>
     <ProjectGuid>{1CBC030D-B5D3-4AB5-A9FD-24EC5F6F38D2}</ProjectGuid>
-    <DefineConstants Condition="'$(TargetGroup)'=='net45' OR '$(TargetGroup)'=='netfx'">netfx</DefineConstants>
-    <DefineConstants Condition="'$(TargetGroup)'=='wpa81'">wpa81</DefineConstants>
-    <DefineConstants Condition="'$(TargetGroup)'=='win8'">win8</DefineConstants>
-    <DefineConstants Condition="'$(TargetGroup)'=='uap'">uap</DefineConstants>
-    <DefineConstants Condition="'$(TargetGroup)'=='uapaot'">uap;uapaot;netcore50</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)'=='net45' OR '$(TargetGroup)'=='netfx'">$(DefineConstants);netfx</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)'=='wpa81'">$(DefineConstants);wpa81</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)'=='win8'">$(DefineConstants);win8</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)'=='uap'">$(DefineConstants);uap</DefineConstants>
     <GeneratePlatformNotSupportedAssembly Condition="'$(TargetGroup)'=='netstandard1.1' AND '$(OSGroup)'=='AnyOS'">true</GeneratePlatformNotSupportedAssembly>
     <!-- use netstandard1.1 refs for win8 and wpa81 -->
     <RefPath Condition="'$(TargetGroup)'=='wpa81' OR '$(TargetGroup)'=='win8'">$(RefRootPath)/netstandard1.1</RefPath>
     <!-- Clear runtime for wpa81 & win8: these project types don't use project.json and need to resolve without a runtime -->
     <PackageTargetRuntime Condition="'$(TargetGroup)'=='wpa81' OR '$(TargetGroup)'=='win8'">
     </PackageTargetRuntime>
-    <ValidPinvokeMappings Condition="'$(TargetGroup)'=='wpa81' OR '$(TargetGroup)'=='win8'">$(MSBuildThisFileDirectory)PinvokeAnalyzer_win8-wpa81-APIs.txt</ValidPinvokeMappings>
+    <ValidPInvokeMappings Condition="'$(TargetGroup)'=='wpa81' OR '$(TargetGroup)'=='win8'">$(MSBuildThisFileDirectory)PInvokeAnalyzer_win8-wpa81-APIs.txt</ValidPInvokeMappings>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net45-Windows_NT-Debug|AnyCPU'" />
@@ -28,14 +27,14 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.1-AnyOS-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.1-AnyOS-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.1-Unix-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.1-Unix-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.1-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.1-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'win8-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'win8-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'wpa81-Windows_NT-Debug|AnyCPU'" />

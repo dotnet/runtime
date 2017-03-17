@@ -59,9 +59,9 @@ namespace System.Security.Cryptography
             }
             else
             {
-#if !NETNATIVE
+#if !uap
                 keyHandle = ECCng.ImportKeyBlob(format.Format, keyBlob, curveName, providerHandle);
-#endif //!NETNATIVE
+#endif // !uap
             }
 
             CngKey key = new CngKey(providerHandle, keyHandle);

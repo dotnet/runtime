@@ -2,16 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regproperty.genclass.genclassregprop.genclassregprop;
 using Xunit;
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regproperty.genclass.genclassregprop.genclassregprop
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regproperty.genclass.genclassregprop.genclassregprop;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regproperty.genclass.genclass001.genclass001;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Text;
-    using System.Linq.Expressions;
     using System.Reflection;
 
     public class MyClass
@@ -122,15 +117,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regpro
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regproperty.genclass.genclass001.genclass001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regproperty.genclass.genclassregprop.genclassregprop;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regproperty.genclass.genclass001.genclass001;
     // <Title> Tests generic class regular property used in regular method body.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -174,15 +166,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regpro
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regproperty.genclass.genclass002.genclass002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regproperty.genclass.genclassregprop.genclassregprop;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regproperty.genclass.genclass002.genclass002;
     // <Title> Tests generic class regular property used in regular method body with conditional attribute.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -231,15 +220,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regpro
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regproperty.genclass.genclass003.genclass003
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regproperty.genclass.genclassregprop.genclassregprop;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regproperty.genclass.genclass003.genclass003;
     // <Title> Tests generic class regular property used in member initializer of anonymous type.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -280,15 +266,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regpro
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regproperty.genclass.genclass005.genclass005
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regproperty.genclass.genclassregprop.genclassregprop;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regproperty.genclass.genclass005.genclass005;
     // <Title> Tests generic class regular property used in query expression.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
     using System.Linq;
     using System.Collections.Generic;
 
@@ -324,17 +307,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regpro
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regproperty.genclass.genclass006.genclass006
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regproperty.genclass.genclassregprop.genclassregprop;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regproperty.genclass.genclass006.genclass006;
     // <Title> Tests generic class regular property used in member initializer of object initializer.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
-    using System.Linq;
-    using System.Collections.Generic;
 
     public class Test
     {
@@ -378,15 +356,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regpro
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regproperty.genclass.genclass007.genclass007
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regproperty.genclass.genclassregprop.genclassregprop;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regproperty.genclass.genclass007.genclass007;
     // <Title> Tests generic class regular property used in explicit operator.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -436,15 +411,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regpro
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regproperty.genclass.genclass008.genclass008
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regproperty.genclass.genclassregprop.genclassregprop;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regproperty.genclass.genclass008.genclass008;
     // <Title> Tests generic class regular property used in implicit operator.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -495,15 +467,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regpro
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regproperty.genclass.genclass011.genclass011
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regproperty.genclass.genclassregprop.genclassregprop;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regproperty.genclass.genclass011.genclass011;
     // <Title> Tests generic class regular property used in volatile field initializer.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -544,8 +513,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regpro
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regproperty.genclass.genclass012.genclass012
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regproperty.genclass.genclassregprop.genclassregprop;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regproperty.genclass.genclass012.genclass012;
     // <Title> Tests generic class regular property used in volatile field initializer.</Title>
     // <Description>
     // </Description>
@@ -553,7 +520,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.regpro
     //<Expects Status=success></Expects>
     // <Code>
     //<Expects Status=warning>\(17,16\).*CS0219</Expects>
-    using System;
     using System.Linq;
     using System.Collections.Generic;
 

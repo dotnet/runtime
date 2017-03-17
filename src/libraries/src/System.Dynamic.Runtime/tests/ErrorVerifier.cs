@@ -3,13 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections;
-using System.IO;
-using System.Globalization;
 using System.Reflection;
 using System.Resources;
-using Microsoft.CSharp.RuntimeBinder;
-using Xunit;
 
 public enum ErrorElementId
 {

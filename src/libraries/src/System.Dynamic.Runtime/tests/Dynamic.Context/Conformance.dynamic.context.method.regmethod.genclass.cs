@@ -2,15 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclassregmeth.genclassregmeth;
 using Xunit;
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclassregmeth.genclassregmeth
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclassregmeth.genclassregmeth;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclass001.genclass001;
-    using System;
-    using System.Collections.Generic;
-
     public class C
     {
     }
@@ -203,15 +199,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclass001.genclass001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclassregmeth.genclassregmeth;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclass001.genclass001;
     // <Title> Tests generic class regular method used in regular method body.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -242,15 +235,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclass002.genclass002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclassregmeth.genclassregmeth;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclass002.genclass002;
     // <Title> Tests generic class regular method used in arguments of method invocation.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -304,15 +294,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclass003.genclass003
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclassregmeth.genclassregmeth;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclass003.genclass003;
     // <Title> Tests generic class regular method used in static variable.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -338,8 +325,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclass005.genclass005
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclassregmeth.genclassregmeth;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclass005.genclass005;
     // <Title> Tests generic class regular method used in unsafe.</Title>
     // <Description>
     // </Description>
@@ -367,15 +352,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclass006.genclass006
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclassregmeth.genclassregmeth;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclass006.genclass006;
     // <Title> Tests generic class regular method used in generic method body.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -409,15 +391,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclass008.genclass008
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclassregmeth.genclassregmeth;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclass008.genclass008;
     // <Title> Tests generic class regular method used in extension method body.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -459,15 +438,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclass009.genclass009
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclassregmeth.genclassregmeth;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclass009.genclass009;
     // <Title> Tests generic class regular method used in for loop.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -497,15 +473,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclass009a.genclass009a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclassregmeth.genclassregmeth;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclass009a.genclass009a;
     // <Title> Tests generic class regular method used in for loop.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -535,15 +508,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclass010.genclass010
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclassregmeth.genclassregmeth;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclass010.genclass010;
     // <Title> Tests generic class regular method used in static constructor.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test : I
     {
@@ -574,8 +544,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclass012.genclass012
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclassregmeth.genclassregmeth;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclass012.genclass012;
     // <Title> Tests generic class regular method used in lambda.</Title>
     // <Description>
     // </Description>
@@ -583,7 +551,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
     //<Expects Status=success></Expects>
     // <Code>
     using System;
-    using System.Collections.Generic;
 
     public class Test
     {
@@ -611,16 +578,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclass013.genclass013
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclassregmeth.genclassregmeth;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclass013.genclass013;
     // <Title> Tests generic class regular method used in array initializer list.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
-    using System.Collections.Generic;
 
     public class Test
     {
@@ -649,16 +612,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclass014.genclass014
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclassregmeth.genclassregmeth;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclass014.genclass014;
     // <Title> Tests generic class regular method used in null coalescing operator.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
-    using System.Collections.Generic;
 
     public class Test
     {
@@ -682,16 +641,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclass015.genclass015
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclassregmeth.genclassregmeth;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclass015.genclass015;
     // <Title> Tests generic class regular method used in static method body.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
-    using System.Collections.Generic;
 
     public class Test
     {
@@ -714,15 +669,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclass016.genclass016
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclassregmeth.genclassregmeth;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclass016.genclass016;
     // <Title> Tests generic class regular method used in query expression.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
     using System.Linq;
     using System.Collections.Generic;
 
@@ -766,17 +718,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclass017.genclass017
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclassregmeth.genclassregmeth;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclass017.genclass017;
     // <Title> Tests generic class regular method used in ternary operator expression.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
-    using System.Linq;
-    using System.Collections.Generic;
 
     public class Test
     {
@@ -799,17 +746,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclass018.genclass018
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclassregmeth.genclassregmeth;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclass018.genclass018;
     // <Title> Tests generic class regular method used in lock expression.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
-    using System.Linq;
-    using System.Collections.Generic;
 
     public class Test
     {
@@ -837,17 +779,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclass019.genclass019
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclassregmeth.genclassregmeth;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.genclass019.genclass019;
     // <Title> Tests generic class regular method used in switch section statement list.</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
-    using System.Linq;
-    using System.Collections.Generic;
 
     public class Test
     {
@@ -882,7 +819,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmetho
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.implicit01.implicit01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.regmethod.genclass.implicit01.implicit01;
     // <Title> Tests generic class regular method used in regular method body.</Title>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>

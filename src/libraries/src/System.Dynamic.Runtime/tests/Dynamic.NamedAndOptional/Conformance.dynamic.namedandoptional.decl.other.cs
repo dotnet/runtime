@@ -6,8 +6,6 @@ using Xunit;
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.other.extension02.extension02
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.other.extension02.extension02;
-
     // <Area>Declaration of Methods with Optional Parameters</Area>
     // <Title>Declaration of Optional Params</Title>
     // <Description>Simple Declaration of a an Extension method with optional parameters</Description>
@@ -46,8 +44,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.o
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.other.extension02a.extension02a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.other.extension02a.extension02a;
-
     // <Area>Declaration of Methods with Optional Parameters</Area>
     // <Title>Declaration of Optional Params</Title>
     // <Description>Simple Declaration of a an Extension method with optional parameters</Description>
@@ -97,8 +93,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.o
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.other.extension02b.extension02b
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.other.extension02b.extension02b;
-
     // <Area>Declaration of Methods with Optional Parameters</Area>
     // <Title>Declaration of Optional Params</Title>
     // <Description>Simple Declaration of a an Extension method with optional parameters</Description>
@@ -206,8 +200,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.o
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.other.array01.array01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.other.array01.array01;
-
     // <Area>Use of optional Params</Area>
     // <Title>Use of optional arrays</Title>
     // <Description>should be able to have a default array</Description>
@@ -244,8 +236,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.o
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.other.array01a.array01a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.other.array01a.array01a;
-
     // <Area>Use of optional Params</Area>
     // <Title>Use of optional arrays</Title>
     // <Description>should be able to have a default array</Description>
@@ -282,8 +272,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.o
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.other.array01b.array01b
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.other.array01b.array01b;
-
     // <Area>Use of optional Params</Area>
     // <Title>Use of optional arrays</Title>
     // <Description>should be able to have a default array</Description>
@@ -326,8 +314,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.o
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.other.array03.array03
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.other.array03.array03;
-
     // <Area>Use of optional Params</Area>
     // <Title>Use of optional arrays</Title>
     // <Description>should be able to have a default array</Description>
@@ -369,8 +355,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.o
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.other.array03a.array03a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.other.array03a.array03a;
-
     // <Area>Use of optional Params</Area>
     // <Title>Use of optional arrays</Title>
     // <Description>should be able to have a default array</Description>
@@ -413,8 +397,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.o
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.other.array04.array04
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.other.array04.array04;
-
     // <Area>Use of optional Params</Area>
     // <Title>Use of optional arrays</Title>
     // <Description>should be able to have a default array</Description>
@@ -456,8 +438,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.o
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.other.array04a.array04a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.decl.other.array04a.array04a;
-
     // <Area>Use of optional Params</Area>
     // <Title>Use of optional arrays</Title>
     // <Description>should be able to have a default array</Description>

@@ -49,5 +49,29 @@ namespace System.Reflection.Emit.Tests
             
             Assert.Throws<IndexOutOfRangeException>(() => typeParams[0].MakeArrayType(rank));
         }
+
+        [Fact]
+        public void IsArray()
+        {
+            GenericTypeParameterBuilder typeParam = Helpers.DynamicType(TypeAttributes.Public).DefineGenericParameters("TFirst")[0];
+            Assert.False(typeParam.IsArray);
+            Assert.False(typeParam.IsSZArray);
+
+            Type asType = typeParam.AsType();
+            Assert.False(asType.IsArray);
+            Assert.False(asType.IsSZArray);
+
+            Type arrType = typeParam.MakeArrayType();
+            Assert.True(arrType.IsArray);
+            Assert.True(arrType.IsSZArray);
+
+            arrType = typeParam.MakeArrayType(1);
+            Assert.True(arrType.IsArray);
+            Assert.False(arrType.IsSZArray);
+
+            arrType = typeParam.MakeArrayType(2);
+            Assert.True(arrType.IsArray);
+            Assert.False(arrType.IsSZArray);
+        }
     }
 }

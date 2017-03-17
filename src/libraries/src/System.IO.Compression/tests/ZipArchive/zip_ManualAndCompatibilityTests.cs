@@ -11,7 +11,6 @@ namespace System.IO.Compression.Tests
     {
         [Theory]
         [InlineData("7zip.zip", "normal", true, true)]
-        [InlineData("deflate64.zip", "normal", true, true)]
         [InlineData("windows.zip", "normalWithoutEmptyDir", false, true)]
         [InlineData("dotnetzipstreaming.zip", "normal", false, false)]
         [InlineData("sharpziplib.zip", "normalWithoutEmptyDir", false, false)]
@@ -19,6 +18,13 @@ namespace System.IO.Compression.Tests
         public static async Task CompatibilityTests(string zipFile, string zipFolder, bool requireExplicit, bool checkTimes)
         {
             IsZipSameAsDir(await StreamHelpers.CreateTempCopyStream(compat(zipFile)), zfolder(zipFolder), ZipArchiveMode.Update, requireExplicit, checkTimes);
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Deflate64 zip support is a netcore feature not available on full framework.")]
+        public static async Task Deflate64Zip()
+        {
+            IsZipSameAsDir(await StreamHelpers.CreateTempCopyStream(compat("deflate64.zip")), zfolder("normal"), ZipArchiveMode.Update, requireExplicit: true, checkTimes: true);
         }
 
         [Theory]

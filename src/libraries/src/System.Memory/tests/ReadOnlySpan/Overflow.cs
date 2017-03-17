@@ -10,7 +10,9 @@ namespace System.SpanTests
 {
     public static partial class ReadOnlySpanTests
     {
+        [ActiveIssue(16593)]
         [Fact]
+        [OuterLoop]
         public static void IndexOverflow()
         {
             //

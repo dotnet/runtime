@@ -33,7 +33,7 @@ namespace System.Net.Http
         private const byte UTF8PreambleByte2 = 0xBF;
         private const int UTF8PreambleFirst2Bytes = 0xEFBB;
 
-#if !NETNative
+#if !uap
         // UTF32 not supported on Phone
         private const int UTF32CodePage = 12000;
         private const int UTF32PreambleLength = 4;
@@ -64,7 +64,7 @@ namespace System.Net.Http
                 UTF8PreambleByte1,
                 UTF8PreambleByte2);
 
-#if !NETNative
+#if !uap
             // UTF32 not supported on Phone
             AssertEncodingConstants(Encoding.UTF32, UTF32CodePage, UTF32PreambleLength, UTF32OrUnicodePreambleFirst2Bytes,
                 UTF32PreambleByte0,
@@ -547,7 +547,7 @@ namespace System.Net.Http
                         && data[offset + 0] == UTF8PreambleByte0
                         && data[offset + 1] == UTF8PreambleByte1
                         && data[offset + 2] == UTF8PreambleByte2) ? UTF8PreambleLength : 0;
-#if !NETNative
+#if !uap
                 // UTF32 not supported on Phone
                 case UTF32CodePage:
                     return (dataLength >= UTF32PreambleLength
@@ -596,7 +596,7 @@ namespace System.Net.Http
                         break;
 
                     case UTF32OrUnicodePreambleFirst2Bytes:
-#if !NETNative
+#if !uap
                         // UTF32 not supported on Phone
                         if (dataLength >= UTF32PreambleLength && data[offset + 2] == UTF32PreambleByte2 && data[offset + 3] == UTF32PreambleByte3)
                         {

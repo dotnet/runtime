@@ -487,7 +487,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     {
                         if (shouldInstallCertToUserStore)
                         {
-                            userRootStore.Open(OpenFlags.ReadWrite);
+                            try
+                            {
+                                userRootStore.Open(OpenFlags.ReadWrite);
+                            }
+                            catch (CryptographicException)
+                            {
+                                return;
+                            }
+
                             userRootStore.Add(microsoftDotComRoot); // throws CryptographicException
                             installedCertToUserStore = true;
                         }

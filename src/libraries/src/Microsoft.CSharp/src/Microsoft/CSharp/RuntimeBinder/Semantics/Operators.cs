@@ -2537,9 +2537,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             CType typeRet = pCall.type;
 
-            Debug.Assert(pCall.mwi.Meth().Params.size == 2);
-            if (!GetTypes().SubstEqualTypes(typeRet, pCall.mwi.Meth().Params.Item(0), typeRet) ||
-                !GetTypes().SubstEqualTypes(typeRet, pCall.mwi.Meth().Params.Item(1), typeRet))
+            Debug.Assert(pCall.mwi.Meth().Params.Count == 2);
+            if (!GetTypes().SubstEqualTypes(typeRet, pCall.mwi.Meth().Params[0], typeRet) ||
+                !GetTypes().SubstEqualTypes(typeRet, pCall.mwi.Meth().Params[1], typeRet))
             {
                 MethWithInst mwi = new MethWithInst(null, null);
                 EXPRMEMGRP pMemGroup = GetExprFactory().CreateMemGroup(null, mwi);
@@ -2628,11 +2628,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private bool UserDefinedBinaryOperatorCanBeLifted(ExpressionKind ek, MethodSymbol method, AggregateType ats,
             TypeArray Params)
         {
-            if (!Params.Item(0).IsNonNubValType())
+            if (!Params[0].IsNonNubValType())
             {
                 return false;
             }
-            if (!Params.Item(1).IsNonNubValType())
+            if (!Params[1].IsNonNubValType())
             {
                 return false;
             }
@@ -2649,7 +2649,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     {
                         return false;
                     }
-                    if (Params.Item(0) != Params.Item(1))
+                    if (Params[0] != Params[1])
                     {
                         return false;
                     }
@@ -2673,13 +2673,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private bool UserDefinedBinaryOperatorIsApplicable(List<CandidateFunctionMember> candidateList,
             ExpressionKind ek, MethodSymbol method, AggregateType ats, EXPR arg1, EXPR arg2, bool fDontLift)
         {
-            if (!method.isOperator || method.Params.size != 2)
+            if (!method.isOperator || method.Params.Count != 2)
             {
                 return false;
             }
-            Debug.Assert(method.typeVars.size == 0);
+            Debug.Assert(method.typeVars.Count == 0);
             TypeArray paramsCur = GetTypes().SubstTypeArray(method.Params, ats);
-            if (canConvert(arg1, paramsCur.Item(0)) && canConvert(arg2, paramsCur.Item(1)))
+            if (canConvert(arg1, paramsCur[0]) && canConvert(arg2, paramsCur[1]))
             {
                 candidateList.Add(new CandidateFunctionMember(
                     new MethPropWithInst(method, ats, BSYMMGR.EmptyTypeArray()),
@@ -2694,8 +2694,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return false;
             }
             CType[] rgtype = new CType[2];
-            rgtype[0] = GetTypes().GetNullable(paramsCur.Item(0));
-            rgtype[1] = GetTypes().GetNullable(paramsCur.Item(1));
+            rgtype[0] = GetTypes().GetNullable(paramsCur[0]);
+            rgtype[1] = GetTypes().GetNullable(paramsCur[1]);
             if (!canConvert(arg1, rgtype[0]) || !canConvert(arg2, rgtype[1]))
             {
                 return false;
@@ -2816,8 +2816,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private EXPRCALL BindUDBinopCall(EXPR arg1, EXPR arg2, TypeArray Params, CType typeRet, MethPropWithInst mpwi)
         {
-            arg1 = mustConvert(arg1, Params.Item(0));
-            arg2 = mustConvert(arg2, Params.Item(1));
+            arg1 = mustConvert(arg1, Params[0]);
+            arg2 = mustConvert(arg2, Params[1]);
             EXPRLIST args = GetExprFactory().CreateList(arg1, arg2);
 
             checkUnsafe(arg1.type); // added to the binder so we don't bind to pointer ops
@@ -2851,19 +2851,19 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             TypeArray paramsRaw = GetTypes().SubstTypeArray(mpwi.Meth().Params, mpwi.GetType());
             Debug.Assert(Params != paramsRaw);
-            Debug.Assert(paramsRaw.Item(0) == Params.Item(0).GetBaseOrParameterOrElementType());
-            Debug.Assert(paramsRaw.Item(1) == Params.Item(1).GetBaseOrParameterOrElementType());
+            Debug.Assert(paramsRaw[0] == Params[0].GetBaseOrParameterOrElementType());
+            Debug.Assert(paramsRaw[1] == Params[1].GetBaseOrParameterOrElementType());
 
-            if (!canConvert(arg1.type.StripNubs(), paramsRaw.Item(0), CONVERTTYPE.NOUDC))
+            if (!canConvert(arg1.type.StripNubs(), paramsRaw[0], CONVERTTYPE.NOUDC))
             {
-                exprVal1 = mustConvert(arg1, Params.Item(0));
+                exprVal1 = mustConvert(arg1, Params[0]);
             }
-            if (!canConvert(arg2.type.StripNubs(), paramsRaw.Item(1), CONVERTTYPE.NOUDC))
+            if (!canConvert(arg2.type.StripNubs(), paramsRaw[1], CONVERTTYPE.NOUDC))
             {
-                exprVal2 = mustConvert(arg2, Params.Item(1));
+                exprVal2 = mustConvert(arg2, Params[1]);
             }
-            EXPR nonLiftedArg1 = mustCast(exprVal1, paramsRaw.Item(0));
-            EXPR nonLiftedArg2 = mustCast(exprVal2, paramsRaw.Item(1));
+            EXPR nonLiftedArg1 = mustCast(exprVal1, paramsRaw[0]);
+            EXPR nonLiftedArg2 = mustCast(exprVal2, paramsRaw[1]);
             switch (ek)
             {
                 default:
@@ -2871,7 +2871,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     break;
                 case ExpressionKind.EK_EQ:
                 case ExpressionKind.EK_NE:
-                    Debug.Assert(paramsRaw.Item(0) == paramsRaw.Item(1));
+                    Debug.Assert(paramsRaw[0] == paramsRaw[1]);
                     Debug.Assert(typeRetRaw.isPredefType(PredefinedType.PT_BOOL));
                     // These ones don't lift the return type. Instead, if either side is null, the result is false.
                     typeRet = typeRetRaw;

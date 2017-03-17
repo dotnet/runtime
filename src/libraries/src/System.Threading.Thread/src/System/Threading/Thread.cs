@@ -2,23 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#if !NETNATIVE
 extern alias System_Runtime_Extensions;
 extern alias System_Security_Principal;
-#endif
 
-using System.Diagnostics;
+using Internal.Runtime.Augments;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.ConstrainedExecution;
-using Internal.Runtime.Augments;
 
 namespace System.Threading
 {
-#if !NETNATIVE
     using AppDomain = System_Runtime_Extensions::System.AppDomain;
     using IPrincipal = System_Security_Principal::System.Security.Principal.IPrincipal;
-#endif
 
     public sealed partial class Thread : CriticalFinalizerObject
     {
@@ -27,9 +23,7 @@ namespace System.Threading
 
         private readonly RuntimeThread _runtimeThread;
         private Delegate _start;
-#if !NETNATIVE
         private IPrincipal _principal;
-#endif
 
         private Thread(RuntimeThread runtimeThread)
         {
@@ -162,7 +156,6 @@ namespace System.Threading
             }
         }
 
-#if !NETNATIVE
         public static IPrincipal CurrentPrincipal
         {
             get
@@ -174,7 +167,6 @@ namespace System.Threading
                 CurrentThread._principal = value;
             }
         }
-#endif
 
         public ExecutionContext ExecutionContext => ExecutionContext.Capture();
         public bool IsAlive => _runtimeThread.IsAlive;
@@ -285,10 +277,8 @@ namespace System.Threading
             throw new InvalidOperationException(SR.Thread_GetSetCompressedStack_NotSupported);
         }
 
-#if !NETNATIVE
         public static AppDomain GetDomain() => AppDomain.CurrentDomain;
         public static int GetDomainID() => GetDomain().Id;
-#endif
         public override int GetHashCode() => ManagedThreadId;
         public void Interrupt() => _runtimeThread.Interrupt();
         public void Join() => _runtimeThread.Join();

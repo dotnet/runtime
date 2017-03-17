@@ -6,8 +6,6 @@ using Xunit;
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.cnstrctor001.cnstrctor001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.cnstrctor001.cnstrctor001;
-
     // <Title>Formal parameter to constructor</Title>
     // <Description>
     // </Description>
@@ -48,8 +46,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.cnstrctor002.cnstrctor002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.cnstrctor002.cnstrctor002;
-
     // <Title>Formal parameter to constructor</Title>
     // <Description>
     // </Description>
@@ -99,8 +95,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.cnstrctor003.cnstrctor003
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.cnstrctor003.cnstrctor003;
-
     // <Title>Formal parameter to constructor</Title>
     // <Description>
     // </Description>
@@ -141,7 +135,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.cnstrctor004.cnstrctor004
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.cnstrctor004.cnstrctor004;
     // <Title>Formal parameter to constructor</Title>
     // <Description>choose right sig for new ctor(..dynamic..) - only bind for public method</Description>
     // <RelatedBugs></RelatedBugs>
@@ -288,7 +281,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.cnstrctor007.cnstrctor007
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.cnstrctor007.cnstrctor007;
     // <Title>Formal parameter to constructor</Title>
     // <Description>choose right sig for new ctor(..dynamic..)</Description>
     // <RelatedBugs></RelatedBugs>
@@ -570,13 +562,11 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.cnstrctor008.cnstrctor008
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.cnstrctor008.cnstrctor008;
     // <Title>Formal parameter to constructor</Title>
     // <Description>choose right sig for ctor declared with (..dynamic..)</Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class MyType
     {
@@ -717,13 +707,11 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.cnstrctor009.cnstrctor009
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.cnstrctor009.cnstrctor009;
     // <Title>Formal parameter to constructor</Title>
     // <Description>choose right sig for ctor declared with (..dynamic..)</Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public interface MyInterface
     {
@@ -898,8 +886,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.cnstrctor013.cnstrctor013
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.cnstrctor013.cnstrctor013;
-
     // <Title>Casting a dynamic constructor</Title>
     // <Description>
     // </Description>
@@ -947,14 +933,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.cnstrctor014.cnstrctor014
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.cnstrctor014.cnstrctor014;
     // <Title>Formal parameter to private constructor</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Program
     {
@@ -992,14 +976,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.cnstrctor015.cnstrctor015
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.cnstrctor015.cnstrctor015;
     // <Title>Formal parameter to protected constructor</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Program
     {
@@ -1037,14 +1019,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.cnstrctor016.cnstrctor016
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.cnstrctor016.cnstrctor016;
     // <Title>Formal parameter to protected constructor</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Program
     {
@@ -1082,14 +1062,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.cnstrctor017.cnstrctor017
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.cnstrctor017.cnstrctor017;
     // <Title>Formal parameter to protected constructor</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
     using Microsoft.CSharp.RuntimeBinder;
 
     public class Foo
@@ -1149,14 +1127,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.cnstrctor018.cnstrctor018
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.cnstrctor018.cnstrctor018;
     // <Title>Formal parameter to protected constructor</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Program
     {
@@ -1208,8 +1184,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.indexer001.indexer001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.indexer001.indexer001;
-
     // <Title>Formal parameter for indexer</Title>
     // <Description>
     // </Description>
@@ -1271,8 +1245,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.indexer002.indexer002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.indexer002.indexer002;
-
     // <Title>Formal parameter for indexer</Title>
     // <Description>
     // </Description>
@@ -1334,8 +1306,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.indexer004.indexer004
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.indexer004.indexer004;
-
     // <Title>Formal parameter for indexer</Title>
     // <Description>
     // </Description>
@@ -1398,8 +1368,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.indexer005.indexer005
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.indexer005.indexer005;
-
     // <Title>Formal parameter for indexer</Title>
     // <Description>
     // </Description>
@@ -1461,8 +1429,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.indexer006.indexer006
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.indexer006.indexer006;
-
     // <Title>Formal parameter for indexer</Title>
     // <Description>
     // </Description>
@@ -1516,8 +1482,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.method001.method001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.method001.method001;
-
     // <Title>Formal parameter</Title>
     // <Description>
     // </Description>
@@ -1558,8 +1522,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.method002.method002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.method002.method002;
-
     // <Title>Formal parameter</Title>
     // <Description>
     // </Description>
@@ -1600,8 +1562,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.method003.method003
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.method003.method003;
-
     // <Title>Formal parameter to static method</Title>
     // <Description>
     // </Description>
@@ -1641,8 +1601,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.method004.method004
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.method004.method004;
-
     // <Title>Formal parameter to static method</Title>
     // <Description>
     // </Description>
@@ -1682,8 +1640,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.method005.method005
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.method005.method005;
-
     // <Title>Formal parameter to generic method</Title>
     // <Description>
     // </Description>
@@ -1724,8 +1680,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.method006.method006
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.method006.method006;
-
     // <Title>Formal parameter to generic method</Title>
     // <Description>
     // </Description>
@@ -1766,8 +1720,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.method007.method007
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.method007.method007;
-
     // <Title>Formal parameter to generic method</Title>
     // <Description>
     // </Description>
@@ -1808,8 +1760,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.method008.method008
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.method008.method008;
-
     // <Title>Formal parameter to generic method</Title>
     // <Description>
     // </Description>
@@ -1850,14 +1800,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.method009.method009
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.method009.method009;
     // <Title>Formal parameter to generic method</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
     using System.Collections.Generic;
 
     public class CommonLibrary
@@ -1898,14 +1846,12 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.method010.method010
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.method010.method010;
     // <Title>Formal parameter to generic method</Title>
     // <Description>
     // </Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
     using System.Collections.Generic;
 
     public class CommonLibrary
@@ -1946,8 +1892,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.operate001.operate001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.operate001.operate001;
-
     // <Title>Formal parameter</Title>
     // <Description>
     // </Description>
@@ -1993,8 +1937,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.operate002.operate002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.operate002.operate002;
-
     // <Title>Formal parameter</Title>
     // <Description>
     // </Description>
@@ -2040,8 +1982,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.operate003.operate003
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.operate003.operate003;
-
     // <Title>Formal parameter</Title>
     // <Description>
     // </Description>
@@ -2087,8 +2027,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.operate004.operate004
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.operate004.operate004;
-
     // <Title>Formal parameter</Title>
     // <Description>
     // </Description>
@@ -2134,8 +2072,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.operate006.operate006
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.operate006.operate006;
-
     // <Title>Formal parameter</Title>
     // <Description>
     // </Description>
@@ -2175,8 +2111,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.operate007.operate007
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.operate007.operate007;
-
     // <Title>Formal parameter</Title>
     // <Description>
     // </Description>
@@ -2216,8 +2150,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.param001.param001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.param001.param001;
-
     // <Title>Formal parameter</Title>
     // <Description>
     // </Description>
@@ -2271,8 +2203,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.param002.param002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.param002.param002;
-
     // <Title>Formal parameter</Title>
     // <Description>
     // </Description>
@@ -2322,8 +2252,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.param004.param004
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.param004.param004;
-
     // <Title>Formal parameter</Title>
     // <Description>
     // </Description>
@@ -2373,8 +2301,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.param006.param006
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.param006.param006;
-
     // <Title>Formal parameter</Title>
     // <Description>
     // </Description>
@@ -2425,13 +2351,11 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.param009.param009
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.param009.param009;
     // <Title>Delegates</Title>
     // <Description></Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class A
     {
@@ -2461,8 +2385,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.property001.property001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.property001.property001;
-
     // <Title>Property that is of type dynamic</Title>
     // <Description>
     // </Description>
@@ -2527,8 +2449,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParam
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.property002.property002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.formalParameter.property002.property002;
-
     // <Title>Property that is of type dynamic</Title>
     // <Description>
     // </Description>

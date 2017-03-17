@@ -9,11 +9,8 @@
       <TargetsUnix>true</TargetsUnix>
     -->
   </PropertyGroup>
-  <PropertyGroup Condition="'$(EnableWinRT)' != 'true'">
-    <DefineConstants>$(DefineConstants);FEATURE_CORECLR</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(EnableWinRT)' == 'true'">
-    <DefineConstants>$(DefineConstants);NETNATIVE</DefineConstants>
+  <PropertyGroup>
+    <DefineConstants Condition="'$(TargetGroup)' == 'uap'">$(DefineConstants);uap</DefineConstants>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='uap-Windows_NT-Debug|AnyCPU'" />
@@ -41,7 +38,7 @@
     <Compile Include="System\Net\WebSockets\WebSocketHandle.Windows.cs" />
   </ItemGroup>
   <!-- Windows : Win32 only -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(EnableWinRT)' != 'true'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(TargetGroup)' != 'uap'">
     <Compile Include="System\Net\WebSockets\WebSocketHandle.Win32.cs" />
     <Compile Include="System\Net\WebSockets\WebSocketMessageTypeAdapter.cs" />
     <Compile Include="System\Net\WebSockets\WinHttpWebSocket.cs" />
@@ -87,12 +84,11 @@
     </Compile>
   </ItemGroup>
   <!-- Windows : Win32 + WinRT -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(EnableWinRT)' == 'true'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(TargetGroup)' == 'uap'">
     <Compile Include="System\Net\WebSockets\WebSocketHandle.WinRT.cs" />
     <Compile Include="System\Net\WebSockets\WinRTWebSocket.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
-    <Compile Include="System\Net\Sockets\AsyncEventArgsNetworkStream.cs" />
     <Compile Include="System\Net\WebSockets\WebSocketHandle.Managed.cs" />
     <Compile Include="$(CommonPath)\System\Net\WebSockets\ManagedWebSocket.cs">
       <Link>Common\System\Net\WebSockets\ManagedWebSocket.cs</Link>
@@ -136,14 +132,16 @@
     <Reference Include="System.Threading.Tasks" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <Reference Include="System.Buffers" />
     <Reference Include="System.Net.NameResolution" />
     <Reference Include="System.Net.Security" />
     <Reference Include="System.Net.Sockets" />
+    <Reference Include="System.Numerics.Vectors" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Security.Cryptography.Algorithms" />
     <Reference Include="System.Security.Cryptography.Primitives" />
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Threading.Timer" />
-    <Reference Include="System.Buffers" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

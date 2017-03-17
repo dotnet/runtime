@@ -19,6 +19,7 @@
 using System.IO;
 using System.Text;
 using System.Xml;
+using System.Xml.Resolvers;
 using Xunit;
 
 namespace System.Security.Cryptography.Xml.Tests
@@ -292,12 +293,10 @@ namespace System.Security.Cryptography.Xml.Tests
         [Fact]
         public void ExcC14NSpecExample1()
         {
-            string testName = GetType().Name + "." + nameof(ExcC14NSpecExample1);
-            using (TestHelpers.CreateTestDtdFile(testName))
-            {
-                string res = ExecuteXmlDSigExcC14NTransform(ExcC14NSpecExample1Input);
-                Assert.Equal(ExcC14NSpecExample1Output, res);
-            }
+            XmlPreloadedResolver resolver = new XmlPreloadedResolver();
+            resolver.Add(TestHelpers.ToUri("doc.dtd"), "");
+            string res = ExecuteXmlDSigExcC14NTransform(ExcC14NSpecExample1Input);
+            Assert.Equal(ExcC14NSpecExample1Output, res);
         }
 
         [Fact]
@@ -325,13 +324,11 @@ namespace System.Security.Cryptography.Xml.Tests
         [Fact]
         public void ExcC14NSpecExample5()
         {
-            string testName = GetType().Name + "." + nameof(ExcC14NSpecExample5);
-            using (TempFile tempFile = TestHelpers.CreateTestTextFile(testName, "world"))
-            {
-                string input = ExcC14NSpecExample5Input(tempFile.Path);
-                string res = ExecuteXmlDSigExcC14NTransform(input, new XmlUrlResolver());
-                Assert.Equal(ExcC14NSpecExample5Output, res);
-            }
+            XmlPreloadedResolver resolver = new XmlPreloadedResolver();
+            resolver.Add(TestHelpers.ToUri("doc.txt"), "world");
+            string input = ExcC14NSpecExample5Input;
+            string res = ExecuteXmlDSigExcC14NTransform(input, resolver);
+            Assert.Equal(ExcC14NSpecExample5Output, res);
         }
 
         [Fact]
@@ -381,7 +378,7 @@ namespace System.Security.Cryptography.Xml.Tests
                 "<?xml-stylesheet   href=\"doc.xsl\"\n" +
                 "   type=\"text/xsl\"   ?>\n" +
                 "\n" +
-                // "<!DOCTYPE doc SYSTEM \"doc.dtd\">\n" +
+                "<!DOCTYPE doc SYSTEM \"doc.dtd\">\n" +
                 "\n" +
                 "<doc>Hello, world!<!-- Comment 1 --></doc>\n" +
                 "\n" +
@@ -499,11 +496,11 @@ namespace System.Security.Cryptography.Xml.Tests
         // Example 5 from ExcC14N spec - Entity References: 
         // http://www.w3.org/TR/xml-c14n#Example-Entities
         //
-        static string ExcC14NSpecExample5Input(string path) =>
+        static string ExcC14NSpecExample5Input =>
                 "<!DOCTYPE doc [\n" +
                 "<!ATTLIST doc attrExtEnt ENTITY #IMPLIED>\n" +
                 "<!ENTITY ent1 \"Hello\">\n" +
-                $"<!ENTITY ent2 SYSTEM \"{TestHelpers.EscapePath(path)}\">\n" +
+                $"<!ENTITY ent2 SYSTEM \"doc.txt\">\n" +
                 "<!ENTITY entExt SYSTEM \"earth.gif\" NDATA gif>\n" +
                 "<!NOTATION gif SYSTEM \"viewgif.exe\">\n" +
                 "]>\n" +
@@ -511,7 +508,7 @@ namespace System.Security.Cryptography.Xml.Tests
                 "   &ent1;, &ent2;!\n" +
                 "</doc>\n" +
                 "\n" +
-                $"<!-- Let {TestHelpers.EscapePath(path)} contain \"world\" (excluding the quotes) -->\n";
+                $"<!-- Let doc.txt contain \"world\" (excluding the quotes) -->\n";
         static string ExcC14NSpecExample5Output =
                 "<doc attrExtEnt=\"entExt\">\n" +
                 "   Hello, world!\n" +

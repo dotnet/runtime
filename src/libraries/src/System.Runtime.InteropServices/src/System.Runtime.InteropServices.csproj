@@ -6,8 +6,8 @@
     <AssemblyName>System.Runtime.InteropServices</AssemblyName>
     <OutputType>Library</OutputType>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <GenFacadesIgnoreMissingTypes Condition="'$(TargetGroup)' == 'uapaot' or '$(TargetGroup)' == 'netcoreapp1.2corert'">true</GenFacadesIgnoreMissingTypes>
-    <NoWarn Condition="'$(TargetGroup)' == 'uapaot' or '$(TargetGroup)' == 'netcoreapp1.2corert'">0436;3001</NoWarn>
+    <GenFacadesIgnoreMissingTypes Condition="'$(TargetGroup)' == 'uapaot'">true</GenFacadesIgnoreMissingTypes>
+    <NoWarn Condition="'$(TargetGroup)' == 'uapaot'">0436;3001</NoWarn>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
@@ -40,7 +40,7 @@
     <Compile Include="System\Runtime\InteropServices\ExporterEventKind.cs" />
     <Compile Include="System\Runtime\InteropServices\RegistrationClassContext.cs" />
     <Compile Include="System\Runtime\InteropServices\RegistrationConnectionType.cs" />
-    <Compile Include="System\Security\SecureStringMarshal.cs" Condition="'$(TargetGroup)'!='uapaot' and '$(TargetGroup)' != 'netcoreapp1.2corert'" />
+    <Compile Include="System\Security\SecureStringMarshal.cs" Condition="'$(TargetGroup)'!='uapaot'" />
   </ItemGroup>
   <ItemGroup>
     <ReferenceFromRuntime Include="System.Private.CoreLib" />

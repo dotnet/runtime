@@ -6,8 +6,6 @@ using Xunit;
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.hide001.hide001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.hide001.hide001;
-
     // <Title> Tests overload resolution for 2 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -79,8 +77,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Inde
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.hide002.hide002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.hide002.hide002;
-
     // <Title> Tests overload resolution for 2 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -156,8 +152,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Inde
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.hide003.hide003
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.hide003.hide003;
-
     // <Title> Tests overload resolution for 2 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -231,8 +225,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Inde
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.overload001.overload001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.overload001.overload001;
-
     // <Title> Tests overload resolution for 2 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -304,8 +296,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Inde
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.overload002.overload002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.overload002.overload002;
-
     // <Title> Tests overload resolution for 2 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -376,8 +366,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Inde
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.overload003.overload003
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.overload003.overload003;
-
     // <Title> Tests overload resolution for 2 class and 2 methods</Title>
     // <Description>
     // Call methods with different accessibility level and selecting the right one.:)
@@ -459,8 +447,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Inde
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.overload004.overload004
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.overload004.overload004;
-
     // <Title> Tests overload resolution for 2 class and 2 methods</Title>
     // <Description>
     // Call methods with different accessibility level and selecting the right one.:)
@@ -532,8 +518,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Inde
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.overload005.overload005
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.overload005.overload005;
-
     // <Title> Tests overload resolution for 2 class and 2 methods</Title>
     // <Description>
     // Call methods with different accessibility level and selecting the right one.:)
@@ -605,8 +589,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Inde
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.overload006.overload006
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.overload006.overload006;
-
     // <Title> Tests overload resolution for 2 class and 2 methods</Title>
     // <Description>
     // Call methods with different accessibility level and selecting the right one.:)
@@ -678,8 +660,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Inde
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.overload007.overload007
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.overload007.overload007;
-
     // <Title> Tests overload resolution for 2 class and 2 methods</Title>
     // <Description>
     // Call methods with different accessibility level and selecting the right one.:)
@@ -750,8 +730,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Inde
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.overload008.overload008
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.overload008.overload008;
-
     // <Title> Tests overload resolution for 2 class and 2 methods</Title>
     // <Description>
     // Select the best method to call.
@@ -837,8 +815,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Inde
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.ovr001.ovr001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.ovr001.ovr001;
-
     // <Title> Tests overload resolution for 2 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -922,8 +898,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Inde
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.ovr002.ovr002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.ovr002.ovr002;
-
     // <Title> Tests overload resolution for 2 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -1007,8 +981,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Inde
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.ovr003.ovr003
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.ovr003.ovr003;
-
     // <Title> Tests overload resolution for 2 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -1092,8 +1064,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Inde
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.ovr004.ovr004
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.ovr004.ovr004;
-
     // <Title> Tests overload resolution for 2 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -1185,8 +1155,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Inde
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.ovr005.ovr005
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.ovr005.ovr005;
-
     // <Title> Tests overload resolution for 2 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -1278,8 +1246,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Inde
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.ovr006.ovr006
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.ovr006.ovr006;
-
     // <Title> Tests overload resolution for 2 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -1371,8 +1337,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Inde
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.ovr007.ovr007
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.ovr007.ovr007;
-
     // <Title> Tests overload resolution for 2 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -1464,8 +1428,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Inde
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.ovr008.ovr008
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.ovr008.ovr008;
-
     // <Title> Tests overload resolution for 2 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -1553,8 +1515,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Inde
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.ovr009.ovr009
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.ovr009.ovr009;
-
     // <Title> Tests overload resolution for 2 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -1644,8 +1604,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Inde
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.ovr010.ovr010
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.ovr010.ovr010;
-
     // <Title> Tests overload resolution for 2 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -1737,8 +1695,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Inde
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.ovr011.ovr011
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.ovr011.ovr011;
-
     // <Title> Tests overload resolution for 2 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -1830,8 +1786,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Inde
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.ovr012.ovr012
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.ovr012.ovr012;
-
     // <Title> Tests overload resolution for 2 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -1932,8 +1886,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Inde
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.ovrdynamic001.ovrdynamic001
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.ovrdynamic001.ovrdynamic001;
-
     // <Title> Tests overload resolution for 2 class and 2 methods</Title>
     // <Description>
     // </Description>
@@ -2003,8 +1955,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Inde
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.ovrdynamic002.ovrdynamic002
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Indexers.Twoclass2indexers.ovrdynamic002.ovrdynamic002;
-
     // <Title> Tests overload resolution for 2 class and 2 methods</Title>
     // <Description>
     // </Description>
