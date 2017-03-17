@@ -14519,8 +14519,7 @@ void Module::ExpandAll()
 #include "clrvarargs.h" /* for VARARG C_ASSERTs in asmconstants.h */
 class CheckAsmOffsets
 {
-#define ASMCONSTANTS_C_ASSERT(cond) \
-        typedef char UNIQUE_LABEL(__C_ASSERT__)[(cond) ? 1 : -1];
+#define ASMCONSTANTS_C_ASSERT(cond) static_assert(cond, #cond);
 #include "asmconstants.h"
 };
 

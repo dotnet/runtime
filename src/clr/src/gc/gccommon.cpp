@@ -46,23 +46,6 @@ uint32_t* g_gc_card_bundle_table;
 
 uint8_t* g_gc_lowest_address  = 0;
 uint8_t* g_gc_highest_address = 0;
-bool g_fFinalizerRunOnShutDown = false;
-
-#ifdef FEATURE_SVR_GC
-bool g_built_with_svr_gc = true;
-#else
-bool g_built_with_svr_gc = false;
-#endif // FEATURE_SVR_GC
-
-#if defined(BUILDENV_DEBUG)
-uint8_t g_build_variant = 0;
-#elif defined(BUILDENV_CHECKED)
-uint8_t g_build_variant = 1;
-#else
-uint8_t g_build_variant = 2;
-#endif // defined(BUILDENV_DEBUG)
-
-VOLATILE(int32_t) m_GCLock = -1;
 
 #ifdef GC_CONFIG_DRIVEN
 void record_global_mechanism (int mech_index)

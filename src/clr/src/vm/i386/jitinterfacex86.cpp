@@ -34,8 +34,7 @@
 #define MON_DEBUG 1
 #endif
 
-class generation;
-extern "C" generation generation_table[];
+extern "C" LONG g_global_alloc_lock;
 
 extern "C" void STDCALL JIT_WriteBarrierReg_PreGrow();// JIThelp.asm/JIThelp.s
 extern "C" void STDCALL JIT_WriteBarrierReg_PostGrow();// JIThelp.asm/JIThelp.s
@@ -562,9 +561,9 @@ void JIT_TrialAlloc::EmitCore(CPUSTUBLINKER *psl, CodeLabel *noLock, CodeLabel *
     else
     {
         // Take the GC lock (there is no lock prefix required - we will use JIT_TrialAllocSFastMP on an MP System).
-        // inc             dword ptr [m_GCLock]
+        // inc             dword ptr [g_global_alloc_lock]
         psl->Emit16(0x05ff);
-        psl->Emit32((int)(size_t)&m_GCLock);
+        psl->Emit32((int)(size_t)&g_global_alloc_lock);
 
         // jnz             NoLock
         psl->X86EmitCondJump(noLock, X86CondCode::kJNZ);
@@ -580,9 +579,9 @@ void JIT_TrialAlloc::EmitCore(CPUSTUBLINKER *psl, CodeLabel *noLock, CodeLabel *
             psl->X86EmitIndexRegLoad(kEDX, kECX, offsetof(MethodTable, m_BaseSize));
         }
 
-        // mov             eax, dword ptr [generation_table]
+        // mov             eax, dword ptr [g_global_alloc_context]
         psl->Emit8(0xA1);
-        psl->Emit32((int)(size_t)&generation_table);
+        psl->Emit32((int)(size_t)&g_global_alloc_context);
 
         // Try the allocation.
         // add             edx, eax
@@ -591,17 +590,17 @@ void JIT_TrialAlloc::EmitCore(CPUSTUBLINKER *psl, CodeLabel *noLock, CodeLabel *
         if (flags & (ALIGN8 | ALIGN8OBJ))
             EmitAlignmentRoundup(psl, kEAX, kEDX, flags);      // bump up EDX size by 12 if EAX unaligned (so that we are aligned)
 
-        // cmp             edx, dword ptr [generation_table+4]
+        // cmp             edx, dword ptr [g_global_alloc_context+4]
         psl->Emit16(0x153b);
-        psl->Emit32((int)(size_t)&generation_table + 4);
+        psl->Emit32((int)(size_t)&g_global_alloc_context + 4);
 
         // ja              noAlloc
         psl->X86EmitCondJump(noAlloc, X86CondCode::kJA);
 
         // Fill in the allocation and get out.
-        // mov             dword ptr [generation_table], edx
+        // mov             dword ptr [g_global_alloc_context], edx
         psl->Emit16(0x1589);
-        psl->Emit32((int)(size_t)&generation_table);
+        psl->Emit32((int)(size_t)&g_global_alloc_context);
 
         if (flags & (ALIGN8 | ALIGN8OBJ))
             EmitDummyObject(psl, kEAX, flags);
@@ -609,9 +608,9 @@ void JIT_TrialAlloc::EmitCore(CPUSTUBLINKER *psl, CodeLabel *noLock, CodeLabel *
         // mov             dword ptr [eax], ecx
         psl->X86EmitIndexRegStore(kEAX, 0, kECX);
 
-        // mov             dword ptr [m_GCLock], 0FFFFFFFFh
+        // mov             dword ptr [g_global_alloc_lock], 0FFFFFFFFh
         psl->Emit16(0x05C7);
-        psl->Emit32((int)(size_t)&m_GCLock);
+        psl->Emit32((int)(size_t)&g_global_alloc_lock);
         psl->Emit32(0xFFFFFFFF);
     }
 
@@ -667,9 +666,9 @@ void JIT_TrialAlloc::EmitNoAllocCode(CPUSTUBLINKER *psl, Flags flags)
     }
     else
     {
-        // mov             dword ptr [m_GCLock], 0FFFFFFFFh
+        // mov             dword ptr [g_global_alloc_lock], 0FFFFFFFFh
         psl->Emit16(0x05c7);
-        psl->Emit32((int)(size_t)&m_GCLock);
+        psl->Emit32((int)(size_t)&g_global_alloc_lock);
         psl->Emit32(0xFFFFFFFF);
     }
 }
@@ -1427,7 +1426,7 @@ void InitJITHelpers1()
 
     _ASSERTE(g_SystemInfo.dwNumberOfProcessors != 0);
 
-    JIT_TrialAlloc::Flags flags = GCHeapUtilities::UseAllocationContexts() ?
+    JIT_TrialAlloc::Flags flags = GCHeapUtilities::UseThreadAllocationContexts() ?
         JIT_TrialAlloc::MP_ALLOCATOR : JIT_TrialAlloc::NORMAL;
 
     // Get CPU features and check for SSE2 support.
