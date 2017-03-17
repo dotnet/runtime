@@ -1825,47 +1825,35 @@ emit_push_lmf (MonoCompile *cfg)
 	if (!cfg->lmf_ir)
 		return;
 
-	if (cfg->lmf_ir_mono_lmf) {
-		MonoInst *lmf_vara_ins, *lmf_ins;
-		/* Load current lmf */
-		lmf_ins = mono_create_tls_get (cfg, TLS_KEY_LMF);
-		g_assert (lmf_ins);
-		EMIT_NEW_VARLOADA (cfg, lmf_vara_ins, cfg->lmf_var, NULL);
-		/* Save previous_lmf */
-		EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, lmf_vara_ins->dreg, MONO_STRUCT_OFFSET (MonoLMF, previous_lmf), lmf_ins->dreg);
-		/* Set new LMF */
-		mono_create_tls_set (cfg, lmf_vara_ins, TLS_KEY_LMF);
-	} else {
-		int lmf_reg, prev_lmf_reg;
-		/*
-		 * Store lmf_addr in a variable, so it can be allocated to a global register.
-		 */
-		if (!cfg->lmf_addr_var)
-			cfg->lmf_addr_var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
+	int lmf_reg, prev_lmf_reg;
+	/*
+	 * Store lmf_addr in a variable, so it can be allocated to a global register.
+	 */
+	if (!cfg->lmf_addr_var)
+		cfg->lmf_addr_var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
 
 #ifdef HOST_WIN32
-		ins = mono_create_tls_get (cfg, TLS_KEY_JIT_TLS);
-		g_assert (ins);
-		int jit_tls_dreg = ins->dreg;
+	ins = mono_create_tls_get (cfg, TLS_KEY_JIT_TLS);
+	g_assert (ins);
+	int jit_tls_dreg = ins->dreg;
 
-		lmf_reg = alloc_preg (cfg);
-		EMIT_NEW_BIALU_IMM (cfg, lmf_ins, OP_PADD_IMM, lmf_reg, jit_tls_dreg, MONO_STRUCT_OFFSET (MonoJitTlsData, lmf));
+	lmf_reg = alloc_preg (cfg);
+	EMIT_NEW_BIALU_IMM (cfg, lmf_ins, OP_PADD_IMM, lmf_reg, jit_tls_dreg, MONO_STRUCT_OFFSET (MonoJitTlsData, lmf));
 #else
-		lmf_ins = mono_create_tls_get (cfg, TLS_KEY_LMF_ADDR);
-		g_assert (lmf_ins);
+	lmf_ins = mono_create_tls_get (cfg, TLS_KEY_LMF_ADDR);
+	g_assert (lmf_ins);
 #endif
-		lmf_ins->dreg = cfg->lmf_addr_var->dreg;
+	lmf_ins->dreg = cfg->lmf_addr_var->dreg;
 
-		EMIT_NEW_VARLOADA (cfg, ins, cfg->lmf_var, NULL);
-		lmf_reg = ins->dreg;
+	EMIT_NEW_VARLOADA (cfg, ins, cfg->lmf_var, NULL);
+	lmf_reg = ins->dreg;
 
-		prev_lmf_reg = alloc_preg (cfg);
-		/* Save previous_lmf */
-		EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, prev_lmf_reg, cfg->lmf_addr_var->dreg, 0);
-		EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, lmf_reg, MONO_STRUCT_OFFSET (MonoLMF, previous_lmf), prev_lmf_reg);
-		/* Set new lmf */
-		EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, cfg->lmf_addr_var->dreg, 0, lmf_reg);
-	}
+	prev_lmf_reg = alloc_preg (cfg);
+	/* Save previous_lmf */
+	EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, prev_lmf_reg, cfg->lmf_addr_var->dreg, 0);
+	EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, lmf_reg, MONO_STRUCT_OFFSET (MonoLMF, previous_lmf), prev_lmf_reg);
+	/* Set new lmf */
+	EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, cfg->lmf_addr_var->dreg, 0, lmf_reg);
 }
 
 /*
@@ -1885,26 +1873,19 @@ emit_pop_lmf (MonoCompile *cfg)
  	EMIT_NEW_VARLOADA (cfg, ins, cfg->lmf_var, NULL);
  	lmf_reg = ins->dreg;
 
-	if (cfg->lmf_ir_mono_lmf) {
-		/* Load previous_lmf */
-		EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, alloc_preg (cfg), lmf_reg, MONO_STRUCT_OFFSET (MonoLMF, previous_lmf));
-		/* Set new LMF */
-		mono_create_tls_set (cfg, ins, TLS_KEY_LMF);
-	} else {
-		int prev_lmf_reg;
-		/*
-		 * Emit IR to pop the LMF:
-		 * *(lmf->lmf_addr) = lmf->prev_lmf
-		 */
-		/* This could be called before emit_push_lmf () */
-		if (!cfg->lmf_addr_var)
-			cfg->lmf_addr_var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
-		lmf_addr_reg = cfg->lmf_addr_var->dreg;
+	int prev_lmf_reg;
+	/*
+	 * Emit IR to pop the LMF:
+	 * *(lmf->lmf_addr) = lmf->prev_lmf
+	 */
+	/* This could be called before emit_push_lmf () */
+	if (!cfg->lmf_addr_var)
+		cfg->lmf_addr_var = mono_compile_create_var (cfg, &mono_defaults.int_class->byval_arg, OP_LOCAL);
+	lmf_addr_reg = cfg->lmf_addr_var->dreg;
 
-		prev_lmf_reg = alloc_preg (cfg);
-		EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, prev_lmf_reg, lmf_reg, MONO_STRUCT_OFFSET (MonoLMF, previous_lmf));
-		EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, lmf_addr_reg, 0, prev_lmf_reg);
-	}
+	prev_lmf_reg = alloc_preg (cfg);
+	EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, prev_lmf_reg, lmf_reg, MONO_STRUCT_OFFSET (MonoLMF, previous_lmf));
+	EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, lmf_addr_reg, 0, prev_lmf_reg);
 }
 
 static void
@@ -2857,6 +2838,8 @@ emit_llvmonly_calli (MonoCompile *cfg, MonoMethodSignature *fsig, MonoInst **arg
 static gboolean
 direct_icalls_enabled (MonoCompile *cfg)
 {
+	return FALSE;
+
 	/* LLVM on amd64 can't handle calls to non-32 bit addresses */
 #ifdef TARGET_AMD64
 	if (cfg->compile_llvm && !cfg->llvm_only)

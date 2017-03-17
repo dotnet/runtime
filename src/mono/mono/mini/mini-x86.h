@@ -192,10 +192,6 @@ typedef struct {
 #define MONO_ARCH_HAVE_IS_INT_OVERFLOW 1
 #define MONO_ARCH_HAVE_INVALIDATE_METHOD 1
 #define MONO_ARCH_NEED_GOT_VAR 1
-#ifndef HOST_WIN32
-/* X86 uses jit_tls->lmf (See emit_push_lmf ()) */
-#define MONO_ARCH_ENABLE_MONO_LMF_VAR 1
-#endif
 #define MONO_ARCH_IMT_REG X86_EDX
 #define MONO_ARCH_VTABLE_REG X86_EDX
 #define MONO_ARCH_RGCTX_REG MONO_ARCH_IMT_REG

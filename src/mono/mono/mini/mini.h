@@ -1138,7 +1138,6 @@ typedef struct {
 typedef struct {
 	gpointer          end_of_stack;
 	guint32           stack_size;
-	/* !defined(HAVE_KW_THREAD) || !defined(MONO_ARCH_ENABLE_MONO_LMF_VAR) */
 	MonoLMF          *lmf;
 	MonoLMF          *first_lmf;
 	gpointer         restore_stack_prot;
@@ -1711,7 +1710,6 @@ typedef struct {
 	 * Whenever to use the mono_lmf TLS variable instead of indirection through the
 	 * mono_lmf_addr TLS variable.
 	 */
-	guint            lmf_ir_mono_lmf : 1;
 	guint            gen_write_barriers : 1;
 	guint            init_ref_vars : 1;
 	guint            extend_live_ranges : 1;

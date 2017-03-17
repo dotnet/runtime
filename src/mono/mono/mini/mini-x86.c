@@ -1180,9 +1180,6 @@ mono_arch_create_vars (MonoCompile *cfg)
 	if (cfg->method->save_lmf) {
 		cfg->create_lmf_var = TRUE;
 		cfg->lmf_ir = TRUE;
-#if !defined(HOST_WIN32) && !defined(TARGET_ANDROID)
-		cfg->lmf_ir_mono_lmf = TRUE;
-#endif
 	}
 
 	cfg->arch_eh_jit_info = 1;

@@ -719,9 +719,6 @@ register_dyn_icall (gpointer func, const char *name, const char *sigstr, gboolea
 MonoLMF *
 mono_get_lmf (void)
 {
-#if defined(MONO_ARCH_ENABLE_MONO_LMF_VAR) && defined(HAVE_GET_TLS_ADDR)
-	return (MonoLMF *)mono_tls_get_lmf ();
-#else
 	MonoJitTlsData *jit_tls;
 
 	if ((jit_tls = mono_tls_get_jit_tls ()))
@@ -732,7 +729,6 @@ mono_get_lmf (void)
 	 * (the thread object allocation can trigger a collection).
 	 */
 	return NULL;
-#endif
 }
 
 MonoLMF **
@@ -744,11 +740,7 @@ mono_get_lmf_addr (void)
 void
 mono_set_lmf (MonoLMF *lmf)
 {
-#if defined(MONO_ARCH_ENABLE_MONO_LMF_VAR) && defined(HAVE_GET_TLS_ADDR)
-	mono_tls_set_lmf (lmf);
-#else
 	(*mono_get_lmf_addr ()) = lmf;
-#endif
 }
 
 MonoJitTlsData*
@@ -880,23 +872,9 @@ setup_jit_tls_data (gpointer stack_start, gpointer abort_func)
 
 	jit_tls->first_lmf = lmf;
 
-	/*
-	 * We can have 2 configurations for accessing lmf.
-	 * We can use only the tls_lmf_addr variable, which will store the address of
-	 * jit_tls->lmf, or, if we have MONO_ARCH_ENABLE_MONO_LMF_VAR enabled, we can
-	 * use both tls_lmf_addr and tls_lmf variables (in this case we need to have
-	 * means of getting the address of a tls variable; this can be done always
-	 * when using __thread or, on osx, even when using pthread)
-	 */
-#if defined(MONO_ARCH_ENABLE_MONO_LMF_VAR) && defined(HAVE_GET_TLS_ADDR)
-	/* jit_tls->lmf is unused */
-	mono_tls_set_lmf (lmf);
-	mono_set_lmf_addr (mono_tls_get_tls_addr (TLS_KEY_LMF));
-#else
 	mono_set_lmf_addr (&jit_tls->lmf);
 
 	jit_tls->lmf = lmf;
-#endif
 
 #ifdef MONO_ARCH_HAVE_TLS_INIT
 	mono_arch_tls_init ();
@@ -3830,7 +3808,7 @@ register_icalls (void)
 		register_icall (mono_threads_state_poll, "mono_threads_state_poll", "void", FALSE);
 
 #ifndef MONO_ARCH_NO_EMULATE_LONG_MUL_OPTS
-	register_opcode_emulation (OP_LMUL, "__emul_lmul", "long long long", mono_llmult, "mono_llmult", TRUE);
+	register_opcode_emulation (OP_LMUL, "__emul_lmul", "long long long", mono_llmult, "mono_llmult", FALSE);
 	register_opcode_emulation (OP_LDIV, "__emul_ldiv", "long long long", mono_lldiv, "mono_lldiv", FALSE);
 	register_opcode_emulation (OP_LDIV_UN, "__emul_ldiv_un", "long long long", mono_lldiv_un, "mono_lldiv_un", FALSE);
 	register_opcode_emulation (OP_LREM, "__emul_lrem", "long long long", mono_llrem, "mono_llrem", FALSE);
@@ -4033,13 +4011,11 @@ register_icalls (void)
 	register_icall_no_wrapper (mono_tls_get_thread, "mono_tls_get_thread", "ptr");
 	register_icall_no_wrapper (mono_tls_get_jit_tls, "mono_tls_get_jit_tls", "ptr");
 	register_icall_no_wrapper (mono_tls_get_domain, "mono_tls_get_domain", "ptr");  
-	register_icall_no_wrapper (mono_tls_get_lmf, "mono_tls_get_lmf", "ptr");
 	register_icall_no_wrapper (mono_tls_get_sgen_thread_info, "mono_tls_get_sgen_thread_info", "ptr");
 	register_icall_no_wrapper (mono_tls_get_lmf_addr, "mono_tls_get_lmf_addr", "ptr");
 	register_icall_no_wrapper (mono_tls_set_thread, "mono_tls_set_thread", "void ptr");
 	register_icall_no_wrapper (mono_tls_set_jit_tls, "mono_tls_set_jit_tls", "void ptr");
 	register_icall_no_wrapper (mono_tls_set_domain, "mono_tls_set_domain", "void ptr");
-	register_icall_no_wrapper (mono_tls_set_lmf, "mono_tls_set_lmf", "void ptr");
 	register_icall_no_wrapper (mono_tls_set_sgen_thread_info, "mono_tls_set_sgen_thread_info", "void ptr");
 	register_icall_no_wrapper (mono_tls_set_lmf_addr, "mono_tls_set_lmf_addr", "void ptr");
 }
