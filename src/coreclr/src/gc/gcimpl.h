@@ -39,6 +39,11 @@ void GCProfileWalkHeap();
 class gc_heap;
 class CFinalize;
 
+extern bool g_fFinalizerRunOnShutDown;
+extern bool g_built_with_svr_gc;
+extern uint8_t g_build_variant;
+extern VOLATILE(int32_t) g_no_gc_lock;
+
 class GCHeap : public IGCHeapInternal
 {
 protected:
@@ -91,8 +96,6 @@ public:
     HRESULT Initialize ();
 
     //flags can be GC_ALLOC_CONTAINS_REF GC_ALLOC_FINALIZE
-    Object*  Alloc (size_t size, uint32_t flags);
-    Object*  AllocAlign8 (size_t size, uint32_t flags);
     Object*  AllocAlign8 (gc_alloc_context* acontext, size_t size, uint32_t flags);
 private:
     Object*  AllocAlign8Common (void* hp, alloc_context* acontext, size_t size, uint32_t flags);
@@ -199,6 +202,7 @@ public:
     BOOL ShouldRestartFinalizerWatchDog();
 
     void DiagWalkObject (Object* obj, walk_fn fn, void* context);
+    void SetFinalizeRunOnShutdown(bool value);
 
 public:	// FIX 
 

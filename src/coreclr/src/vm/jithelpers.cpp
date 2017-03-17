@@ -2752,7 +2752,7 @@ HCIMPL1(Object*, JIT_NewS_MP_FastPortable, CORINFO_CLASS_HANDLE typeHnd_)
 
     do
     {
-        _ASSERTE(GCHeapUtilities::UseAllocationContexts());
+        _ASSERTE(GCHeapUtilities::UseThreadAllocationContexts());
 
         // This is typically the only call in the fast path. Making the call early seems to be better, as it allows the compiler
         // to use volatile registers for intermediate values. This reduces the number of push/pop instructions and eliminates
@@ -2844,7 +2844,7 @@ HCIMPL1(StringObject*, AllocateString_MP_FastPortable, DWORD stringLength)
 
     do
     {
-        _ASSERTE(GCHeapUtilities::UseAllocationContexts());
+        _ASSERTE(GCHeapUtilities::UseThreadAllocationContexts());
 
         // Instead of doing elaborate overflow checks, we just limit the number of elements. This will avoid all overflow
         // problems, as well as making sure big string objects are correctly allocated in the big object heap.
@@ -3008,7 +3008,7 @@ HCIMPL2(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE arrayTypeHn
 
     do
     {
-        _ASSERTE(GCHeapUtilities::UseAllocationContexts());
+        _ASSERTE(GCHeapUtilities::UseThreadAllocationContexts());
 
         // Do a conservative check here.  This is to avoid overflow while doing the calculations.  We don't
         // have to worry about "large" objects, since the allocation quantum is never big enough for
@@ -3085,7 +3085,7 @@ HCIMPL2(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE arrayTypeH
 
     do
     {
-        _ASSERTE(GCHeapUtilities::UseAllocationContexts());
+        _ASSERTE(GCHeapUtilities::UseThreadAllocationContexts());
 
         // Make sure that the total size cannot reach LARGE_OBJECT_SIZE, which also allows us to avoid overflow checks. The
         // "256" slack is to cover the array header size and round-up, using a constant value here out of laziness.
