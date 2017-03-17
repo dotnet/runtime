@@ -1,0 +1,5 @@
+<linker>
+    <assembly fullname="IsInst002">
+        <type fullname="*" required="true" />
+    </assembly>
+</linker>
