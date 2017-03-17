@@ -1281,9 +1281,13 @@ mono_interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoOb
 		break;
 	case MONO_TYPE_VALUETYPE:
 		retval = mono_object_new_checked (context->domain, klass, error);
-		ret = ((char*)retval) + sizeof (MonoObject);
+		ret = mono_object_unbox (retval);
 		if (!sig->ret->data.klass->enumtype)
 			result.data.vt = ret;
+		break;
+	case MONO_TYPE_PTR:
+		retval = mono_object_new_checked (context->domain, mono_defaults.int_class, error);
+		ret = mono_object_unbox (retval);
 		break;
 	default:
 		retval = mono_object_new_checked (context->domain, klass, error);
@@ -1338,6 +1342,7 @@ handle_enum:
 			}
 			break;
 		case MONO_TYPE_STRING:
+		case MONO_TYPE_PTR:
 		case MONO_TYPE_CLASS:
 		case MONO_TYPE_ARRAY:
 		case MONO_TYPE_SZARRAY:
