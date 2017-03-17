@@ -151,7 +151,17 @@ public static class SeekUnroll
             InnerIterations = 100000;
         }
 
-        int manualLoopCount = (args != null && args.Length >= 1) ? int.Parse(args[0]) : 1;
+        int manualLoopCount = 1;
+        if (args == null || args.Length == 0)
+        {
+            Console.WriteLine("Warning: no iteration count specified; defaulting to 1 iteration per case");
+            Console.WriteLine("To use multiple iterations per case, pass the desired number of iterations as the first command-line argument to this test");
+        }
+        else
+        {
+            manualLoopCount = int.Parse(args[0]);
+        }
+
         foreach(int index in IndicesToTest)
         {
             ManualLoopTimes = new long[manualLoopCount];
