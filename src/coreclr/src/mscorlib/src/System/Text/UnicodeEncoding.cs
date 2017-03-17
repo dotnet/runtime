@@ -1781,7 +1781,7 @@ namespace System.Text
         }
 
         [Serializable]
-        private class Decoder : System.Text.DecoderNLS, ISerializable
+        private sealed class Decoder : System.Text.DecoderNLS, ISerializable
         {
             internal int lastByte = -1;
             internal char lastChar = '\0';

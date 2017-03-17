@@ -2314,7 +2314,7 @@ namespace System.Text
         }
 
         [Serializable]
-        internal class UTF8Encoder : EncoderNLS, ISerializable
+        private sealed class UTF8Encoder : EncoderNLS, ISerializable
         {
             // We must save a high surrogate value until the next call, looking
             // for a low surrogate value.
@@ -2386,7 +2386,7 @@ namespace System.Text
         }
 
         [Serializable]
-        internal class UTF8Decoder : DecoderNLS, ISerializable
+        private sealed class UTF8Decoder : DecoderNLS, ISerializable
         {
             // We'll need to remember the previous information. See the comments around definition
             // of FinalByte for details.
