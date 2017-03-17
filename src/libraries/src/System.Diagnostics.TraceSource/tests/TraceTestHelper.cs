@@ -9,8 +9,6 @@ namespace System.Diagnostics.TraceSourceTests
 {
     static class TraceTestHelper
     {
-        internal static bool IsFullFramework => RuntimeInformation.FrameworkDescription.StartsWith(".NET Framework", StringComparison.OrdinalIgnoreCase);
-
         /// <summary>
         /// Resets the static state of the trace objects before a unit test.
         /// </summary>

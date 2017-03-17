@@ -135,7 +135,7 @@ namespace System.Diagnostics.TraceSourceTests
             ArgumentException exception2 = Assert.Throws<ArgumentException>(() => new TraceSource(string.Empty, SourceLevels.All));
 
             // In Desktop in TraceSource.ctor we create the ArgumentException without param name, just with Message = "name", so ParamName is null
-            if (TraceTestHelper.IsFullFramework)
+            if (PlatformDetection.IsFullFramework)
             {
                 Assert.Null(exception1.ParamName);
                 Assert.Null(exception2.ParamName);
