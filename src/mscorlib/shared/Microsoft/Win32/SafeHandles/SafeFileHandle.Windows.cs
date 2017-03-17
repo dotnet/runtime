@@ -10,6 +10,9 @@ using Microsoft.Win32;
 
 namespace Microsoft.Win32.SafeHandles
 {
+#if PROJECTN
+    [Internal.Runtime.CompilerServices.RelocatedTypeAttribute("System.IO.FileSystem")]
+#endif
     public sealed class SafeFileHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
         private bool? _isAsync;
