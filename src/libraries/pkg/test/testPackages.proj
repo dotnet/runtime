@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+  <ItemGroup>
+    <PackageReports Condition="'$(TestPackage)' == ''" Include="$(PackageReportDir)*.json" />
+    <PackageReports Condition="'$(TestPackage)' != ''" Include="$(PackageReportDir)$(TestPackage).json" />
+
+    <!-- restrict restore sources to the current build and publicly shipped packages -->
+    <RestoreSource Include="$(PackageOutputPath)" />
+    <RestoreSource Include="https:%2F%2Fapi.nuget.org/v3/index.json" />
+
+    <!-- needed for SQLClient's SNI packages -->
+    <RestoreSource Include="https:%2F%2Fdotnet.myget.org/F/dotnet-core/api/v3/index.json" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TestProjectDir>$(PackageOutputPath)projects/</TestProjectDir>
+    <TestPackageDir>$(BinDir)testPackages</TestPackageDir>
+
+    <TestRestoreCommand>$(DotnetToolCommand)</TestRestoreCommand>
+    <TestRestoreCommand>$(TestRestoreCommand) restore</TestRestoreCommand>
+    <TestRestoreCommand>$(TestRestoreCommand) @(RestoreSource->'-s %(Identity)', ' ')</TestRestoreCommand>
+    <TestRestoreCommand>$(TestRestoreCommand) --packages "$(TestPackageDir)"</TestRestoreCommand>
+  </PropertyGroup>
+  
+  <Target Name="GetSupportedPackages">
+    <GetSupportedPackagesFromPackageReports PackageReports="@(PackageReports)">
+      <Output TaskParameter="SupportedPackages" ItemName="SupportedPackage"/>
+    </GetSupportedPackagesFromPackageReports>
+  </Target>
+
+  <Target Name="GenerateProjects"
+          DependsOnTargets="GetSupportedPackages"
+          Inputs="@(PackageReports)"
+          Outputs="$(TestProjectDir)%(SupportedPackage.Identity)/%(SupportedPackage.TargetFramework)/project.json">
+    <ItemGroup>
+      <_projectRuntimes Remove="@(_projectRuntimes)" />
+      <_projectRuntimes Include="%(SupportedPackage.RuntimeIdentifiers)" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <_projectDir>$(TestProjectDir)%(SupportedPackage.Identity)/%(SupportedPackage.TargetFramework)/</_projectDir>
+      <_projectFile>$(_projectDir)project.json</_projectFile>
+      <_packageId>%(SupportedPackage.Identity)</_packageId>
+      <_packageVersion>%(SupportedPackage.Version)</_packageVersion>
+      <_projectTFM>%(SupportedPackage.TargetFramework)</_projectTFM>
+      <_projectRuntimeSection />
+      <_projectRuntimeSection Condition="'@(_projectRuntimes)' != ''">@(_projectRuntimes->'"%(Identity)": {}', ', ')</_projectRuntimeSection>
+    </PropertyGroup>
+
+    <MakeDir Directories="$(_projectDir)" />
+    <!-- Update project.json template -->
+    <WriteLinesToFile
+      File="$(_projectFile)"
+      Lines="$([System.IO.File]::ReadAllText('project.template.json').Replace('{PackageId}', $(_packageId)).Replace('{PackageVersion}', $(_packageVersion)).Replace('{TFM}', $(_projectTFM)).Replace('{RuntimeSection}', $(_projectRuntimeSection)))"
+      Overwrite="true" />
+    <Message Text="Generated $(_projectFile)" />
+  </Target>
+
+  <Target Name="RestoreProjects"
+          DependsOnTargets="GenerateProjects"
+          Inputs="$(TestProjectDir)%(SupportedPackage.Identity)/%(SupportedPackage.TargetFramework)/project.json"
+          Outputs="$(TestProjectDir)%(SupportedPackage.Identity)'%(SupportedPackage.TargetFramework)/project.lock.json">
+    <PropertyGroup>
+      <_projectDir>$(TestProjectDir)%(SupportedPackage.Identity)/%(SupportedPackage.TargetFramework)/</_projectDir>
+      <_projectFile>$(_projectDir)project.json</_projectFile>
+    </PropertyGroup>
+
+    <Message Importance="High" Text="Testing $(_projectFile)" />
+    <Exec Command="$(TestRestoreCommand) &quot;$(_projectFile)&quot;" StandardOutputImportance="Low" ContinueOnError="ErrorAndContinue" />
+  </Target>
+
+  <Target Name="Build" DependsOnTargets="RestoreProjects" />
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
