@@ -54,10 +54,6 @@ public class PathInternal_Windows_Tests
     [PlatformSpecific(TestPlatforms.Windows)]
     public void IsExtendedTest(string path, bool expected)
     {
-        StringBuffer sb = new StringBuffer();
-        sb.Append(path);
-        Assert.Equal(expected, PathInternal.IsExtended(sb));
-
         Assert.Equal(expected, PathInternal.IsExtended(path));
     }
 
@@ -74,11 +70,6 @@ public class PathInternal_Windows_Tests
     [PlatformSpecific(TestPlatforms.Windows)]
     public void IsDeviceTest(string path, bool expected)
     {
-        StringBuffer sb = new StringBuffer();
-        sb.Append(path);
-
-        Assert.Equal(expected, PathInternal.IsDevice(sb));
-
         Assert.Equal(expected, PathInternal.IsDevice(path));
     }
 
@@ -107,10 +98,6 @@ public class PathInternal_Windows_Tests
     [PlatformSpecific(TestPlatforms.Windows)]
     public void IsPartiallyQualifiedTest(string path, bool expected)
     {
-        StringBuffer sb = new StringBuffer();
-        sb.Append(path);
-        Assert.Equal(expected, PathInternal.IsPartiallyQualified(sb));
-
         Assert.Equal(expected, PathInternal.IsPartiallyQualified(path));
     }
 
