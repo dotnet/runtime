@@ -68,6 +68,24 @@ int compact_ratio = 0;
 // See comments in reset_memory.
 BOOL reset_mm_p = TRUE;
 
+bool g_fFinalizerRunOnShutDown = false;
+
+#ifdef FEATURE_SVR_GC
+bool g_built_with_svr_gc = true;
+#else
+bool g_built_with_svr_gc = false;
+#endif // FEATURE_SVR_GC
+
+#if defined(BUILDENV_DEBUG)
+uint8_t g_build_variant = 0;
+#elif defined(BUILDENV_CHECKED)
+uint8_t g_build_variant = 1;
+#else
+uint8_t g_build_variant = 2;
+#endif // defined(BUILDENV_DEBUG)
+
+VOLATILE(int32_t) g_no_gc_lock = -1;
+
 #if defined (TRACE_GC) && !defined (DACCESS_COMPILE)
 const char * const allocation_state_str[] = {
     "start",
@@ -92,7 +110,6 @@ const char * const allocation_state_str[] = {
     "check_retry_seg"
 };
 #endif //TRACE_GC && !DACCESS_COMPILE
-
 
 // Keep this in sync with the definition of gc_reason
 #if (defined(DT_LOG) || defined(TRACE_GC)) && !defined (DACCESS_COMPILE)
@@ -149,6 +166,7 @@ size_t GetHighPrecisionTimeStamp()
     return (size_t)(ts / (qpf / 1000));    
 }
 #endif
+
 
 #ifdef GC_STATS
 // There is a current and a prior copy of the statistics.  This allows us to display deltas per reporting
@@ -2685,10 +2703,6 @@ BOOL        gc_heap::heap_analyze_enabled = FALSE;
 
 #ifndef MULTIPLE_HEAPS
 
-extern "C" {
-    generation generation_table[NUMBERGENERATIONS + 1];
-}
-
 alloc_list gc_heap::loh_alloc_list [NUM_LOH_ALIST-1];
 alloc_list gc_heap::gen2_alloc_list[NUM_GEN2_ALIST-1];
 
@@ -2731,9 +2745,7 @@ int         gc_heap::gen0_must_clear_bricks = 0;
 CFinalize*  gc_heap::finalize_queue = 0;
 #endif // FEATURE_PREMORTEM_FINALIZATION
 
-#ifdef MULTIPLE_HEAPS
 generation gc_heap::generation_table [NUMBERGENERATIONS + 1];
-#endif // MULTIPLE_HEAPS
 
 size_t     gc_heap::interesting_data_per_heap[max_idp_count];
 
@@ -5716,18 +5728,13 @@ void gc_mechanisms::record (gc_history_global* history)
 //as opposed to concurrent heap verification
 void gc_heap::fix_youngest_allocation_area (BOOL for_gc_p)
 {
-    assert (alloc_allocated);
-    alloc_context* acontext = generation_alloc_context (youngest_generation);
-    dprintf (3, ("generation 0 alloc context: ptr: %Ix, limit %Ix",
-                 (size_t)acontext->alloc_ptr, (size_t)acontext->alloc_limit));
-    fix_allocation_context (acontext, for_gc_p, get_alignment_constant (TRUE));
-    if (for_gc_p)
-    {
-        acontext->alloc_ptr = alloc_allocated;
-        acontext->alloc_limit = acontext->alloc_ptr;
-    }
-    heap_segment_allocated (ephemeral_heap_segment) =
-        alloc_allocated;
+    UNREFERENCED_PARAMETER(for_gc_p);
+
+    // The gen 0 alloc context is never used for allocation in the allocator path. It's
+    // still used in the allocation path during GCs.
+    assert (generation_allocation_pointer (youngest_generation) == nullptr);
+    assert (generation_allocation_limit (youngest_generation) == nullptr);
+    heap_segment_allocated (ephemeral_heap_segment) = alloc_allocated;
 }
 
 void gc_heap::fix_large_allocation_area (BOOL for_gc_p)
@@ -5832,12 +5839,6 @@ void void_allocation (gc_alloc_context* acontext, void*)
 void gc_heap::repair_allocation_contexts (BOOL repair_p)
 {
     GCToEEInterface::GcEnumAllocContexts (repair_p ? repair_allocation : void_allocation, NULL);
-
-    alloc_context* acontext = generation_alloc_context (youngest_generation);
-    if (repair_p)
-        repair_allocation (acontext, NULL);
-    else
-        void_allocation (acontext, NULL);
 }
 
 struct fix_alloc_context_args
@@ -5857,8 +5858,8 @@ void gc_heap::fix_allocation_contexts(BOOL for_gc_p)
     fix_alloc_context_args args;
     args.for_gc_p = for_gc_p;
     args.heap = __this;
-    GCToEEInterface::GcEnumAllocContexts(fix_alloc_context, &args);
 
+    GCToEEInterface::GcEnumAllocContexts(fix_alloc_context, &args);
     fix_youngest_allocation_area(for_gc_p);
     fix_large_allocation_area(for_gc_p);
 }
@@ -14182,7 +14183,8 @@ uint8_t* gc_heap::allocate_in_condemned_generations (generation* gen,
         to_gen_number = from_gen_number + (settings.promotion ? 1 : 0);
     }
 
-    dprintf (3, ("aic gen%d: s: %Id", gen->gen_num, size));
+    dprintf (3, ("aic gen%d: s: %Id, %d->%d, %Ix->%Ix", gen->gen_num, size, from_gen_number, 
+          to_gen_number, generation_allocation_pointer(gen), generation_allocation_limit(gen)));
 
     int pad_in_front = (old_loc != 0) ? USE_PADDING_FRONT : 0;
 
@@ -32431,36 +32433,18 @@ int                 GCHeap::m_CurStressObj          = 0;
 #endif // FEATURE_REDHAWK
 
 #endif //FEATURE_PREMORTEM_FINALIZATION
-inline
-static void spin_lock ()
-{
-    enter_spin_lock_noinstru (&m_GCLock);
-}
 
-inline
-void EnterAllocLock()
-{
-    spin_lock();
-}
-
-inline
-void LeaveAllocLock()
-{
-    // Trick this out
-    leave_spin_lock_noinstru (&m_GCLock);
-}
-
-class AllocLockHolder
+class NoGCRegionLockHolder
 {
 public:
-    AllocLockHolder()
+    NoGCRegionLockHolder()
     {
-        EnterAllocLock();
+        enter_spin_lock_noinstru(&g_no_gc_lock);
     }
 
-    ~AllocLockHolder()
+    ~NoGCRegionLockHolder()
     {
-        LeaveAllocLock();
+        leave_spin_lock_noinstru(&g_no_gc_lock);
     }
 };
 
@@ -33612,14 +33596,6 @@ HRESULT GCHeap::Init(size_t hn)
 {
     HRESULT hres = S_OK;
 
-    //Initialize all of the instance members.
-
-#ifdef MULTIPLE_HEAPS
-    m_GCLock                = -1;
-#endif //MULTIPLE_HEAPS
-
-    // Rest of the initialization
-
 #ifdef MULTIPLE_HEAPS
     if ((pGenGCHeap = gc_heap::make_gc_heap(this, (int)hn)) == 0)
         hres = E_OUTOFMEMORY;
@@ -34323,122 +34299,7 @@ BOOL GCHeap::StressHeap(gc_alloc_context * context)
 // Small Object Allocator
 //
 //
-Object *
-GCHeap::Alloc( size_t size, uint32_t flags REQD_ALIGN_DCL)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_TRIGGERS;
-    } CONTRACTL_END;
-
-    TRIGGERSGC();
-
-    Object* newAlloc = NULL;
-
-#ifdef TRACE_GC
-#ifdef COUNT_CYCLES
-    AllocStart = GetCycleCount32();
-    unsigned finish;
-#elif defined(ENABLE_INSTRUMENTATION)
-    unsigned AllocStart = GetInstLogTime();
-    unsigned finish;
-#endif //COUNT_CYCLES
-#endif //TRACE_GC
-
-#ifdef MULTIPLE_HEAPS
-    //take the first heap....
-    gc_heap* hp = gc_heap::g_heaps[0];
-#else
-    gc_heap* hp = pGenGCHeap;
-#ifdef _PREFAST_
-    // prefix complains about us dereferencing hp in wks build even though we only access static members
-    // this way. not sure how to shut it up except for this ugly workaround:
-    PREFIX_ASSUME(hp != NULL);
-#endif //_PREFAST_
-#endif //MULTIPLE_HEAPS
-
-    {
-        AllocLockHolder lh;
-
-#ifndef FEATURE_REDHAWK
-        GCStress<gc_on_alloc>::MaybeTrigger(generation_alloc_context(hp->generation_of(0)));
-#endif // FEATURE_REDHAWK
-
-        alloc_context* acontext = 0;
-
-        if (size < LARGE_OBJECT_SIZE)
-        {
-            acontext = generation_alloc_context (hp->generation_of (0));
-
-#ifdef TRACE_GC
-            AllocSmallCount++;
-#endif //TRACE_GC
-            newAlloc = (Object*) hp->allocate (size + ComputeMaxStructAlignPad(requiredAlignment), acontext);
-#ifdef FEATURE_STRUCTALIGN
-            newAlloc = (Object*) hp->pad_for_alignment ((uint8_t*) newAlloc, requiredAlignment, size, acontext);
-#endif // FEATURE_STRUCTALIGN
-            // ASSERT (newAlloc);
-        }
-        else
-        {
-            acontext = generation_alloc_context (hp->generation_of (max_generation+1));
-
-            newAlloc = (Object*) hp->allocate_large_object (size + ComputeMaxStructAlignPadLarge(requiredAlignment), acontext->alloc_bytes_loh);
-#ifdef FEATURE_STRUCTALIGN
-            newAlloc = (Object*) hp->pad_for_alignment_large ((uint8_t*) newAlloc, requiredAlignment, size);
-#endif // FEATURE_STRUCTALIGN
-        }
-    }
-
-    CHECK_ALLOC_AND_POSSIBLY_REGISTER_FOR_FINALIZATION(newAlloc, size, flags & GC_ALLOC_FINALIZE);
-
-#ifdef TRACE_GC
-#ifdef COUNT_CYCLES
-    finish = GetCycleCount32();
-#elif defined(ENABLE_INSTRUMENTATION)
-    finish = GetInstLogTime();
-#endif //COUNT_CYCLES
-    AllocDuration += finish - AllocStart;
-    AllocCount++;
-#endif //TRACE_GC
-    return newAlloc;
-}
-
-// Allocate small object with an alignment requirement of 8-bytes. Non allocation context version.
-Object *
-GCHeap::AllocAlign8( size_t size, uint32_t flags)
-{
-#ifdef FEATURE_64BIT_ALIGNMENT
-    CONTRACTL {
-        NOTHROW;
-        GC_TRIGGERS;
-    } CONTRACTL_END;
-
-    Object* newAlloc = NULL;
-
-    {
-        AllocLockHolder lh;
-
-#ifdef MULTIPLE_HEAPS
-        //take the first heap....
-        gc_heap* hp = gc_heap::g_heaps[0];
-#else
-        gc_heap* hp = pGenGCHeap;
-#endif //MULTIPLE_HEAPS
-
-        newAlloc = AllocAlign8Common(hp, generation_alloc_context (hp->generation_of (0)), size, flags);
-    }
-
-    return newAlloc;
-#else
-    UNREFERENCED_PARAMETER(size);
-    UNREFERENCED_PARAMETER(flags);
-    assert(!"should not call GCHeap::AllocAlign8 without FEATURE_64BIT_ALIGNMENT defined!");
-    return nullptr;
-#endif  //FEATURE_64BIT_ALIGNMENT
-}
-
-// Allocate small object with an alignment requirement of 8-bytes. Allocation context version.
+// Allocate small object with an alignment requirement of 8-bytes.
 Object*
 GCHeap::AllocAlign8(gc_alloc_context* ctx, size_t size, uint32_t flags )
 {
@@ -35689,7 +35550,7 @@ int GCHeap::WaitForFullGCComplete(int millisecondsTimeout)
 
 int GCHeap::StartNoGCRegion(uint64_t totalSize, BOOL lohSizeKnown, uint64_t lohSize, BOOL disallowFullBlockingGC)
 {
-    AllocLockHolder lh;
+    NoGCRegionLockHolder lh;
 
     dprintf (1, ("begin no gc called"));
     start_no_gc_region_status status = gc_heap::prepare_for_no_gc_region (totalSize, lohSizeKnown, lohSize, disallowFullBlockingGC);
@@ -35707,7 +35568,7 @@ int GCHeap::StartNoGCRegion(uint64_t totalSize, BOOL lohSizeKnown, uint64_t lohS
 
 int GCHeap::EndNoGCRegion()
 {
-    AllocLockHolder lh;
+    NoGCRegionLockHolder lh;
     return (int)gc_heap::end_no_gc_region();
 }
 
@@ -37054,6 +36915,11 @@ BOOL GCHeap::IsConcurrentGCEnabled()
 #endif //BACKGROUND_GC
 }
 
+void GCHeap::SetFinalizeRunOnShutdown(bool value)
+{
+    g_fFinalizerRunOnShutDown = value;
+}
+
 void PopulateDacVars(GcDacVars *gcDacVars)
 {
 #ifndef DACCESS_COMPILE
@@ -37081,7 +36947,7 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     gcDacVars->next_sweep_obj = &gc_heap::next_sweep_obj;
     gcDacVars->oom_info = &gc_heap::oom_info;
     gcDacVars->finalize_queue = reinterpret_cast<dac_finalize_queue**>(&gc_heap::finalize_queue);
-    gcDacVars->generation_table = reinterpret_cast<dac_generation**>(&generation_table);
+    gcDacVars->generation_table = reinterpret_cast<dac_generation**>(&gc_heap::generation_table);
 #ifdef GC_CONFIG_DRIVEN
     gcDacVars->gc_global_mechanisms = reinterpret_cast<size_t**>(&gc_global_mechanisms);
     gcDacVars->interesting_data_per_heap = reinterpret_cast<size_t**>(&gc_heap::interesting_data_per_heap);

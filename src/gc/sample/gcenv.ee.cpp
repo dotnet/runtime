@@ -15,6 +15,8 @@ int32_t g_TrapReturningThreads;
 
 EEConfig * g_pConfig;
 
+gc_alloc_context g_global_alloc_context;
+
 bool CLREventStatic::CreateManualEventNoThrow(bool bInitialState)
 {
     m_hEvent = CreateEventW(NULL, TRUE, bInitialState, NULL);
