@@ -190,7 +190,7 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]  // Unix platforms don't support accepting into an existing socket
+        [ActiveIssue(17209, TestPlatforms.AnyUnix)]
         public void AcceptAsync_WithTargetSocket_Success()
         {
             using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
@@ -206,9 +206,57 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [ActiveIssue(17209, TestPlatforms.AnyUnix)]
+        [OuterLoop] // TODO: Issue #11345
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void AcceptAsync_WithTargetSocket_ReuseAfterDisconnect_Success(bool reuseSocket)
+        {
+            using (var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            using (var server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            using (var saea = new SocketAsyncEventArgs())
+            {
+                int port = listener.BindToAnonymousPort(IPAddress.Loopback);
+                listener.Listen(1);
+
+                var are = new AutoResetEvent(false);
+                saea.Completed += delegate { are.Set(); };
+                saea.AcceptSocket = server;
+
+                using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+                {
+                    Assert.True(listener.AcceptAsync(saea));
+                    client.Connect(IPAddress.Loopback, port);
+                    are.WaitOne();
+                    Assert.Same(server, saea.AcceptSocket);
+                    Assert.True(server.Connected);
+                }
+
+                server.Disconnect(reuseSocket);
+                Assert.False(server.Connected);
+
+                if (reuseSocket)
+                {
+                    using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+                    {
+                        Assert.True(listener.AcceptAsync(saea));
+                        client.Connect(IPAddress.Loopback, port);
+                        are.WaitOne();
+                        Assert.Same(server, saea.AcceptSocket);
+                        Assert.True(server.Connected);
+                    }
+                }
+                else
+                {
+                    Assert.Throws<InvalidOperationException>(() => listener.AcceptAsync(server).GetAwaiter().GetResult());
+                }
+            }
+        }
+
         [OuterLoop] // TODO: Issue #11345
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]  // Unix platforms don't support accepting into an existing socket
+        [ActiveIssue(17209, TestPlatforms.AnyUnix)]
         public void AcceptAsync_WithAlreadyBoundTargetSocket_Failed()
         {
             using (Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
