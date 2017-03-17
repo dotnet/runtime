@@ -7,7 +7,6 @@
     <AssemblyName>FromNativePaths</AssemblyName>
     <ProjectGuid>{649A239B-AB4B-4E20-BDCA-3BA736E8B790}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <FileAlignment>512</FileAlignment>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">

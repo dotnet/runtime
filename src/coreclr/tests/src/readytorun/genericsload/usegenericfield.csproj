@@ -7,13 +7,9 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{7DECC55A-B584-4456-83BA-6C42A5B3B3CB}</ProjectGuid>
     <OutputType>exe</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
-    <ReferencePath>$(ProgramFiles)\Common Files\microsoft shared\VSTT\11.0\UITestExtensionPackages</ReferencePath>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
     <CLRTestKind>BuildAndRun</CLRTestKind>
-    <NuGetPackageImportStamp>7a9bfb7d</NuGetPackageImportStamp>
     <DefineConstants>$(DefineConstants);STATIC;CORECLR</DefineConstants>
     <ZapRequire>1</ZapRequire>
   </PropertyGroup>

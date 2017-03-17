@@ -27,8 +27,6 @@ WARNING:   When setting properties based on their current state (for example:
       <DisassemblyName>$(MSBuildProjectName).dasm.il</DisassemblyName>
       <TargetAssemblyName>$(MSBuildProjectName).asm.exe</TargetAssemblyName>
 
-      <IlasmRoundTrip Condition="'$(ReferenceLocalMscorlib)'!=''">false</IlasmRoundTrip>
-
       <IlasmRoundTripBashScript Condition="'$(IlasmRoundTrip)'=='true'">
       <![CDATA[
 echo "$CORE_ROOT/ildasm" -raweh -out=$(DisassemblyName) $(InputAssemblyName)

@@ -7,7 +7,6 @@
     <AssemblyName>DynMethodJumpStubTests</AssemblyName>
     <ProjectGuid>{742D9E05-668D-4B90-97F9-717A7572FE6C}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <FileAlignment>512</FileAlignment>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">

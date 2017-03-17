@@ -82,11 +82,8 @@ $(_XunitEpilog)
     <TargetFrameworkVersion Condition ="'$(BuildTestsAgainstPackages)' != 'true'">v4.5</TargetFrameworkVersion>
     <IsXunitWrapperProject>true</IsXunitWrapperProject>
     <SkipSigning>true</SkipSigning>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <SolutionDir Condition="%24(SolutionDir) == '' Or %24(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
-    <NuGetPackageImportStamp>7a9bfb7d</NuGetPackageImportStamp>
     <CLRTestKind>BuildOnly</CLRTestKind>
     <IsTestProject>true</IsTestProject>
     <ProjectJson Condition="'$(BuildTestsAgainstPackages)' != 'true'">%24(TestWrappersPackagesConfigFileDirectory)project.json</ProjectJson>
