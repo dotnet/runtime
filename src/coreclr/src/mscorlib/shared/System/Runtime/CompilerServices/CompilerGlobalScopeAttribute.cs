@@ -2,13 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-
 namespace System.Runtime.CompilerServices
 {
+    // Attribute used to communicate to the VS7 debugger that a class should be treated as if it has global scope.
+    
     [Serializable]
-    [AttributeUsage(AttributeTargets.Field)]
-    sealed public class FixedAddressValueTypeAttribute : Attribute
+    [AttributeUsage(AttributeTargets.Class)]
+    public class CompilerGlobalScopeAttribute : Attribute
     {
+        public CompilerGlobalScopeAttribute() { }
     }
 }
+
