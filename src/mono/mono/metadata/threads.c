@@ -259,8 +259,6 @@ mono_threads_begin_abort_protected_block (void)
 
 		new_state = 0;
 		if (old_state & (INTERRUPT_REQUESTED_BIT | INTERRUPT_REQUEST_DEFERRED_BIT)) {
-			if (old_state & INTERRUPT_REQUESTED_BIT)
-				printf ("begin prot happy as it demoted interrupt to deferred interrupt\n");
 			new_state |= INTERRUPT_REQUEST_DEFERRED_BIT;
 		}
 
@@ -285,7 +283,6 @@ mono_threads_end_abort_protected_block (void)
 		new_state = 0;
 
 		if ((old_state & INTERRUPT_REQUEST_DEFERRED_BIT) && new_val == 0) {
-			printf ("end abort on alert, promoted deferred to pront interrupt\n");
 			new_state |= INTERRUPT_REQUESTED_BIT;
 		}
 
@@ -371,7 +368,6 @@ mono_thread_set_interruption_requested (MonoInternalThread *thread)
 
 		//If there's an outstanding prot block, we queue it
 		if (prot_count && !force_interrupt) {
-			printf ("set interrupt unhappy, as it's only putting a deferred req %d\n", force_interrupt);
 			new_state = old_state | INTERRUPT_REQUEST_DEFERRED_BIT;
 		} else
 			new_state = old_state | INTERRUPT_REQUESTED_BIT;
