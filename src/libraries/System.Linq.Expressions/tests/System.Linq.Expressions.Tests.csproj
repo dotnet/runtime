@@ -50,9 +50,6 @@
     <ReferenceFromRuntime Include="System.Runtime.InteropServices" />
     <ReferenceFromRuntime Include="System.Private.Interop" />
     <ReferenceFromRuntime Include="netstandard" />
-    <Reference Include="System.Reflection.Emit.ILGeneration" />
-    <Reference Include="System.Reflection.Emit" />
-    <Reference Include="System.Reflection.Emit.Lightweight" />
   </ItemGroup>
   <ItemGroup>
     <!-- Remove this when TypeBuilder extends TypeInfo. See https://github.com/dotnet/corefx/issues/14334 -->
