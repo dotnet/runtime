@@ -218,7 +218,7 @@ void InitJITHelpers1()
         ))
     {
         // if (multi-proc || server GC)
-        if (GCHeapUtilities::UseAllocationContexts())
+        if (GCHeapUtilities::UseThreadAllocationContexts())
         {
 #ifdef FEATURE_IMPLICIT_TLS
             SetJitHelperFunction(CORINFO_HELP_NEWSFAST, JIT_NewS_MP_FastPortable);
