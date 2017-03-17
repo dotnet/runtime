@@ -4445,7 +4445,7 @@ mono_thread_request_interruption (gboolean running_managed)
 /*This function should be called by a thread after it has exited all of
  * its handle blocks at interruption time.*/
 MonoException*
-mono_thread_resume_interruption (void)
+mono_thread_resume_interruption (gboolean exec)
 {
 	MonoInternalThread *thread = mono_thread_internal_current ();
 	gboolean still_aborting;
@@ -4460,14 +4460,17 @@ mono_thread_resume_interruption (void)
 
 	/*This can happen if the protected block called Thread::ResetAbort*/
 	if (!still_aborting)
-		return FALSE;
+		return NULL;
 
 	if (!mono_thread_set_interruption_requested (thread))
 		return NULL;
 
 	mono_thread_info_self_interrupt ();
 
-	return mono_thread_execute_interruption ();
+	if (exec)
+		return mono_thread_execute_interruption ();
+	else
+		return NULL;
 }
 
 gboolean mono_thread_interruption_requested ()
@@ -5132,20 +5135,6 @@ mono_threads_detach_coop (gpointer cookie, gpointer *dummy)
 				mono_domain_set (orig, TRUE);
 		}
 	}
-}
-
-MonoException*
-mono_thread_try_resume_interruption (void)
-{
-	MonoInternalThread *thread;
-
-	thread = mono_thread_internal_current ();
-	if (!mono_get_eh_callbacks ()->mono_above_abort_threshold ())
-		return NULL;
-	if (mono_thread_get_abort_prot_block_count (thread) > 0 || mono_get_eh_callbacks ()->mono_current_thread_has_handle_block_guard ())
-		return NULL;
-
-	return mono_thread_resume_interruption ();
 }
 
 #if 0
