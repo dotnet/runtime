@@ -3729,10 +3729,11 @@ void ZapInfo::getMethodVTableOffset(CORINFO_METHOD_HANDLE method,
 
 CORINFO_METHOD_HANDLE ZapInfo::resolveVirtualMethod(
         CORINFO_METHOD_HANDLE virtualMethod,
-        CORINFO_CLASS_HANDLE implementingClass
+        CORINFO_CLASS_HANDLE implementingClass,
+        CORINFO_CONTEXT_HANDLE ownerType
         )
 {
-    return m_pEEJitInfo->resolveVirtualMethod(virtualMethod, implementingClass);
+    return m_pEEJitInfo->resolveVirtualMethod(virtualMethod, implementingClass, ownerType);
 }
 
 CorInfoIntrinsics ZapInfo::getIntrinsicID(CORINFO_METHOD_HANDLE method,
