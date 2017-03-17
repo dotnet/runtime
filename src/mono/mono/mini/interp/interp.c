@@ -4077,8 +4077,9 @@ array_constructed:
 		}
 die_on_ex:
 		ex_obj = (MonoObject*)frame->ex;
-		mono_unhandled_exception (ex_obj);
-		exit (1);
+		MonoJitTlsData *jit_tls = (MonoJitTlsData *) mono_tls_get_jit_tls ();
+		jit_tls->abort_func (ex_obj);
+		g_assert_not_reached ();
 	}
 	handle_finally:
 	{
