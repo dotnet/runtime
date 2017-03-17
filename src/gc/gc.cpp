@@ -5800,9 +5800,10 @@ void gc_heap::fix_allocation_context (alloc_context* acontext, BOOL for_gc_p,
         alloc_contexts_used ++;
     }
 
-
     if (for_gc_p)
     {
+        // We need to update the alloc_bytes to reflect the portion that we have not used  
+        acontext->alloc_bytes -= (acontext->alloc_limit - acontext->alloc_ptr);  
         acontext->alloc_ptr = 0;
         acontext->alloc_limit = acontext->alloc_ptr;
     }
@@ -11375,6 +11376,13 @@ void gc_heap::adjust_limit_clr (uint8_t* start, size_t limit_size,
         }
         acontext->alloc_ptr = start;
     }
+    else  
+    {  
+        // If the next alloc context is right up against the current one it means we are absorbing the min  
+        // object, so need to account for that.  
+        acontext->alloc_bytes += (start - acontext->alloc_limit);  
+    }  
+
     acontext->alloc_limit = (start + limit_size - aligned_min_obj_size);
     acontext->alloc_bytes += limit_size - ((gen_number < max_generation + 1) ? aligned_min_obj_size : 0);
 
