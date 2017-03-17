@@ -17,6 +17,10 @@
     <ValidatePackageSuppression Include="PermitImplementation">
       <Value>.NETCoreApp,Version=v1.1/win10-arm64;.NETCoreApp,Version=v2.0/win10-arm64</Value>
     </ValidatePackageSuppression>
+
+    <!-- this package is part of the implementation closure of NETStandard.Library
+         therefore it cannot reference NETStandard.Library -->
+    <SuppressMetaPackage Include="NETStandard.Library" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
