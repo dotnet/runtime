@@ -20,11 +20,12 @@
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\BCrypt\Interop.BCryptGenRandom.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.CancelIoEx.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.CloseHandle.cs"/>
-    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.CreateFile.cs" Condition="'$(IsProjectNLibrary)' != 'true'"/>
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.CreateFile.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.CreateFile2.cs" Condition="'$(IsProjectNLibrary)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.FileTypes.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.FlushFileBuffers.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.FormatMessage.cs"/>
-    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.GetFileInformationByHandleEx.cs" Condition="'$(IsProjectNLibrary)' != 'true'"/>
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.GetFileInformationByHandleEx.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.GetFileType_SafeHandle.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.GetFullPathNameW.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.GetLongPathNameW.cs"/>
@@ -132,9 +133,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\InvalidProgramException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\InvalidTimeZoneException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Error.cs"/>
-    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.cs" Condition="'$(IsProjectNLibrary)' != 'true'"/>
-    <Compile Include="$(MSBuildThisFileDirectory)System\IO\Path.cs" Condition="'$(IsProjectNLibrary)' != 'true'"/>
-    <Compile Include="$(MSBuildThisFileDirectory)System\IO\PathInternal.cs" Condition="'$(IsProjectNLibrary)' != 'true'"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\Path.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\PathInternal.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IObservable.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\IObserver.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\IProgress.cs"/>
@@ -209,14 +210,16 @@
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\CriticalHandleZeroOrMinusOneIsInvalid.cs"/>
   </ItemGroup>
   <ItemGroup Condition="$(TargetsWindows)">
-    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.Win32.cs" Condition="'$(IsProjectNLibrary)' != 'true'"/>
-    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStreamCompletionSource.Win32.cs" Condition="'$(IsProjectNLibrary)' != 'true'"/>
-    <Compile Include="$(MSBuildThisFileDirectory)System\IO\Path.Windows.cs" Condition="'$(IsProjectNLibrary)' != 'true'"/>
-    <Compile Include="$(MSBuildThisFileDirectory)System\IO\PathHelper.Windows.cs" Condition="'$(IsProjectNLibrary)' != 'true'"/>
-    <Compile Include="$(MSBuildThisFileDirectory)System\IO\PathInternal.Windows.cs" Condition="'$(IsProjectNLibrary)' != 'true'"/>
-    <Compile Include="$(MSBuildThisFileDirectory)System\IO\PathInternal.Windows.StringBuffer.cs" Condition="'$(IsProjectNLibrary)' != 'true'"/>
-    <Compile Include="$(MSBuildThisFileDirectory)System\IO\Win32Marshal.cs"/>
-    <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFileHandle.Windows.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.Win32.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.WinRT.cs" Condition="'$(IsProjectNLibrary)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.Windows.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStreamCompletionSource.Win32.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\Path.Windows.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\PathHelper.Windows.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\PathInternal.Windows.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\PathInternal.Windows.StringBuffer.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\Win32Marshal.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFileHandle.Windows.cs" />
   </ItemGroup>
   <ItemGroup Condition="$(TargetsUnix)">
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.Unix.cs"/>

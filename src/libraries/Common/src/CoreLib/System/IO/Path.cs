@@ -11,6 +11,9 @@ namespace System.IO
     // Provides methods for processing file system strings in a cross-platform manner.
     // Most of the methods don't do a complete parsing (such as examining a UNC hostname), 
     // but they will handle most string operations.
+#if PROJECTN
+    [Internal.Runtime.CompilerServices.RelocatedTypeAttribute("System.Runtime.Extensions")]
+#endif
     public static partial class Path
     {
         // Public static readonly variant of the separators. The Path implementation itself is using
