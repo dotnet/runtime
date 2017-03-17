@@ -231,20 +231,24 @@ namespace Mono.Linker.Steps {
 		protected virtual void MarkCustomAttribute (CustomAttribute ca)
 		{
 			Annotations.Push (ca);
-			MarkMethod (ca.Constructor);
+			try {
+				MarkMethod (ca.Constructor);
 
-			MarkCustomAttributeArguments (ca);
+				MarkCustomAttributeArguments (ca);
 
-			TypeReference constructor_type = ca.Constructor.DeclaringType;
-			TypeDefinition type = constructor_type.Resolve ();
-			if (type == null) {
+				TypeReference constructor_type = ca.Constructor.DeclaringType;
+				TypeDefinition type = constructor_type.Resolve ();
+
+				if (type == null) {
+					HandleUnresolvedType (constructor_type);
+					return;
+				}
+
+				MarkCustomAttributeProperties (ca, type);
+				MarkCustomAttributeFields (ca, type);
+			} finally {
 				Annotations.Pop ();
-				throw new ResolutionException (constructor_type);
 			}
-
-			MarkCustomAttributeProperties (ca, type);
-			MarkCustomAttributeFields (ca, type);
-			Annotations.Pop ();
 		}
 
 		protected void MarkSecurityDeclarations (ISecurityDeclarationProvider provider)
@@ -524,8 +528,10 @@ namespace Mono.Linker.Steps {
 
 			TypeDefinition type = ResolveTypeDefinition (reference);
 
-			if (type == null)
-				throw new ResolutionException (reference);
+			if (type == null) {
+				HandleUnresolvedType (reference);
+				return null;
+			}
 
 			if (CheckProcessed (type))
 				return null;
@@ -963,17 +969,19 @@ namespace Mono.Linker.Steps {
 
 			MethodDefinition method = ResolveMethodDefinition (reference);
 
-			if (method == null) {
+			try {
+				if (method == null) {
+					HandleUnresolvedMethod (reference);
+					return null;
+				}
+
+				if (Annotations.GetAction (method) == MethodAction.Nothing)
+					Annotations.SetAction (method, MethodAction.Parse);
+
+				EnqueueMethod (method);
+			} finally {
 				Annotations.Pop ();
-				throw new ResolutionException (reference);
 			}
-
-			if (Annotations.GetAction (method) == MethodAction.Nothing)
-				Annotations.SetAction (method, MethodAction.Parse);
-
-			EnqueueMethod (method);
-
-			Annotations.Pop ();
 			Annotations.AddDependency (method);
 
 			return method;
@@ -1213,6 +1221,16 @@ namespace Mono.Linker.Steps {
 			default:
 				break;
 			}
+		}
+
+		protected virtual void HandleUnresolvedType (TypeReference reference)
+		{
+			throw new ResolutionException (reference);
+		}
+
+		protected virtual void HandleUnresolvedMethod (MethodReference reference)
+		{
+			throw new ResolutionException (reference);
 		}
 	}
 }
