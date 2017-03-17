@@ -323,6 +323,9 @@ mono_thread_clear_interruption_requested (MonoInternalThread *thread)
 		else
 			new_state = old_state & ~INTERRUPT_ASYNC_REQUESTED_BIT;
 	} while (InterlockedCompareExchangePointer ((volatile gpointer)&thread->thread_state, (gpointer)new_state, (gpointer)old_state) != (gpointer)old_state);
+
+	InterlockedDecrement (&thread_interruption_requested);
+
 	return TRUE;
 }
 
@@ -346,6 +349,8 @@ mono_thread_set_interruption_requested (MonoInternalThread *thread)
 		else
 			new_state = old_state | INTERRUPT_ASYNC_REQUESTED_BIT;
 	} while (InterlockedCompareExchangePointer ((volatile gpointer)&thread->thread_state, (gpointer)new_state, (gpointer)old_state) != (gpointer)old_state);
+
+	InterlockedIncrement (&thread_interruption_requested);
 
 	return sync || !(new_state & ABORT_PROT_BLOCK_MASK);
 }
@@ -1138,8 +1143,7 @@ mono_thread_detach_internal (MonoInternalThread *thread)
 	Leaving the counter unbalanced will cause a performance degradation since all threads
 	will now keep checking their local flags all the time.
 	*/
-	if (mono_thread_clear_interruption_requested (thread))
-		InterlockedDecrement (&thread_interruption_requested);
+	mono_thread_clear_interruption_requested (thread);
 
 	mono_threads_lock ();
 
@@ -4357,8 +4361,6 @@ mono_thread_execute_interruption (void)
 #ifdef HOST_WIN32
 		WaitForSingleObjectEx (GetCurrentThread(), 0, TRUE);
 #endif
-		InterlockedDecrement (&thread_interruption_requested);
-
 		/* Clear the interrupted flag of the thread so it can wait again */
 		mono_thread_info_clear_self_interrupt ();
 	}
@@ -4419,7 +4421,6 @@ mono_thread_request_interruption (gboolean running_managed)
 
 	if (!mono_thread_set_interruption_requested (thread))
 		return NULL;
-	InterlockedIncrement (&thread_interruption_requested);
 
 	if (!running_managed || is_running_protected_wrapper ()) {
 		/* Can't stop while in unmanaged code. Increase the global interruption
@@ -4463,7 +4464,6 @@ mono_thread_resume_interruption (void)
 
 	if (!mono_thread_set_interruption_requested (thread))
 		return NULL;
-	InterlockedIncrement (&thread_interruption_requested);
 
 	mono_thread_info_self_interrupt ();
 
@@ -4720,8 +4720,6 @@ async_abort_critical (MonoThreadInfo *info, gpointer ud)
 	if (!mono_thread_set_interruption_requested (thread))
 		return MonoResumeThread;
 
-	InterlockedIncrement (&thread_interruption_requested);
-
 	ji = mono_thread_info_get_last_managed (info);
 	protected_wrapper = ji && !ji->is_trampoline && !ji->async && mono_threads_is_critical_method (mono_jit_info_get_method (ji));
 	running_managed = mono_jit_info_match (ji, MONO_CONTEXT_GET_IP (&mono_thread_info_get_suspend_state (info)->ctx));
@@ -4812,8 +4810,7 @@ async_suspend_critical (MonoThreadInfo *info, gpointer ud)
 			return KeepSuspended;
 		}
 	} else {
-		if (mono_thread_set_interruption_requested (thread))
-			InterlockedIncrement (&thread_interruption_requested);
+		mono_thread_set_interruption_requested (thread);
 		if (data->interrupt)
 			data->interrupt_token = mono_thread_info_prepare_interrupt ((MonoThreadInfo *)thread->thread_info);
 
