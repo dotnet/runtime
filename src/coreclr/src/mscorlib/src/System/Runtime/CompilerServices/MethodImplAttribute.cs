@@ -11,31 +11,6 @@ namespace System.Runtime.CompilerServices
     // This Enum matchs the miImpl flags defined in corhdr.h. It is used to specify 
     // certain method properties.
 
-    [Serializable]
-    [Flags]
-    public enum MethodImplOptions
-    {
-        Unmanaged = System.Reflection.MethodImplAttributes.Unmanaged,
-        ForwardRef = System.Reflection.MethodImplAttributes.ForwardRef,
-        PreserveSig = System.Reflection.MethodImplAttributes.PreserveSig,
-        InternalCall = System.Reflection.MethodImplAttributes.InternalCall,
-        Synchronized = System.Reflection.MethodImplAttributes.Synchronized,
-        NoInlining = System.Reflection.MethodImplAttributes.NoInlining,
-        AggressiveInlining = System.Reflection.MethodImplAttributes.AggressiveInlining,
-        NoOptimization = System.Reflection.MethodImplAttributes.NoOptimization,
-        // **** If you add something, update internal MethodImplAttribute(MethodImplAttributes methodImplAttributes)! ****
-    }
-
-    [Serializable]
-    public enum MethodCodeType
-    {
-        IL = System.Reflection.MethodImplAttributes.IL,
-        Native = System.Reflection.MethodImplAttributes.Native,
-        /// <internalonly/>
-        OPTIL = System.Reflection.MethodImplAttributes.OPTIL,
-        Runtime = System.Reflection.MethodImplAttributes.Runtime
-    }
-
     // Custom attribute to specify additional method properties.
     [Serializable]
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor, Inherited = false)]
