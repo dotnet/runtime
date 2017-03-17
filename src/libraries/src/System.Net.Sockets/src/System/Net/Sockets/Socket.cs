@@ -3730,7 +3730,7 @@ namespace System.Net.Sockets
 
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"AcceptSocket:{acceptSocket}");
 
-            int socketAddressSize = _rightEndPoint.Serialize().Size;
+            int socketAddressSize = GetAddressSize(_rightEndPoint);
             SocketError errorCode = SocketPal.AcceptAsync(this, _handle, acceptHandle, receiveSize, socketAddressSize, asyncResult);
 
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Interop.Winsock.AcceptEx returns:{errorCode} {asyncResult}");
@@ -4470,6 +4470,15 @@ namespace System.Net.Sockets
             bool isIPv4MappedToIPv6 = socketAddress.Family == AddressFamily.InterNetworkV6 && socketAddress.GetIPAddress().IsIPv4MappedToIPv6;
             isIPv4 = addressFamily == AddressFamily.InterNetwork || isIPv4MappedToIPv6; // DualMode
             isIPv6 = addressFamily == AddressFamily.InterNetworkV6;
+        }
+
+        internal static int GetAddressSize(EndPoint endPoint)
+        {
+            AddressFamily fam = endPoint.AddressFamily;
+            return
+                fam == AddressFamily.InterNetwork ? SocketAddressPal.IPv4AddressSize :
+                fam == AddressFamily.InterNetworkV6 ? SocketAddressPal.IPv6AddressSize :
+                endPoint.Serialize().Size;
         }
 
         private Internals.SocketAddress SnapshotAndSerialize(ref EndPoint remoteEP)
