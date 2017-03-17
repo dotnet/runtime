@@ -18,6 +18,7 @@ using System.Reflection.Metadata.Ecma335;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Cryptography.Xml;
+using System.Text;
 using System.Xml;
 using Xunit;
 
@@ -25,6 +26,30 @@ namespace System.Security.Cryptography.Xml.Tests
 {
     public class EncryptedXmlTest
     {
+        [Fact]
+        public void Constructor_Default()
+        {
+            EncryptedXml encryptedXml = new EncryptedXml();
+            Assert.Equal(Encoding.UTF8, encryptedXml.Encoding);
+            Assert.Equal(CipherMode.CBC, encryptedXml.Mode);
+            Assert.Equal(PaddingMode.ISO10126, encryptedXml.Padding);
+            Assert.Equal(string.Empty, encryptedXml.Recipient);
+            Assert.Equal(null, encryptedXml.Resolver);
+            Assert.Equal(20, encryptedXml.XmlDSigSearchDepth);
+        }
+
+        [Fact]
+        public void Constructor_XmlDocument()
+        {
+            EncryptedXml encryptedXml = new EncryptedXml(null);
+            Assert.Equal(Encoding.UTF8, encryptedXml.Encoding);
+            Assert.Equal(CipherMode.CBC, encryptedXml.Mode);
+            Assert.Equal(PaddingMode.ISO10126, encryptedXml.Padding);
+            Assert.Equal(string.Empty, encryptedXml.Recipient);
+            Assert.Equal(null, encryptedXml.Resolver);
+            Assert.Equal(20, encryptedXml.XmlDSigSearchDepth);
+        }
+
         [Fact]
         public void Sample1()
         {
@@ -89,7 +114,7 @@ namespace System.Security.Cryptography.Xml.Tests
             }
         }
 
-        [Fact(Skip = "TODO: fix me")]
+        [Fact]
         public void Sample3()
         {
             AssertDecryption1("System.Security.Cryptography.Xml.Tests.EncryptedXmlSample3.xml");
@@ -224,16 +249,23 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Throws<ArgumentNullException>(() => ex.GetDecryptionIV(null, EncryptedXml.XmlEncAES128Url));
         }
 
-        [Fact(Skip = "TODO: fix me")]
-        public void GetDecryptionIV_StringNull()
+        [Fact]
+        public void GetDecryptionIV_StringNullWithEncryptionMethod()
         {
-            // Added EncryptionMethod and CipherData to avoid a CryptographicException
-
             EncryptedXml ex = new EncryptedXml();
             EncryptedData encryptedData = new EncryptedData();
             encryptedData.EncryptionMethod = new EncryptionMethod(EncryptedXml.XmlEncAES256Url);
             encryptedData.CipherData = new CipherData(new byte[16]);
-            Assert.Null(ex.GetDecryptionIV(encryptedData, null));
+            Assert.Equal(new byte[16], ex.GetDecryptionIV(encryptedData, null));
+        }
+
+        [Fact]
+        public void GetDecryptionIV_StringNullWithoutEncryptionMethod()
+        {
+            EncryptedXml ex = new EncryptedXml();
+            EncryptedData encryptedData = new EncryptedData();
+            encryptedData.CipherData = new CipherData(new byte[16]);
+            Assert.Throws<CryptographicException>(() => ex.GetDecryptionIV(encryptedData, null));
         }
 
         [Fact]
