@@ -69,7 +69,7 @@ LOCAL_LABEL(NoFloatingPoint):
     ldr     x9, [x19,#CallDescrData__pTarget]
     blr     x9
 
-    ldr     x19, [fp, 24] // Fixup corrupted X19 callee preserved register
+    ldr     x19, [fp, 24] // Fixup corrupted X19 caller preserved register
 
     ldr     w3, [x19,#CallDescrData__fpReturnSize]
 
