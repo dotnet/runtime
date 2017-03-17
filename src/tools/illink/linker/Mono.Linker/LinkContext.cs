@@ -28,8 +28,8 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
-
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 
@@ -202,6 +202,19 @@ namespace Mono.Linker {
 				} else
 					assembly.MainModule.ReadSymbols ();
 			} catch {}
+		}
+
+		public virtual ICollection<AssemblyDefinition> ResolveReferences (AssemblyDefinition assembly)
+		{
+			List<AssemblyDefinition> references = new List<AssemblyDefinition> ();
+			foreach (AssemblyNameReference reference in assembly.MainModule.AssemblyReferences) {
+				try {
+					references.Add (Resolve (reference));
+				}
+				catch (AssemblyResolutionException) {
+				}
+			}
+			return references;
 		}
 
 		static AssemblyNameReference GetReference (IMetadataScope scope)
