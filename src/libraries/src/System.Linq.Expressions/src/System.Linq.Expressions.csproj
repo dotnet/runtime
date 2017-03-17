@@ -36,9 +36,6 @@
     <ProjectReference Include="..\..\System.ObjectModel\src\System.ObjectModel.csproj" />
     <ProjectReference Include="..\..\System.Reflection.Primitives\src\System.Reflection.Primitives.csproj" />
     <ProjectReference Include="..\..\System.Linq\src\System.Linq.csproj" />
-    <Reference Include="System.Reflection.Emit.ILGeneration" /> <!-- Have to add reference to ref because the contract is not fulfilled yet -->
-    <Reference Include="System.Reflection.Emit" /> <!-- Have to add reference to ref because the contract is not fulfilled yet -->
-    <Reference Include="System.Reflection.Emit.Lightweight" /> <!-- Have to add reference to ref because the contract is not fulfilled yet -->
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'uapaot'">
     <Reference Include="System.Collections" />
