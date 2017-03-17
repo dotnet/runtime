@@ -5939,10 +5939,7 @@ namespace System.Data.SqlClient
                     _physicalStateObj.SniContext = SniContext.Snix_LoginSspi;
 
                     SSPIData(null, 0, ref outSSPIBuff, ref outSSPILength);
-                    if (TdsParserStateObjectFactory.UseManagedSNI)
-                    {
-                        outSSPILength = outSSPIBuff != null ? (uint)outSSPIBuff.Length : 0;
-                    }
+                    
                     if (outSSPILength > Int32.MaxValue)
                     {
                         throw SQL.InvalidSSPIPacketSize();  // SqlBu 332503
