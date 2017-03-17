@@ -117,7 +117,11 @@ if /i "%1" == "release"             (set __BuildTypeRelease=1&set processedArgs=
 
 REM All arguments after this point will be passed through directly to build.cmd on nested invocations
 REM using the "all" argument, and must be added to the __PassThroughArgs variable.
-set __PassThroughArgs=%__PassThroughArgs% %1
+if [!__PassThroughArgs!]==[] (
+    set __PassThroughArgs=%1
+) else (
+    set __PassThroughArgs=%__PassThroughArgs% %1
+)
 
 if /i "%1" == "freebsdmscorlib"     (set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildOS=FreeBSD&set __SkipNugetPackage=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "linuxmscorlib"       (set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildOS=Linux&set __SkipNugetPackage=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
