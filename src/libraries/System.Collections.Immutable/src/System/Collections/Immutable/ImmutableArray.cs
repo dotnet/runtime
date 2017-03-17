@@ -137,7 +137,7 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
-        /// Creates an empty <see cref="ImmutableArray{T}"/>.
+        /// Creates an <see cref="ImmutableArray{T}"/> with the specified elements.
         /// </summary>
         /// <typeparam name="T">The type of element stored in the array.</typeparam>
         /// <param name="items">The elements to store in the array.</param>
