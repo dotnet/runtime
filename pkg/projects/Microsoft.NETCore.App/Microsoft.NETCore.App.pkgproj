@@ -66,6 +66,7 @@
     <!-- references the host packages -->
     <Dependency Include="Microsoft.NETCore.DotNetAppHost">
        <Version>$(AppHostFullVersion)</Version>
+      <TargetFramework>.NETCoreApp2.0</TargetFramework>
     </Dependency>
 
     <!-- Add a placeholder to make sure NuGet understands we still support older versions,
