@@ -233,12 +233,13 @@ del %CORE_ROOT%\mscorlib.ni.dll
 
 set __BuildLogRootName=TestRunResults
 call :msbuild "%__ProjectFilesDir%\runtest.proj" /p:Runtests=true /clp:showcommandline
+set __errorlevel=%errorlevel%
 
 if "%__CollectDumps%"=="true" (
     python "%__DumplingHelperPath%" collect_dump %errorlevel% "%__CrashDumpFolder%" %__StartTime% "CoreCLR_Tests"
 )
 
-if errorlevel 1 (
+if %__errorlevel% GEQ 1 (
     echo Test Run failed. Refer to the following:
     echo     Html report: %__TestRunHtmlLog%
     exit /b 1
