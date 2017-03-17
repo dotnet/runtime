@@ -40,6 +40,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [ActiveIssue(17235)]
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)] // Not supported via OpenSSL
         [Fact]
         public static void Constructor_StoreHandle()
