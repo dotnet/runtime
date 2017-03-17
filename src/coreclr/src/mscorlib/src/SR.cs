@@ -945,4 +945,16 @@ internal static class SR
 
     internal static string Arg_EnumIllegalVal =>
         Environment.GetResourceString("Arg_EnumIllegalVal");
+
+    internal static string InvalidOperation_NoPublicAddMethod =>
+        Environment.GetResourceString("InvalidOperation_NoPublicAddMethod");
+
+    internal static string InvalidOperation_NoPublicRemoveMethod =>
+        Environment.GetResourceString("InvalidOperation_NoPublicRemoveMethod");
+
+    internal static string InvalidOperation_NotSupportedOnWinRTEvent =>
+        Environment.GetResourceString("InvalidOperation_NotSupportedOnWinRTEvent");
+
+    internal static string NotSupported_AbstractNonCLS =>
+        Environment.GetResourceString("NotSupported_AbstractNonCLS");
 }
