@@ -31,8 +31,8 @@ namespace System.IO
         // buffer is negated by the win of allocating a smaller byte[], which 
         // saves construction time.  This does break adaptive buffering,
         // but this is slightly faster.
-        internal const int DefaultBufferSize = 1024;  // Byte buffer size
-        internal const int DefaultFileStreamBufferSize = 4096;
+        private const int DefaultBufferSize = 1024;  // Byte buffer size
+        private const int DefaultFileStreamBufferSize = 4096;
         private const int MinBufferSize = 128;
 
         private Stream _stream;
@@ -187,7 +187,8 @@ namespace System.IO
             if (bufferSize <= 0)
                 throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
 
-            Stream stream = FileStreamHelpers.CreateFileStream(path, write: false, append: false);
+            Stream stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 
+                DefaultFileStreamBufferSize, FileOptions.SequentialScan);
             Init(stream, encoding, detectEncodingFromByteOrderMarks, bufferSize, leaveOpen: false);
         }
 
