@@ -33,25 +33,40 @@ namespace System.Linq.Expressions.Tests
             // we'd therefore end up with multiple copies of the last result.
             foreach (object[] received in delegatedTo.GetData(testMethod))
             {
+#if FEATURE_COMPILE
                 object[] withFalse = new object[received.Length + 1];
-#if FEATURE_COMPILE && FEATURE_INTERPRET
+#endif
+
+#if FEATURE_INTERPRET
                 object[] withTrue = new object[received.Length + 1];
 #endif
 
+#if FEATURE_COMPILE
                 withFalse[received.Length] = s_boxedFalse;
-#if FEATURE_COMPILE && FEATURE_INTERPRET
+#endif
+
+#if FEATURE_INTERPRET
                 withTrue[received.Length] = s_boxedTrue;
 #endif
 
                 for (int i = 0; i != received.Length; ++i)
                 {
                     object arg = received[i];
+
+#if FEATURE_COMPILE
                     withFalse[i] = arg;
+#endif
+
+#if FEATURE_INTERPRET
                     withTrue[i] = arg;
+#endif
                 }
 
+#if FEATURE_COMPILE
                 yield return withFalse;
-#if FEATURE_COMPILE && FEATURE_INTERPRET
+#endif
+
+#if  FEATURE_INTERPRET
                 yield return withTrue;
 #endif
             }
