@@ -628,7 +628,7 @@ namespace System.Text
         [Serializable]
         // Of all the amazing things... This MUST be Decoder so that our com name
         // for System.Text.Decoder doesn't change
-        private class Decoder : DecoderNLS, ISerializable
+        private sealed class Decoder : DecoderNLS, ISerializable
         {
             /*private*/
             internal int bits;
@@ -694,7 +694,7 @@ namespace System.Text
         [Serializable]
         // Of all the amazing things... This MUST be Encoder so that our com name
         // for System.Text.Encoder doesn't change
-        private class Encoder : EncoderNLS, ISerializable
+        private sealed class Encoder : EncoderNLS, ISerializable
         {
             /*private*/
             internal int bits;
@@ -753,7 +753,7 @@ namespace System.Text
         // Preexisting UTF7 behavior for bad bytes was just to spit out the byte as the next char
         // and turn off base64 mode if it was in that mode.  We still exit the mode, but now we fallback.
         [Serializable]
-        internal sealed class DecoderUTF7Fallback : DecoderFallback
+        private sealed class DecoderUTF7Fallback : DecoderFallback
         {
             // Construction.  Default replacement fallback uses no best fit and ? replacement string
             public DecoderUTF7Fallback()
@@ -791,7 +791,7 @@ namespace System.Text
             }
         }
 
-        internal sealed class DecoderUTF7FallbackBuffer : DecoderFallbackBuffer
+        private sealed class DecoderUTF7FallbackBuffer : DecoderFallbackBuffer
         {
             // Store our default string
             private char cFallback = (char)0;
