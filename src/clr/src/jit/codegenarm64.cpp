@@ -5637,15 +5637,10 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
     assert(argOffsetOut == (curArgTabEntry->slotNum * TARGET_POINTER_SIZE));
 #endif // DEBUG
 
-#if FEATURE_FASTTAILCALL
-    bool putInIncomingArgArea = treeNode->putInIncomingArgArea;
-#else
-    const bool putInIncomingArgArea = false;
-#endif
     // Whether to setup stk arg in incoming or out-going arg area?
     // Fast tail calls implemented as epilog+jmp = stk arg is setup in incoming arg area.
     // All other calls - stk arg is setup in out-going arg area.
-    if (putInIncomingArgArea)
+    if (treeNode->putInIncomingArgArea())
     {
         varNumOut    = getFirstArgWithStackSlot();
         argOffsetMax = compiler->compArgSize;

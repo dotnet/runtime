@@ -940,18 +940,11 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
         // This provides the info to put this argument in in-coming arg area slot
         // instead of in out-going arg area slot.
 
-        PUT_STRUCT_ARG_STK_ONLY(assert(info->isStruct == varTypeIsStruct(type))); // Make sure state is
-                                                                                  // correct
+        PUT_STRUCT_ARG_STK_ONLY(assert(info->isStruct == varTypeIsStruct(type))); // Make sure state is correct
 
-#if FEATURE_FASTTAILCALL
         putArg = new (comp, GT_PUTARG_STK)
             GenTreePutArgStk(GT_PUTARG_STK, type, arg, info->slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(info->numSlots),
-                             call->IsFastTailCall() DEBUGARG(call));
-#else
-        putArg = new (comp, GT_PUTARG_STK)
-            GenTreePutArgStk(GT_PUTARG_STK, type, arg,
-                             info->slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(info->numSlots) DEBUGARG(call));
-#endif
+                             call->IsFastTailCall(), call);
 
 #if defined(UNIX_X86_ABI)
         assert((info->padStkAlign > 0 && info->numSlots > 0) || (info->padStkAlign == 0));
