@@ -69,10 +69,6 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             // Nothing but slashes
             builder.DataSource = @"np:\\\\\";
             OpenBadConnection<SqlException>(builder.ConnectionString, invalidConnStringError);
-
-            // Empty string
-            builder.DataSource = "np:";
-            OpenBadConnection<SqlException>(builder.ConnectionString, invalidConnStringError);
         }
 #endif
 
@@ -103,8 +99,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 {
                     throw new InvalidOperationException("Connection string did not contain expected NP token in Server Name string!");
                 }
-
-                return (new Uri(dataSource.Substring(colonIndex + 1))).Host;
+                return dataSource.Contains(@"\") ? (new Uri(dataSource.Substring(colonIndex + 1))).Host : dataSource.Substring(colonIndex+1);
             }
             else
             {
