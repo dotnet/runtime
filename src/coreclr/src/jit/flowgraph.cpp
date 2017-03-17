@@ -4546,7 +4546,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, BYTE*
                 else
                 {
                     // account for possible hidden param
-                    varNum = compMapILargNum(varNum); 
+                    varNum = compMapILargNum(varNum);
 
                     // This check is only intended to prevent an AV.  Bad varNum values will later
                     // be handled properly by the verifier.
