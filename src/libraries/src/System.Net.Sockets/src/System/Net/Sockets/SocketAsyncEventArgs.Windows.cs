@@ -17,6 +17,8 @@ namespace System.Net.Sockets
         private GCHandle _singleBufferGCHandle;
 
         // BufferList property variables.
+        // Note that these arrays are allocated and then grown as necessary, but never shrunk.
+        // Thus the actual in-use length is defined by _bufferListInternal.Count, not the length of these arrays.
         private WSABuffer[] _wsaBufferArray;
         private GCHandle[] _multipleBufferGCHandles;
 
@@ -124,8 +126,7 @@ namespace System.Net.Sockets
 
             ThreadPoolBoundHandle boundHandle = _currentSocket.GetOrAllocateThreadPoolBoundHandle();
 
-            NativeOverlapped* overlapped = null;
-            overlapped = boundHandle.AllocateNativeOverlapped(_preAllocatedOverlapped);
+            NativeOverlapped* overlapped = boundHandle.AllocateNativeOverlapped(_preAllocatedOverlapped);
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"boundHandle:{boundHandle}, PreAllocatedOverlapped:{_preAllocatedOverlapped}, Returned:{(IntPtr)overlapped}");
 
             Debug.Assert(overlapped != null, "NativeOverlapped is null.");
@@ -808,7 +809,7 @@ namespace System.Net.Sockets
         private void FreeOverlapped()
         {
             // Free the overlapped object.
-            if (_ptrNativeOverlapped != null && !_ptrNativeOverlapped.IsInvalid)
+            if (_ptrNativeOverlapped != null)
             {
                 _ptrNativeOverlapped.Dispose();
                 _ptrNativeOverlapped = null;
@@ -923,6 +924,16 @@ namespace System.Net.Sockets
         {
             int bufferCount = _bufferListInternal.Count;
 
+#if DEBUG
+            if (_multipleBufferGCHandles != null)
+            {
+                foreach (GCHandle gcHandle in _multipleBufferGCHandles)
+                {
+                    Debug.Assert(!gcHandle.IsAllocated);
+                }
+            }
+#endif
+
             // Number of things to pin is number of buffers.
             // Ensure we have properly sized object array.
             if (_multipleBufferGCHandles == null || (_multipleBufferGCHandles.Length < bufferCount))
@@ -962,6 +973,16 @@ namespace System.Net.Sockets
 
             // Number of things to pin is number of buffers + 1 (native descriptor).
             // Ensure we have properly sized object array.
+#if DEBUG
+            if (_multipleBufferGCHandles != null)
+            {
+                foreach (GCHandle gcHandle in _multipleBufferGCHandles)
+                {
+                    Debug.Assert(!gcHandle.IsAllocated);
+                }
+            }
+#endif
+
             if (_multipleBufferGCHandles == null || (_multipleBufferGCHandles.Length < _sendPacketsElementsBufferCount + 1))
             {
                 _multipleBufferGCHandles = new GCHandle[_sendPacketsElementsBufferCount + 1];
