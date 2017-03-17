@@ -7462,16 +7462,10 @@ unsigned CodeGen::getBaseVarForPutArgStk(GenTreePtr treeNode)
 
     unsigned baseVarNum;
 
-#if FEATURE_FASTTAILCALL
-    bool putInIncomingArgArea = treeNode->AsPutArgStk()->putInIncomingArgArea;
-#else
-    const bool putInIncomingArgArea = false;
-#endif
-
     // Whether to setup stk arg in incoming or out-going arg area?
     // Fast tail calls implemented as epilog+jmp = stk arg is setup in incoming arg area.
     // All other calls - stk arg is setup in out-going arg area.
-    if (putInIncomingArgArea)
+    if (treeNode->AsPutArgStk()->putInIncomingArgArea())
     {
         // See the note in the function header re: finding the first stack passed argument.
         baseVarNum = getFirstArgWithStackSlot();

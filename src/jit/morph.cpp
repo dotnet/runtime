@@ -2837,9 +2837,9 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         // so we record the stack depth on the first morph call when reMorphing
         // was false (via RecordStkLevel) and then retrieve that value here (via RetrieveStkLevel)
         //
-        unsigned callStkLevel = call->fgArgInfo->RetrieveStkLevel();
         if (call->gtCallLateArgs != nullptr)
         {
+            unsigned callStkLevel = call->fgArgInfo->RetrieveStkLevel();
             fgPtrArgCntCur += callStkLevel;
             call->gtCallLateArgs = fgMorphTree(call->gtCallLateArgs)->AsArgList();
             flagsSummary |= call->gtCallLateArgs->gtFlags;
