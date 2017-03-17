@@ -22,7 +22,7 @@ namespace System.Net.Sockets
             // No-op for *nix.
         }
 
-        private void FreeInternals(bool calledFromFinalizer)
+        private void FreeInternals()
         {
             // No-op for *nix.
         }
