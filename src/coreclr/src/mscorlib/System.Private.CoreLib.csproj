@@ -452,14 +452,12 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Binder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\BindingFlags.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\CallingConventions.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\ConstructorInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\ConstructorInfo.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\CustomAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\DefaultMemberAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\EventAttributes.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\EventInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\FieldAttributes.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\FieldInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\FieldInfo.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\GenericParameterAttributes.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\ICustomAttributeProvider.cs" />
@@ -482,7 +480,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodAttributes.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodBase.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodImplAttributes.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Missing.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Module.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\ModuleResolveEventHandler.cs" />
@@ -493,7 +490,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Pointer.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\PortableExecutableKinds.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\PropertyAttributes.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\PropertyInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\ReflectionContext.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\ReflectionTypeLoadException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\ResourceAttributes.cs" />
@@ -512,7 +508,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\TargetParameterCountException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\TypeAttributes.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\TypeFilter.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\TypeInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\AssemblyBuilder.cs" />
