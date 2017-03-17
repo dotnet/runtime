@@ -4535,17 +4535,22 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, BYTE*
                 }
 
                 varNum = (sz == sizeof(BYTE)) ? getU1LittleEndian(codeAddr) : getU2LittleEndian(codeAddr);
-                varNum = compMapILargNum(varNum); // account for possible hidden param
 
-                // This check is only intended to prevent an AV.  Bad varNum values will later
-                // be handled properly by the verifier.
-                if (varNum < lvaTableCnt)
+                if (isInlining)
                 {
-                    if (isInlining)
+                    if (varNum < impInlineInfo->argCnt)
                     {
                         impInlineInfo->inlArgInfo[varNum].argHasStargOp = true;
                     }
-                    else
+                }
+                else
+                {
+                    // account for possible hidden param
+                    varNum = compMapILargNum(varNum);
+
+                    // This check is only intended to prevent an AV.  Bad varNum values will later
+                    // be handled properly by the verifier.
+                    if (varNum < lvaTableCnt)
                     {
                         // In non-inline cases, note written-to locals.
                         lvaTable[varNum].lvArgWrite = 1;
