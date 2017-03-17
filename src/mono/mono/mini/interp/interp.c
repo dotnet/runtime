@@ -938,6 +938,15 @@ ves_runtime_method (MonoInvocation *frame, ThreadContext *context)
 
 	mono_class_init (method->klass);
 
+	if (method->klass == mono_defaults.array_class) {
+		if (!strcmp (method->name, "UnsafeMov")) {
+			/* TODO: layout checks */
+			MonoType *mt = mono_method_signature (method)->ret;
+			stackval_from_data (mt, frame->retval, (char *) frame->stack_args, FALSE);
+			return;
+		}
+	}
+
 	isinst_obj = mono_object_isinst_checked (obj, mono_defaults.array_class, &error);
 	mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 	if (obj && isinst_obj) {

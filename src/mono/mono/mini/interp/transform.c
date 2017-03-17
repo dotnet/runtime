@@ -3308,7 +3308,7 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 				} else if (*name == 'E' && (strcmp (name, "EndInvoke") == 0)) {
 					nm = mono_marshal_get_delegate_end_invoke (method);
 				}
-			} 
+			}
 			if (nm == NULL) {
 				runtime_method->code = g_malloc(sizeof(short));
 				runtime_method->code[0] = MINT_CALLRUN;
@@ -3325,6 +3325,24 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 		method = nm;
 		header = mono_method_get_header (nm);
 		mono_os_mutex_unlock(&calc_section);
+	} else if (method->klass == mono_defaults.array_class) {
+		if (!strcmp (method->name, "UnsafeMov")) {
+			mono_os_mutex_lock (&calc_section);
+			if (!runtime_method->transformed) {
+				runtime_method->code = g_malloc (sizeof (short));
+				runtime_method->code[0] = MINT_CALLRUN;
+				runtime_method->stack_size = sizeof (stackval); /* for tracing */
+				runtime_method->alloca_size = runtime_method->stack_size;
+				runtime_method->transformed = TRUE;
+			}
+			mono_os_mutex_unlock(&calc_section);
+			mono_profiler_method_end_jit (method, NULL, MONO_PROFILE_OK);
+			return NULL;
+		} else if (!strcmp (method->name, "UnsafeStore)")) {
+			g_error ("TODO");
+		} else if (!strcmp (method->name, "UnsafeLoad)")) {
+			g_error ("TODO");
+		}
 	}
 	g_assert ((signature->param_count + signature->hasthis) < 1000);
 	g_assert (header->max_stack < 10000);

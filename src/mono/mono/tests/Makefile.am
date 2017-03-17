@@ -973,7 +973,6 @@ INTERP_DISABLED_TESTS = \
 	delegate-delegate-exit.exe \
 	delegate-exit.exe \
 	delegate-with-null-target.exe \
-	delegate.exe \
 	delegate1.exe \
 	delegate3.exe \
 	delegate5.exe \
@@ -984,7 +983,6 @@ INTERP_DISABLED_TESTS = \
 	dynamic-method-finalize.2.exe \
 	dynamic-method-resurrection.exe \
 	dynamic-method-stack-traces.exe \
-	enum.exe \
 	even-odd.exe \
 	exception18.exe \
 	field-access.exe \
