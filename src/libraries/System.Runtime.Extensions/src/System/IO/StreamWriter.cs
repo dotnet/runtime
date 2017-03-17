@@ -20,7 +20,7 @@ namespace System.IO
         // write perf.  Note that for UTF-8, we end up allocating a 4K byte buffer,
         // which means we take advantage of adaptive buffering code.
         // The performance using UnicodeEncoding is acceptable.  
-        internal const int DefaultBufferSize = 1024;   // char[]
+        private const int DefaultBufferSize = 1024;   // char[]
         private const int DefaultFileStreamBufferSize = 4096;
         private const int MinBufferSize = 128;
 
@@ -137,7 +137,8 @@ namespace System.IO
             if (bufferSize <= 0)
                 throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
 
-            Stream stream = FileStreamHelpers.CreateFileStream(path, write: true, append: append);
+            Stream stream = new FileStream(path, append ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.Read,
+                DefaultFileStreamBufferSize, FileOptions.SequentialScan);
             Init(stream, encoding, bufferSize, shouldLeaveOpen: false);
         }
 
