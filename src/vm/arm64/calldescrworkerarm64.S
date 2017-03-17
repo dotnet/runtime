@@ -13,8 +13,7 @@
 
 NESTED_ENTRY CallDescrWorkerInternal, _TEXT, NoHandler
     PROLOG_SAVE_REG_PAIR_INDEXED   fp, lr, -32
-    PROLOG_SAVE_REG    x19, 16
-    PROLOG_SAVE_REG    x0, 24
+    PROLOG_SAVE_REG    x19, 16           //the stack slot at sp+24 is empty for 16 byte alligment
 
     mov     x19, x0 // save pCallDescrData in x19
 
@@ -68,8 +67,6 @@ LOCAL_LABEL(NoFloatingPoint):
     // call pTarget
     ldr     x9, [x19,#CallDescrData__pTarget]
     blr     x9
-
-    ldr     x19, [fp, 24] // Fixup corrupted X19 caller preserved register
 
     ldr     w3, [x19,#CallDescrData__fpReturnSize]
 
