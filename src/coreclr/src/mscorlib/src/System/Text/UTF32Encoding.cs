@@ -998,7 +998,7 @@ namespace System.Text
         }
 
         [Serializable]
-        internal class UTF32Decoder : DecoderNLS
+        private sealed class UTF32Decoder : DecoderNLS
         {
             // Need a place to store any extra bytes we may have picked up
             internal int iChar = 0;
