@@ -48,6 +48,16 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [Fact]
+        public void ClientCertificates_ClientCertificateOptionsAutomatic_ThrowsException()
+        {
+            using (var handler = new HttpClientHandler())
+            {
+                handler.ClientCertificateOptions = ClientCertificateOption.Automatic;
+                Assert.Throws<InvalidOperationException>(() => handler.ClientCertificates);
+            }
+        }
+
         [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(nameof(BackendDoesNotSupportCustomCertificateHandling))]
         public async Task Automatic_SSLBackendNotSupported_ThrowsPlatformNotSupportedException()

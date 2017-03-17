@@ -129,6 +129,11 @@ namespace System.Net.Http
         {
             get
             {
+                if (_clientCertOptions != ClientCertificateOption.Manual)
+                {
+                    throw new InvalidOperationException(SR.Format(SR.net_http_invalid_enable_first, "ClientCertificateOptions", "Manual"));
+                }
+
                 if (_clientCertificates == null)
                 {
                     _clientCertificates = new X509Certificate2Collection();
@@ -267,7 +272,7 @@ namespace System.Net.Http
 
                 CheckDisposedOrStarted();
                 _maxResponseHeadersLength = value;
-            }            
+            }
         }
 
         public bool PreAuthenticate
@@ -438,7 +443,7 @@ namespace System.Net.Http
             _useCookies = true; // deal with cookies by default.
             _useDefaultCredentials = false;
             _clientCertOptions = ClientCertificateOption.Manual;
-            
+
             // New properties not in .NET Framework HttpClientHandler.
             _maxResponseHeadersLength = HttpWebRequest.DefaultMaximumResponseHeadersLength;
             _defaultProxyCredentials = null;
@@ -472,7 +477,7 @@ namespace System.Net.Http
             // If we have a request-content, make sure to provide HWR with a delegate to CopyTo(). This allows HWR
             // to serialize the content multiple times in case of redirect/authentication.
             // Also note that the connection group name provided is considered an 'internal' connection group. I.e.
-            // HWR will add 'I>' after the string we provided. I.e. by default the actual connection group name looks 
+            // HWR will add 'I>' after the string we provided. I.e. by default the actual connection group name looks
             // like '123456S>I>' or '123456U>I>' if UnsafeAuthenticatedConnectionSharing is true. Even is users use the
             // same hashcode for their HWR connection group, they'll end up using a different one, since 'I>' is not
             // added ('123456S>' or '123456U>').
@@ -614,7 +619,7 @@ namespace System.Net.Http
             }
             else
             {
-                // HTTP 1.1 uses persistent connections by default. If the user doesn't want to use persistent 
+                // HTTP 1.1 uses persistent connections by default. If the user doesn't want to use persistent
                 // connections, he can set 'ConnectionClose' to true (equivalent to header "Connection: close").
                 if (request.Headers.ConnectionClose == true)
                 {
@@ -662,8 +667,8 @@ namespace System.Net.Http
                 }
             }
 
-            // The following headers (Expect, Transfer-Encoding, Connection) have both a collection property and a 
-            // bool property indicating a special value. Internally (in HttpHeaders) we don't distinguish between 
+            // The following headers (Expect, Transfer-Encoding, Connection) have both a collection property and a
+            // bool property indicating a special value. Internally (in HttpHeaders) we don't distinguish between
             // "special" values and other values. So we must make sure that we add all but the special value to HWR.
             // E.g. the 'Transfer-Encoding: chunked' value must be set using HWR.SendChunked, whereas all other values
             // can be added to the 'Transfer-Encoding'.
@@ -721,12 +726,12 @@ namespace System.Net.Http
             {
                 HttpContentHeaders headers = request.Content.Headers;
 
-                // All content headers besides Content-Length can be added directly to HWR. So just check whether we 
-                // have the Content-Length header set. If not, add all headers, otherwise skip the Content-Length 
+                // All content headers besides Content-Length can be added directly to HWR. So just check whether we
+                // have the Content-Length header set. If not, add all headers, otherwise skip the Content-Length
                 // header.
                 // Note that this method is called _before_ PrepareWebRequestForContentUpload(): I.e. in most scenarios
-                // this means that no one accessed Headers.ContentLength property yet, thus there will be no 
-                // Content-Length header in the store. I.e. we'll end up in the 'else' block providing better perf, 
+                // this means that no one accessed Headers.ContentLength property yet, thus there will be no
+                // Content-Length header in the store. I.e. we'll end up in the 'else' block providing better perf,
                 // since no string comparison is required.
                 if (headers.Contains(HttpKnownHeaderNames.ContentLength))
                 {
@@ -744,7 +749,7 @@ namespace System.Net.Http
                     foreach (var header in request.Content.Headers)
                     {
                         // Use AddInternal() to skip validation.
-                        webRequest.Headers.AddInternal(header.Key, string.Join(", ", header.Value));                        
+                        webRequest.Headers.AddInternal(header.Key, string.Join(", ", header.Value));
                     }
                 }
             }
@@ -782,7 +787,7 @@ namespace System.Net.Http
                 cancellationToken.Register(s_onCancel, webRequest);
 
                 // Preserve context for authentication
-                if (ExecutionContext.IsFlowSuppressed()) 
+                if (ExecutionContext.IsFlowSuppressed())
                 {
                     // Check for proxy auth
                     IWebProxy currentProxy = null;
@@ -800,7 +805,7 @@ namespace System.Net.Http
 
                 // BeginGetResponse/BeginGetRequestStream have a lot of setup work to do before becoming async
                 // (proxy, dns, connection pooling, etc).  Run these on a separate thread.
-                // Do not provide a cancellation token; if this helper task could be canceled before starting then 
+                // Do not provide a cancellation token; if this helper task could be canceled before starting then
                 // nobody would complete the tcs.
                 Task.Factory.StartNew(_startRequest, state);
             }
@@ -866,7 +871,7 @@ namespace System.Net.Http
                             throw new HttpRequestException(SR.net_http_handler_nocontentlength);
                         }
 
-                        // HttpContent couldn't calculate the content length. Chunked is not specified. Buffer the 
+                        // HttpContent couldn't calculate the content length. Chunked is not specified. Buffer the
                         // content to get the content length.
                         requestContent.LoadIntoBufferAsync(_maxRequestContentBufferSize).ContinueWithStandard(task =>
                         {
@@ -1043,7 +1048,7 @@ namespace System.Net.Http
             {
                 state.tcs.TrySetCanceled();
             }
-            // Wrap expected exceptions as HttpRequestExceptions since this is considered an error during 
+            // Wrap expected exceptions as HttpRequestExceptions since this is considered an error during
             // execution. All other exception types, including ArgumentExceptions and ProtocolViolationExceptions
             // are 'unexpected' or caused by user error and should not be wrapped.
             else if (e is WebException || e is IOException)
@@ -1119,7 +1124,7 @@ namespace System.Net.Http
             internal WindowsIdentity identity;
         }
 
-        // The ConnectStream returned by HttpWebResponse may throw a WebException when aborted. Wrap them in 
+        // The ConnectStream returned by HttpWebResponse may throw a WebException when aborted. Wrap them in
         // IOExceptions. The ConnectStream will be read-only so we don't need to wrap the write methods.
         private class WebExceptionWrapperStream : DelegatingStream
         {
@@ -1164,7 +1169,7 @@ namespace System.Net.Http
                 }
             }
 
-            public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, 
+            public override async Task<int> ReadAsync(byte[] buffer, int offset, int count,
                 CancellationToken cancellationToken)
             {
                 try
