@@ -13,7 +13,7 @@ namespace System.Security.AccessControl.Tests
     {
        public static IEnumerable<object[]> CommonSecurityDescriptor_GetSddlForm_TestData()
        {
-           yield return new object[] { true, false, 20, "BA", "BG", "64:2:4096:BA:false:0", "0:1:4096:BO:false:0", false, false, false, false , null};
+           yield return new object[] { true, false, 20, "BA", "BG", "64:2:4096:BA:false:0", "0:1:4096:BO:false:0", false, false, false, false , "" };
            yield return new object[] { true, false, 20, "BA", "BG", "64:2:4096:BA:false:0", "0:1:4096:BO:false:0", false, false, false, true , "D:(D;;0x1000;;;BO)" };
            yield return new object[] { true, false, 20, "BA", "BG", "64:2:4096:BA:false:0", "0:1:4096:BO:false:0", false, false, true , false, "S:(AU;SA;0x1000;;;BA)" };
            yield return new object[] { true, false, 20, "BA", "BG", "64:2:4096:BA:false:0", "0:1:4096:BO:false:0", false, false, true , true , "D:(D;;0x1000;;;BO)S:(AU;SA;0x1000;;;BA)" };
@@ -29,7 +29,7 @@ namespace System.Security.AccessControl.Tests
            yield return new object[] { true, false, 20, "BA", "BG", "64:2:4096:BA:false:0", "0:1:4096:BO:false:0", true , true , false, true , "O:BAG:BGD:(D;;0x1000;;;BO)" };
            yield return new object[] { true, false, 20, "BA", "BG", "64:2:4096:BA:false:0", "0:1:4096:BO:false:0", true , true , true , false, "O:BAG:BGS:(AU;SA;0x1000;;;BA)" };
            yield return new object[] { true, false, 20, "BA", "BG", "64:2:4096:BA:false:0", "0:1:4096:BO:false:0", true , true , true , true , "O:BAG:BGD:(D;;0x1000;;;BO)S:(AU;SA;0x1000;;;BA)" };
-           yield return new object[] { true, false, 0 , null, null, null                  , null                 , true , true , true , true , null};
+           yield return new object[] { true, false, 0 , null, null, null                  , null                 , true , true , true , true , "" };
            yield return new object[] { true, false, 4 , "BA", "BG", "64:2:4096:BA:false:0", "0:1:4096:BO:false:0", true , true , true , true , "O:BAG:BGD:(D;;0x1000;;;BO)S:(AU;SA;0x1000;;;BA)" };
            yield return new object[] { true, false, 4 , "BA", "BG", null                  , "0:1:4096:BO:false:0", true , true , true , true , "O:BAG:BGD:(D;;0x1000;;;BO)" };
            yield return new object[] { true, false, 20, "BA", "BG", null                  , "0:1:4096:BO:false:0", true , true , true , true , "O:BAG:BGD:(D;;0x1000;;;BO)" };
@@ -42,7 +42,6 @@ namespace System.Security.AccessControl.Tests
 
         [Theory]
         [MemberData(nameof(CommonSecurityDescriptor_GetSddlForm_TestData))]
-        [ActiveIssue(16919)]
         public static void TestGetSddlForm(bool isContainer, bool isDS, int flags, string ownerStr, string groupStr, string saclStr, string daclStr, bool getOwner, bool getGroup, bool getSacl, bool getDacl, string expectedSddl)
         {
             CommonSecurityDescriptor commonSecurityDescriptor = null;
@@ -83,10 +82,7 @@ namespace System.Security.AccessControl.Tests
                 accControlSections |= AccessControlSections.Access;
 
             resultSddl = commonSecurityDescriptor.GetSddlForm(accControlSections);
-            if (expectedSddl == null || resultSddl == null)
-                Assert.True(expectedSddl == null && resultSddl == null);
-            else
-                Assert.True(String.Compare(expectedSddl, resultSddl, StringComparison.CurrentCultureIgnoreCase) == 0);
+            Assert.True(string.Compare(expectedSddl, resultSddl, StringComparison.CurrentCultureIgnoreCase) == 0);
         }
 
     }
