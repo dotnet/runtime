@@ -68,6 +68,7 @@
     <Compile Include="Mono.Linker\DirectoryAssemblyResolver.cs" />
     <Compile Include="Mono.Linker\Driver.cs" />
     <Compile Include="Mono.Linker\LinkContext.cs" />
+    <Compile Include="Mono.Linker\MarkException.cs" />
     <Compile Include="Mono.Linker\MethodAction.cs" />
     <Compile Include="Mono.Linker\Pipeline.cs" />
     <Compile Include="Mono.Linker\TypePreserve.cs" />
