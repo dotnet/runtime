@@ -13,9 +13,9 @@
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46-Windows_NT-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-OSX-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-OSX-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
@@ -119,8 +119,8 @@
   </ItemGroup>
   <!-- Common, except for Windows net46 build -->
   <ItemGroup Condition="'$(TargetGroup)' != 'net46'  And '$(TargetGroup)' != 'netfx'">
-    <Compile Include="System\Net\Http\DiagnosticsHandler.cs" />    
-    <Compile Include="System\Net\Http\DiagnosticsHandlerLoggingStrings.cs"/>    
+    <Compile Include="System\Net\Http\DiagnosticsHandler.cs" />
+    <Compile Include="System\Net\Http\DiagnosticsHandlerLoggingStrings.cs" />
     <Compile Include="$(CommonPath)\System\Net\Mail\DomainLiteralReader.cs">
       <Link>Common\System\Net\Mail\DomainLiteralReader.cs</Link>
     </Compile>
@@ -347,7 +347,7 @@
   <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
     <Compile Include="System\Net\Http\OSX\CurlHandler.SslProvider.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'uap'" >
+  <ItemGroup Condition="'$(TargetGroup)' == 'uap'">
     <Reference Include="Windows" />
     <Reference Include="mscorlib" />
     <Reference Include="System.Runtime.WindowsRuntime" />
