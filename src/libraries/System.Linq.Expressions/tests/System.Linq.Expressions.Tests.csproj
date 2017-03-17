@@ -8,10 +8,6 @@
   <PropertyGroup>
     <ProjectGuid>{4B4AA59B-89F9-4A34-B3C3-C97EF531EE00}</ProjectGuid>
     <IsInterpreting Condition="'$(TargetGroup)' == 'uap'">true</IsInterpreting>
-    <!-- Temporarily disable IsInterpreting build as it's broken and needs investigation
-         https://github.com/dotnet/corefx/issues/16910
-    -->
-    <IsInterpreting>false</IsInterpreting>
     <DefineConstants Condition=" '$(IsInterpreting)' != 'true' ">$(DefineConstants);FEATURE_COMPILE</DefineConstants>
     <DefineConstants Condition=" '$(FeatureInterpret)' == 'true' ">$(DefineConstants);FEATURE_INTERPRET</DefineConstants>
     <IncludeDefaultReferences Condition="'$(TargetGroup)'=='uapaot'">false</IncludeDefaultReferences>

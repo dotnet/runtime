@@ -10,10 +10,6 @@
     <AssemblyName>System.Linq.Expressions</AssemblyName>
     <RootNamespace>System.Linq.Expressions</RootNamespace>
     <IsInterpreting Condition="'$(TargetGroup)' == 'uap'">true</IsInterpreting>
-    <!-- Temporarily disable IsInterpreting build as it's broken and needs investigation 
-         https://github.com/dotnet/corefx/issues/16910
-    -->
-    <IsInterpreting>false</IsInterpreting>
     <DefineConstants Condition=" '$(IsInterpreting)' != 'true' ">$(DefineConstants);FEATURE_COMPILE</DefineConstants>
     <DefineConstants Condition=" '$(FeatureInterpret)' == 'true' ">$(DefineConstants);FEATURE_INTERPRET</DefineConstants>
   </PropertyGroup>
@@ -75,6 +71,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\Dynamic\Utils\ContractUtils.cs">
       <Link>Common\System\Dynamic\Utils\ContractUtils.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Dynamic\Utils\ContractUtils.RequiresArrayRange.cs">
+      <Link>Common\System\Dynamic\Utils\ContractUtils.RequiresArrayRange.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Dynamic\Utils\Error.cs">
       <Link>Common\System\Dynamic\Utils\Error.cs</Link>
@@ -214,9 +213,6 @@
   <ItemGroup Condition=" '$(IsInterpreting)' != 'true'">
     <Compile Include="$(CommonPath)\System\Collections\Generic\ReferenceEqualityComparer.cs">
       <Link>Common\System\Collections\Generic\ReferenceEqualityComparer.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Dynamic\Utils\ContractUtils.RequiresArrayRange.cs">
-      <Link>Common\System\Dynamic\Utils\ContractUtils.RequiresArrayRange.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Linq\Expressions\Compiler\AssemblyGen.cs">
       <Link>Common\System\Linq\Expressions\Compiler\AssemblyGen.cs</Link>
