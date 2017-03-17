@@ -189,11 +189,12 @@ void MyICJI::getMethodVTableOffset (
 // Return null if devirtualization is not possible.
 CORINFO_METHOD_HANDLE MyICJI::resolveVirtualMethod(
     CORINFO_METHOD_HANDLE virtualMethod,
-    CORINFO_CLASS_HANDLE implementingClass
+    CORINFO_CLASS_HANDLE implementingClass,
+    CORINFO_CONTEXT_HANDLE ownerType
     )
 {
     jitInstance->mc->cr->AddCall("resolveVirtualMethod");
-    CORINFO_METHOD_HANDLE result = jitInstance->mc->repResolveVirtualMethod(virtualMethod, implementingClass);
+    CORINFO_METHOD_HANDLE result = jitInstance->mc->repResolveVirtualMethod(virtualMethod, implementingClass, ownerType);
     return result;
 }
 

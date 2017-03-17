@@ -3296,33 +3296,40 @@ void MethodContext::repGetMethodVTableOffset(CORINFO_METHOD_HANDLE method, unsig
     DEBUG_REP(dmpGetMethodVTableOffset((DWORDLONG)method, value));
 }
 
-void MethodContext::recResolveVirtualMethod(CORINFO_METHOD_HANDLE virtMethod, CORINFO_CLASS_HANDLE implClass, CORINFO_METHOD_HANDLE result)
+void MethodContext::recResolveVirtualMethod(CORINFO_METHOD_HANDLE virtMethod, CORINFO_CLASS_HANDLE implClass,
+    CORINFO_CONTEXT_HANDLE ownerType, CORINFO_METHOD_HANDLE result)
 {
     if (ResolveVirtualMethod == nullptr)
     {
-        ResolveVirtualMethod = new LightWeightMap<DLDL, DWORDLONG>();
+        ResolveVirtualMethod = new LightWeightMap<Agnostic_ResolveVirtualMethod, DWORDLONG>();
     }
 
-    DLDL key;
-    key.A = (DWORDLONG)virtMethod;
-    key.B = (DWORDLONG)implClass;
+    Agnostic_ResolveVirtualMethod key;
+    key.virtualMethod = (DWORDLONG)virtMethod;
+    key.implementingClass = (DWORDLONG)implClass;
+    key.ownerType = (DWORDLONG)ownerType;
     ResolveVirtualMethod->Add(key, (DWORDLONG) result);
     DEBUG_REC(dmpResolveVirtualMethod(key, result));
 }
 
-void MethodContext::dmpResolveVirtualMethod(DLDL key, DWORDLONG value)
+void MethodContext::dmpResolveVirtualMethod(const Agnostic_ResolveVirtualMethod& key, DWORDLONG value)
 {
-    printf("ResolveVirtualMethod virtMethod-%016llX, implClass-%016llX, result-%016llX", key.A, key.B, value);
+    printf("ResolveVirtualMethod virtMethod-%016llX, implClass-%016llX, ownerType--%01611X, result-%016llX",
+        key.virtualMethod, key.implementingClass, key.ownerType, value);
 }
 
-CORINFO_METHOD_HANDLE MethodContext::repResolveVirtualMethod(CORINFO_METHOD_HANDLE virtMethod, CORINFO_CLASS_HANDLE implClass)
+CORINFO_METHOD_HANDLE MethodContext::repResolveVirtualMethod(CORINFO_METHOD_HANDLE virtMethod, CORINFO_CLASS_HANDLE implClass,
+    CORINFO_CONTEXT_HANDLE ownerType)
 {
-    DLDL key;
-    key.A = (DWORDLONG)virtMethod;
-    key.B = (DWORDLONG)implClass;
+    Agnostic_ResolveVirtualMethod key;
+    key.virtualMethod = (DWORDLONG)virtMethod;
+    key.implementingClass = (DWORDLONG)implClass;
+    key.ownerType = (DWORDLONG)ownerType;
 
-    AssertCodeMsg(ResolveVirtualMethod != nullptr, EXCEPTIONCODE_MC, "No ResolveVirtualMap map for %016llX-%016llX", key.A, key.B);
-    AssertCodeMsg(ResolveVirtualMethod->GetIndex(key) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX-%016llx", key.A, key.B);
+    AssertCodeMsg(ResolveVirtualMethod != nullptr, EXCEPTIONCODE_MC, "No ResolveVirtualMap map for %016llX-%016llX-%016llX",
+        key.virtualMethod, key.implementingClass, key.ownerType);
+    AssertCodeMsg(ResolveVirtualMethod->GetIndex(key) != -1, EXCEPTIONCODE_MC, "Didn't find %016llX-%016llx-%016llX",
+        key.virtualMethod, key.implementingClass, key.ownerType);
     DWORDLONG result = ResolveVirtualMethod->Get(key);
 
     DEBUG_REP(dmpResolveVirtualMethod(key, result));
