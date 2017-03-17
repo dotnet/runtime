@@ -854,6 +854,7 @@ BadImageFormat_StreamPositionInvalid = Corrupt .resources file.  The specified p
 BadImageFormat_ResourcesDataInvalidOffset = Corrupt .resources file. Invalid offset '{0}' into data section.
 BadImageFormat_NegativeStringLength = Corrupt .resources file. String length must be non-negative.
 BadImageFormat_ParameterSignatureMismatch = The parameters and the signature of the method don't match.
+BadImageFormat_BadILFormat = Bad IL format.
 
 ; Cryptography
 ; These strings still appear in bcl.small but should go away eventually
