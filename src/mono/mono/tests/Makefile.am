@@ -1003,11 +1003,9 @@ INTERP_DISABLED_TESTS = \
 	invalid-token.exe \
 	invalid_generic_instantiation.exe \
 	invoke-string-ctors.exe \
-	invoke.exe \
 	ldfld_missing_class.exe \
 	ldfld_missing_field.exe \
 	ldftn-access.exe \
-	loader.exe \
 	marshal-valuetypes.exe \
 	marshal.exe \
 	marshal2.exe \
@@ -1047,7 +1045,6 @@ INTERP_DISABLED_TESTS = \
 	runtime-invoke.gen.exe \
 	safehandle.2.exe \
 	shared-generic-synchronized.2.exe \
-	sleep.exe \
 	stackframes-async.2.exe \
 	static-constructor.exe \
 	test-inline-call-stack.exe \

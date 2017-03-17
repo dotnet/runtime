@@ -502,7 +502,7 @@ store_arg(TransformData *td, int n)
 		else
 			size = mono_class_value_size (klass, NULL);
 		ADD_CODE(td, MINT_STARG_VT);
-		ADD_CODE(td, n);
+		ADD_CODE(td, td->rtm->arg_offsets [n]);
 		WRITE32(td, &size);
 		if (td->sp [-1].type == STACK_TYPE_VT)
 			POP_VT(td, size);
