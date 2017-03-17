@@ -474,8 +474,8 @@ register_trampoline_jit_info (MonoDomain *domain, MonoTrampInfo *info)
  * INFO can be NULL.
  * Frees INFO.
  */
-void
-mono_tramp_info_register (MonoTrampInfo *info, MonoDomain *domain)
+static void
+mono_tramp_info_register_internal (MonoTrampInfo *info, MonoDomain *domain, gboolean aot)
 {
 	MonoTrampInfo *copy;
 
@@ -506,7 +506,8 @@ mono_tramp_info_register (MonoTrampInfo *info, MonoDomain *domain)
 	mono_lldb_save_trampoline_info (info);
 
 #ifdef MONO_ARCH_HAVE_UNWIND_TABLE
-	mono_arch_unwindinfo_install_tramp_unwind_info (info->unwind_ops, info->code, info->code_size);
+	if (!aot)
+		mono_arch_unwindinfo_install_tramp_unwind_info (info->unwind_ops, info->code, info->code_size);
 #endif
 
 	/* Only register trampolines that have unwind infos */
@@ -517,6 +518,18 @@ mono_tramp_info_register (MonoTrampInfo *info, MonoDomain *domain)
 		mono_emit_jit_tramp (info->code, info->code_size, info->name);
 
 	mono_tramp_info_free (info);
+}
+
+void
+mono_tramp_info_register (MonoTrampInfo *info, MonoDomain *domain)
+{
+	mono_tramp_info_register_internal (info, domain, FALSE);
+}
+
+void
+mono_aot_tramp_info_register (MonoTrampInfo *info, MonoDomain *domain)
+{
+	mono_tramp_info_register_internal (info, domain, TRUE);
 }
 
 static void
