@@ -1285,13 +1285,24 @@ mono_interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoOb
 		if (!sig->ret->data.klass->enumtype)
 			result.data.vt = ret;
 		break;
+	case MONO_TYPE_GENERICINST:
+		if (!MONO_TYPE_IS_REFERENCE (sig->ret)) {
+			retval = mono_object_new_checked (context->domain, klass, error);
+			ret = mono_object_unbox (retval);
+			if (!sig->ret->data.klass->enumtype)
+				result.data.vt = ret;
+		} else {
+			isobject = 1;
+		}
+		break;
+
 	case MONO_TYPE_PTR:
 		retval = mono_object_new_checked (context->domain, mono_defaults.int_class, error);
 		ret = mono_object_unbox (retval);
 		break;
 	default:
 		retval = mono_object_new_checked (context->domain, klass, error);
-		ret = ((char*)retval) + sizeof (MonoObject);
+		ret = mono_object_unbox (retval);
 		break;
 	}
 
