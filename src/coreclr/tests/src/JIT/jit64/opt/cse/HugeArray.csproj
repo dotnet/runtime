@@ -8,12 +8,8 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{BEA92187-D3E8-48FC-B4A7-D0FEF7E2C1E8}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
-    <ReferencePath>$(ProgramFiles)\Common Files\microsoft shared\VSTT\11.0\UITestExtensionPackages</ReferencePath>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
-    <NuGetPackageImportStamp>7a9bfb7d</NuGetPackageImportStamp>
 
     <!-- NOTE: this test simply takes too long to complete under GC stress; it is not fundamentally incompatible -->
     <GCStressIncompatible Condition="'$(Platform)' == 'x86'">true</GCStressIncompatible>
