@@ -125,7 +125,6 @@ namespace System.IO.Tests
         }
 
         [Theory]
-        [OuterLoop("This test has a longer than average timeout and may fail intermittently")]
         [InlineData(WatcherChangeTypes.Created)]
         [InlineData(WatcherChangeTypes.Deleted)]
         public void CreatedDeleted_Success(WatcherChangeTypes changeType)
@@ -133,76 +132,107 @@ namespace System.IO.Tests
             using (var testDirectory = new TempDirectory(GetTestFilePath()))
             using (var fsw = new FileSystemWatcher(testDirectory.Path))
             {
-                Task<WaitForChangedResult> t = Task.Run(() => fsw.WaitForChanged(changeType, LongWaitTimeout));
-                while (!t.IsCompleted)
+                for (int i = 1; i <= DefaultAttemptsForExpectedEvent; i++)
                 {
-                    string path = Path.Combine(testDirectory.Path, Path.GetRandomFileName());
-                    File.WriteAllText(path, "text");
-                    Task.Delay(BetweenOperationsDelayMilliseconds).Wait();
-                    if ((changeType & WatcherChangeTypes.Deleted) != 0)
+                    Task<WaitForChangedResult> t = Task.Run(() => fsw.WaitForChanged(changeType, WaitForExpectedEventTimeout));
+                    while (!t.IsCompleted)
                     {
-                        File.Delete(path);
+                        string path = Path.Combine(testDirectory.Path, Path.GetRandomFileName());
+                        File.WriteAllText(path, "text");
+                        Task.Delay(BetweenOperationsDelayMilliseconds).Wait();
+                        if ((changeType & WatcherChangeTypes.Deleted) != 0)
+                        {
+                            File.Delete(path);
+                        }
                     }
-                }
 
-                Assert.Equal(TaskStatus.RanToCompletion, t.Status);
-                Assert.Equal(changeType, t.Result.ChangeType);
-                Assert.NotNull(t.Result.Name);
-                Assert.Null(t.Result.OldName);
-                Assert.False(t.Result.TimedOut);
+                    try
+                    {
+                        Assert.Equal(TaskStatus.RanToCompletion, t.Status);
+                        Assert.Equal(changeType, t.Result.ChangeType);
+                        Assert.NotNull(t.Result.Name);
+                        Assert.Null(t.Result.OldName);
+                        Assert.False(t.Result.TimedOut);
+                    }
+                    catch when (i < DefaultAttemptsForExpectedEvent)
+                    {
+                        continue;
+                    }
+                    return;
+                }
             }
         }
 
         [Fact]
-        [OuterLoop("This test has a longer than average timeout and may fail intermittently")]
         public void Changed_Success()
         {
             using (var testDirectory = new TempDirectory(GetTestFilePath()))
             using (var fsw = new FileSystemWatcher(testDirectory.Path))
             {
-                string name = Path.Combine(testDirectory.Path, Path.GetRandomFileName());
-                File.Create(name).Dispose();
-
-                Task<WaitForChangedResult> t = Task.Run(() => fsw.WaitForChanged(WatcherChangeTypes.Changed, LongWaitTimeout));
-                while (!t.IsCompleted)
+                for (int i = 1; i <= DefaultAttemptsForExpectedEvent; i++)
                 {
-                    File.AppendAllText(name, "text");
-                    Task.Delay(BetweenOperationsDelayMilliseconds).Wait();
-                }
+                    string name = Path.Combine(testDirectory.Path, Path.GetRandomFileName());
+                    File.Create(name).Dispose();
 
-                Assert.Equal(TaskStatus.RanToCompletion, t.Status);
-                Assert.Equal(WatcherChangeTypes.Changed, t.Result.ChangeType);
-                Assert.NotNull(t.Result.Name);
-                Assert.Null(t.Result.OldName);
-                Assert.False(t.Result.TimedOut);
+                    Task<WaitForChangedResult> t = Task.Run(() => fsw.WaitForChanged(WatcherChangeTypes.Changed, WaitForExpectedEventTimeout));
+                    while (!t.IsCompleted)
+                    {
+                        File.AppendAllText(name, "text");
+                        Task.Delay(BetweenOperationsDelayMilliseconds).Wait();
+                    }
+
+                    try
+                    {
+                        Assert.Equal(TaskStatus.RanToCompletion, t.Status);
+                        Assert.Equal(WatcherChangeTypes.Changed, t.Result.ChangeType);
+                        Assert.NotNull(t.Result.Name);
+                        Assert.Null(t.Result.OldName);
+                        Assert.False(t.Result.TimedOut);
+                    }
+                    catch when (i < DefaultAttemptsForExpectedEvent)
+                    {
+                        continue;
+                    }
+                    return;
+                }
             }
         }
 
         [Fact]
-        [OuterLoop("This test has a longer than average timeout and may fail intermittently")]
         public void Renamed_Success()
         {
             using (var testDirectory = new TempDirectory(GetTestFilePath()))
             using (var fsw = new FileSystemWatcher(testDirectory.Path))
             {
-                Task<WaitForChangedResult> t = Task.Run(() =>
-                    fsw.WaitForChanged(WatcherChangeTypes.Renamed | WatcherChangeTypes.Created, LongWaitTimeout)); // on some OSes, the renamed might come through as Deleted/Created
-
-                string name = Path.Combine(testDirectory.Path, Path.GetRandomFileName());
-                File.Create(name).Dispose();
-
-                while (!t.IsCompleted)
+                for (int i = 1; i <= DefaultAttemptsForExpectedEvent; i++)
                 {
-                    string newName = Path.Combine(testDirectory.Path, Path.GetRandomFileName());
-                    File.Move(name, newName);
-                    name = newName;
-                    Task.Delay(BetweenOperationsDelayMilliseconds).Wait();
-                }
+                    Task<WaitForChangedResult> t = Task.Run(() =>
+                        fsw.WaitForChanged(WatcherChangeTypes.Renamed | WatcherChangeTypes.Created, WaitForExpectedEventTimeout)); // on some OSes, the renamed might come through as Deleted/Created
 
-                Assert.Equal(TaskStatus.RanToCompletion, t.Status);
-                Assert.True(t.Result.ChangeType == WatcherChangeTypes.Created || t.Result.ChangeType == WatcherChangeTypes.Renamed);
-                Assert.NotNull(t.Result.Name);
-                Assert.False(t.Result.TimedOut);
+                    string name = Path.Combine(testDirectory.Path, Path.GetRandomFileName());
+                    File.Create(name).Dispose();
+
+                    while (!t.IsCompleted)
+                    {
+                        string newName = Path.Combine(testDirectory.Path, Path.GetRandomFileName());
+                        File.Move(name, newName);
+                        name = newName;
+                        Task.Delay(BetweenOperationsDelayMilliseconds).Wait();
+                    }
+
+                    try
+                    {
+                        Assert.Equal(TaskStatus.RanToCompletion, t.Status);
+                        Assert.True(t.Result.ChangeType == WatcherChangeTypes.Created || t.Result.ChangeType == WatcherChangeTypes.Renamed);
+                        Assert.NotNull(t.Result.Name);
+                        Assert.False(t.Result.TimedOut);
+                    }
+                    catch when (i < DefaultAttemptsForExpectedEvent)
+                    {
+                        continue;
+                    }
+                    return;
+                }
             }
         }
 
