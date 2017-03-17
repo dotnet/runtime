@@ -1284,6 +1284,8 @@ mono_interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoOb
 		ret = mono_object_unbox (retval);
 		if (!sig->ret->data.klass->enumtype)
 			result.data.vt = ret;
+		else
+			result.data.vt = alloca (mono_class_instance_size (klass));
 		break;
 	case MONO_TYPE_GENERICINST:
 		if (!MONO_TYPE_IS_REFERENCE (sig->ret)) {
@@ -1291,6 +1293,8 @@ mono_interp_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoOb
 			ret = mono_object_unbox (retval);
 			if (!sig->ret->data.klass->enumtype)
 				result.data.vt = ret;
+			else
+				result.data.vt = alloca (mono_class_instance_size (klass));
 		} else {
 			isobject = 1;
 		}
