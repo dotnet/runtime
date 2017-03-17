@@ -83,9 +83,9 @@ namespace System.ComponentModel.Tests
     }
 
 #if FUNCTIONAL_TESTS
-    [TypeConverter("System.ComponentModel.Tests.BaseClassConverter, System.ComponentModel.TypeConverter.Tests, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null")]
+    [TypeConverter("System.ComponentModel.Tests.BaseClassConverter, System.ComponentModel.TypeConverter.Tests, Version=9.9.9.9, Culture=neutral, PublicKeyToken=9d77cc7ad39b68eb")]
 #elif PERFORMANCE_TESTS
-    [TypeConverter("System.ComponentModel.Tests.BaseClassConverter, System.ComponentModel.TypeConverter.Performance.Tests, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null")]
+    [TypeConverter("System.ComponentModel.Tests.BaseClassConverter, System.ComponentModel.TypeConverter.Performance.Tests, Version=9.9.9.9, Culture=neutral, PublicKeyToken=9d77cc7ad39b68eb")]
 #else
 #error Define FUNCTIONAL_TESTS or PERFORMANCE_TESTS
 #endif

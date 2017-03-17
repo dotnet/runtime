@@ -272,7 +272,7 @@ namespace System.Text.RegularExpressions.Tests
         [InlineData(" (?(?n))", RegexOptions.None, typeof(OutOfMemoryException))]
         public void Ctor_InvalidPattern(string pattern, RegexOptions options, Type exceptionType)
         {
-            if (RuntimeInformation.FrameworkDescription.StartsWith(".NET Framework"))
+            if (PlatformDetection.IsFullFramework)
             {
                 Assert.Throws(exceptionType, () => new Regex(pattern, options));
             }
