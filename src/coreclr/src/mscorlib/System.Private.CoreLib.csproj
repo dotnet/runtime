@@ -130,24 +130,19 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CompilerGeneratedAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CustomConstantAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\DateTimeConstantAttribute.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\DiscardableAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\DecimalConstantAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\DisablePrivateReflectionAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CompilationRelaxations.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\CompilerGlobalScopeAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\FixedBufferAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\IndexerNameAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\InternalsVisibleToAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\MethodImplAttribute.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\FixedAddressValueTypeAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\UnsafeValueTypeAttribute.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\AssemblySettingAttributes.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\TypeDependencyAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\jithelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\Unsafe.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\SuppressMergeCheckAttribute.cs" />
     <Compile Condition="'$(FeatureICastable)' == 'true'" Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\ICastable.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\SuppressIldasmAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\TypeForwardedToAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\TypeForwardedFromAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\ReferenceAssemblyAttribute.cs" />
@@ -358,7 +353,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Char.cs" />
     <Compile Include="$(BclSourcesRoot)\System\TypeUnloadedException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\CompatibilitySwitches.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\StringFreezingAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Currency.cs" />
     <Compile Include="$(BclSourcesRoot)\System\DBNull.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Decimal.cs" />
