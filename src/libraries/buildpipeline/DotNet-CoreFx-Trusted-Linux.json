@@ -216,7 +216,7 @@
     },
     {
       "enabled": true,
-      "continueOnError": true,
+      "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Create Helix Test Jobs",
       "timeoutInMinutes": 0,
