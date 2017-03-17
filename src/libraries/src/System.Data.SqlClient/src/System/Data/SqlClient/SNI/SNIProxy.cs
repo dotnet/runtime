@@ -24,7 +24,6 @@ namespace System.Data.SqlClient.SNI
         private const char SemicolonSeparator = ';';
         private const int SqlServerBrowserPort = 1434;
         private const int DefaultSqlServerPort = 1433;
-        private const string Kerberos = "Kerberos";
         private const string SqlServerSpnHeader = "MSSQLSvc";
 
         internal class SspiClientContextResult
@@ -103,17 +102,24 @@ namespace System.Data.SqlClient.SNI
             ContextFlagsPal contextFlags = sspiClientContextStatus.ContextFlags;
             SafeFreeCredentials credentialsHandle = sspiClientContextStatus.CredentialsHandle;
 
-            SecurityBuffer[] inSecurityBufferArray = null;
-            if (securityContext == null) //first iteration
+            string securityPackage = NegotiationInfoClass.Negotiate;
+
+            if (securityContext == null)
             {
-                credentialsHandle = NegotiateStreamPal.AcquireDefaultCredential(Kerberos, false);
+                credentialsHandle = NegotiateStreamPal.AcquireDefaultCredential(securityPackage, false);
             }
-            else
+
+            SecurityBuffer[] inSecurityBufferArray = null;
+            if (receivedBuff != null)
             {
                 inSecurityBufferArray = new SecurityBuffer[] { new SecurityBuffer(receivedBuff, SecurityBufferType.SECBUFFER_TOKEN) };
             }
+            else
+            {
+                inSecurityBufferArray = new SecurityBuffer[] { };
+            }
 
-            int tokenSize = NegotiateStreamPal.QueryMaxTokenSize(Kerberos);
+            int tokenSize = NegotiateStreamPal.QueryMaxTokenSize(securityPackage);
             SecurityBuffer outSecurityBuffer = new SecurityBuffer(tokenSize, SecurityBufferType.SECBUFFER_TOKEN);
 
             ContextFlagsPal requestedContextFlags = ContextFlagsPal.Connection
@@ -136,6 +142,7 @@ namespace System.Data.SqlClient.SNI
             {
                 inSecurityBufferArray = new SecurityBuffer[] { outSecurityBuffer };
                 statusCode = NegotiateStreamPal.CompleteAuthToken(ref securityContext, inSecurityBufferArray);
+                outSecurityBuffer.token = null;
             }
 
             sendBuff = outSecurityBuffer.token;
