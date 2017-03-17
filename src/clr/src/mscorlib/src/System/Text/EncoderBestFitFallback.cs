@@ -16,7 +16,7 @@ using System.Diagnostics.Contracts;
 namespace System.Text
 {
     [Serializable]
-    internal class InternalEncoderBestFitFallback : EncoderFallback
+    internal sealed class InternalEncoderBestFitFallback : EncoderFallback
     {
         // Our variables
         internal Encoding encoding = null;

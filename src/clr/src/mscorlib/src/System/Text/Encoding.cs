@@ -1430,7 +1430,7 @@ namespace System.Text
         }
 
         [Serializable]
-        internal class DefaultEncoder : Encoder, IObjectReference, ISerializable
+        internal sealed class DefaultEncoder : Encoder, IObjectReference, ISerializable
         {
             private Encoding m_encoding;
             [NonSerialized] private bool m_hasInitializedEncoding;
@@ -1552,7 +1552,7 @@ namespace System.Text
         }
 
         [Serializable]
-        internal class DefaultDecoder : Decoder, IObjectReference, ISerializable
+        internal sealed class DefaultDecoder : Decoder, IObjectReference, ISerializable
         {
             private Encoding m_encoding;
             [NonSerialized]
