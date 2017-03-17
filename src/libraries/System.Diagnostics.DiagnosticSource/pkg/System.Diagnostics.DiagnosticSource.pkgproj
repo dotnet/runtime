@@ -9,6 +9,10 @@
     <ProjectReference Include="..\src\System.Diagnostics.DiagnosticSource.csproj">
       <SupportedFramework>net46;net45;netcore45;netcoreapp1.0;wpa81;$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
+
+    <!-- this package is part of the implementation closure of NETStandard.Library
+         therefore it cannot reference NETStandard.Library -->
+    <SuppressMetaPackage Include="NETStandard.Library" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
