@@ -27,9 +27,6 @@ WARNING:   When setting properties based on their current state (for example:
       <DisassemblyName>$(MSBuildProjectName).dasm.il</DisassemblyName>
       <TargetAssemblyName>$(MSBuildProjectName).asm.exe</TargetAssemblyName>
 
-      <!-- If a test is built against mscorlib instead of dotnet Core, permission attributes can be embedded, which CoreCLR does not support. -->
-      <IlasmRoundTrip Condition="'$(ReferenceLocalMscorlib)'!=''">false</IlasmRoundTrip>
-
        <!-- https://github.com/dotnet/coreclr/issues/2481. Delete /raweh to ildasm once it is resolved.-->
       <IlasmRoundTripBatchScript Condition="'$(IlasmRoundTrip)'=='true'">
       <![CDATA[

@@ -12,7 +12,6 @@
     <TargetFrameworkIdentifier>.NETFramework</TargetFrameworkIdentifier>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <SkipSigning>true</SkipSigning>
-    <FileAlignment>512</FileAlignment>
     <CLRTestKind>BuildOnly</CLRTestKind>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
