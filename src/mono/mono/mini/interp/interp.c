@@ -1593,23 +1593,13 @@ static int opcode_counts[512];
 #define MINT_IN_DEFAULT default:
 #endif
 
-/* 
- * Defining this causes register allocation errors in some versions of gcc:
- * error: unable to find a register to spill in class `SIREG'
- */
-/* #define MINT_USE_DEDICATED_IP_REG */
-
 static void 
 ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 {
 	MonoInvocation child_frame;
 	GSList *finally_ips = NULL;
 	const unsigned short *endfinally_ip = NULL;
-#if defined(__GNUC__) && defined (i386) && defined (MINT_USE_DEDICATED_IP_REG)
-	register const unsigned short *ip asm ("%esi");
-#else
-	register const unsigned short *ip;
-#endif
+	const unsigned short *ip = NULL;
 	register stackval *sp;
 	RuntimeMethod *rtm;
 #if DEBUG_INTERP
