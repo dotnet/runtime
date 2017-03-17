@@ -13,10 +13,9 @@ function exit_with_error {
 function exit_if_empty {
     local inputString="$1"
     local errorMessage="$2"
-    local printUsage=$3
 
     if [ -z "$inputString" ]; then
-        exit_with_error "$errorMessage" $printUsage
+        exit_with_error "$errorMessage"
     fi
 }
 
@@ -56,7 +55,7 @@ done
 set -x
 set -e
 
-exit_if_empty "$__buildConfig" "--buildConfig is a mandatory argument, not provided" true
+exit_if_empty "$__buildConfig" "--buildConfig is a mandatory argument, not provided"
 
 #Complete the cross build
 (set +x; echo 'Building corefx...')
