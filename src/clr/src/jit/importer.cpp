@@ -18488,16 +18488,15 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         return;
     }
 
-    // Bail (for now) if base class is an interface.
     if (isInterface)
     {
         assert(call->IsVirtualStub());
-        JITDUMP("--- base class is interface, sorry\n");
-        return;
+        JITDUMP("--- base class is interface\n");
     }
 
     // Fetch the method that would be called based on the declared type of 'this'
-    CORINFO_METHOD_HANDLE derivedMethod = info.compCompHnd->resolveVirtualMethod(baseMethod, objClass);
+    CORINFO_CONTEXT_HANDLE ownerType     = callInfo->contextHandle;
+    CORINFO_METHOD_HANDLE  derivedMethod = info.compCompHnd->resolveVirtualMethod(baseMethod, objClass, ownerType);
 
     // If we failed to get a handle, we can't devirtualize.  This can
     // happen when prejitting, if the devirtualization crosses

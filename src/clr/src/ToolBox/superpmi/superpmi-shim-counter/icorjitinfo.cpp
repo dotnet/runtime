@@ -169,11 +169,12 @@ void interceptor_ICJI::getMethodVTableOffset (
 // Return null if devirtualization is not possible.
 CORINFO_METHOD_HANDLE interceptor_ICJI::resolveVirtualMethod(
     CORINFO_METHOD_HANDLE virtualMethod,
-    CORINFO_CLASS_HANDLE implementingClass
+    CORINFO_CLASS_HANDLE implementingClass,
+    CORINFO_CONTEXT_HANDLE ownerType
     )
 {
     mcs->AddCall("resolveVirtualMethod");
-    return original_ICorJitInfo->resolveVirtualMethod(virtualMethod, implementingClass);
+    return original_ICorJitInfo->resolveVirtualMethod(virtualMethod, implementingClass, ownerType);
 }
 
 // If a method's attributes have (getMethodAttribs) CORINFO_FLG_INTRINSIC set,
