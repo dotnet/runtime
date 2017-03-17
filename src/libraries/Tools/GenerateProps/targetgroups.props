@@ -4,76 +4,103 @@
     <TargetGroups Include="netcore50">
       <TargetingPackNugetPackageId>Microsoft.TargetingPack.Private.NetNative</TargetingPackNugetPackageId>
       <NuGetTargetMoniker>.NETCore,Version=v5.0</NuGetTargetMoniker>
-      <EnableWinRT>true</EnableWinRT>
+      <UWPCompatible>true</UWPCompatible>
       <CompatibleWith>netstandard1.4</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="netcore50aot">
       <PackageTargetRuntimeSuffix>aot</PackageTargetRuntimeSuffix>
       <TargetingPackNugetPackageId>Microsoft.TargetingPack.Private.NetNative</TargetingPackNugetPackageId>
       <NuGetTargetMoniker>.NETCore,Version=v5.0</NuGetTargetMoniker>
-      <EnableWinRT>true</EnableWinRT>
+      <UWPCompatible>true</UWPCompatible>
       <Imports>netcore50</Imports>
       <CompatibleWith>netstandard1.4</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="uap101aot">
       <PackageTargetRuntimeSuffix>aot</PackageTargetRuntimeSuffix>
       <NuGetTargetMoniker>UAP,Version=v10.1</NuGetTargetMoniker>
-      <EnableWinRT>true</EnableWinRT>
+      <UWPCompatible>true</UWPCompatible>
       <Imports>netcore50aot</Imports>
       <CompatibleWith>uap101;netstandard2.0</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="uap101">
       <NuGetTargetMoniker>UAP,Version=v10.1</NuGetTargetMoniker>
-      <EnableWinRT>true</EnableWinRT>
+      <UWPCompatible>true</UWPCompatible>
       <Imports>netcore50</Imports>
       <CompatibleWith>netstandard2.0</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="uap">
       <NuGetTargetMoniker>UAP,Version=v10.1</NuGetTargetMoniker>
-      <EnableWinRT>true</EnableWinRT>
+      <UWPCompatible>true</UWPCompatible>
       <Imports>uap101</Imports>
       <CompatibleWith>netstandard</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="uapaot">
       <PackageTargetRuntimeSuffix>aot</PackageTargetRuntimeSuffix>
       <NuGetTargetMoniker>UAP,Version=v10.1</NuGetTargetMoniker>
-      <EnableWinRT>true</EnableWinRT>
+      <UWPCompatible>true</UWPCompatible>
       <Imports>uap101aot</Imports>
       <CompatibleWith>uap;netstandard</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="netstandard1.0">
       <NuGetTargetMoniker>.NETStandard,Version=v1.0</NuGetTargetMoniker>
+      <!-- By default, netstandard libraries will be held to the UWP compatibility bar;
+           set this to false in the project to force otherwise. -->
+      <UWPCompatible>true</UWPCompatible>
     </TargetGroups>
     <TargetGroups Include="netstandard1.1">
       <NuGetTargetMoniker>.NETStandard,Version=v1.1</NuGetTargetMoniker>
+      <!-- By default, netstandard libraries will be held to the UWP compatibility bar;
+           set this to false in the project to force otherwise. -->
+      <UWPCompatible>true</UWPCompatible>
       <Imports>netstandard1.0</Imports>
     </TargetGroups>
     <TargetGroups Include="netstandard1.2">
       <NuGetTargetMoniker>.NETStandard,Version=v1.2</NuGetTargetMoniker>
+      <!-- By default, netstandard libraries will be held to the UWP compatibility bar;
+           set this to false in the project to force otherwise. -->
+      <UWPCompatible>true</UWPCompatible>
       <Imports>netstandard1.1</Imports>
     </TargetGroups>
     <TargetGroups Include="netstandard1.3">
       <NuGetTargetMoniker>.NETStandard,Version=v1.3</NuGetTargetMoniker>
+      <!-- By default, netstandard libraries will be held to the UWP compatibility bar;
+           set this to false in the project to force otherwise. -->
+      <UWPCompatible>true</UWPCompatible>
       <Imports>netstandard1.2</Imports>
     </TargetGroups>
     <TargetGroups Include="netstandard1.4">
       <NuGetTargetMoniker>.NETStandard,Version=v1.4</NuGetTargetMoniker>
+      <!-- By default, netstandard libraries will be held to the UWP compatibility bar;
+           set this to false in the project to force otherwise. -->
+      <UWPCompatible>true</UWPCompatible>
       <Imports>netstandard1.3</Imports>
     </TargetGroups>
     <TargetGroups Include="netstandard1.5">
       <NuGetTargetMoniker>.NETStandard,Version=v1.5</NuGetTargetMoniker>
+      <!-- By default, netstandard libraries will be held to the UWP compatibility bar;
+           set this to false in the project to force otherwise. -->
+      <UWPCompatible>true</UWPCompatible>
       <Imports>netstandard1.4</Imports>
     </TargetGroups>
     <TargetGroups Include="netstandard1.6">
       <NuGetTargetMoniker>.NETStandard,Version=v1.6</NuGetTargetMoniker>
+      <!-- By default, netstandard libraries will be held to the UWP compatibility bar;
+           set this to false in the project to force otherwise. -->
+      <UWPCompatible>true</UWPCompatible>
       <Imports>netstandard1.5</Imports>
     </TargetGroups>
     <TargetGroups Include="netstandard2.0">
       <NuGetTargetMoniker>.NETStandard,Version=v2.0</NuGetTargetMoniker>
+      <!-- By default, netstandard libraries will be held to the UWP compatibility bar;
+           set this to false in the project to force otherwise. -->
+      <UWPCompatible>true</UWPCompatible>
       <Imports>netstandard1.6</Imports>
     </TargetGroups>
     <TargetGroups Include="netstandard">
       <NuGetTargetMoniker>.NETStandard,Version=v2.0</NuGetTargetMoniker>
+      <!-- By default, netstandard libraries will be held to the UWP compatibility bar;
+           set this to false in the project to force otherwise. -->
+      <UWPCompatible>true</UWPCompatible>
       <Imports>netstandard2.0</Imports>
     </TargetGroups>
     <TargetGroups Include="netcoreapp1.0">

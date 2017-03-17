@@ -263,21 +263,10 @@ namespace System.Data.SqlClient.SNI
             }
         }
 
-        /// <summary>
-        /// Reset a packet
-        /// </summary>
-        /// <param name="handle">SNI handle</param>
-        /// <param name="write">true if packet is for write</param>
-        /// <param name="packet">SNI packet</param>
-        public void PacketReset(SNIHandle handle, bool write, SNIPacket packet)
-        {
-            packet.Reset();
-        }
-
         private static string GetServerNameWithOutProtocol(string fullServerName, string protocolHeader)
         {
             string serverNameWithOutProtocol = null;
-            if (fullServerName.Length > protocolHeader.Length &&
+            if (fullServerName.Length >= protocolHeader.Length &&
                 String.Compare(fullServerName, 0, protocolHeader, 0, protocolHeader.Length, true) == 0)
             {
                 serverNameWithOutProtocol = fullServerName.Substring(protocolHeader.Length, fullServerName.Length - protocolHeader.Length);
@@ -329,8 +318,7 @@ namespace System.Data.SqlClient.SNI
                     sniHandle = CreateTcpHandle(serverNameWithOutProtocol, timerExpire, callbackObject, parallel, ref spnBuffer, isIntegratedSecurity);
                 }
                 // when np protocol is specified
-                else if ((serverNameWithOutProtocol = GetServerNameWithOutProtocol(fullServerName, TdsEnums.NP + ":\\\\")) != null ||
-                         (serverNameWithOutProtocol = GetServerNameWithOutProtocol(fullServerName, "\\\\")) != null)
+                else if ((serverNameWithOutProtocol = GetServerNameWithOutProtocol(fullServerName, TdsEnums.NP + ":")) != null)
                 {
                     sniHandle = CreateNpHandle(serverNameWithOutProtocol, timerExpire, callbackObject, parallel);
                 }
@@ -664,7 +652,7 @@ namespace System.Data.SqlClient.SNI
         /// <param name="handle">SNI handle</param>
         /// <param name="packet">Packet</param>
         /// <returns>SNI error status</returns>
-        public uint ReadAsync(SNIHandle handle, ref SNIPacket packet)
+        public uint ReadAsync(SNIHandle handle, out SNIPacket packet)
         {
             packet = new SNIPacket(null);
 

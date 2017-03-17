@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.IO;
+using System.Reflection;
 using Xunit;
 
 namespace System.Diagnostics.TraceSourceTests
@@ -10,7 +12,8 @@ namespace System.Diagnostics.TraceSourceTests
 
     public class TraceClassTests : IDisposable
     {
-        private const string TestRunnerAssemblyName = "xunit.console.netcore";
+        private readonly string TestRunnerAssemblyName = PlatformDetection.IsFullFramework ? 
+            Path.GetFileName(Environment.GetCommandLineArgs()[0]) : Assembly.GetEntryAssembly().GetName().Name;
 
         void IDisposable.Dispose()
         {
@@ -96,13 +99,15 @@ namespace System.Diagnostics.TraceSourceTests
             var listener = new TestTraceListener();
             Trace.Listeners.Add(listener);
             Trace.Close();
-            Assert.Equal(1, listener.GetCallCount(Method.Dispose));
+            Assert.Equal(1, listener.GetCallCount(Method.Close));
         }
 
         [Fact]
         public void Assert1Test()
         {
             var listener = new TestTraceListener();
+            // We have to clear the listeners list on Trace since there is a trace listener by default with AssertUiEnabled = true in Desktop and that will pop up an assert window with Trace.Fail
+            Trace.Listeners.Clear();
             Trace.Listeners.Add(listener);
             Trace.Assert(true);
             Assert.Equal(0, listener.GetCallCount(Method.WriteLine));
@@ -117,6 +122,8 @@ namespace System.Diagnostics.TraceSourceTests
         {
             var listener = new TestTraceListener();
             var text = new TestTextTraceListener();
+            // We have to clear the listeners list on Trace since there is a trace listener by default with AssertUiEnabled = true in Desktop and that will pop up an assert window with Trace.Fail
+            Trace.Listeners.Clear();
             Trace.Listeners.Add(listener);
             Trace.Listeners.Add(text);
             Trace.Assert(true, "Message");
@@ -136,6 +143,8 @@ namespace System.Diagnostics.TraceSourceTests
         {
             var listener = new TestTraceListener();
             var text = new TestTextTraceListener();
+            // We have to clear the listeners list on Trace since there is a trace listener by default with AssertUiEnabled = true in Desktop and that will pop up an assert window with Trace.Fail
+            Trace.Listeners.Clear();
             Trace.Listeners.Add(listener);
             Trace.Listeners.Add(text);
             Trace.Assert(true, "Message", "Detail");
@@ -303,6 +312,8 @@ namespace System.Diagnostics.TraceSourceTests
         public void FailTest()
         {
             var listener = new TestTraceListener();
+            // We have to clear the listeners list on Trace since there is a trace listener by default with AssertUiEnabled = true in Desktop and that will pop up an assert window with Trace.Fail
+            Trace.Listeners.Clear();
             Trace.Listeners.Add(listener);
             Trace.Fail("Text");
             Assert.Equal(1, listener.GetCallCount(Method.Fail));
@@ -344,6 +355,8 @@ namespace System.Diagnostics.TraceSourceTests
         public void TraceTest02()
         {
             var textTL = new TestTextTraceListener();
+            // We have to clear the listeners list on Trace since there is a trace listener by default with AssertUiEnabled = true in Desktop and that will pop up an assert window with Trace.Fail
+            Trace.Listeners.Clear();
             Trace.Listeners.Add(textTL);
             Trace.IndentLevel = 0;
             Trace.IndentSize = 2;

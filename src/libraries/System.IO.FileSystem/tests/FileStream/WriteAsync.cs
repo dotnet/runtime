@@ -257,7 +257,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public async void WriteAsyncInternalBufferOverflow()
+        public async Task WriteAsyncInternalBufferOverflow()
         {
             using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create, FileAccess.Write, FileShare.None, 3, useAsync: true))
             {

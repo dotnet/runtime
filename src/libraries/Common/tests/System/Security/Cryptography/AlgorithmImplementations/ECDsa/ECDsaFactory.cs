@@ -35,12 +35,6 @@ namespace System.Security.Cryptography.EcDsa.Tests
             return s_provider.IsCurveValid(oid);
         }
 
-        public static bool ExplicitCurvesSupported
-        {
-            get
-            {
-                return s_provider.ExplicitCurvesSupported;
-            }
-        }
+        public static bool ExplicitCurvesSupported => s_provider.ExplicitCurvesSupported;
     }
 }

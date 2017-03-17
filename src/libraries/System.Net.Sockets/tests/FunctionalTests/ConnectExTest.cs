@@ -74,21 +74,5 @@ namespace System.Net.Sockets.Tests
                 server6.Dispose();
             }
         }
-
-        #region GC Finalizer test
-        // This test assumes sequential execution of tests and that it is going to be executed after other tests
-        // that used Sockets.
-        [OuterLoop] // TODO: Issue #11345
-        [Fact]
-        public void TestFinalizers()
-        {
-            // Making several passes through the FReachable list.
-            for (int i = 0; i < 3; i++)
-            {
-                GC.Collect();
-                GC.WaitForPendingFinalizers();
-            }
-        }
-        #endregion 
     }
 }

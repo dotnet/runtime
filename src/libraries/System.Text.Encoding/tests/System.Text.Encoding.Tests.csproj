@@ -4,8 +4,11 @@
   <PropertyGroup>
     <ProjectGuid>{3BB28F2F-51DF-49A3-A0BF-E1C5C0D7E3E0}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants Condition="'$(TargetGroup)'=='netcoreapp'">$(DefineConstants);netcoreapp</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
@@ -37,7 +40,9 @@
     <Compile Include="Fallback\EncoderExceptionFallbackTests.cs" />
     <Compile Include="Fallback\DecoderExceptionFallbackTests.cs" />
     <Compile Include="NegativeEncodingTests.cs" />
+    <Compile Include="NegativeEncodingTests.netcoreapp.cs" Condition="'$(TargetGroup)'=='netcoreapp'" />
     <Compile Include="EncodingTestHelpers.cs" />
+    <Compile Include="EncodingTestHelpers.netcoreapp.cs" Condition="'$(TargetGroup)'=='netcoreapp'" />
     <Compile Include="Latin1Encoding\Latin1EncodingEncode.cs" />
     <Compile Include="Latin1Encoding\Latin1EncodingDecode.cs" />
     <Compile Include="Latin1Encoding\Latin1EncodingGetMaxByteCount.cs" />

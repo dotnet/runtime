@@ -103,7 +103,7 @@ namespace System.CodeDom.Compiler
         public override bool Equals(object o)
         {
             CompilerInfo other = o as CompilerInfo;
-            if (o == null)
+            if (other == null)
             {
                 return false;
             }

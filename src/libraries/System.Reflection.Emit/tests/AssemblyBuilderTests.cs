@@ -125,7 +125,7 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal("<In Memory Module>", module.Name);
 
             // The coreclr ignores the name passed to AssemblyBuilder.DefineDynamicModule
-            if (RuntimeInformation.FrameworkDescription.StartsWith(".NET Framework"))
+            if (PlatformDetection.IsFullFramework)
             {
                 Assert.Equal(name, module.FullyQualifiedName);
             }

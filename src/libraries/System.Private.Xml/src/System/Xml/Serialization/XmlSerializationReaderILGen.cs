@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 
-#if !NET_NATIVE
+#if !uapaot
 namespace System.Xml.Serialization
 {
     using System;

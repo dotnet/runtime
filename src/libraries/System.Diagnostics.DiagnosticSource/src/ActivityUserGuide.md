@@ -21,7 +21,7 @@ Therefore code which creates activity also writes corresponding event to `Diagno
 - DO - Guard Activity creation and start with call to `DiagnosticSource.IsEnabled` to avoid creating activities when no-one is listening to them and to enable event name-based filtering or sampling.
 - DO - Use `DiagnosticSource.StartActivity(Activity)` and `DiagnosticSource.StopActivity(Activity)` methods instead of Activity methods to ensure Activity events are always written to `DiagnosticSource`.
 - DO - pass any necessary context to `DiagnosticListener`, so your application may enrich Activity. For example, in the case of an incoming HTTP request, the application needs an instance of `HttpContext` in order to add custom tags (method, path, user-agent, etc.)
-- CONSIDER - keeping [Baggage](#baggage) as small as possible.
+- CONSIDER - avoid [Baggage](#baggage) or keep it as small as possible.
 - DO NOT - add sensitive information to baggage, since it may be propagated out of the process boundaries.
 - DO - write activity [Id](#id) with every telemetry event. [ParentId](#parentid), [Tags](#tags) and [Baggage](#baggage) should be written at least once per operation and could be found by Id. Note that Tags and Baggage could be changed through the lifetime of activity, and it makes sense to write them when the activity stops. [Duration](#duration) should be logged only when the activity stops.
 - CONSIDER - writing activity [RootId](#root-id) with every telemetry event *if* filtering by Id prefix is not supported by you logging backend or too expensive.
@@ -30,7 +30,6 @@ The current activity is exposed as static variable, `Activity.Current`, and flow
 
 Applications may access `Activity.Current` anywhere in the code to log events along with the context stored in Activity.
 # Activity Usage
-At the moment an application writes log record, it can access `Activity.Current` to get all required details from it.
 
 ## Creating Activities
 ```C#
@@ -40,37 +39,37 @@ An activity must be created with an operation name. This is a coarse name that i
 
 After an Activity is created you can add additional details: [Start time](#starttimeutc), [Tags](#tags) and [Baggage](#baggage)
 ```C#
-   activity.SetStartTime(GetHighPrecisionTimestamp())
+   activity.SetStartTime()
            .AddTag("Path", request.Path)
-           .AddBaggage("CorrelationId", request.Headers["x-ms-correlation-id"]);
+           .AddBaggage("FeatureId", experimentalFeatureId);
 ```
 Once an activity has been built, it's time to start it and continue with request processing.
 
 ## Starting and Stopping Activity
 
 The `Start()` and `Stop()` methods maintain [Activity.Current](current) which flows with async calls and is available during request processing.
-When that activity is started, it is given an [Id](id) and a [Parent](parent).
+When that activity is started, it gets an [Id](id) and [Parent](parent).
 
 ```C#
-   public void OnIncomingRequest(DiagnosticListener httpListener, HttpContext request)
+   public void OnIncomingRequest(DiagnosticListener httpListener, HttpContext context)
    {
        if (httpListener.IsEnabled("Http_In"))
        {
            Activity activity = new Activity("Http_In");
-           activity.SetStartTime(GetHighPrecisionTimestamp())
+
            //add tags, baggage, etc.
-           activity.SetParentId(context.Request.headers["x-ms-request-id"])
-           foreach (var header in context.Request.Headers)
-             if (header.Key.StartsWith("x-baggage-")
-                 activity.AddBaggage(header.Key, header.Value);
-                 
-           httpListener.StartActivity(activity, httpContext);
+           activity.SetParentId(context.Request.headers["Request-id"])
+           foreach (var pair in context.Request.Headers["Correlation-Context"])
+		   {
+			   var baggageItem = NameValueHEaderValue.Parse(pair);
+	           activity.AddBaggage(baggageItem.Key, baggageItem.Value);
+           }     
+           httpListener.StartActivity(activity, new  {context});
            try {
                //process request ...
            } finally {
-               activity.SetEndTime(GetHighPrecisionTimestamp());
                //stop activity
-               httpListener.StopActivity(activity, highPrecisionStopTime);
+               httpListener.StopActivity(activity, new {context} );
            }       
        }
    }
@@ -78,8 +77,6 @@ When that activity is started, it is given an [Id](id) and a [Parent](parent).
 **Note** 
 - instead of Activity.Start() and Stop() methods, in above example we call `DiagnosticSource.StartActivity()` and `StopActivity()` methods that write events to DiagnosticSource.
 - Activity creation is guarded with a call to `DiagnosticSource.IsEnabled` thus eliminating any unnecessary performance impact if no-one is listening to this `DiagnosticSource`.
-- DateTime.UtcNow in practice is [accurate to 16 milliseconds](https://blogs.msdn.microsoft.com/ericlippert/2010/04/08/precision-and-accuracy-of-datetime/). If you want better accuracy, call [SetStartTime](#setstarttime) and [SetEndTime](#setendtime) with a timestamp derived from a combination of `DateTime` and `System.Diagnostics.Stopwatch`.
-
 
 ## Creating child Activities
 When an application makes an outbound call, for example to an external web-service, a new activity should be created. If this child activity is part of an existing activity then its Parent will be assigned automatically during Start().
@@ -87,20 +84,18 @@ When an application makes an outbound call, for example to an external web-servi
 ```C#
     public void OnOutgoingRequest(DiagnosticListener httpListener, HttpRequestMessage request)
     {
-        if (httpListener.IsEnabled(request.RequestUri.ToString()))
+        if (httpListener.IsEnabled() && httpListener.IsEnabled("Http_Out", request))
         {
             var activity = new Activity("Http_Out");
-            httpListener.StartActivity(activity, request);
+            httpListener.StartActivity(activity, new {request});
 
-            request.Headers.Add("x-ms-request-id", activity.Id);
-            foreach (var baggage in activity.Baggage)
-                request.Headers.Add(baggage.Key, baggage.Value);
+            request.Headers.Add("Request-Id", activity.Id);
+            request.Headers.Add("Correlation-Context", baggageToHeader(activity.Baggage));
             try {
                //process request ...
             } finally {
-                activity.SetEndTime(GetHighPrecisionTimestamp());
                 //stop activity
-                httpListener.StopActivity(activity, value.Value, DateTimeStopwatch.GetTime(timestamp));
+                httpListener.StopActivity(activity, new {request} );
             }       
         }   
     }
@@ -108,7 +103,7 @@ When an application makes an outbound call, for example to an external web-servi
 
 The child Activity will automatically inherit Baggage from its parent. The above example also demonstrates how baggage could be propagated to a downstream web service in HTTP request headers.
 
-Just as in the previous example, activity creation should be guarded with a `DiagnosticSource.IsEnabled()` call. In this case, however, it prevents headers injection based on request Uri.
+Just as in the previous example, activity creation should be guarded with a `DiagnosticSource.IsEnabled()` call. In this case, however, it prevents instrumentation based on request properties: e.g. URI.
 Note that different DiagnosticSources should be used for incoming and outgoing HTTP activities allowing you to implement separate filtering for events.
 
 ## Listening to Activity Events
@@ -162,6 +157,8 @@ Note that in the [Incoming Request Sample](#starting-and-stopping-activity), we 
 			["ParentId"] = activity.ParentId,
 			["Duration"] = activity.Duration
 		};
+		
+		//warning: Baggage or Tag could have duplicated keys!
         foreach (var kv in activity.Tags)
             document[kv.Key] = kv.Value;
         foreach (var kv in activity.Baggage)
@@ -188,6 +185,8 @@ Note that in the [Incoming Request Sample](#starting-and-stopping-activity), we 
 
 It's crucial that Activity Id is logged along with every event. ParentId, Tags and Baggage must be logged at least once for every activity and may be logged with every telemetry event to simplify querying and aggregation. Duration is only available after SetEndTime is called and should be logged when Activity Stop event is received.
 
+**Note: Activity allows duplicated keys in Tags and Baggage**
+
 ## Activity Id
 The main goal of Activity is to ensure telemetry events could be correlated in order to trace user requests and Activity.Id is the key part of this functionality.
 
@@ -199,42 +198,54 @@ Activity.Id serves as hierarchical Request-Id in terms of [HTTP standard proposa
 
 ### Id Format
 
-`/root-id.id1.id2.id3...`
+`|root-id.id1_id2.id3_id4.`
 
-It starts with '/' followed by [root-id](#root-id) followed by '.' and small identifiers of local Activities, separated by '.'. 
+e.g. 
+
+`|Server1-5d183ab6-a000b421.1.8e2d4c28_1.`
+
+It starts with '|' followed by [root-id](#root-id) followed by '.' and small identifiers of local Activities, separated by '.' or '_'. 
 
 [Root-id](#root-id) identifies the whole operation and 'Id' identifies particular Actvity involved in operation processing.
 
-'/' indicates Id has hierarchcal structure, which is useful information for logging system. 
+'|' indicates Id has hierarchcal structure, which is useful information for logging system. 
 
-* Id is 128 bytes or shorter
-* Id consist of [Base64](https://en.wikipedia.org/wiki/Base64), '-' (dash), '.' (dot) and '#' (pound) characters.
+* Id is 1024 bytes or shorter
+* Id consist of [Base64](https://en.wikipedia.org/wiki/Base64), '-' (hyphen), '.' (dot), '_' (underscore) and '#' (pound) characters. 
+Where base64 and '-' are used in nodes and other characters delimit nodes. Id always ends with one of the delimiters.
 
 ### Root Id
-When you start the first Activity for the operation, you may provide root-id through `Activity.SetParentId(string)` API. When Activity is actually started, it will generate own Id by appending relatively small suffix (preceeded with '.') to root-id. E.g. `/<root-id>.2341`
+When you start the first Activity for the operation, you may optionaly provide root-id through `Activity.SetParentId(string)` API. 
 
-Root-Id:
-* MUST be sufficiently large to identify single operation: use 64-bit random number or Guid
-* MUST be 64 bytes or shorter.
-* MUST contain [Base64 characters](https://en.wikipedia.org/wiki/Base64) and '-' (dash)
+If you don't provide it, Activity will generate root-id: e.g. `Server-5d183ab6-a000b421`
 
-If you don't provide it, Activity will generate root-id: e.g. `<root-id>` without suffix.
+If don't have ParentId from external process and want to generate one, keep in mind that Root-Id
+* MUST be sufficiently large to identify single operation in entire system: use 64(or 128) bit random number or Guid
+* MUST contain only [Base64 characters](https://en.wikipedia.org/wiki/Base64) and '-' (dash)
 
-If provided ParentId does not start with '/', Activity will prepend it's own Id with '/' and will keep ParentId intact.
 To get root id, use `Activity.RootId` property after providing ParentId or after starting Activity. 
 
-### Child Avtivities and Parent Id
-Any child Activity started in the same process as it's parent, will take Parent.Id and generate own Id by appending integer suffix to Parent.Id: e.g. `<Parent.Id>.1`. Suffix is an integer number of child activity started from the same parent.
+### Child Activities and Parent Id
+#### Internal Parent
+Any child Activity started in the same process as its parent, will take `Parent.Id` and generate its own Id
+by appending integer suffix to `Parent.Id`: e.g. `<Parent.Id>.1.`. Suffix is an integer number of child activity started from the same parent.
 
-Activities which parent is external to the process, should be assigned with Parent-Id (before start) with `Activity.SetParentId(string)` API. Activity would use another suffix for Id, as described in [Root Id](#root-id) section.
+Activity generates Id in following format `parent-id.local-id.`.
 
-If ParentId does not start with '/', Activity will add prepend it's own Id with '/' and will keep ParentId intact.
+#### External Parent
+Activities which parent is external to the process, should be assigned with Parent-Id (before start) with `Activity.SetParentId(string)` API.
+Activity would use another suffix for Id, as described in [Root Id](#root-id) section and will append '_' delimiter that indicates 
+that parent came from the external process.
 
-So the Activity generates Id in following format `parent-id.local-id`, where `parent-id` may have similar hierarchical structure.
+If external ParentId does not start with '|', Activity will add prepend it's own Id with '|' and will keep ParentId intact.
+Similarly, if ParentId does not end with '.', Activity will append it.
+
+Activity generates Id in following format `parent-id.local-id_`.
 
 ### Id overflow
 Appending local-id to Parent.Id may cause Id to exceed length limit.
-In case of overflow, last bytes of Parent.Id are trimmed to make a room for 32-bit random lower-hex encoded integer preceeded with '#': `<Beginning-Of-Parent-Id>#local-id`
+In case of overflow, last bytes of Parent.Id are trimmed to make a room for 32-bit random lower-hex encoded integer
+and '#' delimiter that indicates overflow: `<Beginning-Of-Parent-Id>.local-id#`
 
 # Reference
 
@@ -265,7 +276,7 @@ Id is passed to external dependencies and considered as [ParentId](#parentid) fo
 `string ParentId { get; private set; }` - Activity may have either an in-process [Parent](#parent) or an external Parent if it was deserialized from request. ParentId together with Id represent the parent-child relationship in logs and allows you to correlate outgoing and incoming requests.
 
 ### RootId
-`string RootId  { get; private set; }` - Returns [root id](#root-id): Id (or ParentId) substring from '/' to first '.' occurence.
+`string RootId  { get; private set; }` - Returns [root id](#root-id): Id (or ParentId) substring from '|' to first '.' occurence.
 
 ### Current
 `static Activity Current { get; }` - Returns current Activity which flows across async calls.

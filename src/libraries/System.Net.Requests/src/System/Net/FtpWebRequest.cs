@@ -8,8 +8,10 @@ using System.IO;
 using System.Net.Cache;
 using System.Net.Sockets;
 using System.Security;
+using System.Runtime.ExceptionServices;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net
@@ -1231,7 +1233,7 @@ namespace System.Net
         {
             if (_exception != null)
             {
-                throw _exception;
+                ExceptionDispatchInfo.Capture(_exception).Throw();
             }
         }
 
@@ -1643,17 +1645,7 @@ namespace System.Net
         {
             get
             {
-                if (_clientCertificates == null)
-                {
-                    lock (_syncObject)
-                    {
-                        if (_clientCertificates == null)
-                        {
-                            _clientCertificates = new X509CertificateCollection();
-                        }
-                    }
-                }
-                return _clientCertificates;
+                return LazyInitializer.EnsureInitialized(ref _clientCertificates, ref _syncObject, () => new X509CertificateCollection());
             }
             set
             {

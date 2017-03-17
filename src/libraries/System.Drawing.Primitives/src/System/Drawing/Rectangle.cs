@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.ComponentModel;
 using System.Diagnostics.Contracts;
 using System.Numerics.Hashing;
 
@@ -63,6 +64,7 @@ namespace System.Drawing
         ///       upper-left corner of the rectangular region represented by this <see cref='System.Drawing.Rectangle'/>.
         ///    </para>
         /// </summary>
+        [Browsable(false)]
         public Point Location
         {
             get { return new Point(X, Y); }
@@ -76,6 +78,7 @@ namespace System.Drawing
         /// <summary>
         ///    Gets or sets the size of this <see cref='System.Drawing.Rectangle'/>.
         /// </summary>
+        [Browsable(false)]
         public Size Size
         {
             get { return new Size(Width, Height); }
@@ -132,6 +135,7 @@ namespace System.Drawing
         ///       rectangular region defined by this <see cref='System.Drawing.Rectangle'/> .
         ///    </para>
         /// </summary>
+        [Browsable(false)]
         public int Left => X;
 
         /// <summary>
@@ -140,6 +144,7 @@ namespace System.Drawing
         ///       rectangular region defined by this <see cref='System.Drawing.Rectangle'/>.
         ///    </para>
         /// </summary>
+        [Browsable(false)]
         public int Top => Y;
 
         /// <summary>
@@ -148,6 +153,7 @@ namespace System.Drawing
         ///       rectangular region defined by this <see cref='System.Drawing.Rectangle'/>.
         ///    </para>
         /// </summary>
+        [Browsable(false)]
         public int Right => unchecked(X + Width);
 
         /// <summary>
@@ -156,6 +162,7 @@ namespace System.Drawing
         ///       rectangular region defined by this <see cref='System.Drawing.Rectangle'/>.
         ///    </para>
         /// </summary>
+        [Browsable(false)]
         public int Bottom => unchecked(Y + Height);
 
         /// <summary>
@@ -164,6 +171,7 @@ namespace System.Drawing
         ///       or a <see cref='System.Drawing.Rectangle.Height'/> of 0.
         ///    </para>
         /// </summary>
+        [Browsable(false)]
         public bool IsEmpty => _height == 0 && _width == 0 && _x == 0 && _y == 0;
 
         /// <summary>

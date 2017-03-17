@@ -95,7 +95,7 @@ namespace Microsoft.SqlServer.TDS.EndPoint
             ServerEndPoint = (IPEndPoint)ListenerSocket.LocalEndpoint;
 
             // Initialize the listener
-            ListenerThread = new Thread(new ThreadStart(_RequestListener));
+            ListenerThread = new Thread(new ThreadStart(_RequestListener)) { IsBackground = true };
             ListenerThread.Name = "TDS Server EndPoint Listener";
             ListenerThread.Start();
         }

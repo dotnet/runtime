@@ -406,7 +406,7 @@ namespace System.Net.Primitives.Unit.Tests
         }
 
         [Fact]
-        public async void Add_ReachedMaxCountWithExpiredCookies_Added()
+        public async Task Add_ReachedMaxCountWithExpiredCookies_Added()
         {
             Cookie c1 = new Cookie("name1", "value", "", ".domain1.com");
             Cookie c2 = new Cookie("name2", "value", "", ".domain2.com");
@@ -518,7 +518,7 @@ namespace System.Net.Primitives.Unit.Tests
         }
 
         [Fact]
-        public async void GetCookies_RemovesExpired_Cookies()
+        public async Task GetCookies_RemovesExpired_Cookies()
         {
             Cookie c1 = new Cookie("name1", "value", "", ".url1.com");
             Cookie c2 = new Cookie("name2", "value", "", ".url2.com");

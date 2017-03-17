@@ -4,6 +4,8 @@
   <PropertyGroup>
     <ProjectGuid>{7DEA4539-9A0D-4801-B229-3824710EBCEE}</ProjectGuid>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System.DirectoryServices.Protocols.cs" />
     <ProjectReference Include="..\..\System.DirectoryServices\ref\System.DirectoryServices.csproj" />
@@ -22,4 +24,3 @@
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
-

@@ -72,11 +72,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             if (typeArgsCls != null)
             {
-#if DEBUG
                 typeArgsCls.AssertValid();
-#endif
-                ctypeCls = typeArgsCls.size;
-                prgtypeCls = typeArgsCls.ToArray();
+                ctypeCls = typeArgsCls.Count;
+                prgtypeCls = typeArgsCls.Items;
             }
             else
             {
@@ -86,12 +84,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             if (typeArgsMeth != null)
             {
-#if DEBUG
                 typeArgsMeth.AssertValid();
-#endif
-
-                ctypeMeth = typeArgsMeth.size;
-                prgtypeMeth = typeArgsMeth.ToArray();
+                ctypeMeth = typeArgsMeth.Count;
+                prgtypeMeth = typeArgsMeth.Items;
             }
             else
             {

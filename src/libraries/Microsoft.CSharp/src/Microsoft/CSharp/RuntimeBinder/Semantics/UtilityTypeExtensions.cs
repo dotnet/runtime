@@ -13,14 +13,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             Debug.Assert(type != null);
             yield return type;
-            foreach (AggregateType t in type.GetIfacesAll().ToArray())
+            foreach (AggregateType t in type.GetIfacesAll().Items)
                 yield return t;
         }
 
         private static IEnumerable<AggregateType> AllConstraintInterfaces(this TypeArray constraints)
         {
             Debug.Assert(constraints != null);
-            foreach (AggregateType c in constraints.ToArray())
+            foreach (AggregateType c in constraints.Items)
                 foreach (AggregateType t in c.InterfaceAndBases())
                     yield return t;
         }
@@ -40,7 +40,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             Debug.Assert(type != null);
             foreach (AggregateType b in type.TypeAndBaseClasses())
-                foreach (AggregateType t in b.GetIfacesAll().ToArray())
+                foreach (AggregateType t in b.GetIfacesAll().Items)
                     yield return t;
         }
 

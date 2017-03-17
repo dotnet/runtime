@@ -46,6 +46,7 @@ namespace System.Security.AccessControl.Tests
 
         [Theory]
         [MemberData(nameof(CommonSecurityDescriptor_CreateFromRawSecurityDescriptor_TestData))]
+        [ActiveIssue(16919)]
         public static void TestCreateFromRawSecurityDescriptor(bool isContainer, bool isDS, string rawSecurityDescriptorSddl, string verifierSddl)
         {
             RawSecurityDescriptor rawSecurityDescriptor = new RawSecurityDescriptor(rawSecurityDescriptorSddl);

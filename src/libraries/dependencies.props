@@ -17,21 +17,21 @@
        These ref versions are pulled from https://github.com/dotnet/versions.
   -->
   <PropertyGroup>
-    <CoreFxCurrentRef>0f63ef5a159c7cd37724ae17b05bf956dfb79b52</CoreFxCurrentRef>
-    <CoreClrCurrentRef>1c4a59f686ba747727efcddb87b0322b9c48261b</CoreClrCurrentRef>
+    <CoreFxCurrentRef>8928ad83e2e5c33ce116c3b63eb94f611d72c2e2</CoreFxCurrentRef>
+    <CoreClrCurrentRef>b48a83561e6763d50668717a46130aaa94a4687e</CoreClrCurrentRef>
     <ExternalCurrentRef>3b8a99621d89ad9877f053ba8af25e0f25dcd9d8</ExternalCurrentRef>
-    <ProjectNTfsCurrentRef>d9076a006edfd716b4b54d702703fcb1f5575619</ProjectNTfsCurrentRef>
+    <ProjectNTfsCurrentRef>63be48cacc0f8c89abc9157f7a9afc68f21f9c58</ProjectNTfsCurrentRef>
     <SniCurrentRef>05650e53f2aa4497f74cd6e9b053d3f69f64b0bd</SniCurrentRef>
-    <StandardCurrentRef>1fcc52093fa372901c516f23293e8b8350c54027</StandardCurrentRef>
+    <StandardCurrentRef>08ff016839d62c9455d16245524f46b16d7a1074</StandardCurrentRef>
   </PropertyGroup>
 
   <!-- Auto-upgraded properties for each build info dependency. -->
   <PropertyGroup>
-    <CoreFxExpectedPrerelease>stable</CoreFxExpectedPrerelease>
-    <CoreClrExpectedPrerelease>beta-25103-01</CoreClrExpectedPrerelease>
+    <CoreFxExpectedPrerelease>beta-25114-01</CoreFxExpectedPrerelease>
+    <CoreClrExpectedPrerelease>beta-25115-02</CoreClrExpectedPrerelease>
     <ExternalExpectedPrerelease>beta-25016-01</ExternalExpectedPrerelease>
-    <ProjectNTfsExpectedPrerelease>beta-25028-00</ProjectNTfsExpectedPrerelease>
-    <NETStandardPackageVersion>2.0.0-beta-25102-01</NETStandardPackageVersion>
+    <ProjectNTfsExpectedPrerelease>beta-25116-00</ProjectNTfsExpectedPrerelease>
+    <NETStandardPackageVersion>2.0.0-beta-25115-01</NETStandardPackageVersion>
     <NETStandardPackageId>NETStandard.Library</NETStandardPackageId>
     <!-- Use the SNI runtime package -->
     <SniPackageVersion>4.4.0-beta-25007-02</SniPackageVersion>
@@ -40,7 +40,7 @@
   <!-- Full package version strings that are used in other parts of the build. -->
   <PropertyGroup>
     <AppXRunnerVersion>1.0.3-prerelease-00921-01</AppXRunnerVersion>
-    <XunitPerfAnalysisPackageVersion>1.0.0-alpha-build0047</XunitPerfAnalysisPackageVersion>
+    <XunitPerfAnalysisPackageVersion>1.0.0-alpha-build0049</XunitPerfAnalysisPackageVersion>
     <TraceEventPackageVersion>1.0.0-alpha-experimental</TraceEventPackageVersion>
   </PropertyGroup>
 

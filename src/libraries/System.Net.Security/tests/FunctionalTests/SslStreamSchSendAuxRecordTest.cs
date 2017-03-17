@@ -26,6 +26,7 @@ namespace System.Net.Security.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
+        [ActiveIssue(16516, TestPlatforms.Windows)]
         public async Task SslStream_ClientAndServerUsesAuxRecord_Ok()
         {
             X509Certificate2 serverCert = Configuration.Certificates.GetServerCertificate();

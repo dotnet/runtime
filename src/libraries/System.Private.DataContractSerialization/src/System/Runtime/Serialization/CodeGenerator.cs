@@ -13,7 +13,7 @@ using System.IO;
 using System.Security;
 using System.Diagnostics;
 
-#if !NET_NATIVE
+#if !uapaot
 namespace System.Runtime.Serialization
 {
     internal class CodeGenerator
@@ -60,7 +60,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-#if !NET_NATIVE
+#if !uapaot
         private static MethodInfo s_objectToString;
         private static MethodInfo ObjectToString
         {
@@ -124,7 +124,7 @@ namespace System.Runtime.Serialization
         private enum CodeGenTrace { None, Save, Tron };
         private CodeGenTrace _codeGenTrace;
 
-#if !NET_NATIVE
+#if !uapaot
         private LocalBuilder _stringFormatArray;
 #endif
 
@@ -1620,7 +1620,7 @@ namespace System.Runtime.Serialization
             If(Cmp.NotEqualTo);
         }
 
-#if !NET_NATIVE
+#if !uapaot
         internal void BeginWhileCondition()
         {
             Label startWhile = DefineLabel();

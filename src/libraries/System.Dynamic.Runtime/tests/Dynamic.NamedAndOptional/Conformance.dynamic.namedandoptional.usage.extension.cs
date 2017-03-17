@@ -6,8 +6,6 @@ using Xunit;
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.extension.ext01.ext01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.extension.ext01.ext01;
-
     // <Area> of Methods with Optional Parameters and named arguments</Area>
     // <Title>Calling extension methods properly</Title>
     // <Description>CAlling extension methods with optional parameters and named-ness</Description>
@@ -57,8 +55,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.extension.ext01a.ext01a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.extension.ext01a.ext01a;
-
     // <Area> of Methods with Optional Parameters and named arguments</Area>
     // <Title>Calling extension methods properly</Title>
     // <Description>CAlling extension methods with optional parameters and named-ness</Description>
@@ -97,8 +93,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.extension.ext02.ext02
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.extension.ext02.ext02;
-
     // <Area> of Methods with Optional Parameters and named arguments</Area>
     // <Title>Calling extension methods properly</Title>
     // <Description>CAlling extension methods with optional parameters and named-ness</Description>
@@ -150,8 +144,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.extension.ext02a.ext02a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.extension.ext02a.ext02a;
-
     // <Area> of Methods with Optional Parameters and named arguments</Area>
     // <Title>Calling extension methods properly</Title>
     // <Description>CAlling extension methods with optional parameters and named-ness</Description>
@@ -192,8 +184,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.extension.ext04.ext04
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.extension.ext04.ext04;
-
     // <Area> of Methods with Optional Parameters and named arguments</Area>
     // <Title>Calling extension methods properly</Title>
     // <Description>CAlling extension methods with optional parameters and named-ness</Description>
@@ -250,8 +240,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.extension.ext04a.ext04a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.extension.ext04a.ext04a;
-
     // <Area> of Methods with Optional Parameters and named arguments</Area>
     // <Title>Calling extension methods properly</Title>
     // <Description>CAlling extension methods with optional parameters and named-ness</Description>
@@ -297,8 +285,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.extension.ext05.ext05
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.extension.ext05.ext05;
-
     // <Area> of Methods with Optional Parameters and named arguments</Area>
     // <Title>Calling extension methods properly</Title>
     // <Description>CAlling extension methods with optional parameters and named-ness</Description>
@@ -355,8 +341,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.extension.ext06.ext06
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.extension.ext06.ext06;
-
     // <Area> of Methods with Optional Parameters and named arguments</Area>
     // <Title>Calling extension methods properly</Title>
     // <Description>CAlling extension methods with optional parameters and named-ness</Description>
@@ -411,8 +395,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.extension.ext07.ext07
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.extension.ext07.ext07;
-
     // <Area> of Methods with Optional Parameters and named arguments</Area>
     // <Title>Calling extension methods properly</Title>
     // <Description>CAlling extension methods with optional parameters and named-ness</Description>
@@ -467,8 +449,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.extension.ext07a.ext07a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.extension.ext07a.ext07a;
-
     // <Area> of Methods with Optional Parameters and named arguments</Area>
     // <Title>Calling extension methods properly</Title>
     // <Description>CAlling extension methods with optional parameters and named-ness</Description>
@@ -512,8 +492,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.extension.ext09.ext09
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.extension.ext09.ext09;
-
     // <Area> of Methods with Optional Parameters and named arguments</Area>
     // <Title>Calling extension methods properly</Title>
     // <Description>CAlling extension methods with optional parameters and named-ness</Description>
@@ -573,8 +551,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.extension.ext09a.ext09a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.extension.ext09a.ext09a;
-
     // <Area> of Methods with Optional Parameters and named arguments</Area>
     // <Title>Calling extension methods properly</Title>
     // <Description>CAlling extension methods with optional parameters and named-ness</Description>
@@ -623,8 +599,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.extension.ext10.ext10
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.extension.ext10.ext10;
-
     // <Area> of Methods with Optional Parameters and named arguments</Area>
     // <Title>Calling extension methods properly</Title>
     // <Description>CAlling extension methods with optional parameters and named-ness</Description>
@@ -682,8 +656,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.extension.ext11.ext11
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.extension.ext11.ext11;
-
     // <Area> of Methods with Optional Parameters and named arguments</Area>
     // <Title>Calling extension methods properly</Title>
     // <Description>CAlling extension methods with optional parameters and named-ness</Description>
@@ -741,8 +713,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.extension.ext12.ext12
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.extension.ext12.ext12;
-
     // <Area> of Methods with Optional Parameters and named arguments</Area>
     // <Title>Calling extension methods properly</Title>
     // <Description>CAlling extension methods with optional parameters and named-ness</Description>
@@ -800,8 +770,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.extension.ext13.ext13
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.extension.ext13.ext13;
-
     // <Area> of Methods with Optional Parameters and named arguments</Area>
     // <Title>Calling extension methods properly</Title>
     // <Description>CAlling extension methods with optional parameters and named-ness</Description>
@@ -853,8 +821,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.extension.ext14.ext14
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.extension.ext14.ext14;
-
     // <Area> of Methods with Optional Parameters and named arguments</Area>
     // <Title>Calling extension methods properly</Title>
     // <Description>CAlling extension methods with optional parameters and named-ness</Description>
@@ -895,8 +861,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.extension.ext14a.ext14a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.extension.ext14a.ext14a;
-
     // <Area> of Methods with Optional Parameters and named arguments</Area>
     // <Title>Calling extension methods properly</Title>
     // <Description>CAlling extension methods with optional parameters and named-ness</Description>
@@ -937,8 +901,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.extension.ext15.ext15
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.extension.ext15.ext15;
-
     // <Area> of Methods with Optional Parameters and named arguments</Area>
     // <Title>Calling extension methods properly</Title>
     // <Description>CAlling extension methods with optional parameters and named-ness</Description>
@@ -993,8 +955,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.extension.ext15a.ext15a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.namedandoptional.usage.extension.ext15a.ext15a;
-
     // <Area> of Methods with Optional Parameters and named arguments</Area>
     // <Title>Calling extension methods properly</Title>
     // <Description>CAlling extension methods with optional parameters and named-ness</Description>

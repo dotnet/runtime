@@ -176,9 +176,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         }
                         if (meth.Params != null)
                         {
-                            for (int i = 0; !fBogus && i < meth.Params.Size; i++)
+                            for (int i = 0; !fBogus && i < meth.Params.Count; i++)
                             {
-                                fBogus |= meth.Params.Item(i).computeCurrentBogusState();
+                                fBogus |= meth.Params[i].computeCurrentBogusState();
                             }
                         }
                     }
@@ -221,7 +221,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     fBogus = this.AsAggregateType().getAggregate().computeCurrentBogusState();
                     for (int i = 0; !fBogus && i < this.AsAggregateType().GetTypeArgsAll().size; i++)
                     {
-                        fBogus |= this.AsAggregateType().GetTypeArgsAll().Item(i).computeCurrentBogusState();
+                        fBogus |= this.AsAggregateType().GetTypeArgsAll()[i].computeCurrentBogusState();
                     }
                     break;
                  */

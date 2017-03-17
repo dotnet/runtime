@@ -13,7 +13,7 @@ using System.Text;
 using System.Xml.Schema;
 using System.Xml.Extensions;
 
-#if !NET_NATIVE
+#if !uapaot
 namespace System.Xml.Serialization
 {
     internal class XmlSerializationWriterILGen : XmlSerializationILGen

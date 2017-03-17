@@ -13,6 +13,18 @@ namespace Microsoft.DotNet.Build.Tasks
         [Required]
         public string DepsJsonPath { get; set; }
 
+        public struct FileNameAssemblyPair
+        {
+            public AssemblyName AssemblyName;
+            public string FileName;
+
+            public FileNameAssemblyPair(AssemblyName assemblyName, string fileName)
+            {
+                AssemblyName = assemblyName;
+                FileName = fileName;
+            } 
+        }
+
         public string RuntimeDirectory { get; set; }
 
         public ITaskItem[] DepsExceptions { get; set; }
@@ -27,13 +39,13 @@ namespace Microsoft.DotNet.Build.Tasks
             }
             List<string> filesInDir = Directory.EnumerateFiles(Path.GetDirectoryName(RuntimeDirectory)).ToList();
 
-            List<AssemblyName> assemblyNames = new List<AssemblyName>();
+            List<FileNameAssemblyPair> assemblyNames = new List<FileNameAssemblyPair>();
             foreach (string file in filesInDir)
             {
                 AssemblyName result;
                 if (TryGetManagedAssemblyName(file, out result))
                 {
-                    assemblyNames.Add(result);
+                    assemblyNames.Add(new FileNameAssemblyPair(result, Path.GetFileNameWithoutExtension(file)));
                 }
             }
 
@@ -73,8 +85,8 @@ namespace Microsoft.DotNet.Build.Tasks
             {
                 JObject runtimes = new JObject();
                 JObject runtimeLocation = new JObject();
-                string key = $"{assembly.Name}/{assembly.Version.Major}.{assembly.Version.Minor}.{assembly.Version.Build}";
-                runtimeLocation.Add(assembly.Name + ".dll", new JObject());
+                string key = $"{assembly.FileName}/{assembly.AssemblyName.Version.Major}.{assembly.AssemblyName.Version.Minor}.{assembly.AssemblyName.Version.Build}";
+                runtimeLocation.Add(assembly.FileName + ".dll", new JObject());
                 runtimes.Add("runtime", runtimeLocation);
                 try
                 {

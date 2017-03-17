@@ -10,7 +10,7 @@ using System.Xml.Serialization;
 
 namespace System.Runtime.Serialization
 {
-#if USE_REFEMIT || NET_NATIVE
+#if USE_REFEMIT || uapaot
     public class XmlReaderDelegator
 #else
     internal class XmlReaderDelegator

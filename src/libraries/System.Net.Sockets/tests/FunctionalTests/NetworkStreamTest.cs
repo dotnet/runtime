@@ -639,11 +639,10 @@ namespace System.Net.Sockets.Tests
             });
         }
 
-        [ActiveIssue(16611, TestPlatforms.AnyUnix)]
         [Fact]
         public async Task CopyToAsync_InvalidArguments_Throws()
         {
-            await RunWithConnectedNetworkStreamsAsync(async (stream, _) =>
+            await RunWithConnectedNetworkStreamsAsync((stream, _) =>
             {
                 // Null destination
                 Assert.Throws<ArgumentNullException>("destination", () => { stream.CopyToAsync(null); });
@@ -655,9 +654,27 @@ namespace System.Net.Sockets.Tests
                 // Copying to non-writable stream
                 Assert.Throws<NotSupportedException>(() => { stream.CopyToAsync(new MemoryStream(new byte[0], writable: false)); });
 
+                // Copying to a disposed stream
+                Assert.Throws<ObjectDisposedException>(() =>
+                {
+                    var disposedTarget = new MemoryStream();
+                    disposedTarget.Dispose();
+                    stream.CopyToAsync(disposedTarget);
+                });
+
                 // Already canceled
                 Assert.Equal(TaskStatus.Canceled, stream.CopyToAsync(new MemoryStream(new byte[1]), 1, new CancellationToken(canceled: true)).Status);
 
+                return Task.CompletedTask;
+            });
+        }
+
+        [ActiveIssue(16611, TestPlatforms.AnyUnix)]
+        [Fact]
+        public async Task CopyToAsync_DisposedSourceStream_Throws()
+        {
+            await RunWithConnectedNetworkStreamsAsync(async (stream, _) =>
+            {
                 // Copying while and then after disposing the stream
                 Task copyTask = stream.CopyToAsync(new MemoryStream());
                 stream.Dispose();
@@ -666,11 +683,23 @@ namespace System.Net.Sockets.Tests
             });
         }
 
+        [Fact]
+        public async Task CopyToAsync_NonReadableSourceStream_Throws()
+        {
+            await RunWithConnectedNetworkStreamsAsync((stream, _) =>
+            {
+                // Copying from non-readable stream
+                Assert.Throws<NotSupportedException>(() => { stream.CopyToAsync(new MemoryStream()); });
+                return Task.CompletedTask;
+            }, serverAccess:FileAccess.Write);
+        }
+
         /// <summary>
         /// Creates a pair of connected NetworkStreams and invokes the provided <paramref name="func"/>
         /// with them as arguments.
         /// </summary>
-        private static async Task RunWithConnectedNetworkStreamsAsync(Func<NetworkStream, NetworkStream, Task> func)
+        private static async Task RunWithConnectedNetworkStreamsAsync(Func<NetworkStream, NetworkStream, Task> func,
+            FileAccess serverAccess = FileAccess.ReadWrite, FileAccess clientAccess = FileAccess.ReadWrite)
         {
             var listener = new TcpListener(IPAddress.Loopback, 0);
             try
@@ -686,8 +715,8 @@ namespace System.Net.Sockets.Tests
                     await Task.WhenAll(remoteTask, clientConnectTask);
 
                     using (TcpClient remote = remoteTask.Result)
-                    using (NetworkStream serverStream = remote.GetStream())
-                    using (NetworkStream clientStream = client.GetStream())
+                    using (NetworkStream serverStream = new NetworkStream(remote.Client, serverAccess, ownsSocket:true))
+                    using (NetworkStream clientStream = new NetworkStream(client.Client, clientAccess, ownsSocket: true))
                     {
                         await func(serverStream, clientStream);
                     }

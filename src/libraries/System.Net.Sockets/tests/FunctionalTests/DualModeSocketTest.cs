@@ -403,7 +403,7 @@ namespace System.Net.Sockets.Tests
 
         private void DualModeBeginConnect_IPAddressToHost_Fails_Helper(IPAddress connectTo, IPAddress listenOn)
         {
-            Assert.ThrowsAny<SocketException>(() =>
+            SocketException e = Assert.ThrowsAny<SocketException>(() =>
             {
                 DualModeBeginConnect_IPAddressToHost_Helper(connectTo, listenOn, false);
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -413,6 +413,7 @@ namespace System.Net.Sockets.Tests
                     DualModeBeginConnect_IPAddressToHost_Helper(connectTo, listenOn, false);
                 }
             });
+            Assert.NotEmpty(e.Message);
         }
     }
 
@@ -2641,7 +2642,7 @@ namespace System.Net.Sockets.Tests
                 catch (SocketException ex)
                 {
                     Error = ex.SocketErrorCode;
-                    Task.Delay(TestSettings.FailingTestTimeout).Wait(); // Give the other end a chance to call Accept().
+                    Thread.Sleep(TestSettings.FailingTestTimeout); // Give the other end a chance to call Accept().
                     _serverSocket.Dispose(); // Cancels the test
                     _waitHandle.Set();
                 }
@@ -2656,7 +2657,7 @@ namespace System.Net.Sockets.Tests
                 Error = e.SocketError;
                 if (Error != SocketError.Success)
                 {
-                    Task.Delay(TestSettings.FailingTestTimeout).Wait(); // Give the other end a chance to call Accept().
+                    Thread.Sleep(TestSettings.FailingTestTimeout); // Give the other end a chance to call Accept().
                     _serverSocket.Dispose(); // Cancels the test
                 }
                 handle.Set();

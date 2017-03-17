@@ -7,7 +7,7 @@ using System.Reflection;
 
 namespace System.Runtime.Serialization
 {
-#if USE_REFEMIT || NET_NATIVE
+#if USE_REFEMIT || uapaot
     public sealed class KnownTypeDataContractResolver : DataContractResolver
 #else
     internal sealed class KnownTypeDataContractResolver : DataContractResolver

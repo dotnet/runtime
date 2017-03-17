@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace System
 {
@@ -10,7 +11,7 @@ namespace System
     {
         private static bool s_isDisableCachingInitialized;
         private static bool s_disableCaching;
-        private static readonly object s_syncObject = new object();
+        private static object s_syncObject;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool GetCachedSwitchValue(string switchName, ref int switchValue)
@@ -35,29 +36,12 @@ namespace System
             return isSwitchEnabled;
         }
 
-        private static bool DisableCaching 
-        { 
-            get 
+        private static bool DisableCaching =>
+            LazyInitializer.EnsureInitialized(ref s_disableCaching, ref s_isDisableCachingInitialized, ref s_syncObject, () =>
             {
-                if (!s_isDisableCachingInitialized)
-                {
-                    lock (s_syncObject)
-                    {
-                        if (!s_isDisableCachingInitialized)
-                        {
-                            bool isEnabled;
-                            if (AppContext.TryGetSwitch(@"TestSwitch.LocalAppContext.DisableCaching", out isEnabled))
-                            {
-                                s_disableCaching = isEnabled;
-                            }
-
-                            s_isDisableCachingInitialized = true;
-                        }
-                    }
-                }
-
-                return s_disableCaching;
-            }
-        }
+                bool isEnabled;
+                AppContext.TryGetSwitch(@"TestSwitch.LocalAppContext.DisableCaching", out isEnabled);
+                return isEnabled;
+            });
     }
 }

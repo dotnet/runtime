@@ -11,7 +11,7 @@
     <DebugSymbols>true</DebugSymbols>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DefineConstants>$(DefineConstants);FEATURE_SERIALIZATION</DefineConstants>
-    <DefineConstants Condition="'$(TargetGroup)'=='uapaot'">$(DefineConstants);NET_NATIVE</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)' == 'uapaot'">$(DefineConstants);uapaot</DefineConstants>  
     <!-- We do not want to block reflection for this assembly -->
     <BlockReflectionAttribute Condition="'$(TargetGroup)'=='uapaot'">false</BlockReflectionAttribute>
   </PropertyGroup>
@@ -27,7 +27,6 @@
     <JsonSources>System\Runtime\Serialization\Json</JsonSources>
     <XmlSources>System\Xml</XmlSources>
     <TextSources>System\Text</TextSources>
-    <NetNative>$(DefineConstants.Contains('NET_NATIVE'))</NetNative>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)\System\HResults.cs">
@@ -54,7 +53,7 @@
     <Compile Include="$(RuntimeSerializationSources)\Globals.cs" />
     <Compile Include="$(RuntimeSerializationSources)\GenericParameterDataContract.cs" />
     <Compile Include="$(RuntimeSerializationSources)\HybridObjectCache.cs" />
-    <Compile Include="$(RuntimeSerializationSources)\InvalidDataContract.cs" Condition="$(NetNative)" />
+    <Compile Include="$(RuntimeSerializationSources)\InvalidDataContract.cs"  Condition="'$(TargetGroup)' == 'uapaot'" />
     <Compile Include="$(RuntimeSerializationSources)\ObjectToIdCache.cs" />
     <Compile Include="$(RuntimeSerializationSources)\ObjectReferenceStack.cs" />
     <Compile Include="$(RuntimeSerializationSources)\PrimitiveDataContract.cs" />
@@ -78,7 +77,7 @@
     <Compile Include="$(RuntimeSerializationSources)\KnownTypeDataContractResolver.cs" />
     <Compile Include="$(RuntimeSerializationSources)\XmlObjectSerializerReadContextComplex.cs" />
     <Compile Include="$(RuntimeSerializationSources)\XmlObjectSerializerWriteContextComplex.cs" />
-    <Compile Include="$(RuntimeSerializationSources)\BitFlagsGenerator.cs" Condition="!$(NetNative)" />
+    <Compile Include="$(RuntimeSerializationSources)\BitFlagsGenerator.cs" Condition="'$(TargetGroup)' != 'uapaot'" />
     <Compile Include="$(RuntimeSerializationSources)\DataContractSurrogateCaller.cs" />
     <Compile Include="$(RuntimeSerializationSources)\DataContractSerializerExtensions.cs" />
     <Compile Include="$(RuntimeSerializationSources)\XmlSerializableServices.cs" />
@@ -143,7 +142,7 @@
     <Compile Include="$(JsonSources)\IXmlJsonWriterInitializer.cs" />
     <Compile Include="$(JsonSources)\ByteArrayHelperWithString.cs" />
     <Compile Include="$(JsonSources)\JsonEncodingStreamWrapper.cs" />
-    <Compile Include="$(JsonSources)\JsonFormatGeneratorStatics.cs" Condition="!$(NetNative)" />
+    <Compile Include="$(JsonSources)\JsonFormatGeneratorStatics.cs" Condition="'$(TargetGroup)' != 'uapaot'" />
     <Compile Include="System\Runtime\Serialization\AccessorBuilder.cs" />
     <Compile Include="$(CommonPath)\System\CodeDom\CodeTypeReference.cs" />
     <Compile Include="$(CommonPath)\System\CodeDom\CodeTypeReferenceCollection.cs" />

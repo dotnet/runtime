@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
+using System.Runtime.InteropServices;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -286,17 +287,31 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 // Pre-condition: There's no private key
                 Assert.False(publicOnly.HasPrivateKey);
 
-                // This won't throw.
-                byte[] pkcs12Bytes = publicOnly.Export(X509ContentType.Pkcs12);
+                // macOS 10.12 (Sierra) fails to create a PKCS#12 blob if it has no private keys within it.
+                bool shouldThrow = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
 
-                // Read it back as a collection, there should be only one cert, and it should
-                // be equal to the one we started with.
-                using (ImportedCollection ic = Cert.Import(pkcs12Bytes))
+                try
                 {
-                    X509Certificate2Collection fromPfx = ic.Collection;
+                    byte[] pkcs12Bytes = publicOnly.Export(X509ContentType.Pkcs12);
 
-                    Assert.Equal(1, fromPfx.Count);
-                    Assert.Equal(publicOnly, fromPfx[0]);
+                    Assert.False(shouldThrow, "PKCS#12 export of a public-only certificate threw as expected");
+
+                    // Read it back as a collection, there should be only one cert, and it should
+                    // be equal to the one we started with.
+                    using (ImportedCollection ic = Cert.Import(pkcs12Bytes))
+                    {
+                        X509Certificate2Collection fromPfx = ic.Collection;
+
+                        Assert.Equal(1, fromPfx.Count);
+                        Assert.Equal(publicOnly, fromPfx[0]);
+                    }
+                }
+                catch (CryptographicException)
+                {
+                    if (!shouldThrow)
+                    {
+                        throw;
+                    }
                 }
             }
         }

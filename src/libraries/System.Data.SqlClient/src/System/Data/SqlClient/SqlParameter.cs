@@ -322,7 +322,7 @@ namespace System.Data.SqlClient
                 }
                 else
                 {
-                    localeId = Locale.GetCurrentCultureLcid();
+                    localeId = CultureInfo.CurrentCulture.LCID;
                 }
             }
 

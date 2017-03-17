@@ -75,7 +75,7 @@ namespace System.Net.Sockets.Tests
 
                 SocketError errorCode = ex.SocketErrorCode;
                 Assert.True((errorCode == SocketError.HostNotFound) || (errorCode == SocketError.NoData),
-                    "SocketErrorCode: {0}" + errorCode);
+                    $"SocketErrorCode: {errorCode}");
 
                 ex = Assert.ThrowsAny<SocketException>(() =>
                 {
@@ -127,6 +127,7 @@ namespace System.Net.Sockets.Tests
             {
                 IAsyncResult result = sock.BeginConnect(new DnsEndPoint("localhost", port), null, null);
                 sock.EndConnect(result);
+                Assert.Throws<InvalidOperationException>(() => sock.EndConnect(result)); // validate can't call end twice
             }
         }
 
@@ -447,21 +448,5 @@ namespace System.Net.Sockets.Tests
             Assert.True((errorCode == SocketError.HostNotFound) || (errorCode == SocketError.NoData),
                 "SocketError: " + errorCode);
         }
-
-        #region GC Finalizer test
-        // This test assumes sequential execution of tests and that it is going to be executed after other tests
-        // that used Sockets.
-        [OuterLoop] // TODO: Issue #11345
-        [Fact]
-        public void TestFinalizers()
-        {
-            // Making several passes through the FReachable list.
-            for (int i = 0; i < 3; i++)
-            {
-                GC.Collect();
-                GC.WaitForPendingFinalizers();
-            }
-        }
-        #endregion 
     }
 }

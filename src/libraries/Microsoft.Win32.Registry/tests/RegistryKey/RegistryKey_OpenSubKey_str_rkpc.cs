@@ -50,7 +50,6 @@ namespace Microsoft.Win32.RegistryTests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Net46, "dotnet/corefx#11332")]
         public void OpenSubKeyTest()
         {
             // [] Vanilla; open a subkey in read/write mode and write to it

@@ -15,7 +15,7 @@ using System.Security;
 
 namespace System.Runtime.Serialization
 {
-#if USE_REFEMIT || NET_NATIVE
+#if USE_REFEMIT || uapaot
     public delegate void XmlFormatClassWriterDelegate(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, ClassDataContract dataContract);
     public delegate void XmlFormatCollectionWriterDelegate(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, CollectionDataContract dataContract);
     public sealed class XmlFormatWriterGenerator
@@ -49,7 +49,7 @@ namespace System.Runtime.Serialization
         /// </SecurityNote>
         private class CriticalHelper
         {
-#if !USE_REFEMIT && !NET_NATIVE
+#if !USE_REFEMIT && !uapaot
             private CodeGenerator _ilg;
             private ArgBuilder _xmlWriterArg;
             private ArgBuilder _contextArg;
@@ -70,7 +70,7 @@ namespace System.Runtime.Serialization
                 {
                     return new ReflectionXmlFormatWriter().ReflectionWriteClass;
                 }
-#if NET_NATIVE
+#if uapaot
                 else if (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup)
                 {
                     return new ReflectionXmlFormatWriter().ReflectionWriteClass;
@@ -78,7 +78,7 @@ namespace System.Runtime.Serialization
 #endif
                 else
                 {
-#if USE_REFEMIT || NET_NATIVE
+#if USE_REFEMIT || uapaot
                     throw new InvalidOperationException("Cannot generate class writer");
 #else
                     _ilg = new CodeGenerator();
@@ -111,7 +111,7 @@ namespace System.Runtime.Serialization
                 {
                     return new ReflectionXmlFormatWriter().ReflectionWriteCollection;
                 }
-#if NET_NATIVE
+#if uapaot
                 else if (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup)
                 {
                     return new ReflectionXmlFormatWriter().ReflectionWriteCollection;
@@ -119,7 +119,7 @@ namespace System.Runtime.Serialization
 #endif
                 else
                 {
-#if USE_REFEMIT || NET_NATIVE
+#if USE_REFEMIT || uapaot
                     throw new InvalidOperationException("Cannot generate class writer");
 #else
                     _ilg = new CodeGenerator();
@@ -146,7 +146,7 @@ namespace System.Runtime.Serialization
                 }
             }
 
-#if !USE_REFEMIT && !NET_NATIVE
+#if !USE_REFEMIT && !uapaot
             private void InitArgs(Type objType)
             {
                 _xmlWriterArg = _ilg.GetArg(0);

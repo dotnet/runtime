@@ -6,6 +6,7 @@ using Xunit;
 using Microsoft.Xunit.Performance;
 using System.Collections.Generic;
 using System.Security.Cryptography;
+using System.Threading.Tasks;
 
 namespace System.IO.Compression.Tests
 {
@@ -100,7 +101,7 @@ namespace System.IO.Compression.Tests
         [InlineData(CompressionType.CryptoRandom)]
         [InlineData(CompressionType.RepeatedSegments)]
         [InlineData(CompressionType.NormalData)]
-        public async void Decompress(CompressionType type)
+        public async Task Decompress(CompressionType type)
         {
             string testFilePath = CreateCompressedFile(type);
             int _bufferSize = 1024;

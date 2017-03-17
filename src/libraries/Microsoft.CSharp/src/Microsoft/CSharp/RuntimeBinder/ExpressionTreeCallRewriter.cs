@@ -1017,14 +1017,14 @@ namespace Microsoft.CSharp.RuntimeBinder
                 }
 
                 Debug.Assert((m.Name == methodInfo.Name) &&
-                    (m.GetParameters().Length == genericParams.size) &&
+                    (m.GetParameters().Length == genericParams.Count) &&
                     (TypesAreEqual(m.ReturnType, genericReturn.AssociatedSystemType)));
 
                 bool bMatch = true;
                 ParameterInfo[] parameters = m.GetParameters();
-                for (int i = 0; i < genericParams.size; i++)
+                for (int i = 0; i < genericParams.Count; i++)
                 {
-                    if (!TypesAreEqual(parameters[i].ParameterType, genericParams.Item(i).AssociatedSystemType))
+                    if (!TypesAreEqual(parameters[i].ParameterType, genericParams[i].AssociatedSystemType))
                     {
                         bMatch = false;
                         break;
@@ -1034,11 +1034,11 @@ namespace Microsoft.CSharp.RuntimeBinder
                 {
                     if (m.IsGenericMethod)
                     {
-                        int size = methinfo.Method.TypeArgs?.size ?? 0;
+                        int size = methinfo.Method.TypeArgs?.Count ?? 0;
                         Type[] typeArgs = new Type[size];
                         if (size > 0)
                         {
-                            for (int i = 0; i < methinfo.Method.TypeArgs.size; i++)
+                            for (int i = 0; i < methinfo.Method.TypeArgs.Count; i++)
                             {
                                 typeArgs[i] = methinfo.Method.TypeArgs[i].AssociatedSystemType;
                             }
@@ -1086,13 +1086,13 @@ namespace Microsoft.CSharp.RuntimeBinder
                 {
                     continue;
                 }
-                Debug.Assert(c.GetParameters() == null || c.GetParameters().Length == genericInstanceParams.size);
+                Debug.Assert(c.GetParameters() == null || c.GetParameters().Length == genericInstanceParams.Count);
 
                 bool bMatch = true;
                 ParameterInfo[] parameters = c.GetParameters();
-                for (int i = 0; i < genericInstanceParams.size; i++)
+                for (int i = 0; i < genericInstanceParams.Count; i++)
                 {
-                    if (!TypesAreEqual(parameters[i].ParameterType, genericInstanceParams.Item(i).AssociatedSystemType))
+                    if (!TypesAreEqual(parameters[i].ParameterType, genericInstanceParams[i].AssociatedSystemType))
                     {
                         bMatch = false;
                         break;
@@ -1143,14 +1143,14 @@ namespace Microsoft.CSharp.RuntimeBinder
                     continue;
                 }
                 Debug.Assert((p.Name == propertyInfo.Name) &&
-                    (p.GetIndexParameters() == null || p.GetIndexParameters().Length == genericInstanceParams.size));
+                    (p.GetIndexParameters() == null || p.GetIndexParameters().Length == genericInstanceParams.Count));
 
                 bool bMatch = true;
                 ParameterInfo[] parameters = p.GetSetMethod(true) != null ?
                     p.GetSetMethod(true).GetParameters() : p.GetGetMethod(true).GetParameters();
-                for (int i = 0; i < genericInstanceParams.size; i++)
+                for (int i = 0; i < genericInstanceParams.Count; i++)
                 {
-                    if (!TypesAreEqual(parameters[i].ParameterType, genericInstanceParams.Item(i).AssociatedSystemType))
+                    if (!TypesAreEqual(parameters[i].ParameterType, genericInstanceParams[i].AssociatedSystemType))
                     {
                         bMatch = false;
                         break;

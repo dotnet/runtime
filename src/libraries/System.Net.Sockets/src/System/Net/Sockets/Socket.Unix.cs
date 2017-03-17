@@ -39,6 +39,17 @@ namespace System.Net.Sockets
                 return;
             }
 
+            SocketError errorCode = ReplaceHandle();
+            if (errorCode != SocketError.Success)
+            {
+                throw new SocketException((int) errorCode);
+            }
+
+            _handle.LastConnectFailed = false;
+        }
+
+        internal SocketError ReplaceHandle()
+        {
             // Copy out values from key options. The copied values should be kept in sync with the
             // handling in SafeCloseSocket.TrackOption.  Note that we copy these values out first, before
             // we change _handle, so that we can use the helpers on Socket which internally access _handle.
@@ -65,7 +76,7 @@ namespace System.Net.Sockets
             oldHandle.Dispose();
             if (errorCode != SocketError.Success)
             {
-                throw new SocketException((int)errorCode);
+                return errorCode;
             }
 
             // And put back the copied settings.  For DualMode, we use the value stored in the _handle
@@ -82,7 +93,7 @@ namespace System.Net.Sockets
             if (_handle.IsTrackedOption(TrackedSocketOptions.SendTimeout)) SendTimeout = sendTimeout;
             if (_handle.IsTrackedOption(TrackedSocketOptions.Ttl)) Ttl = ttl;
 
-            _handle.LastConnectFailed = false;
+            return SocketError.Success;
         }
 
         private static void ThrowMultiConnectNotSupported()
@@ -140,10 +151,7 @@ namespace System.Net.Sockets
 
             if (errorCode != SocketError.Success)
             {
-                SocketException socketException = new SocketException((int)errorCode);
-                UpdateStatusAfterSocketError(socketException);
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, socketException);
-                throw socketException;
+                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
             }
 
             // Send the postBuffer, if any
@@ -170,34 +178,18 @@ namespace System.Net.Sockets
                 // Send the file, if any
                 if (fileStream != null)
                 {
-                    var tcs = new TaskCompletionSource<bool>();
-
-                    // This can throw ObjectDisposedException.
-                    errorCode = SocketPal.SendFileAsync(_handle, fileStream, (bytesTransferred, socketError) => 
+                    var tcs = new TaskCompletionSource<SocketError>();
+                    errorCode = SocketPal.SendFileAsync(_handle, fileStream, (_, socketError) => tcs.SetResult(socketError));
+                    if (errorCode == SocketError.IOPending)
                     {
-                        if (socketError != SocketError.Success)
-                        {
-                            // Synchronous exception from SendFileAsync
-                            SocketException socketException = new SocketException((int)errorCode);
-                            UpdateStatusAfterSocketError(socketException);
-                            if (NetEventSource.IsEnabled) NetEventSource.Error(this, socketException);
-                            tcs.SetException(socketException);
-                        }
-
-                        tcs.SetResult(true);
-                    });
-
-                    await tcs.Task.ConfigureAwait(false);
+                        errorCode = await tcs.Task.ConfigureAwait(false);
+                    }
                 }
             }
 
             if (errorCode != SocketError.Success)
             {
-                // Synchronous exception from SendFileAsync
-                SocketException socketException = new SocketException((int)errorCode);
-                UpdateStatusAfterSocketError(socketException);
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, socketException);
-                throw socketException;
+                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
             }
 
             // Send the postBuffer, if any

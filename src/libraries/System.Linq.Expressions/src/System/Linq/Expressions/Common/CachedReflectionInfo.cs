@@ -61,21 +61,6 @@ namespace System.Linq.Expressions
         public static FieldInfo Decimal_MaxValue
             => s_Decimal_MaxValue ?? (s_Decimal_MaxValue = typeof(decimal).GetField(nameof(decimal.MaxValue)));
 
-        private static ConstructorInfo s_Closure_ObjectArray_ObjectArray;
-        public  static ConstructorInfo   Closure_ObjectArray_ObjectArray =>
-                                       s_Closure_ObjectArray_ObjectArray ??
-                                      (s_Closure_ObjectArray_ObjectArray = typeof(Closure).GetConstructor(new[] { typeof(object[]), typeof(object[]) }));
-
-        private static FieldInfo s_Closure_Constants;
-        public  static FieldInfo   Closure_Constants =>
-                                 s_Closure_Constants ??
-                                (s_Closure_Constants = typeof(Closure).GetField(nameof(Closure.Constants)));
-
-        private static FieldInfo s_Closure_Locals;
-        public  static FieldInfo   Closure_Locals =>
-                                 s_Closure_Locals ??
-                                (s_Closure_Locals = typeof(Closure).GetField(nameof(Closure.Locals)));
-
         private static FieldInfo s_Decimal_Zero;
         public static FieldInfo Decimal_Zero
             => s_Decimal_Zero ?? (s_Decimal_Zero = typeof(decimal).GetField(nameof(decimal.Zero)));
@@ -103,26 +88,6 @@ namespace System.Linq.Expressions
         public  static MethodInfo   String_op_Equality_String_String =>
                                   s_String_op_Equality_String_String ??
                                  (s_String_op_Equality_String_String = typeof(string).GetMethod("op_Equality", new[] { typeof(string), typeof(string) }));
-
-        private static MethodInfo s_RuntimeOps_CreateRuntimeVariables_ObjectArray_Int64Array;
-        public  static MethodInfo   RuntimeOps_CreateRuntimeVariables_ObjectArray_Int64Array =>
-                                  s_RuntimeOps_CreateRuntimeVariables_ObjectArray_Int64Array ??
-                                 (s_RuntimeOps_CreateRuntimeVariables_ObjectArray_Int64Array = typeof(RuntimeOps).GetMethod(nameof(RuntimeOps.CreateRuntimeVariables), new[] { typeof(object[]), typeof(long[]) }));
-
-        private static MethodInfo s_RuntimeOps_CreateRuntimeVariables;
-        public  static MethodInfo   RuntimeOps_CreateRuntimeVariables =>
-                                  s_RuntimeOps_CreateRuntimeVariables ??
-                                 (s_RuntimeOps_CreateRuntimeVariables = typeof(RuntimeOps).GetMethod(nameof(RuntimeOps.CreateRuntimeVariables), Type.EmptyTypes));
-
-        private static MethodInfo s_RuntimeOps_MergeRuntimeVariables;
-        public  static MethodInfo   RuntimeOps_MergeRuntimeVariables =>
-                                  s_RuntimeOps_MergeRuntimeVariables ??
-                                 (s_RuntimeOps_MergeRuntimeVariables = typeof(RuntimeOps).GetMethod(nameof(RuntimeOps.MergeRuntimeVariables)));
-
-        private static MethodInfo s_RuntimeOps_Quote;
-        public  static MethodInfo   RuntimeOps_Quote =>
-                                  s_RuntimeOps_Quote ??
-                                 (s_RuntimeOps_Quote = typeof(RuntimeOps).GetMethod(nameof(RuntimeOps.Quote)));
 
         private static MethodInfo s_DictionaryOfStringInt32_Add_String_Int32;
         public  static MethodInfo   DictionaryOfStringInt32_Add_String_Int32 =>
@@ -193,5 +158,43 @@ namespace System.Linq.Expressions
         public  static MethodInfo   Math_Pow_Double_Double =>
                                   s_Math_Pow_Double_Double ??
                                  (s_Math_Pow_Double_Double = typeof(Math).GetMethod(nameof(Math.Pow), new[] { typeof(double), typeof(double) }));
+
+        // Closure and RuntimeOps helpers are used only in the compiler.
+#if FEATURE_COMPILE
+        private static ConstructorInfo s_Closure_ObjectArray_ObjectArray;
+        public static ConstructorInfo Closure_ObjectArray_ObjectArray =>
+                                       s_Closure_ObjectArray_ObjectArray ??
+                                      (s_Closure_ObjectArray_ObjectArray = typeof(Closure).GetConstructor(new[] { typeof(object[]), typeof(object[]) }));
+
+        private static FieldInfo s_Closure_Constants;
+        public static FieldInfo Closure_Constants =>
+                                 s_Closure_Constants ??
+                                (s_Closure_Constants = typeof(Closure).GetField(nameof(Closure.Constants)));
+
+        private static FieldInfo s_Closure_Locals;
+        public static FieldInfo Closure_Locals =>
+                                 s_Closure_Locals ??
+                                (s_Closure_Locals = typeof(Closure).GetField(nameof(Closure.Locals)));
+
+        private static MethodInfo s_RuntimeOps_CreateRuntimeVariables_ObjectArray_Int64Array;
+        public static MethodInfo RuntimeOps_CreateRuntimeVariables_ObjectArray_Int64Array =>
+                                  s_RuntimeOps_CreateRuntimeVariables_ObjectArray_Int64Array ??
+                                 (s_RuntimeOps_CreateRuntimeVariables_ObjectArray_Int64Array = typeof(RuntimeOps).GetMethod(nameof(RuntimeOps.CreateRuntimeVariables), new[] { typeof(object[]), typeof(long[]) }));
+
+        private static MethodInfo s_RuntimeOps_CreateRuntimeVariables;
+        public static MethodInfo RuntimeOps_CreateRuntimeVariables =>
+                                  s_RuntimeOps_CreateRuntimeVariables ??
+                                 (s_RuntimeOps_CreateRuntimeVariables = typeof(RuntimeOps).GetMethod(nameof(RuntimeOps.CreateRuntimeVariables), Type.EmptyTypes));
+
+        private static MethodInfo s_RuntimeOps_MergeRuntimeVariables;
+        public static MethodInfo RuntimeOps_MergeRuntimeVariables =>
+                                  s_RuntimeOps_MergeRuntimeVariables ??
+                                 (s_RuntimeOps_MergeRuntimeVariables = typeof(RuntimeOps).GetMethod(nameof(RuntimeOps.MergeRuntimeVariables)));
+
+        private static MethodInfo s_RuntimeOps_Quote;
+        public static MethodInfo RuntimeOps_Quote =>
+                                  s_RuntimeOps_Quote ??
+                                 (s_RuntimeOps_Quote = typeof(RuntimeOps).GetMethod(nameof(RuntimeOps.Quote)));
+#endif
     }
 }

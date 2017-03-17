@@ -15,8 +15,13 @@ namespace Internal.Cryptography
     //
     internal static class Oids
     {
+        public const string CommonName                  = "2.5.4.3";
+        public const string Organization                = "2.5.4.10";
+        public const string OrganizationalUnit          = "2.5.4.11";
         public const string BasicConstraints            = "2.5.29.10";
         public const string SubjectKeyIdentifier        = "2.5.29.14";
+        public const string SubjectAltName              = "2.5.29.17";
+        public const string IssuerAltName               = "2.5.29.18";
         public const string KeyUsage                    = "2.5.29.15";
         public const string BasicConstraints2           = "2.5.29.19";
         public const string CrlDistributionPoints       = "2.5.29.31";
@@ -31,6 +36,7 @@ namespace Internal.Cryptography
         public const string DsaDsa                      = "1.2.840.10040.4.1";
         public const string EmailAddress                = "1.2.840.113549.1.9.1";
         public const string EnrollCertTypeExtension     = "1.3.6.1.4.1.311.20.2";
+        public const string UserPrincipalName           = "1.3.6.1.4.1.311.20.2.3";
         public const string CertificateTemplate         = "1.3.6.1.4.1.311.21.7";
         public const string ApplicationCertPolicies     = "1.3.6.1.4.1.311.21.10";
         public const string AuthorityInformationAccess  = "1.3.6.1.5.5.7.1.1";

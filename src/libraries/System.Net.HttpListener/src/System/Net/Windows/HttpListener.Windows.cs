@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Net.Security;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Authentication.ExtendedProtection;
@@ -116,24 +117,8 @@ namespace System.Net
             }
         }
 
-        private Dictionary<ulong, DisconnectAsyncResult> DisconnectResults
-        {
-            get
-            {
-                if (_disconnectResults == null)
-                {
-                    lock (_internalLock)
-                    {
-                        if (_disconnectResults == null)
-                        {
-                            _disconnectResults = new Dictionary<ulong, DisconnectAsyncResult>();
-                        }
-                    }
-                }
-                return _disconnectResults;
-            }
-        }
-
+        private Dictionary<ulong, DisconnectAsyncResult> DisconnectResults =>
+            LazyInitializer.EnsureInitialized(ref _disconnectResults, () => new Dictionary<ulong, DisconnectAsyncResult>());
 
         private void SetUrlGroupProperty(Interop.HttpApi.HTTP_SERVER_PROPERTY property, IntPtr info, uint infosize)
         {
@@ -949,7 +934,7 @@ namespace System.Net
                 if (httpContext == null)
                 {
                     Debug.Assert(castedAsyncResult.Result is Exception, "EndGetContext|The result is neither a HttpListenerContext nor an Exception.");
-                    throw castedAsyncResult.Result as Exception;
+                    ExceptionDispatchInfo.Capture(castedAsyncResult.Result as Exception).Throw();
                 }
             }
             catch (Exception exception)

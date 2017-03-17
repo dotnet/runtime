@@ -292,4 +292,13 @@
   <data name="ObjectDisposed_StreamClosed" xml:space="preserve">
     <value>Can not access a closed Stream.</value>
   </data>
+  <data name="net_http_libcurl_callback_notsupported" xml:space="preserve">
+    <value>The handler does not support custom handling of certificates with this combination of libcurl ({0}) and its SSL backend ("{1}").</value>
+  </data>
+  <data name="net_http_libcurl_clientcerts_notsupported" xml:space="preserve">
+    <value>The handler does not support client authentication certificates with this combination of libcurl ({0}) and its SSL backend ("{1}").</value>
+  </data>
+  <data name="net_http_libcurl_revocation_notsupported" xml:space="preserve">
+    <value>The handler does not support changing revocation settings with this combination of libcurl ({0}) and its SSL backend ("{1}").</value>
+  </data>
 </root>

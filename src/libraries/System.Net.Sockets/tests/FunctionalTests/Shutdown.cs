@@ -4,8 +4,7 @@
 
 using Xunit;
 using Xunit.Abstractions;
-
-using System.Threading.Tasks;
+using System.Threading;
 
 namespace System.Net.Sockets.Tests
 {
@@ -71,7 +70,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop] // Explicitly waits for 5 seconds
         [Fact]
         public void Shutdown_TCP_CLOSED_Success()
         {
@@ -111,7 +110,7 @@ namespace System.Net.Sockets.Tests
 
                 // Wait for the underlying connection to transition from TIME_WAIT to
                 // CLOSED.
-                Task.Delay(TimeWaitTimeout).Wait();
+                Thread.Sleep(TimeWaitTimeout);
 
                 client.Shutdown(SocketShutdown.Both);
             }

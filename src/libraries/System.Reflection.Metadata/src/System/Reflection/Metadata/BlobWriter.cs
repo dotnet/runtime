@@ -38,8 +38,6 @@ namespace System.Reflection.Metadata
 
         public BlobWriter(byte[] buffer, int start, int count)
         {
-            // the writer assumes little-endian architecture:
-            Debug.Assert(BitConverter.IsLittleEndian);
             Debug.Assert(buffer != null);
             Debug.Assert(count >= 0);
             Debug.Assert(count <= buffer.Length - start);

@@ -284,7 +284,8 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.True(v1.CheckSignature());
         }
 
-        [Fact(Skip = "https://github.com/dotnet/corefx/issues/16691")]
+        [Fact]
+        [ActiveIssue(17001, TestPlatforms.OSX)]
         public void AsymmetricDSASignature()
         {
             SignedXml signedXml = MSDNSample();
@@ -308,7 +309,7 @@ namespace System.Security.Cryptography.Xml.Tests
 
             Assert.Null(signedXml.SignatureLength);
             Assert.Equal(SignedXml.XmlDsigDSAUrl, signedXml.SignatureMethod);
-            Assert.Equal(40, signedXml.SignatureValue.Length);
+            Assert.InRange(signedXml.SignatureValue.Length, low: 40, high: Int32.MaxValue);
             Assert.Null(signedXml.SigningKeyName);
 
             // Get the XML representation of the signature.
@@ -645,8 +646,12 @@ namespace System.Security.Cryptography.Xml.Tests
 
             s.Position = 0;
 
-            HashAlgorithm hash = SHA1.Create();
-            byte[] digest = hash.ComputeHash(s);
+            byte[] digest;
+            using (HashAlgorithm hash = SHA1.Create())
+            {
+                digest = hash.ComputeHash(s);
+            }
+            
             Assert.Equal("IKbfdK2/DMfXyezCf5QggVCXfk8=", Convert.ToBase64String(digest));
 
             X509Certificate2 cert = new X509Certificate2(_pkcs12, "mono");
@@ -698,8 +703,12 @@ namespace System.Security.Cryptography.Xml.Tests
 
             s.Position = 0;
 
-            HashAlgorithm hash = SHA1.Create();
-            byte[] digest = hash.ComputeHash(s);
+            byte[] digest;
+            using (HashAlgorithm hash = SHA1.Create())
+            {
+                digest = hash.ComputeHash(s);
+            }
+
             Assert.Equal("e3dsi1xK8FAx1vsug7J203JbEAU=", Convert.ToBase64String(digest));
 
             X509Certificate2 cert = new X509Certificate2(_pkcs12, "mono");

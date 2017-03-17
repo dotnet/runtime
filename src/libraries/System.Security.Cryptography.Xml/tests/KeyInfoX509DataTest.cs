@@ -182,7 +182,7 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Throws< NullReferenceException>(() => data1.AddSubjectKeyId((string)null));
         }
 
-        [Fact(Skip = "TODO: fix me")]
+        [Fact]
         public void AddSubjectKeyId_String_BadHexData()
         {
             KeyInfoX509Data data = new KeyInfoX509Data();

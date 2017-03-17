@@ -4,6 +4,8 @@
   <PropertyGroup>
     <ProjectGuid>{CBCDA53B-4C01-4267-B08C-413205FE4D8D}</ProjectGuid>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System.DirectoryServices.cs" />
   </ItemGroup>

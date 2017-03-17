@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -65,7 +66,7 @@ namespace System.Net.Sockets
 
                 _state = State.DnsQuery;
 
-                IAsyncResult result = DnsAPMExtensions.BeginGetHostAddresses(endPoint.Host, new AsyncCallback(DnsCallback), null);
+                IAsyncResult result = Dns.BeginGetHostAddresses(endPoint.Host, new AsyncCallback(DnsCallback), null);
                 if (result.CompletedSynchronously)
                 {
                     return DoDnsCallback(result, true);
@@ -109,7 +110,7 @@ namespace System.Net.Sockets
 
                 try
                 {
-                    _addressList = DnsAPMExtensions.EndGetHostAddresses(result);
+                    _addressList = Dns.EndGetHostAddresses(result);
                     if (_addressList == null)
                     {
                         NetEventSource.Fail(this, "MultipleConnectAsync.DoDnsCallback(): EndGetHostAddresses returned null!");
@@ -322,7 +323,7 @@ namespace System.Net.Sockets
             }
             else
             {
-                throw e;
+                ExceptionDispatchInfo.Capture(e).Throw();
             }
         }
 
@@ -522,64 +523,8 @@ namespace System.Net.Sockets
         // close both sockets whether its abortive or not - we always create them internally
         protected override void OnFail(bool abortive)
         {
-            if (_socket4 != null)
-            {
-                _socket4.Dispose();
-            }
-            if (_socket6 != null)
-            {
-                _socket6.Dispose();
-            }
+            _socket4?.Dispose();
+            _socket6?.Dispose();
         }
-    }
-
-    internal sealed class MultipleSocketMultipleConnectAsync : MultipleConnectAsync
-    {
-        private readonly SocketType _socketType;
-        private readonly ProtocolType _protocolType;
-        private readonly bool _supportsIPv4;
-        private readonly bool _supportsIPv6;
-
-        protected override Socket UserSocket => null;
-
-        public MultipleSocketMultipleConnectAsync(SocketType socketType, ProtocolType protocolType)
-        {
-            _socketType = socketType;
-            _protocolType = protocolType;
-            _supportsIPv4 = Socket.OSSupportsIPv4;
-            _supportsIPv6 = Socket.OSSupportsIPv6;
-        }
-
-        protected override IPAddress GetNextAddress(out Socket attemptSocket)
-        {
-            if (_supportsIPv4 || _supportsIPv6)
-            {
-                while (_nextAddress < _addressList.Length)
-                {
-                    IPAddress rval = _addressList[_nextAddress];
-                    ++_nextAddress;
-
-                    if (_supportsIPv6 && rval.AddressFamily == AddressFamily.InterNetworkV6)
-                    {
-                        attemptSocket = new Socket(AddressFamily.InterNetworkV6, _socketType, _protocolType);
-                        return rval;
-                    }
-                    else if (_supportsIPv4 && rval.AddressFamily == AddressFamily.InterNetwork)
-                    {
-                        attemptSocket = new Socket(AddressFamily.InterNetwork, _socketType, _protocolType);
-                        return rval;
-                    }
-                }
-            }
-
-            attemptSocket = null;
-            return null;
-        }
-
-        // nothing to do on failure
-        protected override void OnFail(bool abortive) { }
-
-        // nothing to do on success
-        protected override void OnSucceed() { }
     }
 }

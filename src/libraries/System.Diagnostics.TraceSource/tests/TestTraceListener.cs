@@ -19,10 +19,11 @@ namespace System.Diagnostics.TraceSourceTests
             WriteLine,
             Flush,
             Fail,
+            Close
             //NOTE: update MethodEnumCount if values are added
         }
 
-        private const int MethodEnumCount = 8;
+        private const int MethodEnumCount = 9;
 
         public TestTraceListener(bool threadSafe = false)
             : this(null, threadSafe)
@@ -118,6 +119,11 @@ namespace System.Diagnostics.TraceSourceTests
         public override void WriteLine(string message)
         {
             Call(Method.WriteLine);
+        }
+
+        public override void Close()
+        {
+            Call(Method.Close);
         }
     }
 }

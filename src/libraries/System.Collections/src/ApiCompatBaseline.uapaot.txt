@@ -1,4 +1,0 @@
-Compat issues with assembly System.Collections:
-MembersMustExist : Member 'System.Collections.Generic.Dictionary<TKey, TValue>.GetValueOrDefault(TKey)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Collections.Generic.Dictionary<TKey, TValue>.GetValueOrDefault(TKey, TValue)' does not exist in the implementation but it does exist in the contract.
-Total Issues: 2

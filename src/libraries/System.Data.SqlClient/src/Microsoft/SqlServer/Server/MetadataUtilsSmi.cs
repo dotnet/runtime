@@ -10,6 +10,7 @@ using System.Data.Common;
 using System.Data.SqlClient;
 using System.Data.SqlTypes;
 using System.Diagnostics;
+using System.Globalization;
 
 namespace Microsoft.SqlServer.Server
 {
@@ -592,7 +593,7 @@ namespace Microsoft.SqlServer.Server
                                         maxLength,
                                         precision,
                                         scale,
-                                        Locale.GetCurrentCultureLcid(),
+                                        CultureInfo.CurrentCulture.LCID,
                                         SmiMetaData.GetDefaultForType(colDbType).CompareOptions,
                                         false,  // no support for multi-valued columns in a TVP yet
                                         null,   // no support for structured columns yet

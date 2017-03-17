@@ -6,7 +6,7 @@
     <AssemblyName>System.Dynamic.Runtime</AssemblyName>
     <RootNamespace>System.Dynamic.Runtime</RootNamespace>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <!-- Disable binplacing for now since we need to use the netcore50aot version of this assembly -->
+    <!-- Disable binplacing for now since we need to use the uapaot version of this assembly -->
     <BinPlaceILCInputFolder>false</BinPlaceILCInputFolder>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->

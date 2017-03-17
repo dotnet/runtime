@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Globalization;
+using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
 
 namespace System.Net
@@ -302,9 +303,9 @@ namespace System.Net
                 workerResult.InternalWaitForCompletion();
             }
 
-            if (workerResult.Result is Exception)
+            if (workerResult.Result is Exception e)
             {
-                throw (Exception)(workerResult.Result);
+                ExceptionDispatchInfo.Capture(e).Throw();
             }
 
             int size = (int)workerResult.Result;
@@ -448,9 +449,9 @@ namespace System.Net
                     workerResult.InternalWaitForCompletion();
                 }
 
-                if (workerResult.Result is Exception)
+                if (workerResult.Result is Exception e)
                 {
-                    throw (Exception)(workerResult.Result);
+                    ExceptionDispatchInfo.Capture(e).Throw();
                 }
             }
             else

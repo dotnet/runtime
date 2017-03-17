@@ -30,5 +30,29 @@ namespace System.Reflection.Emit.Tests
             enumBuilder.AsType();
             Assert.Empty(enumBuilder.Namespace);
         }
+
+        [Fact]
+        public void IsArray()
+        {
+            EnumBuilder enumBuilder = Helpers.DynamicEnum(TypeAttributes.Public, typeof(int));
+            Assert.False(enumBuilder.IsArray);
+            Assert.False(enumBuilder.IsSZArray);
+
+            Type asType = enumBuilder.AsType();
+            Assert.False(asType.IsArray);
+            Assert.False(asType.IsSZArray);
+
+            Type arrType = enumBuilder.MakeArrayType();
+            Assert.True(arrType.IsArray);
+            Assert.True(arrType.IsSZArray);
+
+            arrType = enumBuilder.MakeArrayType(1);
+            Assert.True(arrType.IsArray);
+            Assert.False(arrType.IsSZArray);
+
+            arrType = enumBuilder.MakeArrayType(2);
+            Assert.True(arrType.IsArray);
+            Assert.False(arrType.IsSZArray);
+        }
     }
 }

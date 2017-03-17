@@ -58,6 +58,9 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="Arg_CryptographyException" xml:space="preserve">
+    <value>Error occurred during a cryptographic operation.</value>
+  </data>
   <data name="Arg_EmptyOrNullArray" xml:space="preserve">
     <value>Array may not be empty or null.</value>
   </data>
@@ -97,14 +100,38 @@
   <data name="Chain_NoPolicyMatch" xml:space="preserve">
     <value>The certificate has invalid policy.</value>
   </data>
+  <data name="Cryptography_CSP_NoPrivateKey" xml:space="preserve">
+    <value>Object contains only the public half of a key pair. A private key must also be provided.</value>
+  </data>
+  <data name="Cryptography_CurveNotSupported" xml:space="preserve">
+    <value>The specified curve '{0}' or its parameters are not valid for this platform.</value>
+  </data>
+  <data name="Cryptography_ECC_NamedCurvesOnly" xml:space="preserve">
+    <value>Only named curves are supported on this platform.</value>
+  </data>
+  <data name="Cryptography_Der_Invalid_Encoding" xml:space="preserve">
+    <value>ASN1 corrupted data.</value>
+  </data>
   <data name="Cryptography_InvalidContextHandle" xml:space="preserve">
     <value>The chain context handle is invalid.</value>
   </data>
   <data name="Cryptography_InvalidHandle" xml:space="preserve">
     <value>{0} is an invalid handle.</value>
   </data>
+  <data name="Cryptography_InvalidOID" xml:space="preserve">
+    <value>Object identifier (OID) is unknown.</value>
+  </data>
+  <data name="Cryptography_InvalidPaddingMode" xml:space="preserve">
+    <value>Specified padding mode is not valid for this algorithm.</value>
+  </data>
+  <data name="Cryptography_InvalidRsaParameters" xml:space="preserve">
+    <value>The specified RSA parameters are not valid; both Exponent and Modulus are required fields.</value>
+  </data>
   <data name="Cryptography_InvalidStoreHandle" xml:space="preserve">
     <value>The store handle is invalid.</value>
+  </data>
+  <data name="Cryptography_OpenInvalidHandle" xml:space="preserve">
+    <value>Cannot open an invalid handle.</value>
   </data>
   <data name="Cryptography_Unix_X509_MachineStoresReadOnly" xml:space="preserve">
     <value>Unix LocalMachine X509Stores are read-only for all users.</value>
@@ -115,8 +142,17 @@
   <data name="Cryptography_Unix_X509_PropertyNotSettable" xml:space="preserve">
       <value>The {0} value cannot be set on Unix.</value>
   </data>
+  <data name="Cryptography_UnknownHashAlgorithm" xml:space="preserve">
+    <value>'{0}' is not a known hash algorithm.</value>
+  </data>
   <data name="Cryptography_Unix_X509_SerializedExport" xml:space="preserve">
     <value>X509ContentType.SerializedCert and X509ContentType.SerializedStore are not supported on Unix.</value>
+  </data>
+  <data name="Cryptography_Unmapped_System_Typed_Error" xml:space="preserve">
+    <value>The system cryptographic library returned error '{0}' of type '{1}'</value>
+  </data>
+  <data name="Cryptography_X509_ExportFailed" xml:space="preserve">
+    <value>The certificate export operation failed.</value>
   </data>
   <data name="Cryptography_X509_ExtensionMismatch" xml:space="preserve">
     <value>The parameter should be an X509Extension.</value>
@@ -148,6 +184,9 @@
   <data name="Cryptography_X509_StoreReadOnly" xml:space="preserve">
     <value>The X509 certificate store is read-only.</value>
   </data>
+  <data name="Cryptography_X509_StoreCannotCreate" xml:space="preserve">
+      <value>The platform does not have a definition for an X509 certificate store named '{0}' with a StoreLocation of '{1}', and does not support creating it.</value>
+  </data>
   <data name="InvalidOperation_EnumNotStarted" xml:space="preserve">
     <value>Enumeration has not started.  Call MoveNext.</value>
   </data>
@@ -169,6 +208,9 @@
   <data name="Security_InvalidValue" xml:space="preserve">
     <value>The {0} value was invalid.</value>
   </data>
+  <data name="Security_AccessDenied" xml:space="preserve">
+    <value>Access is denied.</value>
+  </data>
   <data name="Unknown_Error" xml:space="preserve">
     <value>Unknown error.</value>
   </data>
@@ -189,5 +231,41 @@
   </data>
   <data name="Cryptography_Invalid_IA5String" xml:space="preserve">
     <value>The string contains a character not in the 7 bit ASCII character set.</value>
-  </data> 
+  </data>
+  <data name="Cryptography_X509_NoEphemeralPfx" xml:space="preserve">
+    <value>This platform does not support loading with EphemeralKeySet. Remove the flag to allow keys to be temporarily created on disk.</value>
+  </data>
+  <data name="Cryptography_X509Store_WouldModifyUserTrust" xml:space="preserve">
+    <value>Removing the requested certificate would modify user trust settings, and has been denied.</value>
+  </data>
+  <data name="Cryptography_X509Store_WouldModifyAdminTrust" xml:space="preserve">
+    <value>Removing the requested certificate would modify admin trust settings, and has been denied.</value>
+  </data>
+  <data name="Cryptography_InvalidKeySize" xml:space="preserve">
+    <value>Specified key is not a valid size for this algorithm.</value>
+  </data>
+  <data name="Cryptography_DSA_KeyGenNotSupported" xml:space="preserve">
+    <value>DSA keys can be imported, but new key generation is not supported on this platform.</value>
+  </data>
+  <data name="Cryptography_InvalidDsaParameters_MissingFields" xml:space="preserve">
+    <value>The specified DSA parameters are not valid; P, Q, G and Y are all required.</value>
+  </data>
+  <data name="Cryptography_InvalidDsaParameters_MismatchedPGY" xml:space="preserve">
+    <value>The specified DSA parameters are not valid; P, G and Y must be the same length (the key size).</value>
+  </data>
+  <data name="Cryptography_InvalidDsaParameters_MismatchedQX" xml:space="preserve">
+    <value>The specified DSA parameters are not valid; Q and X (if present) must be the same length.</value>
+  </data>
+  <data name="Cryptography_InvalidDsaParameters_MismatchedPJ" xml:space="preserve">
+    <value>The specified DSA parameters are not valid; J (if present) must be shorter than P.</value>
+  </data>
+  <data name="Cryptography_InvalidDsaParameters_SeedRestriction_ShortKey" xml:space="preserve">
+    <value>The specified DSA parameters are not valid; Seed, if present, must be 20 bytes long for keys shorter than 1024 bits.</value>
+  </data>
+  <data name="Cryptography_InvalidDsaParameters_QRestriction_ShortKey" xml:space="preserve">
+    <value>The specified DSA parameters are not valid; Q must be 20 bytes long for keys shorter than 1024 bits.</value>
+  </data>
+  <data name="Cryptography_InvalidDsaParameters_QRestriction_LargeKey" xml:space="preserve">
+    <value>The specified DSA parameters are not valid; Q's length must be one of 20, 32 or 64 bytes.</value>
+  </data>
 </root>

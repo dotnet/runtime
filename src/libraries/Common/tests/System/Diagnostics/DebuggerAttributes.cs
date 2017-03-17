@@ -10,6 +10,12 @@ using System.Text;
 
 namespace System.Diagnostics
 {
+    internal class DebuggerAttributeInfo
+    {
+        public object Instance { get; set; }
+        public IEnumerable<PropertyInfo> Properties { get; set; }
+    }
+
     internal static class DebuggerAttributes
     {
         internal static object GetFieldValue(object obj, string fieldName)
@@ -17,24 +23,29 @@ namespace System.Diagnostics
             return GetField(obj, fieldName).GetValue(obj);
         }
 
-        internal static void ValidateDebuggerTypeProxyProperties(object obj)
+        internal static DebuggerAttributeInfo ValidateDebuggerTypeProxyProperties(object obj)
         {
-            ValidateDebuggerTypeProxyProperties(obj.GetType(), obj);
+            return ValidateDebuggerTypeProxyProperties(obj.GetType(), obj);
         }
 
-        internal static void ValidateDebuggerTypeProxyProperties(Type type, object obj)
+        internal static DebuggerAttributeInfo ValidateDebuggerTypeProxyProperties(Type type, object obj)
         {
-            ValidateDebuggerTypeProxyProperties(type, type.GenericTypeArguments, obj);
+            return ValidateDebuggerTypeProxyProperties(type, type.GenericTypeArguments, obj);
         }
 
-        internal static void ValidateDebuggerTypeProxyProperties(Type type, Type[] genericTypeArguments, object obj)
+        internal static DebuggerAttributeInfo ValidateDebuggerTypeProxyProperties(Type type, Type[] genericTypeArguments, object obj)
         {
             Type proxyType = GetProxyType(type, genericTypeArguments);
 
             // Create an instance of the proxy type, and make sure we can access all of the instance properties 
             // on the type without exception
             object proxyInstance = Activator.CreateInstance(proxyType, obj);
-            GetDebuggerVisibleProperties(proxyInstance);
+            IEnumerable<PropertyInfo> properties = GetDebuggerVisibleProperties(proxyType);
+            return new DebuggerAttributeInfo
+            {
+                Instance = proxyInstance,
+                Properties = properties
+            };
         }
 
         public static DebuggerBrowsableState? GetDebuggerBrowsableState(MemberInfo info)
@@ -45,22 +56,20 @@ namespace System.Diagnostics
             return (DebuggerBrowsableState?)(int?)debuggerBrowsableAttribute?.ConstructorArguments.Single().Value;
         }
 
-        public static IDictionary<string, FieldInfo> GetDebuggerVisibleFields(object obj)
+        public static IEnumerable<FieldInfo> GetDebuggerVisibleFields(Type debuggerAttributeType)
         {
-            TypeInfo typeInfo = obj.GetType().GetTypeInfo();
-            IEnumerable<FieldInfo> visibleFields = typeInfo.DeclaredFields
-                // The debugger doesn't evaluate non-public members of type proxies.
+            // The debugger doesn't evaluate non-public members of type proxies.
+            IEnumerable<FieldInfo> visibleFields = debuggerAttributeType.GetFields()
                 .Where(fi => fi.IsPublic && GetDebuggerBrowsableState(fi) != DebuggerBrowsableState.Never);
-            return visibleFields.ToDictionary(fi => fi.Name, fi => fi);
+            return visibleFields;
         }
 
-        public static IDictionary<string, PropertyInfo> GetDebuggerVisibleProperties(object obj)
+        public static IEnumerable<PropertyInfo> GetDebuggerVisibleProperties(Type debuggerAttributeType)
         {
-            TypeInfo typeInfo = obj.GetType().GetTypeInfo();
-            IEnumerable<PropertyInfo> visibleProperties = typeInfo.DeclaredProperties
-                // The debugger doesn't evaluate non-public members of type proxies. GetGetMethod returns null if the getter is non-public.
+            // The debugger doesn't evaluate non-public members of type proxies. GetGetMethod returns null if the getter is non-public.
+            IEnumerable<PropertyInfo> visibleProperties = debuggerAttributeType.GetProperties()
                 .Where(pi => pi.GetGetMethod() != null && GetDebuggerBrowsableState(pi) != DebuggerBrowsableState.Never);
-            return visibleProperties.ToDictionary(pi => pi.Name, pi => pi);
+            return visibleProperties;
         }
 
         public static object GetProxyObject(object obj) => Activator.CreateInstance(GetProxyType(obj), obj);
@@ -105,7 +114,7 @@ namespace System.Diagnostics
             {
                 throw new InvalidOperationException($"Expected one DebuggerDisplayAttribute on {objType}.");
             }
-            var cad = (CustomAttributeData)attrs[0];
+            var cad = attrs[0];
 
             // Get the text of the DebuggerDisplayAttribute
             string attrText = (string)cad.ConstructorArguments[0].Value;

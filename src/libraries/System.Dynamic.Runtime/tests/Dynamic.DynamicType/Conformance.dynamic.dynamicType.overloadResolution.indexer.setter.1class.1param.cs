@@ -6,8 +6,6 @@ using Xunit;
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadResolution.indexer.setter.Oneclass.Oneparam.noaccessibility004.noaccessibility004
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadResolution.indexer.setter.Oneclass.Oneparam.noaccessibility004.noaccessibility004;
-
     // <Title>Call methods that have different accessibility</Title>
     // <Description>
     // </Description>
@@ -49,15 +47,10 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadRes
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadResolution.indexer.setter.Oneclass.Oneparam.errorverifier.errorverifier
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadResolution.indexer.setter.Oneclass.Oneparam.errorverifier.errorverifier;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadResolution.indexer.setter.Oneclass.Oneparam.param012.param012;
     using System;
-    using System.Collections;
-    using System.IO;
     using System.Globalization;
     using System.Reflection;
     using System.Resources;
-    using Microsoft.CSharp.RuntimeBinder;
 
     public enum ErrorElementId
     {
@@ -292,7 +285,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadRes
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadResolution.indexer.setter.Oneclass.Oneparam.param012.param012
 {
     using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadResolution.indexer.setter.Oneclass.Oneparam.errorverifier.errorverifier;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadResolution.indexer.setter.Oneclass.Oneparam.param012.param012;
 
     // <Title>Call methods that have different parameter modifiers with dynamic</Title>
     // <Description>
@@ -350,7 +342,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadRes
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadResolution.indexer.setter.Oneclass.Oneparam.param014.param014
 {
     using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadResolution.indexer.setter.Oneclass.Oneparam.errorverifier.errorverifier;
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.overloadResolution.indexer.setter.Oneclass.Oneparam.param014.param014;
 
     // <Title>Call methods that have different parameter modifiers with dynamic</Title>
     // <Description>

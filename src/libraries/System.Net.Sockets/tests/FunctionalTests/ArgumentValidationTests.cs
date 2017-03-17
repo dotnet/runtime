@@ -1084,6 +1084,12 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        public void EndConnect_UnrelatedAsyncResult_Throws_Argument()
+        {
+            Assert.Throws<ArgumentException>(() => GetSocket().EndConnect(Task.CompletedTask));
+        }
+
+        [Fact]
         public void BeginSend_Buffer_NullBuffer_Throws_ArgumentNull()
         {
             Assert.Throws<ArgumentNullException>(() => GetSocket().BeginSend(null, 0, 0, SocketFlags.None, TheAsyncCallback, null));
@@ -1133,6 +1139,12 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
+        public void EndSend_UnrelatedAsyncResult_Throws_Argument()
+        {
+            Assert.Throws<ArgumentException>(() => GetSocket().EndSend(Task.CompletedTask));
+        }
+
+        [Fact]
         public void BeginSendTo_NullBuffer_Throws_ArgumentNull()
         {
             Assert.Throws<ArgumentNullException>(() => GetSocket().BeginSendTo(null, 0, 0, SocketFlags.None, new IPEndPoint(IPAddress.Loopback, 1), TheAsyncCallback, null));
@@ -1176,6 +1188,12 @@ namespace System.Net.Sockets.Tests
         public void EndSendTo_NullAsyncResult_Throws_ArgumentNull()
         {
             Assert.Throws<ArgumentNullException>(() => GetSocket().EndSendTo(null));
+        }
+
+        [Fact]
+        public void EndSendto_UnrelatedAsyncResult_Throws_Argument()
+        {
+            Assert.Throws<ArgumentException>(() => GetSocket().EndSendTo(Task.CompletedTask));
         }
 
         [Fact]
@@ -1382,6 +1400,12 @@ namespace System.Net.Sockets.Tests
             IPPacketInformation packetInfo;
 
             Assert.Throws<ArgumentNullException>(() => GetSocket().EndReceiveMessageFrom(null, ref flags, ref remote, out packetInfo));
+        }
+
+        [Fact]
+        public void CancelConnectAsync_NullEventArgs_Throws_ArgumentNull()
+        {
+            Assert.Throws<ArgumentNullException>(() => Socket.CancelConnectAsync(null));
         }
     }
 }

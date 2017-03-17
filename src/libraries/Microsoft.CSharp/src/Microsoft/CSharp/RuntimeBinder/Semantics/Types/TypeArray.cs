@@ -9,58 +9,31 @@ using System.Linq;
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     /////////////////////////////////////////////////////////////////////////////////
-    // Encapsulates a type list, including its size and metadata token.
+    // Encapsulates a type list, including its size.
 
     internal sealed class TypeArray
     {
-        private readonly CType[] _items;
-
         public TypeArray(CType[] types)
         {
-            _items = types;
-            if (_items == null)
-            {
-                _items = Array.Empty<CType>();
-            }
+            Debug.Assert(types != null);
+            Items = types;
         }
 
-        public int Size { get { return _items.Length; } }
-        public int size { get { return Size; } }
+        public int Count => Items.Length;
 
-        public bool HasErrors() { return false; }
-        public CType Item(int i) { return _items[i]; }
-        public TypeParameterType ItemAsTypeParameterType(int i) { return _items[i].AsTypeParameterType(); }
+        public TypeParameterType ItemAsTypeParameterType(int i) => Items[i].AsTypeParameterType();
 
-        public CType[] ToArray() { return _items.ToArray(); }
+        public CType[] Items { get; }
 
-        [System.Runtime.CompilerServices.IndexerName("EyeTim")]
-        public CType this[int i]
-        {
-            get { return _items[i]; }
-        }
+        public CType this[int i] => Items[i];
 
-        public int Count
-        {
-            get { return _items.Length; }
-        }
-
-#if DEBUG
+        [Conditional("DEBUG")]
         public void AssertValid()
         {
-            Debug.Assert(size >= 0);
-            for (int i = 0; i < size; i++)
-            {
-                Debug.Assert(_items[i] != null);
-            }
+            Debug.Assert(Count >= 0);
+            Debug.Assert(Items.All(item => item != null));
         }
-#endif
 
-        public void CopyItems(int i, int c, CType[] dest)
-        {
-            for (int j = 0; j < c; ++j)
-            {
-                dest[j] = _items[i + j];
-            }
-        }
+        public void CopyItems(int i, int c, CType[] dest) => Array.Copy(Items, i, dest, 0, c);
     }
 }

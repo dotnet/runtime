@@ -12,45 +12,13 @@ namespace System.Transactions
     {
         internal abstract void EnterState(InternalEnlistment enlistment);
 
-        // Double-checked locking pattern requires volatile for read/write synchronization
-        internal static volatile EnlistmentStatePromoted _enlistmentStatePromoted;
+        internal static EnlistmentStatePromoted _enlistmentStatePromoted;
 
         // Object for synchronizing access to the entire class( avoiding lock( typeof( ... )) )
         private static object s_classSyncObject;
 
-        // Helper object for static synchronization
-        private static object ClassSyncObject
-        {
-            get
-            {
-                if (s_classSyncObject == null)
-                {
-                    object o = new object();
-                    Interlocked.CompareExchange(ref s_classSyncObject, o, null);
-                }
-                return s_classSyncObject;
-            }
-        }
-
-        internal static EnlistmentStatePromoted EnlistmentStatePromoted
-        {
-            get
-            {
-                if (_enlistmentStatePromoted == null)
-                {
-                    lock (ClassSyncObject)
-                    {
-                        if (_enlistmentStatePromoted == null)
-                        {
-                            EnlistmentStatePromoted temp = new EnlistmentStatePromoted();
-                            _enlistmentStatePromoted = temp;
-                        }
-                    }
-                }
-
-                return _enlistmentStatePromoted;
-            }
-        }
+        internal static EnlistmentStatePromoted EnlistmentStatePromoted =>
+            LazyInitializer.EnsureInitialized(ref _enlistmentStatePromoted, ref s_classSyncObject, () => new EnlistmentStatePromoted());
 
         internal virtual void EnlistmentDone(InternalEnlistment enlistment)
         {

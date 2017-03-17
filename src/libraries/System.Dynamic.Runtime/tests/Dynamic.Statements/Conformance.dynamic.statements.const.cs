@@ -6,13 +6,11 @@ using Xunit;
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.cnst.cnst01.cnst01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.cnst.cnst01.cnst01;
     // <Title>Dynamic & const</Title>
     // <Description>default(dynamic) can be declared as const</Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -76,7 +74,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.cnst.cnst01.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.cnst.cnst04.cnst04
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.cnst.cnst04.cnst04;
     // <Title>Dynamic & const</Title>
     // <Description>const value as the method parameter</Description>
     // <RelatedBugs></RelatedBugs>
@@ -147,13 +144,11 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.cnst.cnst04.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.cnst.cnst05.cnst05
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.cnst.cnst05.cnst05;
     // <Title>Dynamic & const</Title>
     // <Description>const value as the method parameter</Description>
     // <RelatedBugs></RelatedBugs>
     // <Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -215,13 +210,11 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.cnst.cnst05.
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.cnst.readonly01.readonly01
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.cnst.readonly01.readonly01;
     // <Title>Dynamic & static readonly</Title>
     // <Description>default(dynamic) in static readonly</Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -277,13 +270,11 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.cnst.readonl
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.cnst.readonly01a.readonly01a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.cnst.readonly01a.readonly01a;
     // <Title>Dynamic & static readonly</Title>
     // <Description>default(dynamic) in static readonly</Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class TestClass
     {
@@ -366,7 +357,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.cnst.readonl
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.cnst.readonly02.readonly02
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.cnst.readonly02.readonly02;
     // <Title>Dynamic & readonly</Title>
     // <Description>default(dynamic) in static readonly</Description>
     // <RelatedBugs></RelatedBugs>
@@ -449,7 +439,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.cnst.readonl
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.cnst.readonly03.readonly03
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.cnst.readonly03.readonly03;
     // <Title>Dynamic & readonly</Title>
     // <Description>default(dynamic) in static readonly</Description>
     // <RelatedBugs></RelatedBugs>
@@ -537,13 +526,11 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.cnst.readonl
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.cnst.readonly04.readonly04
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.cnst.readonly04.readonly04;
     // <Title>Dynamic & readonly</Title>
     // <Description>readonly value can NOT be modify.</Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -771,13 +758,11 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.cnst.readonl
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.cnst.readonly04a.readonly04a
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.cnst.readonly04a.readonly04a;
     // <Title>Dynamic & readonly</Title>
     // <Description>readonly value can NOT be modify.</Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class TestClass
     {
@@ -1035,13 +1020,11 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.cnst.readonl
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.cnst.readonly06.readonly06
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.cnst.readonly06.readonly06;
     // <Title>Dynamic & readonly</Title>
     // <Description>The field of readonly struct can NOT be modify.</Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -1272,13 +1255,11 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.cnst.readonl
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.cnst.readonly07.readonly07
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.cnst.readonly07.readonly07;
     // <Title>Dynamic & readonly</Title>
     // <Description>The field of readonly struct can NOT be modify.</Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -1423,13 +1404,11 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.cnst.readonl
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.cnst.readonly08.readonly08
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.cnst.readonly08.readonly08;
     // <Title>Dynamic & readonly</Title>
     // <Description>The field of readonly struct can NOT be modify.Struct inner struct.</Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -1570,13 +1549,11 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.cnst.readonl
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.cnst.readonly09.readonly09
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.cnst.readonly09.readonly09;
     // <Title>Dynamic & readonly</Title>
     // <Description>The field of readonly struct can NOT be modify.</Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public class Test
     {
@@ -1725,13 +1702,11 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.cnst.readonl
 
 namespace ManagedTests.DynamicCSharp.Conformance.dynamic.statements.cnst.readonly10.readonly10
 {
-    using ManagedTests.DynamicCSharp.Conformance.dynamic.statements.cnst.readonly10.readonly10;
     // <Title>Dynamic & readonly</Title>
     // <Description>The field of readonly struct can be evaluated in member initializer.</Description>
     // <RelatedBugs></RelatedBugs>
     //<Expects Status=success></Expects>
     // <Code>
-    using System;
 
     public struct Struc
     {

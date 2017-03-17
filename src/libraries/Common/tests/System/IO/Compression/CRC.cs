@@ -11,6 +11,7 @@ public class CRC
     private static bool s_crc_table_computed = false;
 
     // Make the table for a fast CRC.
+    // Derivative work of zlib -- https://github.com/madler/zlib/blob/master/crc32.c (hint: L108)
     private static void make_crc_table()
     {
         ulong c;
