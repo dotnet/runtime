@@ -1,0 +1,5 @@
+<linker>
+    <assembly fullname="Unbox006">
+        <type fullname="*" required="true" />
+    </assembly>
+</linker>
