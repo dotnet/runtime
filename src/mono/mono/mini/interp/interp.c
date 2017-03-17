@@ -696,8 +696,6 @@ interp_walk_stack_with_ctx (MonoInternalStackWalk func, MonoContext *ctx, MonoUn
 			return;
 		frame = frame->parent;
 	}
-
-	g_assert (0);
 }
 
 static MonoPIFunc mono_interp_enter_icall_trampoline = NULL;
