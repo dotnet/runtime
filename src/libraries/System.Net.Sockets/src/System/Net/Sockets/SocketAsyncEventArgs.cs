@@ -402,7 +402,7 @@ namespace System.Net.Sockets
             }
 
             // OK to dispose now.
-            FreeInternals(false);
+            FreeInternals();
 
             // Don't bother finalizing later.
             GC.SuppressFinalize(this);
@@ -410,7 +410,10 @@ namespace System.Net.Sockets
 
         ~SocketAsyncEventArgs()
         {
-            FreeInternals(true);
+            if (!Environment.HasShutdownStarted)
+            {
+                FreeInternals();
+            }
         }
 
         // NOTE: Use a try/finally to make sure Complete is called when you're done
