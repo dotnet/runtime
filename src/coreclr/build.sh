@@ -401,7 +401,7 @@ build_CoreLib()
 
     # Invoke MSBuild
     __ExtraBuildArgs=""
-    if [ "$__IbcTuning" -eq "" ]; then
+    if [[ "$__IbcTuning" -eq "" ]]; then
         __ExtraBuildArgs="$__ExtraBuildArgs -OptimizationDataDir=\"$__PackagesDir/optimization.$__BuildOS-$__BuildArch.IBC.CoreCLR/$__IbcOptDataVersion/data/\""
         __ExtraBuildArgs="$__ExtraBuildArgs -EnableProfileGuidedOptimization=true"
     fi
