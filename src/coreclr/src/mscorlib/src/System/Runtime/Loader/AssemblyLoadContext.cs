@@ -137,6 +137,11 @@ namespace System.Runtime.Loader
                 throw new ArgumentNullException(nameof(assembly));
             }
 
+            if (assembly.Length <= 0)
+            {
+                throw new BadImageFormatException(Environment.GetResourceString("BadImageFormat_BadILFormat"));
+            }
+
             int iAssemblyStreamLength = (int)assembly.Length;
             int iSymbolLength = 0;
 
