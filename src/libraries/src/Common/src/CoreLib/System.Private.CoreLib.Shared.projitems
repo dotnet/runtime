@@ -154,11 +154,16 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\ParamArrayAttribute.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\PlatformNotSupportedException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\RankException.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ConstructorInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\FieldInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MemberInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ObfuscateAssemblyAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ObfuscationAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\PropertyInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\TypeDelegator.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\TypeInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\ExtensionAttribute.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\FormattableStringFactory.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\IsVolatile.cs"/>
