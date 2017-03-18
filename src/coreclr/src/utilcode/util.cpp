@@ -879,6 +879,27 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
 #endif
 }
 
+#if !defined(FEATURE_REDHAWK) && defined(_TARGET_AMD64_) && !defined(FEATURE_PAL)
+// Calculate greatest common divisor
+DWORD GCD(DWORD u, DWORD v)
+{
+    while (v != 0)
+    {
+        DWORD dwTemp = v;
+        v = u % v;
+        u = dwTemp;
+    }
+
+    return u;
+}
+
+// Calculate least common multiple
+DWORD LCM(DWORD u, DWORD v)
+{
+    return u / GCD(u, v) * v;
+}
+#endif
+
 /*static*/ BOOL CPUGroupInfo::InitCPUGroupInfoArray()
 {
     CONTRACTL
@@ -940,11 +961,13 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
         m_CPUGroupInfoArray[i].nr_active   = (WORD)pRecord->Group.GroupInfo[i].ActiveProcessorCount;
         m_CPUGroupInfoArray[i].active_mask = pRecord->Group.GroupInfo[i].ActiveProcessorMask;
         m_nProcessors += m_CPUGroupInfoArray[i].nr_active;
-        dwWeight *= (DWORD)m_CPUGroupInfoArray[i].nr_active;
+        dwWeight = LCM(dwWeight, (DWORD)m_CPUGroupInfoArray[i].nr_active);
     }
 
-    //NOTE: the weight setting should work fine with 4 CPU groups upto 64 LPs each. the minimum number of threads
-    //     per group before the weight overflow is 2^32/(2^6x2^6x2^6) = 2^14 (i.e. 16K threads)
+    // The number of threads per group that can be supported will depend on the number of CPU groups
+    // and the number of LPs within each processor group. For example, when the number of LPs in
+    // CPU groups is the same and is 64, the number of threads per group before weight overflow
+    // would be 2^32/2^6 = 2^26 (64M threads)
     for (DWORD i = 0; i < m_nGroups; i++)
     {
         m_CPUGroupInfoArray[i].groupWeight = dwWeight / (DWORD)m_CPUGroupInfoArray[i].nr_active;
