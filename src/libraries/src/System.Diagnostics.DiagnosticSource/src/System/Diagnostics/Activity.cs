@@ -409,8 +409,9 @@ namespace System.Diagnostics
 #endif
             return ret;
         }
-
+#if ALLOW_PARTIALLY_TRUSTED_CALLERS
         [SecuritySafeCritical]
+#endif
         private static unsafe long GetRandomNumber()
         {
             Guid g = Guid.NewGuid();

@@ -15,6 +15,9 @@
   <PropertyGroup Condition="'$(TargetGroup)' == 'netstandard1.1'">
     <DefineConstants>;NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT</DefineConstants>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetGroup)' == 'net46' OR '$(TargetGroup)' == 'netfx'">
+    <DefineConstants>;ALLOW_PARTIALLY_TRUSTED_CALLERS</DefineConstants>
+  </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net46-Windows_NT-Release|AnyCPU'" />  
@@ -55,7 +58,7 @@
     <Reference Include="System.Threading" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net46' OR '$(TargetGroup)' == 'netfx'">
-    <Compile Include="AssemblyInfo.Net46.cs" />
+    <Compile Include="AssemblyInfo.Net46.cs" />  
     <Reference Include="mscorlib" />
     <Reference Include="System" />
   </ItemGroup>      
