@@ -21,14 +21,14 @@ namespace System.Tests
         // CrossPlatformMachineEpsilon for the variance, while an expected result in the format of 0.0xxxxxxxxx
         // will use CrossPlatformMachineEpsilon / 10 and expected result in the format of x.xxxxxx will
         // use CrossPlatformMachineEpsilon * 10.
-        public const float CrossPlatformMachineEpsilon = 4.76837158e-07f;
+        private const float CrossPlatformMachineEpsilon = 4.76837158e-07f;
 
         /// <summary>Verifies that two <see cref="float"/> values are equal, within the <paramref name="variance"/>.</summary>
         /// <param name="expected">The expected value</param>
         /// <param name="actual">The value to be compared against</param>
         /// <param name="variance">The total variance allowed between the expected and actual results.</param>
         /// <exception cref="EqualException">Thrown when the values are not equal</exception>
-        public static void AssertEqual(float expected, float actual, float variance)
+        private static void AssertEqual(float expected, float actual, float variance)
         {
             if (float.IsNaN(expected))
             {
