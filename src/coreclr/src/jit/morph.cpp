@@ -15132,13 +15132,13 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
                 // else if bTaken has valid profile weight and block does not we try to adjust block's weight
                 // We can only adjust the block weights when (the edge block -> bTaken) is the only edge into bTaken
                 //
-                if (block->bbFlags & BBF_PROF_WEIGHT)
+                if (block->hasProfileWeight())
                 {
                     // The edge weights for (block -> bTaken) are 100% of block's weight
                     edgeTaken->flEdgeWeightMin = block->bbWeight;
                     edgeTaken->flEdgeWeightMax = block->bbWeight;
 
-                    if ((bTaken->bbFlags & BBF_PROF_WEIGHT) == 0)
+                    if (!bTaken->hasProfileWeight())
                     {
                         if ((bTaken->countOfInEdges() == 1) || (bTaken->bbWeight < block->bbWeight))
                         {
@@ -15148,7 +15148,7 @@ bool Compiler::fgFoldConditional(BasicBlock* block)
                         }
                     }
                 }
-                else if (bTaken->bbFlags & BBF_PROF_WEIGHT)
+                else if (bTaken->hasProfileWeight())
                 {
                     if (bTaken->countOfInEdges() == 1)
                     {
