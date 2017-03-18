@@ -214,11 +214,21 @@ GTNODE(SIMD             , "simd"         ,GenTreeSIMD        ,0,GTK_BINOP|GTK_EX
 #endif // FEATURE_SIMD
 
 //-----------------------------------------------------------------------------
+//  LIR specific compare and conditional branch/set nodes:
+//-----------------------------------------------------------------------------
+
+GTNODE(CMP              , "cmp"          ,GenTreeOp          ,0,GTK_BINOP|GTK_NOVALUE)  // Sets the condition flags according to the compare result. 
+                                                                                        // N.B. Not a relop, it does not produce a value and it cannot be reversed.
+GTNODE(JCC              , "jcc"          ,GenTreeCC          ,0,GTK_LEAF|GTK_NOVALUE)   // Checks the condition flags and branch if the condition specified
+                                                                                        // by GenTreeCC::gtCondition is true.
+GTNODE(SETCC            , "setcc"        ,GenTreeCC          ,0,GTK_LEAF)               // Checks the condition flags and produces 1 if the condition specified 
+                                                                                        // by GenTreeCC::gtCondition is true and 0 otherwise.
+
+//-----------------------------------------------------------------------------
 //  Other nodes that look like unary/binary operators:
 //-----------------------------------------------------------------------------
 
 GTNODE(JTRUE            , "jmpTrue"      ,GenTreeOp          ,0,GTK_UNOP|GTK_NOVALUE)
-GTNODE(JCC              , "jcc"          ,GenTreeJumpCC      ,0,GTK_LEAF|GTK_NOVALUE)
 
 GTNODE(LIST             , "<list>"       ,GenTreeArgList     ,0,GTK_BINOP|GTK_NOVALUE)
 GTNODE(FIELD_LIST       , "<fldList>"    ,GenTreeFieldList   ,0,GTK_BINOP) // List of fields of a struct, when passed as an argument
