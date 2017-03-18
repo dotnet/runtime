@@ -16930,7 +16930,7 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
     {
         frequency = InlineCallsiteFrequency::LOOP;
     }
-    else if ((pInlineInfo->iciBlock->bbFlags & BBF_PROF_WEIGHT) && (pInlineInfo->iciBlock->bbWeight > BB_ZERO_WEIGHT))
+    else if (pInlineInfo->iciBlock->hasProfileWeight() && (pInlineInfo->iciBlock->bbWeight > BB_ZERO_WEIGHT))
     {
         frequency = InlineCallsiteFrequency::WARM;
     }
