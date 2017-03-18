@@ -521,14 +521,29 @@ struct BasicBlock : private LIR::Range
     // getBBWeight -- get the normalized weight of this block
     unsigned getBBWeight(Compiler* comp);
 
-    // setBBWeight -- if the block weight is not derived from a profile, then set the weight to the input
-    // weight, but make sure to not overflow BB_MAX_WEIGHT
+    // hasProfileWeight -- Returns true if this block's weight came from profile data
+    bool hasProfileWeight() const
+    {
+        return ((this->bbFlags & BBF_PROF_WEIGHT) != 0);
+    }
+
+    // setBBWeight -- if the block weight is not derived from a profile,
+    // then set the weight to the input weight, making sure to not overflow BB_MAX_WEIGHT
+    // Note to set the weight from profile data, instead use setBBProfileWeight
     void setBBWeight(unsigned weight)
     {
-        if (!(this->bbFlags & BBF_PROF_WEIGHT))
+        if (!hasProfileWeight())
         {
             this->bbWeight = min(weight, BB_MAX_WEIGHT);
         }
+    }
+
+    // setBBProfileWeight -- Set the profile-derived weight for a basic block
+    void setBBProfileWeight(unsigned weight)
+    {
+        this->bbFlags |= BBF_PROF_WEIGHT;
+        // Check if the multiplication by BB_UNITY_WEIGHT will overflow.
+        this->bbWeight = (weight <= BB_MAX_WEIGHT / BB_UNITY_WEIGHT) ? weight * BB_UNITY_WEIGHT : BB_MAX_WEIGHT;
     }
 
     // modifyBBWeight -- same as setBBWeight, but also make sure that if the block is rarely run, it stays that
@@ -541,20 +556,12 @@ struct BasicBlock : private LIR::Range
         }
     }
 
-    // setBBProfileWeight -- Set the profile-derived weight for a basic block
-    void setBBProfileWeight(unsigned weight)
-    {
-        this->bbFlags |= BBF_PROF_WEIGHT;
-        // Check if the multiplication by BB_UNITY_WEIGHT will overflow.
-        this->bbWeight = (weight <= BB_MAX_WEIGHT / BB_UNITY_WEIGHT) ? weight * BB_UNITY_WEIGHT : BB_MAX_WEIGHT;
-    }
-
     // this block will inherit the same weight and relevant bbFlags as bSrc
     void inheritWeight(BasicBlock* bSrc)
     {
         this->bbWeight = bSrc->bbWeight;
 
-        if (bSrc->bbFlags & BBF_PROF_WEIGHT)
+        if (bSrc->hasProfileWeight())
         {
             this->bbFlags |= BBF_PROF_WEIGHT;
         }
