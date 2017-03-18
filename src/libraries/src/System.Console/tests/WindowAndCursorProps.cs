@@ -31,10 +31,19 @@ public class WindowAndCursorProps : RemoteExecutorTestBase
     }
 
     [Fact]
+    [PlatformSpecific(TestPlatforms.Windows)]  // Expected behavior specific to Windows
     public static void WindowWidth_WindowHeight_InvalidSize()
     {
-        Assert.Throws<ArgumentOutOfRangeException>("width", () => Console.WindowWidth = 0);
-        Assert.Throws<ArgumentOutOfRangeException>("height", () => Console.WindowHeight = 0);
+        if (Console.IsOutputRedirected)
+        {
+            Assert.Throws<IOException>(() => Console.WindowWidth = 0);
+            Assert.Throws<IOException>(() => Console.WindowHeight = 0);
+        }
+        else
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("width", () => Console.WindowWidth = 0);
+            Assert.Throws<ArgumentOutOfRangeException>("height", () => Console.WindowHeight = 0);
+        }
     }
 
     [Fact]
