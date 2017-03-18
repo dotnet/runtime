@@ -6,6 +6,7 @@
       netstandard1.0;
       netfx;
       net46;
+      net45;      
     </BuildConfigurations>
   </PropertyGroup>
 </Project>
