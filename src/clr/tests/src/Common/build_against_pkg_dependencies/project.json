@@ -26,7 +26,6 @@
     "rhel.7-x64": {},
     "debian.8-x64": {},
     "fedora.23-x64": {},
-    "opensuse.42.1-x64": {},
-    "linux-x64": {}
+    "opensuse.42.1-x64": {}
   }
 }
