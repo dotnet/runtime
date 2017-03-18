@@ -2060,19 +2060,22 @@ public:
 };
 
 //------------------------------------------------------------------------
-// GenTreeUseEdgeIterator: an iterator that will produce each use edge of a
-//                         GenTree node in the order in which they are
-//                         used. Note that the use edges of a node may not
-//                         correspond exactly to the nodes on the other
-//                         ends of its use edges: in particular, GT_LIST
-//                         nodes are expanded into their component parts
-//                         (with the optional exception of multi-reg
-//                         arguments). This differs from the behavior of
-//                         GenTree::GetChildPointer(), which does not expand
-//                         lists.
+// GenTreeUseEdgeIterator: an iterator that will produce each use edge of a GenTree node in the order in which
+//                         they are used.
 //
-// Note: valid values of this type may be obtained by calling
-// `GenTree::UseEdgesBegin` and `GenTree::UseEdgesEnd`.
+// The use edges of a node may not correspond exactly to the nodes on the other ends of its use edges: in
+// particular, GT_LIST nodes are expanded into their component parts. This differs from the behavior of
+// GenTree::GetChildPointer(), which does not expand lists.
+//
+// Operand iteration is common enough in the back end of the compiler that the implementation of this type has
+// traded some simplicity for speed:
+// - As much work as is reasonable is done in the constructor rather than during operand iteration
+// - Node-specific functionality is handled by a small class of "advance" functions called by operator++
+//   rather than making operator++ itself handle all nodes
+// - Some specialization has been performed for specific node types/shapes (e.g. the advance function for
+//   binary nodes is specialized based on whether or not the node has the GTF_REVERSE_OPS flag set)
+//
+// Valid values of this type may be obtained by calling `GenTree::UseEdgesBegin` and `GenTree::UseEdgesEnd`.
 //
 class GenTreeUseEdgeIterator final
 {
@@ -2080,6 +2083,20 @@ class GenTreeUseEdgeIterator final
     friend GenTreeUseEdgeIterator GenTree::UseEdgesBegin();
     friend GenTreeUseEdgeIterator GenTree::UseEdgesEnd();
 
+    enum
+    {
+        CALL_INSTANCE     = 0,
+        CALL_ARGS         = 1,
+        CALL_LATE_ARGS    = 2,
+        CALL_CONTROL_EXPR = 3,
+        CALL_COOKIE       = 4,
+        CALL_ADDRESS      = 5,
+        CALL_TERMINAL     = 6,
+    };
+
+    typedef void (GenTreeUseEdgeIterator::*AdvanceFn)();
+
+    AdvanceFn m_advance;
     GenTree*  m_node;
     GenTree** m_edge;
     GenTree*  m_argList;
@@ -2087,24 +2104,40 @@ class GenTreeUseEdgeIterator final
 
     GenTreeUseEdgeIterator(GenTree* node);
 
-    GenTree** GetNextUseEdge() const;
-    void      MoveToNextCallUseEdge();
-    void      MoveToNextPhiUseEdge();
-#ifdef FEATURE_SIMD
-    void MoveToNextSIMDUseEdge();
-#endif
-    void MoveToNextFieldUseEdge();
+    // Advance functions for special nodes
+    void AdvanceCmpXchg();
+    void AdvanceBoundsChk();
+    void AdvanceArrElem();
+    void AdvanceArrOffset();
+    void AdvanceDynBlk();
+    void AdvanceStoreDynBlk();
+
+    template <bool ReverseOperands>
+    void           AdvanceBinOp();
+    void           SetEntryStateForBinOp();
+
+    // An advance function for list-like nodes (Phi, SIMDIntrinsicInitN, FieldList)
+    void AdvanceList();
+    void SetEntryStateForList(GenTree* list);
+
+    // The advance function for call nodes
+    template <int state>
+    void          AdvanceCall();
+
+    void Terminate();
 
 public:
     GenTreeUseEdgeIterator();
 
     inline GenTree** operator*()
     {
+        assert(m_state != -1);
         return m_edge;
     }
 
     inline GenTree** operator->()
     {
+        assert(m_state != -1);
         return m_edge;
     }
 
