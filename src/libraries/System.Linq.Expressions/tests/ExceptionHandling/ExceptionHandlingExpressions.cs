@@ -266,7 +266,7 @@ namespace System.Linq.Expressions.Tests
                 ilGen.Emit(OpCodes.Ldstr, "An Exceptional Exception!");
                 ilGen.Emit(OpCodes.Throw);
                 ilGen.Emit(OpCodes.Ret);
-                Type createdType = type.CreateTypeInfo().AsType();
+                Type createdType = type.CreateTypeInfo();
                 ParameterExpression ex = Expression.Variable(typeof(string));
                 TryExpression tryCatch =
                     Expression.TryCatch(

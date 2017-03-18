@@ -565,7 +565,7 @@ namespace System.Linq.Expressions.Tests
             TypeInfo createdType = type.CreateTypeInfo();
             PropertyInfo createdProperty = createdType.DeclaredProperties.First();
 
-            Expression expression = Expression.Constant(Activator.CreateInstance(createdType.AsType()));
+            Expression expression = Expression.Constant(Activator.CreateInstance(createdType));
 
             Assert.Throws<ArgumentException>("property", () => Expression.Property(expression, createdProperty));
             Assert.Throws<ArgumentException>("property", () => Expression.Property(expression, createdProperty.Name));
