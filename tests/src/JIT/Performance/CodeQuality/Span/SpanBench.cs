@@ -27,13 +27,15 @@ namespace Span
         const int FillAllIterations = 1;
         const int BaseIterations = 1;
 #else
+        // Appropriately-scaled iteration counts for the various benchmarks
         const int BubbleSortIterations = 100;
         const int QuickSortIterations = 1000;
         const int FillAllIterations = 100000;
         const int BaseIterations = 10000000;
 #endif
 
-        const int Size = 1024;
+        // Default length for arrays of mock input data
+        const int DefaultLength = 1024;
 
         // Helpers
         #region Helpers
@@ -44,47 +46,263 @@ namespace Span
             public T[] C0;
         }
 
-        /*[MethodImpl(MethodImplOptions.NoInlining)]
-        static void TestFillAllSpan(Span<byte> span)
+        // Copying the result of a computation to Sink<T>.Instance is a way
+        // to prevent the jit from considering the computation dead and removing it.
+        private sealed class Sink<T>
         {
-            for (int i = 0; i < span.Length; ++i) {
-                span[i] = unchecked((byte)i);
+            public T Data;
+            public static Sink<T> Instance = new Sink<T>();
+        }
+
+        // Use statics to smuggle some information from Main to Invoke when running tests
+        // from the command line.
+        static bool IsXunitInvocation = true; // xunit-perf leaves this true; command line Main sets to false
+        static int CommandLineInnerIterationCount = 0;   // used to communicate iteration count from BenchmarkAttribute
+                                                         // (xunit-perf exposes the same in static property Benchmark.InnerIterationCount)
+        static bool DoWarmUp; // Main sets this when calling a new benchmark routine
+
+
+        // Invoke routine to abstract away the difference between running under xunit-perf vs running from the
+        // command line.  Inner loop to be measured is taken as an Action<int>, and invoked passing the number
+        // of iterations that the inner loop should execute.
+        static void Invoke(Action<int> innerLoop, string nameFormat, params object[] nameArgs)
+        {
+            if (IsXunitInvocation)
+            {
+                foreach (var iteration in Benchmark.Iterations)
+                    using (iteration.StartMeasurement())
+                        innerLoop((int)Benchmark.InnerIterationCount);
+            }
+            else
+            {
+                if (DoWarmUp)
+                {
+                    // Run some warm-up iterations before measuring
+                    innerLoop(CommandLineInnerIterationCount);
+                    // Clear the flag since we're now warmed up (caller will
+                    // reset it before calling new code)
+                    DoWarmUp = false;
+                }
+
+                // Now do the timed run of the inner loop.
+                Stopwatch sw = Stopwatch.StartNew();
+                innerLoop(CommandLineInnerIterationCount);
+                sw.Stop();
+
+                // Print result.
+                string name = String.Format(nameFormat, nameArgs);
+                double timeInMs = sw.Elapsed.TotalMilliseconds;
+                Console.WriteLine("{0}: {1}ms", name, timeInMs);
             }
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        static void TestFillAllArray(byte[] data)
+        // Helper for the sort tests to get some pseudo-random input
+        static int[] GetUnsortedData(int length)
         {
-            for (int i = 0; i < data.Length; ++i) {
-                data[i] = unchecked((byte)i);
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        static void TestFillAllReverseSpan(Span<byte> span)
-        {
-            for (int i = span.Length; --i >= 0;) {
-                span[i] = unchecked((byte)i);
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        static void TestFillAllReverseArray(byte[] data)
-        {
-            for (int i = data.Length; --i >= 0;) {
-                data[i] = unchecked((byte)i);
-            }
-        }
-
-        static int[] GetUnsortedData()
-        {
-            int[] unsortedData = new int[Size];
+            int[] unsortedData = new int[length];
             Random r = new Random(42);
             for (int i = 0; i < unsortedData.Length; ++i)
             {
                 unsortedData[i] = r.Next();
             }
             return unsortedData;
+        }
+        #endregion // helpers
+
+        // Tests that implement some vary basic algorithms (fill/sort) over spans and arrays
+        #region Algorithm tests
+
+        #region TestFillAllSpan
+        [Benchmark(InnerIterationCount = FillAllIterations)]
+        [InlineData(DefaultLength)]
+        public static void FillAllSpan(int length)
+        {
+            byte[] a = new byte[length];
+
+            Invoke((int innerIterationCount) =>
+            {
+                Span<byte> s = new Span<byte>(a);
+                for (int i = 0; i < innerIterationCount; ++i)
+                {
+                    TestFillAllSpan(s);
+                }
+            },
+            "TestFillAllSpan({0})", length);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void TestFillAllSpan(Span<byte> span)
+        {
+            for (int i = 0; i < span.Length; ++i)
+            {
+                span[i] = unchecked((byte)i);
+            }
+        }
+        #endregion
+
+        #region TestFillAllArray
+        [Benchmark(InnerIterationCount = FillAllIterations)]
+        [InlineData(DefaultLength)]
+        public static void FillAllArray(int length)
+        {
+            byte[] a = new byte[length];
+
+            Invoke((int innerIterationCount) =>
+            {
+                for (int i = 0; i < innerIterationCount; ++i)
+                {
+                    TestFillAllArray(a);
+                }
+            },
+            "TestFillArray({0})", length);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void TestFillAllArray(byte[] data)
+        {
+            for (int i = 0; i < data.Length; ++i)
+            {
+                data[i] = unchecked((byte)i);
+            }
+        }
+        #endregion
+
+        #region TestFillAllReverseSpan
+        [Benchmark(InnerIterationCount = FillAllIterations)]
+        [InlineData(DefaultLength)]
+        public static void FillAllReverseSpan(int length)
+        {
+            byte[] a = new byte[length];
+
+            Invoke((int innerIterationCount) =>
+            {
+                Span<byte> s = new Span<byte>(a);
+                for (int i = 0; i < innerIterationCount; ++i)
+                {
+                    TestFillAllReverseSpan(s);
+                }
+            },
+            "TestFillAllReverseSpan({0})", length);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void TestFillAllReverseSpan(Span<byte> span)
+        {
+            for (int i = span.Length; --i >= 0;)
+            {
+                span[i] = unchecked((byte)i);
+            }
+        }
+        #endregion
+
+        #region TestFillAllReverseArray
+        [Benchmark(InnerIterationCount = FillAllIterations)]
+        [InlineData(DefaultLength)]
+        public static void FillAllReverseArray(int length)
+        {
+            byte[] a = new byte[length];
+
+            Invoke((int innerIterationCount) =>
+            {
+                for (int i = 0; i < innerIterationCount; ++i)
+                {
+                    TestFillAllReverseArray(a);
+                }
+            },
+            "TestFillAllReverseArray({0})", length);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void TestFillAllReverseArray(byte[] data)
+        {
+            for (int i = data.Length; --i >= 0;)
+            {
+                data[i] = unchecked((byte)i);
+            }
+        }
+        #endregion
+
+        #region TestQuickSortSpan
+        [Benchmark(InnerIterationCount = QuickSortIterations)]
+        [InlineData(DefaultLength)]
+        public static void QuickSortSpan(int length)
+        {
+            int[] data = new int[length];
+            int[] unsortedData = GetUnsortedData(length);
+
+            Invoke((int innerIterationCount) =>
+            {
+                Span<int> span = new Span<int>(data);
+
+                for (int i = 0; i < innerIterationCount; ++i)
+                {
+                    Array.Copy(unsortedData, data, length);
+                    TestQuickSortSpan(span);
+                }
+            },
+            "TestQuickSortSpan({0})", length);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void TestQuickSortSpan(Span<int> data)
+        {
+            if (data.Length <= 1)
+            {
+                return;
+            }
+
+            int lo = 0;
+            int hi = data.Length - 1;
+            int i, j;
+            int pivot, temp;
+            for (i = lo, j = hi, pivot = data[hi]; i < j;)
+            {
+                while (i < j && data[i] <= pivot)
+                {
+                    ++i;
+                }
+                while (j > i && data[j] >= pivot)
+                {
+                    --j;
+                }
+                if (i < j)
+                {
+                    temp = data[i];
+                    data[i] = data[j];
+                    data[j] = temp;
+                }
+            }
+            if (i != hi)
+            {
+                temp = data[i];
+                data[i] = pivot;
+                data[hi] = temp;
+            }
+
+            TestQuickSortSpan(data.Slice(0, i));
+            TestQuickSortSpan(data.Slice(i + 1));
+        }
+        #endregion
+
+        #region TestBubbleSortSpan
+        [Benchmark(InnerIterationCount = BubbleSortIterations)]
+        [InlineData(DefaultLength)]
+        public static void BubbleSortSpan(int length)
+        {
+            int[] data = new int[length];
+            int[] unsortedData = GetUnsortedData(length);
+
+            Invoke((int innerIterationCount) =>
+            {
+                Span<int> span = new Span<int>(data);
+
+                for (int i = 0; i < innerIterationCount; i++)
+                {
+                    Array.Copy(unsortedData, data, length);
+                    TestBubbleSortSpan(span);
+                }
+            },
+            "TestBubbleSortSpan({0})", length);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -93,10 +311,13 @@ namespace Span
             bool swap;
             int temp;
             int n = span.Length - 1;
-            do {
+            do
+            {
                 swap = false;
-                for (int i = 0; i < n; i++) {
-                    if (span[i] > span[i + 1]) {
+                for (int i = 0; i < n; i++)
+                {
+                    if (span[i] > span[i + 1])
+                    {
                         temp = span[i];
                         span[i] = span[i + 1];
                         span[i + 1] = temp;
@@ -107,6 +328,84 @@ namespace Span
             }
             while (swap);
         }
+        #endregion
+
+        #region TestQuickSortArray
+        [Benchmark(InnerIterationCount = QuickSortIterations)]
+        [InlineData(DefaultLength)]
+        public static void QuickSortArray(int length)
+        {
+            int[] data = new int[length];
+            int[] unsortedData = GetUnsortedData(length);
+
+            Invoke((int innerIterationCount) =>
+            {
+                for (int i = 0; i < innerIterationCount; i++)
+                {
+                    Array.Copy(unsortedData, data, length);
+                    TestQuickSortArray(data, 0, data.Length - 1);
+                }
+            },
+            "TestQuickSortArray({0})", length);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void TestQuickSortArray(int[] data, int lo, int hi)
+        {
+            if (lo >= hi)
+            {
+                return;
+            }
+
+            int i, j;
+            int pivot, temp;
+            for (i = lo, j = hi, pivot = data[hi]; i < j;)
+            {
+                while (i < j && data[i] <= pivot)
+                {
+                    ++i;
+                }
+                while (j > i && data[j] >= pivot)
+                {
+                    --j;
+                }
+                if (i < j)
+                {
+                    temp = data[i];
+                    data[i] = data[j];
+                    data[j] = temp;
+                }
+            }
+            if (i != hi)
+            {
+                temp = data[i];
+                data[i] = pivot;
+                data[hi] = temp;
+            }
+
+            TestQuickSortArray(data, lo, i - 1);
+            TestQuickSortArray(data, i + 1, hi);
+        }
+        #endregion
+
+        #region TestBubbleSortArray
+        [Benchmark(InnerIterationCount = BubbleSortIterations)]
+        [InlineData(DefaultLength)]
+        public static void BubbleSortArray(int length)
+        {
+            int[] data = new int[length];
+            int[] unsortedData = GetUnsortedData(length);
+
+            Invoke((int innerIterationCount) =>
+            {
+                for (int i = 0; i < innerIterationCount; i++)
+                {
+                    Array.Copy(unsortedData, data, length);
+                    TestBubbleSortArray(data);
+                }
+            },
+            "TestBubbleSortArray({0})", length);
+        }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         static void TestBubbleSortArray(int[] data)
@@ -114,10 +413,13 @@ namespace Span
             bool swap;
             int temp;
             int n = data.Length - 1;
-            do {
+            do
+            {
                 swap = false;
-                for (int i = 0; i < n; i++) {
-                    if (data[i] > data[i + 1]) {
+                for (int i = 0; i < n; i++)
+                {
+                    if (data[i] > data[i + 1])
+                    {
                         temp = data[i];
                         data[i] = data[i + 1];
                         data[i + 1] = temp;
@@ -128,230 +430,9 @@ namespace Span
             }
             while (swap);
         }
-
-        static void TestQuickSortSpan(Span<int> data)
-        {
-            QuickSortSpan(data);
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        static void QuickSortSpan(Span<int> data)
-        {
-            if (data.Length <= 1) {
-                return;
-            }
-
-            int lo = 0;
-            int hi = data.Length - 1;
-            int i, j;
-            int pivot, temp;
-            for (i = lo, j = hi, pivot = data[hi]; i < j;) {
-                while (i < j && data[i] <= pivot) {
-                    ++i;
-                }
-                while (j > i && data[j] >= pivot) {
-                    --j;
-                }
-                if (i < j) {
-                    temp = data[i];
-                    data[i] = data[j];
-                    data[j] = temp;
-                }
-            }
-            if (i != hi) {
-                temp = data[i];
-                data[i] = pivot;
-                data[hi] = temp;
-            }
-
-            QuickSortSpan(data.Slice(0, i));
-            QuickSortSpan(data.Slice(i + 1));
-        }
-
-        static void TestQuickSortArray(int[] data)
-        {
-            QuickSortArray(data, 0, data.Length - 1);
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        static void QuickSortArray(int[] data, int lo, int hi)
-        {
-            if (lo >= hi) {
-                return;
-            }
-
-            int i, j;
-            int pivot, temp;
-            for (i = lo, j = hi, pivot = data[hi]; i < j;) {
-                while (i < j && data[i] <= pivot) {
-                    ++i;
-                }
-                while (j > i && data[j] >= pivot) {
-                    --j;
-                }
-                if (i < j) {
-                    temp = data[i];
-                    data[i] = data[j];
-                    data[j] = temp;
-                }
-            }
-            if (i != hi) {
-                temp = data[i];
-                data[i] = pivot;
-                data[hi] = temp;
-            }
-
-            QuickSortArray(data, lo, i - 1);
-            QuickSortArray(data, i + 1, hi);
-        }*/
         #endregion
 
-        // XUNIT-PERF tests
-        #region XUNIT-PERF tests
-        /*[Benchmark]
-        public static void FillAllSpan()
-        {
-            byte[] a = new byte[Size];
-            Span<byte> s = new Span<byte>(a);
-            foreach (var iteration in Benchmark.Iterations)
-            {
-                using (iteration.StartMeasurement())
-                {
-                    for (int i = 0; i < FillAllIterations; i++)
-                    {
-                        TestFillAllSpan(s);
-                    }
-                }
-            }
-        }
-
-        [Benchmark]
-        public static void FillAllArray()
-        {
-            byte[] a = new byte[Size];
-            foreach (var iteration in Benchmark.Iterations)
-            {
-                using (iteration.StartMeasurement())
-                {
-                    for (int i = 0; i < FillAllIterations; i++)
-                    {
-                        TestFillAllArray(a);
-                    }
-                }
-            }
-        }
-
-        [Benchmark]
-        public static void FillAllReverseSpan()
-        {
-            byte[] a = new byte[Size];
-            Span<byte> s = new Span<byte>(a);
-            foreach (var iteration in Benchmark.Iterations)
-            {
-                using (iteration.StartMeasurement())
-                {
-                    for (int i = 0; i < FillAllIterations; i++)
-                    {
-                        TestFillAllReverseSpan(s);
-                    }
-                }
-            }
-        }
-
-        [Benchmark]
-        public static void FillAllReverseArray()
-        {
-            byte[] a = new byte[Size];
-            foreach (var iteration in Benchmark.Iterations)
-            {
-                using (iteration.StartMeasurement())
-                {
-                    for (int i = 0; i < FillAllIterations; i++)
-                    {
-                        TestFillAllReverseArray(a);
-                    }
-                }
-            }
-        }
-
-        [Benchmark]
-        public static void QuickSortSpan()
-        {
-            int[] data = new int[Size];
-            int[] unsortedData = GetUnsortedData();
-            Span<int> span = new Span<int>(data);
-
-            foreach (var iteration in Benchmark.Iterations)
-            {
-                using (iteration.StartMeasurement())
-                {
-                    for (int i = 0; i < QuickSortIterations; i++)
-                    {
-                        Array.Copy(unsortedData, data, Size);
-                        TestQuickSortSpan(span);
-                    }
-                }
-            }
-        }
-
-        [Benchmark]
-        public static void BubbleSortSpan()
-        {
-            int[] data = new int[Size];
-            int[] unsortedData = GetUnsortedData();
-            Span<int> span = new Span<int>(data);
-
-            foreach (var iteration in Benchmark.Iterations)
-            {
-                using (iteration.StartMeasurement())
-                {
-                    for (int i = 0; i < BubbleSortIterations; i++)
-                    {
-                        Array.Copy(unsortedData, data, Size);
-                        TestBubbleSortSpan(span);
-                    }
-                }
-            }
-        }
-
-        [Benchmark]
-        public static void QuickSortArray()
-        {
-            int[] data = new int[Size];
-            int[] unsortedData = GetUnsortedData();
-
-            foreach (var iteration in Benchmark.Iterations)
-            {
-                using (iteration.StartMeasurement())
-                {
-                    for (int i = 0; i < QuickSortIterations; i++)
-                    {
-                        Array.Copy(unsortedData, data, Size);
-                        TestQuickSortArray(data);
-                    }
-                }
-            }
-        }
-
-        [Benchmark]
-        public static void BubbleSortArray()
-        {
-            int[] data = new int[Size];
-            int[] unsortedData = GetUnsortedData();
-
-            foreach (var iteration in Benchmark.Iterations)
-            {
-                using (iteration.StartMeasurement())
-                {
-                    for (int i = 0; i < BubbleSortIterations; i++)
-                    {
-                        Array.Copy(unsortedData, data, Size);
-                        TestBubbleSortArray(data);
-                    }
-                }
-            }
-        }*/
-        #endregion
+        #endregion // Algorithm tests
 
         // TestSpanAPIs (For comparison with Array and Slow Span)
         #region TestSpanAPIs
@@ -364,12 +445,7 @@ namespace Span
         [InlineData(1000)]
         public static void TestSpanConstructorByte(int length)
         {
-            var array = new byte[length];
-            Span<byte> span;
-            foreach (var iteration in Benchmark.Iterations)
-                using (iteration.StartMeasurement())
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
-                        span = new Span<byte>(array);
+            InvokeTestSpanConstructor<byte>(length);
         }
 
         [Benchmark(InnerIterationCount = BaseIterations / 100)]
@@ -379,15 +455,33 @@ namespace Span
         [InlineData(1000)]
         public static void TestSpanConstructorString(int length)
         {
-            var array = new string[length];
-            Span<string> span;
-            foreach (var iteration in Benchmark.Iterations)
-                using (iteration.StartMeasurement())
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
-                        span = new Span<string>(array);
+            InvokeTestSpanConstructor<string>(length);
+        }
+
+        static void InvokeTestSpanConstructor<T>(int length)
+        {
+            var array = new T[length];
+
+            Invoke((int innerIterationCount) => TestSpanConstructor<T>(array, innerIterationCount, false),
+                "TestSpanConstructor<{0}>({1})", typeof(T).Name, length);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void TestSpanConstructor<T>(T[] array, int iterationCount, bool untrue)
+        {
+            var sink = Sink<T>.Instance;
+
+            for (int i = 0; i < iterationCount; i++)
+            {
+                var span = new Span<T>(array);
+                // Under a condition that we know is false but the jit doesn't,
+                // add a read from 'span' to make sure it's not dead, and an assignment
+                // to 'array' so the constructor call won't get hoisted.
+                if (untrue) { sink.Data = span[0]; array = new T[iterationCount]; }
+            }
         }
         #endregion
-        
+
         #region TestSpanDangerousCreate<T>
         [Benchmark(InnerIterationCount = BaseIterations)]
         [InlineData(1)]
@@ -396,13 +490,7 @@ namespace Span
         [InlineData(1000)]
         public static void TestSpanDangerousCreateByte(int length)
         {
-            TestClass<byte> testClass = new TestClass<byte>();
-            testClass.C0 = new byte[length];
-            Span<byte> span;
-            foreach (var iteration in Benchmark.Iterations)
-                using (iteration.StartMeasurement())
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
-                        span = Span<byte>.DangerousCreate(testClass, ref testClass.C0[0], testClass.C0.Length);
+            InvokeTestSpanDangerousCreate<byte>(length);
         }
 
         [Benchmark(InnerIterationCount = BaseIterations)]
@@ -412,13 +500,31 @@ namespace Span
         [InlineData(1000)]
         public static void TestSpanDangerousCreateString(int length)
         {
-            TestClass<string> testClass = new TestClass<string>();
-            testClass.C0 = new string[length];
-            Span<string> span;
-            foreach (var iteration in Benchmark.Iterations)
-                using (iteration.StartMeasurement())
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
-                        span = Span<string>.DangerousCreate(testClass, ref testClass.C0[0], testClass.C0.Length);
+            InvokeTestSpanDangerousCreate<string>(length);
+        }
+
+        static void InvokeTestSpanDangerousCreate<T>(int length)
+        {
+            TestClass<T> testClass = new TestClass<T>();
+            testClass.C0 = new T[length];
+
+            Invoke((int innerIterationCount) => TestSpanDangerousCreate<T>(testClass, innerIterationCount, false),
+                "TestSpanDangerousCreate<{0}>({1})", typeof(T).Name, length);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void TestSpanDangerousCreate<T>(TestClass<T> testClass, int iterationCount, bool untrue)
+        {
+            var sink = Sink<T>.Instance;
+
+            for (int i = 0; i < iterationCount; i++)
+            {
+                var span = Span<T>.DangerousCreate(testClass, ref testClass.C0[0], testClass.C0.Length);
+                // Under a condition that we know is false but the jit doesn't,
+                // add a read from 'span' to make sure it's not dead, and an assignment
+                // to 'testClass' so the DangerousCreate call won't get hoisted.
+                if (untrue) { sink.Data = span[0]; testClass = new TestClass<T>(); }
+            }
         }
         #endregion
 
@@ -430,14 +536,7 @@ namespace Span
         [InlineData(1000)]
         public static void TestSpanDangerousGetPinnableReferenceByte(int length)
         {
-            var array = new byte[length];
-            var span = new Span<byte>(array);
-            foreach (var iteration in Benchmark.Iterations)
-                using (iteration.StartMeasurement())
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
-                    {
-                        ref byte temp = ref span.DangerousGetPinnableReference();
-                    }
+            InvokeTestSpanDangerousGetPinnableReference<byte>(length);
         }
 
         [Benchmark(InnerIterationCount = BaseIterations)]
@@ -447,33 +546,40 @@ namespace Span
         [InlineData(1000)]
         public static void TestSpanDangerousGetPinnableReferenceString(int length)
         {
-            var array = new string[length];
-            var span = new Span<string>(array);
-            foreach (var iteration in Benchmark.Iterations)
-                using (iteration.StartMeasurement())
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
-                    {
-                        ref string temp = ref span.DangerousGetPinnableReference();
-                    }
+            InvokeTestSpanDangerousGetPinnableReference<string>(length);
+        }
+
+        static void InvokeTestSpanDangerousGetPinnableReference<T>(int length)
+        {
+            var array = new T[length];
+
+            Invoke((int innerIterationCount) => TestSpanDangerousGetPinnableReference<T>(array, innerIterationCount),
+                "TestSpanDangerousGetPinnableReference<{0}>({1})", typeof(T).Name, length);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void TestSpanDangerousGetPinnableReference<T>(T[] array, int iterationCount)
+        {
+            var sink = Sink<T>.Instance;
+            var span = new Span<T>(array);
+
+            for (int i = 0; i < iterationCount; i++)
+            {
+                ref T temp = ref span.DangerousGetPinnableReference();
+                sink.Data = temp;
+            }
         }
         #endregion
 
-        #region TestSpanIndex<T>
+        #region TestSpanIndexHoistable<T>
         [Benchmark(InnerIterationCount = BaseIterations)]
         [InlineData(1)]
         [InlineData(10)]
         [InlineData(100)]
         [InlineData(1000)]
-        public static void TestSpanIndexByte(int length)
+        public static void TestSpanIndexHoistableByte(int length)
         {
-            var array = new byte[length];
-            var span = new Span<byte>(array);
-            byte temp;
-            foreach (var iteration in Benchmark.Iterations)
-                using (iteration.StartMeasurement())
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
-                            temp = span[length/2];
-
+            InvokeTestSpanIndexHoistable<byte>(length);
         }
 
         [Benchmark(InnerIterationCount = BaseIterations)]
@@ -481,33 +587,39 @@ namespace Span
         [InlineData(10)]
         [InlineData(100)]
         [InlineData(1000)]
-        public static void TestSpanIndexString(int length)
+        public static void TestSpanIndexHoistableString(int length)
         {
-            var array = new string[length];
-            var span = new Span<string>(array);
-            string temp;
-            foreach (var iteration in Benchmark.Iterations)
-                using (iteration.StartMeasurement())
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
-                        temp = span[length / 2];
+            InvokeTestSpanIndexHoistable<string>(length);
+        }
+
+        static void InvokeTestSpanIndexHoistable<T>(int length)
+        {
+            var array = new T[length];
+
+            Invoke((int innerIterationCount) => TestSpanIndexHoistable<T>(array, length, innerIterationCount),
+                "TestSpanIndexHoistable<{0}>({1})", typeof(T).Name, length);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void TestSpanIndexHoistable<T>(T[] array, int length, int iterationCount)
+        {
+            var sink = Sink<T>.Instance;
+            var span = new Span<T>(array);
+
+            for (int i = 0; i < iterationCount; i++)
+                    sink.Data = span[length/2];
         }
         #endregion
 
-        #region TestArrayIndex<T>
+        #region TestArrayIndexHoistable<T>
         [Benchmark(InnerIterationCount = BaseIterations)]
         [InlineData(1)]
         [InlineData(10)]
         [InlineData(100)]
         [InlineData(1000)]
-        public static void TestArrayIndexByte(int length)
+        public static void TestArrayIndexHoistableByte(int length)
         {
-            var array = new byte[length];
-            byte temp;
-            foreach (var iteration in Benchmark.Iterations)
-                using (iteration.StartMeasurement())
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
-                        temp = array[length / 2];
-
+            InvokeTestArrayIndexHoistable<byte>(length);
         }
 
         [Benchmark(InnerIterationCount = BaseIterations)]
@@ -515,14 +627,108 @@ namespace Span
         [InlineData(10)]
         [InlineData(100)]
         [InlineData(1000)]
-        public static void TestArrayIndexString(int length)
+        public static void TestArrayIndexHoistableString(int length)
         {
-            var array = new string[length];
-            string temp;
-            foreach (var iteration in Benchmark.Iterations)
-                using (iteration.StartMeasurement())
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
-                        temp = array[length / 2];
+            InvokeTestArrayIndexHoistable<string>(length);
+        }
+
+        static void InvokeTestArrayIndexHoistable<T>(int length)
+        {
+            var array = new T[length];
+            Invoke((int innerIterationCount) => TestArrayIndexHoistable<T>(array, length, innerIterationCount),
+                "TestArrayIndexHoistable<{0}>({1})", typeof(T).Name, length);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void TestArrayIndexHoistable<T>(T[] array, int length, int iterationCount)
+        {
+            var sink = Sink<T>.Instance;
+
+            for (int i = 0; i < iterationCount; i++)
+                sink.Data = array[length / 2];
+        }
+        #endregion
+
+        #region TestSpanIndexVariant<T>
+        [Benchmark(InnerIterationCount = BaseIterations)]
+        [InlineData(1)]
+        [InlineData(10)]
+        [InlineData(100)]
+        [InlineData(1000)]
+        public static void TestSpanIndexVariantByte(int length)
+        {
+            InvokeTestSpanIndexVariant<byte>(length);
+        }
+
+        [Benchmark(InnerIterationCount = BaseIterations)]
+        [InlineData(1)]
+        [InlineData(10)]
+        [InlineData(100)]
+        [InlineData(1000)]
+        public static void TestSpanIndexVariantString(int length)
+        {
+            InvokeTestSpanIndexVariant<string>(length);
+        }
+
+        static void InvokeTestSpanIndexVariant<T>(int length)
+        {
+            var array = new T[length];
+
+            Invoke((int innerIterationCount) => TestSpanIndexVariant<T>(array, length, innerIterationCount),
+                "TestSpanIndexVariant<{0}>({1})", typeof(T).Name, length);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void TestSpanIndexVariant<T>(T[] array, int length, int iterationCount)
+        {
+            var sink = Sink<T>.Instance;
+            var span = new Span<T>(array);
+            int mask = (length < 2 ? 0 : (length < 8 ? 1 : 7));
+
+            for (int i = 0; i < iterationCount; i++)
+                sink.Data = span[i & mask];
+        }
+        #endregion
+
+        #region TestArrayIndexVariant<T>
+        [Benchmark(InnerIterationCount = BaseIterations)]
+        [InlineData(1)]
+        [InlineData(10)]
+        [InlineData(100)]
+        [InlineData(1000)]
+        public static void TestArrayIndexVariantByte(int length)
+        {
+            InvokeTestArrayIndexVariant<byte>(length);
+        }
+
+        [Benchmark(InnerIterationCount = BaseIterations)]
+        [InlineData(1)]
+        [InlineData(10)]
+        [InlineData(100)]
+        [InlineData(1000)]
+        public static void TestArrayIndexVariantString(int length)
+        {
+            InvokeTestArrayIndexVariant<string>(length);
+        }
+
+        static void InvokeTestArrayIndexVariant<T>(int length)
+        {
+            var array = new T[length];
+
+            Invoke((int innerIterationCount) => TestArrayIndexVariant<T>(array, length, innerIterationCount),
+                "TestArrayIndexVariant<{0}>({1})", typeof(T).Name, length);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void TestArrayIndexVariant<T>(T[] array, int length, int iterationCount)
+        {
+            var sink = Sink<T>.Instance;
+            int mask = (length < 2 ? 0 : (length < 8 ? 1 : 7));
+
+            for (int i = 0; i < iterationCount; i++)
+            {
+                sink.Data = array[i & mask];
+            }
         }
         #endregion
 
@@ -534,13 +740,7 @@ namespace Span
         [InlineData(1000)]
         public static void TestSpanSliceByte(int length)
         {
-            var array = new byte[length];
-            var span = new Span<byte>(array);
-            Span<byte> temp;
-            foreach (var iteration in Benchmark.Iterations)
-                using (iteration.StartMeasurement())
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
-                        temp = span.Slice(length / 2);
+            InvokeTestSpanSlice<byte>(length);
         }
 
         [Benchmark(InnerIterationCount = BaseIterations)]
@@ -550,16 +750,34 @@ namespace Span
         [InlineData(1000)]
         public static void TestSpanSliceString(int length)
         {
-            var array = new string[length];
-            var span = new Span<string>(array);
-            Span<string> temp;
-            foreach (var iteration in Benchmark.Iterations)
-                using (iteration.StartMeasurement())
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
-                        temp = span.Slice(length / 2);
+            InvokeTestSpanSlice<string>(length);
+        }
+
+        static void InvokeTestSpanSlice<T>(int length)
+        {
+            var array = new T[length];
+
+            Invoke((int innerIterationCount) => TestSpanSlice<T>(array, length, innerIterationCount, false),
+                "TestSpanSlice<{0}>({1})", typeof(T).Name, length);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void TestSpanSlice<T>(T[] array, int length, int iterationCount, bool untrue)
+        {
+            var span = new Span<T>(array);
+            var sink = Sink<T>.Instance;
+
+            for (int i = 0; i < iterationCount; i++)
+            {
+                var slice = span.Slice(length / 2);
+                // Under a condition that we know is false but the jit doesn't,
+                // add a read from 'span' to make sure it's not dead, and an assignment
+                // to 'array' so the slice call won't get hoisted.
+                if (untrue) { sink.Data = slice[0]; array = new T[iterationCount]; }
+            }
         }
         #endregion
-        
+
         #region TestSpanToArray<T>
         [Benchmark(InnerIterationCount = BaseIterations / 100)]
         [InlineData(1)]
@@ -568,13 +786,7 @@ namespace Span
         [InlineData(1000)]
         public static void TestSpanToArrayByte(int length)
         {
-            var array = new byte[length];
-            var span = new Span<byte>(array);
-            byte[] temp;
-            foreach (var iteration in Benchmark.Iterations)
-                using (iteration.StartMeasurement())
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
-                        temp = span.ToArray();
+            InvokeTestSpanToArray<byte>(length);
         }
 
         [Benchmark(InnerIterationCount = BaseIterations / 100)]
@@ -584,16 +796,28 @@ namespace Span
         [InlineData(1000)]
         public static void TestSpanToArrayString(int length)
         {
-            var array = new string[length];
-            var span = new Span<string>(array);
-            string[] temp;
-            foreach (var iteration in Benchmark.Iterations)
-                using (iteration.StartMeasurement())
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
-                        temp = span.ToArray();
+            InvokeTestSpanToArray<string>(length);
+        }
+
+        static void InvokeTestSpanToArray<T>(int length)
+        {
+            var array = new T[length];
+
+            Invoke((int innerIterationCount) => TestSpanToArray<T>(array, length, innerIterationCount),
+                "TestSpanToArray<{0}>({1})", typeof(T).Name, length);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void TestSpanToArray<T>(T[] array, int length, int iterationCount)
+        {
+            var span = new Span<T>(array);
+            var sink = Sink<T[]>.Instance;
+
+            for (int i = 0; i < iterationCount; i++)
+                sink.Data = span.ToArray();
         }
         #endregion
-        
+
         #region TestSpanCopyTo<T>
         [Benchmark(InnerIterationCount = BaseIterations / 10)]
         [InlineData(1)]
@@ -602,14 +826,7 @@ namespace Span
         [InlineData(1000)]
         public static void TestSpanCopyToByte(int length)
         {
-            var array = new byte[length];
-            var span = new Span<byte>(array);
-            var destArray = new byte[array.Length];
-            var destination = new Span<byte>(destArray);
-            foreach (var iteration in Benchmark.Iterations)
-                using (iteration.StartMeasurement())
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
-                        span.CopyTo(destination);
+            InvokeTestSpanCopyTo<byte>(length);
         }
 
         [Benchmark(InnerIterationCount = BaseIterations / 100)]
@@ -619,14 +836,26 @@ namespace Span
         [InlineData(1000)]
         public static void TestSpanCopyToString(int length)
         {
-            var array = new string[length];
-            var span = new Span<string>(array);
-            var destArray = new string[array.Length];
-            var destination = new Span<string>(destArray);
-            foreach (var iteration in Benchmark.Iterations)
-                using (iteration.StartMeasurement())
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
-                        span.CopyTo(destination);
+            InvokeTestSpanCopyTo<string>(length);
+        }
+
+        static void InvokeTestSpanCopyTo<T>(int length)
+        {
+            var array = new T[length];
+            var destArray = new T[array.Length];
+
+            Invoke((int innerIterationCount) => TestSpanCopyTo<T>(array, destArray, innerIterationCount),
+                "TestSpanCopyTo<{0}>({1})", typeof(T).Name, length);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void TestSpanCopyTo<T>(T[] array, T[] destArray, int iterationCount)
+        {
+            var span = new Span<T>(array);
+            var destination = new Span<T>(destArray);
+
+            for (int i = 0; i < iterationCount; i++)
+                span.CopyTo(destination);
         }
         #endregion
 
@@ -638,12 +867,7 @@ namespace Span
         [InlineData(1000)]
         public static void TestArrayCopyToByte(int length)
         {
-            var array = new byte[length];
-            var destination = new byte[array.Length];
-            foreach (var iteration in Benchmark.Iterations)
-                using (iteration.StartMeasurement())
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
-                        array.CopyTo(destination, 0);
+            InvokeTestArrayCopyTo<byte>(length);
         }
 
         [Benchmark(InnerIterationCount = BaseIterations / 100)]
@@ -653,12 +877,23 @@ namespace Span
         [InlineData(1000)]
         public static void TestArrayCopyToString(int length)
         {
-            var array = new string[length];
-            var destination = new string[array.Length];
-            foreach (var iteration in Benchmark.Iterations)
-                using (iteration.StartMeasurement())
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
-                        array.CopyTo(destination, 0);
+            InvokeTestArrayCopyTo<string>(length);
+        }
+
+        static void InvokeTestArrayCopyTo<T>(int length)
+        {
+            var array = new T[length];
+            var destination = new T[array.Length];
+
+            Invoke((int innerIterationCount) => TestArrayCopyTo<T>(array, destination, innerIterationCount),
+                "TestArrayCopyTo<{0}>({1})", typeof(T).Name, length);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void TestArrayCopyTo<T>(T[] array, T[] destination, int iterationCount)
+        {
+            for (int i = 0; i < iterationCount; i++)
+                array.CopyTo(destination, 0);
         }
         #endregion
 
@@ -670,12 +905,7 @@ namespace Span
         [InlineData(1000)]
         public static void TestSpanFillByte(int length)
         {
-            var array = new byte[length];
-            var span = new Span<byte>(array);
-            foreach (var iteration in Benchmark.Iterations)
-                using (iteration.StartMeasurement())
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
-                        span.Fill(default(byte));
+            InvokeTestSpanFill<byte>(length);
         }
 
         [Benchmark(InnerIterationCount = BaseIterations / 100)]
@@ -685,12 +915,23 @@ namespace Span
         [InlineData(1000)]
         public static void TestSpanFillString(int length)
         {
-            var array = new string[length];
-            var span = new Span<string>(array);
-            foreach (var iteration in Benchmark.Iterations)
-                using (iteration.StartMeasurement())
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
-                        span.Fill(default(string));
+            InvokeTestSpanFill<string>(length);
+        }
+
+        static void InvokeTestSpanFill<T>(int length)
+        {
+            var array = new T[length];
+
+            Invoke((int innerIterationCount) => TestSpanFill<T>(array, innerIterationCount),
+                "TestSpanFill<{0}>({1})", typeof(T).Name, length);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void TestSpanFill<T>(T[] array, int iterationCount)
+        {
+            var span = new Span<T>(array);
+            for (int i = 0; i < iterationCount; i++)
+                span.Fill(default(T));
         }
         #endregion
 
@@ -702,12 +943,7 @@ namespace Span
         [InlineData(1000)]
         public static void TestSpanClearByte(int length)
         {
-            var array = new byte[length];
-            var span = new Span<byte>(array);
-            foreach (var iteration in Benchmark.Iterations)
-                using (iteration.StartMeasurement())
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
-                        span.Clear();
+            InvokeTestSpanClear<byte>(length);
         }
 
         [Benchmark(InnerIterationCount = BaseIterations / 10)]
@@ -717,12 +953,23 @@ namespace Span
         [InlineData(1000)]
         public static void TestSpanClearString(int length)
         {
-            var array = new string[length];
-            var span = new Span<string>(array);
-            foreach (var iteration in Benchmark.Iterations)
-                using (iteration.StartMeasurement())
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
-                        span.Clear();
+            InvokeTestSpanClear<string>(length);
+        }
+
+        static void InvokeTestSpanClear<T>(int length)
+        {
+            var array = new T[length];
+
+            Invoke((int innerIterationCount) => TestSpanClear<T>(array, innerIterationCount),
+                "TestSpanClear<{0}>({1})", typeof(T).Name, length);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void TestSpanClear<T>(T[] array, int iterationCount)
+        {
+            var span = new Span<T>(array);
+            for (int i = 0; i < iterationCount; i++)
+                span.Clear();
         }
         #endregion
 
@@ -734,11 +981,7 @@ namespace Span
         [InlineData(1000)]
         public static void TestArrayClearByte(int length)
         {
-            var array = new byte[length];
-            foreach (var iteration in Benchmark.Iterations)
-                using (iteration.StartMeasurement())
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
-                        Array.Clear(array, 0, length);
+            InvokeTestArrayClear<byte>(length);
         }
 
         [Benchmark(InnerIterationCount = BaseIterations / 10)]
@@ -748,11 +991,22 @@ namespace Span
         [InlineData(1000)]
         public static void TestArrayClearString(int length)
         {
-            var array = new string[length];
-            foreach (var iteration in Benchmark.Iterations)
-                using (iteration.StartMeasurement())
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
-                        Array.Clear(array, 0, length);
+            InvokeTestArrayClear<string>(length);
+        }
+
+        static void InvokeTestArrayClear<T>(int length)
+        {
+            var array = new T[length];
+
+            Invoke((int innerIterationCount) => TestArrayClear<T>(array, length, innerIterationCount),
+                "TestArrayClear<{0}>({1})", typeof(T).Name, length);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void TestArrayClear<T>(T[] array, int length, int iterationCount)
+        {
+            for (int i = 0; i < iterationCount; i++)
+                Array.Clear(array, 0, length);
         }
         #endregion
 
@@ -764,14 +1018,7 @@ namespace Span
         [InlineData(1000)]
         public static void TestSpanAsBytesByte(int length)
         {
-            var array = new byte[length];
-            var span = new Span<byte>(array);
-            foreach (var iteration in Benchmark.Iterations)
-                using (iteration.StartMeasurement())
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
-                    {
-                        Span<byte> temp = span.AsBytes<byte>();
-                    }
+            InvokeTestSpanAsBytes<byte>(length);
         }
 
         [Benchmark(InnerIterationCount = BaseIterations)]
@@ -781,14 +1028,33 @@ namespace Span
         [InlineData(1000)]
         public static void TestSpanAsBytesInt(int length)
         {
-            var array = new int[length];
-            var span = new Span<int>(array);
-            foreach (var iteration in Benchmark.Iterations)
-                using (iteration.StartMeasurement())
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
-                    {
-                        Span<byte> temp = span.AsBytes<int>();
-                    }
+            InvokeTestSpanAsBytes<int>(length);
+        }
+
+        static void InvokeTestSpanAsBytes<T>(int length)
+            where T : struct
+        {
+            var array = new T[length];
+
+            Invoke((int innerIterationCount) => TestSpanAsBytes<T>(array, innerIterationCount, false),
+                "TestSpanAsBytes<{0}>({1})", typeof(T).Name, length);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void TestSpanAsBytes<T>(T[] array, int iterationCount, bool untrue)
+            where T : struct
+        {
+            var sink = Sink<byte>.Instance;
+            var span = new Span<T>(array);
+
+            for (int i = 0; i < iterationCount; i++)
+            {
+                var byteSpan = span.AsBytes();
+                // Under a condition that we know is false but the jit doesn't,
+                // add a read from 'byteSpan' to make sure it's not dead, and an assignment
+                // to 'span' so the AsBytes call won't get hoisted.
+                if (untrue) { sink.Data = byteSpan[0]; span = new Span<T>(); }
+            }
         }
         #endregion
 
@@ -800,14 +1066,7 @@ namespace Span
         [InlineData(1000)]
         public static void TestSpanNonPortableCastFromByteToInt(int length)
         {
-            var array = new byte[length];
-            var span = new Span<byte>(array);
-            foreach (var iteration in Benchmark.Iterations)
-                using (iteration.StartMeasurement())
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
-                    {
-                        Span<int> temp = span.NonPortableCast<byte, int>();
-                    }
+            InvokeTestSpanNonPortableCast<byte, int>(length);
         }
 
         [Benchmark(InnerIterationCount = BaseIterations)]
@@ -817,14 +1076,35 @@ namespace Span
         [InlineData(1000)]
         public static void TestSpanNonPortableCastFromIntToByte(int length)
         {
-            var array = new int[length];
-            var span = new Span<int>(array);
-            foreach (var iteration in Benchmark.Iterations)
-                using (iteration.StartMeasurement())
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
-                    {
-                        Span<byte> temp = span.NonPortableCast<int, byte>();
-                    }
+            InvokeTestSpanNonPortableCast<int, byte>(length);
+        }
+
+        static void InvokeTestSpanNonPortableCast<From, To>(int length)
+            where From : struct
+            where To : struct
+        {
+            var array = new From[length];
+
+            Invoke((int innerIterationCount) => TestSpanNonPortableCast<From, To>(array, innerIterationCount, false),
+                "TestSpanNonPortableCast<{0}, {1}>({2})", typeof(From).Name, typeof(To).Name, length);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void TestSpanNonPortableCast<From, To>(From[] array, int iterationCount, bool untrue)
+            where From : struct
+            where To : struct
+        {
+            var sink = Sink<To>.Instance;
+            var span = new Span<From>(array);
+
+            for (int i = 0; i < iterationCount; i++)
+            {
+                var toSpan = span.NonPortableCast<From, To>();
+                // Under a condition that we know is false but the jit doesn't,
+                // add a read from 'toSpan' to make sure it's not dead, and an assignment
+                // to 'span' so the AsBytes call won't get hoisted.
+                if (untrue) { sink.Data = toSpan[0]; span = new Span<From>(); }
+            }
         }
         #endregion
 
@@ -834,7 +1114,7 @@ namespace Span
         [InlineData(10)]
         [InlineData(100)]
         [InlineData(1000)]
-        public static void TestSpanSliceStringChar(int length)
+        public static void TestSpanSliceStringCharWrapper(int length)
         {
             StringBuilder sb = new StringBuilder();
             Random rand = new Random(42);
@@ -846,148 +1126,67 @@ namespace Span
             }
             string s = sb.ToString();
 
-            foreach (var iteration in Benchmark.Iterations)
-                using (iteration.StartMeasurement())
-                    for (int i = 0; i < Benchmark.InnerIterationCount; i++)
-                    {
-                        ReadOnlySpan<char> temp = s.Slice();
-                    }
+            Invoke((int innerIterationCount) => TestSpanSliceStringChar(s, innerIterationCount, false),
+                "TestSpanSliceStringChar({0})", length);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static void TestSpanSliceStringChar(string s, int iterationCount, bool untrue)
+        {
+            var sink = Sink<char>.Instance;
+
+            for (int i = 0; i < iterationCount; i++)
+            {
+                var charSpan = s.Slice();
+                // Under a condition that we know is false but the jit doesn't,
+                // add a read from 'charSpan' to make sure it's not dead, and an assignment
+                // to 's' so the AsBytes call won't get hoisted.
+                if (untrue) { sink.Data = charSpan[0]; s = "block hoisting the call to Slice()"; }
+            }
         }
         #endregion
 
-        #endregion
-        
-        // EXE-based testing
-        #region EXE-base testing
-        /*static void FillAllSpanBase()
-        {
-            byte[] a = new byte[Size];
-            Span<byte> s = new Span<byte>(a);
-            for (int i = 0; i < FillAllIterations; i++)
-            {
-                TestFillAllSpan(s);
-            }
-        }
+        #endregion // TestSpanAPIs
 
-        static void FillAllArrayBase()
-        {
-            byte[] a = new byte[Size];
-            for (int i = 0; i < FillAllIterations; i++)
-            {
-                TestFillAllArray(a);
-            }
-        }
-
-        static void FillAllReverseSpanBase()
-        {
-            byte[] a = new byte[Size];
-            Span<byte> s = new Span<byte>(a);
-            for (int i = 0; i < FillAllIterations; i++)
-            {
-                TestFillAllReverseSpan(s);
-            }
-        }
-
-        static void FillAllReverseArrayBase()
-        {
-            byte[] a = new byte[Size];
-            for (int i = 0; i < FillAllIterations; i++)
-            {
-                TestFillAllReverseArray(a);
-            }
-        }
-
-        static void QuickSortSpanBase()
-        {
-            int[] data = new int[Size];
-            int[] unsortedData = GetUnsortedData();
-            Span<int> span = new Span<int>(data);
-
-            for (int i = 0; i < QuickSortIterations; i++)
-            {
-                Array.Copy(unsortedData, data, Size);
-                TestQuickSortSpan(span);
-            }
-        }
-
-        static void BubbleSortSpanBase()
-        {
-            int[] data = new int[Size];
-            int[] unsortedData = GetUnsortedData();
-            Span<int> span = new Span<int>(data);
-
-            for (int i = 0; i < BubbleSortIterations; i++)
-            {
-                Array.Copy(unsortedData, data, Size);
-                TestBubbleSortSpan(span);
-            }
-        }
-
-        static void QuickSortArrayBase()
-        {
-            int[] data = new int[Size];
-            int[] unsortedData = GetUnsortedData();
-
-            for (int i = 0; i < QuickSortIterations; i++)
-            {
-                Array.Copy(unsortedData, data, Size);
-                TestQuickSortArray(data);
-            }
-        }
-
-        static void BubbleSortArrayBase()
-        {
-            int[] data = new int[Size];
-            int[] unsortedData = GetUnsortedData();
-
-            for (int i = 0; i < BubbleSortIterations; i++)
-            {
-                Array.Copy(unsortedData, data, Size);
-                TestBubbleSortArray(data);
-            }
-        }*/
-        #endregion
-
-        static double Bench(Action f)
-        {
-            Stopwatch sw = Stopwatch.StartNew();
-            f();
-            sw.Stop();
-            return sw.Elapsed.TotalMilliseconds;
-        }
-
-        static IEnumerable<object[]> MakeArgs(params string[] args)
-        {
-            return args.Select(arg => new object[] { arg });
-        }
-
-        static IEnumerable<object[]> TestFuncs = MakeArgs(
-            /*"FillAllSpanBase", "FillAllArrayBase",
-            "FillAllReverseSpanBase", "FillAllReverseArrayBase",
-            "BubbleSortSpanBase", "BubbleSortArrayBase",
-            "QuickSortSpanBase", "QuickSortArrayBase"*/
-        );
-
-        static Action LookupFunc(object o)
-        {
-            TypeInfo t = typeof(SpanBench).GetTypeInfo();
-            MethodInfo m = t.GetDeclaredMethod((string) o);
-            return m.CreateDelegate(typeof(Action)) as Action;
-        }
 
         public static int Main(string[] args)
         {
-            bool result = true;
+            // When we call into Invoke, it'll need to know this isn't xunit-perf running
+            IsXunitInvocation = false;
 
-            foreach(object[] o in TestFuncs)
+            // Now simulate xunit-perf's benchmark discovery so we know what tests to invoke
+            TypeInfo t = typeof(SpanBench).GetTypeInfo();
+            foreach(MethodInfo m in t.DeclaredMethods)
             {
-                string funcName = (string) o[0];
-                Action func = LookupFunc(funcName);
-                double timeInMs = Bench(func);
-                Console.WriteLine("{0}: {1}ms", funcName, timeInMs);
+                BenchmarkAttribute benchAttr = m.GetCustomAttribute<BenchmarkAttribute>();
+                if (benchAttr != null)
+                {
+                    // All benchmark methods in this test set the InnerIterationCount on their BenchmarkAttribute.
+                    // Take max of specified count and 1 since some tests use expressions for their count that
+                    // evaluate to 0 under DEBUG.
+                    CommandLineInnerIterationCount = Math.Max((int)benchAttr.InnerIterationCount, 1);
+
+                    // Request a warm-up iteration before measuring this benchmark method.
+                    DoWarmUp = true;
+
+                    // Get the benchmark to measure as a delegate taking the number of inner-loop iterations to run
+                    var invokeMethod = m.CreateDelegate(typeof(Action<int>)) as Action<int>;
+
+                    // All the benchmarks methods in this test use [InlineData] to specify how many times and with
+                    // what arguments they should be run.
+                    foreach (InlineDataAttribute dataAttr in m.GetCustomAttributes<InlineDataAttribute>())
+                    {
+                        foreach (object[] data in dataAttr.GetData(m))
+                        {
+                            // All the benchmark methods in this test take a single int parameter
+                            invokeMethod((int)data[0]);
+                        }
+                    }
+                }
             }
             
-            return (result ? 100 : -1);
+            // The only failure modes are crash/exception.
+            return 100;
         }
     }
 }
