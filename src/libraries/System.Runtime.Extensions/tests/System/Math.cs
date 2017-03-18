@@ -23,6 +23,20 @@ namespace System.Tests
         // use CrossPlatformMachineEpsilon * 10.
         private const double CrossPlatformMachineEpsilon = 8.8817841970012523e-16;
 
+        // binary32 (float) has a machine epsilon of 2^-23 (approx. 1.19e-07). However, this
+        // is slightly too accurate when writing tests meant to run against libm implementations
+        // for various platforms. 2^-21 (approx. 4.76e-07) seems to be as accurate as we can get.
+        //
+        // The tests themselves will take CrossPlatformMachineEpsilon and adjust it according to the expected result
+        // so that the delta used for comparison will compare the most significant digits and ignore
+        // any digits that are outside the single precision range (6-9 digits).
+
+        // For example, a test with an expect result in the format of 0.xxxxxxxxx will use
+        // CrossPlatformMachineEpsilon for the variance, while an expected result in the format of 0.0xxxxxxxxx
+        // will use CrossPlatformMachineEpsilon / 10 and expected result in the format of x.xxxxxx will
+        // use CrossPlatformMachineEpsilon * 10.
+        private const float CrossPlatformMachineEpsilonSingle = 4.76837158e-07f;
+
         /// <summary>Verifies that two <see cref="double"/> values are equal, within the <paramref name="allowedVariance"/>.</summary>
         /// <param name="expected">The expected value</param>
         /// <param name="actual">The value to be compared against</param>
@@ -122,14 +136,123 @@ namespace System.Tests
             }
         }
 
+        /// <summary>Verifies that two <see cref="float"/> values are equal, within the <paramref name="variance"/>.</summary>
+        /// <param name="expected">The expected value</param>
+        /// <param name="actual">The value to be compared against</param>
+        /// <param name="variance">The total variance allowed between the expected and actual results.</param>
+        /// <exception cref="EqualException">Thrown when the values are not equal</exception>
+        private static void AssertEqual(float expected, float actual, float variance)
+        {
+            if (float.IsNaN(expected))
+            {
+                if (float.IsNaN(actual))
+                {
+                    return;
+                }
+
+                throw new EqualException($"{"NaN",10}", $"{actual,10:G9}");
+            }
+            else if (float.IsNaN(actual))
+            {
+                throw new EqualException($"{expected,10:G9}", $"{"NaN",10}");
+            }
+
+            if (float.IsNegativeInfinity(expected))
+            {
+                if (float.IsNegativeInfinity(actual))
+                {
+                    return;
+                }
+
+                throw new EqualException($"{"-∞",10}", $"{actual,10:G9}");
+            }
+            else if (float.IsNegativeInfinity(actual))
+            {
+                throw new EqualException($"{expected,10:G9}", $"{"-∞",10}");
+            }
+
+            if (float.IsPositiveInfinity(expected))
+            {
+                if (float.IsPositiveInfinity(actual))
+                {
+                    return;
+                }
+
+                throw new EqualException($"{"+∞",10}", $"{actual,10:G9}");
+            }
+            else if (float.IsPositiveInfinity(actual))
+            {
+                throw new EqualException($"{expected,10:G9}", $"{"+∞",10}");
+            }
+
+            if (IsNegativeZero(expected))
+            {
+                if (IsNegativeZero(actual))
+                {
+                    return;
+                }
+
+                if (IsPositiveZero(variance) || IsNegativeZero(variance))
+                {
+                    throw new EqualException($"{"-0.0",10}", $"{actual,10:G9}");
+                }
+
+                // When the variance is not ±0.0, then we are handling a case where
+                // the actual result is expected to not be exactly -0.0 on some platforms
+                // and we should fallback to checking if it is within the allowed variance instead.
+            }
+            else if (IsNegativeZero(actual))
+            {
+                // Do nothing, since the actual result could still be within the allowed variance
+            }
+
+            if (IsPositiveZero(expected))
+            {
+                if (IsPositiveZero(actual))
+                {
+                    return;
+                }
+
+                if (IsPositiveZero(variance))
+                {
+                    throw new EqualException($"{"+0.0",10}", $"{actual,10:G9}");
+                }
+
+                // When the variance is not ±0.0, then we are handling a case where
+                // the actual result is expected to not be exactly +0.0 on some platforms
+                // and we should fallback to checking if it is within the allowed variance instead.
+            }
+            else if (IsPositiveZero(actual))
+            {
+                // Do nothing, since the actual result could still be within the allowed variance
+            }
+
+            var delta = Math.Abs(actual - expected);
+
+            if (delta > variance)
+            {
+                throw new EqualException($"{expected,10:G9}", $"{actual,10:G9}");
+            }
+        }
+
         private unsafe static bool IsNegativeZero(double value)
         {
             return (*(ulong*)(&value)) == 0x8000000000000000;
         }
 
+        private unsafe static bool IsNegativeZero(float value)
+        {
+            return (*(uint*)(&value)) == 0x80000000;
+        }
+
         private unsafe static bool IsPositiveZero(double value)
         {
             return (*(ulong*)(&value)) == 0x0000000000000000;
+        }
+
+        private unsafe static bool IsPositiveZero(float value)
+        {
+            return (*(uint*)(&value)) == 0x00000000;
         }
 
         [Fact]
@@ -219,41 +342,41 @@ namespace System.Tests
 
         [Theory]
         [InlineData( float.NegativeInfinity, float.PositiveInfinity, 0.0f)]
-        [InlineData(-3.14159265f,            3.14159265f,            CrossPlatformMachineEpsilon * 10)]     // value: -(pi)             expected: (pi)
-        [InlineData(-2.71828183f,            2.71828183f,            CrossPlatformMachineEpsilon * 10)]     // value: -(e)              expected: (e)
-        [InlineData(-2.30258509f,            2.30258509f,            CrossPlatformMachineEpsilon * 10)]     // value: -(ln(10))         expected: (ln(10))
-        [InlineData(-1.57079633f,            1.57079633f,            CrossPlatformMachineEpsilon * 10)]     // value: -(pi / 2)         expected: (pi / 2)
-        [InlineData(-1.44269504f,            1.44269504f,            CrossPlatformMachineEpsilon * 10)]     // value: -(log2(e))        expected: (log2(e))
-        [InlineData(-1.41421356f,            1.41421356f,            CrossPlatformMachineEpsilon * 10)]     // value: -(sqrt(2))        expected: (sqrt(2))
-        [InlineData(-1.12837917f,            1.12837917f,            CrossPlatformMachineEpsilon * 10)]     // value: -(2 / sqrt(pi))   expected: (2 / sqrt(pi))
-        [InlineData(-1.0f,                   1.0f,                   CrossPlatformMachineEpsilon * 10)]
-        [InlineData(-0.785398163f,           0.785398163f,           CrossPlatformMachineEpsilon)]          // value: -(pi / 4)         expected: (pi / 4)
-        [InlineData(-0.707106781f,           0.707106781f,           CrossPlatformMachineEpsilon)]          // value: -(1 / sqrt(2))    expected: (1 / sqrt(2))
-        [InlineData(-0.693147181f,           0.693147181f,           CrossPlatformMachineEpsilon)]          // value: -(ln(2))          expected: (ln(2))
-        [InlineData(-0.636619772f,           0.636619772f,           CrossPlatformMachineEpsilon)]          // value: -(2 / pi)         expected: (2 / pi)
-        [InlineData(-0.434294482f,           0.434294482f,           CrossPlatformMachineEpsilon)]          // value: -(log10(e))       expected: (log10(e))
-        [InlineData(-0.318309886f,           0.318309886f,           CrossPlatformMachineEpsilon)]          // value: -(1 / pi)         expected: (1 / pi)
+        [InlineData(-3.14159265f,            3.14159265f,            CrossPlatformMachineEpsilonSingle * 10)]   // value: -(pi)             expected: (pi)
+        [InlineData(-2.71828183f,            2.71828183f,            CrossPlatformMachineEpsilonSingle * 10)]   // value: -(e)              expected: (e)
+        [InlineData(-2.30258509f,            2.30258509f,            CrossPlatformMachineEpsilonSingle * 10)]   // value: -(ln(10))         expected: (ln(10))
+        [InlineData(-1.57079633f,            1.57079633f,            CrossPlatformMachineEpsilonSingle * 10)]   // value: -(pi / 2)         expected: (pi / 2)
+        [InlineData(-1.44269504f,            1.44269504f,            CrossPlatformMachineEpsilonSingle * 10)]   // value: -(log2(e))        expected: (log2(e))
+        [InlineData(-1.41421356f,            1.41421356f,            CrossPlatformMachineEpsilonSingle * 10)]   // value: -(sqrt(2))        expected: (sqrt(2))
+        [InlineData(-1.12837917f,            1.12837917f,            CrossPlatformMachineEpsilonSingle * 10)]   // value: -(2 / sqrt(pi))   expected: (2 / sqrt(pi))
+        [InlineData(-1.0f,                   1.0f,                   CrossPlatformMachineEpsilonSingle * 10)]
+        [InlineData(-0.785398163f,           0.785398163f,           CrossPlatformMachineEpsilonSingle)]        // value: -(pi / 4)         expected: (pi / 4)
+        [InlineData(-0.707106781f,           0.707106781f,           CrossPlatformMachineEpsilonSingle)]        // value: -(1 / sqrt(2))    expected: (1 / sqrt(2))
+        [InlineData(-0.693147181f,           0.693147181f,           CrossPlatformMachineEpsilonSingle)]        // value: -(ln(2))          expected: (ln(2))
+        [InlineData(-0.636619772f,           0.636619772f,           CrossPlatformMachineEpsilonSingle)]        // value: -(2 / pi)         expected: (2 / pi)
+        [InlineData(-0.434294482f,           0.434294482f,           CrossPlatformMachineEpsilonSingle)]        // value: -(log10(e))       expected: (log10(e))
+        [InlineData(-0.318309886f,           0.318309886f,           CrossPlatformMachineEpsilonSingle)]        // value: -(1 / pi)         expected: (1 / pi)
         [InlineData(-0.0f,                   0.0f,                   0.0f)]
         [InlineData( float.NaN,              float.NaN,              0.0f)]
         [InlineData( 0.0f,                   0.0f,                   0.0f)]
-        [InlineData( 0.318309886f,           0.318309886f,           CrossPlatformMachineEpsilon)]          // value:  (1 / pi)         expected: (1 / pi)
-        [InlineData( 0.434294482f,           0.434294482f,           CrossPlatformMachineEpsilon)]          // value:  (log10(e))       expected: (log10(e))
-        [InlineData( 0.636619772f,           0.636619772f,           CrossPlatformMachineEpsilon)]          // value:  (2 / pi)         expected: (2 / pi)
-        [InlineData( 0.693147181f,           0.693147181f,           CrossPlatformMachineEpsilon)]          // value:  (ln(2))          expected: (ln(2))
-        [InlineData( 0.707106781f,           0.707106781f,           CrossPlatformMachineEpsilon)]          // value:  (1 / sqrt(2))    expected: (1 / sqrt(2))
-        [InlineData( 0.785398163f,           0.785398163f,           CrossPlatformMachineEpsilon)]          // value:  (pi / 4)         expected: (pi / 4)
-        [InlineData( 1.0f,                   1.0f,                   CrossPlatformMachineEpsilon * 10)]
-        [InlineData( 1.12837917f,            1.12837917f,            CrossPlatformMachineEpsilon * 10)]     // value:  (2 / sqrt(pi))   expected: (2 / sqrt(pi))
-        [InlineData( 1.41421356f,            1.41421356f,            CrossPlatformMachineEpsilon * 10)]     // value:  (sqrt(2))        expected: (sqrt(2))
-        [InlineData( 1.44269504f,            1.44269504f,            CrossPlatformMachineEpsilon * 10)]     // value:  (log2(e))        expected: (log2(e))
-        [InlineData( 1.57079633f,            1.57079633f,            CrossPlatformMachineEpsilon * 10)]     // value:  (pi / 2)         expected: (pi / 2)
-        [InlineData( 2.30258509f,            2.30258509f,            CrossPlatformMachineEpsilon * 10)]     // value:  (ln(10))         expected: (ln(10))
-        [InlineData( 2.71828183f,            2.71828183f,            CrossPlatformMachineEpsilon * 10)]     // value:  (e)              expected: (e)
-        [InlineData( 3.14159265f,            3.14159265f,            CrossPlatformMachineEpsilon * 10)]     // value:  (pi)             expected: (pi)
+        [InlineData( 0.318309886f,           0.318309886f,           CrossPlatformMachineEpsilonSingle)]        // value:  (1 / pi)         expected: (1 / pi)
+        [InlineData( 0.434294482f,           0.434294482f,           CrossPlatformMachineEpsilonSingle)]        // value:  (log10(e))       expected: (log10(e))
+        [InlineData( 0.636619772f,           0.636619772f,           CrossPlatformMachineEpsilonSingle)]        // value:  (2 / pi)         expected: (2 / pi)
+        [InlineData( 0.693147181f,           0.693147181f,           CrossPlatformMachineEpsilonSingle)]        // value:  (ln(2))          expected: (ln(2))
+        [InlineData( 0.707106781f,           0.707106781f,           CrossPlatformMachineEpsilonSingle)]        // value:  (1 / sqrt(2))    expected: (1 / sqrt(2))
+        [InlineData( 0.785398163f,           0.785398163f,           CrossPlatformMachineEpsilonSingle)]        // value:  (pi / 4)         expected: (pi / 4)
+        [InlineData( 1.0f,                   1.0f,                   CrossPlatformMachineEpsilonSingle * 10)]
+        [InlineData( 1.12837917f,            1.12837917f,            CrossPlatformMachineEpsilonSingle * 10)]   // value:  (2 / sqrt(pi))   expected: (2 / sqrt(pi))
+        [InlineData( 1.41421356f,            1.41421356f,            CrossPlatformMachineEpsilonSingle * 10)]   // value:  (sqrt(2))        expected: (sqrt(2))
+        [InlineData( 1.44269504f,            1.44269504f,            CrossPlatformMachineEpsilonSingle * 10)]   // value:  (log2(e))        expected: (log2(e))
+        [InlineData( 1.57079633f,            1.57079633f,            CrossPlatformMachineEpsilonSingle * 10)]   // value:  (pi / 2)         expected: (pi / 2)
+        [InlineData( 2.30258509f,            2.30258509f,            CrossPlatformMachineEpsilonSingle * 10)]   // value:  (ln(10))         expected: (ln(10))
+        [InlineData( 2.71828183f,            2.71828183f,            CrossPlatformMachineEpsilonSingle * 10)]   // value:  (e)              expected: (e)
+        [InlineData( 3.14159265f,            3.14159265f,            CrossPlatformMachineEpsilonSingle * 10)]   // value:  (pi)             expected: (pi)
         [InlineData( float.PositiveInfinity, float.PositiveInfinity, 0.0f)]
         public static void Abs_Single(float value, float expectedResult, float allowedVariance)
         {
-            MathFTests.AssertEqual(expectedResult, MathF.Abs(value), allowedVariance);
+            AssertEqual(expectedResult, Math.Abs(value), allowedVariance);
         }
 
         [Theory]
