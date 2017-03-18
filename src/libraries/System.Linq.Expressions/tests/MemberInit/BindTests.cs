@@ -257,6 +257,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(MemberBindingType.Assignment, bind.BindingType);
         }
 
+#if FEATURE_COMPILE
         [Fact]
         public void GlobalMethod()
         {
@@ -277,5 +278,6 @@ namespace System.Linq.Expressions.Tests
             FieldInfo globalField = module.GetField(fieldBuilder.Name);
             Assert.Throws<ArgumentException>("member", () => Expression.Bind(globalField, Expression.Default(globalField.FieldType)));
         }
+#endif
     }
 }

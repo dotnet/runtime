@@ -514,6 +514,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
+#if FEATURE_COMPILE
         [Fact]
         public static void GlobalMethodInMembers()
         {
@@ -540,6 +541,7 @@ namespace System.Linq.Expressions.Tests
             MemberInfo[] members = { globalField };
             Assert.Throws<ArgumentException>(() => Expression.New(constructor, arguments, members));
         }
+#endif
 
         static class StaticCtor
         {

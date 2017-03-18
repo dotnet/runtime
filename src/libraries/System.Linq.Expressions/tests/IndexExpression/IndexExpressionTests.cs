@@ -93,6 +93,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal("xs[i, j]", e3.ToString());
         }
 
+#if FEATURE_COMPILE
         private static TypeBuilder GetTestTypeBuilder() =>
             AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("TestAssembly"), AssemblyBuilderAccess.Run)
                 .DefineDynamicModule("TestModule")
@@ -525,6 +526,9 @@ namespace System.Linq.Expressions.Tests
             Expression instance = Expression.Default(type);
             Assert.Throws<ArgumentException>("indexes[0]", () => Expression.Property(instance, prop, Expression.Constant(0)));
         }
+
+// FEATURE_COMPILE
+#endif
 
         [Fact]
         public void CallWithoutIndices()

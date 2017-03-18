@@ -354,6 +354,7 @@ namespace System.Linq.Expressions.Tests
     public enum Int64Enum : long { A = Int64.MaxValue }
     public enum UInt64Enum : ulong { A = UInt64.MaxValue }
 
+#if FEATURE_COMPILE
     public static class NonCSharpTypes
     {
         private static Type _charEnumType;
@@ -399,6 +400,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
     }
+#endif
 
     public class FakeExpression : Expression
     {
