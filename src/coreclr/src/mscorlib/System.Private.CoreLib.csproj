@@ -434,9 +434,8 @@
     <Compile Include="$(BclSourcesRoot)\Internal\Console.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\__Filters.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\AmbiguousMatchException.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\Assembly.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Assembly.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\AssemblyAttributes.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\AssemblyName.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\AssemblyNameFlags.cs" />
@@ -476,10 +475,10 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodImplAttributes.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Missing.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Module.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Module.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\ModuleResolveEventHandler.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodBody.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\ParameterAttributes.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\ParameterInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\ParameterModifier.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Pointer.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\PortableExecutableKinds.cs" />
