@@ -552,6 +552,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<ArgumentException>("member", () => Expression.MakeMemberAccess(Expression.Constant(new PC()), member));
         }
 
+#if FEATURE_COMPILE
         [Fact]
         public static void Property_NoGetOrSetAccessors_ThrowsArgumentException()
         {
@@ -573,6 +574,7 @@ namespace System.Linq.Expressions.Tests
 
             Assert.Throws<ArgumentException>("property", () => Expression.MakeMemberAccess(expression, createdProperty));
         }
+#endif
 
         [Fact]
         public static void ToStringTest()

@@ -322,6 +322,60 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<ArgumentException>("method", () => Expression.OrElse(Expression.Constant(5), Expression.Constant(5), method));
         }
 
+
+        [Theory]
+        [InlineData(typeof(NonGenericClass), nameof(NonGenericClass.StaticIntMethod0))]
+        [InlineData(typeof(NonGenericClass), nameof(NonGenericClass.StaticIntMethod1))]
+        [InlineData(typeof(NonGenericClass), nameof(NonGenericClass.StaticIntMethod3))]
+        public static void Method_DoesntHaveTwoParameters_ThrowsArgumentException(Type type, string methodName)
+        {
+            MethodInfo method = type.GetMethod(methodName);
+            Assert.Throws<ArgumentException>("method", () => Expression.AndAlso(Expression.Constant(5), Expression.Constant(5), method));
+            Assert.Throws<ArgumentException>("method", () => Expression.OrElse(Expression.Constant(5), Expression.Constant(5), method));
+        }
+
+        [Fact]
+        public static void AndAlso_Method_ExpressionDoesntMatchMethodParameters_ThrowsInvalidOperationException()
+        {
+            MethodInfo method = typeof(NonGenericClass).GetMethod(nameof(NonGenericClass.StaticIntMethod2Valid));
+            Assert.Throws<InvalidOperationException>(() => Expression.AndAlso(Expression.Constant("abc"), Expression.Constant(5), method));
+            Assert.Throws<InvalidOperationException>(() => Expression.AndAlso(Expression.Constant(5), Expression.Constant("abc"), method));
+        }
+
+        [Fact]
+        public static void OrElse_ExpressionDoesntMatchMethodParameters_ThrowsInvalidOperationException()
+        {
+            MethodInfo method = typeof(NonGenericClass).GetMethod(nameof(NonGenericClass.StaticIntMethod2Valid));
+            Assert.Throws<InvalidOperationException>(() => Expression.AndAlso(Expression.Constant("abc"), Expression.Constant(5), method));
+            Assert.Throws<InvalidOperationException>(() => Expression.AndAlso(Expression.Constant(5), Expression.Constant("abc"), method));
+        }
+
+        [Fact]
+        public static void MethodParametersNotEqual_ThrowsArgumentException()
+        {
+            MethodInfo method = typeof(NonGenericClass).GetMethod(nameof(NonGenericClass.StaticIntMethod2Invalid1));
+            Assert.Throws<ArgumentException>(null, () => Expression.AndAlso(Expression.Constant(5), Expression.Constant("abc"), method));
+            Assert.Throws<ArgumentException>(null, () => Expression.OrElse(Expression.Constant(5), Expression.Constant("abc"), method));
+        }
+
+        [Fact]
+        public static void Method_ReturnTypeNotEqualToParameterTypes_ThrowsArgumentException()
+        {
+            MethodInfo method = typeof(NonGenericClass).GetMethod(nameof(NonGenericClass.StaticIntMethod2Invalid2));
+            Assert.Throws<ArgumentException>(null, () => Expression.AndAlso(Expression.Constant(5), Expression.Constant(5), method));
+            Assert.Throws<ArgumentException>(null, () => Expression.OrElse(Expression.Constant(5), Expression.Constant(5), method));
+        }
+
+        [Fact]
+        public static void MethodDeclaringTypeHasNoTrueFalseOperator_ThrowsArgumentException()
+        {
+            MethodInfo method = typeof(NonGenericClass).GetMethod(nameof(NonGenericClass.StaticIntMethod2Valid));
+            Assert.Throws<ArgumentException>(null, () => Expression.AndAlso(Expression.Constant(5), Expression.Constant(5), method));
+            Assert.Throws<ArgumentException>(null, () => Expression.OrElse(Expression.Constant(5), Expression.Constant(5), method));
+        }
+
+#if FEATURE_COMPILE
+
         [Fact]
         public static void AndAlso_NoMethod_NotStatic_ThrowsInvalidOperationException()
         {
@@ -375,17 +429,6 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory]
-        [InlineData(typeof(NonGenericClass), nameof(NonGenericClass.StaticIntMethod0))]
-        [InlineData(typeof(NonGenericClass), nameof(NonGenericClass.StaticIntMethod1))]
-        [InlineData(typeof(NonGenericClass), nameof(NonGenericClass.StaticIntMethod3))]
-        public static void Method_DoesntHaveTwoParameters_ThrowsArgumentException(Type type, string methodName)
-        {
-            MethodInfo method = type.GetMethod(methodName);
-            Assert.Throws<ArgumentException>("method", () => Expression.AndAlso(Expression.Constant(5), Expression.Constant(5), method));
-            Assert.Throws<ArgumentException>("method", () => Expression.OrElse(Expression.Constant(5), Expression.Constant(5), method));
-        }
-
-        [Theory]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(3)]
@@ -418,14 +461,6 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Fact]
-        public static void AndAlso_Method_ExpressionDoesntMatchMethodParameters_ThrowsInvalidOperationException()
-        {
-            MethodInfo method = typeof(NonGenericClass).GetMethod(nameof(NonGenericClass.StaticIntMethod2Valid));
-            Assert.Throws<InvalidOperationException>(() => Expression.AndAlso(Expression.Constant("abc"), Expression.Constant(5), method));
-            Assert.Throws<InvalidOperationException>(() => Expression.AndAlso(Expression.Constant(5), Expression.Constant("abc"), method));
-        }
-
-        [Fact]
         public static void AndAlso_NoMethod_ExpressionDoesntMatchMethodParameters_ThrowsInvalidOperationException()
         {
             TypeBuilder type = GetTypeBuilder();
@@ -436,14 +471,6 @@ namespace System.Linq.Expressions.Tests
             object obj = Activator.CreateInstance(createdType);
 
             Assert.Throws<InvalidOperationException>(() => Expression.AndAlso(Expression.Constant(obj), Expression.Constant(obj)));
-        }
-
-        [Fact]
-        public static void OrElse_ExpressionDoesntMatchMethodParameters_ThrowsInvalidOperationException()
-        {
-            MethodInfo method = typeof(NonGenericClass).GetMethod(nameof(NonGenericClass.StaticIntMethod2Valid));
-            Assert.Throws<InvalidOperationException>(() => Expression.AndAlso(Expression.Constant("abc"), Expression.Constant(5), method));
-            Assert.Throws<InvalidOperationException>(() => Expression.AndAlso(Expression.Constant(5), Expression.Constant("abc"), method));
         }
 
         [Fact]
@@ -459,22 +486,6 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<InvalidOperationException>(() => Expression.OrElse(Expression.Constant(obj), Expression.Constant(obj)));
         }
 
-
-        [Fact]
-        public static void MethodParametersNotEqual_ThrowsArgumentException()
-        {
-            MethodInfo method = typeof(NonGenericClass).GetMethod(nameof(NonGenericClass.StaticIntMethod2Invalid1));
-            Assert.Throws<ArgumentException>(null, () => Expression.AndAlso(Expression.Constant(5), Expression.Constant("abc"), method));
-            Assert.Throws<ArgumentException>(null, () => Expression.OrElse(Expression.Constant(5), Expression.Constant("abc"), method));
-        }
-
-        [Fact]
-        public static void Method_ReturnTypeNotEqualToParameterTypes_ThrowsArgumentException()
-        {
-            MethodInfo method = typeof(NonGenericClass).GetMethod(nameof(NonGenericClass.StaticIntMethod2Invalid2));
-            Assert.Throws<ArgumentException>(null, () => Expression.AndAlso(Expression.Constant(5), Expression.Constant(5), method));
-            Assert.Throws<ArgumentException>(null, () => Expression.OrElse(Expression.Constant(5), Expression.Constant(5), method));
-        }
 
         [Fact]
         public static void AndAlso_NoMethod_ReturnTypeNotEqualToParameterTypes_ThrowsArgumentException()
@@ -500,14 +511,6 @@ namespace System.Linq.Expressions.Tests
             object obj = Activator.CreateInstance(createdType);
 
             Assert.Throws<ArgumentException>(null, () => Expression.OrElse(Expression.Constant(obj), Expression.Constant(obj)));
-        }
-
-        [Fact]
-        public static void MethodDeclaringTypeHasNoTrueFalseOperator_ThrowsArgumentException()
-        {
-            MethodInfo method = typeof(NonGenericClass).GetMethod(nameof(NonGenericClass.StaticIntMethod2Valid));
-            Assert.Throws<ArgumentException>(null, () => Expression.AndAlso(Expression.Constant(5), Expression.Constant(5), method));
-            Assert.Throws<ArgumentException>(null, () => Expression.OrElse(Expression.Constant(5), Expression.Constant(5), method));
         }
 
         public static IEnumerable<object[]> Operator_IncorrectMethod_TestData()
@@ -727,6 +730,8 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<InvalidOperationException>(() => Expression.OrElse(Expression.Constant(5), Expression.Constant(5)));
         }
 
+#endif
+
         [Fact]
         public static void ImplicitConversionToBool_ThrowsArgumentException()
         {
@@ -775,7 +780,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal("(a OrElse b)", e2.ToString());
         }
 
-
+#if FEATURE_COMPILE
         [Fact]
         public static void AndAlsoGlobalMethod()
         {
@@ -805,6 +810,7 @@ namespace System.Linq.Expressions.Tests
             module.CreateGlobalFunctions();
             return module.GetMethod(globalMethod.Name);
         }
+#endif
 
         public class NonGenericClass
         {
