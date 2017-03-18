@@ -186,7 +186,7 @@
     <NuGetRuntimeIdentifier Condition="'$(TargetGroup)' == 'netcore50'">win8</NuGetRuntimeIdentifier>
     <NuGetRuntimeIdentifier Condition="'$(TargetGroup)' == 'netcore50aot'">win8-aot</NuGetRuntimeIdentifier>
 
-    <!-- workaround Dev14 issue with nuget targets -->
+    <!-- workaround Dev14 issue with nuget targets, misspelling is intentional to align with Dev14 RTM targets -->
     <RuntimeIndentifier>$(NuGetRuntimeIdentifier)</RuntimeIndentifier>
   </PropertyGroup>
 
