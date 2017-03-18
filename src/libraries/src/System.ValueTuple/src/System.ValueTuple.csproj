@@ -31,6 +31,10 @@
       <Link>Common\System\Numerics\Hashing\HashHelpers.cs</Link>
     </Compile>
   </ItemGroup>
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' AND '$(TargetGroup)' != 'portable_net40+sl4+win8+wp8'">
+    <!-- The portable_net40+sl4+win8+wp8 PCL profile does not have AllowPartiallyTrustedCallersAttribute -->
+    <Compile Include="AssemblyInfo.netstandard.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'portable_net40+sl4+win8+wp8'">
     <Compile Include="$(CommonPath)\System\Reflection\AssemblyMetadataAttribute.cs">
       <Link>Common\System\Reflection\AssemblyMetadataAttribute.cs</Link>
