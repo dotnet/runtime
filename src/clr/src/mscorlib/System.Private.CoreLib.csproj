@@ -450,7 +450,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\CustomAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\DefaultMemberAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\EventAttributes.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\EventInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\FieldAttributes.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\FieldInfo.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\GenericParameterAttributes.cs" />
