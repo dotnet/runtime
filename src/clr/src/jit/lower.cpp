@@ -1998,6 +1998,7 @@ GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree* callTarget
 //
 // Notes:
 //    - Decomposes long comparisons that feed a GT_JTRUE (32 bit specific).
+//    - Decomposes long comparisons that produce a value (X86 specific).
 //    - Ensures that we don't have a mix of int/long operands (XARCH specific).
 //    - Narrow operands to enable memory operand containment (XARCH specific).
 //    - Transform cmp(and(x, y), 0) into test(x, y) (XARCH specific but could
@@ -2006,11 +2007,140 @@ GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree* callTarget
 void Lowering::LowerCompare(GenTree* cmp)
 {
 #ifndef _TARGET_64BIT_
-    LIR::Use cmpUse;
-
-    if ((cmp->gtGetOp1()->TypeGet() == TYP_LONG) && BlockRange().TryGetUse(cmp, &cmpUse) &&
-        cmpUse.User()->OperIs(GT_JTRUE))
+    if (cmp->gtGetOp1()->TypeGet() == TYP_LONG)
     {
+// TODO-ARM: This code should be enabled for ARM32 once support for GT_CMP and GT_SETCC is added.
+#if _TARGET_X86_
+        // Currently this handles only relops that produce a value or aren't used.
+        // The same approach can be used for relops that feed a GT_JTRUE, see the #if 0
+        // below and its associated comment.
+        LIR::Use cmpUse;
+        if (!BlockRange().TryGetUse(cmp, &cmpUse) || !cmpUse.User()->OperIs(GT_JTRUE))
+        {
+            GenTree* src1 = cmp->gtGetOp1();
+            GenTree* src2 = cmp->gtGetOp2();
+            assert(src1->OperIs(GT_LONG));
+            assert(src2->OperIs(GT_LONG));
+            GenTree* loSrc1 = src1->gtGetOp1();
+            GenTree* hiSrc1 = src1->gtGetOp2();
+            GenTree* loSrc2 = src2->gtGetOp1();
+            GenTree* hiSrc2 = src2->gtGetOp2();
+            BlockRange().Remove(src1);
+            BlockRange().Remove(src2);
+
+            genTreeOps condition = cmp->OperGet();
+            GenTree*   loCmp;
+            GenTree*   hiCmp;
+
+            if (cmp->OperIs(GT_EQ, GT_NE))
+            {
+                //
+                // Transform (x EQ|NE y) into (((x.lo SUB y.lo) OR (x.hi SUB y.hi)) EQ|NE 0). If y is 0 then this can
+                // be reduced to just ((x.lo OR x.hi) EQ|NE 0). The OR is expected to set the condition flags so we
+                // don't need to generate a redundant compare against 0, we only generate a SETCC|JCC instruction.
+                //
+
+                if (loSrc2->IsIntegralConst(0))
+                {
+                    BlockRange().Remove(loSrc2);
+                    loCmp = loSrc1;
+                }
+                else
+                {
+                    loCmp = comp->gtNewOperNode(GT_SUB, TYP_INT, loSrc1, loSrc2);
+                    BlockRange().InsertBefore(cmp, loCmp);
+                }
+
+                if (hiSrc2->IsIntegralConst(0))
+                {
+                    BlockRange().Remove(hiSrc2);
+                    hiCmp = hiSrc1;
+                }
+                else
+                {
+                    hiCmp = comp->gtNewOperNode(GT_SUB, TYP_INT, hiSrc1, hiSrc2);
+                    BlockRange().InsertBefore(cmp, hiCmp);
+                }
+
+                hiCmp = comp->gtNewOperNode(GT_OR, TYP_INT, loCmp, hiCmp);
+                BlockRange().InsertBefore(cmp, hiCmp);
+            }
+            else
+            {
+                assert(cmp->OperIs(GT_LT, GT_LE, GT_GE, GT_GT));
+
+                //
+                // If the compare is signed then (x LT|GE y) can be transformed into ((x SUB y) LT|GE 0).
+                // If the compare is unsigned we can still use SUB but we need to check the Carry flag,
+                // not the actual result. In both cases we can simply check the appropiate condition flags
+                // and ignore the actual result:
+                //     SUB_LO loSrc1, loSrc2
+                //     SUB_HI hiSrc1, hiSrc2
+                //     SETCC|JCC (signed|unsigned LT|GE)
+                // If loSrc2 happens to be 0 then the first SUB can be eliminated and the second one can
+                // be turned into a CMP because the first SUB would have set carry to 0. This effectively
+                // transforms a long compare against 0 into an int compare of the high part against 0.
+                //
+                // (x LE|GT y) can to be transformed into ((x SUB y) LE|GT 0) but checking that a long value
+                // is greater than 0 is not so easy. We need to turn this into a positive/negative check
+                // like the one we get for LT|GE compares, this can be achieved by swapping the compare:
+                //     (x LE|GT y) becomes (y GE|LT x)
+                //
+
+                if (cmp->OperIs(GT_LE, GT_GT))
+                {
+                    std::swap(loSrc1, loSrc2);
+                    std::swap(hiSrc1, hiSrc2);
+                    condition = GenTree::SwapRelop(condition);
+                }
+
+                assert((condition == GT_LT) || (condition == GT_GE));
+
+                if (loSrc2->IsIntegralConst(0))
+                {
+                    BlockRange().Remove(loSrc2);
+
+                    hiCmp = comp->gtNewOperNode(GT_CMP, TYP_VOID, hiSrc1, hiSrc2);
+                    BlockRange().InsertBefore(cmp, hiCmp);
+                }
+                else
+                {
+                    loCmp = comp->gtNewOperNode(GT_CMP, TYP_VOID, loSrc1, loSrc2);
+                    hiCmp = comp->gtNewOperNode(GT_SUB_HI, TYP_INT, hiSrc1, hiSrc2);
+                    BlockRange().InsertBefore(cmp, loCmp, hiCmp);
+                }
+            }
+
+            hiCmp->gtFlags |= GTF_SET_FLAGS;
+
+// TODO-CQ: We could also lower comparisons that feed a GT_JTRUE. Doing that brings
+// a ~8KB improvement in fx jit-diff but there's also a ~700 bytes regression that
+// should be investigated before enabling this.
+#if 0
+            LIR::Use cmpUse;
+            if (BlockRange().TryGetUse(cmp, &cmpUse) && cmpUse.User()->OperIs(GT_JTRUE))
+            {
+                BlockRange().Remove(cmp);
+
+                GenTree* jcc    = cmpUse.User();
+                jcc->gtOp.gtOp1 = nullptr;
+                jcc->ChangeOper(GT_JCC);
+                jcc->gtFlags |= (cmp->gtFlags & GTF_UNSIGNED);
+                jcc->AsCC()->gtCondition = condition;
+            }
+            else
+#endif
+            {
+                cmp->gtOp.gtOp1 = nullptr;
+                cmp->gtOp.gtOp2 = nullptr;
+                cmp->ChangeOper(GT_SETCC);
+                cmp->AsCC()->gtCondition = condition;
+            }
+
+            return;
+        }
+#endif
+
         // For 32-bit targets any comparison that feeds a `GT_JTRUE` node must be lowered such that
         // the liveness of the operands to the comparison is properly visible to the rest of the
         // backend. As such, a 64-bit comparison is lowered from something like this:
