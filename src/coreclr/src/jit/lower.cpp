@@ -2217,7 +2217,7 @@ void Lowering::LowerCompare(GenTree* cmp)
 
             BasicBlock* newBlock2 = comp->fgSplitBlockAtEnd(newBlock);
 
-            GenTree* hiJcc = new (comp, GT_JCC) GenTreeJumpCC(hiCmpOper);
+            GenTree* hiJcc = new (comp, GT_JCC) GenTreeCC(GT_JCC, hiCmpOper);
             hiJcc->gtFlags = cmp->gtFlags;
             LIR::AsRange(newBlock).InsertAfter(nullptr, hiJcc);
 
