@@ -21,11 +21,7 @@ class CILJit : public ICorJitCompiler
     void getVersionIdentifier(GUID* versionIdentifier /* OUT */
                               );
 
-#if COR_JIT_EE_VERSION > 460
     unsigned getMaxIntrinsicSIMDVectorLength(CORJIT_FLAGS cpuCompileFlags);
-#else
-    unsigned getMaxIntrinsicSIMDVectorLength(DWORD cpuCompileFlags);
-#endif
 
     void setRealJit(ICorJitCompiler* realJitCompiler);
 };

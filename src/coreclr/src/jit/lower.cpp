@@ -3029,7 +3029,6 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
 
     noway_assert(comp->lvaInlinedPInvokeFrameVar != BAD_VAR_NUM);
 
-#if COR_JIT_EE_VERSION > 460
     if (comp->opts.ShouldUsePInvokeHelpers())
     {
         // First argument is the address of the frame variable.
@@ -3045,7 +3044,6 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
         LowerNode(helperCall); // helper call is inserted before current node and should be lowered here.
         return;
     }
-#endif
 
     // Emit the following sequence:
     //
@@ -3178,7 +3176,6 @@ void Lowering::InsertPInvokeCallEpilog(GenTreeCall* call)
 {
     JITDUMP("======= Inserting PInvoke call epilog\n");
 
-#if COR_JIT_EE_VERSION > 460
     if (comp->opts.ShouldUsePInvokeHelpers())
     {
         noway_assert(comp->lvaInlinedPInvokeFrameVar != BAD_VAR_NUM);
@@ -3196,7 +3193,6 @@ void Lowering::InsertPInvokeCallEpilog(GenTreeCall* call)
         BlockRange().InsertAfter(call, LIR::SeqTree(comp, helperCall));
         return;
     }
-#endif
 
     // gcstate = 1
     GenTree* insertionPoint = call->gtNext;
@@ -3317,18 +3313,7 @@ GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
         CORINFO_METHOD_HANDLE methHnd = call->gtCallMethHnd;
 
         CORINFO_CONST_LOOKUP lookup;
-#if COR_JIT_EE_VERSION > 460
         comp->info.compCompHnd->getAddressOfPInvokeTarget(methHnd, &lookup);
-#else
-        void* pIndirection;
-        lookup.accessType = IAT_PVALUE;
-        lookup.addr       = comp->info.compCompHnd->getAddressOfPInvokeFixup(methHnd, &pIndirection);
-        if (lookup.addr == nullptr)
-        {
-            lookup.accessType = IAT_PPVALUE;
-            lookup.addr       = pIndirection;
-        }
-#endif
 
         void* addr = lookup.addr;
         switch (lookup.accessType)

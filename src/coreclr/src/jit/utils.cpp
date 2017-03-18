@@ -780,7 +780,7 @@ void ConfigMethodRange::InitRanges(const wchar_t* rangeStr, unsigned capacity)
     }
 
     // Allocate some persistent memory
-    ICorJitHost* jitHost = JitHost::getJitHost();
+    ICorJitHost* jitHost = g_jitHost;
     m_ranges             = (Range*)jitHost->allocateMemory(capacity * sizeof(Range));
     m_entries            = capacity;
 
@@ -1412,9 +1412,7 @@ void HelperCallProperties::init()
             case CORINFO_HELP_GETGENERICS_GCSTATIC_BASE:
             case CORINFO_HELP_GETGENERICS_NONGCSTATIC_BASE:
             case CORINFO_HELP_READYTORUN_STATIC_BASE:
-#if COR_JIT_EE_VERSION > 460
             case CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE:
-#endif // COR_JIT_EE_VERSION > 460
 
                 // These may invoke static class constructors
                 // These can throw InvalidProgram exception if the class can not be constructed
@@ -1464,9 +1462,7 @@ void HelperCallProperties::init()
             case CORINFO_HELP_VERIFICATION:
             case CORINFO_HELP_RNGCHKFAIL:
             case CORINFO_HELP_THROWDIVZERO:
-#if COR_JIT_EE_VERSION > 460
             case CORINFO_HELP_THROWNULLREF:
-#endif // COR_JIT_EE_VERSION
             case CORINFO_HELP_THROW:
             case CORINFO_HELP_RETHROW:
 

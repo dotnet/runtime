@@ -6725,9 +6725,7 @@ bool Compiler::fgIsThrow(GenTreePtr tree)
         (tree->gtCall.gtCallMethHnd == eeFindHelper(CORINFO_HELP_VERIFICATION)) ||
         (tree->gtCall.gtCallMethHnd == eeFindHelper(CORINFO_HELP_RNGCHKFAIL)) ||
         (tree->gtCall.gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROWDIVZERO)) ||
-#if COR_JIT_EE_VERSION > 460
         (tree->gtCall.gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROWNULLREF)) ||
-#endif // COR_JIT_EE_VERSION
         (tree->gtCall.gtCallMethHnd == eeFindHelper(CORINFO_HELP_THROW)) ||
         (tree->gtCall.gtCallMethHnd == eeFindHelper(CORINFO_HELP_RETHROW)))
     {
@@ -7138,13 +7136,8 @@ GenTreePtr Compiler::fgOptimizeDelegateConstructor(GenTreeCall* call, CORINFO_CO
                 helperArgs->gtOp.gtOp2 = gtNewArgList(call->gtCallArgs->gtOp.gtOp1);
 
                 call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, GTF_EXCEPT, helperArgs);
-#if COR_JIT_EE_VERSION > 460
                 info.compCompHnd->getReadyToRunDelegateCtorHelper(targetMethod->gtFptrVal.gtLdftnResolvedToken, clsHnd,
                                                                   &entryPoint);
-#else
-                info.compCompHnd->getReadyToRunHelper(targetMethod->gtFptrVal.gtLdftnResolvedToken,
-                                                      CORINFO_HELP_READYTORUN_DELEGATE_CTOR, &entryPoint);
-#endif
                 call->setEntryPoint(entryPoint);
             }
         }
@@ -7932,7 +7925,6 @@ void Compiler::fgAddReversePInvokeEnterExit()
 {
     assert(opts.IsReversePInvoke());
 
-#if COR_JIT_EE_VERSION > 460
     lvaReversePInvokeFrameVar = lvaGrabTempWithImplicitUse(false DEBUGARG("Reverse Pinvoke FrameVar"));
 
     LclVarDsc* varDsc   = &lvaTable[lvaReversePInvokeFrameVar];
@@ -7979,8 +7971,6 @@ void Compiler::fgAddReversePInvokeEnterExit()
         printf("\n");
     }
 #endif
-
-#endif // COR_JIT_EE_VERSION > 460
 }
 
 /*****************************************************************************
@@ -17530,12 +17520,10 @@ unsigned Compiler::acdHelper(SpecialCodeKind codeKind)
     {
         case SCK_RNGCHK_FAIL:
             return CORINFO_HELP_RNGCHKFAIL;
-#if COR_JIT_EE_VERSION > 460
         case SCK_ARG_EXCPN:
             return CORINFO_HELP_THROW_ARGUMENTEXCEPTION;
         case SCK_ARG_RNG_EXCPN:
             return CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION;
-#endif // COR_JIT_EE_VERSION
         case SCK_DIV_BY_ZERO:
             return CORINFO_HELP_THROWDIVZERO;
         case SCK_ARITH_EXCPN:
@@ -17662,14 +17650,12 @@ BasicBlock* Compiler::fgAddCodeRef(BasicBlock* srcBlk, unsigned refData, Special
             case SCK_OVERFLOW:
                 msg = " for OVERFLOW";
                 break;
-#if COR_JIT_EE_VERSION > 460
             case SCK_ARG_EXCPN:
                 msg = " for ARG_EXCPN";
                 break;
             case SCK_ARG_RNG_EXCPN:
                 msg = " for ARG_RNG_EXCPN";
                 break;
-#endif // COR_JIT_EE_VERSION
             default:
                 msg = " for ??";
                 break;
@@ -17716,7 +17702,6 @@ BasicBlock* Compiler::fgAddCodeRef(BasicBlock* srcBlk, unsigned refData, Special
             noway_assert(SCK_OVERFLOW == SCK_ARITH_EXCPN);
             break;
 
-#if COR_JIT_EE_VERSION > 460
         case SCK_ARG_EXCPN:
             helper = CORINFO_HELP_THROW_ARGUMENTEXCEPTION;
             break;
@@ -17724,7 +17709,6 @@ BasicBlock* Compiler::fgAddCodeRef(BasicBlock* srcBlk, unsigned refData, Special
         case SCK_ARG_RNG_EXCPN:
             helper = CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION;
             break;
-#endif // COR_JIT_EE_VERSION
 
         // case SCK_PAUSE_EXEC:
         //     noway_assert(!"add code to pause exec");
