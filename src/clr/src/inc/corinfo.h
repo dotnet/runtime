@@ -213,23 +213,6 @@ TODO: Talk about initializing strutures before use
     #define SELECTANY extern __declspec(selectany)
 #endif
 
-// COR_JIT_EE_VERSION is a #define that specifies a JIT-EE version, but on a less granular basis than the GUID.
-// The #define is intended to be used on a per-product basis. That is, for each release that we support a JIT
-// CTP build, we'll update the COR_JIT_EE_VERSION. The GUID must change any time any part of the interface changes.
-//
-// COR_JIT_EE_VERSION is set, by convention, to a number related to the the product number. So, 460 is .NET 4.60.
-// 461 would indicate .NET 4.6.1. Etc.
-//
-// Note that the EE should always build with the most current (highest numbered) version. Only the JIT will
-// potentially build with a lower version number. In that case, the COR_JIT_EE_VERSION will be specified in the
-// CTP JIT build project, such as ctpjit.nativeproj.
-
-#if !defined(COR_JIT_EE_VERSION)
-#define COR_JIT_EE_VERSION 999999999    // This means we'll take everything in the interface
-#endif
-
-#if COR_JIT_EE_VERSION > 460
-
 // Update this one
 SELECTANY const GUID JITEEVersionIdentifier = { /* 3d43decb-a611-4413-a0af-a24278a00e2d */
     0x3d43decb,
@@ -238,26 +221,11 @@ SELECTANY const GUID JITEEVersionIdentifier = { /* 3d43decb-a611-4413-a0af-a2427
     {0xa0, 0xaf, 0xa2, 0x42, 0x78, 0xa0, 0x0e, 0x2d}
   };
 
-#else
-
-// ************ Leave this one alone ***************
-// We need it to build a .NET 4.6 compatible JIT for the RyuJIT CTP releases
-SELECTANY const GUID JITEEVersionIdentifier = { /* 9110edd8-8fc3-4e3d-8ac9-12555ff9be9c */
-    0x9110edd8,
-    0x8fc3,
-    0x4e3d,
-    { 0x8a, 0xc9, 0x12, 0x55, 0x5f, 0xf9, 0xbe, 0x9c }
-};
-
-#endif
-
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 // END JITEEVersionIdentifier
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-#if COR_JIT_EE_VERSION > 460
 
 // For System V on the CLR type system number of registers to pass in and return a struct is the same.
 // The CLR type system allows only up to 2 eightbytes to be passed in registers. There is no SSEUP classification types.
@@ -381,8 +349,6 @@ private:
     }
 };
 
-#endif // COR_JIT_EE_VERSION
-
 // CorInfoHelpFunc defines the set of helpers (accessed via the ICorDynamicInfo::getHelperFtn())
 // These helpers can be called by native code which executes in the runtime.
 // Compilers can emit calls to these helpers.
@@ -433,9 +399,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_NEWSFAST,          // allocator for small, non-finalizer, non-array object
     CORINFO_HELP_NEWSFAST_ALIGN8,   // allocator for small, non-finalizer, non-array object, 8 byte aligned
     CORINFO_HELP_NEW_MDARR,         // multi-dim array helper (with or without lower bounds - dimensions passed in as vararg)
-#if COR_JIT_EE_VERSION > 460
     CORINFO_HELP_NEW_MDARR_NONVARARG,// multi-dim array helper (with or without lower bounds - dimensions passed in as unmanaged array)
-#endif
     CORINFO_HELP_NEWARR_1_DIRECT,   // helper for any one dimensional array creation
     CORINFO_HELP_NEWARR_1_OBJ,      // optimized 1-D object arrays
     CORINFO_HELP_NEWARR_1_VC,       // optimized 1-D value class arrays
@@ -481,9 +445,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_RNGCHKFAIL,        // array bounds check failed
     CORINFO_HELP_OVERFLOW,          // throw an overflow exception
     CORINFO_HELP_THROWDIVZERO,      // throw a divide by zero exception
-#if COR_JIT_EE_VERSION > 460
     CORINFO_HELP_THROWNULLREF,      // throw a null reference exception
-#endif // COR_JIT_EE_VERSION
 
     CORINFO_HELP_INTERNALTHROW,     // Support for really fast jit
     CORINFO_HELP_VERIFICATION,      // Throw a VerificationException
@@ -639,13 +601,9 @@ enum CorInfoHelpFunc
     CORINFO_HELP_READYTORUN_CHKCAST,
     CORINFO_HELP_READYTORUN_STATIC_BASE,
     CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR,
-#if COR_JIT_EE_VERSION > 460
     CORINFO_HELP_READYTORUN_GENERIC_HANDLE,
     CORINFO_HELP_READYTORUN_DELEGATE_CTOR,
     CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE,
-#else
-    #define CORINFO_HELP_READYTORUN_DELEGATE_CTOR CORINFO_HELP_EE_PRESTUB
-#endif // COR_JIT_EE_VERSION
 
     CORINFO_HELP_EE_PRESTUB,            // Not real JIT helper. Used in native images.
 
@@ -682,7 +640,6 @@ enum CorInfoHelpFunc
     CORINFO_HELP_LOOP_CLONE_CHOICE_ADDR, // Return the reference to a counter to decide to take cloned path in debug stress.
     CORINFO_HELP_DEBUG_LOG_LOOP_CLONING, // Print a message that a loop cloning optimization has occurred in debug mode.
 
-#if COR_JIT_EE_VERSION > 460
     CORINFO_HELP_THROW_ARGUMENTEXCEPTION,           // throw ArgumentException
     CORINFO_HELP_THROW_ARGUMENTOUTOFRANGEEXCEPTION, // throw ArgumentOutOfRangeException
 
@@ -693,7 +650,6 @@ enum CorInfoHelpFunc
     CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT,  // Transition to preemptive mode in reverse P/Invoke epilog, frame is the first argument
 
     CORINFO_HELP_GVMLOOKUP_FOR_SLOT,        // Resolve a generic virtual method target from this pointer and runtime method handle 
-#endif
 
     CORINFO_HELP_COUNT,
 };
@@ -1311,8 +1267,6 @@ enum CORINFO_RUNTIME_LOOKUP_KIND
     CORINFO_LOOKUP_CLASSPARAM,
 };
 
-#if COR_JIT_EE_VERSION > 460
-
 struct CORINFO_LOOKUP_KIND
 {
     bool                        needsRuntimeLookup;
@@ -1323,16 +1277,6 @@ struct CORINFO_LOOKUP_KIND
     WORD                        runtimeLookupFlags;
     void *                      runtimeLookupArgs;
 } ;
-
-#else
-
-struct CORINFO_LOOKUP_KIND
-{
-    bool                        needsRuntimeLookup;
-    CORINFO_RUNTIME_LOOKUP_KIND runtimeLookupKind;
-} ;
-
-#endif
 
 
 // CORINFO_RUNTIME_LOOKUP indicates the details of the runtime lookup
@@ -1611,10 +1555,8 @@ enum CorInfoTokenKind
     // token comes from CEE_CONSTRAINED
     CORINFO_TOKENKIND_Constrained = 0x100 | CORINFO_TOKENKIND_Class,
 
-#if COR_JIT_EE_VERSION > 460
     // token comes from CEE_NEWOBJ
     CORINFO_TOKENKIND_NewObj    = 0x200 | CORINFO_TOKENKIND_Method,
-#endif
 };
 
 struct CORINFO_RESOLVED_TOKEN
@@ -1713,15 +1655,11 @@ enum CORINFO_FIELD_ACCESSOR
     CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER, // static field access using the "generic static" helper (argument is MethodTable *)
     CORINFO_FIELD_STATIC_ADDR_HELPER,       // static field accessed using address-of helper (argument is FieldDesc *)
     CORINFO_FIELD_STATIC_TLS,               // unmanaged TLS access
-#if COR_JIT_EE_VERSION > 460
     CORINFO_FIELD_STATIC_READYTORUN_HELPER, // static field access using a runtime lookup helper
-#endif
 
     CORINFO_FIELD_INTRINSIC_ZERO,           // intrinsic zero (IntPtr.Zero, UIntPtr.Zero)
     CORINFO_FIELD_INTRINSIC_EMPTY_STRING,   // intrinsic emptry string (String.Empty)
-#if COR_JIT_EE_VERSION > 460
     CORINFO_FIELD_INTRINSIC_ISLITTLEENDIAN, // intrinsic BitConverter.IsLittleEndian
-#endif
 };
 
 // Set of flags returned in CORINFO_FIELD_INFO::fieldFlags
@@ -1833,7 +1771,6 @@ struct CORINFO_EE_INFO
     // Array offsets
     unsigned    offsetOfObjArrayData;
 
-#if COR_JIT_EE_VERSION > 460
     // Reverse PInvoke offsets
     unsigned    sizeOfReversePInvokeFrame;
 
@@ -1846,7 +1783,6 @@ struct CORINFO_EE_INFO
     // Target ABI. Combined with target architecture and OS to determine
     // GC, EH, and unwind styles.
     CORINFO_RUNTIME_ABI targetAbi;
-#endif
 
     CORINFO_OS  osType;
     unsigned    osMajor;
@@ -1862,18 +1798,6 @@ enum { LCL_FINALLY_MARK = 0xFC }; // FC = "Finally Call"
  * The following is the internal structure of an object that the compiler knows about
  * when it generates code
  **********************************************************************************/
-
-#if COR_JIT_EE_VERSION <= 460
-
-#define CORINFO_PAGE_SIZE   0x1000                           // the page size on the machine
-
-#ifndef FEATURE_PAL
-#define MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT ((32*1024)-1)   // when generating JIT code
-#else // !FEATURE_PAL
-#define MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT ((OS_PAGE_SIZE / 2) - 1)
-#endif // !FEATURE_PAL
-
-#endif // COR_JIT_EE_VERISION <= 460
 
 #include <pshpack4.h>
 
@@ -2116,7 +2040,6 @@ public:
             unsigned*                   offsetAfterIndirection  /* OUT */
             ) = 0;
 
-#if COR_JIT_EE_VERSION > 460
     // Find the virtual method in implementingClass that overrides virtualMethod,
     // or the method in implementingClass that implements the interface method
     // represented by virtualMethod.
@@ -2128,21 +2051,14 @@ public:
             CORINFO_CLASS_HANDLE        implementingClass,      /* IN */
             CORINFO_CONTEXT_HANDLE      ownerType = NULL        /* IN */
             ) = 0;
-#endif
 
     // If a method's attributes have (getMethodAttribs) CORINFO_FLG_INTRINSIC set,
     // getIntrinsicID() returns the intrinsic ID.
     // *pMustExpand tells whether or not JIT must expand the intrinsic.
-#if COR_JIT_EE_VERSION > 460
     virtual CorInfoIntrinsics getIntrinsicID(
             CORINFO_METHOD_HANDLE       method,
             bool*                       pMustExpand = NULL      /* OUT */
             ) = 0;
-#else
-    virtual CorInfoIntrinsics getIntrinsicID(
-            CORINFO_METHOD_HANDLE       method
-            ) = 0;
-#endif
 
     // Is the given module the System.Numerics.Vectors module?
     // This defaults to false.
@@ -2234,13 +2150,11 @@ public:
     // failures during token resolution.
     virtual void resolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken) = 0;
 
-#if COR_JIT_EE_VERSION > 460
     // Attempt to resolve a metadata token into a runtime method handle. Returns true
     // if resolution succeeded and false otherwise (e.g. if it encounters invalid metadata
     // during token reoslution). This method should be used instead of `resolveToken` in
     // situations that need to be resilient to invalid metadata.
     virtual bool tryResolveToken(/* IN, OUT */ CORINFO_RESOLVED_TOKEN * pResolvedToken) = 0;
-#endif
 
     // Signature information about the call sig
     virtual void findSig (
@@ -2470,7 +2384,6 @@ public:
             CORINFO_CLASS_HANDLE        cls
             ) = 0;
 
-#if COR_JIT_EE_VERSION > 460
     virtual bool getReadyToRunHelper(
             CORINFO_RESOLVED_TOKEN *        pResolvedToken,
             CORINFO_LOOKUP_KIND *           pGenericLookupKind,
@@ -2483,14 +2396,6 @@ public:
             CORINFO_CLASS_HANDLE     delegateType,
             CORINFO_CONST_LOOKUP *   pLookup
             ) = 0;
-#else
-    virtual void getReadyToRunHelper(
-            CORINFO_RESOLVED_TOKEN * pResolvedToken,
-            CorInfoHelpFunc          id,
-            CORINFO_CONST_LOOKUP *   pLookup
-            ) = 0;
-#endif
-
 
     virtual const char* getHelperName(
             CorInfoHelpFunc
@@ -2807,7 +2712,6 @@ public:
     virtual void ThrowExceptionForHelper(
             const CORINFO_HELPER_DESC * throwHelper) = 0;
 
-#if COR_JIT_EE_VERSION > 460
     // Runs the given function under an error trap. This allows the JIT to make calls
     // to interface functions that may throw exceptions without needing to be aware of
     // the EH ABI, exception types, etc. Returns true if the given function completed
@@ -2816,7 +2720,6 @@ public:
         void (*function)(void*), // The function to run
         void* parameter          // The context parameter that will be passed to the function and the handler
         ) = 0;
-#endif
 
 /*****************************************************************************
  * ICorStaticInfo contains EE interface methods which return values that are
@@ -2868,15 +2771,11 @@ public:
             size_t FQNameCapacity  /* IN */
             ) = 0;
 
-#if COR_JIT_EE_VERSION > 460
-
     // returns whether the struct is enregisterable. Only valid on a System V VM. Returns true on success, false on failure.
     virtual bool getSystemVAmd64PassStructInRegisterDescriptor(
         /* IN */    CORINFO_CLASS_HANDLE        structHnd,
         /* OUT */   SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR* structPassInRegDescPtr
         ) = 0;
-
-#endif // COR_JIT_EE_VERSION
 
 };
 
@@ -3003,8 +2902,7 @@ public:
                     ) = 0;
 
     // NOTE: the two methods below--getPInvokeUnmanagedTarget and getAddressOfPInvokeFixup--are
-    //       deprecated. New code (i.e. anything that can depend on COR_JIT_EE_VERSION being
-    //       greater than 460) should instead use getAddressOfPInvokeTarget, which subsumes the
+    //       deprecated. New code should instead use getAddressOfPInvokeTarget, which subsumes the
     //       functionality of these methods.
 
     // return the unmanaged target *if method has already been prelinked.*
@@ -3019,14 +2917,12 @@ public:
                     void                  **ppIndirection = NULL
                     ) = 0;
 
-#if COR_JIT_EE_VERSION > 460
     // return the address of the PInvoke target. May be a fixup area in the
     // case of late-bound PInvoke calls.
     virtual void getAddressOfPInvokeTarget(
                     CORINFO_METHOD_HANDLE  method,
                     CORINFO_CONST_LOOKUP  *pLookup
                     ) = 0;
-#endif
 
     // Generate a cookie based on the signature that would needs to be passed
     // to CORINFO_HELP_PINVOKE_CALLI

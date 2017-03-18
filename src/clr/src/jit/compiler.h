@@ -6561,11 +6561,7 @@ public:
     // Returns the page size for the target machine as reported by the EE.
     inline size_t eeGetPageSize()
     {
-#if COR_JIT_EE_VERSION > 460
         return eeGetEEInfo()->osPageSize;
-#else  // COR_JIT_EE_VERSION <= 460
-        return CORINFO_PAGE_SIZE;
-#endif // COR_JIT_EE_VERSION > 460
     }
 
     // Returns the frame size at which we will generate a loop to probe the stack.
@@ -6583,11 +6579,7 @@ public:
 
     inline bool IsTargetAbi(CORINFO_RUNTIME_ABI abi)
     {
-#if COR_JIT_EE_VERSION > 460
         return eeGetEEInfo()->targetAbi == abi;
-#else
-        return CORINFO_DESKTOP_ABI == abi;
-#endif
     }
 
     inline bool generateCFIUnwindCodes()
@@ -7782,28 +7774,20 @@ public:
         // PInvoke transitions inline (e.g. when targeting CoreRT).
         inline bool ShouldUsePInvokeHelpers()
         {
-#if COR_JIT_EE_VERSION > 460
             return jitFlags->IsSet(JitFlags::JIT_FLAG_USE_PINVOKE_HELPERS);
-#else
-            return false;
-#endif
         }
 
         // true if we should use insert the REVERSE_PINVOKE_{ENTER,EXIT} helpers in the method
         // prolog/epilog
         inline bool IsReversePInvoke()
         {
-#if COR_JIT_EE_VERSION > 460
             return jitFlags->IsSet(JitFlags::JIT_FLAG_REVERSE_PINVOKE);
-#else
-            return false;
-#endif
         }
 
         // true if we must generate code compatible with JIT32 quirks
         inline bool IsJit32Compat()
         {
-#if defined(_TARGET_X86_) && COR_JIT_EE_VERSION > 460
+#if defined(_TARGET_X86_)
             return jitFlags->IsSet(JitFlags::JIT_FLAG_DESKTOP_QUIRKS);
 #else
             return false;
@@ -7813,9 +7797,9 @@ public:
         // true if we must generate code compatible with Jit64 quirks
         inline bool IsJit64Compat()
         {
-#if defined(_TARGET_AMD64_) && COR_JIT_EE_VERSION > 460
+#if defined(_TARGET_AMD64_)
             return jitFlags->IsSet(JitFlags::JIT_FLAG_DESKTOP_QUIRKS);
-#elif defined(_TARGET_AMD64_) && !defined(FEATURE_CORECLR)
+#elif !defined(FEATURE_CORECLR)
             return true;
 #else
             return false;

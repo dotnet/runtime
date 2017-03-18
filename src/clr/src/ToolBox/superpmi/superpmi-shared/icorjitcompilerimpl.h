@@ -57,11 +57,7 @@ public:
     // When the EE loads the System.Numerics.Vectors assembly, it asks the JIT what length (in bytes) of
     // SIMD vector it supports as an intrinsic type.  Zero means that the JIT does not support SIMD
     // intrinsics, so the EE should use the default size (i.e. the size of the IL implementation).
-#if COR_JIT_EE_VERSION > 460
     unsigned getMaxIntrinsicSIMDVectorLength(CORJIT_FLAGS cpuCompileFlags); /* { return 0; } */
-#else
-    unsigned getMaxIntrinsicSIMDVectorLength(DWORD cpuCompileFlags); /* { return 0; } */
-#endif
 
     // IL obfuscators sometimes interpose on the EE-JIT interface. This function allows the VM to
     // tell the JIT to use a particular ICorJitCompiler to implement the methods of this interface,

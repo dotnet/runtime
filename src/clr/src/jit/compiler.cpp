@@ -4996,11 +4996,7 @@ int Compiler::compCompile(CORINFO_METHOD_HANDLE methodHnd,
     info.compMatchedVM = false;
 #endif
 
-#if COR_JIT_EE_VERSION > 460
     compMaxUncheckedOffsetForNullObject = eeGetEEInfo()->maxUncheckedOffsetForNullObject;
-#else  // COR_JIT_EE_VERSION <= 460
-    compMaxUncheckedOffsetForNullObject = MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT;
-#endif // COR_JIT_EE_VERSION > 460
 
     // Set the context for token lookup.
     if (compIsForInlining())
