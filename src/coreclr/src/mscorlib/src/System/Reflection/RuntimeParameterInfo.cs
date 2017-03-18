@@ -148,6 +148,18 @@ namespace System.Reflection
         }
         #endregion
 
+        #region Internal Methods
+        internal void SetName(string name)
+        {
+            NameImpl = name;
+        }
+
+        internal void SetAttributes(ParameterAttributes attributes)
+        {
+            AttrsImpl = attributes;
+        }
+        #endregion
+
         #region VTS magic to serialize/deserialized to/from pre-Whidbey endpoints.
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {

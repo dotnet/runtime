@@ -534,7 +534,7 @@ namespace System.Reflection.Emit
 
             if (position >= 0)
             {
-                ParameterInfo[] parameters = m_dynMethod.LoadParameters();
+                RuntimeParameterInfo[] parameters = m_dynMethod.LoadParameters();
                 parameters[position].SetName(parameterName);
                 parameters[position].SetAttributes(attributes);
             }
@@ -583,7 +583,7 @@ namespace System.Reflection.Emit
         internal class RTDynamicMethod : MethodInfo
         {
             internal DynamicMethod m_owner;
-            private ParameterInfo[] m_parameters;
+            private RuntimeParameterInfo[] m_parameters;
             private String m_name;
             private MethodAttributes m_attributes;
             private CallingConventions m_callingConvention;
@@ -741,12 +741,12 @@ namespace System.Reflection.Emit
             // private implementation
             //
 
-            internal ParameterInfo[] LoadParameters()
+            internal RuntimeParameterInfo[] LoadParameters()
             {
                 if (m_parameters == null)
                 {
                     Type[] parameterTypes = m_owner.m_parameterTypes;
-                    ParameterInfo[] parameters = new ParameterInfo[parameterTypes.Length];
+                    RuntimeParameterInfo[] parameters = new RuntimeParameterInfo[parameterTypes.Length];
                     for (int i = 0; i < parameterTypes.Length; i++)
                         parameters[i] = new RuntimeParameterInfo(this, null, parameterTypes[i], i);
                     if (m_parameters == null)
