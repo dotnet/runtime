@@ -1850,14 +1850,10 @@ GenTreeCall* Compiler::impReadyToRunHelperToTree(
     CORINFO_LOOKUP_KIND*    pGenericLookupKind /* =NULL. Only used with generics */)
 {
     CORINFO_CONST_LOOKUP lookup;
-#if COR_JIT_EE_VERSION > 460
     if (!info.compCompHnd->getReadyToRunHelper(pResolvedToken, pGenericLookupKind, helper, &lookup))
     {
         return nullptr;
     }
-#else
-    info.compCompHnd->getReadyToRunHelper(pResolvedToken, helper, &lookup);
-#endif
 
     GenTreeCall* op1 = gtNewHelperCallNode(helper, type, GTF_EXCEPT, args);
 
@@ -2997,14 +2993,12 @@ GenTreePtr Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
 #endif
             )
     {
-#if COR_JIT_EE_VERSION > 460
         if (newArrayCall->gtCall.gtCallMethHnd != eeFindHelper(CORINFO_HELP_NEW_MDARR_NONVARARG))
         {
             return nullptr;
         }
 
         isMDArray = true;
-#endif
     }
 
     CORINFO_CLASS_HANDLE arrayClsHnd = (CORINFO_CLASS_HANDLE)newArrayCall->gtCall.compileTimeHelperArgumentHandle;
@@ -3278,13 +3272,9 @@ GenTreePtr Compiler::impIntrinsic(GenTreePtr            newobjThis,
                                   bool                  tailCall,
                                   CorInfoIntrinsics*    pIntrinsicID)
 {
-    bool mustExpand = false;
-#if COR_JIT_EE_VERSION > 460
+    bool              mustExpand  = false;
     CorInfoIntrinsics intrinsicID = info.compCompHnd->getIntrinsicID(method, &mustExpand);
-#else
-    CorInfoIntrinsics intrinsicID                                      = info.compCompHnd->getIntrinsicID(method);
-#endif
-    *pIntrinsicID = intrinsicID;
+    *pIntrinsicID                 = intrinsicID;
 
 #ifndef _TARGET_ARM_
     genTreeOps interlockedOperator;
@@ -4989,7 +4979,6 @@ GenTreePtr Compiler::impImportLdvirtftn(GenTreePtr              thisPtr,
         NO_WAY("Virtual call to a function added via EnC is not supported");
     }
 
-#if COR_JIT_EE_VERSION > 460
     // CoreRT generic virtual method
     if (((pCallInfo->sig.callConv & CORINFO_CALLCONV_GENERIC) != 0) && IsTargetAbi(CORINFO_CORERT_ABI))
     {
@@ -5006,7 +4995,6 @@ GenTreePtr Compiler::impImportLdvirtftn(GenTreePtr              thisPtr,
         return gtNewHelperCallNode(CORINFO_HELP_GVMLOOKUP_FOR_SLOT, TYP_I_IMPL, GTF_EXCEPT,
                                    gtNewArgList(thisPtr, runtimeMethodHandle));
     }
-#endif // COR_JIT_EE_VERSION
 
 #ifdef FEATURE_READYTORUN_COMPILER
     if (opts.IsReadyToRun())
@@ -5257,7 +5245,6 @@ void Compiler::impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
     //
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if COR_JIT_EE_VERSION > 460
     if (!opts.IsReadyToRun() || IsTargetAbi(CORINFO_CORERT_ABI))
     {
         LclVarDsc* newObjArrayArgsVar;
@@ -5317,7 +5304,6 @@ void Compiler::impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
         node = gtNewHelperCallNode(CORINFO_HELP_NEW_MDARR_NONVARARG, TYP_REF, 0, args);
     }
     else
-#endif
     {
         //
         // The varargs helper needs the type and method handles as last
@@ -5941,7 +5927,7 @@ GenTreePtr Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolve
             }
             break;
         }
-#if COR_JIT_EE_VERSION > 460
+
         case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
         {
 #ifdef FEATURE_READYTORUN_COMPILER
@@ -5970,7 +5956,7 @@ GenTreePtr Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolve
 #endif // FEATURE_READYTORUN_COMPILER
         }
         break;
-#endif // COR_JIT_EE_VERSION > 460
+
         default:
         {
             if (!(access & CORINFO_ACCESS_ADDRESS))
@@ -12430,11 +12416,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 /* NEWOBJ does not respond to CONSTRAINED */
                 prefixFlags &= ~PREFIX_CONSTRAINED;
 
-#if COR_JIT_EE_VERSION > 460
                 _impResolveToken(CORINFO_TOKENKIND_NewObj);
-#else
-                _impResolveToken(CORINFO_TOKENKIND_Method);
-#endif
 
                 eeGetCallInfo(&resolvedToken, nullptr /* constraint typeRef*/,
                               addVerifyFlag(combine(CORINFO_CALLINFO_SECURITYCHECKS, CORINFO_CALLINFO_ALLOWINSTPARAM)),
@@ -12921,9 +12903,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             return;
 
                         case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
-#if COR_JIT_EE_VERSION > 460
                         case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
-#endif
                             /* We may be able to inline the field accessors in specific instantiations of generic
                              * methods */
                             compInlineResult->NoteFatal(InlineObservation::CALLSITE_LDFLD_NEEDS_HELPER);
@@ -13154,9 +13134,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     case CORINFO_FIELD_STATIC_RVA_ADDRESS:
                     case CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER:
                     case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
-#if COR_JIT_EE_VERSION > 460
                     case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
-#endif
                         op1 = impImportStaticFieldAccess(&resolvedToken, (CORINFO_ACCESS_FLAGS)aflags, &fieldInfo,
                                                          lclTyp);
                         break;
@@ -13180,19 +13158,17 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                     break;
 
-#if COR_JIT_EE_VERSION > 460
                     case CORINFO_FIELD_INTRINSIC_ISLITTLEENDIAN:
                     {
                         assert(aflags & CORINFO_ACCESS_GET);
 #if BIGENDIAN
                         op1 = gtNewIconNode(0, lclTyp);
 #else
-                        op1 = gtNewIconNode(1, lclTyp);
+                        op1                     = gtNewIconNode(1, lclTyp);
 #endif
                         goto FIELD_DONE;
                     }
                     break;
-#endif
 
                     default:
                         assert(!"Unexpected fieldAccessor");
@@ -13314,10 +13290,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             return;
 
                         case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
-#if COR_JIT_EE_VERSION > 460
                         case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
-#endif
-
                             /* We may be able to inline the field accessors in specific instantiations of generic
                              * methods */
                             compInlineResult->NoteFatal(InlineObservation::CALLSITE_STFLD_NEEDS_HELPER);
@@ -13436,9 +13409,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     case CORINFO_FIELD_STATIC_RVA_ADDRESS:
                     case CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER:
                     case CORINFO_FIELD_STATIC_GENERICS_STATIC_HELPER:
-#if COR_JIT_EE_VERSION > 460
                     case CORINFO_FIELD_STATIC_READYTORUN_HELPER:
-#endif
                         op1 = impImportStaticFieldAccess(&resolvedToken, (CORINFO_ACCESS_FLAGS)aflags, &fieldInfo,
                                                          lclTyp);
                         break;
@@ -18363,9 +18334,7 @@ bool Compiler::IsMathIntrinsic(GenTreePtr tree)
 //     can enable further devirtualization. We currently reinvoke this
 //     code after inlining, if the return value of the inlined call is
 //     the 'this obj' of a subsequent virtual call.
-
-#if COR_JIT_EE_VERSION > 460
-
+//
 void Compiler::impDevirtualizeCall(GenTreeCall*            call,
                                    GenTreePtr              thisObj,
                                    CORINFO_CALL_INFO*      callInfo,
@@ -18636,16 +18605,3 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     }
 #endif // defined(DEBUG)
 }
-
-#else
-
-// Stubbed out implementation for 4.6 compatjit
-void Compiler::impDevirtualizeCall(GenTreeCall*            call,
-                                   GenTreePtr              thisObj,
-                                   CORINFO_CALL_INFO*      callInfo,
-                                   CORINFO_CONTEXT_HANDLE* exactContextHandle)
-{
-    return;
-}
-
-#endif // COR_JIT_EE_VERSION > 460
