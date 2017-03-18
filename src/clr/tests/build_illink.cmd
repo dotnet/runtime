@@ -1,4 +1,4 @@
-if not defined _echo @echo off
+@if not defined _echo @echo off
 setlocal
 set rid=win10-x64
 
