@@ -24,7 +24,7 @@ namespace System.Diagnostics
         {
             private const string EnvVar_DebugWriteToStdErr = "COMPlus_DebugWriteToStdErr";
             private static readonly bool s_shouldWriteToStdErr = 
-                Environment.GetEnvironmentVariable(EnvVar_DebugWriteToStdErr) == "1";
+                Internal.Runtime.Augments.EnvironmentAugments.GetEnvironmentVariable(EnvVar_DebugWriteToStdErr) == "1";
 
             public void ShowAssertDialog(string stackTrace, string message, string detailMessage)
             {
