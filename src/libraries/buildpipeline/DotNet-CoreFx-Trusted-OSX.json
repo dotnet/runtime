@@ -173,7 +173,7 @@
       },
       "inputs": {
         "filename": "$(Agent.BuildDirectory)/s/corefx/publish-packages.sh",
-        "arguments": "-AzureAccount=$(PB_CloudDropAccountName) -AzureToken=$(CloudDropAccessToken) -Container=$(PB_Label) -- /p:OverwriteOnPublish=true",
+        "arguments": "-AzureAccount=$(PB_CloudDropAccountName) -AzureToken=$(CloudDropAccessToken) -Container=$(PB_Label) -- /p:OverwriteOnPublish=false",
         "workingFolder": "$(Agent.BuildDirectory)/s/corefx/",
         "failOnStandardError": "false"
       }

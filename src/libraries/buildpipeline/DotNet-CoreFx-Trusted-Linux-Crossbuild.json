@@ -209,7 +209,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "exec $(PB_DockerContainerName) $(PB_GitDirectory)/publish-packages.sh -AzureAccount=$(PB_CloudDropAccountName) -AzureToken=$(CloudDropAccessToken) -Container=$(PB_Label) -verbose -- /p:OverwriteOnPublish=true",
+        "arguments": "exec $(PB_DockerContainerName) $(PB_GitDirectory)/publish-packages.sh -AzureAccount=$(PB_CloudDropAccountName) -AzureToken=$(CloudDropAccessToken) -Container=$(PB_Label) -verbose -- /p:OverwriteOnPublish=false",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
