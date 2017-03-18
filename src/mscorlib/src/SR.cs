@@ -957,4 +957,22 @@ internal static class SR
 
     internal static string NotSupported_AbstractNonCLS =>
         Environment.GetResourceString("NotSupported_AbstractNonCLS");
+
+    internal static string Serialization_InsufficientState =>
+        Environment.GetResourceString("Serialization_InsufficientState");
+
+    internal static string Serialization_BadParameterInfo =>
+        Environment.GetResourceString("Serialization_BadParameterInfo");
+
+    internal static string Serialization_NoParameterInfo =>
+        Environment.GetResourceString("Serialization_NoParameterInfo");
+
+    internal static string InvalidFilterCriteriaException_CritString =>
+        Environment.GetResourceString("InvalidFilterCriteriaException_CritString");
+
+    internal static string NotSupported_NoTypeInfo =>
+        Environment.GetResourceString("NotSupported_NoTypeInfo");
+
+    internal static string PlatformNotSupported_ReflectionOnly =>
+        Environment.GetResourceString("PlatformNotSupported_ReflectionOnly");
 }
