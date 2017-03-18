@@ -64,9 +64,6 @@ namespace System.Net.Sockets
         // Bool marked true if the native socket option IP_PKTINFO or IPV6_PKTINFO has been set.
         private bool _receivingPacketInformation;
 
-        // These members are to cache permission checks.
-        private Internals.SocketAddress _permittedRemoteAddress;
-
         private static object s_internalSyncObject;
         private int _closeTimeout = Socket.DefaultCloseTimeout;
         private int _intCleanedUp; // 0 if not completed, > 0 otherwise.
@@ -695,24 +692,13 @@ namespace System.Net.Sockets
             }
 
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"localEP:{localEP}");
-            EndPoint endPointSnapshot = localEP;
-            IPEndPoint ipSnapshot = localEP as IPEndPoint;
-
-            // For now security is implemented only on IPEndPoint.
-            // If EndPoint is of any other type, unmanaged code permission is demanded.
-            if (ipSnapshot != null)
-            {
-                // Take a snapshot that will make it immutable and not derived.
-                ipSnapshot = ipSnapshot.Snapshot();
-                endPointSnapshot = RemapIPEndPoint(ipSnapshot);
-
-                // NB: if local port is 0, then winsock will assign some port > 1024,
-                //     which is assumed to be safe.
-            }
 
             // Ask the EndPoint to generate a SocketAddress that we can pass down to native code.
-            Internals.SocketAddress socketAddress = CallSerializeCheckDnsEndPoint(endPointSnapshot);
+            EndPoint endPointSnapshot = localEP;
+            Internals.SocketAddress socketAddress = SnapshotAndSerialize(ref endPointSnapshot);
+
             DoBind(endPointSnapshot, socketAddress);
+
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
@@ -826,9 +812,8 @@ namespace System.Net.Sockets
 
             ValidateForMultiConnect(isMultiEndpoint: false);
 
-            // This will check the permissions for connect
             EndPoint endPointSnapshot = remoteEP;
-            Internals.SocketAddress socketAddress = CheckCacheRemote(ref endPointSnapshot, true);
+            Internals.SocketAddress socketAddress = SnapshotAndSerialize(ref endPointSnapshot);
 
             if (!Blocking)
             {
@@ -1003,8 +988,6 @@ namespace System.Net.Sockets
             }
 
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"backlog:{backlog}");
-
-            // No access permissions are necessary here because the verification is done for Bind.
 
             // This may throw ObjectDisposedException.
             SocketError errorCode = SocketPal.Listen(_handle, backlog);
@@ -1328,9 +1311,8 @@ namespace System.Net.Sockets
             ValidateBlockingMode();
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SRC:{LocalEndPoint} size:{size} remoteEP:{remoteEP}");
 
-            // CheckCacheRemote will check ConnectPermission for remoteEP.
             EndPoint endPointSnapshot = remoteEP;
-            Internals.SocketAddress socketAddress = CheckCacheRemote(ref endPointSnapshot, false);
+            Internals.SocketAddress socketAddress = SnapshotAndSerialize(ref endPointSnapshot);
 
             // This can throw ObjectDisposedException.
             int bytesTransferred;
@@ -2835,9 +2817,8 @@ namespace System.Net.Sockets
                 throw new ArgumentOutOfRangeException(nameof(size));
             }
 
-            // This will check the permissions for connect.
             EndPoint endPointSnapshot = remoteEP;
-            Internals.SocketAddress socketAddress = CheckCacheRemote(ref endPointSnapshot, false);
+            Internals.SocketAddress socketAddress = SnapshotAndSerialize(ref endPointSnapshot);
 
             // Set up the async result and indicate to flow the context.
             OverlappedAsyncResult asyncResult = new OverlappedAsyncResult(this, state, callback);
@@ -3943,7 +3924,7 @@ namespace System.Net.Sockets
                 throw new InvalidOperationException(SR.net_sockets_mustnotlisten);
             }
 
-            // Check permissions for connect and prepare SocketAddress.
+            // Prepare SocketAddress.
             EndPoint endPointSnapshot = e.RemoteEndPoint;
             DnsEndPoint dnsEP = endPointSnapshot as DnsEndPoint;
 
@@ -3975,7 +3956,7 @@ namespace System.Net.Sockets
                     throw new NotSupportedException(SR.net_invalidversion);
                 }
 
-                e._socketAddress = CheckCacheRemote(ref endPointSnapshot, false);
+                e._socketAddress = SnapshotAndSerialize(ref endPointSnapshot);
 
                 // Do wildcard bind if socket not bound.
                 if (_rightEndPoint == null)
@@ -4385,9 +4366,9 @@ namespace System.Net.Sockets
                 throw new ArgumentNullException(nameof(RemoteEndPoint));
             }
 
-            // Check permissions for connect and prepare SocketAddress
+            // Prepare SocketAddress
             EndPoint endPointSnapshot = e.RemoteEndPoint;
-            e._socketAddress = CheckCacheRemote(ref endPointSnapshot, false);
+            e._socketAddress = SnapshotAndSerialize(ref endPointSnapshot);
 
             // Prepare for the native call.
             e.StartOperationCommon(this);
@@ -4483,27 +4464,22 @@ namespace System.Net.Sockets
 
         private Internals.SocketAddress SnapshotAndSerialize(ref EndPoint remoteEP)
         {
-            IPEndPoint ipSnapshot = remoteEP as IPEndPoint;
-
-            if (ipSnapshot != null)
+            if (remoteEP is IPEndPoint ipSnapshot)
             {
+                // Snapshot to avoid external tampering and malicious derivations if IPEndPoint.
                 ipSnapshot = ipSnapshot.Snapshot();
+
+                // DualMode: return an IPEndPoint mapped to an IPv6 address.
                 remoteEP = RemapIPEndPoint(ipSnapshot);
             }
-
-            return CallSerializeCheckDnsEndPoint(remoteEP);
-        }
-
-        // Give a nicer exception for DnsEndPoint in cases where it is not supported.
-        private Internals.SocketAddress CallSerializeCheckDnsEndPoint(EndPoint remoteEP)
-        {
-            if (remoteEP is DnsEndPoint)
+            else if (remoteEP is DnsEndPoint)
             {
                 throw new ArgumentException(SR.Format(SR.net_sockets_invalid_dnsendpoint, nameof(remoteEP)), nameof(remoteEP));
             }
 
             return IPEndPointExtensions.Serialize(remoteEP);
         }
+
 
         // DualMode: automatically re-map IPv4 addresses to IPv6 addresses.
         private IPEndPoint RemapIPEndPoint(IPEndPoint input)
@@ -4513,40 +4489,6 @@ namespace System.Net.Sockets
                 return new IPEndPoint(input.Address.MapToIPv6(), input.Port);
             }
             return input;
-        }
-
-        // A socketAddress must always be the result of remoteEP.Serialize().
-        private Internals.SocketAddress CheckCacheRemote(ref EndPoint remoteEP, bool isOverwrite)
-        {
-            IPEndPoint ipSnapshot = remoteEP as IPEndPoint;
-
-            if (ipSnapshot != null)
-            {
-                // Snapshot to avoid external tampering and malicious derivations if IPEndPoint.
-                ipSnapshot = ipSnapshot.Snapshot();
-
-                // DualMode: Do the security check on the user input address, but return an IPEndPoint 
-                // mapped to an IPv6 address.
-                remoteEP = RemapIPEndPoint(ipSnapshot);
-            }
-
-            // This doesn't use SnapshotAndSerialize() because we need the ipSnapshot later.
-            Internals.SocketAddress socketAddress = CallSerializeCheckDnsEndPoint(remoteEP);
-
-            // We remember the first peer with which we have communicated.
-            Internals.SocketAddress permittedRemoteAddress = _permittedRemoteAddress;
-            if (permittedRemoteAddress != null && permittedRemoteAddress.Equals(socketAddress))
-            {
-                return permittedRemoteAddress;
-            }
-
-            // Cache only the first peer with which we communicated.
-            if (_permittedRemoteAddress == null || isOverwrite)
-            {
-                _permittedRemoteAddress = socketAddress;
-            }
-
-            return socketAddress;
         }
 
         internal static void InitializeSockets()
@@ -4985,9 +4927,8 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
 
-            // This will check the permissions for connect.
             EndPoint endPointSnapshot = remoteEP;
-            Internals.SocketAddress socketAddress = flowContext ? CheckCacheRemote(ref endPointSnapshot, true) : SnapshotAndSerialize(ref endPointSnapshot);
+            Internals.SocketAddress socketAddress = SnapshotAndSerialize(ref endPointSnapshot);
 
             // The socket must be bound first.
             // The calling method--BeginConnect--will ensure that this method is only
@@ -5168,8 +5109,7 @@ namespace System.Net.Sockets
             {
                 EndPoint endPoint = new IPEndPoint(currentAddressSnapshot, context._port);
 
-                // Do the necessary security demand.
-                context._socket.CheckCacheRemote(ref endPoint, true);
+                context._socket.SnapshotAndSerialize(ref endPoint);
 
                 IAsyncResult connectResult = context._socket.UnsafeBeginConnect(endPoint, CachedMultipleAddressConnectCallback, context);
                 if (connectResult.CompletedSynchronously)
