@@ -18,6 +18,9 @@
     <LibBinDir Condition="$(PackageTargetRuntime.EndsWith('-aot'))">$(UAPAOTPackageRuntimePath)</LibBinDir>
 
     <NETStandardVersion>2.0</NETStandardVersion>
+
+    <!-- Include symbols in package by default-->
+    <IncludeSymbolsInPackage Condition="'$(IncludeSymbolsInPackage)' == ''">true</IncludeSymbolsInPackage>
   </PropertyGroup>
 
   <Import Condition="'$(PackageTargetRuntime)' == ''" Project="$(RefBinDir)\*.props" />
