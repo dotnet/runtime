@@ -5,6 +5,7 @@
 #pragma once
 
 #include "pal_types.h"
+#include "pal_errno.h"
 #include <stdio.h>
 #include <dirent.h>
 #include <sys/types.h>

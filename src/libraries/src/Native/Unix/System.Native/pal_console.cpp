@@ -4,10 +4,12 @@
 
 #include "pal_config.h"
 #include "pal_console.h"
+#include "pal_io.h"
 #include "pal_utilities.h"
 
 #include <assert.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <pthread.h>
 #include <signal.h>
 #include <stdio.h>
@@ -430,7 +432,7 @@ static bool InitializeSignalHandling()
     // thread.  We can't do anything interesting in the signal handler,
     // so we instead send a message to another thread that'll do
     // the handling work.
-    if (pipe(g_signalPipe) != 0)
+    if (SystemNative_Pipe(g_signalPipe, PAL_O_CLOEXEC) != 0)
     {
         return false;
     }
