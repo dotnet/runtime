@@ -28,7 +28,14 @@ namespace System.Reflection
         public virtual object[] GetCustomAttributes(bool inherit) { throw NotImplemented.ByDesign; }
         public virtual object[] GetCustomAttributes(Type attributeType, bool inherit) { throw NotImplemented.ByDesign; }
 
-        public MethodInfo GetMethod(string name) => GetMethod(name, null);
+        public MethodInfo GetMethod(string name)
+        {
+            if (name == null)
+                throw new ArgumentNullException(nameof(name));
+
+            return GetMethodImpl(name, Module.DefaultLookup, null, CallingConventions.Any, null, null);
+        }
+
         public MethodInfo GetMethod(string name, Type[] types) => GetMethod(name, Module.DefaultLookup, null, CallingConventions.Any, types, null);
         public MethodInfo GetMethod(string name, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
         {
