@@ -1584,10 +1584,28 @@ namespace System.Linq.Expressions.Tests
         [Theory, ClassData(typeof(CompilationTypes))]
         public static void ArrayTypeArrayAllowed(bool useInterpreter)
         {
-            Array arr = new[] {1, 2, 3};
+            Array arr = new[] { 1, 2, 3 };
             Func<int> func =
                 Expression.Lambda<Func<int>>(Expression.ArrayLength(Expression.Constant(arr))).Compile(useInterpreter);
             Assert.Equal(3, func());
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void ArrayExplicitlyTypeArrayNotAllowed(bool useInterpreter)
+        {
+            Array arr = new[] { 1, 2, 3 };
+            Expression arrayExpression = Expression.Constant(arr, typeof(Array));
+            Assert.Throws<ArgumentException>("array", () => Expression.ArrayLength(arrayExpression));
+        }
+
+        [Fact]
+        public static void ArrayTypeArrayNotAllowedIfNotSZArray()
+        {
+            Array arr = new[,] { { 1, 2, 3 }, { 1, 2, 2 } };
+            Assert.Throws<ArgumentException>("array", () => Expression.ArrayLength(Expression.Constant(arr)));
+
+            arr = Array.CreateInstance(typeof(int), new[] { 3 }, new[] { -1 });
+            Assert.Throws<ArgumentException>("array", () => Expression.ArrayLength(Expression.Constant(arr)));
         }
 
         [Fact]

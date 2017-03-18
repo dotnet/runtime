@@ -1076,7 +1076,7 @@ namespace System.Linq.Expressions.Compiler
             Debug.Assert(arrayType != null);
             Debug.Assert(arrayType.IsArray);
 
-            if (arrayType.IsVector())
+            if (arrayType.IsSZArray)
             {
                 il.Emit(OpCodes.Newarr, arrayType.GetElementType());
             }
