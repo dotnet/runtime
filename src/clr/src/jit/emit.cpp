@@ -4502,7 +4502,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     //
     if (emitComp->fgHaveProfileData())
     {
-        if (emitComp->fgCalledWeight > (BB_VERY_HOT_WEIGHT * emitComp->fgNumProfileRuns))
+        if (emitComp->fgCalledCount > (BB_VERY_HOT_WEIGHT * emitComp->fgProfileRunsCount()))
         {
             allocMemFlag = CORJIT_ALLOCMEM_FLG_16BYTE_ALIGN;
         }

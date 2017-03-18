@@ -518,8 +518,11 @@ struct BasicBlock : private LIR::Range
 
     weight_t bbWeight; // The dynamic execution weight of this block
 
+    // getCalledCount -- get the value used to normalize weights for this method
+    weight_t getCalledCount(Compiler* comp);
+
     // getBBWeight -- get the normalized weight of this block
-    unsigned getBBWeight(Compiler* comp);
+    weight_t getBBWeight(Compiler* comp);
 
     // hasProfileWeight -- Returns true if this block's weight came from profile data
     bool hasProfileWeight() const
@@ -530,7 +533,7 @@ struct BasicBlock : private LIR::Range
     // setBBWeight -- if the block weight is not derived from a profile,
     // then set the weight to the input weight, making sure to not overflow BB_MAX_WEIGHT
     // Note to set the weight from profile data, instead use setBBProfileWeight
-    void setBBWeight(unsigned weight)
+    void setBBWeight(weight_t weight)
     {
         if (!hasProfileWeight())
         {
@@ -548,7 +551,7 @@ struct BasicBlock : private LIR::Range
 
     // modifyBBWeight -- same as setBBWeight, but also make sure that if the block is rarely run, it stays that
     // way, and if it's not rarely run then its weight never drops below 1.
-    void modifyBBWeight(unsigned weight)
+    void modifyBBWeight(weight_t weight)
     {
         if (this->bbWeight != BB_ZERO_WEIGHT)
         {
