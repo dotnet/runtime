@@ -107,7 +107,7 @@ namespace System.Linq.Expressions.Tests
             typeBuild.DefineProperty("Item", PropertyAttributes.None, typeof(int), new[] { typeof(int) });
 
             TypeInfo info = typeBuild.CreateTypeInfo();
-            Type type = info.AsType();
+            Type type = info;
             PropertyInfo prop = info.DeclaredProperties.First();
             Expression instance = Expression.Default(type);
             Assert.Throws<ArgumentException>("indexer", () => Expression.Property(instance, prop, Expression.Constant(0)));
@@ -138,7 +138,7 @@ namespace System.Linq.Expressions.Tests
             property.SetGetMethod(getter);
 
             TypeInfo info = typeBuild.CreateTypeInfo();
-            Type type = info.AsType();
+            Type type = info;
             PropertyInfo prop = type.GetProperties()[0];
             Expression instance = Expression.Default(type);
             Assert.Throws<ArgumentException>("indexer", () => Expression.Property(instance, prop, Expression.Constant(0)));
@@ -166,7 +166,7 @@ namespace System.Linq.Expressions.Tests
             property.SetGetMethod(getter);
 
             TypeInfo info = typeBuild.CreateTypeInfo();
-            Type type = info.AsType();
+            Type type = info;
             PropertyInfo prop = type.GetProperties()[0];
             Expression instance = Expression.Default(type);
             Assert.Throws<ArgumentException>("indexer", () => Expression.Property(instance, prop, Expression.Constant(0)));
@@ -194,7 +194,7 @@ namespace System.Linq.Expressions.Tests
             property.SetGetMethod(getter);
 
             TypeInfo info = typeBuild.CreateTypeInfo();
-            Type type = info.AsType();
+            Type type = info;
             PropertyInfo prop = type.GetProperties()[0];
             Expression instance = Expression.Default(type);
             Assert.Throws<ArgumentException>("indexer", () => Expression.Property(instance, prop, Expression.Constant(0)));
@@ -222,7 +222,7 @@ namespace System.Linq.Expressions.Tests
             property.SetSetMethod(setter);
 
             TypeInfo info = typeBuild.CreateTypeInfo();
-            Type type = info.AsType();
+            Type type = info;
             PropertyInfo prop = type.GetProperties()[0];
             Expression instance = Expression.Default(type);
             Assert.Throws<ArgumentException>("indexer", () => Expression.Property(instance, prop, Expression.Constant(0)));
@@ -250,7 +250,7 @@ namespace System.Linq.Expressions.Tests
             property.SetSetMethod(setter);
 
             TypeInfo info = typeBuild.CreateTypeInfo();
-            Type type = info.AsType();
+            Type type = info;
             PropertyInfo prop = type.GetProperties()[0];
             Expression instance = Expression.Default(type);
             Assert.Throws<ArgumentException>("indexer", () => Expression.Property(instance, prop, Expression.Constant(0)));
@@ -278,7 +278,7 @@ namespace System.Linq.Expressions.Tests
             property.SetSetMethod(setter);
 
             TypeInfo info = typeBuild.CreateTypeInfo();
-            Type type = info.AsType();
+            Type type = info;
             PropertyInfo prop = type.GetProperties()[0];
             Expression instance = Expression.Default(type);
             Assert.Throws<ArgumentException>("indexer", () => Expression.Property(instance, prop, Expression.Constant(0)));
@@ -318,7 +318,7 @@ namespace System.Linq.Expressions.Tests
             property.SetSetMethod(setter);
 
             TypeInfo info = typeBuild.CreateTypeInfo();
-            Type type = info.AsType();
+            Type type = info;
             PropertyInfo prop = type.GetProperties()[0];
             Expression instance = Expression.Default(type);
             Assert.Throws<ArgumentException>("indexer", () => Expression.Property(instance, prop, Expression.Constant(0)));
@@ -346,7 +346,7 @@ namespace System.Linq.Expressions.Tests
             property.SetSetMethod(setter);
 
             TypeInfo info = typeBuild.CreateTypeInfo();
-            Type type = info.AsType();
+            Type type = info;
             PropertyInfo prop = type.GetProperties()[0];
             Expression instance = Expression.Default(type);
             Assert.Throws<ArgumentException>("indexer", () => Expression.Property(instance, prop, Expression.Constant(0)));
@@ -386,7 +386,7 @@ namespace System.Linq.Expressions.Tests
             property.SetSetMethod(setter);
 
             TypeInfo info = typeBuild.CreateTypeInfo();
-            Type type = info.AsType();
+            Type type = info;
             PropertyInfo prop = type.GetProperties()[0];
             Expression instance = Expression.Default(type);
             Assert.Throws<ArgumentException>("indexer", () => Expression.Property(instance, prop, Expression.Constant(0)));
@@ -426,7 +426,7 @@ namespace System.Linq.Expressions.Tests
             property.SetSetMethod(setter);
 
             TypeInfo info = typeBuild.CreateTypeInfo();
-            Type type = info.AsType();
+            Type type = info;
             PropertyInfo prop = type.GetProperties()[0];
             Expression instance = Expression.Default(type);
             Assert.Throws<ArgumentException>("indexer", () => Expression.Property(instance, prop, Expression.Constant(0), Expression.Constant(0), Expression.Constant(0)));
@@ -456,7 +456,7 @@ namespace System.Linq.Expressions.Tests
             property.SetGetMethod(getter);
 
             TypeInfo info = typeBuild.CreateTypeInfo();
-            Type type = info.AsType();
+            Type type = info;
             PropertyInfo prop = type.GetProperties()[0];
             Expression instance = Expression.Default(type);
             Assert.Throws<ArgumentException>("indexer", () => Expression.Property(instance, prop, Expression.Constant(0), Expression.Constant(0), Expression.Constant(0)));
@@ -493,7 +493,7 @@ namespace System.Linq.Expressions.Tests
             property.SetGetMethod(getter);
 
             TypeInfo info = typeBuild.CreateTypeInfo();
-            Type type = info.AsType();
+            Type type = info;
             PropertyInfo prop = type.GetProperties()[0];
             Expression instance = Expression.Default(type);
             Assert.Throws<ArgumentException>(() => Expression.Property(instance, prop, Expression.Constant(0)));
@@ -521,7 +521,7 @@ namespace System.Linq.Expressions.Tests
             property.SetGetMethod(getter);
 
             TypeInfo info = typeBuild.CreateTypeInfo();
-            Type type = info.AsType();
+            Type type = info;
             PropertyInfo prop = type.GetProperties()[0];
             Expression instance = Expression.Default(type);
             Assert.Throws<ArgumentException>("indexes[0]", () => Expression.Property(instance, prop, Expression.Constant(0)));

@@ -52,10 +52,6 @@
     <ReferenceFromRuntime Include="netstandard" />
   </ItemGroup>
   <ItemGroup>
-    <!-- Remove this when TypeBuilder extends TypeInfo. See https://github.com/dotnet/corefx/issues/14334 -->
-    <Compile Include="$(CommonTestPath)\System\TypeBuilderExtensions.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <AdditionalCodeCoverageAssemblies Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
