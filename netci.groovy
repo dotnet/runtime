@@ -325,10 +325,6 @@ def static getJobName(def configuration, def architecture, def os, def scenario,
                 // we don't care about the configuration for the formatting job. It runs all configs
                 baseName = architecture.toLowerCase() + '_' + os.toLowerCase()
             }
-            else if (scenario == 'illink') {
-                // Identify that the job ran post-illink
-                baseName = architecture.toLowerCase() + '_' + configuration.toLowerCase() + '_' + os.toLowerCase() + '_illink'
-            }
             else {
                 baseName = architecture.toLowerCase() + '_' + configuration.toLowerCase() + '_' + os.toLowerCase()
             }
@@ -624,8 +620,9 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
         case 'illink':
             // Testing on other operating systems TBD
             assert (os == 'Windows_NT')
-            assert (architecture == 'x64' || architecture == 'x86' || architecture == 'x86compatjit')
-            Utilities.addPeriodicTrigger(job, '@daily')
+            if (architecture == 'x64' || architecture == 'x86') {
+                Utilities.addPeriodicTrigger(job, '@daily')
+            }
 	    break
 
         default:
@@ -999,7 +996,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                                "(?i).*test\\W+${os}\\W+${architecture}\\W+${scenario}.*")
                             break
                         case 'illink':
-                            Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} via ILLink", "(?i).*test\\W+illink\\W+${os}\\W+${configuration}\\W+${scenario}.*")
+                            Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} via ILLink", "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+${scenario}.*")
     			            break
                         default:
                             println("Unknown scenario: ${scenario}");
@@ -1260,7 +1257,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                        "(?i).*test\\W+${os}\\W+${architecture}\\W+${scenario}.*")
                     break
                 case 'illink':
-                    Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} via ILLink", "(?i).*test\\W+illink\\W+${os}\\W+${configuration}\\W+${scenario}.*")
+                    Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} via ILLink", "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+${scenario}.*")
                     break
                 default:
                     println("Unknown scenario: ${os} ${architecture} ${scenario}");
@@ -1399,7 +1396,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                        "(?i).*test\\W+${os}\\W+${arch}\\W+${jit}\\W+${configuration}\\W+${scenario}.*")
                     break
                 case 'illink':
-                    Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} via ILLink", "(?i).*test\\W+illink\\W+${os}\\W+${configuration}\\W+${scenario}.*")
+                    Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} via ILLink", "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}\\W+${scenario}.*")
                     break
                 default:
                     println("Unknown scenario: ${os} ${arch} ${jit} ${scenario}");
@@ -1436,12 +1433,9 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         buildOpts = 'compatjitcrossgen skiptests'
                     }
 
-                    // build_illink.cmd performs the following tasks:
-                    // - Clone and build illink for netcoreapp2.0
-                    // - sets ILLINK=<path to illink.exe> in the environment.
+                    def illinkArch = (architecture == 'x86compatjit') ? 'x86' : architecture
                     if (scenario == 'illink') {
-                        def illinkArgs = (architecture == 'x86compatjit') ? 'x86' : architecture
-                        buildCommands += "tests\\build_illink.cmd clone setenv ${illinkArgs}"
+                        buildCommands += "tests\\build_illink.cmd clone ${illinkArch}"
                     }
 
                     if (Constants.jitStressModeScenarios.containsKey(scenario) ||
@@ -1562,7 +1556,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
 
                         if (scenario == 'illink')
                         {
-                            illinkArguments = 'link %ILLINK%'
+                            illinkArguments = "link %WORKSPACE%\\linker\\linker\\bin\\netcore_Relase\\netcoreapp2.0\\win10-${illinkArch}\\publish\\illink.exe"
                         }
 
                         runtestArguments = "${lowerConfiguration} ${arch} ${gcstressStr} ${crossgenStr} ${runcrossgentestsStr} ${runjitstressStr} ${runjitstressregsStr} ${runjitmioptsStr} ${runjitforcerelocsStr} ${runjitdisasmStr} ${gcTestArguments} ${illinkArguments} collectdumps"
