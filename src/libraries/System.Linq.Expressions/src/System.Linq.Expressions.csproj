@@ -9,7 +9,7 @@
     <ProjectGuid>{AEF718E9-D4FC-418F-A7AE-ED6B2C7B3787}</ProjectGuid>
     <AssemblyName>System.Linq.Expressions</AssemblyName>
     <RootNamespace>System.Linq.Expressions</RootNamespace>
-    <IsInterpreting Condition="'$(TargetGroup)' == 'uap'">true</IsInterpreting>
+    <IsInterpreting Condition="'$(TargetGroup)' == 'uapaot'">true</IsInterpreting>
     <DefineConstants Condition=" '$(IsInterpreting)' != 'true' ">$(DefineConstants);FEATURE_COMPILE</DefineConstants>
     <DefineConstants Condition=" '$(FeatureInterpret)' == 'true' ">$(DefineConstants);FEATURE_INTERPRET</DefineConstants>
   </PropertyGroup>
