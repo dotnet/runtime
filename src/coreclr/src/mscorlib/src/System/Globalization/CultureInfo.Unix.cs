@@ -15,6 +15,9 @@ namespace System.Globalization
 
         internal static CultureInfo GetUserDefaultCulture()
         {
+            if (GlobalizationMode.Invariant)
+                return CultureInfo.InvariantCulture;
+
             CultureInfo cultureInfo = null;
             string localeName;
             if (CultureData.GetDefaultLocaleName(out localeName))

@@ -560,6 +560,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Globalization\CharUnicodeInfoData.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\ChineseLunisolarCalendar.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\CompareInfo.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\CompareInfo.Invariant.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\CultureData.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\CultureInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\CultureNotFoundException.cs" />
@@ -572,6 +573,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Globalization\DateTimeStyles.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\DigitShapes.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\EastAsianLunisolarCalendar.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\GregorianCalendar.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\GregorianCalendarHelper.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\GregorianCalendarTypes.cs" />
@@ -613,6 +615,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Globalization\CompareInfo.Unix.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\CultureData.Unix.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\CultureInfo.Unix.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.Unix.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\TextInfo.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' != 'true'">
@@ -620,6 +623,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Globalization\CompareInfo.Windows.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\CultureData.Windows.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\CultureInfo.Windows.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.Windows.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\HijriCalendar.Win32.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\IdnMapping.Windows.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\JapaneseCalendar.Win32.cs" />
@@ -635,6 +639,7 @@
     <Compile Include="$(BclSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Calendar.cs" />
     <Compile Include="$(BclSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Casing.cs" />
     <Compile Include="$(BclSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Collation.cs" />
+    <Compile Include="$(BclSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.ICU.cs" />
     <Compile Include="$(BclSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Idna.cs" />
     <Compile Include="$(BclSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Locale.cs" />
     <Compile Include="$(BclSourcesRoot)\Interop\Unix\System.Globalization.Native\Interop.Normalization.cs" />

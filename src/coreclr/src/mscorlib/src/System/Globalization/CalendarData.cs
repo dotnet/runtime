@@ -101,6 +101,8 @@ namespace System.Globalization
         {
             this.bUseUserOverrides = bUseUserOverrides;
 
+            Debug.Assert(!GlobalizationMode.Invariant);
+
             if (!LoadCalendarDataFromSystem(localeName, calendarId))
             {
                 Debug.Assert(false, "[CalendarData] LoadCalendarDataFromSystem call isn't expected to fail for calendar " + calendarId + " locale " + localeName);
