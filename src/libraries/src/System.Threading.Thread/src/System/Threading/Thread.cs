@@ -2,20 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-extern alias System_Runtime_Extensions;
-extern alias System_Security_Principal;
-
 using Internal.Runtime.Augments;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.ConstrainedExecution;
+using System.Security.Principal;
 
 namespace System.Threading
 {
-    using AppDomain = System_Runtime_Extensions::System.AppDomain;
-    using IPrincipal = System_Security_Principal::System.Security.Principal.IPrincipal;
-
     public sealed partial class Thread : CriticalFinalizerObject
     {
         [ThreadStatic]

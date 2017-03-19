@@ -4,8 +4,6 @@
 
 #pragma warning disable CS0067 // events are declared but not used
 
-extern alias System_Security_Principal;
-
 using System;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
@@ -13,12 +11,10 @@ using System.Runtime.ExceptionServices;
 using System.Runtime.Loader;
 #endif
 using System.IO;
+using System.Security.Principal;
 
 namespace System
 {
-    using PrincipalPolicy = System_Security_Principal::System.Security.Principal.PrincipalPolicy;
-    using IPrincipal = System_Security_Principal::System.Security.Principal.IPrincipal;
-
     public partial class AppDomain : MarshalByRefObject
     {
         private static readonly AppDomain s_domain = new AppDomain();
