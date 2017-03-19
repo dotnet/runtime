@@ -9652,8 +9652,14 @@ void          GenTreeUseEdgeIterator::AdvanceCall()
         case CALL_CONTROL_EXPR:
             if (call->gtControlExpr != nullptr)
             {
-                m_advance = call->gtCallType == CT_INDIRECT ? &GenTreeUseEdgeIterator::AdvanceCall<CALL_COOKIE>
-                                                            : &GenTreeUseEdgeIterator::Terminate;
+                if (call->gtCallType == CT_INDIRECT)
+                {
+                    m_advance = &GenTreeUseEdgeIterator::AdvanceCall<CALL_COOKIE>;
+                }
+                else
+                {
+                    m_advance = &GenTreeUseEdgeIterator::Terminate;
+                }
                 m_edge = &call->gtControlExpr;
                 return;
             }
