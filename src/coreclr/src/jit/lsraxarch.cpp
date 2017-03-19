@@ -3056,20 +3056,6 @@ void Lowering::TreeNodeInfoInitCmp(GenTreePtr tree)
     var_types  op1Type = op1->TypeGet();
     var_types  op2Type = op2->TypeGet();
 
-#if !defined(_TARGET_64BIT_)
-    // Long compares will consume GT_LONG nodes, each of which produces two results.
-    // Thus for each long operand there will be an additional source.
-    // TODO-X86-CQ: Mark hiOp2 and loOp2 as contained if it is a constant or a memory op.
-    if (varTypeIsLong(op1Type))
-    {
-        info->srcCount++;
-    }
-    if (varTypeIsLong(op2Type))
-    {
-        info->srcCount++;
-    }
-#endif // !defined(_TARGET_64BIT_)
-
     // If either of op1 or op2 is floating point values, then we need to use
     // ucomiss or ucomisd to compare, both of which support the following form:
     //     ucomis[s|d] xmm, xmm/mem
