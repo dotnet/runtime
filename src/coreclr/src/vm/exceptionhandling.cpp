@@ -21,7 +21,7 @@
 #define USE_CURRENT_CONTEXT_IN_FILTER
 #endif // _TARGET_X86_
 
-#if defined(_TARGET_ARM_) || defined(__TARGET_X86_)
+#if defined(_TARGET_ARM_) || defined(_TARGET_X86_)
 #define VSD_STUB_CAN_THROW_AV
 #endif // _TARGET_ARM_ || _TARGET_X86_
 
