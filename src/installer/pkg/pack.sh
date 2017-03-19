@@ -58,9 +58,9 @@ __msbuild="$__project_dir/Tools/msbuild.sh"
 
 __targets_param=
 if [ "$(uname -s)" == "Darwin" ]; then
-    __targets_param="TargetsOSX=true"
+    __targets_param="OSGroup=OSX"
 else
-    __targets_param="TargetsLinux=true"
+    __targets_param="OSGroup=Linux"
     if [ -z $__distro_rid ]; then
         echo "Runtime Identifier not defined"
         exit 1
@@ -71,6 +71,6 @@ __common_parameters="/p:$__targets_param /p:DistroRid=$__distro_rid /verbosity:m
 
 $__msbuild $__project_dir/tasks/core-setup.tasks.builds $__common_parameters || exit 1
 
-$__msbuild $__project_dir/projects/packages.builds $__common_parameters || exit 1
+$__msbuild $__project_dir/packages.builds $__common_parameters || exit 1
 
 exit 0
