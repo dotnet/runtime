@@ -30766,6 +30766,7 @@ CObjectHeader* gc_heap::allocate_large_object (size_t jsize, int64_t& alloc_byte
     uint8_t*  result = acontext.alloc_ptr;
 
     assert ((size_t)(acontext.alloc_limit - acontext.alloc_ptr) == size);
+    alloc_bytes += size;
 
     CObjectHeader* obj = (CObjectHeader*)result;
 
@@ -30802,7 +30803,6 @@ CObjectHeader* gc_heap::allocate_large_object (size_t jsize, int64_t& alloc_byte
     assert (obj != 0);
     assert ((size_t)obj == Align ((size_t)obj, align_const));
 
-    alloc_bytes += acontext.alloc_bytes;
     return obj;
 }
 
