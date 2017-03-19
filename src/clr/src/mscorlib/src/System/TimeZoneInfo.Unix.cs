@@ -97,6 +97,12 @@ namespace System
 
         private void GetDisplayName(Interop.GlobalizationInterop.TimeZoneDisplayNameType nameType, ref string displayName)
         {
+            if (GlobalizationMode.Invariant)
+            {
+                displayName = _standardDisplayName;
+                return;
+            }
+
             string timeZoneDisplayName;
             bool result = Interop.CallStringMethod(
                 (locale, id, type, stringBuilder) => Interop.GlobalizationInterop.GetTimeZoneDisplayName(

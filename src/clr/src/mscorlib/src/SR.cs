@@ -186,14 +186,29 @@ internal static class SR
         get { return Environment.GetResourceString("Argument_EmptyDecString"); }
     }
 
+    public static string Argument_IdnBadBidi
+    {
+        get { return Environment.GetResourceString("Argument_IdnBadBidi"); }
+    }
+
     public static string Argument_IdnBadLabelSize
     {
         get { return Environment.GetResourceString("Argument_IdnBadLabelSize"); }
     }
 
+    public static string Argument_IdnBadNameSize
+    {
+        get { return Environment.GetResourceString("Argument_IdnBadNameSize"); }
+    }
+
     public static string Argument_IdnBadPunycode
     {
         get { return Environment.GetResourceString("Argument_IdnBadPunycode"); }
+    }
+
+    public static string Argument_IdnBadStd3
+    {
+        get { return Environment.GetResourceString("Argument_IdnBadStd3"); }
     }
 
     public static string Argument_IdnIllegalName

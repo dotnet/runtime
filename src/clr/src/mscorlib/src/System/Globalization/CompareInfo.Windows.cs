@@ -12,24 +12,24 @@ namespace System.Globalization
 {
     public partial class CompareInfo
     {
-        internal unsafe CompareInfo(CultureInfo culture)
-        {
-            _name = culture._name;
-            InitSort(culture);
-        }
-
         private unsafe void InitSort(CultureInfo culture)
         {
             _sortName = culture.SortName;
 
-            const uint LCMAP_SORTHANDLE = 0x20000000;
-
             _name = culture._name;
             _sortName = culture.SortName;
 
-            IntPtr handle;
-            int ret = Interop.Kernel32.LCMapStringEx(_sortName, LCMAP_SORTHANDLE, null, 0, &handle, IntPtr.Size, null, null, IntPtr.Zero);
-            _sortHandle = ret > 0 ? handle : IntPtr.Zero;
+            if (_invariantMode)
+            {
+                _sortHandle = IntPtr.Zero;
+            }
+            else
+            {
+                const uint LCMAP_SORTHANDLE = 0x20000000;
+                IntPtr handle;
+                int ret = Interop.Kernel32.LCMapStringEx(_sortName, LCMAP_SORTHANDLE, null, 0, &handle, IntPtr.Size, null, null, IntPtr.Zero);
+                _sortHandle = ret > 0 ? handle : IntPtr.Zero;
+            }
         }
 
         private static unsafe int FindStringOrdinal(
@@ -41,6 +41,8 @@ namespace System.Globalization
             int cchValue,
             bool bIgnoreCase)
         {
+            Debug.Assert(!GlobalizationMode.Invariant);
+
             fixed (char* pSource = stringSource)
             fixed (char* pValue = value)
             {
@@ -55,16 +57,20 @@ namespace System.Globalization
             }
         }
 
-        internal static int IndexOfOrdinal(string source, string value, int startIndex, int count, bool ignoreCase)
+        internal static int IndexOfOrdinalCore(string source, string value, int startIndex, int count, bool ignoreCase)
         {
+            Debug.Assert(!GlobalizationMode.Invariant);
+
             Debug.Assert(source != null);
             Debug.Assert(value != null);
 
             return FindStringOrdinal(FIND_FROMSTART, source, startIndex, count, value, value.Length, ignoreCase);
         }
 
-        internal static int LastIndexOfOrdinal(string source, string value, int startIndex, int count, bool ignoreCase)
+        internal static int LastIndexOfOrdinalCore(string source, string value, int startIndex, int count, bool ignoreCase)
         {
+            Debug.Assert(!GlobalizationMode.Invariant);
+
             Debug.Assert(source != null);
             Debug.Assert(value != null);
 
@@ -73,6 +79,8 @@ namespace System.Globalization
 
         private unsafe int GetHashCodeOfStringCore(string source, CompareOptions options)
         {
+            Debug.Assert(!_invariantMode);
+
             Debug.Assert(source != null);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
@@ -103,12 +111,16 @@ namespace System.Globalization
 
         private static unsafe int CompareStringOrdinalIgnoreCase(char* string1, int count1, char* string2, int count2)
         {
+            Debug.Assert(!GlobalizationMode.Invariant);
+
             // Use the OS to compare and then convert the result to expected value by subtracting 2 
             return Interop.Kernel32.CompareStringOrdinal(string1, count1, string2, count2, true) - 2;
         }
 
         private unsafe int CompareString(string string1, int offset1, int length1, string string2, int offset2, int length2, CompareOptions options)
         {
+            Debug.Assert(!_invariantMode);
+
             Debug.Assert(string1 != null);
             Debug.Assert(string2 != null);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
@@ -150,6 +162,8 @@ namespace System.Globalization
                     int cchValue,
                     int *pcchFound)
         {
+            Debug.Assert(!_invariantMode);
+
             string localeName = _sortHandle != IntPtr.Zero ? null : _sortName;
 
             fixed (char* pLocaleName = localeName)
@@ -175,6 +189,8 @@ namespace System.Globalization
 
         internal unsafe int IndexOfCore(String source, String target, int startIndex, int count, CompareOptions options, int* matchLengthPtr)
         {
+            Debug.Assert(!_invariantMode);
+
             Debug.Assert(source != null);
             Debug.Assert(target != null);
             Debug.Assert((options & CompareOptions.OrdinalIgnoreCase) == 0);
@@ -216,6 +232,8 @@ namespace System.Globalization
 
         private unsafe int LastIndexOfCore(string source, string target, int startIndex, int count, CompareOptions options)
         {
+            Debug.Assert(!_invariantMode);
+
             Debug.Assert(!string.IsNullOrEmpty(source));
             Debug.Assert(target != null);
             Debug.Assert((options & CompareOptions.OrdinalIgnoreCase) == 0);
@@ -245,6 +263,8 @@ namespace System.Globalization
 
         private unsafe bool StartsWith(string source, string prefix, CompareOptions options)
         {
+            Debug.Assert(!_invariantMode);
+
             Debug.Assert(!string.IsNullOrEmpty(source));
             Debug.Assert(!string.IsNullOrEmpty(prefix));
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
@@ -255,6 +275,8 @@ namespace System.Globalization
 
         private unsafe bool EndsWith(string source, string suffix, CompareOptions options)
         {
+            Debug.Assert(!_invariantMode);
+
             Debug.Assert(!string.IsNullOrEmpty(source));
             Debug.Assert(!string.IsNullOrEmpty(suffix));
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
@@ -352,6 +374,8 @@ namespace System.Globalization
 
         private unsafe SortKey CreateSortKey(String source, CompareOptions options)
         {
+            Debug.Assert(!_invariantMode);
+
             if (source == null) { throw new ArgumentNullException(nameof(source)); }
             Contract.EndContractBlock();
 
@@ -397,6 +421,8 @@ namespace System.Globalization
 
         private static unsafe bool IsSortable(char* text, int length)
         {
+            Debug.Assert(!GlobalizationMode.Invariant);
+
             return Interop.Kernel32.IsNLSDefinedString(Interop.Kernel32.COMPARE_STRING, 0, IntPtr.Zero, text, length);
         }
 
@@ -440,6 +466,8 @@ namespace System.Globalization
 
         private unsafe SortVersion GetSortVersion()
         {
+            Debug.Assert(!_invariantMode);
+
             Interop.Kernel32.NlsVersionInfoEx nlsVersion = new Interop.Kernel32.NlsVersionInfoEx();
             Interop.Kernel32.GetNLSVersionEx(Interop.Kernel32.COMPARE_STRING, _sortName, &nlsVersion);
             return new SortVersion(

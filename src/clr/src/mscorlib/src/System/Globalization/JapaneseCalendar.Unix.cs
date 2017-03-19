@@ -10,6 +10,11 @@ namespace System.Globalization
     {
         private static EraInfo[] GetJapaneseEras()
         {
+            if (GlobalizationMode.Invariant)
+            {
+                return null;
+            }
+
             string[] eraNames;
             if (!CalendarData.EnumCalendarInfo("ja-JP", CalendarId.JAPAN, CalendarDataType.EraNames, out eraNames))
             {
@@ -66,6 +71,8 @@ namespace System.Globalization
 
         private static bool GetJapaneseEraStartDate(int era, out DateTime dateTime)
         {
+            Debug.Assert(!GlobalizationMode.Invariant);
+
             dateTime = default(DateTime);
 
             int startYear;
