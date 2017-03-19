@@ -62,7 +62,7 @@ namespace System.Globalization
         /// </summary>
         private unsafe bool InitCultureData()
         {
-            const int LOCALE_NAME_MAX_LENGTH = 85;
+            Debug.Assert(!GlobalizationMode.Invariant);
 
             const uint LOCALE_ILANGUAGE = 0x00000001;
             const uint LOCALE_INEUTRAL = 0x00000071;
@@ -193,6 +193,8 @@ namespace System.Globalization
 
         internal static unsafe int GetLocaleInfoEx(string lpLocaleName, uint lcType, char* lpLCData, int cchData)
         {
+            Debug.Assert(!GlobalizationMode.Invariant);
+
             return Interop.Kernel32.GetLocaleInfoEx(lpLocaleName, lcType, (IntPtr)lpLCData, cchData);
         }
 
@@ -665,11 +667,15 @@ namespace System.Globalization
 
         private static int LocaleNameToLCID(string cultureName)
         {
+            Debug.Assert(!GlobalizationMode.Invariant);
+
             return Interop.Kernel32.LocaleNameToLCID(cultureName, Interop.Kernel32.LOCALE_ALLOW_NEUTRAL_NAMES);
         }
 
         private static unsafe string LCIDToLocaleName(int culture)
         {
+            Debug.Assert(!GlobalizationMode.Invariant);
+
             char *pBuffer = stackalloc char[Interop.Kernel32.LOCALE_NAME_MAX_LENGTH + 1]; // +1 for the null termination
             int length = Interop.Kernel32.LCIDToLocaleName(culture, pBuffer, Interop.Kernel32.LOCALE_NAME_MAX_LENGTH + 1, Interop.Kernel32.LOCALE_ALLOW_NEUTRAL_NAMES);
 
@@ -718,6 +724,8 @@ namespace System.Globalization
 
         private static CultureInfo[] EnumCultures(CultureTypes types)
         {
+            Debug.Assert(!GlobalizationMode.Invariant);
+            
             uint flags = 0;
 
 #pragma warning disable 618

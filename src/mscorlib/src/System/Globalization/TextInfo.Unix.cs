@@ -14,27 +14,14 @@ namespace System.Globalization
         [NonSerialized]
         private Tristate _needsTurkishCasing = Tristate.NotInitialized;
 
-        //////////////////////////////////////////////////////////////////////////
-        ////
-        ////  TextInfo Constructors
-        ////
-        ////  Implements CultureInfo.TextInfo.
-        ////
-        //////////////////////////////////////////////////////////////////////////
-        internal unsafe TextInfo(CultureData cultureData)
-        {
-            _cultureData = cultureData;
-            _cultureName = _cultureData.CultureName;
-            _textInfoName = _cultureData.STEXTINFO;
-            FinishInitialization(_textInfoName);
-        }
-
         private void FinishInitialization(string textInfoName)
         {
         }
 
         private unsafe string ChangeCase(string s, bool toUpper)
         {
+            Debug.Assert(!_invariantMode);
+
             Debug.Assert(s != null);
 
             if (s.Length == 0)
@@ -79,6 +66,8 @@ namespace System.Globalization
 
         private unsafe char ChangeCase(char c, bool toUpper)
         {
+            Debug.Assert(!_invariantMode);
+
             char dst = default(char);
 
             ChangeCase(&c, 1, &dst, 1, toUpper);
@@ -101,6 +90,8 @@ namespace System.Globalization
 
         internal unsafe void ChangeCase(char* src, int srcLen, char* dstBuffer, int dstBufferCapacity, bool bToUpper)
         {
+            Debug.Assert(!_invariantMode);
+
             if (IsInvariant)
             {
                 Interop.GlobalizationInterop.ChangeCaseInvariant(src, srcLen, dstBuffer, dstBufferCapacity, bToUpper);

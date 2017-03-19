@@ -8,24 +8,14 @@ namespace System.Globalization
 {
     public partial class TextInfo
     {
-        //////////////////////////////////////////////////////////////////////////
-        ////
-        ////  TextInfo Constructors
-        ////
-        ////  Implements CultureInfo.TextInfo.
-        ////
-        //////////////////////////////////////////////////////////////////////////
-        internal unsafe TextInfo(CultureData cultureData)
-        {
-            // This is our primary data source, we don't need most of the rest of this
-            _cultureData = cultureData;
-            _cultureName = _cultureData.CultureName;
-            _textInfoName = _cultureData.STEXTINFO;
-            FinishInitialization(_textInfoName);
-        }
-
         private unsafe void FinishInitialization(string textInfoName)
         {
+            if (_invariantMode)
+            {
+                _sortHandle = IntPtr.Zero;
+                return;
+            }
+
             const uint LCMAP_SORTHANDLE = 0x20000000;
 
             long handle;
@@ -35,6 +25,8 @@ namespace System.Globalization
 
         private unsafe string ChangeCase(string s, bool toUpper)
         {
+            Debug.Assert(!_invariantMode);
+
             Debug.Assert(s != null);
 
             //
@@ -49,44 +41,44 @@ namespace System.Globalization
             {
                 return s;
             }
-            else
+
+            int ret;
+
+            // Check for Invariant to avoid A/V in LCMapStringEx
+            uint linguisticCasing = IsInvariantLocale(_textInfoName) ? 0 : LCMAP_LINGUISTIC_CASING;
+
+            //
+            //  Create the result string.
+            //
+            string result = string.FastAllocateString(nLengthInput);
+
+            fixed (char* pSource = s)
+            fixed (char* pResult = result)
             {
-                int ret;
-
-                // Check for Invariant to avoid A/V in LCMapStringEx
-                uint linguisticCasing = IsInvariantLocale(_textInfoName) ? 0 : LCMAP_LINGUISTIC_CASING;
-
-                //
-                //  Create the result string.
-                //
-                string result = string.FastAllocateString(nLengthInput);
-
-                fixed (char* pSource = s)
-                fixed (char* pResult = result)
-                {
-                    ret = Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _textInfoName,
-                                                        toUpper ? LCMAP_UPPERCASE | linguisticCasing : LCMAP_LOWERCASE | linguisticCasing,
-                                                        pSource,
-                                                        nLengthInput,
-                                                        pResult,
-                                                        nLengthInput,
-                                                        null,
-                                                        null,
-                                                        _sortHandle);
-                }
-
-                if (0 == ret)
-                {
-                    throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
-                }
-
-                Debug.Assert(ret == nLengthInput, "Expected getting the same length of the original string");
-                return result;
+                ret = Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _textInfoName,
+                                                    linguisticCasing | (toUpper ? LCMAP_UPPERCASE : LCMAP_LOWERCASE),
+                                                    pSource,
+                                                    nLengthInput,
+                                                    pResult,
+                                                    nLengthInput,
+                                                    null,
+                                                    null,
+                                                    _sortHandle);
             }
+
+            if (ret == 0)
+            {
+                throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
+            }
+
+            Debug.Assert(ret == nLengthInput, "Expected getting the same length of the original string");
+            return result;
         }
 
         private unsafe char ChangeCase(char c, bool toUpper)
         {
+            Debug.Assert(!_invariantMode);
+
             char retVal = '\0';
 
             // Check for Invariant to avoid A/V in LCMapStringEx

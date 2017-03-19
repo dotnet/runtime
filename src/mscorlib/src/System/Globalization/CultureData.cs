@@ -53,6 +53,7 @@ namespace System.Globalization
     //
     internal partial class CultureData
     {
+        private const int LOCALE_NAME_MAX_LENGTH = 85;
         private const int undef = -1;
 
         // Override flag
@@ -159,7 +160,7 @@ namespace System.Globalization
         // Region Name to Culture Name mapping table
         // (In future would be nice to be in registry or something)
 
-        //Using a property so we avoid creating the dictionary untill we need it
+        //Using a property so we avoid creating the dictionary until we need it
         private static StringStringDictionary RegionNames
         {
             get
@@ -429,8 +430,123 @@ namespace System.Globalization
                 types &= (~CultureTypes.WindowsOnlyCultures);
             }
             
+            if (GlobalizationMode.Invariant)
+            {
+                // in invariant mode we always return invariant culture only from the enumeration
+                return new CultureInfo[1] { new CultureInfo("") };
+            }
+
 #pragma warning restore 618
             return EnumCultures(types);
+        }
+
+        private static CultureData CreateCultureWithInvariantData()
+        {
+            // Make a new culturedata
+            CultureData invariant = new CultureData();
+
+            // Basics
+            // Note that we override the resources since this IS NOT supposed to change (by definition)
+            invariant._bUseOverrides = false;
+            invariant._sRealName = "";                     // Name you passed in (ie: en-US, en, or de-DE_phoneb)
+            invariant._sWindowsName = "";                     // Name OS thinks the object is (ie: de-DE_phoneb, or en-US (even if en was passed in))
+
+            // Identity
+            invariant._sName = "";                     // locale name (ie: en-us)
+            invariant._sParent = "";                     // Parent name (which may be a custom locale/culture)
+            invariant._bNeutral = false;                   // Flags for the culture (ie: neutral or not right now)
+            invariant._sEnglishDisplayName = "Invariant Language (Invariant Country)"; // English pretty name for this locale
+            invariant._sNativeDisplayName = "Invariant Language (Invariant Country)";  // Native pretty name for this locale
+            invariant._sSpecificCulture = "";                     // The culture name to be used in CultureInfo.CreateSpecificCulture()
+
+            // Language
+            invariant._sISO639Language = "iv";                   // ISO 639 Language Name
+            invariant._sISO639Language2 = "ivl";                  // 3 char ISO 639 lang name 2
+            invariant._sLocalizedLanguage = "Invariant Language";   // Display name for this Language
+            invariant._sEnglishLanguage = "Invariant Language";   // English name for this language
+            invariant._sNativeLanguage = "Invariant Language";   // Native name of this language
+            invariant._sAbbrevLang = "IVL";                  // abbreviated language name (Windows Language Name)
+            invariant._sConsoleFallbackName = "";            // The culture name for the console fallback UI culture
+            invariant._iInputLanguageHandle = 0x07F;         // input language handle
+
+            // Region
+            invariant._sRegionName = "IV";                    // (RegionInfo)
+            invariant._sEnglishCountry = "Invariant Country"; // english country name (RegionInfo)
+            invariant._sNativeCountry = "Invariant Country";  // native country name (Windows Only)
+            invariant._sISO3166CountryName = "IV";            // (RegionInfo), ie: US
+            invariant._sISO3166CountryName2 = "ivc";          // 3 char ISO 3166 country name 2 2(RegionInfo)
+            invariant._iGeoId = 244;                          // GeoId (Windows Only)
+
+            // Numbers
+            invariant._sPositiveSign = "+";                    // positive sign
+            invariant._sNegativeSign = "-";                    // negative sign
+            invariant._iDigits = 2;                      // number of fractional digits
+            invariant._iNegativeNumber = 1;                      // negative number format
+            invariant._waGrouping = new int[] { 3 };          // grouping of digits
+            invariant._sDecimalSeparator = ".";                    // decimal separator
+            invariant._sThousandSeparator = ",";                    // thousands separator
+            invariant._sNaN = "NaN";                  // Not a Number
+            invariant._sPositiveInfinity = "Infinity";             // + Infinity
+            invariant._sNegativeInfinity = "-Infinity";            // - Infinity
+
+            // Percent
+            invariant._iNegativePercent = 0;                      // Negative Percent (0-3)
+            invariant._iPositivePercent = 0;                      // Positive Percent (0-11)
+            invariant._sPercent = "%";                    // Percent (%) symbol
+            invariant._sPerMille = "\x2030";               // PerMille symbol
+
+            // Currency
+            invariant._sCurrency = "\x00a4";                // local monetary symbol: for international monetary symbol
+            invariant._sIntlMonetarySymbol = "XDR";                  // international monetary symbol (RegionInfo)
+            invariant._sEnglishCurrency = "International Monetary Fund"; // English name for this currency (Windows Only)
+            invariant._sNativeCurrency = "International Monetary Fund"; // Native name for this currency (Windows Only)
+            invariant._iCurrencyDigits = 2;                      // # local monetary fractional digits
+            invariant._iCurrency = 0;                      // positive currency format
+            invariant._iNegativeCurrency = 0;                      // negative currency format
+            invariant._waMonetaryGrouping = new int[] { 3 };          // monetary grouping of digits
+            invariant._sMonetaryDecimal = ".";                    // monetary decimal separator
+            invariant._sMonetaryThousand = ",";                    // monetary thousands separator
+
+            // Misc
+            invariant._iMeasure = 0;                      // system of measurement 0=metric, 1=US (RegionInfo)
+            invariant._sListSeparator = ",";                    // list separator
+
+            // Time
+            invariant._sTimeSeparator = ":";
+            invariant._sAM1159 = "AM";                   // AM designator
+            invariant._sPM2359 = "PM";                   // PM designator
+            invariant._saLongTimes = new String[] { "HH:mm:ss" };                             // time format
+            invariant._saShortTimes = new String[] { "HH:mm", "hh:mm tt", "H:mm", "h:mm tt" }; // short time format
+            invariant._saDurationFormats = new String[] { "HH:mm:ss" };                             // time duration format
+
+
+            // Calendar specific data
+            invariant._iFirstDayOfWeek = 0;                      // first day of week
+            invariant._iFirstWeekOfYear = 0;                      // first week of year
+            invariant._waCalendars = new CalendarId[] { CalendarId.GREGORIAN };       // all available calendar type(s).  The first one is the default calendar
+
+            // Store for specific data about each calendar
+            invariant._calendars = new CalendarData[CalendarData.MAX_CALENDARS];
+            invariant._calendars[0] = CalendarData.Invariant;
+
+            // Text information
+            invariant._iReadingLayout = 0;
+
+            // These are desktop only, not coreclr
+
+            invariant._iLanguage = CultureInfo.LOCALE_INVARIANT;   // locale ID (0409) - NO sort information
+            invariant._iDefaultAnsiCodePage = 1252;         // default ansi code page ID (ACP)
+            invariant._iDefaultOemCodePage = 437;           // default oem code page ID (OCP or OEM)
+            invariant._iDefaultMacCodePage = 10000;         // default macintosh code page
+            invariant._iDefaultEbcdicCodePage = 037;        // default EBCDIC code page
+            
+            if (GlobalizationMode.Invariant)
+            {
+                invariant._sLocalizedDisplayName = invariant._sNativeDisplayName;
+                invariant._sLocalizedCountry = invariant._sNativeCountry;
+            }
+
+            return invariant;
         }
 
         /////////////////////////////////////////////////////////////////////////
@@ -444,104 +560,8 @@ namespace System.Globalization
             {
                 if (s_Invariant == null)
                 {
-                    // Make a new culturedata
-                    CultureData invariant = new CultureData();
-
-                    // Basics
-                    // Note that we override the resources since this IS NOT supposed to change (by definition)
-                    invariant._bUseOverrides = false;
-                    invariant._sRealName = "";                     // Name you passed in (ie: en-US, en, or de-DE_phoneb)
-                    invariant._sWindowsName = "";                     // Name OS thinks the object is (ie: de-DE_phoneb, or en-US (even if en was passed in))
-
-                    // Identity
-                    invariant._sName = "";                     // locale name (ie: en-us)
-                    invariant._sParent = "";                     // Parent name (which may be a custom locale/culture)
-                    invariant._bNeutral = false;                   // Flags for the culture (ie: neutral or not right now)
-                    invariant._sEnglishDisplayName = "Invariant Language (Invariant Country)"; // English pretty name for this locale
-                    invariant._sNativeDisplayName = "Invariant Language (Invariant Country)";  // Native pretty name for this locale
-                    invariant._sSpecificCulture = "";                     // The culture name to be used in CultureInfo.CreateSpecificCulture()
-
-                    // Language
-                    invariant._sISO639Language = "iv";                   // ISO 639 Language Name
-                    invariant._sISO639Language2 = "ivl";                  // 3 char ISO 639 lang name 2
-                    invariant._sLocalizedLanguage = "Invariant Language";   // Display name for this Language
-                    invariant._sEnglishLanguage = "Invariant Language";   // English name for this language
-                    invariant._sNativeLanguage = "Invariant Language";   // Native name of this language
-                    invariant._sAbbrevLang = "IVL";                  // abbreviated language name (Windows Language Name)
-                    invariant._sConsoleFallbackName = "";            // The culture name for the console fallback UI culture
-                    invariant._iInputLanguageHandle = 0x07F;         // input language handle
-
-                    // Region
-                    invariant._sRegionName = "IV";                    // (RegionInfo)
-                    invariant._sEnglishCountry = "Invariant Country"; // english country name (RegionInfo)
-                    invariant._sNativeCountry = "Invariant Country";  // native country name (Windows Only)
-                    invariant._sISO3166CountryName = "IV";            // (RegionInfo), ie: US
-                    invariant._sISO3166CountryName2 = "ivc";          // 3 char ISO 3166 country name 2 2(RegionInfo)
-                    invariant._iGeoId = 244;                          // GeoId (Windows Only)
-
-                    // Numbers
-                    invariant._sPositiveSign = "+";                    // positive sign
-                    invariant._sNegativeSign = "-";                    // negative sign
-                    invariant._iDigits = 2;                      // number of fractional digits
-                    invariant._iNegativeNumber = 1;                      // negative number format
-                    invariant._waGrouping = new int[] { 3 };          // grouping of digits
-                    invariant._sDecimalSeparator = ".";                    // decimal separator
-                    invariant._sThousandSeparator = ",";                    // thousands separator
-                    invariant._sNaN = "NaN";                  // Not a Number
-                    invariant._sPositiveInfinity = "Infinity";             // + Infinity
-                    invariant._sNegativeInfinity = "-Infinity";            // - Infinity
-
-                    // Percent
-                    invariant._iNegativePercent = 0;                      // Negative Percent (0-3)
-                    invariant._iPositivePercent = 0;                      // Positive Percent (0-11)
-                    invariant._sPercent = "%";                    // Percent (%) symbol
-                    invariant._sPerMille = "\x2030";               // PerMille symbol
-
-                    // Currency
-                    invariant._sCurrency = "\x00a4";                // local monetary symbol: for international monetary symbol
-                    invariant._sIntlMonetarySymbol = "XDR";                  // international monetary symbol (RegionInfo)
-		            invariant._sEnglishCurrency = "International Monetary Fund"; // English name for this currency (Windows Only)
-		            invariant._sNativeCurrency = "International Monetary Fund"; // Native name for this currency (Windows Only)
-                    invariant._iCurrencyDigits = 2;                      // # local monetary fractional digits
-                    invariant._iCurrency = 0;                      // positive currency format
-                    invariant._iNegativeCurrency = 0;                      // negative currency format
-                    invariant._waMonetaryGrouping = new int[] { 3 };          // monetary grouping of digits
-                    invariant._sMonetaryDecimal = ".";                    // monetary decimal separator
-                    invariant._sMonetaryThousand = ",";                    // monetary thousands separator
-
-                    // Misc
-                    invariant._iMeasure = 0;                      // system of measurement 0=metric, 1=US (RegionInfo)
-                    invariant._sListSeparator = ",";                    // list separator
-
-                    // Time
-                    invariant._sAM1159 = "AM";                   // AM designator
-                    invariant._sPM2359 = "PM";                   // PM designator
-                    invariant._saLongTimes = new String[] { "HH:mm:ss" };                             // time format
-                    invariant._saShortTimes = new String[] { "HH:mm", "hh:mm tt", "H:mm", "h:mm tt" }; // short time format
-                    invariant._saDurationFormats = new String[] { "HH:mm:ss" };                             // time duration format
-
-
-                    // Calendar specific data
-                    invariant._iFirstDayOfWeek = 0;                      // first day of week
-                    invariant._iFirstWeekOfYear = 0;                      // first week of year
-                    invariant._waCalendars = new CalendarId[] { CalendarId.GREGORIAN };       // all available calendar type(s).  The first one is the default calendar
-
-                    // Store for specific data about each calendar
-                    invariant._calendars = new CalendarData[CalendarData.MAX_CALENDARS];
-                    invariant._calendars[0] = CalendarData.Invariant;
-
-                    // Text information
-                    invariant._iReadingLayout = 0;
-
-                    // These are desktop only, not coreclr
-
-                    invariant._iLanguage = CultureInfo.LOCALE_INVARIANT;   // locale ID (0409) - NO sort information
-                    invariant._iDefaultAnsiCodePage = 1252;         // default ansi code page ID (ACP)
-                    invariant._iDefaultOemCodePage = 437;           // default oem code page ID (OCP or OEM)
-                    invariant._iDefaultMacCodePage = 10000;         // default macintosh code page
-                    invariant._iDefaultEbcdicCodePage = 037;        // default EBCDIC code page
                     // Remember it
-                    s_Invariant = invariant;
+                    s_Invariant = CreateCultureWithInvariantData();
                 }
                 return s_Invariant;
             }
@@ -606,8 +626,72 @@ namespace System.Globalization
             return culture;
         }
 
+        private static unsafe string NormalizeCultureName(string name, out bool isNeutralName)
+        {
+            isNeutralName = true;
+            int i = 0;
+
+            Debug.Assert(name.Length <= LOCALE_NAME_MAX_LENGTH);
+
+            char *pName = stackalloc char[LOCALE_NAME_MAX_LENGTH];
+            bool changed = false;
+
+            while (i < name.Length && name[i] != '-' && name[i] != '_')
+            {
+                if (name[i] >= 'A' && name[i] <= 'Z')
+                {
+                    // lowercase characters before '-'
+                    pName[i] = (char) (((int)name[i]) + 0x20);
+                    changed = true;
+                }
+                else
+                {
+                    pName[i] = name[i];
+                }
+                i++;
+            }
+
+            if (i < name.Length)
+            {
+                // this is not perfect to detect the non neutral cultures but it is good enough when we are running in invariant mode
+                isNeutralName = false;
+            }
+
+            while (i < name.Length)
+            {
+                if (name[i] >= 'a' && name[i] <= 'z')
+                {
+                    pName[i] = (char) (((int)name[i]) - 0x20);
+                    changed = true;
+                }
+                else
+                {
+                    pName[i] = name[i];
+                }
+                i++;
+            }
+
+            if (changed)
+                return new string(pName, 0, name.Length);
+            
+            return name;
+        }
+
         private static CultureData CreateCultureData(string cultureName, bool useUserOverride)
         {
+            if (GlobalizationMode.Invariant)
+            {
+                CultureInfo.VerifyCultureName(cultureName, true);
+                CultureData cd = CreateCultureWithInvariantData();
+                cd._bUseOverrides = useUserOverride;
+                cd._sName = NormalizeCultureName(cultureName, out cd._bNeutral);
+                cd._sRealName = cd._sName;
+                cd._sWindowsName = cd._sName;
+                cd._iLanguage = CultureInfo.LOCALE_CUSTOM_UNSPECIFIED;
+
+                return cd;
+            }
+
             CultureData culture = new CultureData();
             culture._bUseOverrides = useUserOverride;
             culture._sRealName = cultureName;
@@ -665,6 +749,12 @@ namespace System.Globalization
 
             if (culture == CultureInfo.LOCALE_INVARIANT)
                 return Invariant;
+            
+            if (GlobalizationMode.Invariant)
+            {
+                // LCID is not supported in the InvariantMode
+                throw new CultureNotFoundException(nameof(culture), culture, SR.Argument_CultureNotSupported);
+            }
 
             // Convert the lcid to a name, then use that
             // Note that this will return neutral names (unlike Vista native API)
@@ -1412,6 +1502,8 @@ namespace System.Globalization
             {
                 if (_saLongTimes == null)
                 {
+                    Debug.Assert(!GlobalizationMode.Invariant);
+
                     String[] longTimes = GetTimeFormats();
                     if (longTimes == null || longTimes.Length == 0)
                     {
@@ -1435,6 +1527,8 @@ namespace System.Globalization
             {
                 if (_saShortTimes == null)
                 {
+                    Debug.Assert(!GlobalizationMode.Invariant);
+
                     // Try to get the short times from the OS/culture.dll
                     String[] shortTimes = null;
                     shortTimes = GetShortTimeFormats();
@@ -1967,6 +2061,11 @@ namespace System.Globalization
         {
             get
             {
+                if (GlobalizationMode.Invariant)
+                {
+                    return CultureInfo.GetCalendarInstance(CalendarIds[0]);
+                }
+
                 CalendarId defaultCalId = (CalendarId)GetLocaleInfo(LocaleNumberData.CalendarType);
 
                 if (defaultCalId == 0)
@@ -2198,7 +2297,7 @@ namespace System.Globalization
 
         internal void GetNFIValues(NumberFormatInfo nfi)
         {
-            if (this.IsInvariantCulture)
+            if (GlobalizationMode.Invariant || this.IsInvariantCulture)
             {
                 // FUTURE: NumberFormatInfo already has default values for many of these fields.  Can we not do this?
                 nfi.positiveSign = _sPositiveSign;

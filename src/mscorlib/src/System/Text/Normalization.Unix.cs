@@ -4,6 +4,7 @@
 
 using System.Security;
 using System.Text;
+using System.Globalization;
 
 namespace System.Text
 {
@@ -12,6 +13,13 @@ namespace System.Text
         public static bool IsNormalized(this string strInput, NormalizationForm normalizationForm)
         {
             ValidateArguments(strInput, normalizationForm);
+
+            if (GlobalizationMode.Invariant)
+            {
+                // In Invariant mode we assume all characters are normalized. 
+                // This is because we don't support any linguistic operation on the strings
+                return true;
+            }
 
             int ret = Interop.GlobalizationInterop.IsNormalized(normalizationForm, strInput, strInput.Length);
 
@@ -26,6 +34,13 @@ namespace System.Text
         public static string Normalize(this string strInput, NormalizationForm normalizationForm)
         {
             ValidateArguments(strInput, normalizationForm);
+
+            if (GlobalizationMode.Invariant)
+            {
+                // In Invariant mode we assume all characters are normalized. 
+                // This is because we don't support any linguistic operation on the strings
+                return strInput;
+            }
 
             char[] buf = new char[strInput.Length];
 

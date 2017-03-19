@@ -268,7 +268,7 @@ namespace System
 #if !PLATFORM_UNIX
                             trim = 8;
 #else
-                            // For Unix platform, trim the first 7 charcaters only.
+                            // For Unix platform, trim the first 7 characters only.
                             // Trimming the first 8 characters will cause
                             // the root path separator to be trimmed away,
                             // and the absolute local path becomes a relative local path.

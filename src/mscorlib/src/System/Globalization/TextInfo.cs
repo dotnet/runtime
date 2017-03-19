@@ -61,6 +61,10 @@ namespace System.Globalization
         [NonSerialized]
         private Tristate _isAsciiCasingSameAsInvariant = Tristate.NotInitialized;
 
+        // _invariantMode is defined for the perf reason as accessing the instance field is faster than access the static property GlobalizationMode.Invariant
+        [NonSerialized] 
+        private readonly bool _invariantMode = GlobalizationMode.Invariant;
+
         // Invariant text info
         internal static TextInfo Invariant
         {
@@ -72,6 +76,22 @@ namespace System.Globalization
             }
         }
         internal volatile static TextInfo s_Invariant;
+
+        //////////////////////////////////////////////////////////////////////////
+        ////
+        ////  TextInfo Constructors
+        ////
+        ////  Implements CultureInfo.TextInfo.
+        ////
+        //////////////////////////////////////////////////////////////////////////
+        internal unsafe TextInfo(CultureData cultureData)
+        {
+            // This is our primary data source, we don't need most of the rest of this
+            _cultureData = cultureData;
+            _cultureName = _cultureData.CultureName;
+            _textInfoName = _cultureData.STEXTINFO;
+            FinishInitialization(_textInfoName);
+        }
 
         [OnSerializing]
         private void OnSerializing(StreamingContext ctx) { }
@@ -126,7 +146,7 @@ namespace System.Globalization
                 return -1;
             }
 
-            return CompareInfo.IndexOfOrdinal(source, value, startIndex, count, ignoreCase: true);
+            return CultureInfo.InvariantCulture.CompareInfo.IndexOfOrdinal(source, value, startIndex, count, ignoreCase: true);
         }
 
         // Currently we don't have native functions to do this, so we do it the hard way
@@ -137,7 +157,7 @@ namespace System.Globalization
                 return -1;
             }
 
-            return CompareInfo.LastIndexOfOrdinal(source, value, startIndex, count, ignoreCase: true);
+            return CultureInfo.InvariantCulture.CompareInfo.LastIndexOfOrdinal(source, value, startIndex, count, ignoreCase: true);
         }
 
         ////////////////////////////////////////////////////////////////////////
@@ -311,10 +331,11 @@ namespace System.Globalization
         ////////////////////////////////////////////////////////////////////////
         public unsafe virtual char ToLower(char c)
         {
-            if (IsAscii(c) && IsAsciiCasingSameAsInvariant)
+            if (_invariantMode || (IsAscii(c) && IsAsciiCasingSameAsInvariant))
             {
                 return ToLowerAsciiInvariant(c);
             }
+
             return (ChangeCase(c, toUpper: false));
         }
 
@@ -322,7 +343,104 @@ namespace System.Globalization
         {
             if (str == null) { throw new ArgumentNullException(nameof(str)); }
 
+            if (_invariantMode)
+            {
+                return ToLowerAsciiInvariant(str);
+            }
+
             return ChangeCase(str, toUpper: false);
+        }
+
+        private unsafe string ToLowerAsciiInvariant(string s)
+        {
+            if (s.Length == 0)
+            {
+                return string.Empty;
+            }
+            
+            fixed (char* pSource = s)
+            {
+                int i = 0;
+                while (i < s.Length)
+                {
+                    if ((uint)(pSource[i] - 'A') <= (uint)('Z' - 'A'))
+                    {
+                        break;
+                    }
+                    i++;
+                }
+                
+                if (i >= s.Length)
+                {
+                    return s;
+                }
+
+                string result = string.FastAllocateString(s.Length);
+                fixed (char* pResult = result)
+                {
+                    for (int j = 0; j < i; j++)
+                    {
+                        pResult[j] = pSource[j];
+                    }
+                    
+                    pResult[i] = (Char)(pSource[i] | 0x20);
+                    i++;
+
+                    while (i < s.Length)
+                    {
+                        pResult[i] = ToLowerAsciiInvariant(pSource[i]);
+                        i++;
+                    }
+                }
+
+                return result;
+            }
+        }
+
+        private unsafe string ToUpperAsciiInvariant(string s)
+        {
+            if (s.Length == 0)
+            {
+                return string.Empty;
+            }
+            
+            fixed (char* pSource = s)
+            {
+                int i = 0;
+                while (i < s.Length)
+                {
+                    if ((uint)(pSource[i] - 'a') <= (uint)('z' - 'a'))
+                    {
+                        break;
+                    }
+                    i++;
+                }
+                
+                if (i >= s.Length)
+                {
+                    return s;
+                }
+
+                string result = string.FastAllocateString(s.Length);
+                fixed (char* pResult = result)
+                {
+                    for (int j = 0; j < i; j++)
+                    {
+                        pResult[j] = pSource[j];
+                    }
+                    
+                    pResult[i] = (char)(pSource[i] & ~0x20);
+                    i++;
+
+                    while (i < s.Length)
+                    {
+                        pResult[i] = ToUpperAsciiInvariant(pSource[i]);
+                        i++;
+                    }
+                }
+
+                return result;
+            }
         }
 
         private static Char ToLowerAsciiInvariant(Char c)
@@ -344,16 +462,22 @@ namespace System.Globalization
         ////////////////////////////////////////////////////////////////////////
         public unsafe virtual char ToUpper(char c)
         {
-            if (IsAscii(c) && IsAsciiCasingSameAsInvariant)
+            if (_invariantMode || (IsAscii(c) && IsAsciiCasingSameAsInvariant))
             {
                 return ToUpperAsciiInvariant(c);
             }
+            
             return (ChangeCase(c, toUpper: true));
         }
 
         public unsafe virtual String ToUpper(String str)
         {
             if (str == null) { throw new ArgumentNullException(nameof(str)); }
+
+            if (_invariantMode)
+            {
+                return ToUpperAsciiInvariant(str);
+            }
 
             return ChangeCase(str, toUpper: true);
         }
