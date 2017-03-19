@@ -53,13 +53,11 @@ unsigned getFirstArgWithStackSlot();
 void genCompareFloat(GenTreePtr treeNode);
 void genCompareInt(GenTreePtr treeNode);
 
-#if !defined(_TARGET_64BIT_)
-void genCompareLong(GenTreePtr treeNode);
 #if defined(_TARGET_ARM_)
+void genCompareLong(GenTreePtr treeNode);
 void genJccLongHi(genTreeOps cmp, BasicBlock* jumpTrue, BasicBlock* jumpFalse, bool isUnsigned = false);
 void genJccLongLo(genTreeOps cmp, BasicBlock* jumpTrue, BasicBlock* jumpFalse);
 #endif // defined(_TARGET_ARM_)
-#endif
 
 #ifdef FEATURE_SIMD
 enum SIMDScalarMoveType
