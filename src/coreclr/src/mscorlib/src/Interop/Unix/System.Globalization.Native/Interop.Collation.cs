@@ -60,6 +60,8 @@ internal static partial class Interop
 
             protected override bool ReleaseHandle()
             {
+                Debug.Assert(!GlobalizationMode.Invariant);
+
                 CloseSortHandle(handle);
                 SetHandle(IntPtr.Zero);
                 return true;

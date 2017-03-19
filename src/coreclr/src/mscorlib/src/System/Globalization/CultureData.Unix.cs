@@ -27,7 +27,9 @@ namespace System.Globalization
         private unsafe bool InitCultureData()
         {
             Debug.Assert(_sRealName != null);
-            
+
+            Debug.Assert(!GlobalizationMode.Invariant);
+
             string alternateSortName = string.Empty;
             string realNameBuffer = _sRealName;
 
@@ -120,6 +122,8 @@ namespace System.Globalization
         
         private string GetLocaleInfo(LocaleStringData type)
         {
+            Debug.Assert(!GlobalizationMode.Invariant);
+            
             Debug.Assert(_sWindowsName != null, "[CultureData.GetLocaleInfo] Expected _sWindowsName to be populated already");
             return GetLocaleInfo(_sWindowsName, type);
         }
@@ -153,6 +157,8 @@ namespace System.Globalization
 
         private int GetLocaleInfo(LocaleNumberData type)
         {
+            Debug.Assert(!GlobalizationMode.Invariant);
+
             Debug.Assert(_sWindowsName != null, "[CultureData.GetLocaleInfo(LocaleNumberData)] Expected _sWindowsName to be populated already");
 
             switch (type)
@@ -296,11 +302,15 @@ namespace System.Globalization
         
         private static string LCIDToLocaleName(int culture)
         {
+            Debug.Assert(!GlobalizationMode.Invariant);
+
             return LocaleData.LCIDToLocaleName(culture);
         }
 
         private static int LocaleNameToLCID(string cultureName)
         {
+            Debug.Assert(!GlobalizationMode.Invariant);
+            
             int lcid = LocaleData.GetLocaleDataNumericPart(cultureName, LocaleDataParts.Lcid);
             return lcid == -1 ? CultureInfo.LOCALE_CUSTOM_UNSPECIFIED : lcid; 
         }
@@ -349,6 +359,8 @@ namespace System.Globalization
 
         private static CultureInfo[] EnumCultures(CultureTypes types)
         {
+            Debug.Assert(!GlobalizationMode.Invariant);
+            
             if ((types & (CultureTypes.NeutralCultures | CultureTypes.SpecificCultures)) == 0)
             {
                 return Array.Empty<CultureInfo>();

@@ -44,6 +44,9 @@ namespace System.Globalization
 
         internal static CultureInfo GetUserDefaultCulture()
         {
+            if (GlobalizationMode.Invariant)
+                return CultureInfo.InvariantCulture;
+            
             const uint LOCALE_SNAME = 0x0000005c;
             const string LOCALE_NAME_USER_DEFAULT = null;
             const string LOCALE_NAME_SYSTEM_DEFAULT = "!x-sys-default-locale";
@@ -69,6 +72,9 @@ namespace System.Globalization
 
         private static CultureInfo GetUserDefaultUILanguage()
         {
+            if (GlobalizationMode.Invariant)
+                return CultureInfo.InvariantCulture;
+
             const uint MUI_LANGUAGE_NAME = 0x8;    // Use ISO language (culture) name convention
             uint langCount = 0;
             uint bufLen = 0;

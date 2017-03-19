@@ -139,6 +139,7 @@ set(VM_SOURCES_WKS
     cachelinealloc.cpp
     callhelpers.cpp
     ceemain.cpp
+    clrconfignative.cpp
     clrex.cpp
     clrprivbinderutil.cpp
     clrvarargs.cpp
