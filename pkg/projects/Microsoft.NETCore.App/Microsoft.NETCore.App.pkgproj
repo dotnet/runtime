@@ -3,17 +3,14 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
-    <IsLineupPackage Condition="'$(PackageTargetRuntime)' == ''">true</IsLineupPackage>
-    <PreventImplementationReference Condition="'$(PackageTargetRuntime)' != ''">true</PreventImplementationReference>
     <Version>$(NetCoreAppVersion)</Version>
     <NETCoreAppFramework>netcoreapp$([System.Version]::Parse('$(NetCoreAppVersion)').ToString(2))</NETCoreAppFramework>
-    <PackagePlatform>AnyCPU</PackagePlatform>
-    <SkipPackageFileCheck>true</SkipPackageFileCheck>
     <OmitDependencies>true</OmitDependencies>
     <SkipValidatePackage>true</SkipValidatePackage>
     <ShouldCreateLayout>false</ShouldCreateLayout>
     <PropsFile>$(IntermediateOutputPath)$(MSBuildProjectName).props</PropsFile>
     <PlatformManifestFile>$(IntermediateOutputPath)$(MSBuildProjectName).PlatformManifest.txt</PlatformManifestFile>
+    <PreventImplementationReference Condition="'$(PackageTargetRuntime)' != ''">true</PreventImplementationReference>
     <!-- During an official build when we can guarantee that all RID-specific dependencies have been built,
          restore all of those dependencies and gather the prospective content of the RID-specific Core.App
          packages.  This is needed so that we have a complete platform manifest in the shipping version of
@@ -21,34 +18,7 @@
     <IncludeAllRuntimePackagesInPlatformManifest Condition="'$(SIGNED_PACKAGES)' == 'true'">true</IncludeAllRuntimePackagesInPlatformManifest>
   </PropertyGroup>
   
-  <Choose>
-    <When Condition="$(PackageTargetRuntime.StartsWith('win'))">
-      <PropertyGroup>
-        <ApplicationFileExtension>.exe</ApplicationFileExtension>
-        <LibraryFilePrefix></LibraryFilePrefix>
-        <LibraryFileExtension>.dll</LibraryFileExtension>
-        <SymbolFileExtension>.pdb</SymbolFileExtension>
-      </PropertyGroup>
-    </When>
-    <When Condition="$(PackageTargetRuntime.StartsWith('osx'))">
-      <PropertyGroup>
-        <ApplicationFileExtension></ApplicationFileExtension>
-        <LibraryFilePrefix>lib</LibraryFilePrefix>
-        <LibraryFileExtension>.dylib</LibraryFileExtension>
-        <SymbolFileExtension>.dwarf</SymbolFileExtension>
-      </PropertyGroup>
-    </When>
-    <Otherwise>
-      <PropertyGroup>
-        <ApplicationFileExtension></ApplicationFileExtension>
-        <LibraryFilePrefix>lib</LibraryFilePrefix>
-        <LibraryFileExtension>.so</LibraryFileExtension>
-        <SymbolFileExtension>.dbg</SymbolFileExtension>
-      </PropertyGroup>
-    </Otherwise>
-  </Choose>
   
-  <Import Project="$(MSBuildProjectName).props" />
   <Import Project="netcoreapp1.0.props" />
 
   <!-- Identity / Reference package content -->
@@ -130,72 +100,6 @@
   </Target>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
-  
-  <Target Name="PreserveSymbols"
-          AfterTargets="CreatePackage">
-    <PropertyGroup>
-      <_PackageSymbolsProjectDir>$(PackageSymbolsBinDir)$(MSBuildProjectName)/</_PackageSymbolsProjectDir>
-    </PropertyGroup>
-    <ItemGroup>
-      <_SymbolsFiles Include="%(File.Identity)" Condition="'%(File.Extension)' == '.pdb' OR '%(File.Extension)' == '$(SymbolFileExtension)'">
-        <DestinationFolder>$(_PackageSymbolsProjectDir)%(File.TargetPath)/</DestinationFolder>
-      </_SymbolsFiles>
-    </ItemGroup>
-    <MakeDir Directories="%(_SymbolsFiles.DestinationFolder)" />
-    <Copy SourceFiles="%(_SymbolsFiles.Identity)"
-          DestinationFolder="%(_SymbolsFiles.DestinationFolder)" />
-
-  </Target>
-
-  <!-- override GetPackageIdentity so that it doesn't attempt to gather 
-       files from runtime depdencies,  this prevents folks from needing
-       packages that don't apply to their local OS.
-       https://github.com/dotnet/buildtools/issues/1273 -->
-  <Target Name="GetPackageIdentity" Returns="@(_PackageIdentity)" DependsOnTargets="CalculatePackageVersion">
-    <ItemGroup>
-      <_PackageIdentity Include="$(Id)">
-        <Version>$(PackageVersion)</Version>
-        <TargetRuntime Condition="'$(PackageTargetRuntime)' != ''">$(PackageTargetRuntime)</TargetRuntime>
-      </_PackageIdentity>
-    </ItemGroup>
-  </Target>
-
-  <!-- override AssignPkgProjPackageDependenciesTargetFramework so that
-       it doesn't attempt to resolve all files in order to get dependency
-       TargetFrameworks.  
-       https://github.com/dotnet/buildtools/issues/1273 -->
-  <Target Name="AssignPkgProjPackageDependenciesTargetFramework" DependsOnTargets="GetPkgProjPackageDependencies">
-    <SplitDependenciesBySupport Condition="'$(SplitDependenciesBySupport)' == 'true'" OriginalDependencies="@(PkgProjDependency)">
-      <Output TaskParameter="SplitDependencies" ItemName="_SplitPkgProjDependency" />
-    </SplitDependenciesBySupport>
-    <ItemGroup Condition="'@(_SplitPkgProjDependency)' != ''">
-      <PkgProjDependency Remove="@(PkgProjDependency)" />
-      <PkgProjDependency Include="@(_SplitPkgProjDependency)" />
-    </ItemGroup>
-    <ItemGroup>
-      <!-- ensure that unconstrained dependencies are also expanded in constrained TFM groups -->
-      <_PkgProjDependencyWithoutTFM Include="@(PkgProjDependency)" Condition="'%(PkgProjDependency.TargetFramework)' == '' AND '%(PkgProjDependency.TargetRuntime)' == '' AND '%(PkgProjDependency.DoNotExpand)' != 'true'" />
-      <_AllPkgProjTFMs Include="%(PkgProjDependency.TargetFramework)" Condition="'%(PkgProjDependency.DependencyKind)' == 'Direct'" />
-      <!-- Remove dependencies without a TFM so they can be replaced -->
-      <PkgProjDependency Remove="@(_PkgProjDependencyWithoutTFM)" />
-      <!-- operate on pkgproj dependencies and file dependencies -->
-      <PkgProjDependency Include="@(_PkgProjDependencyWithoutTFM)">
-        <TargetFramework>%(_AllPkgProjTFMs.Identity)</TargetFramework>
-      </PkgProjDependency>
-      <Dependency Include="@(PkgProjDependency)" Condition="'%(PkgProjDependency.DependencyKind)' == 'Direct'" />
-    </ItemGroup>
-  </Target>
 
   <Target Name="GetPackageReport" />
-
-  <Target Name="GetDependenciesToPackage" AfterTargets="ExpandProjectReferences">
-    <!-- allow projects to provide dependencies -->
-    <MSBuild Targets="GetDependenciesToPackage"
-             BuildInParallel="$(BuildInParallel)"
-             Projects="@(_NonPkgProjProjectReference)"
-             Properties="$(ProjectProperties)">
-      <Output TaskParameter="TargetOutputs"
-              ItemName="Dependency" />
-    </MSBuild>
-  </Target>
 </Project>

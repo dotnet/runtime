@@ -5,6 +5,8 @@
   <PropertyGroup>
     <Version>5.0.3</Version>
     <PackagePlatform>AnyCPU</PackagePlatform>
+    <IsLineupPackage>false</IsLineupPackage>
+    <IncludeRuntimeJson>false</IncludeRuntimeJson>
   </PropertyGroup>
 
   <Target Name="ReadDependenciesFromProjectJsonFile" BeforeTargets="GetPackageDependencies">
@@ -25,4 +27,7 @@
   </Target>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+
+  <!-- Don't pull in NuGet package dependencies -->
+  <Target Name="GetNuGetPackageDependencies" />
 </Project>
