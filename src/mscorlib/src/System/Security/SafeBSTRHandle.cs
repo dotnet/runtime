@@ -13,7 +13,7 @@ namespace System.Security
 
         internal static SafeBSTRHandle Allocate(uint lenInChars)
         {
-            uint lenInBytes = lenInChars * sizeof(char);
+            ulong lenInBytes = (ulong)lenInChars * sizeof(char);
             SafeBSTRHandle bstr = Interop.OleAut32.SysAllocStringLen(IntPtr.Zero, lenInChars);
             if (bstr.IsInvalid) // SysAllocStringLen returns a NULL ptr when there's insufficient memory
             {
