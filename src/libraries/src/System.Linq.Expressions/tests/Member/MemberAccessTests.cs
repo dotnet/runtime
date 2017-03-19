@@ -552,6 +552,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<ArgumentException>("member", () => Expression.MakeMemberAccess(Expression.Constant(new PC()), member));
         }
 
+#if FEATURE_COMPILE
         [Fact]
         public static void Property_NoGetOrSetAccessors_ThrowsArgumentException()
         {
@@ -564,7 +565,7 @@ namespace System.Linq.Expressions.Tests
             TypeInfo createdType = type.CreateTypeInfo();
             PropertyInfo createdProperty = createdType.DeclaredProperties.First();
 
-            Expression expression = Expression.Constant(Activator.CreateInstance(createdType.AsType()));
+            Expression expression = Expression.Constant(Activator.CreateInstance(createdType));
 
             Assert.Throws<ArgumentException>("property", () => Expression.Property(expression, createdProperty));
             Assert.Throws<ArgumentException>("property", () => Expression.Property(expression, createdProperty.Name));
@@ -573,6 +574,7 @@ namespace System.Linq.Expressions.Tests
 
             Assert.Throws<ArgumentException>("property", () => Expression.MakeMemberAccess(expression, createdProperty));
         }
+#endif
 
         [Fact]
         public static void ToStringTest()

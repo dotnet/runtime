@@ -7,7 +7,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <ProjectGuid>{4B4AA59B-89F9-4A34-B3C3-C97EF531EE00}</ProjectGuid>
-    <IsInterpreting Condition="'$(TargetGroup)' == 'uap'">true</IsInterpreting>
+    <IsInterpreting Condition="'$(TargetGroup)' == 'uapaot'">true</IsInterpreting>
     <DefineConstants Condition=" '$(IsInterpreting)' != 'true' ">$(DefineConstants);FEATURE_COMPILE</DefineConstants>
     <DefineConstants Condition=" '$(FeatureInterpret)' == 'true' ">$(DefineConstants);FEATURE_INTERPRET</DefineConstants>
     <IncludeDefaultReferences Condition="'$(TargetGroup)'=='uapaot'">false</IncludeDefaultReferences>
@@ -50,13 +50,6 @@
     <ReferenceFromRuntime Include="System.Runtime.InteropServices" />
     <ReferenceFromRuntime Include="System.Private.Interop" />
     <ReferenceFromRuntime Include="netstandard" />
-    <Reference Include="System.Reflection.Emit.ILGeneration" />
-    <Reference Include="System.Reflection.Emit" />
-    <Reference Include="System.Reflection.Emit.Lightweight" />
-  </ItemGroup>
-  <ItemGroup>
-    <!-- Remove this when TypeBuilder extends TypeInfo. See https://github.com/dotnet/corefx/issues/14334 -->
-    <Compile Include="$(CommonTestPath)\System\TypeBuilderExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
     <AdditionalCodeCoverageAssemblies Include="Microsoft.CSharp" />

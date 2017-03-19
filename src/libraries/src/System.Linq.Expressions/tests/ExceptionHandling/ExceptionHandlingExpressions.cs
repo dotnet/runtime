@@ -243,6 +243,8 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(4, func());
         }
 
+#if FEATURE_COMPILE
+
         [Theory, ClassData(typeof(CompilationTypes))]
         public void CatchFromExternallyThrownString(bool useInterpreter)
         {
@@ -264,7 +266,7 @@ namespace System.Linq.Expressions.Tests
                 ilGen.Emit(OpCodes.Ldstr, "An Exceptional Exception!");
                 ilGen.Emit(OpCodes.Throw);
                 ilGen.Emit(OpCodes.Ret);
-                Type createdType = type.CreateTypeInfo().AsType();
+                Type createdType = type.CreateTypeInfo();
                 ParameterExpression ex = Expression.Variable(typeof(string));
                 TryExpression tryCatch =
                     Expression.TryCatch(
@@ -275,6 +277,7 @@ namespace System.Linq.Expressions.Tests
                 Assert.Equal("An Exceptional Exception!", func());
             }
         }
+#endif
 
         [Theory]
         [ClassData(typeof(CompilationTypes))]

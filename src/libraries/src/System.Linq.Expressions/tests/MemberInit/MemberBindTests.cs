@@ -254,6 +254,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<InvalidProgramException>(() => exp.Compile(useInterpreter));
         }
 
+#if FEATURE_COMPILE
         [Fact]
         public void GlobalMethod()
         {
@@ -264,6 +265,7 @@ namespace System.Linq.Expressions.Tests
             MethodInfo globalMethodInfo = module.GetMethod(globalMethod.Name);
             Assert.Throws<ArgumentException>("propertyAccessor", () => Expression.MemberBind(globalMethodInfo));
         }
+#endif
 
         public void WriteOnlyInnerProperty()
         {

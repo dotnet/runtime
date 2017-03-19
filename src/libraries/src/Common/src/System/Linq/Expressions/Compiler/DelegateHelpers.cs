@@ -26,7 +26,7 @@ namespace System.Linq.Expressions.Compiler
             TypeBuilder builder = AssemblyGen.DefineDelegateType("Delegate" + types.Length);
             builder.DefineConstructor(CtorAttributes, CallingConventions.Standard, s_delegateCtorSignature).SetImplementationFlags(ImplAttributes);
             builder.DefineMethod("Invoke", InvokeAttributes, returnType, parameters).SetImplementationFlags(ImplAttributes);
-            return builder.CreateTypeInfo().AsType();
+            return builder.CreateTypeInfo();
 #else
             throw new PlatformNotSupportedException();
 #endif

@@ -9,7 +9,7 @@
     <ProjectGuid>{AEF718E9-D4FC-418F-A7AE-ED6B2C7B3787}</ProjectGuid>
     <AssemblyName>System.Linq.Expressions</AssemblyName>
     <RootNamespace>System.Linq.Expressions</RootNamespace>
-    <IsInterpreting Condition="'$(TargetGroup)' == 'uap'">true</IsInterpreting>
+    <IsInterpreting Condition="'$(TargetGroup)' == 'uapaot'">true</IsInterpreting>
     <DefineConstants Condition=" '$(IsInterpreting)' != 'true' ">$(DefineConstants);FEATURE_COMPILE</DefineConstants>
     <DefineConstants Condition=" '$(FeatureInterpret)' == 'true' ">$(DefineConstants);FEATURE_INTERPRET</DefineConstants>
   </PropertyGroup>
@@ -36,9 +36,6 @@
     <ProjectReference Include="..\..\System.ObjectModel\src\System.ObjectModel.csproj" />
     <ProjectReference Include="..\..\System.Reflection.Primitives\src\System.Reflection.Primitives.csproj" />
     <ProjectReference Include="..\..\System.Linq\src\System.Linq.csproj" />
-    <Reference Include="System.Reflection.Emit.ILGeneration" /> <!-- Have to add reference to ref because the contract is not fulfilled yet -->
-    <Reference Include="System.Reflection.Emit" /> <!-- Have to add reference to ref because the contract is not fulfilled yet -->
-    <Reference Include="System.Reflection.Emit.Lightweight" /> <!-- Have to add reference to ref because the contract is not fulfilled yet -->
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'uapaot'">
     <Reference Include="System.Collections" />
