@@ -5,12 +5,16 @@
   <PropertyGroup>
     <Version>5.3.0</Version>
     <PackagePlatform>AnyCPU</PackagePlatform>
+    <IsLineupPackage>false</IsLineupPackage>
+    <IncludeRuntimeJson>false</IncludeRuntimeJson>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Microsoft.NETCore\Microsoft.NETCore.pkgproj" />
+    <Dependency Include="Microsoft.NETCore">
+      <Version>5.0.3</Version>
+    </Dependency>
   </ItemGroup>
-
+  
   <Target Name="ReadDependenciesFromProjectJsonFile" BeforeTargets="GetPackageDependencies">
     <ReadLinesFromFile File="$(MSBuildThisFileDirectory)project.json">
       <Output TaskParameter="Lines" ItemName="ProjectJsonLines" />
@@ -29,4 +33,7 @@
   </Target>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+
+<!-- Don't pull in NuGet package dependencies -->
+    <Target Name="GetNuGetPackageDependencies" />
 </Project>

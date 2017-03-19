@@ -1,4 +1,5 @@
-﻿<Project ToolsVersion="12.0" DefaultTargets="Build" InitialTargets="ValidateArgs" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" InitialTargets="ValidateArgs" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <!--
     $(OS) is set to Unix/Windows_NT. This comes from an environment variable on Windows and MSBuild on Unix.
   -->
@@ -54,6 +55,8 @@
     <PackageIndexFile>$(MSBuildThisFileDirectory)packageIndex.json</PackageIndexFile> 
     <!-- core-setup doesn't currently use the index so don't force it to be in sync --> 
     <SkipIndexCheck>true</SkipIndexCheck>     
+
+    <Serviceable>true</Serviceable>
   </PropertyGroup>
 
   <!-- Add required legal files to packages -->

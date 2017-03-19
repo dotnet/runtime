@@ -3,9 +3,18 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
-    <Version>$(HostVersion)</Version>
+    <Version>$(HostResolverVersion)</Version>
   </PropertyGroup>    
 
+  <ItemGroup>
+    <Dependency Include="Microsoft.NETCore.DotNetHost">
+      <Version>$(HostFullVersion)</Version>
+    </Dependency>
+    <Dependency Include="Microsoft.NETCore.DotNetAppHost">
+      <Version>$(AppHostFullVersion)</Version>
+    </Dependency>
+  </ItemGroup>
+     
   <Import Condition="'$(PackageTargetRuntime)' != ''" Project="$(MSBuildThisFileDirectory)runtime.$(OSGroup).$(MSBuildProjectName).props" />
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
