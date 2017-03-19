@@ -354,6 +354,7 @@ namespace System.Linq.Expressions.Tests
     public enum Int64Enum : long { A = Int64.MaxValue }
     public enum UInt64Enum : ulong { A = UInt64.MaxValue }
 
+#if FEATURE_COMPILE
     public static class NonCSharpTypes
     {
         private static Type _charEnumType;
@@ -376,7 +377,7 @@ namespace System.Linq.Expressions.Tests
                     eb.DefineLiteral("A", 'A');
                     eb.DefineLiteral("B", 'B');
                     eb.DefineLiteral("C", 'C');
-                    _charEnumType = eb.CreateTypeInfo().AsType();
+                    _charEnumType = eb.CreateTypeInfo();
                 }
 
                 return _charEnumType;
@@ -392,13 +393,14 @@ namespace System.Linq.Expressions.Tests
                     EnumBuilder eb = GetModuleBuilder().DefineEnum("BoolEnumType", TypeAttributes.Public, typeof(bool));
                     eb.DefineLiteral("False", false);
                     eb.DefineLiteral("True", true);
-                    _boolEnumType = eb.CreateTypeInfo().AsType();
+                    _boolEnumType = eb.CreateTypeInfo();
                 }
 
                 return _boolEnumType;
             }
         }
     }
+#endif
 
     public class FakeExpression : Expression
     {

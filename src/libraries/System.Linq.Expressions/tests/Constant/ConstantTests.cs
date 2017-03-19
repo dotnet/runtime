@@ -11,27 +11,12 @@ namespace System.Linq.Expressions.Tests
 {
     public static class ConstantTests
     {
-        private static TypeBuilder GetTypeBuilder()
-        {
-            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run);
-            ModuleBuilder module = assembly.DefineDynamicModule("Name");
-            return module.DefineType("Type");
-        }
-
-        private static MethodInfo GlobalMethod(params Type[] parameterTypes)
-        {
-            ModuleBuilder module = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run).DefineDynamicModule("Module");
-            MethodBuilder globalMethod = module.DefineGlobalMethod("GlobalMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(void), parameterTypes);
-            globalMethod.GetILGenerator().Emit(OpCodes.Ret);
-            module.CreateGlobalFunctions();
-            return module.GetMethod(globalMethod.Name);
-        }
 
         private class PrivateGenericClass<T>
         {
         }
 
-        #region Test methods
+#region Test methods
 
         [Theory, ClassData(typeof(CompilationTypes))]
         public static void CheckBoolConstantTest(bool useInterpreter)
@@ -294,6 +279,15 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
+#if FEATURE_COMPILE
+        private static TypeBuilder GetTypeBuilder()
+        {
+            AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run);
+            ModuleBuilder module = assembly.DefineDynamicModule("Name");
+            return module.DefineType("Type");
+        }
+#endif
+
         [Theory, ClassData(typeof(CompilationTypes))]
         public static void CheckTypeConstantTest(bool useInterpreter)
         {
@@ -303,7 +297,9 @@ namespace System.Linq.Expressions.Tests
                 typeof(int),
                 typeof(Func<string>),
                 typeof(List<>).GetGenericArguments()[0],
+#if FEATURE_COMPILE
                 GetTypeBuilder(),
+#endif
                 typeof(PrivateGenericClass<>).GetGenericArguments()[0],
                 typeof(PrivateGenericClass<>),
                 typeof(PrivateGenericClass<int>)
@@ -311,6 +307,17 @@ namespace System.Linq.Expressions.Tests
             {
                 VerifyTypeConstant(value, useInterpreter);
             }
+        }
+
+#if FEATURE_COMPILE
+
+        private static MethodInfo GlobalMethod(params Type[] parameterTypes)
+        {
+            ModuleBuilder module = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run).DefineDynamicModule("Module");
+            MethodBuilder globalMethod = module.DefineGlobalMethod("GlobalMethod", MethodAttributes.Public | MethodAttributes.Static, typeof(void), parameterTypes);
+            globalMethod.GetILGenerator().Emit(OpCodes.Ret);
+            module.CreateGlobalFunctions();
+            return module.GetMethod(globalMethod.Name);
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
@@ -332,6 +339,7 @@ namespace System.Linq.Expressions.Tests
                 VerifyMethodInfoConstant(value, useInterpreter);
             }
         }
+#endif
 
         [Theory, ClassData(typeof(CompilationTypes))]
         public static void CheckConstructorInfoConstantTest(bool useInterpreter)
@@ -508,9 +516,9 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        #endregion
+#endregion
 
-        #region Generic helpers
+#region Generic helpers
 
         public static void CheckGenericWithStructRestrictionConstantHelper<Ts>(bool useInterpreter) where Ts : struct
         {
@@ -560,9 +568,9 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        #endregion
+#endregion
 
-        #region Test verifiers
+#region Test verifiers
 
         private static void VerifyBoolConstant(bool value, bool useInterpreter)
         {
@@ -942,7 +950,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(value, f());
         }
 
-        #endregion
+#endregion
 
         [Fact]
         public static void InvalidTypeValueType()

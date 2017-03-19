@@ -696,7 +696,7 @@ namespace System.Tests
             yield return new object[] { typeof(Enum), typeof(ArgumentException) };
             yield return new object[] { typeof(object), typeof(ArgumentException) };
 #if netcoreapp
-            yield return new object[] { GetNonRuntimeEnumTypeBuilder(typeof(int)).AsType(), typeof(ArgumentException) };
+            yield return new object[] { GetNonRuntimeEnumTypeBuilder(typeof(int)), typeof(ArgumentException) };
 #endif // netcoreapp            
         }
 

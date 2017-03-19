@@ -14,11 +14,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
-    <!-- Remove this when TypeBuilder extends TypeInfo. See https://github.com/dotnet/corefx/issues/14334 -->
-    <!-- EnumBuilder type is defined in netcoreapp and not in netstandard -->
-    <Compile Include="$(CommonTestPath)\System\TypeBuilderExtensions.cs" />
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
       <Link>Common\System\AssertExtensions.cs</Link>
