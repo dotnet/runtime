@@ -55,7 +55,7 @@ Areas are tracked by labels area-&#42; (e.g. area-System.Collections). Each area
 | [System.Composition](https://github.com/dotnet/corefx/labels/area-System.Composition)         | [@AlexGhiondea](https://github.com/AlexGhiondea) |  |
 | [System.Configuration](https://github.com/dotnet/corefx/labels/area-System.Configuration)     | [@JeremyKuhne](https://github.com/JeremyKuhne) |  |
 | [System.Console](https://github.com/dotnet/corefx/labels/area-System.Console)                 | [@ianhays](https://github.com/ianhays) |  |
-| [System.Data](https://github.com/dotnet/corefx/labels/area-System.Data)                       | [@saurabh500](https://github.com/saurabh500), [@YoungGah](https://github.com/YoungGah) |  |
+| [System.Data](https://github.com/dotnet/corefx/labels/area-System.Data)                       | [@saurabh500](https://github.com/saurabh500), [@corivera](https://github.com/corivera) |  |
 | [System.Data.SqlClient](https://github.com/dotnet/corefx/labels/area-System.Data.SqlClient)   | [@saurabh500](https://github.com/saurabh500), [@YoungGah](https://github.com/YoungGah) | **Pending triage** |
 | [System.Diagnostics](https://github.com/dotnet/corefx/labels/area-System.Diagnostics)         | [@joperezr](https://github.com/dotnet/joperezr) |  |
 | [System.Diagnostics.Process](https://github.com/dotnet/corefx/labels/area-System.Diagnostics.Process) | [@Priya91](https://github.com/Priya91) |  |
