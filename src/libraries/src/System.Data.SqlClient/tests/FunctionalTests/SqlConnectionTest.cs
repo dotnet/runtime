@@ -13,23 +13,30 @@ namespace System.Data.SqlClient.Tests
         [Fact]
         public void ConnectionTest()
         {
-            Exception e = null;
-
             using (TestTdsServer server = TestTdsServer.StartTestServer())
             {
-                try
+                using (SqlConnection connection = new SqlConnection(server.ConnectionString))
                 {
-                    SqlConnection connection = new SqlConnection(server.ConnectionString);
                     connection.Open();
                 }
-                catch (Exception ce)
-                {
-                    e = ce;
-                }
             }
-            Assert.Null(e);
         }
 
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Integ auth on Test server is supported on Windows right now
+        public void IntegratedAuthConnectionTest()
+        {
+            using (TestTdsServer server = TestTdsServer.StartTestServer())
+            {
+                SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(server.ConnectionString);
+                builder.IntegratedSecurity = true;
+                using (SqlConnection connection = new SqlConnection(builder.ConnectionString))
+                {
+                    connection.Open();
+                }
+            }
+        }
     }
 
 }
