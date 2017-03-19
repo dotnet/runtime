@@ -51,11 +51,11 @@ namespace System.Tests
                     return;
                 }
 
-                throw new EqualException($"{"NaN",20}", $"{actual,20:G17}");
+                throw new EqualException(ToString(expected), ToString(actual));
             }
             else if (double.IsNaN(actual))
             {
-                throw new EqualException($"{expected,20:G17}", $"{"NaN",20}");
+                throw new EqualException(ToString(expected), ToString(actual));
             }
 
             if (double.IsNegativeInfinity(expected))
@@ -65,11 +65,11 @@ namespace System.Tests
                     return;
                 }
 
-                throw new EqualException($"{"-∞",20}", $"{actual,20:G17}");
+                throw new EqualException(ToString(expected), ToString(actual));
             }
             else if (double.IsNegativeInfinity(actual))
             {
-                throw new EqualException($"{expected,20:G17}", $"{"-∞",20}");
+                throw new EqualException(ToString(expected), ToString(actual));
             }
 
             if (double.IsPositiveInfinity(expected))
@@ -79,11 +79,11 @@ namespace System.Tests
                     return;
                 }
 
-                throw new EqualException($"{"+∞",20}", $"{actual,20:G17}");
+                throw new EqualException(ToString(expected), ToString(actual));
             }
             else if (double.IsPositiveInfinity(actual))
             {
-                throw new EqualException($"{expected,20:G17}", $"{"+∞",20}");
+                throw new EqualException(ToString(expected), ToString(actual));
             }
 
             if (IsNegativeZero(expected))
@@ -95,7 +95,7 @@ namespace System.Tests
 
                 if (IsPositiveZero(variance) || IsNegativeZero(variance))
                 {
-                    throw new EqualException($"{"-0.0",20}", $"{actual,20:G17}");
+                    throw new EqualException(ToString(expected), ToString(actual));
                 }
 
                 // When the variance is not ±0.0, then we are handling a case where
@@ -116,7 +116,7 @@ namespace System.Tests
 
                 if (IsPositiveZero(variance))
                 {
-                    throw new EqualException($"{"+0.0",20}", $"{actual,20:G17}");
+                    throw new EqualException(ToString(expected), ToString(actual));
                 }
 
                 // When the variance is not ±0.0, then we are handling a case where
@@ -132,7 +132,7 @@ namespace System.Tests
 
             if (delta > variance)
             {
-                throw new EqualException($"{expected,10:G9}", $"{actual,10:G9}");
+                throw new EqualException(ToString(expected), ToString(actual));
             }
         }
 
@@ -150,11 +150,11 @@ namespace System.Tests
                     return;
                 }
 
-                throw new EqualException($"{"NaN",10}", $"{actual,10:G9}");
+                throw new EqualException(ToString(expected), ToString(actual));
             }
             else if (float.IsNaN(actual))
             {
-                throw new EqualException($"{expected,10:G9}", $"{"NaN",10}");
+                throw new EqualException(ToString(expected), ToString(actual));
             }
 
             if (float.IsNegativeInfinity(expected))
@@ -164,11 +164,11 @@ namespace System.Tests
                     return;
                 }
 
-                throw new EqualException($"{"-∞",10}", $"{actual,10:G9}");
+                throw new EqualException(ToString(expected), ToString(actual));
             }
             else if (float.IsNegativeInfinity(actual))
             {
-                throw new EqualException($"{expected,10:G9}", $"{"-∞",10}");
+                throw new EqualException(ToString(expected), ToString(actual));
             }
 
             if (float.IsPositiveInfinity(expected))
@@ -178,11 +178,11 @@ namespace System.Tests
                     return;
                 }
 
-                throw new EqualException($"{"+∞",10}", $"{actual,10:G9}");
+                throw new EqualException(ToString(expected), ToString(actual));
             }
             else if (float.IsPositiveInfinity(actual))
             {
-                throw new EqualException($"{expected,10:G9}", $"{"+∞",10}");
+                throw new EqualException(ToString(expected), ToString(actual));
             }
 
             if (IsNegativeZero(expected))
@@ -194,7 +194,7 @@ namespace System.Tests
 
                 if (IsPositiveZero(variance) || IsNegativeZero(variance))
                 {
-                    throw new EqualException($"{"-0.0",10}", $"{actual,10:G9}");
+                    throw new EqualException(ToString(expected), ToString(actual));
                 }
 
                 // When the variance is not ±0.0, then we are handling a case where
@@ -215,7 +215,7 @@ namespace System.Tests
 
                 if (IsPositiveZero(variance))
                 {
-                    throw new EqualException($"{"+0.0",10}", $"{actual,10:G9}");
+                    throw new EqualException(ToString(expected), ToString(actual));
                 }
 
                 // When the variance is not ±0.0, then we are handling a case where
@@ -231,7 +231,7 @@ namespace System.Tests
 
             if (delta > variance)
             {
-                throw new EqualException($"{expected,10:G9}", $"{actual,10:G9}");
+                throw new EqualException(ToString(expected), ToString(actual));
             }
         }
 
@@ -253,6 +253,62 @@ namespace System.Tests
         private unsafe static bool IsPositiveZero(float value)
         {
             return (*(uint*)(&value)) == 0x00000000;
+        }
+
+        private static string ToString(double value)
+        {
+            if (double.IsNaN(value))
+            {
+                return "NaN".PadLeft(20);
+            }
+            else if (double.IsPositiveInfinity(value))
+            {
+                return "+∞".PadLeft(20);
+            }
+            else if (double.IsNegativeInfinity(value))
+            {
+                return "-∞".PadLeft(20);
+            }
+            else if (IsNegativeZero(value))
+            {
+                return "-0.0".PadLeft(20);
+            }
+            else if (IsPositiveZero(value))
+            {
+                return "+0.0".PadLeft(20);
+            }
+            else
+            {
+                return $"{value,20:G17}";
+            }
+        }
+
+        private static string ToString(float value)
+        {
+            if (double.IsNaN(value))
+            {
+                return "NaN".PadLeft(10);
+            }
+            else if (double.IsPositiveInfinity(value))
+            {
+                return "+∞".PadLeft(10);
+            }
+            else if (double.IsNegativeInfinity(value))
+            {
+                return "-∞".PadLeft(10);
+            }
+            else if (IsNegativeZero(value))
+            {
+                return "-0.0".PadLeft(10);
+            }
+            else if (IsPositiveZero(value))
+            {
+                return "+0.0".PadLeft(10);
+            }
+            else
+            {
+                return $"{value,10:G9}";
+            }
         }
 
         [Fact]

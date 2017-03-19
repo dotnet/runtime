@@ -37,11 +37,11 @@ namespace System.Tests
                     return;
                 }
 
-                throw new EqualException($"{"NaN",10}", $"{actual,10:G9}");
+                throw new EqualException(ToString(expected), ToString(actual));
             }
             else if (float.IsNaN(actual))
             {
-                throw new EqualException($"{expected,10:G9}", $"{"NaN",10}");
+                throw new EqualException(ToString(expected), ToString(actual));
             }
 
             if (float.IsNegativeInfinity(expected))
@@ -51,11 +51,11 @@ namespace System.Tests
                     return;
                 }
 
-                throw new EqualException($"{"-∞",10}", $"{actual,10:G9}");
+                throw new EqualException(ToString(expected), ToString(actual));
             }
             else if (float.IsNegativeInfinity(actual))
             {
-                throw new EqualException($"{expected,10:G9}", $"{"-∞",10}");
+                throw new EqualException(ToString(expected), ToString(actual));
             }
 
             if (float.IsPositiveInfinity(expected))
@@ -65,11 +65,11 @@ namespace System.Tests
                     return;
                 }
 
-                throw new EqualException($"{"+∞",10}", $"{actual,10:G9}");
+                throw new EqualException(ToString(expected), ToString(actual));
             }
             else if (float.IsPositiveInfinity(actual))
             {
-                throw new EqualException($"{expected,10:G9}", $"{"+∞",10}");
+                throw new EqualException(ToString(expected), ToString(actual));
             }
 
             if (IsNegativeZero(expected))
@@ -81,7 +81,7 @@ namespace System.Tests
 
                 if (IsPositiveZero(variance) || IsNegativeZero(variance))
                 {
-                    throw new EqualException($"{"-0.0",10}", $"{actual,10:G9}");
+                    throw new EqualException(ToString(expected), ToString(actual));
                 }
 
                 // When the variance is not ±0.0, then we are handling a case where
@@ -102,7 +102,7 @@ namespace System.Tests
 
                 if (IsPositiveZero(variance))
                 {
-                    throw new EqualException($"{"+0.0",10}", $"{actual,10:G9}");
+                    throw new EqualException(ToString(expected), ToString(actual));
                 }
 
                 // When the variance is not ±0.0, then we are handling a case where
@@ -114,11 +114,11 @@ namespace System.Tests
                 // Do nothing, since the actual result could still be within the allowed variance
             }
 
-            var delta = MathF.Abs(actual - expected);
+            var delta = Math.Abs(actual - expected);
 
             if (delta > variance)
             {
-                throw new EqualException($"{expected,10:G9}", $"{actual,10:G9}");
+                throw new EqualException(ToString(expected), ToString(actual));
             }
         }
 
@@ -130,6 +130,34 @@ namespace System.Tests
         private unsafe static bool IsPositiveZero(float value)
         {
             return (*(uint*)(&value)) == 0x00000000;
+        }
+
+        private static string ToString(float value)
+        {
+            if (double.IsNaN(value))
+            {
+                return "NaN".PadLeft(10);
+            }
+            else if (double.IsPositiveInfinity(value))
+            {
+                return "+∞".PadLeft(10);
+            }
+            else if (double.IsNegativeInfinity(value))
+            {
+                return "-∞".PadLeft(10);
+            }
+            else if (IsNegativeZero(value))
+            {
+                return "-0.0".PadLeft(10);
+            }
+            else if (IsPositiveZero(value))
+            {
+                return "+0.0".PadLeft(10);
+            }
+            else
+            {
+                return $"{value,10:G9}";
+            }
         }
 
         [Theory]
@@ -375,37 +403,37 @@ namespace System.Tests
 
         [Theory]
         [InlineData(float.NegativeInfinity,  float.NegativeInfinity, 0.0f)]
-        [InlineData(-3.14159265f,           -3.0f,                   0.0f)]  // value: -(pi)
-        [InlineData(-2.71828183f,           -2.0f,                   0.0f)]  // value: -(e)
-        [InlineData(-2.30258509f,           -2.0f,                   0.0f)]  // value: -(ln(10))
-        [InlineData(-1.57079633f,           -1.0f,                   0.0f)]  // value: -(pi / 2)
-        [InlineData(-1.44269504f,           -1.0f,                   0.0f)]  // value: -(log2(e))
-        [InlineData(-1.41421356f,           -1.0f,                   0.0f)]  // value: -(sqrt(2))
-        [InlineData(-1.12837917f,           -1.0f,                   0.0f)]  // value: -(2 / sqrt(pi))
+        [InlineData(-3.14159265f,           -3.0f,                   0.0f)]     // value: -(pi)
+        [InlineData(-2.71828183f,           -2.0f,                   0.0f)]     // value: -(e)
+        [InlineData(-2.30258509f,           -2.0f,                   0.0f)]     // value: -(ln(10))
+        [InlineData(-1.57079633f,           -1.0f,                   0.0f)]     // value: -(pi / 2)
+        [InlineData(-1.44269504f,           -1.0f,                   0.0f)]     // value: -(log2(e))
+        [InlineData(-1.41421356f,           -1.0f,                   0.0f)]     // value: -(sqrt(2))
+        [InlineData(-1.12837917f,           -1.0f,                   0.0f)]     // value: -(2 / sqrt(pi))
         [InlineData(-1.0f,                  -1.0f,                   0.0f)]
-        [InlineData(-0.785398163f,           0.0f,                   0.0f)]  // value: -(pi / 4)
-        [InlineData(-0.707106781f,           0.0f,                   0.0f)]  // value: -(1 / sqrt(2))
-        [InlineData(-0.693147181f,           0.0f,                   0.0f)]  // value: -(ln(2))
-        [InlineData(-0.636619772f,           0.0f,                   0.0f)]  // value: -(2 / pi)
-        [InlineData(-0.434294482f,           0.0f,                   0.0f)]  // value: -(log10(e))
-        [InlineData(-0.318309886f,           0.0f,                   0.0f)]  // value: -(1 / pi)
+        [InlineData(-0.785398163f,           0.0f,                   0.0f)]     // value: -(pi / 4)
+        [InlineData(-0.707106781f,           0.0f,                   0.0f)]     // value: -(1 / sqrt(2))
+        [InlineData(-0.693147181f,           0.0f,                   0.0f)]     // value: -(ln(2))
+        [InlineData(-0.636619772f,           0.0f,                   0.0f)]     // value: -(2 / pi)
+        [InlineData(-0.434294482f,           0.0f,                   0.0f)]     // value: -(log10(e))
+        [InlineData(-0.318309886f,           0.0f,                   0.0f)]     // value: -(1 / pi)
         [InlineData(-0.0f,                  -0.0f,                   0.0f)]
         [InlineData( float.NaN,              float.NaN,              0.0f)]
         [InlineData( 0.0f,                   0.0f,                   0.0f)]
-        [InlineData( 0.318309886f,           1.0f,                   0.0f)]  // value:  (1 / pi)
-        [InlineData( 0.434294482f,           1.0f,                   0.0f)]  // value:  (log10(e))
-        [InlineData( 0.636619772f,           1.0f,                   0.0f)]  // value:  (2 / pi)
-        [InlineData( 0.693147181f,           1.0f,                   0.0f)]  // value:  (ln(2))
-        [InlineData( 0.707106781f,           1.0f,                   0.0f)]  // value:  (1 / sqrt(2))
-        [InlineData( 0.785398163f,           1.0f,                   0.0f)]  // value:  (pi / 4)
+        [InlineData( 0.318309886f,           1.0f,                   0.0f)]     // value:  (1 / pi)
+        [InlineData( 0.434294482f,           1.0f,                   0.0f)]     // value:  (log10(e))
+        [InlineData( 0.636619772f,           1.0f,                   0.0f)]     // value:  (2 / pi)
+        [InlineData( 0.693147181f,           1.0f,                   0.0f)]     // value:  (ln(2))
+        [InlineData( 0.707106781f,           1.0f,                   0.0f)]     // value:  (1 / sqrt(2))
+        [InlineData( 0.785398163f,           1.0f,                   0.0f)]     // value:  (pi / 4)
         [InlineData( 1.0f,                   1.0f,                   0.0f)]
-        [InlineData( 1.12837917f,            2.0f,                   0.0f)]  // value:  (2 / sqrt(pi))
-        [InlineData( 1.41421356f,            2.0f,                   0.0f)]  // value:  (sqrt(2))
-        [InlineData( 1.44269504f,            2.0f,                   0.0f)]  // value:  (log2(e))
-        [InlineData( 1.57079633f,            2.0f,                   0.0f)]  // value:  (pi / 2)
-        [InlineData( 2.30258509f,            3.0f,                   0.0f)]  // value:  (ln(10))
-        [InlineData( 2.71828183f,            3.0f,                   0.0f)]  // value:  (e)
-        [InlineData( 3.14159265f,            4.0f,                   0.0f)]  // value:  (pi)
+        [InlineData( 1.12837917f,            2.0f,                   0.0f)]     // value:  (2 / sqrt(pi))
+        [InlineData( 1.41421356f,            2.0f,                   0.0f)]     // value:  (sqrt(2))
+        [InlineData( 1.44269504f,            2.0f,                   0.0f)]     // value:  (log2(e))
+        [InlineData( 1.57079633f,            2.0f,                   0.0f)]     // value:  (pi / 2)
+        [InlineData( 2.30258509f,            3.0f,                   0.0f)]     // value:  (ln(10))
+        [InlineData( 2.71828183f,            3.0f,                   0.0f)]     // value:  (e)
+        [InlineData( 3.14159265f,            4.0f,                   0.0f)]     // value:  (pi)
         [InlineData(float.PositiveInfinity,  float.PositiveInfinity, 0.0f)]
         public static void Ceiling(float value, float expectedResult, float allowedVariance)
         {
