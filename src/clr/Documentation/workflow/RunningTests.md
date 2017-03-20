@@ -1,5 +1,5 @@
 
-#Running .NET Core Tests
+# Running .NET Core Tests
 
 TODO - Incomplete. 
 
