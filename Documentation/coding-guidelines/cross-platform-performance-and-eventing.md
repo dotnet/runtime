@@ -1,6 +1,6 @@
 # .NET Cross-Plat Performance and Eventing Design
 
-##Introduction
+## Introduction
 
 As we bring up CoreCLR on the Linux and OS X platforms, it’s important that we determine how we’ll measure and analyze performance on these platforms.  On Windows we use an event based model that depends on ETW, and we have a good amount of tooling that builds on this approach.  Ideally, we can extend this model to Linux and OS X and re-use much of the Windows tooling.
 
