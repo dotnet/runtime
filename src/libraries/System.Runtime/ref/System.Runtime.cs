@@ -2052,6 +2052,10 @@ namespace System
         public static string Join(string separator, params string[] value) { throw null; }
         public static string Join(string separator, string[] value, int startIndex, int count) { throw null; }
         public static string Join<T>(string separator, System.Collections.Generic.IEnumerable<T> values) { throw null; }
+        public static string Join(char separator, params object[] values) { throw null; }
+        public static string Join(char separator, params string[] value) { throw null; }
+        public static string Join(char separator, string[] value, int startIndex, int count) { throw null; }
+        public static string Join<T>(char separator, System.Collections.Generic.IEnumerable<T> values) { throw null; }
         public int LastIndexOf(char value) { throw null; }
         public int LastIndexOf(char value, int startIndex) { throw null; }
         public int LastIndexOf(char value, int startIndex, int count) { throw null; }
