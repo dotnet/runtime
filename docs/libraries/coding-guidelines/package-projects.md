@@ -271,7 +271,7 @@ Part of package build is to ensure that a package is applicable on all platforms
     </SupportedFramework>
     ```
 
-###Inbox assets
+### Inbox assets
 Some libraries are supported inbox on particular frameworks.  For these frameworks the package should not present any assets for (ref or lib) for that framework, but instead permit installation and provide no assets.  We do this in the package by using placeholders ref and lib folders for that framework.  In the package project one can use `InboxOnTargetFramework` items.  The following is an example from the System.Linq.Expressions package.
 ```
 <InboxOnTargetFramework Include="net45" />
@@ -292,7 +292,7 @@ If the library is also a "classic" reference assembly, not referenced by default
 
 Package validation will catch a case where we know a library is supported inbox but a package is using an asset from the package.  This data is driven by framework lists from previously-shipped targeting packs.  The error will appear as: *Framework net45 should support Microsoft.CSharp inbox but {explanation of problem}.  You may need to add <InboxOnTargetFramework Include="net45" /> to your project.*
 
-###External assets
+### External assets
 Runtime specific packages are used to break apart implementations into separate packages and enable "pay-for-play".  For example: don't download the Windows implementation if we're only building/deploying for linux.  In most cases we can completely separate implementations into separate packages such that they easily translate.  For example:
 ```
 runtimes/win/lib/dotnet5.4/System.Banana.dll
@@ -315,7 +315,7 @@ The fix for the error is to put a placeholder in the package that contains the a
 <ExternalOnTargetFramework Include="net46" />
 ```
 
-###Not supported
+### Not supported
 In rare cases a particular library might represent itself as targeting a specific portable moniker (eg: `dotnet5.4`) but it cannot be supported on a particular target framework that is included in that portable moniker for other reasons.  One example of this is System.Diagnostics.Process.  The surface area of this API is portable to dotnet5.4 and could technically run in UWP based on its managed dependencies.  The native API, however, is not supported in app container.  To prevent this package and packages which depend on from installing in UWP projects, only to fail at runtime, we can block the package from being installed.
 
 To do this we create a placeholder in the lib folder with the following syntax.  The resulting combination will be an applicable ref asset with no applicable lib and NuGet's compat check will fail.

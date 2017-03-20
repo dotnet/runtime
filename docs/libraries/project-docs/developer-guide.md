@@ -30,7 +30,7 @@ For more information about the different options that each task has, use the arg
 build -?
 ```
 
-###Build
+### Build
 The CoreFX build has two logical components, the native build which produces the "shims" (which provide a stable interface between the OS and managed code) and
 the managed build which produces the MSIL code and nuget packages that make up CoreFX.
 
@@ -76,7 +76,7 @@ build -framework=netfx
 build -framework=uap
 ```
 
-###Build Native
+### Build Native
 The native build produces shims over libc, openssl, gssapi, libcurl and libz.
 The build system uses CMake (2.8.12 or higher) to generate Makefiles using clang (3.5 or higher).
 The build also uses git for generating some version information.
@@ -97,7 +97,7 @@ build-native -debug -buildArch=arm -- cross verbose
 
 For more information about extra parameters take a look at the scripts `build-native` under src/Native.
 
-###Build Managed
+### Build Managed
 Since the managed build uses the .NET Core CLI (which the build will download), managed components can only be built on a subset of distros.
 There are some additional prerequisites from the CLI which need to be installed. Both libicu and
 libunwind are used by CoreCLR to execute managed code, so they must be
@@ -117,7 +117,7 @@ build-managed -debug -buildArch=x64
 build-managed -debug -buildArch=x64 -os=Linux
 ```
 
-###Build And Run Tests
+### Build And Run Tests
 To build the tests and run them you can call the build-test script. The same parameters you pass to build should also be passed to build-tests script to ensure you are building and running the tests on the same configuration you have build the product on. However to run tests on the same machine you need to ensure the machine supports the configuration you are building.
 
 **Examples**
