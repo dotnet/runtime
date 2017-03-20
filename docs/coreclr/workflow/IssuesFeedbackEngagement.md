@@ -16,7 +16,7 @@ Before you log a new issue, you should try using the search tool on the issue pa
 If you want to ask a question, or want wider discussion (to see if others share you issue), we encourage you to start a thread 
 in the [.NET Foundation forums](http://forums.dotnetfoundation.org/). 
 
-###Chat with the CoreCLR Community
+### Chat with the CoreCLR Community
 
 For more real-time feedback you can also start a chat session by clicking on the icons below.  
 
