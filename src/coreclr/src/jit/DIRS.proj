@@ -36,13 +36,9 @@
 
     <ProjectFile Condition="'$(BuildArchitecture)' == 'arm'"   Include="protojit\protojit.nativeproj" />
     <ProjectFile Condition="'$(BuildArchitecture)' == 'amd64'" Include="protojit\protojit.nativeproj" />
-    <ProjectFile Condition="'$(BuildArchitecture)' == 'amd64'" Include="ctp\ctpjit.nativeproj" />
     <ProjectFile Condition="'$(BuildArchitecture)' == 'amd64'" Include="arm64altjit\arm64altjit.nativeproj" />
     <ProjectFile Condition="'$(BuildArchitecture)' == 'i386'"  Include="protojit\protojit.nativeproj" />
     <ProjectFile Condition="'$(BuildArchitecture)' == 'i386'"  Include="protononjit\protononjit.nativeproj" />
-
-    <!-- We could build skipjit for all architectures, but we only need it for x86 currently -->
-    <ProjectFile Condition="'$(BuildArchitecture)' == 'i386'"  Include="skipjit\skipjit.nativeproj" />
   </ItemGroup>
 
   <!--Import the targets-->
