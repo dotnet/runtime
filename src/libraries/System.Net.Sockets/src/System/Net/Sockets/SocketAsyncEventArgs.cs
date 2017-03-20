@@ -377,8 +377,6 @@ namespace System.Net.Sockets
             // Mark as not in-use.
             _operating = Free;
 
-            InnerComplete();
-
             // Check for deferred Dispose().
             // The deferred Dispose is not guaranteed if Dispose is called while an operation is in progress. 
             // The _disposeCalled variable is not managed in a thread-safe manner on purpose for performance.

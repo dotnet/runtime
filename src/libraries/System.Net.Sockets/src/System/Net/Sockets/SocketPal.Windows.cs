@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace System.Net.Sockets
 {
@@ -140,21 +141,24 @@ namespace System.Net.Sockets
                 }
 
                 // This may throw ObjectDisposedException.
-                SocketError errorCode = Interop.Winsock.WSASend(
-                    handle.DangerousGetHandle(),
-                    WSABuffers,
-                    count,
-                    out bytesTransferred,
-                    socketFlags,
-                    SafeNativeOverlapped.Zero,
-                    IntPtr.Zero);
-
-                if ((SocketError)errorCode == SocketError.SocketError)
+                unsafe
                 {
-                    errorCode = GetLastSocketError();
-                }
+                    SocketError errorCode = Interop.Winsock.WSASend(
+                        handle.DangerousGetHandle(),
+                        WSABuffers,
+                        count,
+                        out bytesTransferred,
+                        socketFlags,
+                        null,
+                        IntPtr.Zero);
 
-                return errorCode;
+                    if (errorCode == SocketError.SocketError)
+                    {
+                        errorCode = GetLastSocketError();
+                    }
+
+                    return errorCode;
+                }
             }
             finally
             {
@@ -205,7 +209,7 @@ namespace System.Net.Sockets
             fixed (byte* prePinnedBuffer = preBuffer)
             fixed (byte* postPinnedBuffer = postBuffer)
             {
-                bool success = TransmitFileHelper(handle, fileHandle, SafeNativeOverlapped.Zero, preBuffer, postBuffer, flags);
+                bool success = TransmitFileHelper(handle, fileHandle, null, preBuffer, postBuffer, flags);
                 return (success ? SocketError.Success : SocketPal.GetLastSocketError());
             }
         }
@@ -266,21 +270,24 @@ namespace System.Net.Sockets
                 }
 
                 // This can throw ObjectDisposedException.
-                SocketError errorCode = Interop.Winsock.WSARecv(
-                    handle.DangerousGetHandle(),
-                    WSABuffers,
-                    count,
-                    out bytesTransferred,
-                    ref socketFlags,
-                    SafeNativeOverlapped.Zero,
-                    IntPtr.Zero);
-
-                if ((SocketError)errorCode == SocketError.SocketError)
+                unsafe
                 {
-                    errorCode = GetLastSocketError();
-                }
+                    SocketError errorCode = Interop.Winsock.WSARecv(
+                        handle.DangerousGetHandle(),
+                        WSABuffers,
+                        count,
+                        out bytesTransferred,
+                        ref socketFlags,
+                        null,
+                        IntPtr.Zero);
 
-                return errorCode;
+                    if (errorCode == SocketError.SocketError)
+                    {
+                        errorCode = GetLastSocketError();
+                    }
+
+                    return errorCode;
+                }
             }
             finally
             {
@@ -462,7 +469,7 @@ namespace System.Net.Sockets
                 optionOutValue,
                 optionOutValue != null ? optionOutValue.Length : 0,
                 out optionLength,
-                SafeNativeOverlapped.Zero,
+                IntPtr.Zero,
                 IntPtr.Zero);
             return errorCode == SocketError.SocketError ? GetLastSocketError() : SocketError.Success;
         }
@@ -804,7 +811,7 @@ namespace System.Net.Sockets
                     IntPtr.Zero,
                     0,
                     out ignoreBytesSent,
-                    asyncResult.OverlappedHandle);
+                    asyncResult.DangerousOverlappedPointer); // SafeHandle was just created in SetUnmanagedStructures
 
                 return asyncResult.ProcessOverlappedResult(success, 0);
             }
@@ -829,7 +836,7 @@ namespace System.Net.Sockets
                     1, // There is only ever 1 buffer being sent.
                     out bytesTransferred,
                     socketFlags,
-                    asyncResult.OverlappedHandle,
+                    asyncResult.DangerousOverlappedPointer, // SafeHandle was just created in SetUnmanagedStructures
                     IntPtr.Zero);
 
                 return asyncResult.ProcessOverlappedResult(errorCode == SocketError.Success, bytesTransferred);
@@ -855,7 +862,7 @@ namespace System.Net.Sockets
                     asyncResult._wsaBuffers.Length,
                     out bytesTransferred,
                     socketFlags,
-                    asyncResult.OverlappedHandle,
+                    asyncResult.DangerousOverlappedPointer, // SafeHandle was just created in SetUnmanagedStructures
                     IntPtr.Zero);
 
                 return asyncResult.ProcessOverlappedResult(errorCode == SocketError.Success, bytesTransferred);
@@ -872,7 +879,7 @@ namespace System.Net.Sockets
         private static unsafe bool TransmitFileHelper(
             SafeHandle socket, 
             SafeHandle fileHandle,
-            SafeHandle overlapped,
+            NativeOverlapped* overlapped,
             byte[] preBuffer,
             byte[] postBuffer,
             TransmitFileOptions flags)
@@ -908,7 +915,7 @@ namespace System.Net.Sockets
                 bool success = TransmitFileHelper(
                     handle, 
                     fileStream?.SafeFileHandle, 
-                    asyncResult.OverlappedHandle, 
+                    asyncResult.DangerousOverlappedPointer, // SafeHandle was just created in SetUnmanagedStructures
                     preBuffer, 
                     postBuffer, 
                     flags);
@@ -937,7 +944,7 @@ namespace System.Net.Sockets
                     socketFlags,
                     asyncResult.GetSocketAddressPtr(),
                     asyncResult.SocketAddress.Size,
-                    asyncResult.OverlappedHandle,
+                    asyncResult.DangerousOverlappedPointer, // SafeHandle was just created in SetUnmanagedStructures
                     IntPtr.Zero);
 
                 return asyncResult.ProcessOverlappedResult(errorCode == SocketError.Success, bytesTransferred);
@@ -963,7 +970,7 @@ namespace System.Net.Sockets
                     1,
                     out bytesTransferred,
                     ref socketFlags,
-                    asyncResult.OverlappedHandle,
+                    asyncResult.DangerousOverlappedPointer, // SafeHandle was just created in SetUnmanagedStructures
                     IntPtr.Zero);
 
                 return asyncResult.ProcessOverlappedResult(errorCode == SocketError.Success, bytesTransferred);
@@ -989,7 +996,7 @@ namespace System.Net.Sockets
                     asyncResult._wsaBuffers.Length,
                     out bytesTransferred,
                     ref socketFlags,
-                    asyncResult.OverlappedHandle,
+                    asyncResult.DangerousOverlappedPointer, // SafeHandle was just created in SetUnmanagedStructures
                     IntPtr.Zero);
 
                 return asyncResult.ProcessOverlappedResult(errorCode == SocketError.Success, bytesTransferred);
@@ -1016,7 +1023,7 @@ namespace System.Net.Sockets
                     ref socketFlags,
                     asyncResult.GetSocketAddressPtr(),
                     asyncResult.GetSocketAddressSizePtr(),
-                    asyncResult.OverlappedHandle,
+                    asyncResult.DangerousOverlappedPointer, // SafeHandle was just created in SetUnmanagedStructures
                     IntPtr.Zero);
 
                 return asyncResult.ProcessOverlappedResult(errorCode == SocketError.Success, bytesTransferred);
@@ -1038,7 +1045,7 @@ namespace System.Net.Sockets
                     handle,
                     Marshal.UnsafeAddrOfPinnedArrayElement(asyncResult._messageBuffer, 0),
                     out bytesTransfered,
-                    asyncResult.OverlappedHandle,
+                    asyncResult.DangerousOverlappedPointer, // SafeHandle was just created in SetUnmanagedStructures
                     IntPtr.Zero);
 
                 return asyncResult.ProcessOverlappedResult(errorCode == SocketError.Success, bytesTransfered);
@@ -1072,7 +1079,7 @@ namespace System.Net.Sockets
                     addressBufferSize,
                     addressBufferSize,
                     out bytesTransferred,
-                    asyncResult.OverlappedHandle);
+                    asyncResult.DangerousOverlappedPointer); // SafeHandle was just created in SetUnmanagedStructures
 
                 return asyncResult.ProcessOverlappedResult(success, 0);
             }
@@ -1088,7 +1095,7 @@ namespace System.Net.Sockets
             // Dual-mode sockets support received packet info on Windows.
         }
 
-        internal static SocketError DisconnectAsync(Socket socket, SafeCloseSocket handle, bool reuseSocket, DisconnectOverlappedAsyncResult asyncResult)
+        internal static unsafe SocketError DisconnectAsync(Socket socket, SafeCloseSocket handle, bool reuseSocket, DisconnectOverlappedAsyncResult asyncResult)
         {
             asyncResult.SetUnmanagedStructures(null);
             try
@@ -1096,7 +1103,7 @@ namespace System.Net.Sockets
                 // This can throw ObjectDisposedException
                 bool success = socket.DisconnectEx(
                     handle,
-                    asyncResult.OverlappedHandle,
+                    asyncResult.DangerousOverlappedPointer, // SafeHandle was just created in SetUnmanagedStructures
                     (int)(reuseSocket ? TransmitFileOptions.ReuseSocket : 0), 
                     0);
 

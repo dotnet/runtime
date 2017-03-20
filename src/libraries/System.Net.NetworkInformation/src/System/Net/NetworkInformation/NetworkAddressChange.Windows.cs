@@ -251,7 +251,7 @@ namespace System.Net.NetworkInformation
                                 (int)IOControlCode.AddressListChange,
                                 null, 0, null, 0,
                                 out length,
-                                SafeNativeOverlapped.Zero, IntPtr.Zero);
+                                IntPtr.Zero, IntPtr.Zero);
 
                             if (errorCode != SocketError.Success)
                             {
@@ -290,7 +290,7 @@ namespace System.Net.NetworkInformation
                                 (int)IOControlCode.AddressListChange,
                                 null, 0, null, 0,
                                 out length,
-                                SafeNativeOverlapped.Zero, IntPtr.Zero);
+                                IntPtr.Zero, IntPtr.Zero);
 
                             if (errorCode != SocketError.Success)
                             {
