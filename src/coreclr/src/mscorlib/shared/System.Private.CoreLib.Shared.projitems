@@ -196,6 +196,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\PartialTrustVisibilityLevel.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\SecurityCriticalAttribute.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\SecurityCriticalScope.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Security\SecurityException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\SecurityRulesAttribute.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\SecurityRuleSet.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\SecuritySafeCriticalAttribute.cs"/>
