@@ -184,9 +184,9 @@
 
   </Target>
 
-  <Target Name="CopyReflectionRoots">  
-    <Copy SourceFiles="$(AssemblyName).reflect.xml" 
-          DestinationFolder="$(OutputPath)"
-	  Condition="Exists('$(AssemblyName).reflect.xml')"/>  
-  </Target>  
+  <Target Name="AfterBuild">
+     <Copy SourceFiles="$(AssemblyName).reflect.xml"
+           DestinationFolder="$(OutputPath)"
+       Condition="Exists('$(AssemblyName).reflect.xml')"/>
+  </Target>
 </Project>
