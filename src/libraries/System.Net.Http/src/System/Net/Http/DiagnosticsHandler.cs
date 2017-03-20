@@ -41,7 +41,7 @@ namespace System.Net.Http
             Activity activity = null;
             Guid loggingRequestId = Guid.Empty;
 
-            // If System.Net.Http.Activity is on see if we should log the start (or just log the activity)
+            // If System.Net.Http.HttpRequestOut is on see if we should log the start (or just log the activity)
             if (s_diagnosticListener.IsEnabled(DiagnosticsHandlerLoggingStrings.ActivityName, request))
             {
                 activity = new Activity(DiagnosticsHandlerLoggingStrings.ActivityName);
@@ -99,7 +99,7 @@ namespace System.Net.Http
             }
             catch (TaskCanceledException)
             {
-                //we'll report task status in Activity.Stop
+                //we'll report task status in HttpRequestOut.Stop
                 throw;
             }
             catch (Exception ex)
