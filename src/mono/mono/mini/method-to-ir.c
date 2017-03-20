@@ -3008,10 +3008,17 @@ emit_write_barrier (MonoCompile *cfg, MonoInst *ptr, MonoInst *value)
 		wbarrier->sreg1 = ptr->dreg;
 		wbarrier->sreg2 = value->dreg;
 		MONO_ADD_INS (cfg->cbb, wbarrier);
-	} else if (card_table && !cfg->compile_aot && !mono_gc_card_table_nursery_check ()) {
+	} else if (card_table) {
 		int offset_reg = alloc_preg (cfg);
 		int card_reg;
 		MonoInst *ins;
+
+		/*
+		 * We emit a fast light weight write barrier. This always marks cards as in the concurrent
+		 * collector case, so, for the serial collector, it might slightly slow down nursery
+		 * collections. We also expect that the host system and the target system have the same card
+		 * table configuration, which is the case if they have the same pointer size.
+		 */
 
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_SHR_UN_IMM, offset_reg, ptr->dreg, card_table_shift_bits);
 		if (card_table_mask)
