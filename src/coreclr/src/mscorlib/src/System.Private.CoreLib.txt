@@ -1427,8 +1427,8 @@ RFLCT.InvalidPropFail = '{0}' property specified was not found.
 RFLCT.InvalidFieldFail = '{0}' field specified was not found.
 
 ;InvalidFilterCriteriaException
-RFLCT.FltCritString = A String must be provided for the filter criteria.
-RFLCT.FltCritInt = An Int32 must be provided for the filter criteria.
+InvalidFilterCriteriaException_CritString = A String must be provided for the filter criteria.
+InvalidFilterCriteriaException_CritInt = An Int32 must be provided for the filter criteria.
 
 ; TargetException
 RFLCT.Targ_ITargMismatch = Object does not match target type.

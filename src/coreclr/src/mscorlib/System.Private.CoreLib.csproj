@@ -330,7 +330,6 @@
     <Compile Include="$(BclSourcesRoot)\System\OutOfMemoryException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Delegate.cs" />
     <Compile Include="$(BclSourcesRoot)\System\MulticastDelegate.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\__Filters.cs" />
     <Compile Include="$(BclSourcesRoot)\System\__HResults.cs" />
     <Compile Include="$(BclSourcesRoot)\System\BCLDebug.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Activator.cs" />
@@ -401,6 +400,9 @@
     <Compile Include="$(BclSourcesRoot)\System\TimeZoneInfo.StringSerializer.cs" />
     <Compile Include="$(BclSourcesRoot)\System\TimeZoneInfo.TransitionTime.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Type.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Type.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Type.Enum.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Type.Helpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\TypeNameParser.cs" />
     <Compile Include="$(BclSourcesRoot)\System\TypedReference.cs" />
     <Compile Include="$(BclSourcesRoot)\System\TypeLoadException.cs" />

@@ -990,4 +990,28 @@ internal static class SR
 
     internal static string PlatformNotSupported_ReflectionOnly =>
         Environment.GetResourceString("PlatformNotSupported_ReflectionOnly");
+
+    internal static string Arg_EnumAndObjectMustBeSameType =>
+        Environment.GetResourceString("Arg_EnumAndObjectMustBeSameType");
+
+    internal static string Arg_EnumUnderlyingTypeAndObjectMustBeSameType =>
+        Environment.GetResourceString("Arg_EnumUnderlyingTypeAndObjectMustBeSameType");
+
+    internal static string Arg_MustBeEnum =>
+        Environment.GetResourceString("Arg_MustBeEnum");
+
+    internal static string Arg_MustBeEnumBaseTypeOrEnum =>
+        Environment.GetResourceString("Arg_MustBeEnumBaseTypeOrEnum");
+
+    internal static string Arg_NotGenericParameter =>
+        Environment.GetResourceString("Arg_NotGenericParameter");
+
+    internal static string Argument_InvalidEnum =>
+        Environment.GetResourceString("Argument_InvalidEnum");
+
+    internal static string InvalidFilterCriteriaException_CritInt =>
+        Environment.GetResourceString("InvalidFilterCriteriaException_CritInt");
+
+    internal static string InvalidOperation_UnknownEnumType =>
+        Environment.GetResourceString("InvalidOperation_UnknownEnumType");
 }
