@@ -2,13 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//
-//
-//
-// Implements System.Type
-//
-// ======================================================================================
-
 using System.Reflection;
 using System.Threading;
 using System.Runtime.CompilerServices;
