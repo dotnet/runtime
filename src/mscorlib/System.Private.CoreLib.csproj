@@ -399,10 +399,7 @@
     <Compile Include="$(BclSourcesRoot)\System\TimeZoneInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\TimeZoneInfo.StringSerializer.cs" />
     <Compile Include="$(BclSourcesRoot)\System\TimeZoneInfo.TransitionTime.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Type.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Type.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Type.Enum.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Type.Helpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\TypeNameParser.cs" />
     <Compile Include="$(BclSourcesRoot)\System\TypedReference.cs" />
     <Compile Include="$(BclSourcesRoot)\System\TypeLoadException.cs" />
@@ -475,7 +472,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodBase.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodImplAttributes.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Missing.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\Module.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\ModuleResolveEventHandler.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodBody.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\ParameterAttributes.cs" />
