@@ -4232,9 +4232,6 @@ void MethodContext::repGetEEInfo(CORINFO_EE_INFO *pEEInfoOut)
         pEEInfoOut->osMajor = (unsigned)0;
         pEEInfoOut->osMinor = (unsigned)0;
         pEEInfoOut->osBuild = (unsigned)0;
-#ifdef DEBUG_REP
-        printf("repGetEEInfo - fell to default params\n");
-#endif
     }
 }
 
