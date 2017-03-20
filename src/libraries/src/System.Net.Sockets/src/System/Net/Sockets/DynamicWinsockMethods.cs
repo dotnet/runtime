@@ -261,7 +261,7 @@ namespace System.Net.Sockets
         }
     }
 
-    internal delegate bool AcceptExDelegate(
+    internal unsafe delegate bool AcceptExDelegate(
                 SafeCloseSocket listenSocketHandle,
                 SafeCloseSocket acceptSocketHandle,
                 IntPtr buffer,
@@ -269,7 +269,7 @@ namespace System.Net.Sockets
                 int localAddressLength,
                 int remoteAddressLength,
                 out int bytesReceived,
-                SafeHandle overlapped);
+                NativeOverlapped* overlapped);
 
     internal delegate void GetAcceptExSockaddrsDelegate(
                 IntPtr buffer,
@@ -282,18 +282,18 @@ namespace System.Net.Sockets
                 out int remoteSocketAddressLength);
 
 
-    internal delegate bool ConnectExDelegate(
+    internal unsafe delegate bool ConnectExDelegate(
                 SafeCloseSocket socketHandle,
                 IntPtr socketAddress,
                 int socketAddressSize,
                 IntPtr buffer,
                 int dataLength,
                 out int bytesSent,
-                SafeHandle overlapped);
+                NativeOverlapped* overlapped);
 
-    internal delegate bool DisconnectExDelegate(
+    internal unsafe delegate bool DisconnectExDelegate(
                 SafeCloseSocket socketHandle, 
-                SafeHandle overlapped, 
+                NativeOverlapped* overlapped, 
                 int flags, 
                 int reserved);
 
@@ -303,11 +303,11 @@ namespace System.Net.Sockets
                 int flags, 
                 int reserved);
 
-    internal delegate SocketError WSARecvMsgDelegate(
+    internal unsafe delegate SocketError WSARecvMsgDelegate(
                 SafeCloseSocket socketHandle,
                 IntPtr msg,
                 out int bytesTransferred,
-                SafeHandle overlapped,
+                NativeOverlapped* overlapped,
                 IntPtr completionRoutine);
 
     internal delegate SocketError WSARecvMsgDelegateBlocking(
@@ -317,11 +317,11 @@ namespace System.Net.Sockets
                 IntPtr overlapped,
                 IntPtr completionRoutine);
 
-    internal delegate bool TransmitPacketsDelegate(
+    internal unsafe delegate bool TransmitPacketsDelegate(
                 SafeCloseSocket socketHandle,
                 IntPtr packetArray,
                 int elementCount,
                 int sendSize,
-                SafeNativeOverlapped overlapped,
+                NativeOverlapped* overlapped,
                 TransmitFileOptions flags);
 }
