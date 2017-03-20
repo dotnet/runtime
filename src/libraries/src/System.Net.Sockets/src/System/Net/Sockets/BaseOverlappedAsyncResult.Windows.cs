@@ -95,14 +95,17 @@ namespace System.Net.Sockets
                     }
                     else
                     {
+                        bool addRefedNativeOverlapped = false;
                         try
                         {
+                            asyncResult._nativeOverlapped.DangerousAddRef(ref addRefedNativeOverlapped);
+
                             // The async IO completed with a failure.
                             // Here we need to call WSAGetOverlappedResult() just so GetLastSocketError() will return the correct error.
                             SocketFlags ignore;
                             bool success = Interop.Winsock.WSAGetOverlappedResult(
                                 socket.SafeHandle,
-                                asyncResult._nativeOverlapped,
+                                (NativeOverlapped*)asyncResult._nativeOverlapped.DangerousGetHandle(),
                                 out numBytes,
                                 false,
                                 out ignore);
@@ -119,6 +122,13 @@ namespace System.Net.Sockets
                         {
                             // CleanedUp check above does not always work since this code is subject to race conditions
                             socketError = SocketError.OperationAborted;
+                        }
+                        finally
+                        {
+                            if (addRefedNativeOverlapped)
+                            {
+                                asyncResult.OverlappedHandle.DangerousRelease();
+                            }
                         }
                     }
                 }
@@ -139,18 +149,13 @@ namespace System.Net.Sockets
             InvokeCallback(result);
         }
 
-        // The following property returns the Win32 unsafe pointer to
-        // whichever Overlapped structure we're using for IO.
-        internal SafeNativeOverlapped OverlappedHandle
-        {
-            get
-            {
-                // On WinNT we need to use (due to the current implementation)
-                // an Overlapped object in order to bind the socket to the
-                // ThreadPool's completion port, so return the native handle
-                return _nativeOverlapped == null ? SafeNativeOverlapped.Zero : _nativeOverlapped;
-            }
-        }
+        // The following property returns a SafeHandle for the pointer to
+        // the Overlapped structure we're using for IO.
+        internal SafeNativeOverlapped OverlappedHandle =>
+            _nativeOverlapped ?? SafeNativeOverlapped.Zero;
+
+        internal unsafe NativeOverlapped* DangerousOverlappedPointer =>
+            _nativeOverlapped != null ? (NativeOverlapped*)_nativeOverlapped.DangerousGetHandle() : null;
 
         // Check the result of the overlapped operation.
         // Handle synchronous success by completing the asyncResult here.

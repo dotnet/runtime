@@ -32,7 +32,7 @@ internal static partial class Interop
             [Out] byte[] outBuffer,
             [In] int outBufferSize,
             [Out] out int bytesTransferred,
-            [In] SafeHandle overlapped,
+            [In] IntPtr overlapped,
             [In] IntPtr completionRoutine);
 
         [DllImport(Interop.Libraries.Ws2_32, SetLastError = true, EntryPoint = "WSAIoctl")]

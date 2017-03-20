@@ -5,6 +5,7 @@
 using System;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 internal static partial class Interop
 {
@@ -16,7 +17,7 @@ internal static partial class Interop
             SafeHandle fileHandle,
             int numberOfBytesToWrite,
             int numberOfBytesPerSend,
-            SafeHandle overlapped,
+            NativeOverlapped* overlapped,
             TransmitFileBuffers* buffers,
             TransmitFileOptions flags);
 
