@@ -42,7 +42,7 @@ fi
 
 echo "$CORE_ROOT/ilasm" -output=$(TargetAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
 "$CORE_ROOT/ilasm" -output=$(TargetAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
-_ERRORLEVEL=$?
+ERRORLEVEL=$?
 if [ $ERRORLEVEL -ne 0 ]
 then
   echo EXECUTION OF ILASM - FAILED $ERRORLEVEL
