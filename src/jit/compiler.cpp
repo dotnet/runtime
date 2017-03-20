@@ -2296,7 +2296,6 @@ void Compiler::compSetProcessor()
 
 #ifdef FEATURE_AVX_SUPPORT
     // COMPlus_EnableAVX can be used to disable using AVX if available on a target machine.
-    // Note that FEATURE_AVX_SUPPORT is not enabled for ctpjit
     opts.compCanUseAVX = false;
     if (!jitFlags.IsSet(JitFlags::JIT_FLAG_PREJIT) && jitFlags.IsSet(JitFlags::JIT_FLAG_USE_AVX2))
     {
