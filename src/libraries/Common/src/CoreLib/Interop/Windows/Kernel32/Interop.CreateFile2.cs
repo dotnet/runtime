@@ -11,20 +11,20 @@ internal partial class Interop
     internal partial class Kernel32
     {
         [DllImport(Libraries.Kernel32, EntryPoint = "CreateFile2", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
-        internal static extern SafeFileHandle CreateFile2(
+        internal static extern unsafe SafeFileHandle CreateFile2(
             string lpFileName,
             int dwDesiredAccess,
             System.IO.FileShare dwShareMode,
             System.IO.FileMode dwCreationDisposition,
-            ref CREATEFILE2_EXTENDED_PARAMETERS parameters);
+            CREATEFILE2_EXTENDED_PARAMETERS* pCreateExParams);
 
-        internal struct CREATEFILE2_EXTENDED_PARAMETERS
+        internal unsafe struct CREATEFILE2_EXTENDED_PARAMETERS
         {
             internal uint dwSize;
             internal uint dwFileAttributes;
             internal uint dwFileFlags;
             internal uint dwSecurityQosFlags;
-            internal IntPtr lpSecurityAttributes;
+            internal SECURITY_ATTRIBUTES* lpSecurityAttributes;
             internal IntPtr hTemplateFile;
         }
     }

@@ -9,7 +9,7 @@ namespace System.IO
 {
     public partial class FileStream : Stream
     {
-        private SafeFileHandle OpenHandle(FileMode mode, FileShare share, FileOptions options)
+        private unsafe SafeFileHandle OpenHandle(FileMode mode, FileShare share, FileOptions options)
         {
             Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = GetSecAttrs(share);
 
@@ -26,14 +26,16 @@ namespace System.IO
                 mode = FileMode.OpenOrCreate;
 
             Interop.Kernel32.CREATEFILE2_EXTENDED_PARAMETERS parameters = new Interop.Kernel32.CREATEFILE2_EXTENDED_PARAMETERS();
+            parameters.dwSize = (uint)sizeof(Interop.Kernel32.CREATEFILE2_EXTENDED_PARAMETERS);
             parameters.dwFileFlags = (uint)options;
+            parameters.lpSecurityAttributes = &secAttrs;
 
             SafeFileHandle fileHandle = Interop.Kernel32.CreateFile2(
                 lpFileName: _path,
                 dwDesiredAccess: fAccess,
                 dwShareMode: share,
                 dwCreationDisposition: mode,
-                parameters: ref parameters);
+                pCreateExParams: &parameters);
 
             fileHandle.IsAsync = _useAsyncIO;
 
@@ -55,21 +57,22 @@ namespace System.IO
             return fileHandle;
         }
 
+#if PROJECTN
         // TODO: These internal methods should be removed once we start consuming updated CoreFX builds
-        internal static FileStream InternalOpen(string path, int bufferSize = 4096, bool useAsync = true)
+        public static FileStream InternalOpen(string path, int bufferSize = 4096, bool useAsync = true)
         {
             return new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize, useAsync);
         }
 
-        internal static FileStream InternalCreate(string path, int bufferSize = 4096, bool useAsync = true)
+        public static FileStream InternalCreate(string path, int bufferSize = 4096, bool useAsync = true)
         {
             return new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read, bufferSize, useAsync);
         }
 
-        internal static FileStream InternalAppend(string path, int bufferSize = 4096, bool useAsync = true)
+        public static FileStream InternalAppend(string path, int bufferSize = 4096, bool useAsync = true)
         {
             return new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.Read, bufferSize, useAsync);
         }
-
+#endif
     }
 }
