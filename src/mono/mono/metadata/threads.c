@@ -261,8 +261,14 @@ mono_threads_begin_abort_protected_block (void)
 	} while (InterlockedCompareExchangePointer ((volatile gpointer)&thread->thread_state, (gpointer)new_state, (gpointer)old_state) != (gpointer)old_state);
 
 	/* Defer async request since we won't be able to process until exiting the block */
-	if (new_val == 1 && (new_state & INTERRUPT_ASYNC_REQUESTED_BIT))
+	if (new_val == 1 && (new_state & INTERRUPT_ASYNC_REQUESTED_BIT)) {
 		InterlockedDecrement (&thread_interruption_requested);
+		THREADS_INTERRUPT_DEBUG ("[%d] begin abort protected block old_state %ld new_state %ld, defer tir %d\n", thread->small_id, old_state, new_state, thread_interruption_requested);
+		if (thread_interruption_requested < 0)
+			g_warning ("bad thread_interruption_requested state");
+	} else {
+		THREADS_INTERRUPT_DEBUG ("[%d] begin abort protected block old_state %ld new_state %ld, tir %d\n", thread->small_id, old_state, new_state, thread_interruption_requested);
+	}
 }
 
 static gboolean
@@ -296,8 +302,12 @@ mono_threads_end_abort_protected_block (void)
 		new_state = old_state - (1 << ABORT_PROT_BLOCK_SHIFT);
 	} while (InterlockedCompareExchangePointer ((volatile gpointer)&thread->thread_state, (gpointer)new_state, (gpointer)old_state) != (gpointer)old_state);
 
-	if (new_val == 0 && (new_state & INTERRUPT_ASYNC_REQUESTED_BIT))
+	if (new_val == 0 && (new_state & INTERRUPT_ASYNC_REQUESTED_BIT)) {
 		InterlockedIncrement (&thread_interruption_requested);
+		THREADS_INTERRUPT_DEBUG ("[%d] end abort protected block old_state %ld new_state %ld, restore tir %d\n", thread->small_id, old_state, new_state, thread_interruption_requested);
+	} else {
+		THREADS_INTERRUPT_DEBUG ("[%d] end abort protected block old_state %ld new_state %ld, tir %d\n", thread->small_id, old_state, new_state, thread_interruption_requested);
+	}
 
 	return mono_thread_state_has_interruption (new_state);
 }
@@ -333,7 +343,9 @@ mono_thread_clear_interruption_requested (MonoInternalThread *thread)
 	} while (InterlockedCompareExchangePointer ((volatile gpointer)&thread->thread_state, (gpointer)new_state, (gpointer)old_state) != (gpointer)old_state);
 
 	InterlockedDecrement (&thread_interruption_requested);
-
+	THREADS_INTERRUPT_DEBUG ("[%d] clear interruption old_state %ld new_state %ld, tir %d\n", thread->small_id, old_state, new_state, thread_interruption_requested);
+	if (thread_interruption_requested < 0)
+		g_warning ("bad thread_interruption_requested state");
 	return TRUE;
 }
 
@@ -358,8 +370,12 @@ mono_thread_set_interruption_requested (MonoInternalThread *thread)
 			new_state = old_state | INTERRUPT_ASYNC_REQUESTED_BIT;
 	} while (InterlockedCompareExchangePointer ((volatile gpointer)&thread->thread_state, (gpointer)new_state, (gpointer)old_state) != (gpointer)old_state);
 
-	if (sync || !(new_state & ABORT_PROT_BLOCK_MASK))
+	if (sync || !(new_state & ABORT_PROT_BLOCK_MASK)) {
 		InterlockedIncrement (&thread_interruption_requested);
+		THREADS_INTERRUPT_DEBUG ("[%d] set interruption on [%d] old_state %ld new_state %ld, tir %d\n", mono_thread_internal_current ()->small_id, thread->small_id, old_state, new_state, thread_interruption_requested);
+	} else {
+		THREADS_INTERRUPT_DEBUG ("[%d] set interruption on [%d] old_state %ld new_state %ld, tir deferred %d\n", mono_thread_internal_current ()->small_id, thread->small_id, old_state, new_state, thread_interruption_requested);
+	}
 
 	return sync || !(new_state & ABORT_PROT_BLOCK_MASK);
 }
