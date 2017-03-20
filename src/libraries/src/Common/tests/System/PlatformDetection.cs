@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System
 {
-    public static class PlatformDetection
+    public static partial class PlatformDetection
     {
         public static bool IsFullFramework => RuntimeInformation.FrameworkDescription.StartsWith(".NET Framework", StringComparison.OrdinalIgnoreCase);
 
@@ -151,8 +151,6 @@ namespace System
             return false;
         }
 
-        public static Version OSXKernelVersion { get; } = GetOSXKernelVersion();
-
         private static IdVersionPair ParseOsReleaseFile()
         {
             Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.Linux));
@@ -236,23 +234,6 @@ namespace System
 
             return -1;
         }
-
-        private static Version GetOSXKernelVersion()
-        {
-            if (IsOSX)
-            {
-                byte[] bytes = new byte[256];
-                IntPtr bytesLength = new IntPtr(bytes.Length);
-                Assert.Equal(0, sysctlbyname("kern.osrelease", bytes, ref bytesLength, null, IntPtr.Zero));
-                string versionString = Encoding.UTF8.GetString(bytes);
-                return Version.Parse(versionString);
-            }
-
-            return new Version(0, 0, 0);
-        }
-
-        [DllImport("libc", SetLastError = true)]
-        private static extern int sysctlbyname(string ctlName, byte[] oldp, ref IntPtr oldpLen, byte[] newp, IntPtr newpLen);
 
         [DllImport("ntdll.dll")]
         private static extern int RtlGetVersion(out RTL_OSVERSIONINFOEX lpVersionInformation);
