@@ -92,6 +92,13 @@ mono_arch_get_plt_info_offset (guint8 *plt_entry, mgreg_t *regs, guint8 *code)
 	return ((guint32*)plt_entry) [4];
 }
 
+gpointer
+mono_arm_handler_block_trampoline_helper (gpointer *ptr)
+{
+	MonoJitTlsData *jit_tls = mono_tls_get_jit_tls ();
+	return jit_tls->handler_block_return_address;
+}
+
 #ifndef DISABLE_JIT
 
 guchar*
@@ -505,13 +512,6 @@ mono_arch_create_general_rgctx_lazy_fetch_trampoline (MonoTrampInfo **info, gboo
 		*info = mono_tramp_info_create ("rgctx_fetch_trampoline_general", buf, code - buf, ji, unwind_ops);
 
 	return buf;
-}
-
-gpointer
-mono_arm_handler_block_trampoline_helper (gpointer *ptr)
-{
-	MonoJitTlsData *jit_tls = mono_tls_get_jit_tls ();
-	return jit_tls->handler_block_return_address;
 }
 
 gpointer
