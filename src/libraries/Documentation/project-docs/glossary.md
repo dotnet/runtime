@@ -103,13 +103,13 @@ A simple example of LINQ is
 var odds = source.Where(obj => obj.Id == 1).ToArray();
 ```
 
-####IQueryable&lt;T&gt; and Expressions
+#### IQueryable&lt;T&gt; and Expressions
 
 One of the big advantages of using LINQ over more common data processing patterns is that the function given to the LINQ function can be converted to an expression and then executed in some other form, like SQL or on another machine across the network. An expression is a in-memory representation of some logic to follow.
 
 For example, in the above sample `source` could actually be a database connection and the function call `Where(obj => obj.Id == 1)` would be conveted to a SQL WHERE clause: `WHERE ID = 1`, and then executed on the SQL server.
 
-####Parallel LINQ
+#### Parallel LINQ
 
 **Also referred to as**: PLINQ
 
