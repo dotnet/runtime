@@ -44,7 +44,7 @@ void Compiler::fgInit()
     fgSlopUsedInEdgeWeights  = false;
     fgRangeUsedInEdgeWeights = true;
     fgNeedsUpdateFlowGraph   = false;
-    fgCalledWeight           = BB_ZERO_WEIGHT;
+    fgCalledCount            = BB_ZERO_WEIGHT;
 
     /* We haven't yet computed the dominator sets */
     fgDomsComputed = false;
@@ -12544,7 +12544,7 @@ void Compiler::fgComputeEdgeWeights()
         }
 #endif // DEBUG
         fgHaveValidEdgeWeights = false;
-        fgCalledWeight         = BB_UNITY_WEIGHT;
+        fgCalledCount          = BB_UNITY_WEIGHT;
     }
 
 #if DEBUG
@@ -12682,12 +12682,12 @@ void Compiler::fgComputeEdgeWeights()
     }
 #endif
 
-    // When we are not using profile data we have already setup fgCalledWeight
+    // When we are not using profile data we have already setup fgCalledCount
     // only set it here if we are using profile data
     //
     if (fgIsUsingProfileWeights())
     {
-        // If the first block has one ref then it's weight is the fgCalledWeight
+        // If the first block has one ref then it's weight is the fgCalledCount
         // otherwise we have backedge's into the first block so instead
         // we use the sum of the return block weights.
         // If the profile data has a 0 for the returnWeoght
@@ -12695,11 +12695,11 @@ void Compiler::fgComputeEdgeWeights()
         //
         if ((fgFirstBB->countOfInEdges() == 1) || (returnWeight == 0))
         {
-            fgCalledWeight = fgFirstBB->bbWeight;
+            fgCalledCount = fgFirstBB->bbWeight;
         }
         else
         {
-            fgCalledWeight = returnWeight;
+            fgCalledCount = returnWeight;
         }
     }
 
@@ -12713,7 +12713,7 @@ void Compiler::fgComputeEdgeWeights()
         //
         if (bDst == fgFirstBB)
         {
-            bDstWeight -= fgCalledWeight;
+            bDstWeight -= fgCalledCount;
         }
 
         for (edge = bDst->bbPreds; edge != nullptr; edge = edge->flNext)
@@ -12878,7 +12878,7 @@ void Compiler::fgComputeEdgeWeights()
                 //
                 if (bDst == fgFirstBB)
                 {
-                    bDstWeight -= fgCalledWeight;
+                    bDstWeight -= fgCalledCount;
                 }
 
                 UINT64 minEdgeWeightSum = 0;
@@ -19116,7 +19116,7 @@ bool Compiler::fgDumpFlowGraph(Phases phase)
         return false;
     }
     bool        validWeights  = fgHaveValidEdgeWeights;
-    unsigned    calledCount   = max(fgCalledWeight, BB_UNITY_WEIGHT) / BB_UNITY_WEIGHT;
+    unsigned    calledCount   = max(fgCalledCount, BB_UNITY_WEIGHT) / BB_UNITY_WEIGHT;
     double      weightDivisor = (double)(calledCount * BB_UNITY_WEIGHT);
     const char* escapedString;
     const char* regionString = "NONE";
