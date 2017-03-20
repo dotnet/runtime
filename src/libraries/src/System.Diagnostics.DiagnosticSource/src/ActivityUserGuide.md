@@ -308,7 +308,7 @@ Id is passed to external dependencies and considered as [ParentId](#parentid) fo
 ### SetEndTime()
 `Activity SetEndTime(DateTime endTimeUtc)` - sets [Duration](#duration) as a difference between endTimeUtc and [StartTimeUtc](#starttimeutc).
 
-##DiagnosticSource
+## DiagnosticSource
 ### StartActivity
 `Activity StartActivity(Activity activity, object args)` - Starts the given activity and writes DiagnosticSource event message OperationName.Start with args payload.
 ### StopActivity

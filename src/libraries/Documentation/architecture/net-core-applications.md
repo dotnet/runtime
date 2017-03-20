@@ -1,4 +1,4 @@
-﻿#.NET Core Applications
+﻿# .NET Core Applications
 
 NETCoreApp is the [target framework](https://docs.nuget.org/Create/TargetFrameworks) that represents .NET Core applications
 
@@ -11,7 +11,7 @@ Friendly name | .NET Core Application
 NuGet folder name | `netcoreapp1.0`
 NETStandard version supported | `netstandard1.6`
 
-##FAQ
+## FAQ
 **Q: What is a .NET Core application?**  
 **A:** A .NET Core application is an application that can run on any .NET Core runtime: CoreCLR (current), .NETNative (future). It can run on one of many .NET core platforms (Windows, OSX, Linux).  It relies on the host provided by the given runtime.  It's a composable framework built from the packages on which the application depends.  Its assembly loading policy permits newer versions of dependencies without any application configuration (eg: BindingRedirects are not required).
 
