@@ -95,17 +95,14 @@ namespace System.Net.Sockets
                     }
                     else
                     {
-                        bool addRefedNativeOverlapped = false;
                         try
                         {
-                            asyncResult._nativeOverlapped.DangerousAddRef(ref addRefedNativeOverlapped);
-
                             // The async IO completed with a failure.
                             // Here we need to call WSAGetOverlappedResult() just so GetLastSocketError() will return the correct error.
                             SocketFlags ignore;
                             bool success = Interop.Winsock.WSAGetOverlappedResult(
                                 socket.SafeHandle,
-                                (NativeOverlapped*)asyncResult._nativeOverlapped.DangerousGetHandle(),
+                                nativeOverlapped,
                                 out numBytes,
                                 false,
                                 out ignore);
@@ -122,13 +119,6 @@ namespace System.Net.Sockets
                         {
                             // CleanedUp check above does not always work since this code is subject to race conditions
                             socketError = SocketError.OperationAborted;
-                        }
-                        finally
-                        {
-                            if (addRefedNativeOverlapped)
-                            {
-                                asyncResult.OverlappedHandle.DangerousRelease();
-                            }
                         }
                     }
                 }
@@ -149,13 +139,7 @@ namespace System.Net.Sockets
             InvokeCallback(result);
         }
 
-        // The following property returns a SafeHandle for the pointer to
-        // the Overlapped structure we're using for IO.
-        internal SafeNativeOverlapped OverlappedHandle =>
-            _nativeOverlapped ?? SafeNativeOverlapped.Zero;
-
-        internal unsafe NativeOverlapped* DangerousOverlappedPointer =>
-            _nativeOverlapped != null ? (NativeOverlapped*)_nativeOverlapped.DangerousGetHandle() : null;
+        internal unsafe NativeOverlapped* DangerousOverlappedPointer => (NativeOverlapped*)_nativeOverlapped.DangerousGetHandle();
 
         // Check the result of the overlapped operation.
         // Handle synchronous success by completing the asyncResult here.

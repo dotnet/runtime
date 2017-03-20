@@ -34,17 +34,5 @@ internal static partial class Interop
             [Out] out int bytesTransferred,
             [In] IntPtr overlapped,
             [In] IntPtr completionRoutine);
-
-        [DllImport(Interop.Libraries.Ws2_32, SetLastError = true, EntryPoint = "WSAIoctl")]
-        internal static extern SocketError WSAIoctl_Blocking_Internal(
-            [In]  IntPtr socketHandle,
-            [In]  uint ioControlCode,
-            [In]  IntPtr inBuffer,
-            [In]  int inBufferSize,
-            [Out] IntPtr outBuffer,
-            [In]  int outBufferSize,
-            [Out] out int bytesTransferred,
-            [In]  SafeHandle overlapped,
-            [In]  IntPtr completionRoutine);
     }
 }
