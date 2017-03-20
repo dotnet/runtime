@@ -89,7 +89,7 @@ This is the full list of commands currently supported by SOS. LLDB is case-sensi
     HistObjFind (histobjfind)
     HistClear (histclear)
 
-###Aliases###
+### Aliases ###
 
 By default you can reach all the SOS commands by using: _sos [command\_name]_
 However the common commands have been aliased so that you don't need the SOS prefix:

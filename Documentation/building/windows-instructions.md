@@ -4,7 +4,7 @@ Build CoreCLR on Windows
 These instructions will lead you through building CoreCLR.
 
 ----------------
-#Environment
+# Environment
 
 You must install several components to build the CoreCLR and CoreFX repos. These instructions were tested on Windows 7+.
 
@@ -48,7 +48,7 @@ For Visual Studio 2017:
 
 Visual Studio Express is not supported.
 
-##CMake
+## CMake
 
 The CoreCLR repo build has been validated using CMake 3.7.2 
 
@@ -58,7 +58,7 @@ The CoreCLR repo build has been validated using CMake 3.7.2
   following the instructions at [Adding to the Default PATH variable](#adding-to-the-default-path-variable)
   
 
-##Python
+## Python
 
 Python is used in the build system. We are currently using python 2.7.9, although
 any recent (2.4+) version of Python should work, including Python 3.
@@ -67,7 +67,7 @@ any recent (2.4+) version of Python should work, including Python 3.
   The installation script has a check box to do this, but you can do it yourself after the fact 
   following the instructions at [Adding to the Default PATH variable](#adding-to-the-default-path-variable)
 
-##Git 
+## Git
 
 For actual user operations, it is often more convinient to use the GIT features built into Visual Studio 2015.
 However the CoreCLR and the tests use the GIT command line utilities directly so you need to install them
@@ -78,20 +78,20 @@ for these to work properly.   You can get it from
   The installation script has a check box to do this, but you can do it yourself after the fact 
   following the instructions at [Adding to the Default PATH variable](#adding-to-the-default-path-variable)
 
-##PowerShell
+## PowerShell
 PowerShell is used in the build system. Ensure that it is accessible via the PATH environment variable.
 Typically this is %SYSTEMROOT%\System32\WindowsPowerShell\v1.0\.
 
 Powershell version must be 3.0 or higher. This should be the case for Windows 8 and later builds.
 - Windows 7 SP1 can install Powershell version 4 [here](https://www.microsoft.com/en-us/download/details.aspx?id=40855).
 
-##DotNet Core SDK
+## DotNet Core SDK
 While not strictly needed to build or tests the .NET Core repository, having the .NET Core SDK installed lets 
 you use the dotnet.exe command to run .NET Core applications in the 'normal' way.   We use this in the 
 [Using Your Build](Documentation/workflow/UsingYourBuild.md) instructions.  Visual Studio 2015 (update 3) should have
 installed the .NET Core SDK, but in case it did not you can get it from the [Installing the .Net Core SDK](https://www.microsoft.com/net/core) page.  
 
-##Adding to the default PATH variable
+## Adding to the default PATH variable
 
 The commands above need to be on your command lookup path.   Some installers will automatically add them to 
 the path as part of installation, but if not here is how you can do it.  
@@ -106,7 +106,7 @@ and select the 'Path' variable in the 'System variables' (if you want to change 
 to change it for the currnet user).  Simply edit the PATH variable's value and add the directory (with a semicolon separator).
 
 -------------------------------------
-#Building 
+# Building
 
 Once all the necessary tools are in place, building is trivial.  Simply run build build.cmd script that lives at
 the base of the repository.   
