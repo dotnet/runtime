@@ -14,6 +14,7 @@
 #include "ir-emit.h"
 #include "mono/utils/bsearch.h"
 #include <mono/metadata/abi-details.h>
+#include <mono/metadata/reflection-internals.h>
 
 /*
 General notes on SIMD intrinsics
@@ -1058,6 +1059,99 @@ type_to_pdiv_op (MonoType *t)
 }
 
 static int
+type_to_pxor_op (MonoType *t)
+{
+	/*
+	 * These opcodes have the same semantics, but using the
+	 * correctly typed version is better for performance.
+	 */
+	switch (t->type) {
+	case MONO_TYPE_R4:
+		return OP_XORPS;
+	case MONO_TYPE_R8:
+		return OP_XORPD;
+	default:
+		return OP_PXOR;
+	}
+}
+
+static int
+type_to_pand_op (MonoType *t)
+{
+	switch (t->type) {
+	case MONO_TYPE_R4:
+		return OP_ANDPS;
+	case MONO_TYPE_R8:
+		return OP_ANDPD;
+	default:
+		return OP_PAND;
+	}
+}
+
+static int
+type_to_por_op (MonoType *t)
+{
+	switch (t->type) {
+	case MONO_TYPE_R4:
+		return OP_ORPS;
+	case MONO_TYPE_R8:
+		return OP_ORPD;
+	default:
+		return OP_POR;
+	}
+}
+
+static int
+type_to_pmin_op (MonoType *t)
+{
+	switch (t->type) {
+	case MONO_TYPE_R4:
+		return OP_MINPS;
+	case MONO_TYPE_R8:
+		return OP_MINPD;
+	case MONO_TYPE_I1:
+		return OP_PMINB;
+	case MONO_TYPE_U1:
+		return OP_PMINB_UN;
+	case MONO_TYPE_I2:
+		return OP_PMINW;
+	case MONO_TYPE_U2:
+		return OP_PMINW_UN;
+	case MONO_TYPE_I4:
+		return OP_PMIND;
+	case MONO_TYPE_U4:
+		return OP_PMIND_UN;
+	default:
+		return -1;
+	}
+}
+
+static int
+type_to_pmax_op (MonoType *t)
+{
+	switch (t->type) {
+	case MONO_TYPE_R4:
+		return OP_MAXPS;
+	case MONO_TYPE_R8:
+		return OP_MAXPD;
+	case MONO_TYPE_I1:
+		return OP_PMAXB;
+	case MONO_TYPE_U1:
+		return OP_PMAXB_UN;
+	case MONO_TYPE_I2:
+		return OP_PMAXW;
+	case MONO_TYPE_U2:
+		return OP_PMAXW_UN;
+	case MONO_TYPE_I4:
+		return OP_PMAXD;
+	case MONO_TYPE_U4:
+		return OP_PMAXD_UN;
+	default:
+		return -1;
+	}
+}
+
+static int
 get_simd_vreg_or_expanded_scalar (MonoCompile *cfg, MonoClass *klass, MonoType *param_type, MonoInst *src)
 {
 	MonoInst *ins;
@@ -1940,6 +2034,30 @@ mono_emit_simd_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	return NULL;
 }
 
+static void
+assert_handled (MonoCompile *cfg, MonoMethod *method)
+{
+	MonoCustomAttrInfo *cattr;
+	MonoError error;
+
+	if (cfg->verbose_level > 1) {
+		cattr = mono_custom_attrs_from_method_checked (method, &error);
+
+		if (cattr) {
+			gboolean has_attr = FALSE;
+			for (int i = 0; i < cattr->num_attrs; ++i)
+				if (cattr->attrs [i].ctor && (!strcmp (cattr->attrs [i].ctor->klass->name, "JitIntrinsicAttribute")))
+					has_attr = TRUE;
+			if (has_attr) {
+				printf ("SIMD intrinsic unhandled: %s\n", mono_method_get_name_full (method, TRUE, TRUE, MONO_TYPE_NAME_FORMAT_IL));
+				fflush (stdout);
+				//g_assert_not_reached ();
+			}
+			mono_custom_attrs_free (cattr);
+		}
+	}
+}
+
 // The entries should be ordered by name
 // System.Numerics.Vector2/Vector3/Vector4
 static const SimdIntrinsic vector2_intrinsics[] = {
@@ -1968,7 +2086,7 @@ emit_vector_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 	 */
 	intrins = (const SimdIntrinsic*)mono_binary_search (cmethod->name, vector2_intrinsics, sizeof (vector2_intrinsics) / sizeof (SimdIntrinsic), sizeof (SimdIntrinsic), &simd_intrinsic_compare_by_name);
 	if (!intrins) {
-		//printf ("%s\n", mono_method_full_name (cmethod, 1));
+		assert_handled (cfg, cmethod);
 		return NULL;
 	}
 
@@ -2036,6 +2154,8 @@ emit_vector_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 		break;
 	}
 
+	assert_handled (cfg, cmethod);
+
 	if (cfg->verbose_level > 1) {
 		char *name = mono_method_full_name (cmethod, TRUE);
 		printf ("  SIMD method %s not handled.\n", name);
@@ -2044,6 +2164,7 @@ emit_vector_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 	return NULL;
 }
 
+/* These should be ordered by name */
 static const SimdIntrinsic vector_t_intrinsics[] = {
 	{ SN_ctor },
 	{ SN_Abs },
@@ -2053,12 +2174,17 @@ static const SimdIntrinsic vector_t_intrinsics[] = {
 	{ SN_GreaterThanOrEqual },
 	{ SN_LessThan },
 	{ SN_LessThanOrEqual },
+	{ SN_Max },
+	{ SN_Min },
 	{ SN_get_AllOnes, OP_XONES },
 	{ SN_get_Count },
 	{ SN_get_Item },
 	{ SN_get_Zero, OP_XZERO },
 	{ SN_op_Addition },
+	{ SN_op_BitwiseAnd },
+	{ SN_op_BitwiseOr },
 	{ SN_op_Division },
+	{ SN_op_ExclusiveOr },
 	{ SN_op_Explicit },
 	{ SN_op_Multiply },
 	{ SN_op_Subtraction }
@@ -2074,7 +2200,7 @@ emit_vector_t_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 
 	intrins = (const SimdIntrinsic*)mono_binary_search (cmethod->name, vector_t_intrinsics, sizeof (vector_t_intrinsics) / sizeof (SimdIntrinsic), sizeof (SimdIntrinsic), &simd_intrinsic_compare_by_name);
 	if (!intrins) {
-		//printf ("%s\n", mono_method_full_name (cmethod, 1));
+		assert_handled (cfg, cmethod);
 		return NULL;
 	}
 
@@ -2152,13 +2278,14 @@ emit_vector_t_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 	case SN_Equals:
 		if (fsig->param_count == 1 && fsig->ret->type == MONO_TYPE_BOOLEAN && mono_metadata_type_equal (fsig->params [0], type))
 			return simd_intrinsic_emit_equality_op (cfg, cmethod, args, type_to_comp_op (etype), SIMD_COMP_EQ);
-		if (fsig->param_count == 2 && fsig->ret->type == MONO_TYPE_BOOLEAN && mono_metadata_type_equal (fsig->params [0], type) && mono_metadata_type_equal (fsig->params [1], type))
+		if (fsig->param_count == 2 && mono_metadata_type_equal (fsig->ret, type) && mono_metadata_type_equal (fsig->params [0], type) && mono_metadata_type_equal (fsig->params [1], type))
 			return simd_intrinsic_emit_binary_op (cfg, type_to_comp_op (etype), 0, cmethod->klass, fsig->params [0], fsig->params [1], args [0], args [1]);
 		break;
 
 	case SN_GreaterThan:
 	case SN_GreaterThanOrEqual:
-	case SN_LessThan: {
+	case SN_LessThan:
+	case SN_LessThanOrEqual: {
 		MonoInst *cmp1, *cmp2;
 		int eq_op, gt_op;
 
@@ -2218,7 +2345,12 @@ emit_vector_t_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 	case SN_op_Addition:
 	case SN_op_Subtraction:
 	case SN_op_Multiply:
- 	case SN_op_Division: {
+	case SN_op_Division:
+	case SN_op_ExclusiveOr:
+	case SN_op_BitwiseAnd:
+	case SN_op_BitwiseOr:
+	case SN_Max:
+	case SN_Min: {
 		if (!(fsig->param_count == 2 && mono_metadata_type_equal (fsig->ret, fsig->params [0]) && mono_metadata_type_equal (fsig->params [0], fsig->params [1])))
 			break;
 		int op = 0;
@@ -2234,6 +2366,21 @@ emit_vector_t_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 			break;
 		case SN_op_Division:
 			op = type_to_pdiv_op (etype);
+			break;
+		case SN_op_ExclusiveOr:
+			op = type_to_pxor_op (etype);
+			break;
+		case SN_op_BitwiseAnd:
+			op = type_to_pand_op (etype);
+			break;
+		case SN_op_BitwiseOr:
+			op = type_to_por_op (etype);
+			break;
+		case SN_Min:
+			op = type_to_pmin_op (etype);
+			break;
+		case SN_Max:
+			op = type_to_pmax_op (etype);
 			break;
 		default:
 			g_assert_not_reached ();
@@ -2273,6 +2420,8 @@ emit_vector_t_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 	default:
 		break;
 	}
+
+	assert_handled (cfg, cmethod);
 
 	if (cfg->verbose_level > 1) {
 		char *name = mono_method_full_name (cmethod, TRUE);
