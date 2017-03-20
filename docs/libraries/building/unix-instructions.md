@@ -1,6 +1,6 @@
 Building CoreFX on FreeBSD, Linux and OS X
 ==========================================
-##Building
+## Building
 
 1. Install the prerequisites ([Linux](#user-content-linux), [macOS](#user-content-macos))
 2. Clone the corefx repo `git clone https://github.com/dotnet/corefx.git`
