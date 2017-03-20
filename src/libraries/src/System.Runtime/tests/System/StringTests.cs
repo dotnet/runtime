@@ -1607,20 +1607,30 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void Join_StringArray_Invalid()
+        public static void Join_String_NullValues_ThrowsArgumentNullException()
         {
-            // Values is null
             Assert.Throws<ArgumentNullException>("value", () => string.Join("$$", null));
             Assert.Throws<ArgumentNullException>("value", () => string.Join("$$", null, 0, 0));
             Assert.Throws<ArgumentNullException>("values", () => string.Join("|", (IEnumerable<string>)null));
             Assert.Throws<ArgumentNullException>("values", () => string.Join<string>("|", (IEnumerable<string>)null)); // Generic overload
+        }
 
-            Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => string.Join("$$", new string[] { "Foo" }, -1, 0)); // Start index < 0
-            Assert.Throws<ArgumentOutOfRangeException>("count", () => string.Join("$$", new string[] { "Foo" }, 0, -1)); // Count < 0
+        [Fact]
+        public static void Join_String_NegativeCount_ThrowsArgumentOutOfRangeException()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("count", () => string.Join("$$", new string[] { "Foo" }, 0, -1));
+        }
 
-            // Start index > separators.Length
-            Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => string.Join("$$", new string[] { "Foo" }, 2, 1));
-            Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => string.Join("$$", new string[] { "Foo" }, 0, 2));
+        [Theory]
+        [InlineData(2, 1)]
+        [InlineData(2, 0)]
+        [InlineData(1, 2)]
+        [InlineData(1, 1)]
+        [InlineData(0, 2)]
+        [InlineData(-1, 0)]
+        public static void Join_String_InvalidStartIndexCount_ThrowsArgumentOutOfRangeException(int startIndex, int count)
+        {
+            Assert.Throws<ArgumentOutOfRangeException>("startIndex", () => string.Join("$$", new string[] { "Foo" }, startIndex, count));
         }
 
         public static IEnumerable<object[]> Join_ObjectArray_TestData()
