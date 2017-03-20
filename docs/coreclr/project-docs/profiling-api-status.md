@@ -1,10 +1,10 @@
-#Status of CoreCLR Profiler APIs
+# Status of CoreCLR Profiler APIs
 
 The notes below will help you determine what profiling APIs are safe to use. The .NET Core project started with the codebase from the desktop CoreCLR/Silverlight so all the profiler APIs present there are also present in the code here. However that doesn't automatically imply that they are all working or being actively tested right now. Our goal is to eventually have everything tested and working across all the supported OSes. As we make progress we'll document it here. If you want to use APIs that we haven't tested yet you are welcome to do so, but you need to do your own testing to determine whether they work. If you do test APIs we haven't gotten to yet, we hope you'll add a note below in the Community Tested API section so that everyone can benefit.
 
-#Microsoft Tested APIs:
+# Microsoft Tested APIs:
 
-###Windows
+### Windows
 
 * ICorProfilerCallback:
  * `Initialize`
@@ -34,12 +34,12 @@ The notes below will help you determine what profiling APIs are safe to use. The
 \* Instrumentation APIs have not been tested on assemblies compiled with Ready2Run technology. Ready2Run is currently used
    for all Framework assemblies. 
    
-###Linux
-###OS X
+### Linux
+### OS X
 
-#Community Tested APIs (please include GitHub handle)
+# Community Tested APIs (please include GitHub handle)
 
-###Windows
+### Windows
   * IProfilerCallback
     * ModuleLoadStarted (noahfalk on behalf of one of our vendors)
     * JITCompilationStarted (noahfalk on behalf of one of our vendors)
@@ -51,12 +51,12 @@ The notes below will help you determine what profiling APIs are safe to use. The
   * IMetaDataAssemblyEmit
     * DefineAssemblyRef (noahfalk on behalf of one of our vendors)
     
-###Linux
-###OS X
+### Linux
+### OS X
 
-#APIs definitely known not to work yet
-###Windows
-###Linux
+# APIs definitely known not to work yet
+### Windows
+### Linux
 
 * ICorProfilerInfo:
  * `SetEnterLeaveFunctionHooks`
@@ -68,7 +68,7 @@ The notes below will help you determine what profiling APIs are safe to use. The
  * `COR_PRF_USE_PROFILE_IMAGES`
  * `COR_PRF_REQUIRE_PROFILE_IMAGE`
 
-###OS X
+### OS X
 * ICorProfilerInfo:
  * `SetEnterLeaveFunctionHooks`
 

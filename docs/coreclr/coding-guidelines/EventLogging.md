@@ -1,6 +1,6 @@
 # CoreClr Event Logging Design
 
-##Introduction
+## Introduction
 
 Event Logging is a mechanism by which CoreClr can provide a variety of information on it's state. This Logging works by inserting explicit logging calls by the developer within the VM . The Event Logging mechanism is largely based on [ETW- Event Tracing For Windows](https://msdn.microsoft.com/en-us/library/windows/desktop/bb968803(v=vs.85).aspx)
 
