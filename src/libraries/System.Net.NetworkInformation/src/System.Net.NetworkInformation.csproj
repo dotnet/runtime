@@ -223,9 +223,6 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Winsock\Interop.WSASocketW.SafeCloseSocket.cs">
       <Link>Interop\Windows\Winsock\Interop.WSASocketW.SafeCloseSocket.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Winsock\SafeNativeOverlapped.cs">
-      <Link>Interop\Windows\Winsock\SafeNativeOverlapped.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Winsock\SafeOverlappedFree.cs">
       <Link>Interop\Windows\Winsock\SafeOverlappedFree.cs</Link>
     </Compile>

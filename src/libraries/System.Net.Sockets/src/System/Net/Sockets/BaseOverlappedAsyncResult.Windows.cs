@@ -102,7 +102,7 @@ namespace System.Net.Sockets
                             SocketFlags ignore;
                             bool success = Interop.Winsock.WSAGetOverlappedResult(
                                 socket.SafeHandle,
-                                asyncResult._nativeOverlapped,
+                                nativeOverlapped,
                                 out numBytes,
                                 false,
                                 out ignore);
@@ -139,18 +139,7 @@ namespace System.Net.Sockets
             InvokeCallback(result);
         }
 
-        // The following property returns the Win32 unsafe pointer to
-        // whichever Overlapped structure we're using for IO.
-        internal SafeNativeOverlapped OverlappedHandle
-        {
-            get
-            {
-                // On WinNT we need to use (due to the current implementation)
-                // an Overlapped object in order to bind the socket to the
-                // ThreadPool's completion port, so return the native handle
-                return _nativeOverlapped == null ? SafeNativeOverlapped.Zero : _nativeOverlapped;
-            }
-        }
+        internal unsafe NativeOverlapped* DangerousOverlappedPointer => (NativeOverlapped*)_nativeOverlapped.DangerousGetHandle();
 
         // Check the result of the overlapped operation.
         // Handle synchronous success by completing the asyncResult here.
