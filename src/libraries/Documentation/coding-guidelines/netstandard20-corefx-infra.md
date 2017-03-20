@@ -1,5 +1,5 @@
-##dotnet/CoreFx
-###Libraries in NETStandard
+## dotnet/CoreFx
+### Libraries in NETStandard
 - ref
   - Default targetgroup should be NETCoreApp build
   - P2P references to other reference assembly CSProjs.
@@ -26,7 +26,7 @@
   - Use P2P references to pkgproj for things not in NETStandard.Library
   - Implementation is automatically injected by targets.
 
-###Libraries above NETStandard
+### Libraries above NETStandard
 - ref
   - Only required if component is inbox somewhere or has multiple implementations for same NETStandard version.
   - Build against NETStandard.Library package
@@ -45,7 +45,7 @@
   - Use P2P references for things not in NETStandard.Library
   - Implementation is automatically injected by targets.
 
-###NETStandard  compatibility facade
+### NETStandard  compatibility facade
 Provides compatibility between NETCore.App and libraries built against NETStandard.
 - ref
   - Should adapt supported NETStandard.dll to contract reference assemblies.
@@ -57,7 +57,7 @@ Provides compatibility between NETCore.App and libraries built against NETStanda
   - No individual package builds.
   - Should be included in NETCoreApp package as above
 
-###Desktop compatibility facades
+### Desktop compatibility facades
 - ref
   - Should adapt latest desktop surface to contract reference assemblies for anything that has type-overlap with desktop, including assemblies like Microsoft.Win32.Registry which are not in NETStandard.Library.
   - EG: `GenFacades -contracts:<desktopReferenceAssemblies> -seeds:<allNetCoreAppReferenceAssemblies>`
@@ -68,20 +68,20 @@ Provides compatibility between NETCore.App and libraries built against NETStanda
   - No individual package builds.
   - Should be included in NETCoreApp package as above
 
-###Native shims
+### Native shims
 - pkg
   - No individual package builds.
   - As with libraries in NETStandard the shims will be included in the runtime specific packages for NETCoreApp
 
-##Transition
+## Transition
 
-###End goal
+### End goal
 
 - CoreFx does not build any reference assemblies for NETStandard.
 - For every library in NETStandard.Library, the only configurations in CoreFx are framework-specific.  EG: NETCoreApp1.2, UAP10.1
 - For every library in NETCore.App but not in NETStandard.Library there must be a framework-specific configuration for NETCoreApp1.2.  Other configurations may exist to ship in a package, but those will not be built by folks building just NETCore.App.
 
-###Getting there (WIP)
+### Getting there (WIP)
 
 Folks still consume our current packages so we need to keep building those until we transition.
 
