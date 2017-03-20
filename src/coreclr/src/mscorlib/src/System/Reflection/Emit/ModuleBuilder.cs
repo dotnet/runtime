@@ -368,7 +368,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        internal override ModuleHandle GetModuleHandle()
+        protected override ModuleHandle GetModuleHandleImpl()
         {
             return new ModuleHandle(GetNativeHandle());
         }

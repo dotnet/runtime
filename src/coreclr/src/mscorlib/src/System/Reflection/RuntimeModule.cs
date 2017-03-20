@@ -249,7 +249,7 @@ namespace System.Reflection
 
             try
             {
-                Type t = GetModuleHandle().ResolveTypeHandle(metadataToken, typeArgs, methodArgs).GetRuntimeType();
+                Type t = GetModuleHandleImpl().ResolveTypeHandle(metadataToken, typeArgs, methodArgs).GetRuntimeType();
 
                 if (t == null)
                     throw new ArgumentException(Environment.GetResourceString("Argument_ResolveType", tk, this), nameof(metadataToken));
@@ -588,8 +588,7 @@ namespace System.Reflection
             return m_runtimeAssembly;
         }
 
-
-        internal override ModuleHandle GetModuleHandle()
+        protected override ModuleHandle GetModuleHandleImpl()
         {
             return new ModuleHandle(this);
         }

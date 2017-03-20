@@ -476,7 +476,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodImplAttributes.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Missing.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Module.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\Module.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\ModuleResolveEventHandler.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodBody.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\ParameterAttributes.cs" />
