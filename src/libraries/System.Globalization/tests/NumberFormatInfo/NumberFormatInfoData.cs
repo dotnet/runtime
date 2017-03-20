@@ -9,8 +9,11 @@ namespace System.Globalization.Tests
         public static int[] UrINNumberGroupSizes()
         {
             if ((PlatformDetection.IsWindows && PlatformDetection.WindowsVersion >= 10)
+#if !uap
                 ||
-                (PlatformDetection.IsOSX && PlatformDetection.OSXKernelVersion >= new Version(15, 0)))
+                (PlatformDetection.IsOSX && PlatformDetection.OSXKernelVersion >= new Version(15, 0))
+#endif
+                )
             {
                 return new int[] { 3 };
             }
