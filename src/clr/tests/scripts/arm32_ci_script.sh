@@ -27,9 +27,14 @@ function usage {
     echo '                                         <path>/platform/rootfs-t30.ext4 should exist'
     echo '    --mountPath=<path>                 : The desired path for mounting the emulator rootfs (without ending /)'
     echo '                                         This path is created if not already present'
-    echo '    --buildConfig=<config>             : The value of config should be either Debug or Release'
+    echo '    --buildConfig=<config>             : The value of config should be either Debug, Checked or Release'
     echo '                                         Any other value is not accepted'
     echo 'Optional Arguments:'
+    echo '    --mode=<mode>                      : docker or emulator (default)'
+    echo '    --arm                              : Build using hard ABI'
+    echo '    --armel                            : Build using softfp ABI (default)'
+    echo '    --linuxCodeName=<name>             : Code name for Linux: For arm, trusty (default) and xenial. For armel, tizen'
+    echo '    --skipRootFS                       : Skip building rootfs'
     echo '    --skipTests                        : Presenting this option skips testing the generated binaries'
     echo '                                         If this option is not presented, then tests are run by default'
     echo '                                         using the other test related options'
@@ -148,7 +153,9 @@ function handle_exit {
 
     echo 'The script is exited. Cleaning environment..'
 
-    clean_env
+    if [ "$__ciMode" == "emulator" ]; then
+        clean_env
+    fi
 }
 trap handle_exit EXIT
 
@@ -229,6 +236,64 @@ function cross_build_coreclr {
     fi
 }
 
+#Cross builds coreclr using Docker
+function cross_build_coreclr_with_docker {
+    __currentWorkingDirectory=`pwd`
+
+    # Check build configuration and choose Docker image
+    __dockerEnvironmentVariables=""
+    if [ "$__buildArch" == "arm" ]; then
+        # TODO: For arm, we are going to embed RootFS inside Docker image.
+        case $__linuxCodeName in
+        trusty)
+            __dockerImage=" microsoft/dotnet-buildtools-prereqs:ubuntu1404_cross_prereqs_v3"
+            __skipRootFS=1
+            __dockerEnvironmentVariables+=" -e ROOTFS_DIR=/crossrootfs/arm"
+            __runtimeOS="ubuntu.14.04"
+        ;;
+        xenial)
+            __dockerImage=" microsoft/dotnet-buildtools-prereqs:ubuntu1604_cross_prereqs_v3"
+            __skipRootFS=1
+            __dockerEnvironmentVariables+=" -e ROOTFS_DIR=/crossrootfs/arm"
+            __runtimeOS="ubuntu.16.04"
+        ;;
+        *)
+            exit_with_error "ERROR: $__linuxCodeName is not a supported linux name for $__buildArch" false
+        ;;
+        esac
+    elif [ "$__buildArch" == "armel" ]; then
+        # For armel Tizen, we are going to construct RootFS on the fly.
+        case $__linuxCodeName in
+        tizen)
+            __dockerImage=" t2wish/dotnetcore:ubuntu1404_cross_prereqs_v3"
+            __runtimeOS="tizen.4.0.0"
+        ;;
+        *)
+            echo "ERROR: $__linuxCodeName is not a supported linux name for $__buildArch"
+            exit_with_error "ERROR: $__linuxCodeName is not a supported linux name for $__buildArch" false
+        ;;
+        esac
+    else
+        exit_with_error "ERROR: unknown buildArch $__buildArch" false
+    fi
+    __dockerCmd="sudo docker run ${__dockerEnvironmentVariables} --privileged -i --rm -v $__currentWorkingDirectory:/opt/code -w /opt/code $__dockerImage"
+
+    if [ $__skipRootFS == 0 ]; then
+        # Build rootfs
+        __buildRootfsCmd="./cross/build-rootfs.sh $__buildArch $__linuxCodeName --skipunmount"
+
+        (set +x; echo "Build RootFS for $__buildArch $__linuxCodeName")
+        $__dockerCmd $__buildRootfsCmd
+        sudo chown -R $(id -u -n) cross/rootfs
+    fi
+
+    # Cross building coreclr with rootfs in Docker
+    (set +x; echo "Start cross build coreclr for $__buildArch $__linuxCodeName")
+    __buildCmd="./build.sh $__buildArch cross $__verboseFlag $__skipMscorlib $__buildConfig -rebuild"
+    $__dockerCmd $__buildCmd
+    sudo chown -R $(id -u -n) ./bin
+}
+
 #Copy the needed files to the emulator to run tests
 function copy_to_emulator {
 
@@ -292,13 +357,52 @@ function run_tests {
 EOF
 }
 
+function run_tests_using_docker {
+    __currentWorkingDirectory=`pwd`
+
+    # Configure docker
+    __dockerEnvironmentVariables=""
+    if [ "$__buildArch" == "arm" ]; then
+        case $__linuxCodeName in
+        trusty)
+            __dockerImage=" microsoft/dotnet-buildtools-prereqs:ubuntu1404_cross_prereqs_v3"
+            __skipRootFS=1
+            __dockerEnvironmentVariables=" -e ROOTFS_DIR=/crossrootfs/arm"
+        ;;
+        xenial)
+            __dockerImage=" microsoft/dotnet-buildtools-prereqs:ubuntu1604_cross_prereqs_v3"
+            __skipRootFS=1
+            __dockerEnvironmentVariables=" -e ROOTFS_DIR=/crossrootfs/arm"
+        ;;
+        *)
+            exit_with_error "ERROR: $__linuxCodeName is not a supported linux name for $__buildArch" false
+        ;;
+        esac
+    elif [ "$__buildArch" == "armel" ]; then
+        case $__linuxCodeName in
+        tizen)
+            __dockerImage=" t2wish/dotnetcore:ubuntu1404_cross_prereqs_v3"
+        ;;
+        *)
+            exit_with_error "ERROR: $__linuxCodeName is not a supported linux name for $__buildArch" false
+        ;;
+        esac
+    else
+        exit_with_error "ERROR: unknown buildArch $__buildArch" false
+    fi
+    __dockerCmd="sudo docker run ${__dockerEnvironmentVariables} --privileged -i --rm -v $__currentWorkingDirectory:/opt/code -w /opt/code $__dockerImage"
+    __testCmd="./tests/scripts/arm32_ci_test.sh --abi=${__buildArch} --buildConfig=${__buildConfig}"
+
+    $__dockerCmd $__testCmd
+}
+
 #Define script variables
+__ciMode="emulator"
 __ARMEmulRootfs=/mnt/arm-emulator-rootfs
 __ARMEmulPath=
 __ARMRootfsMountPath=
 __buildConfig=
-# TODO: Currently test is not working correctly for a month. This will be fixed with new arm CI soon.
-__skipTests=1
+__skipTests=0
 __skipMscorlib=
 __testRootDir=
 __mscorlibDir=
@@ -308,6 +412,8 @@ __testDirFile=
 __verboseFlag=
 __buildOS="Linux"
 __buildArch="armel"
+__linuxCodeName="tizen"
+__skipRootFS=0
 __buildDirName=
 __initialGitHead=`git rev-parse --verify HEAD`
 
@@ -323,9 +429,12 @@ do
         ;;
     --buildConfig=*)
         __buildConfig="$(echo ${arg#*=} | awk '{print tolower($0)}')"
-        if [[ "$__buildConfig" != "debug" && "$__buildConfig" != "release" ]]; then
-            exit_with_error "--buildConfig can be only Debug or Release" true
+        if [[ "$__buildConfig" != "debug" && "$__buildConfig" != "release" && "$__buildConfig" != "checked" ]]; then
+            exit_with_error "--buildConfig can be Debug, Checked or Release" true
         fi
+        ;;
+    --mode=*)
+        __ciMode=${arg#*=}
         ;;
     --skipTests)
         __skipTests=1
@@ -351,6 +460,19 @@ do
     --testDirFile=*)
         __testDirFile=${arg#*=}
         ;;
+    --arm)
+        __buildArch="arm"
+        ;;
+    --armel)
+        __buildArch="armel"
+        __linuxCodeName="tizen"
+        ;;
+    --linuxCodeName=*)
+        __linuxCodeName=${arg#*=}
+        ;;
+    --skipRootFS)
+        __skipRootFS=1
+        ;;
     -h|--help)
         usage
         ;;
@@ -368,26 +490,24 @@ if [[ $(git status -s) != "" ]]; then
    exit 1
 fi
 
-#Check if the compulsory arguments have been presented to the script and if the input paths exist
-exit_if_empty "$__ARMEmulPath" "--emulatorPath is a mandatory argument, not provided" true
-exit_if_empty "$__ARMRootfsMountPath" "--mountPath is a mandatory argument, not provided" true
 exit_if_empty "$__buildConfig" "--buildConfig is a mandatory argument, not provided" true
-exit_if_path_absent "$__ARMEmulPath/platform/rootfs-t30.ext4" "Path specified in --emulatorPath does not have the rootfs" false
+if [ "$__ciMode" == "emulator" ]; then
+    #Check if the compulsory arguments have been presented to the script and if the input paths exist
+    exit_if_empty "$__ARMEmulPath" "--emulatorPath is a mandatory argument, not provided" true
+    exit_if_empty "$__ARMRootfsMountPath" "--mountPath is a mandatory argument, not provided" true
+    exit_if_path_absent "$__ARMEmulPath/platform/rootfs-t30.ext4" "Path specified in --emulatorPath does not have the rootfs" false
+    # Test is not available in emulator mode.
+    __skipTests=1
+fi
 
+__coreFxBinDir="./bin/CoreFxBinDir" # TODO-clenup: Just for testing.... 
 #Check if the optional arguments are present in the case that testing is to be done
 if [ $__skipTests == 0 ]; then
     exit_if_empty "$__testRootDir" "Testing requested, but --testRootDir not provided" true
     exit_if_path_absent "$__testRootDir" "Path specified in --testRootDir does not exist" false
 
-    exit_if_empty "$__coreFxNativeBinDir" "Testing requested but --coreFxNativeBinDir not provided" true
-    exit_if_path_absent "$__coreFxNativeBinDir" "Path specified in --coreFxNativeBinDir does not exist" false
-
     exit_if_empty "$__coreFxBinDir" "Testing requested, but --coreFxBinDir not provided" true
-    while IFS=';' read -ra coreFxBinDirectories; do
-        for currDir in "${coreFxBinDirectories[@]}"; do
-            exit_if_path_absent "$currDir" "Path specified in --coreFxBinDir, $currDir does not exist" false
-        done
-    done <<< "$__coreFxBinDir"
+    exit_if_path_absent "$__coreFxBinDir" "Path specified in --coreFxBinDir does not exist" false
 
     exit_if_empty "$__testDirFile" "Testing requested, but --testDirFile not provided" true
     exit_if_path_absent "$__testDirFile" "Path specified in --testDirFile does not exist" false
@@ -404,6 +524,8 @@ fi
 #Change build configuration to the capitalized form to create build product paths correctly
 if [[ "$__buildConfig" == "release" ]]; then
     __buildConfig="Release"
+elif [[ "$__buildConfig" == "checked" ]]; then
+    __buildConfig="Checked"
 else
     __buildConfig="Debug"
 fi
@@ -429,37 +551,50 @@ set -e
 ## Begin cross build
 (set +x; echo "Git HEAD @ $__initialGitHead")
 
-#Mount the emulator
-(set +x; echo 'Mounting emulator...')
-mount_emulator
+if [ "$__ciMode" == "docker" ]; then
+    # Complete the cross build using Docker
+    (set +x; echo 'Building coreclr...')
+    cross_build_coreclr_with_docker
+else
+    #Mount the emulator
+    (set +x; echo 'Mounting emulator...')
+    mount_emulator
 
-#Clean the emulator
-(set +x; echo 'Cleaning emulator...')
-clean_emulator
+    #Clean the emulator
+    (set +x; echo 'Cleaning emulator...')
+    clean_emulator
 
-#Complete the cross build
-(set +x; echo 'Building coreclr...')
-cross_build_coreclr
+    #Complete the cross build
+    (set +x; echo 'Building coreclr...')
+    cross_build_coreclr
+fi
 
 #If tests are to be skipped end the script here, else continue
 if [ $__skipTests == 1 ]; then
     exit 0
 fi
 
-## Tests are going to be performed in an emulated environment
+__unittestResult=0
+## Begin CoreCLR test
+if [ "$__ciMode" == "docker" ]; then
+    run_tests_using_docker
+    __unittestResult=$?
+else
+    ## Tests are going to be performed in an emulated environment
 
-#Copy the needed files to the emulator before entering the emulated environment
-(set +x; echo 'Setting up emulator to run tests...')
-copy_to_emulator
+    #Copy the needed files to the emulator before entering the emulated environment
+    (set +x; echo 'Setting up emulator to run tests...')
+    copy_to_emulator
 
-#Enter the emulated mode and run the tests
-(set +x; echo 'Running tests...')
-run_tests
+    #Enter the emulated mode and run the tests
+    (set +x; echo 'Running tests...')
+    run_tests
+    __unittestResult=$?
 
-
-#Clean the environment
-(set +x; echo 'Cleaning environment...')
-clean_env
-
+    #Clean the environment
+    (set +x; echo 'Cleaning environment...')
+    clean_env
+fi
 
 (set +x; echo 'Build and test complete')
+exit $__unittestResult
