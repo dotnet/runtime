@@ -3,18 +3,18 @@ Recommended reading to better understand this document:
 | [Project-Guidelines](https://github.com/dotnet/corefx/blob/master/Documentation/coding-guidelines/project-guidelines.md)
 | [Package-Projects](https://github.com/dotnet/corefx/blob/master/Documentation/coding-guidelines/package-projects.md)
 
-#Add APIs
+# Add APIs
 - [Determining versions and targets](#determining-versions-and-targets)
 - [Making the changes in repo](#making-the-changes-in-repo)
 - [FAQ](#faq)
 
-##Determining versions and targets
+## Determining versions and targets
 
 1. [Determine what library](#determine-what-library) the API goes into.
 2. [Determine the target framework](#determine-target-framework) for the library that will contain the API.
 3. [Determine the version](#determine-library-version) for the library that will contain the API.
 
-###Determine what library
+### Determine what library
 - Propose a library for exposing it as part of the [API review process](http://aka.ms/apireview).
 - Keep in mind the API might be exposed in a reference assembly that
 doesn't match the identity of the implementation. There are many reasons for this but
@@ -22,7 +22,7 @@ the primary reason is to abstract the runtime assembly identities across
 different platforms while sharing a common API surface and allowing us to refactor
 the implementation without compat concerns in future releases.
 
-###Determine target framework
+### Determine target framework
 `<latest>` is the target framework version currently under development. Currently netcoreapp1.1 and netstandard1.7 (note netstandard1.7 is a placeholder for netstandard2.0).
 
 - If the library is [part of netstandard](#isnetstandard)
@@ -41,13 +41,13 @@ the implementation without compat concerns in future releases.
     `netstandard<latest>` it will have a target framework of `<framework><latest>`. Example `net<latest>` for desktop or `netcoreapp<latest>` for .NET Core.
 - It is not uncommon for a library to target the latest versions of multiple frameworks when adding new APIs (ex: https://github.com/dotnet/corefx/blob/master/src/System.Runtime/ref/System.Runtime.builds)
 
-###Determine library version
+### Determine library version
 - If targeting netstandard
   - Ensure minor version of the assembly is bumped since last stable package release
 - If targeting netcoreapp
   - No assembly version bump necessary
 
-##Making the changes in repo
+## Making the changes in repo
 
 **If changing the library version**
   - Update the `AssemblyVersion` property in `<Library>\dir.props` (ex: [System.Runtime\dir.props](https://github.com/dotnet/corefx/blob/master/src/System.Runtime/dir.props#L4)) to the version determined above.
@@ -95,7 +95,7 @@ the implementation without compat concerns in future releases.
   - Add new test code following [conventions](https://github.com/dotnet/corefx/blob/master/Documentation/coding-guidelines/project-guidelines.md#code-file-naming-conventions) for new files to that are specific to the new target framework.
   - To run just the new test configuration run `msbuild <Library>.csproj /t:RebuildAndTest /p:TargetGroup=<TargetGroup>`
 
-##FAQ
+## FAQ
 _**<a name="isnetstandard">Is your API part of netstandard?</a>**_
 
 - For netstandard2.0 refer to https://github.com/dotnet/standard/tree/master/netstandard/ref, and if any Type is included in any of the *.cs files then it is part of netstandard.
@@ -133,7 +133,7 @@ If you are moving types down you need to version both contracts at the same time
 project references across the projects. You also need to be sure to leave type-forwards in the places
 where you removed types in order to maintain back-compat.
 
-###Potential clean-up work that can be done
+### Potential clean-up work that can be done
 - Remove old build configurations - The older build configurations will automatically be harvested from
 the last stable packages and thus can be removed.
 - Remove import statements - If not referencing any pre-netstandard stable packages the [imports of dotnet5.x](https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.Process/src/project.json#L28) are no longer needed and can be removed. We should also remove any dead target frameworks sections.

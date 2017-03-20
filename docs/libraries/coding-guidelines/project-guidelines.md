@@ -1,8 +1,8 @@
-#Build Project Guidelines
+# Build Project Guidelines
 In order to work in corefx repo you must first run build.cmd/sh from the root of the repo at least
 once before you can iterate and work on a given library project.
 
-##Behind the scenes with build.cmd/sh
+## Behind the scenes with build.cmd/sh
 
 - Setup tools (currently done in init-tools but will later be a boot-strap script in run.cmd/sh)
 - Restore external dependencies
@@ -18,17 +18,17 @@ once before you can iterate and work on a given library project.
  - Build src\sign.builds
 //**CONSIDER**: We should make this as part of the src.builds file instead of a separate .builds file.
 
-##Behind the scenes with build-test.cmd/sh
+## Behind the scenes with build-test.cmd/sh
 - build-test.cmd cannot be ran successfully until build.cmd has been ran at least once for a `BuildConfiguration`.
 - Build src\tests.builds which builds all applicable test projects. For test project information see [tests](#tests).
 - The build pass will happen twice. Once for the specific `$(BuildConfiguration)` and once for netstandard. That way we run both sets of applicable tests against for the given `$(BuildConfiguration)`.
 - TODO: Currently as part of src/post.builds we call CloudBuild.targets which sets up our test runs. This needs to be moved to be part of build-test.cmd now.
 
-##Behind the scenes with build-packages.cmd/sh
+## Behind the scenes with build-packages.cmd/sh
 - build-packages.cmd cannot be run successfully until build.cmd has been ran at least once for a BuildConfiguration.
 - Build src\packages.builds which will build only the packages it has the context to build which will generally be only the ones for the given `BuildConfiguration`. If a package requires assets from multiple `BuildConfigurations` it will require that all `BuildConfigurations` are built first.
 
-#Build Pivots
+# Build Pivots
 Below is a list of all the various options we pivot the project builds on:
 
 - **Target Frameworks:** NetFx (aka Desktop), netstandard (aka dotnet/Portable), NETCoreApp (aka .NET Core), UAP (aka UWP/Store/netcore50)
@@ -37,7 +37,7 @@ Below is a list of all the various options we pivot the project builds on:
 - **Flavor:** Debug, Release
 - **Architecture:** x86, x64, arm, arm64, AnyCPU
 
-##Individual build properties
+## Individual build properties
 The following are the properties associated with each build pivot
 
 - `$(TargetGroup) -> netstandard | netcoreapp | netcoreappcorert | netfx | uap | uapaot`
@@ -49,7 +49,7 @@ The following are the properties associated with each build pivot
 
 For more information on various targets see also [.NET Standard](https://github.com/dotnet/standard/blob/master/docs/versions.md)
 
-##Aggregate build properties
+## Aggregate build properties
 Each project will define a set of supported build configurations
 
 ```
@@ -88,7 +88,7 @@ All supported targets with unique windows/unix build for netcoreapp:
 <PropertyGroup>
 ```
 
-##Options for building
+## Options for building
 
 A full or individual project build is centered around BuildConfiguration and will be setup in one of the following ways:
 
@@ -101,20 +101,20 @@ On top of the `BuildConfiguration` we also have `RuntimeOS` which can be passed 
 
 Any of the mentioned properties can be set via `/p:<Property>=<Value>` at the command line. When building using our run tool or any of the wrapper scripts around it (i.e. build.cmd) a number of these properties have aliases which make them easier to pass (run build.cmd/sh -? for the aliases).
 
-##Selecting the correct build configuration
+## Selecting the correct build configuration
 When building an individual project the `BuildConfiguation` will be used to select the closest matching configuration listed in the projects `BuildConfigurations` property. The rules used to select the configuration will consider compatible target frameworks and OS fallbacks.
 
 TODO: Link to the target framework and OS fallbacks when they are available.
 Temporary versions are at https://github.com/dotnet/corefx/blob/dev/eng/src/Tools/GenerateProps/osgroups.props and https://github.com/dotnet/corefx/blob/dev/eng/src/Tools/GenerateProps/targetgroups.props
 
-##Supported full build configurations
+## Supported full build configurations
 - .NET Core latest on current OS (default) -> `netcoreapp-[RunningOS]`
 - .NET Core CoreRT -> `netcoreappcorert-[RunningOS]`
 - .NET Framework latest -> `netfx-Windows_NT`
 - UWP -> `uapaot-Windows_NT`
 - UAP F5 -> `uap-Windows_NT`
 
-##Project configurations for VS
+## Project configurations for VS
 For each unique configuration needed for a given library project a configuration property group should be added to the project so it can be selected and built in VS and also clearly identify the various configurations.<BR/>
 
 `<PropertyGroup Condition="'$(Configuration)|$(Platform)' == '$(OSGroup)-$(TargetGroup)-$(ConfigurationGroup)|$(Platform)'">`
@@ -144,7 +144,7 @@ Project configurations that are unique for a few different target frameworks and
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap101-Release|AnyCPU'" />
 ```
 
-##Updating Configurations
+## Updating Configurations
 
 We have a build task that you can run to automatically update all the projects with the above boilerplate as well as updating all the solution files for the libraries. Whenever you change the list of configurations for a project you can regenerate all these for the entire repo by running:
 
@@ -154,7 +154,7 @@ msbuild build.proj /t:UpdateVSConfigurations
 
 If you want to scope the geneneration you can either undo changes that you don't need or you can temporally limit the set of projects or directories by updating the item set in the UpdateVSConfigurations target in https://github.com/dotnet/corefx/blob/master/build.proj
 
-#Library project guidelines
+# Library project guidelines
 Library projects should use the following directory layout.
 
 ```
@@ -164,7 +164,7 @@ src\<Library Name>\pkg - Contains package projects for the library.
 src\<Library Name>\tests - Contains the test code for a library
 ```
 
-##ref
+## ref
 Reference assemblies are required for any library that has more than one implementation or uses a facade. A reference assembly is a surface-area-only assembly that represents the public API of the library. To generate a reference assembly source file you can use the [GenAPI tool](https://www.nuget.org/packages/Microsoft.DotNet.BuildTools.GenAPI). If a library is a pure portable library with a single implementation it need not use a reference assembly at all.
 
 In the ref directory for the library there should be at most **one** `.csproj` that contains the latest API for the reference assembly for the library. That project can contain multiple entries in its `BuildConfigurations` property.
@@ -180,32 +180,32 @@ There are two types of reference assembly projects:
  - Should contain `<Reference Include='netstandard'>`
  - Anything outside of netstandard should use a relative path `<ProjectReference>` to its dependencies it has. Those dependencies should only be libraries that are built against netstandard as well.
 
-###ref output
+### ref output
 The output for the ref project build will be a flat targeting pack folder in the following directory:
 
 `bin\ref\$(TargetGroup)`
 
 <BR/>//**CONSIDER**: Do we need a specific BuildConfiguration version of TargetGroup for this output path to ensure all projects output to same targeting path?
 
-##src
+## src
 In the src directory for a library there should be only **one** `.csproj` file that contains any information necessary to build the library in various configurations. All supported configurations should be listed in the `BuildConfigurations` property.
 
 All libraries should use `<Reference Include="..." />` for all their project references. That will cause them to be resolved against a targeting pack (i.e. `bin\ref\netcoreapp` or `\bin\ref\netstanard`) based on the project configuration. There should not be any direct project references to other libraries. The only exception to that rule right now is for partial facades which directly reference System.Private.CoreLib and thus need to directly reference other partial facades to avoid type conflicts.
 <BR>//**CONSIDER**: just using Reference and use a reference to System.Private.CoreLib as a trigger to turn the other References into a ProjectReference automatically. That will allow us to have consistency where all projects just use Reference.
 
-###src output
+### src output
 The output for the src product build will be a flat runtime folder into the following directory:
 
 `bin\runtime\$(BuildConfiguration)`
 
 Note: The `BuildConfiguration` is the global property and not the project configuration because we need all projects to output to the same runtime directory no matter which compatible configuration we select and build the project with.
 
-##pkg
+## pkg
 In the pkg directory for the library there should be only **one** `.pkgproj` for the primary package for the library. If the library has platform-specific implementations those should be split into platform specific projects in a subfolder for each platform. (see [Package projects](./package-projects.md))
 
 TODO: Outline changes needed for pkgprojs
 
-##tests
+## tests
 Similar to the src projects tests projects will define a `BuildConfigurations` property so they can list out the set of build configurations they support.
 
 Tests should not have any `<Reference>` or `<ProjectReference>` items in their project because they will automatically reference everything in the targeting pack based on the configuration they are building in. The only exception to this is a `<ProjectReference>` can be used to reference other test helper libraries or assets.
@@ -213,13 +213,13 @@ Tests should not have any `<Reference>` or `<ProjectReference>` items in their p
 In order to build and run a test project in a given configuration a root level build.cmd/sh must have been completed for that configuration first. Tests will run on the live built runtime at `bin\runtime\$(BuildConfiguration)`.
 TODO: We need update our test host so that it can run from the shared runtime directory as well as resolve assemblies from the test output directory.
 
-###tests output
+### tests output
 All test outputs should be under
 
 `bin\tests\$(MSBuildProjectName)\$(BuildConfiguration)` or
 `bin\tests\$(MSBuildProjectName)\netstandard`
 
-##Facades
+## Facades
 Facade are unique in that they don't have any code and instead are generated by finding a contract reference assembly with the matching identity and generating type forwards for all the types to where they live in the implementation assemblies (aka facade seeds). There are also partial facades which contain some type forwards as well as some code definitions. All the various build configurations should be contained in the one csproj file per library.
 
 TODO: Fill in more information about the required properties for creatng a facade project.

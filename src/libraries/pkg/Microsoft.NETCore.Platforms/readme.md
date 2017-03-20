@@ -1,17 +1,17 @@
-#Runtime IDs
+# Runtime IDs
 The package `Microsoft.NETCore.Platforms` defines the runtime identifiers (RIDs) used by .NET packages to represent runtime-specific assets in NuGet packages.
 
-##What is a RID?
+## What is a RID?
 A RID is an opaque string that identifies a platform.  RIDs have relationships to other RIDs by "importing" the other RID.  In that way a RID is a directed graph of compatible RIDs.
 
-##How does NuGet use RIDs?
+## How does NuGet use RIDs?
 When NuGet is deciding which assets to use from a package and which packages to include NuGet will consider a RID if the project.json lists a RID in its `runtimes` section.
 
 - NuGet chooses the best RID-specific asset, where best is determined by a breadth first traversal of the RID graph.  Breadth ordering is document order.
 - NuGet considers RID-specific assets for two asset types: lib and native.
 - NuGet never considers RID-specific assets for compile.
 
-###Best RID
+### Best RID
 Consider the partial RID-graph:
 ```
         "any": {},
@@ -52,7 +52,7 @@ As such, best RID, when evaluating for win7-x64 would be:`win7-x64`, `win7`, `wi
 Similarly, when evaluating for `win-x64`: `win-x64`, `win`, `any`
 Note that `win7` comes before `win-x64` due to the import for `win7` appearing before the import for `win-x64` in document order.
 
-###RID-qualified assets are preferred
+### RID-qualified assets are preferred
 NuGet will always prefer a RID-qualified asset over a RID-less asset.  For example if a package contains
 ```
 lib/netcoreapp1.0/foo.dll
@@ -75,18 +75,18 @@ runtimes/win/lib/netstandard1.0/foo.dll
 ```
 When resolving for netstandard1.5/win7-x64 will select `lib/netstandard1.5/foo.dll` for the compile asset and `runtimes/win/lib/netstandard1.0/foo.dll` for the runtime asset.
 
-##Adding new RIDs
+## Adding new RIDs
 
-###Why do I need to add a new RID?
+### Why do I need to add a new RID?
 NuGet's extensibility mechanism for platform-specific assets requires a RID be defined for any platform that needs assets specific to that platform.  Unlike TFMs, which have a known relationship in NuGet (eg net4.5 is compatible with net4.0), RIDs are opaque strings which NuGet knows nothing about.  The definition and relationship of RIDs comes solely from the `runtime.json` files within the root of the packages referenced by the project.
 As such, whenever we want to put a new RID in a project.json in order to get assets specific for that RID we have to define the rid in some package.  Typically that package is `Microsoft.NETCore.Platforms` if the RID is "official".  If you'd like to prototype you can put the RID in any other package and so long as that package is referenced you can use that RID.
 
-###Do I really need to add a new RID?
+### Do I really need to add a new RID?
 If you're prototyping on a platform that is compatible with an existing platform then you can reuse the RID for that exsisting platform.  New RIDs are only needed when an asset needs to be different on a particular platform.
 
 `Microsoft.NETCore.Platforms` attempts to define all RIDs that packages may need, and as such will define RIDs for platforms that we don't actually cross compile for.  This is to support higher-level packages, 3rd party packages, that may need to cross-compile for that RID.
 
-###Naming convention
+### Naming convention
 We use the following convention in all newly-defined RIDs.  Some RIDs (win7-x64, win8-x64) predate this convention and don't follow it, but all new RIDs should follow it.
 `[os name].[version]-[architecture]-[additional qualifiers]`, for example `osx.10.10-x64` or `ubuntu.14.04-x64`
 - `[os name]` can contain any characters other than `.`
@@ -96,10 +96,10 @@ We use the following convention in all newly-defined RIDs.  Some RIDs (win7-x64,
 
 For all of these we strive to make them something that can be uniquely discoverable at runtime, so that a RID may be computed from an executing application.  As such these properties should be derivable from `/etc/os-release` or similar platform APIs / data.
 
-###Binary compatibility
+### Binary compatibility
 Binary compatibility is represented through imports.  If a platform is considered binary compatible with another version of the same platform, or a specific version of another platform, then it can import that platform.  This permits packages to reuse assets that were built for the imported platform on the compatible platform.  Binary compatibility here is a bit nebulous because inevietably different platforms will have observable differences that can cause compatibility problems.  For the purposes of RIDs we'll try to represent compatibility as versions of a platform that are explicitly advertised as being compatible with a previous version and/or another platform and don't have any known broad breaking changes.
 
-###Import convention
+### Import convention
 Imports should be used when the added RID is considered compatible with an existing RID.
 
 1. Architecture-specific RIDs should first import the architecture-less RID.  EG: `osx.10.11-x64` should first import `osx.10.11`.
