@@ -3552,7 +3552,7 @@ public:
     bool                 fgSlopUsedInEdgeWeights;  // true if their was some slop used when computing the edge weights
     bool                 fgRangeUsedInEdgeWeights; // true if some of the edgeWeight are expressed in Min..Max form
     bool                 fgNeedsUpdateFlowGraph;   // true if we need to run fgUpdateFlowGraph
-    BasicBlock::weight_t fgCalledWeight;           // count of the number of times this method was called
+    BasicBlock::weight_t fgCalledCount;            // count of the number of times this method was called
                                                    // This is derived from the profile data
                                                    // or is BB_UNITY_WEIGHT when we don't have profile data
 
@@ -4528,12 +4528,22 @@ protected:
 
     bool fgHaveProfileData();
     bool fgGetProfileWeightForBasicBlock(IL_OFFSET offset, unsigned* weight);
+    void fgInstrumentMethod();
 
+public:
+    // fgIsUsingProfileWeights - returns true if we have real profile data for this method
+    //                           or if we have some fake profile data for the stress mode
     bool fgIsUsingProfileWeights()
     {
         return (fgHaveProfileData() || fgStressBBProf());
     }
-    void fgInstrumentMethod();
+
+    // fgProfileRunsCount - returns total number of scenario runs for the profile data
+    //                      or BB_UNITY_WEIGHT when we aren't using profile data.
+    unsigned fgProfileRunsCount()
+    {
+        return fgIsUsingProfileWeights() ? fgNumProfileRuns : BB_UNITY_WEIGHT;
+    }
 
 //-------- Insert a statement at the start or end of a basic block --------
 
