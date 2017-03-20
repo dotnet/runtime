@@ -1952,8 +1952,13 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     // Insert a null check on "this" pointer if asked.
     if (call->NeedsNullCheck())
     {
-        const regNumber regThis = genGetThisArgReg(call);
-        const regNumber tmpReg  = genRegNumFromMask(call->gtRsvdRegs);
+        const regNumber regThis  = genGetThisArgReg(call);
+        regMaskTP       tempMask = genFindLowestBit(call->gtRsvdRegs);
+        const regNumber tmpReg   = genRegNumFromMask(tempMask);
+        if (genCountBits(call->gtRsvdRegs) > 1)
+        {
+            call->gtRsvdRegs &= ~tempMask;
+        }
         getEmitter()->emitIns_R_R_I(INS_ldr, EA_4BYTE, tmpReg, regThis, 0);
     }
 
