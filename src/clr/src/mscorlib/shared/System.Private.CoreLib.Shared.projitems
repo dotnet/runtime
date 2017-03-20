@@ -162,6 +162,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MemberInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodBase.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Module.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ObfuscateAssemblyAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ObfuscationAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ParameterInfo.cs" />
@@ -213,6 +214,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeoutException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeZoneNotFoundException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\TupleExtensions.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Type.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Type.Enum.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Type.Helpers.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\TypeAccessException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\TypeCode.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\TypeInitializationException.cs"/>
