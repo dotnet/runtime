@@ -157,8 +157,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 try
                 {
                     s_killByTSqlConnectionStringsLock.EnterWriteLock();
-                    if (!s_killByTSqlConnectionStrings.ContainsKey(ConnectionString))
-                        s_killByTSqlConnectionStrings.Add(ConnectionString, killConnectionString);
+                    s_killByTSqlConnectionStrings.TryAdd(ConnectionString, killConnectionString);
                 }
                 finally
                 {

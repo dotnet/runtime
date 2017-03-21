@@ -1633,10 +1633,7 @@ namespace System.Linq.Expressions.Interpreter
                 foreach (ConstantExpression testValue in switchCase.TestValues)
                 {
                     var key = (T)testValue.Value;
-                    if (!caseDict.ContainsKey(key))
-                    {
-                        caseDict.Add(key, caseOffset);
-                    }
+                    caseDict.TryAdd(key, caseOffset);
                 }
 
                 Compile(switchCase.Body, !hasValue);
@@ -1687,9 +1684,9 @@ namespace System.Linq.Expressions.Interpreter
                             nullCase.Value = caseOffset;
                         }
                     }
-                    else if (!caseDict.ContainsKey(key))
+                    else
                     {
-                        caseDict.Add(key, caseOffset);
+                        caseDict.TryAdd(key, caseOffset);
                     }
                 }
 

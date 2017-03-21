@@ -448,10 +448,7 @@ namespace System.ComponentModel
                         eventArray = ReflectGetEvents(baseType);
                         foreach (EventDescriptor ed in eventArray)
                         {
-                            if (!eventList.ContainsKey(ed.Name))
-                            {
-                                eventList.Add(ed.Name, ed);
-                            }
+                            eventList.TryAdd(ed.Name, ed);
                         }
                         baseType = baseType.BaseType;
                     }
@@ -486,10 +483,7 @@ namespace System.ComponentModel
                         propertyArray = ReflectGetProperties(baseType);
                         foreach (PropertyDescriptor p in propertyArray)
                         {
-                            if (!propertyList.ContainsKey(p.Name))
-                            {
-                                propertyList.Add(p.Name, p);
-                            }
+                            propertyList.TryAdd(p.Name, p);
                         }
                         baseType = baseType.BaseType;
                     }

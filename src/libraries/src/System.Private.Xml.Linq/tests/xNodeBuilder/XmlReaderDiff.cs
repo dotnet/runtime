@@ -39,7 +39,7 @@ namespace CoreXml.Test.XLinq
                 // verify whether we do have duplicate
                 TestLog.Compare(!IsDuplicate(depth, prefix, ns), String.Format("Duplicate: {0}, {1}", prefix, ns));
                 // no duplicates, add new one
-                if (!_nsStack.ContainsKey(depth)) _nsStack.Add(depth, new Dictionary<string, string>());
+                _nsStack.TryAdd(depth, new Dictionary<string, string>());
                 _nsStack[depth].Add(prefix, ns);
             }
 

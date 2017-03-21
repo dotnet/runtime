@@ -290,19 +290,13 @@ namespace System.Runtime.Serialization.Json
                                     _knownDataContracts = new Dictionary<XmlQualifiedName, DataContract>();
                                 }
 
-                                if (!_knownDataContracts.ContainsKey(itemContract.StableName))
-                                {
-                                    _knownDataContracts.Add(itemContract.StableName, itemContract);
-                                }
+                                _knownDataContracts.TryAdd(itemContract.StableName, itemContract);
 
                                 if (collectionDataContract.ItemType.IsGenericType
                                     && collectionDataContract.ItemType.GetGenericTypeDefinition() == typeof(KeyValue<,>))
                                 {
                                     DataContract itemDataContract = DataContract.GetDataContract(Globals.TypeOfKeyValuePair.MakeGenericType(collectionDataContract.ItemType.GenericTypeArguments));
-                                    if (!_knownDataContracts.ContainsKey(itemDataContract.StableName))
-                                    {
-                                        _knownDataContracts.Add(itemDataContract.StableName, itemDataContract);
-                                    }
+                                    _knownDataContracts.TryAdd(itemDataContract.StableName, itemDataContract);
                                 }
 
                                 if (!(itemContract is CollectionDataContract))
