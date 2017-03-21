@@ -158,12 +158,6 @@ namespace System.Net.Mail
         Normal = 0,
     }
     public delegate void SendCompletedEventHandler(object sender, System.ComponentModel.AsyncCompletedEventArgs e);
-    public enum SmtpAccess
-    {
-        Connect = 1,
-        ConnectToUnrestrictedPort = 2,
-        None = 0,
-    }
     public partial class SmtpClient : System.IDisposable
     {
         public SmtpClient() { }

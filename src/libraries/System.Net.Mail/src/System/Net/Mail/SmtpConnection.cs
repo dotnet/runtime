@@ -13,7 +13,6 @@ using System.Runtime.ExceptionServices;
 using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography.X509Certificates;
-using System.Security.Permissions;
 using System.Security.Principal;
 using System.Threading;
 
@@ -178,7 +177,7 @@ namespace System.Net.Mail
                             _channelBindingToken.Close();
                         }
 
-                        // must destroy manually since sending a QUIT here might not be 
+                        // must destroy manually since sending a QUIT here might not be
                         // interpreted correctly by the server if it's in the middle of a
                         // DATA command or some similar situation.  This may send a RST
                         // but this is ok in this situation.  Do not reuse this connection
@@ -247,7 +246,7 @@ namespace System.Net.Mail
                 _networkStream = tlsStream;
                 _responseReader = new SmtpReplyReaderFactory(_networkStream);
 
-                // According to RFC 3207: The client SHOULD send an EHLO command 
+                // According to RFC 3207: The client SHOULD send an EHLO command
                 // as the first command after a successful TLS negotiation.
                 _extensions = EHelloCommand.Send(this, _client.clientDomain);
                 ParseExtensions(_extensions);
@@ -303,7 +302,6 @@ namespace System.Net.Mail
             _isConnected = true;
         }
 
-        [SecurityPermission(SecurityAction.Assert, Flags = SecurityPermissionFlag.ControlPrincipal)]
         private Authorization SetContextAndTryAuthenticate(ISmtpAuthenticationModule module, NetworkCredential credential, ContextAwareResult context)
         {
             // We may need to restore user thread token here
