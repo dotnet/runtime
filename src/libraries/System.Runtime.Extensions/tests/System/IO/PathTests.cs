@@ -231,9 +231,9 @@ namespace System.IO.Tests
         // Testing invalid drive letters !(a-zA-Z)
         [PlatformSpecific(TestPlatforms.Windows)]
         [Theory]
-        [InlineData(@"@:\\foo")]    // 064 = @     065 = A
+        [InlineData(@"@:\foo")]    // 064 = @     065 = A
         [InlineData(@"[:\\")]       // 091 = [     090 = Z
-        [InlineData(@"`:\\foo")]    // 096 = `     097 = a
+        [InlineData(@"`:\foo")]    // 096 = `     097 = a
         [InlineData(@"{:\\")]       // 123 = {     122 = z
         public static void IsPathRooted_Windows_Invalid(string value)
         {
