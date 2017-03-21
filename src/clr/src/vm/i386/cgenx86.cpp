@@ -523,6 +523,8 @@ void ExternalMethodFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 
     UpdateRegDisplayHelper(pRD, CbStackPopUsingGCRefMap(GetGCRefMap()));
 
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    ExternalMethodFrane::UpdateRegDisplay(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
+
     RETURN;
 }
 
@@ -560,6 +562,8 @@ void StubDispatchFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
         // code:VSD_ResolveWorker or code:StubDispatchFixupWorker
         pRD->ControlPC = GetAdjustedCallAddress(pRD->ControlPC);
     }
+
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    StubDispatchFrame::UpdateRegDisplay(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 
     RETURN;
 }
@@ -800,6 +804,8 @@ void ResumableFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 
 #endif // !WIN64EXCEPTIONS
 
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    ResumableFrame::UpdateRegDisplay(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
+
     RETURN;
 }
 
@@ -856,6 +862,8 @@ void HijackFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
     pRD->SP  = (DWORD)(pRD->PCTAddr + sizeof(TADDR));
 
 #endif // WIN64EXCEPTIONS
+
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    HijackFrame::UpdateRegDisplay(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 }
 
 #endif  // FEATURE_HIJACK
@@ -874,6 +882,8 @@ void PInvokeCalliFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 
     VASigCookie *pVASigCookie = GetVASigCookie();
     UpdateRegDisplayHelper(pRD, pVASigCookie->sizeOfArgs+sizeof(int));
+
+    LOG((LF_GCROOTS, LL_INFO100000, "STACKWALK    PInvokeCalliFrame::UpdateRegDisplay(ip:%p, sp:%p)\n", pRD->ControlPC, pRD->SP));
 
     RETURN;
 }
