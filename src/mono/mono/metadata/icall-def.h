@@ -115,7 +115,7 @@ ICALL(KPAIR_5, "_ProtectUser", ves_icall_Mono_Security_Cryptography_KeyPairPersi
 #endif /* !PLATFORM_RO_FS */
 
 ICALL_TYPE(APPDOM, "System.AppDomain", APPDOM_23)
-ICALL(APPDOM_23, "DoUnhandledException", ves_icall_System_AppDomain_DoUnhandledException)
+HANDLES(ICALL(APPDOM_23, "DoUnhandledException", ves_icall_System_AppDomain_DoUnhandledException))
 HANDLES(ICALL(APPDOM_1, "ExecuteAssembly", ves_icall_System_AppDomain_ExecuteAssembly))
 HANDLES(ICALL(APPDOM_2, "GetAssemblies", ves_icall_System_AppDomain_GetAssemblies))
 HANDLES(ICALL(APPDOM_3, "GetData", ves_icall_System_AppDomain_GetData))

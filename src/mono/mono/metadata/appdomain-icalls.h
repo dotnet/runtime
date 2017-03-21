@@ -75,7 +75,7 @@ ves_icall_System_AppDomain_InternalUnload          (gint32 domain_id,
 						    MonoError *error);
 
 void
-ves_icall_System_AppDomain_DoUnhandledException (MonoException *exc);
+ves_icall_System_AppDomain_DoUnhandledException (MonoExceptionHandle exc, MonoError *error);
 
 gint32
 ves_icall_System_AppDomain_ExecuteAssembly         (MonoAppDomainHandle ad,

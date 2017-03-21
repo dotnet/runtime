@@ -2246,9 +2246,11 @@ ves_icall_System_AppDomain_InternalIsFinalizingForUnload (gint32 domain_id, Mono
 }
 
 void
-ves_icall_System_AppDomain_DoUnhandledException (MonoException *exc)
+ves_icall_System_AppDomain_DoUnhandledException (MonoExceptionHandle exc, MonoError *error)
 {
-	mono_unhandled_exception ((MonoObject*) exc);
+	error_init (error);
+	mono_unhandled_exception_checked (MONO_HANDLE_CAST (MonoObject, exc), error);
+	mono_error_assert_ok (error);
 }
 
 gint32
