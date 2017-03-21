@@ -2917,10 +2917,10 @@
     </project>
     <project dir="class/Mono.Cecil" library="Mono.Cecil-net_4_x">
       <boot>false</boot>
-      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize -keyfile:../../mono.snk -d:NET_3_5 /publicsign -r:./../../../class/lib/net_4_x/System.Core.dll</flags>
+      <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize -keyfile:../mono.snk -d:NET_4_0 /publicsign -r:./../../class/lib/net_4_x/System.Core.dll</flags>
       <output>Mono.Cecil.dll</output>
       <built_sources></built_sources>
-      <library_output>./../../../class/lib/net_4_x/legacy/Mono.Cecil.dll</library_output>
+      <library_output>./../../class/lib/net_4_x/Mono.Cecil.dll</library_output>
       <fx_version>4.5</fx_version>
       <profile>net_4_x</profile>
       <resources></resources>
@@ -3586,7 +3586,7 @@
       <resources></resources>
       <response>System.Reflection.Context.dll.sources</response>
     </project>
-    <project dir="class/legacy/Mono.Cecil" library="Mono.Cecil-net_4_x">
+    <project dir="class/legacy/Mono.Cecil" library="legacy_Mono.Cecil-net_4_x">
       <boot>false</boot>
       <flags>/codepage:65001 /nologo /noconfig /deterministic -d:NET_4_0 -d:NET_4_5 -d:NET_4_6 -d:MONO -d:WIN_PLATFORM -nowarn:1699 -nostdlib -r:./../../../class/lib/net_4_x/mscorlib.dll /debug:portable -optimize -keyfile:../../mono.snk -d:NET_3_5 /publicsign -r:./../../../class/lib/net_4_x/System.Core.dll</flags>
       <output>Mono.Cecil.dll</output>
