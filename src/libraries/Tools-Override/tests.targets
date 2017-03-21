@@ -48,9 +48,10 @@
     <XunitResultsFileName>testResults.xml</XunitResultsFileName>
 
     <XunitOptions Condition="'$(BuildingNETFxVertical)' == 'true'">$(XunitOptions) -noshadow -noappdomain </XunitOptions>
-    <XunitOptions Condition="'$(BuildingUAPAOTVertical)' != 'true'">$(XunitOptions) -xml $(XunitResultsFileName)</XunitOptions>
+    <XunitOptions>$(XunitOptions) -xml $(XunitResultsFileName)</XunitOptions>
 
     <XunitOptions Condition="'$(Performance)'!='true'">$(XunitOptions) -notrait Benchmark=true</XunitOptions>
+    <XunitOptions Condition="'$(BuildingUAPAOTVertical)'=='true'">$(XunitOptions) -redirectoutput</XunitOptions>
 
     <XunitOptions>$(XunitOptions) -notrait category=non$(_bc_TargetGroup)tests</XunitOptions>
 
@@ -209,6 +210,8 @@
       <TestCommandLines Include="copy /y $(TestILCFolder)\CRT\vcruntime140_app.dll %EXECUTION_DIR%\native" />
       <TestCommandLines Include="echo > %EXECUTION_DIR%\native\$(XunitTestAssembly)"/>
       <TestCommandLines Include="cd native"/>
+      <PostExecutionTestCommandLines Include="type Xunit.Console.Output.txt" />
+      <PostExecutionTestCommandLines Include="copy /y testResults.xml %EXECUTION_DIR%\" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(Performance)'!='true'">
