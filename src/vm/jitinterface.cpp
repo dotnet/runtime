@@ -8796,7 +8796,6 @@ static CORINFO_METHOD_HANDLE resolveVirtualMethodHelper(MethodDesc* callerMethod
         // The base method should be in the base vtable
         WORD slot = pBaseMD->GetSlot();
         _ASSERTE(slot < pBaseMT->GetNumVirtuals());
-        _ASSERTE(pBaseMD == pBaseMT->GetMethodDescForSlot(slot));
         
         // Fetch the method that would be invoked if the class were
         // exactly derived class. It is up to the jit to determine whether
