@@ -119,7 +119,7 @@
       },
       "inputs": {
         "filename": "$(Agent.BuildDirectory)/s/corefx/build.sh",
-        "arguments": "$(PB_BuildArguments)",
+        "arguments": "-OfficialBuildId=$(OfficialBuildId) $(PB_BuildArguments)",
         "workingFolder": "$(Agent.BuildDirectory)/s/corefx/",
         "failOnStandardError": "false"
       }

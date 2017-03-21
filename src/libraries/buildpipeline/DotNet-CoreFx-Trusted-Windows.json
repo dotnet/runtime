@@ -141,7 +141,7 @@
       },
       "inputs": {
         "filename": "$(Build.SourcesDirectory)\\corefx\\build.cmd",
-        "arguments": "$(PB_BuildArguments) $(PB_PipelineBuildMSBuildArguments)",
+        "arguments": "-OfficialBuildId=$(OfficialBuildId) $(PB_BuildArguments) $(PB_PipelineBuildMSBuildArguments)",
         "workingFolder": "corefx",
         "failOnStandardError": "false"
       }
