@@ -2334,24 +2334,27 @@ ves_icall_System_AppDomain_InternalPopDomainRef (MonoError *error)
 	mono_thread_pop_appdomain_ref ();
 }
 
-MonoAppContext * 
-ves_icall_System_AppDomain_InternalGetContext ()
+MonoAppContextHandle
+ves_icall_System_AppDomain_InternalGetContext (MonoError *error)
 {
-	return mono_context_get ();
+	error_init (error);
+	return mono_context_get_handle ();
 }
 
-MonoAppContext * 
-ves_icall_System_AppDomain_InternalGetDefaultContext ()
+MonoAppContextHandle
+ves_icall_System_AppDomain_InternalGetDefaultContext (MonoError *error)
 {
-	return mono_domain_get ()->default_context;
+	error_init (error);
+	return MONO_HANDLE_NEW (MonoAppContext, mono_domain_get ()->default_context);
 }
 
-MonoAppContext * 
-ves_icall_System_AppDomain_InternalSetContext (MonoAppContext *mc)
+MonoAppContextHandle
+ves_icall_System_AppDomain_InternalSetContext (MonoAppContextHandle mc, MonoError *error)
 {
-	MonoAppContext *old_context = mono_context_get ();
+	error_init (error);
+	MonoAppContextHandle old_context = mono_context_get_handle ();
 
-	mono_context_set (mc);
+	mono_context_set_handle (mc);
 
 	return old_context;
 }

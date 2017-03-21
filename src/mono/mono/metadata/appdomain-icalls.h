@@ -98,14 +98,14 @@ ves_icall_System_AppDomain_InternalPushDomainRefByID (gint32 domain_id, MonoErro
 void
 ves_icall_System_AppDomain_InternalPopDomainRef (MonoError *error);
 
-MonoAppContext * 
-ves_icall_System_AppDomain_InternalGetContext      (void);
+MonoAppContextHandle
+ves_icall_System_AppDomain_InternalGetContext      (MonoError *error);
 
-MonoAppContext * 
-ves_icall_System_AppDomain_InternalGetDefaultContext      (void);
+MonoAppContextHandle
+ves_icall_System_AppDomain_InternalGetDefaultContext      (MonoError *error);
 
-MonoAppContext * 
-ves_icall_System_AppDomain_InternalSetContext	   (MonoAppContext *mc);
+MonoAppContextHandle
+ves_icall_System_AppDomain_InternalSetContext	   (MonoAppContextHandle mc, MonoError *error);
 
 gint32 
 ves_icall_System_AppDomain_GetIDFromDomain (MonoAppDomain * ad);

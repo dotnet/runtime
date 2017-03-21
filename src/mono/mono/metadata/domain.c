@@ -1399,6 +1399,12 @@ mono_context_set (MonoAppContext * new_context)
 	SET_APPCONTEXT (new_context);
 }
 
+void
+mono_context_set_handle (MonoAppContextHandle new_context)
+{
+	SET_APPCONTEXT (MONO_HANDLE_RAW (new_context));
+}
+
 /**
  * mono_context_get:
  *
@@ -1408,6 +1414,17 @@ MonoAppContext *
 mono_context_get (void)
 {
 	return GET_APPCONTEXT ();
+}
+
+/**
+ * mono_context_get_handle:
+ *
+ * Returns: the current Mono Application Context.
+ */
+MonoAppContextHandle
+mono_context_get_handle (void)
+{
+	return MONO_HANDLE_NEW (MonoAppContext, GET_APPCONTEXT ());
 }
 
 /**

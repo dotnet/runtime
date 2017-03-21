@@ -397,6 +397,7 @@ TYPED_HANDLE_DECL (MonoString);
 TYPED_HANDLE_DECL (MonoArray);
 TYPED_HANDLE_DECL (MonoObject);
 TYPED_HANDLE_DECL (MonoException);
+TYPED_HANDLE_DECL (MonoAppContext);
 
 #define NULL_HANDLE_STRING MONO_HANDLE_CAST(MonoString, NULL_HANDLE)
 
@@ -451,6 +452,13 @@ mono_array_handle_pin_with_size (MonoArrayHandle handle, int size, uintptr_t ind
 
 void
 mono_error_set_exception_handle (MonoError *error, MonoExceptionHandle exc);
+
+MonoAppContextHandle
+mono_context_get_handle (void);
+
+void
+mono_context_set_handle (MonoAppContextHandle new_context);
+
 
 G_END_DECLS
 
