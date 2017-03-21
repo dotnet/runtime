@@ -309,6 +309,13 @@ namespace System.Linq.Expressions.Tests
             AssertArgumentException(() => Expression.Call(method, (IEnumerable<Expression>)new Expression[0]), exceptionType, "method");
         }
 
+        [Fact]
+        public static void Method_Invalid_Via_Name()
+        {
+            Assert.Throws<ArgumentException>("method", () => Expression.Call(typeof(GenericClass<>), nameof(GenericClass<string>.NonGenericMethod), Type.EmptyTypes));
+            Assert.Throws<ArgumentException>("method", () => Expression.Call(typeof(GenericClass<>).MakeGenericType(typeof(GenericClass<>)), nameof(GenericClass<string>.NonGenericMethod), Type.EmptyTypes));
+        }
+
         public static IEnumerable<object[]> Method_DoesntBelongToInstance_TestData()
         {
             // Different declaring type
