@@ -114,7 +114,7 @@ namespace System.IO
         }
 
         // Tests if the given path contains a root. A path is considered rooted
-        // if it starts with a backslash ("\") or a drive letter and a colon (":").
+        // if it starts with a backslash ("\") or a valid drive letter and a colon (":").
         public static bool IsPathRooted(string path)
         {
             if (path != null)
@@ -123,7 +123,7 @@ namespace System.IO
 
                 int length = path.Length;
                 if ((length >= 1 && PathInternal.IsDirectorySeparator(path[0])) ||
-                    (length >= 2 && path[1] == PathInternal.VolumeSeparatorChar))
+                    (length >= 2 && PathInternal.IsValidDriveChar(path[0]) && path[1] == PathInternal.VolumeSeparatorChar))
                     return true;
             }
             return false;
