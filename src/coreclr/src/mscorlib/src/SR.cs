@@ -1014,4 +1014,7 @@ internal static class SR
 
     internal static string InvalidOperation_UnknownEnumType =>
         Environment.GetResourceString("InvalidOperation_UnknownEnumType");
+
+    internal static string Arg_SecurityException =>
+        Environment.GetResourceString("Arg_SecurityException");
 }
