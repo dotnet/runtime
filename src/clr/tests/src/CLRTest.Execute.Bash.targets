@@ -31,7 +31,7 @@ WARNING:   When setting properties based on their current state (for example:
       <![CDATA[
 echo "$CORE_ROOT/ildasm" -raweh -out=$(DisassemblyName) $(InputAssemblyName)
 "$CORE_ROOT/ildasm" -raweh -out=$(DisassemblyName) $(InputAssemblyName)
-_ERRORLEVEL=$?
+ERRORLEVEL=$?
 if [  $ERRORLEVEL -ne 0 ]
 then
   echo EXECUTION OF ILDASM - FAILED $ERRORLEVEL
@@ -40,7 +40,7 @@ fi
 
 echo "$CORE_ROOT/ilasm" -output=$(TargetAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
 "$CORE_ROOT/ilasm" -output=$(TargetAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
-_ERRORLEVEL=$?
+ERRORLEVEL=$?
 if [ $ERRORLEVEL -ne 0 ]
 then
   echo EXECUTION OF ILASM - FAILED $ERRORLEVEL
