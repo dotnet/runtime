@@ -40,7 +40,7 @@ namespace System
             ParameterModifier[] modifiers, CultureInfo cultureInfo, String[] names, out Object state)
         {
             if (match == null || match.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Arg_EmptyArray"), nameof(match));
+                throw new ArgumentException(SR.Arg_EmptyArray, nameof(match));
             Contract.EndContractBlock();
 
             MethodBase[] candidates = (MethodBase[])match.Clone();
@@ -292,7 +292,7 @@ namespace System
 
             // If we didn't find a method 
             if (CurIdx == 0)
-                throw new MissingMethodException(Environment.GetResourceString("MissingMember"));
+                throw new MissingMethodException(SR.MissingMember);
 
             if (CurIdx == 1)
             {
@@ -375,7 +375,7 @@ namespace System
             }
 
             if (ambig)
-                throw new AmbiguousMatchException(Environment.GetResourceString("Arg_AmbiguousMatchException"));
+                throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
 
             // Reorder (if needed)
             if (names != null)
@@ -499,7 +499,7 @@ namespace System
                     }
                 }
                 if (CurIdx == 0)
-                    throw new MissingFieldException(Environment.GetResourceString("MissingField"));
+                    throw new MissingFieldException(SR.MissingField);
                 if (CurIdx == 1)
                     return candidates[0];
             }
@@ -522,7 +522,7 @@ namespace System
                 }
             }
             if (ambig)
-                throw new AmbiguousMatchException(Environment.GetResourceString("Arg_AmbiguousMatchException"));
+                throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
             return candidates[currentMin];
         }
 
@@ -539,13 +539,13 @@ namespace System
             {
                 realTypes[i] = types[i].UnderlyingSystemType;
                 if (!(realTypes[i] is RuntimeType))
-                    throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), nameof(types));
+                    throw new ArgumentException(SR.Arg_MustBeType, nameof(types));
             }
             types = realTypes;
 
             // We don't automatically jump out on exact match.
             if (match == null || match.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Arg_EmptyArray"), nameof(match));
+                throw new ArgumentException(SR.Arg_EmptyArray, nameof(match));
 
             MethodBase[] candidates = (MethodBase[])match.Clone();
 
@@ -606,7 +606,7 @@ namespace System
                 }
             }
             if (ambig)
-                throw new AmbiguousMatchException(Environment.GetResourceString("Arg_AmbiguousMatchException"));
+                throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
             return candidates[currentMin];
         }
 
@@ -620,7 +620,7 @@ namespace System
                 throw new ArgumentNullException(nameof(indexes));
             }
             if (match == null || match.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Arg_EmptyArray"), nameof(match));
+                throw new ArgumentException(SR.Arg_EmptyArray, nameof(match));
             Contract.EndContractBlock();
 
             PropertyInfo[] candidates = (PropertyInfo[])match.Clone();
@@ -718,7 +718,7 @@ namespace System
             }
 
             if (ambig)
-                throw new AmbiguousMatchException(Environment.GetResourceString("Arg_AmbiguousMatchException"));
+                throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
             return candidates[currentMin];
         }
 
@@ -727,7 +727,7 @@ namespace System
         // This is because the default is built into the low level invoke code.
         public override Object ChangeType(Object value, Type type, CultureInfo cultureInfo)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_ChangeType"));
+            throw new NotSupportedException(SR.NotSupported_ChangeType);
         }
 
         public override void ReorderArgumentArray(ref Object[] args, Object state)
@@ -833,7 +833,7 @@ namespace System
                     continue;
 
                 if (bestMatch != null)
-                    throw new AmbiguousMatchException(Environment.GetResourceString("Arg_AmbiguousMatchException"));
+                    throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
 
                 bestMatch = match[i];
             }
@@ -1110,7 +1110,7 @@ namespace System
                 // This can only happen if at least one is vararg or generic.
                 if (currentHierarchyDepth == deepestHierarchy)
                 {
-                    throw new AmbiguousMatchException(Environment.GetResourceString("Arg_AmbiguousMatchException"));
+                    throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
                 }
 
                 // Check to see if this method is on the most derived class.

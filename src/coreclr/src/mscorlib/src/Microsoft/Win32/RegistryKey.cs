@@ -545,7 +545,7 @@ namespace Microsoft.Win32
         {
             if (options < RegistryValueOptions.None || options > RegistryValueOptions.DoNotExpandEnvironmentNames)
             {
-                throw new ArgumentException(Environment.GetResourceString("Arg_EnumIllegalVal", (int)options), nameof(options));
+                throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, (int)options), nameof(options));
             }
             bool doNotExpand = (options == RegistryValueOptions.DoNotExpandEnvironmentNames);
             CheckPermission(RegistryInternalCheck.CheckValueReadPermission, name, false, RegistryKeyPermissionCheck.Default);
@@ -669,7 +669,7 @@ namespace Microsoft.Win32
                             }
                             catch (OverflowException e)
                             {
-                                throw new IOException(Environment.GetResourceString("Arg_RegGetOverflowBug"), e);
+                                throw new IOException(SR.Arg_RegGetOverflowBug, e);
                             }
                         }
                         char[] blob = new char[datasize / 2];
@@ -699,7 +699,7 @@ namespace Microsoft.Win32
                             }
                             catch (OverflowException e)
                             {
-                                throw new IOException(Environment.GetResourceString("Arg_RegGetOverflowBug"), e);
+                                throw new IOException(SR.Arg_RegGetOverflowBug, e);
                             }
                         }
                         char[] blob = new char[datasize / 2];
@@ -732,7 +732,7 @@ namespace Microsoft.Win32
                             }
                             catch (OverflowException e)
                             {
-                                throw new IOException(Environment.GetResourceString("Arg_RegGetOverflowBug"), e);
+                                throw new IOException(SR.Arg_RegGetOverflowBug, e);
                             }
                         }
                         char[] blob = new char[datasize / 2];
@@ -754,7 +754,7 @@ namespace Microsoft.Win32
                             }
                             catch (OverflowException e)
                             {
-                                throw new IOException(Environment.GetResourceString("Arg_RegGetOverflowBug"), e);
+                                throw new IOException(SR.Arg_RegGetOverflowBug, e);
                             }
                             blob[blob.Length - 1] = (char)0;
                         }
@@ -844,11 +844,11 @@ namespace Microsoft.Win32
 
             if (name != null && name.Length > MaxValueLength)
             {
-                throw new ArgumentException(Environment.GetResourceString("Arg_RegValStrLenBug"));
+                throw new ArgumentException(SR.Arg_RegValStrLenBug);
             }
 
             if (!Enum.IsDefined(typeof(RegistryValueKind), valueKind))
-                throw new ArgumentException(Environment.GetResourceString("Arg_RegBadKeyKind"), nameof(valueKind));
+                throw new ArgumentException(SR.Arg_RegBadKeyKind, nameof(valueKind));
 
             EnsureWriteable();
 
@@ -1013,7 +1013,7 @@ namespace Microsoft.Win32
                 else if (value is String[])
                     return RegistryValueKind.MultiString;
                 else
-                    throw new ArgumentException(Environment.GetResourceString("Arg_RegSetBadArrType", value.GetType().Name));
+                    throw new ArgumentException(SR.Format(SR.Arg_RegSetBadArrType, value.GetType().Name));
             }
             else
                 return RegistryValueKind.String;
@@ -1043,7 +1043,7 @@ namespace Microsoft.Win32
             {
                 case Win32Native.ERROR_ACCESS_DENIED:
                     if (str != null)
-                        throw new UnauthorizedAccessException(Environment.GetResourceString("UnauthorizedAccess_RegistryKeyGeneric_Key", str));
+                        throw new UnauthorizedAccessException(SR.Format(SR.UnauthorizedAccess_RegistryKeyGeneric_Key, str));
                     else
                         throw new UnauthorizedAccessException();
 
@@ -1068,7 +1068,7 @@ namespace Microsoft.Win32
                     goto default;
 
                 case Win32Native.ERROR_FILE_NOT_FOUND:
-                    throw new IOException(Environment.GetResourceString("Arg_RegKeyNotFound"), errorCode);
+                    throw new IOException(SR.Arg_RegKeyNotFound, errorCode);
 
                 default:
                     throw new IOException(Win32Native.GetMessage(errorCode), errorCode);

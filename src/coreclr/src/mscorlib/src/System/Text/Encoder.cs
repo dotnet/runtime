@@ -55,7 +55,7 @@ namespace System.Text
                 // Can't change fallback if buffer is wrong
                 if (m_fallbackBuffer != null && m_fallbackBuffer.Remaining > 0)
                     throw new ArgumentException(
-                      Environment.GetResourceString("Argument_FallbackBufferNotEmpty"), nameof(value));
+                      SR.Argument_FallbackBufferNotEmpty, nameof(value));
 
                 m_fallback = value;
                 m_fallbackBuffer = null;
@@ -124,11 +124,11 @@ namespace System.Text
             // Validate input parameters
             if (chars == null)
                 throw new ArgumentNullException(nameof(chars),
-                      Environment.GetResourceString("ArgumentNull_Array"));
+                      SR.ArgumentNull_Array);
 
             if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count),
-                      Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                      SR.ArgumentOutOfRange_NeedNonNegNum);
             Contract.EndContractBlock();
 
             char[] arrChar = new char[count];
@@ -185,11 +185,11 @@ namespace System.Text
             // Validate input parameters
             if (bytes == null || chars == null)
                 throw new ArgumentNullException(bytes == null ? nameof(bytes) : nameof(chars),
-                    Environment.GetResourceString("ArgumentNull_Array"));
+                    SR.ArgumentNull_Array);
 
             if (charCount < 0 || byteCount < 0)
                 throw new ArgumentOutOfRangeException((charCount < 0 ? nameof(charCount) : nameof(byteCount)),
-                    Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                    SR.ArgumentOutOfRange_NeedNonNegNum);
             Contract.EndContractBlock();
 
             // Get the char array to convert
@@ -242,23 +242,23 @@ namespace System.Text
             // Validate parameters
             if (chars == null || bytes == null)
                 throw new ArgumentNullException((chars == null ? nameof(chars) : nameof(bytes)),
-                      Environment.GetResourceString("ArgumentNull_Array"));
+                      SR.ArgumentNull_Array);
 
             if (charIndex < 0 || charCount < 0)
                 throw new ArgumentOutOfRangeException((charIndex < 0 ? nameof(charIndex) : nameof(charCount)),
-                      Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                      SR.ArgumentOutOfRange_NeedNonNegNum);
 
             if (byteIndex < 0 || byteCount < 0)
                 throw new ArgumentOutOfRangeException((byteIndex < 0 ? nameof(byteIndex) : nameof(byteCount)),
-                      Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                      SR.ArgumentOutOfRange_NeedNonNegNum);
 
             if (chars.Length - charIndex < charCount)
                 throw new ArgumentOutOfRangeException(nameof(chars),
-                      Environment.GetResourceString("ArgumentOutOfRange_IndexCountBuffer"));
+                      SR.ArgumentOutOfRange_IndexCountBuffer);
 
             if (bytes.Length - byteIndex < byteCount)
                 throw new ArgumentOutOfRangeException(nameof(bytes),
-                      Environment.GetResourceString("ArgumentOutOfRange_IndexCountBuffer"));
+                      SR.ArgumentOutOfRange_IndexCountBuffer);
             Contract.EndContractBlock();
 
             charsUsed = charCount;
@@ -282,7 +282,7 @@ namespace System.Text
             }
 
             // Oops, we didn't have anything, we'll have to throw an overflow
-            throw new ArgumentException(Environment.GetResourceString("Argument_ConversionOverflow"));
+            throw new ArgumentException(SR.Argument_ConversionOverflow);
         }
 
         // Same thing, but using pointers
@@ -300,10 +300,10 @@ namespace System.Text
             // Validate input parameters
             if (bytes == null || chars == null)
                 throw new ArgumentNullException(bytes == null ? nameof(bytes) : nameof(chars),
-                    Environment.GetResourceString("ArgumentNull_Array"));
+                    SR.ArgumentNull_Array);
             if (charCount < 0 || byteCount < 0)
                 throw new ArgumentOutOfRangeException((charCount < 0 ? nameof(charCount) : nameof(byteCount)),
-                    Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                    SR.ArgumentOutOfRange_NeedNonNegNum);
             Contract.EndContractBlock();
 
             // Get ready to do it
@@ -326,7 +326,7 @@ namespace System.Text
             }
 
             // Oops, we didn't have anything, we'll have to throw an overflow
-            throw new ArgumentException(Environment.GetResourceString("Argument_ConversionOverflow"));
+            throw new ArgumentException(SR.Argument_ConversionOverflow);
         }
     }
 }

@@ -30,7 +30,7 @@ namespace System
         }
 
         public OperationCanceledException()
-            : base(Environment.GetResourceString("OperationCanceled"))
+            : base(SR.OperationCanceled)
         {
             SetErrorCode(__HResults.COR_E_OPERATIONCANCELED);
         }

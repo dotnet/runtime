@@ -29,7 +29,7 @@ namespace System.IO
         private String _fusionLog;  // fusion log (when applicable)
 
         public FileNotFoundException()
-            : base(Environment.GetResourceString("IO.FileNotFound"))
+            : base(SR.IO_FileNotFound)
         {
             SetErrorCode(__HResults.COR_E_FILENOTFOUND);
         }
@@ -74,7 +74,7 @@ namespace System.IO
             {
                 if ((_fileName == null) &&
                     (HResult == System.__HResults.COR_E_EXCEPTION))
-                    _message = Environment.GetResourceString("IO.FileNotFound");
+                    _message = SR.IO_FileNotFound;
 
                 else if (_fileName != null)
                     _message = FileLoadException.FormatFileLoadExceptionMessage(_fileName, HResult);
@@ -91,7 +91,7 @@ namespace System.IO
             String s = GetType().FullName + ": " + Message;
 
             if (_fileName != null && _fileName.Length != 0)
-                s += Environment.NewLine + Environment.GetResourceString("IO.FileName_Name", _fileName);
+                s += Environment.NewLine + SR.Format(SR.IO_FileName_Name, _fileName);
 
             if (InnerException != null)
                 s = s + " ---> " + InnerException.ToString();

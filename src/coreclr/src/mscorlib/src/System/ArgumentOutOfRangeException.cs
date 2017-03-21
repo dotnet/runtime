@@ -33,7 +33,7 @@ namespace System
             get
             {
                 if (_rangeMessage == null)
-                    _rangeMessage = Environment.GetResourceString("Arg_ArgumentOutOfRangeException");
+                    _rangeMessage = SR.Arg_ArgumentOutOfRangeException;
                 return _rangeMessage;
             }
         }
@@ -81,7 +81,7 @@ namespace System
                 String s = base.Message;
                 if (m_actualValue != null)
                 {
-                    String valueMessage = Environment.GetResourceString("ArgumentOutOfRange_ActualValue", m_actualValue.ToString());
+                    String valueMessage = SR.Format(SR.ArgumentOutOfRange_ActualValue, m_actualValue.ToString());
                     if (s == null)
                         return valueMessage;
                     return s + Environment.NewLine + valueMessage;

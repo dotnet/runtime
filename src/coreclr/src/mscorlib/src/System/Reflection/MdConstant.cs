@@ -69,7 +69,7 @@ namespace System.Reflection
                         break;
 
                     default:
-                        throw new FormatException(Environment.GetResourceString("Arg_BadLiteralFormat"));
+                        throw new FormatException(SR.Arg_BadLiteralFormat);
                         #endregion
                 }
 
@@ -95,7 +95,7 @@ namespace System.Reflection
                         break;
 
                     default:
-                        throw new FormatException(Environment.GetResourceString("Arg_BadLiteralFormat"));
+                        throw new FormatException(SR.Arg_BadLiteralFormat);
                         #endregion
                 }
 
@@ -158,7 +158,7 @@ namespace System.Reflection
                         return null;
 
                     default:
-                        throw new FormatException(Environment.GetResourceString("Arg_BadLiteralFormat"));
+                        throw new FormatException(SR.Arg_BadLiteralFormat);
                         #endregion
                 }
             }

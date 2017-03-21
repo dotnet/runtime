@@ -133,7 +133,7 @@ namespace System.Resources
             if (stream == null)
                 throw new ArgumentNullException(nameof(stream));
             if (!stream.CanRead)
-                throw new ArgumentException(Environment.GetResourceString("Argument_StreamNotReadable"));
+                throw new ArgumentException(SR.Argument_StreamNotReadable);
             Contract.EndContractBlock();
 
             _resCache = new Dictionary<String, ResourceLocator>(FastResourceComparer.Default);
@@ -211,7 +211,7 @@ namespace System.Resources
             int stringLength = _store.Read7BitEncodedInt();
             if (stringLength < 0)
             {
-                throw new BadImageFormatException(Environment.GetResourceString("BadImageFormat_NegativeStringLength"));
+                throw new BadImageFormatException(SR.BadImageFormat_NegativeStringLength);
             }
             _store.BaseStream.Seek(stringLength, SeekOrigin.Current);
         }
@@ -239,7 +239,7 @@ namespace System.Resources
                 r = ReadUnalignedI4(&_namePositionsPtr[index]);
             if (r < 0 || r > _dataSectionOffset - _nameSectionOffset)
             {
-                throw new FormatException(Environment.GetResourceString("BadImageFormat_ResourcesNameInvalidOffset", r));
+                throw new FormatException(SR.Format(SR.BadImageFormat_ResourcesNameInvalidOffset, r));
             }
             return r;
         }
@@ -252,7 +252,7 @@ namespace System.Resources
         public IDictionaryEnumerator GetEnumerator()
         {
             if (_resCache == null)
-                throw new InvalidOperationException(Environment.GetResourceString("ResourceReaderIsClosed"));
+                throw new InvalidOperationException(SR.ResourceReaderIsClosed);
             return new ResourceEnumerator(this);
         }
 
@@ -341,7 +341,7 @@ namespace System.Resources
                         int dataPos = _store.ReadInt32();
                         if (dataPos < 0 || dataPos >= _store.BaseStream.Length - _dataSectionOffset)
                         {
-                            throw new FormatException(Environment.GetResourceString("BadImageFormat_ResourcesDataInvalidOffset", dataPos));
+                            throw new FormatException(SR.Format(SR.BadImageFormat_ResourcesDataInvalidOffset, dataPos));
                         }
                         return dataPos;
                     }
@@ -361,7 +361,7 @@ namespace System.Resources
             int byteLen = _store.Read7BitEncodedInt();
             if (byteLen < 0)
             {
-                throw new BadImageFormatException(Environment.GetResourceString("BadImageFormat_NegativeStringLength"));
+                throw new BadImageFormatException(SR.BadImageFormat_NegativeStringLength);
             }
             if (_ums != null)
             {
@@ -370,7 +370,7 @@ namespace System.Resources
                 _ums.Seek(byteLen, SeekOrigin.Current);
                 if (_ums.Position > _ums.Length)
                 {
-                    throw new BadImageFormatException(Environment.GetResourceString("BadImageFormat_ResourcesNameTooLong"));
+                    throw new BadImageFormatException(SR.BadImageFormat_ResourcesNameTooLong);
                 }
 
                 // On 64-bit machines, these char*'s may be misaligned.  Use a
@@ -387,7 +387,7 @@ namespace System.Resources
                 {
                     int n = _store.Read(bytes, byteLen - numBytesToRead, numBytesToRead);
                     if (n == 0)
-                        throw new BadImageFormatException(Environment.GetResourceString("BadImageFormat_ResourceNameCorrupted"));
+                        throw new BadImageFormatException(SR.BadImageFormat_ResourceNameCorrupted);
                     numBytesToRead -= n;
                 }
                 return FastResourceComparer.CompareOrdinal(bytes, byteLen / 2, name) == 0;
@@ -410,13 +410,13 @@ namespace System.Resources
                 byteLen = _store.Read7BitEncodedInt();
                 if (byteLen < 0)
                 {
-                    throw new BadImageFormatException(Environment.GetResourceString("BadImageFormat_NegativeStringLength"));
+                    throw new BadImageFormatException(SR.BadImageFormat_NegativeStringLength);
                 }
 
                 if (_ums != null)
                 {
                     if (_ums.Position > _ums.Length - byteLen)
-                        throw new BadImageFormatException(Environment.GetResourceString("BadImageFormat_ResourcesIndexTooLong", index));
+                        throw new BadImageFormatException(SR.Format(SR.BadImageFormat_ResourcesIndexTooLong, index));
 
                     String s = null;
                     char* charPtr = (char*)_ums.PositionPointer;
@@ -438,7 +438,7 @@ namespace System.Resources
                     dataOffset = _store.ReadInt32();
                     if (dataOffset < 0 || dataOffset >= _store.BaseStream.Length - _dataSectionOffset)
                     {
-                        throw new FormatException(Environment.GetResourceString("BadImageFormat_ResourcesDataInvalidOffset", dataOffset));
+                        throw new FormatException(SR.Format(SR.BadImageFormat_ResourcesDataInvalidOffset, dataOffset));
                     }
                     return s;
                 }
@@ -452,13 +452,13 @@ namespace System.Resources
                 {
                     int n = _store.Read(bytes, byteLen - count, count);
                     if (n == 0)
-                        throw new EndOfStreamException(Environment.GetResourceString("BadImageFormat_ResourceNameCorrupted_NameIndex", index));
+                        throw new EndOfStreamException(SR.Format(SR.BadImageFormat_ResourceNameCorrupted_NameIndex, index));
                     count -= n;
                 }
                 dataOffset = _store.ReadInt32();
                 if (dataOffset < 0 || dataOffset >= _store.BaseStream.Length - _dataSectionOffset)
                 {
-                    throw new FormatException(Environment.GetResourceString("BadImageFormat_ResourcesDataInvalidOffset", dataOffset));
+                    throw new FormatException(SR.Format(SR.BadImageFormat_ResourcesDataInvalidOffset, dataOffset));
                 }
             }
             return Encoding.Unicode.GetString(bytes, 0, byteLen);
@@ -479,7 +479,7 @@ namespace System.Resources
                 int dataPos = _store.ReadInt32();
                 if (dataPos < 0 || dataPos >= _store.BaseStream.Length - _dataSectionOffset)
                 {
-                    throw new FormatException(Environment.GetResourceString("BadImageFormat_ResourcesDataInvalidOffset", dataPos));
+                    throw new FormatException(SR.Format(SR.BadImageFormat_ResourcesDataInvalidOffset, dataPos));
                 }
                 BCLDebug.Log("RESMGRFILEFORMAT", "GetValueForNameIndex: dataPos: " + dataPos);
                 ResourceTypeCode junk;
@@ -505,7 +505,7 @@ namespace System.Resources
                 if (typeIndex == -1)
                     return null;
                 if (FindType(typeIndex) != typeof(String))
-                    throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_ResourceNotString_Type", FindType(typeIndex).FullName));
+                    throw new InvalidOperationException(SR.Format(SR.InvalidOperation_ResourceNotString_Type, FindType(typeIndex).FullName));
                 s = _store.ReadString();
             }
             else
@@ -518,7 +518,7 @@ namespace System.Resources
                         typeString = typeCode.ToString();
                     else
                         typeString = FindType(typeCode - ResourceTypeCode.StartOfUserTypes).FullName;
-                    throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_ResourceNotString_Type", typeString));
+                    throw new InvalidOperationException(SR.Format(SR.InvalidOperation_ResourceNotString_Type, typeString));
                 }
                 if (typeCode == ResourceTypeCode.String) // ignore Null
                     s = _store.ReadString();
@@ -564,11 +564,11 @@ namespace System.Resources
             }
             catch (EndOfStreamException eof)
             {
-                throw new BadImageFormatException(Environment.GetResourceString("BadImageFormat_TypeMismatch"), eof);
+                throw new BadImageFormatException(SR.BadImageFormat_TypeMismatch, eof);
             }
             catch (ArgumentOutOfRangeException e)
             {
-                throw new BadImageFormatException(Environment.GetResourceString("BadImageFormat_TypeMismatch"), e);
+                throw new BadImageFormatException(SR.BadImageFormat_TypeMismatch, e);
             }
         }
 
@@ -623,7 +623,7 @@ namespace System.Resources
             }
             else
             {
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_ResourceObjectSerialization"));
+                throw new NotSupportedException(SR.NotSupported_ResourceObjectSerialization);
             }
         }
 
@@ -640,11 +640,11 @@ namespace System.Resources
             }
             catch (EndOfStreamException eof)
             {
-                throw new BadImageFormatException(Environment.GetResourceString("BadImageFormat_TypeMismatch"), eof);
+                throw new BadImageFormatException(SR.BadImageFormat_TypeMismatch, eof);
             }
             catch (ArgumentOutOfRangeException e)
             {
-                throw new BadImageFormatException(Environment.GetResourceString("BadImageFormat_TypeMismatch"), e);
+                throw new BadImageFormatException(SR.BadImageFormat_TypeMismatch, e);
             }
         }
 
@@ -717,21 +717,21 @@ namespace System.Resources
                         int len = _store.ReadInt32();
                         if (len < 0)
                         {
-                            throw new BadImageFormatException(Environment.GetResourceString("BadImageFormat_ResourceDataLengthInvalid", len));
+                            throw new BadImageFormatException(SR.Format(SR.BadImageFormat_ResourceDataLengthInvalid, len));
                         }
 
                         if (_ums == null)
                         {
                             if (len > _store.BaseStream.Length)
                             {
-                                throw new BadImageFormatException(Environment.GetResourceString("BadImageFormat_ResourceDataLengthInvalid", len));
+                                throw new BadImageFormatException(SR.Format(SR.BadImageFormat_ResourceDataLengthInvalid, len));
                             }
                             return _store.ReadBytes(len);
                         }
 
                         if (len > _ums.Length - _ums.Position)
                         {
-                            throw new BadImageFormatException(Environment.GetResourceString("BadImageFormat_ResourceDataLengthInvalid", len));
+                            throw new BadImageFormatException(SR.Format(SR.BadImageFormat_ResourceDataLengthInvalid, len));
                         }
 
                         byte[] bytes = new byte[len];
@@ -745,7 +745,7 @@ namespace System.Resources
                         int len = _store.ReadInt32();
                         if (len < 0)
                         {
-                            throw new BadImageFormatException(Environment.GetResourceString("BadImageFormat_ResourceDataLengthInvalid", len));
+                            throw new BadImageFormatException(SR.Format(SR.BadImageFormat_ResourceDataLengthInvalid, len));
                         }
                         if (_ums == null)
                         {
@@ -757,7 +757,7 @@ namespace System.Resources
                         // make sure we don't create an UnmanagedMemoryStream that is longer than the resource stream. 
                         if (len > _ums.Length - _ums.Position)
                         {
-                            throw new BadImageFormatException(Environment.GetResourceString("BadImageFormat_ResourceDataLengthInvalid", len));
+                            throw new BadImageFormatException(SR.Format(SR.BadImageFormat_ResourceDataLengthInvalid, len));
                         }
 
                         // For the case that we've memory mapped in the .resources
@@ -771,13 +771,13 @@ namespace System.Resources
                 default:
                     if (typeCode < ResourceTypeCode.StartOfUserTypes)
                     {
-                        throw new BadImageFormatException(Environment.GetResourceString("BadImageFormat_TypeMismatch"));
+                        throw new BadImageFormatException(SR.BadImageFormat_TypeMismatch);
                     }
                     break;
             }
 
             // Normal serialized objects
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_ResourceObjectSerialization"));
+            throw new NotSupportedException(SR.NotSupported_ResourceObjectSerialization);
         }
 
 
@@ -797,11 +797,11 @@ namespace System.Resources
             }
             catch (EndOfStreamException eof)
             {
-                throw new BadImageFormatException(Environment.GetResourceString("BadImageFormat_ResourcesHeaderCorrupted"), eof);
+                throw new BadImageFormatException(SR.BadImageFormat_ResourcesHeaderCorrupted, eof);
             }
             catch (IndexOutOfRangeException e)
             {
-                throw new BadImageFormatException(Environment.GetResourceString("BadImageFormat_ResourcesHeaderCorrupted"), e);
+                throw new BadImageFormatException(SR.BadImageFormat_ResourcesHeaderCorrupted, e);
             }
         }
 
@@ -811,7 +811,7 @@ namespace System.Resources
             // Check for magic number
             int magicNum = _store.ReadInt32();
             if (magicNum != ResourceManager.MagicNumber)
-                throw new ArgumentException(Environment.GetResourceString("Resources_StreamNotValid"));
+                throw new ArgumentException(SR.Resources_StreamNotValid);
             // Assuming this is ResourceManager header V1 or greater, hopefully
             // after the version number there is a number of bytes to skip
             // to bypass the rest of the ResMgr header. For V2 or greater, we
@@ -820,7 +820,7 @@ namespace System.Resources
             int numBytesToSkip = _store.ReadInt32();
             if (numBytesToSkip < 0 || resMgrHeaderVersion < 0)
             {
-                throw new BadImageFormatException(Environment.GetResourceString("BadImageFormat_ResourcesHeaderCorrupted"));
+                throw new BadImageFormatException(SR.BadImageFormat_ResourcesHeaderCorrupted);
             }
             if (resMgrHeaderVersion > 1)
             {
@@ -839,7 +839,7 @@ namespace System.Resources
                 AssemblyName mscorlib = new AssemblyName(ResourceManager.MscorlibName);
 
                 if (!ResourceManager.CompareNames(readerType, ResourceManager.ResReaderTypeName, mscorlib))
-                    throw new NotSupportedException(Environment.GetResourceString("NotSupported_WrongResourceReader_Type", readerType));
+                    throw new NotSupportedException(SR.Format(SR.NotSupported_WrongResourceReader_Type, readerType));
 
                 // Skip over type name for a suitable ResourceSet
                 SkipString();
@@ -849,7 +849,7 @@ namespace System.Resources
             // Do file version check
             int version = _store.ReadInt32();
             if (version != RuntimeResourceSet.Version && version != 1)
-                throw new ArgumentException(Environment.GetResourceString("Arg_ResourceFileUnsupportedVersion", RuntimeResourceSet.Version, version));
+                throw new ArgumentException(SR.Format(SR.Arg_ResourceFileUnsupportedVersion, RuntimeResourceSet.Version, version));
             _version = version;
 
 #if RESOURCE_FILE_FORMAT_DEBUG
@@ -875,7 +875,7 @@ namespace System.Resources
             _numResources = _store.ReadInt32();
             if (_numResources < 0)
             {
-                throw new BadImageFormatException(Environment.GetResourceString("BadImageFormat_ResourcesHeaderCorrupted"));
+                throw new BadImageFormatException(SR.BadImageFormat_ResourcesHeaderCorrupted);
             }
             BCLDebug.Log("RESMGRFILEFORMAT", "ReadResources: Expecting " + _numResources + " resources.");
 #if RESOURCE_FILE_FORMAT_DEBUG
@@ -888,7 +888,7 @@ namespace System.Resources
             int numTypes = _store.ReadInt32();
             if (numTypes < 0)
             {
-                throw new BadImageFormatException(Environment.GetResourceString("BadImageFormat_ResourcesHeaderCorrupted"));
+                throw new BadImageFormatException(SR.BadImageFormat_ResourcesHeaderCorrupted);
             }
             _typeTable = new RuntimeType[numTypes];
             _typeNamePositions = new int[numTypes];
@@ -942,7 +942,7 @@ namespace System.Resources
                 int seekPos = unchecked(4 * _numResources);
                 if (seekPos < 0)
                 {
-                    throw new BadImageFormatException(Environment.GetResourceString("BadImageFormat_ResourcesHeaderCorrupted"));
+                    throw new BadImageFormatException(SR.BadImageFormat_ResourcesHeaderCorrupted);
                 }
                 unsafe
                 {
@@ -969,7 +969,7 @@ namespace System.Resources
                     int namePosition = _store.ReadInt32();
                     if (namePosition < 0)
                     {
-                        throw new BadImageFormatException(Environment.GetResourceString("BadImageFormat_ResourcesHeaderCorrupted"));
+                        throw new BadImageFormatException(SR.BadImageFormat_ResourcesHeaderCorrupted);
                     }
 
                     _namePositions[i] = namePosition;
@@ -980,7 +980,7 @@ namespace System.Resources
                 int seekPos = unchecked(4 * _numResources);
                 if (seekPos < 0)
                 {
-                    throw new BadImageFormatException(Environment.GetResourceString("BadImageFormat_ResourcesHeaderCorrupted"));
+                    throw new BadImageFormatException(SR.BadImageFormat_ResourcesHeaderCorrupted);
                 }
                 unsafe
                 {
@@ -996,7 +996,7 @@ namespace System.Resources
             _dataSectionOffset = _store.ReadInt32();
             if (_dataSectionOffset < 0)
             {
-                throw new BadImageFormatException(Environment.GetResourceString("BadImageFormat_ResourcesHeaderCorrupted"));
+                throw new BadImageFormatException(SR.BadImageFormat_ResourcesHeaderCorrupted);
             }
 
             // Store current location as start of name section
@@ -1005,7 +1005,7 @@ namespace System.Resources
             // _nameSectionOffset should be <= _dataSectionOffset; if not, it's corrupt
             if (_dataSectionOffset < _nameSectionOffset)
             {
-                throw new BadImageFormatException(Environment.GetResourceString("BadImageFormat_ResourcesHeaderCorrupted"));
+                throw new BadImageFormatException(SR.BadImageFormat_ResourcesHeaderCorrupted);
             }
 
             BCLDebug.Log("RESMGRFILEFORMAT", String.Format(CultureInfo.InvariantCulture, "ReadResources: _nameOffset = 0x{0:x}  _dataOffset = 0x{1:x}", _nameSectionOffset, _dataSectionOffset));
@@ -1018,7 +1018,7 @@ namespace System.Resources
         {
             if (typeIndex < 0 || typeIndex >= _typeTable.Length)
             {
-                throw new BadImageFormatException(Environment.GetResourceString("BadImageFormat_InvalidType"));
+                throw new BadImageFormatException(SR.BadImageFormat_InvalidType);
             }
             if (_typeTable[typeIndex] == null)
             {
@@ -1041,7 +1041,7 @@ namespace System.Resources
                 // getting to Type.GetType -- this is costly with v1 resource formats.
                 catch (FileNotFoundException)
                 {
-                    throw new NotSupportedException(Environment.GetResourceString("NotSupported_ResourceObjectSerialization"));
+                    throw new NotSupportedException(SR.NotSupported_ResourceObjectSerialization);
                 }
                 finally
                 {
@@ -1059,7 +1059,7 @@ namespace System.Resources
                 throw new ArgumentNullException(nameof(resourceName));
             Contract.EndContractBlock();
             if (_resCache == null)
-                throw new InvalidOperationException(Environment.GetResourceString("ResourceReaderIsClosed"));
+                throw new InvalidOperationException(SR.ResourceReaderIsClosed);
 
             // Get the type information from the data section.  Also,
             // sort all of the data section's indexes to compute length of
@@ -1069,7 +1069,7 @@ namespace System.Resources
             int dataPos = FindPosForResource(resourceName);
             if (dataPos == -1)
             {
-                throw new ArgumentException(Environment.GetResourceString("Arg_ResourceNameNotExist", resourceName));
+                throw new ArgumentException(SR.Format(SR.Arg_ResourceNameNotExist, resourceName));
             }
 
             lock (this)
@@ -1082,14 +1082,14 @@ namespace System.Resources
                     int numBytesToSkip = _store.Read7BitEncodedInt();
                     if (numBytesToSkip < 0)
                     {
-                        throw new FormatException(Environment.GetResourceString("BadImageFormat_ResourcesNameInvalidOffset", numBytesToSkip));
+                        throw new FormatException(SR.Format(SR.BadImageFormat_ResourcesNameInvalidOffset, numBytesToSkip));
                     }
                     _store.BaseStream.Position += numBytesToSkip;
 
                     int dPos = _store.ReadInt32();
                     if (dPos < 0 || dPos >= _store.BaseStream.Length - _dataSectionOffset)
                     {
-                        throw new FormatException(Environment.GetResourceString("BadImageFormat_ResourcesDataInvalidOffset", dPos));
+                        throw new FormatException(SR.Format(SR.BadImageFormat_ResourcesDataInvalidOffset, dPos));
                     }
                     sortedDataPositions[i] = dPos;
                 }
@@ -1106,7 +1106,7 @@ namespace System.Resources
                 ResourceTypeCode typeCode = (ResourceTypeCode)_store.Read7BitEncodedInt();
                 if (typeCode < 0 || typeCode >= ResourceTypeCode.StartOfUserTypes + _typeTable.Length)
                 {
-                    throw new BadImageFormatException(Environment.GetResourceString("BadImageFormat_InvalidType"));
+                    throw new BadImageFormatException(SR.BadImageFormat_InvalidType);
                 }
                 resourceType = TypeNameFromTypeCode(typeCode);
 
@@ -1115,7 +1115,7 @@ namespace System.Resources
                 len -= (int)(_store.BaseStream.Position - (_dataSectionOffset + dataPos));
                 byte[] bytes = _store.ReadBytes(len);
                 if (bytes.Length != len)
-                    throw new FormatException(Environment.GetResourceString("BadImageFormat_ResourceNameCorrupted"));
+                    throw new FormatException(SR.BadImageFormat_ResourceNameCorrupted);
                 resourceData = bytes;
             }
         }
@@ -1181,9 +1181,9 @@ namespace System.Resources
             {
                 get
                 {
-                    if (_currentName == ENUM_DONE) throw new InvalidOperationException(Environment.GetResourceString(ResId.InvalidOperation_EnumEnded));
-                    if (!_currentIsValid) throw new InvalidOperationException(Environment.GetResourceString(ResId.InvalidOperation_EnumNotStarted));
-                    if (_reader._resCache == null) throw new InvalidOperationException(Environment.GetResourceString("ResourceReaderIsClosed"));
+                    if (_currentName == ENUM_DONE) throw new InvalidOperationException(SR.GetResourceString(ResId.InvalidOperation_EnumEnded));
+                    if (!_currentIsValid) throw new InvalidOperationException(SR.GetResourceString(ResId.InvalidOperation_EnumNotStarted));
+                    if (_reader._resCache == null) throw new InvalidOperationException(SR.ResourceReaderIsClosed);
 
                     return _reader.AllocateStringForNameIndex(_currentName, out _dataPosition);
                 }
@@ -1210,9 +1210,9 @@ namespace System.Resources
             {
                 get
                 {
-                    if (_currentName == ENUM_DONE) throw new InvalidOperationException(Environment.GetResourceString(ResId.InvalidOperation_EnumEnded));
-                    if (!_currentIsValid) throw new InvalidOperationException(Environment.GetResourceString(ResId.InvalidOperation_EnumNotStarted));
-                    if (_reader._resCache == null) throw new InvalidOperationException(Environment.GetResourceString("ResourceReaderIsClosed"));
+                    if (_currentName == ENUM_DONE) throw new InvalidOperationException(SR.GetResourceString(ResId.InvalidOperation_EnumEnded));
+                    if (!_currentIsValid) throw new InvalidOperationException(SR.GetResourceString(ResId.InvalidOperation_EnumNotStarted));
+                    if (_reader._resCache == null) throw new InvalidOperationException(SR.ResourceReaderIsClosed);
 
                     String key;
                     Object value = null;
@@ -1248,9 +1248,9 @@ namespace System.Resources
             {
                 get
                 {
-                    if (_currentName == ENUM_DONE) throw new InvalidOperationException(Environment.GetResourceString(ResId.InvalidOperation_EnumEnded));
-                    if (!_currentIsValid) throw new InvalidOperationException(Environment.GetResourceString(ResId.InvalidOperation_EnumNotStarted));
-                    if (_reader._resCache == null) throw new InvalidOperationException(Environment.GetResourceString("ResourceReaderIsClosed"));
+                    if (_currentName == ENUM_DONE) throw new InvalidOperationException(SR.GetResourceString(ResId.InvalidOperation_EnumEnded));
+                    if (!_currentIsValid) throw new InvalidOperationException(SR.GetResourceString(ResId.InvalidOperation_EnumNotStarted));
+                    if (_reader._resCache == null) throw new InvalidOperationException(SR.ResourceReaderIsClosed);
 
                     // Consider using _resCache here, eventually, if
                     // this proves to be an interesting perf scenario.
@@ -1262,7 +1262,7 @@ namespace System.Resources
 
             public void Reset()
             {
-                if (_reader._resCache == null) throw new InvalidOperationException(Environment.GetResourceString("ResourceReaderIsClosed"));
+                if (_reader._resCache == null) throw new InvalidOperationException(SR.ResourceReaderIsClosed);
                 _currentIsValid = false;
                 _currentName = ENUM_NOT_STARTED;
             }

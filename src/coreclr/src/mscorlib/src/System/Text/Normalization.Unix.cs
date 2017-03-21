@@ -25,7 +25,7 @@ namespace System.Text
 
             if (ret == -1)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidCharSequenceNoIndex"), nameof(strInput));
+                throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, nameof(strInput));
             }
 
             return ret == 1;
@@ -50,7 +50,7 @@ namespace System.Text
 
                 if (realLen == -1)
                 {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_InvalidCharSequenceNoIndex"), nameof(strInput));
+                    throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, nameof(strInput));
                 }
 
                 if (realLen <= buf.Length)
@@ -61,7 +61,7 @@ namespace System.Text
                 buf = new char[realLen];
             }
 
-            throw new ArgumentException(Environment.GetResourceString("Argument_InvalidCharSequenceNoIndex"), nameof(strInput));
+            throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, nameof(strInput));
         }
 
         // -----------------------------
@@ -78,12 +78,12 @@ namespace System.Text
             if (normalizationForm != NormalizationForm.FormC && normalizationForm != NormalizationForm.FormD &&
                 normalizationForm != NormalizationForm.FormKC && normalizationForm != NormalizationForm.FormKD)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidNormalizationForm"), nameof(normalizationForm));
+                throw new ArgumentException(SR.Argument_InvalidNormalizationForm, nameof(normalizationForm));
             }
 
             if (HasInvalidUnicodeSequence(strInput))
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidCharSequenceNoIndex"), nameof(strInput));
+                throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, nameof(strInput));
             }
         }
 

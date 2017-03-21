@@ -69,7 +69,7 @@ namespace System
 
             if (Size == 4 && (l > Int32.MaxValue || l < Int32.MinValue))
             {
-                throw new ArgumentException(Environment.GetResourceString("Serialization_InvalidPtrValue"));
+                throw new ArgumentException(SR.Serialization_InvalidPtrValue);
             }
 
             m_value = (void*)l;

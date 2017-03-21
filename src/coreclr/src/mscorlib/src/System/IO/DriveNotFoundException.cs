@@ -21,7 +21,7 @@ namespace System.IO
     internal class DriveNotFoundException : IOException
     {
         public DriveNotFoundException()
-            : base(Environment.GetResourceString("Arg_DriveNotFoundException"))
+            : base(SR.Arg_DriveNotFoundException)
         {
             SetErrorCode(__HResults.COR_E_DIRECTORYNOTFOUND);
         }

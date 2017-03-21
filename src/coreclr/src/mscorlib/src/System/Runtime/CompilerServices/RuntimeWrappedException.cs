@@ -22,7 +22,7 @@ namespace System.Runtime.CompilerServices
     public sealed class RuntimeWrappedException : Exception
     {
         private RuntimeWrappedException(Object thrownObject)
-            : base(Environment.GetResourceString("RuntimeWrappedException"))
+            : base(SR.RuntimeWrappedException)
         {
             SetErrorCode(System.__HResults.COR_E_RUNTIMEWRAPPED);
             m_wrappedException = thrownObject;

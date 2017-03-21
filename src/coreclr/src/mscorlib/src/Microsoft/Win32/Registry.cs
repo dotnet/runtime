@@ -106,7 +106,7 @@ namespace Microsoft.Win32
                     basekey = Registry.CurrentConfig;
                     break;
                 default:
-                    throw new ArgumentException(Environment.GetResourceString("Arg_RegInvalidKeyName", nameof(keyName)));
+                    throw new ArgumentException(SR.Format(SR.Arg_RegInvalidKeyName, nameof(keyName)));
             }
             if (i == -1 || i == keyName.Length)
             {

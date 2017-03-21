@@ -159,7 +159,7 @@ namespace System.Resources
             {
                 if ((UltimateResourceFallbackLocation)fallback < UltimateResourceFallbackLocation.MainAssembly || (UltimateResourceFallbackLocation)fallback > UltimateResourceFallbackLocation.Satellite)
                 {
-                    throw new ArgumentException(Environment.GetResourceString("Arg_InvalidNeutralResourcesLanguage_FallbackLoc", fallback));
+                    throw new ArgumentException(SR.Format(SR.Arg_InvalidNeutralResourcesLanguage_FallbackLoc, fallback));
                 }
                 fallbackLocation = (UltimateResourceFallbackLocation)fallback;
             }
@@ -185,7 +185,7 @@ namespace System.Resources
                     return CultureInfo.InvariantCulture;
                 }
 
-                throw new ArgumentException(Environment.GetResourceString("Arg_InvalidNeutralResourcesLanguage_Asm_Culture", a.ToString(), cultureName), e);
+                throw new ArgumentException(SR.Format(SR.Arg_InvalidNeutralResourcesLanguage_Asm_Culture, a.ToString(), cultureName), e);
             }
         }
 
@@ -238,7 +238,7 @@ namespace System.Resources
                         // resMgrHeaderVersion is older than this ResMgr version.
                         // We should add in backwards compatibility support here.
 
-                        throw new NotSupportedException(Environment.GetResourceString("NotSupported_ObsoleteResourcesFile", _mediator.MainAssembly.GetSimpleName()));
+                        throw new NotSupportedException(SR.Format(SR.NotSupported_ObsoleteResourcesFile, _mediator.MainAssembly.GetSimpleName()));
                     }
 
                     store.Position = startPos;
@@ -334,7 +334,7 @@ namespace System.Resources
                 }
                 catch (MissingMethodException e)
                 {
-                    throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_ResMgrBadResSet_Type", _mediator.UserResourceSet.AssemblyQualifiedName), e);
+                    throw new InvalidOperationException(SR.Format(SR.InvalidOperation_ResMgrBadResSet_Type, _mediator.UserResourceSet.AssemblyQualifiedName), e);
                 }
             }
         }
@@ -394,7 +394,7 @@ namespace System.Resources
                     }
                     else
                     {
-                        throw new MissingManifestResourceException(Environment.GetResourceString("MissingManifestResource_MultipleBlobs", givenName, satellite.ToString()));
+                        throw new MissingManifestResourceException(SR.Format(SR.MissingManifestResource_MultipleBlobs, givenName, satellite.ToString()));
                     }
                 }
             }
@@ -521,7 +521,7 @@ namespace System.Resources
             {
                 missingCultureName = "<invariant>";
             }
-            throw new MissingSatelliteAssemblyException(Environment.GetResourceString("MissingSatelliteAssembly_Culture_Name", _mediator.NeutralResourcesCulture, satAssemName), missingCultureName);
+            throw new MissingSatelliteAssemblyException(SR.Format(SR.MissingSatelliteAssembly_Culture_Name, _mediator.NeutralResourcesCulture, satAssemName), missingCultureName);
         }
 
         private void HandleResourceStreamMissing(String fileName)
@@ -542,7 +542,7 @@ namespace System.Resources
             if (_mediator.LocationInfo != null && _mediator.LocationInfo.Namespace != null)
                 resName = _mediator.LocationInfo.Namespace + Type.Delimiter;
             resName += fileName;
-            throw new MissingManifestResourceException(Environment.GetResourceString("MissingManifestResource_NoNeutralAsm", resName, _mediator.MainAssembly.GetSimpleName()));
+            throw new MissingManifestResourceException(SR.Format(SR.MissingManifestResource_NoNeutralAsm, resName, _mediator.MainAssembly.GetSimpleName()));
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]

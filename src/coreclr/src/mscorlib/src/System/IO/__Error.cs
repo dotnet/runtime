@@ -30,49 +30,49 @@ namespace System.IO
     {
         internal static void EndOfFile()
         {
-            throw new EndOfStreamException(Environment.GetResourceString("IO.EOF_ReadBeyondEOF"));
+            throw new EndOfStreamException(SR.IO_EOF_ReadBeyondEOF);
         }
 
         internal static void FileNotOpen()
         {
-            throw new ObjectDisposedException(null, Environment.GetResourceString("ObjectDisposed_FileClosed"));
+            throw new ObjectDisposedException(null, SR.ObjectDisposed_FileClosed);
         }
 
         internal static void StreamIsClosed()
         {
-            throw new ObjectDisposedException(null, Environment.GetResourceString("ObjectDisposed_StreamClosed"));
+            throw new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);
         }
 
         internal static void MemoryStreamNotExpandable()
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_MemStreamNotExpandable"));
+            throw new NotSupportedException(SR.NotSupported_MemStreamNotExpandable);
         }
 
         internal static void ReaderClosed()
         {
-            throw new ObjectDisposedException(null, Environment.GetResourceString("ObjectDisposed_ReaderClosed"));
+            throw new ObjectDisposedException(null, SR.ObjectDisposed_ReaderClosed);
         }
 
         internal static void ReadNotSupported()
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_UnreadableStream"));
+            throw new NotSupportedException(SR.NotSupported_UnreadableStream);
         }
 
         internal static void WrongAsyncResult()
         {
-            throw new ArgumentException(Environment.GetResourceString("Arg_WrongAsyncResult"));
+            throw new ArgumentException(SR.Arg_WrongAsyncResult);
         }
 
         internal static void EndReadCalledTwice()
         {
             // Should ideally be InvalidOperationExc but we can't maitain parity with Stream and FileStream without some work
-            throw new ArgumentException(Environment.GetResourceString("InvalidOperation_EndReadCalledMultiple"));
+            throw new ArgumentException(SR.InvalidOperation_EndReadCalledMultiple);
         }
 
         internal static void EndWriteCalledTwice()
         {
             // Should ideally be InvalidOperationExc but we can't maintain parity with Stream and FileStream without some work
-            throw new ArgumentException(Environment.GetResourceString("InvalidOperation_EndWriteCalledMultiple"));
+            throw new ArgumentException(SR.InvalidOperation_EndWriteCalledMultiple);
         }
 
         // Given a possible fully qualified path, ensure that we have path
@@ -124,7 +124,7 @@ namespace System.IO
             if (!safeToReturn)
             {
                 if (PathInternal.IsDirectorySeparator(path[path.Length - 1]))
-                    path = Environment.GetResourceString("IO.IO_NoPermissionToDirectoryName");
+                    path = SR.IO_NoPermissionToDirectoryName;
                 else
                     path = Path.GetFileName(path);
             }
@@ -153,46 +153,46 @@ namespace System.IO
             {
                 case Win32Native.ERROR_FILE_NOT_FOUND:
                     if (str.Length == 0)
-                        throw new FileNotFoundException(Environment.GetResourceString("IO.FileNotFound"));
+                        throw new FileNotFoundException(SR.IO_FileNotFound);
                     else
-                        throw new FileNotFoundException(Environment.GetResourceString("IO.FileNotFound_FileName", str), str);
+                        throw new FileNotFoundException(SR.Format(SR.IO_FileNotFound_FileName, str), str);
 
                 case Win32Native.ERROR_PATH_NOT_FOUND:
                     if (str.Length == 0)
-                        throw new DirectoryNotFoundException(Environment.GetResourceString("IO.PathNotFound_NoPathName"));
+                        throw new DirectoryNotFoundException(SR.IO_PathNotFound_NoPathName);
                     else
-                        throw new DirectoryNotFoundException(Environment.GetResourceString("IO.PathNotFound_Path", str));
+                        throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, str));
 
                 case Win32Native.ERROR_ACCESS_DENIED:
                     if (str.Length == 0)
-                        throw new UnauthorizedAccessException(Environment.GetResourceString("UnauthorizedAccess_IODenied_NoPathName"));
+                        throw new UnauthorizedAccessException(SR.UnauthorizedAccess_IODenied_NoPathName);
                     else
-                        throw new UnauthorizedAccessException(Environment.GetResourceString("UnauthorizedAccess_IODenied_Path", str));
+                        throw new UnauthorizedAccessException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, str));
 
                 case Win32Native.ERROR_ALREADY_EXISTS:
                     if (str.Length == 0)
                         goto default;
-                    throw new IOException(Environment.GetResourceString("IO.IO_AlreadyExists_Name", str), Win32Native.MakeHRFromErrorCode(errorCode), maybeFullPath);
+                    throw new IOException(SR.Format(SR.IO_AlreadyExists_Name, str), Win32Native.MakeHRFromErrorCode(errorCode), maybeFullPath);
 
                 case Win32Native.ERROR_FILENAME_EXCED_RANGE:
-                    throw new PathTooLongException(Environment.GetResourceString("IO.PathTooLong"));
+                    throw new PathTooLongException(SR.IO_PathTooLong);
 
                 case Win32Native.ERROR_INVALID_DRIVE:
-                    throw new DriveNotFoundException(Environment.GetResourceString("IO.DriveNotFound_Drive", str));
+                    throw new DriveNotFoundException(SR.Format(SR.IO_DriveNotFound_Drive, str));
 
                 case Win32Native.ERROR_INVALID_PARAMETER:
                     throw new IOException(Win32Native.GetMessage(errorCode), Win32Native.MakeHRFromErrorCode(errorCode), maybeFullPath);
 
                 case Win32Native.ERROR_SHARING_VIOLATION:
                     if (str.Length == 0)
-                        throw new IOException(Environment.GetResourceString("IO.IO_SharingViolation_NoFileName"), Win32Native.MakeHRFromErrorCode(errorCode), maybeFullPath);
+                        throw new IOException(SR.IO_SharingViolation_NoFileName, Win32Native.MakeHRFromErrorCode(errorCode), maybeFullPath);
                     else
-                        throw new IOException(Environment.GetResourceString("IO.IO_SharingViolation_File", str), Win32Native.MakeHRFromErrorCode(errorCode), maybeFullPath);
+                        throw new IOException(SR.Format(SR.IO_SharingViolation_File, str), Win32Native.MakeHRFromErrorCode(errorCode), maybeFullPath);
 
                 case Win32Native.ERROR_FILE_EXISTS:
                     if (str.Length == 0)
                         goto default;
-                    throw new IOException(Environment.GetResourceString("IO.IO_FileExists_Name", str), Win32Native.MakeHRFromErrorCode(errorCode), maybeFullPath);
+                    throw new IOException(SR.Format(SR.IO_FileExists_Name, str), Win32Native.MakeHRFromErrorCode(errorCode), maybeFullPath);
 
                 case Win32Native.ERROR_OPERATION_ABORTED:
                     throw new OperationCanceledException();
@@ -204,7 +204,7 @@ namespace System.IO
 
         internal static void WriteNotSupported()
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_UnwritableStream"));
+            throw new NotSupportedException(SR.NotSupported_UnwritableStream);
         }
 
         // From WinError.h

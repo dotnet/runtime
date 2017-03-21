@@ -268,7 +268,7 @@ namespace System.Reflection
             if (type.IsValueType)
                 return CustomAttributeEncoding.Undefined;
 
-            throw new ArgumentException(Environment.GetResourceString("Argument_InvalidKindOfTypeForCA"), nameof(type));
+            throw new ArgumentException(SR.Argument_InvalidKindOfTypeForCA, nameof(type));
         }
         private static CustomAttributeType InitCustomAttributeType(RuntimeType parameterType)
         {
@@ -604,7 +604,7 @@ namespace System.Reflection
             else if (property != null)
                 type = property.PropertyType;
             else
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidMemberForNamedArgument"));
+                throw new ArgumentException(SR.Argument_InvalidMemberForNamedArgument);
 
             m_memberInfo = memberInfo;
             m_value = new CustomAttributeTypedArgument(type, value);
@@ -730,7 +730,7 @@ namespace System.Reflection
                     return typeof(object);
 
                 default:
-                    throw new ArgumentException(Environment.GetResourceString("Arg_EnumIllegalVal", (int)encodedType), nameof(encodedType));
+                    throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, (int)encodedType), nameof(encodedType));
             }
         }
 
@@ -775,7 +775,7 @@ namespace System.Reflection
                     unsafe { return *(double*)&val; }
 
                 default:
-                    throw new ArgumentException(Environment.GetResourceString("Arg_EnumIllegalVal", (int)val), nameof(val));
+                    throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, (int)val), nameof(val));
             }
         }
         private static RuntimeType ResolveType(RuntimeModule scope, string typeName)
@@ -784,7 +784,7 @@ namespace System.Reflection
 
             if (type == null)
                 throw new InvalidOperationException(
-                    String.Format(CultureInfo.CurrentUICulture, Environment.GetResourceString("Arg_CATypeResolutionFailed"), typeName));
+                    String.Format(CultureInfo.CurrentUICulture, SR.Arg_CATypeResolutionFailed, typeName));
 
             return type;
         }
@@ -1524,7 +1524,7 @@ namespace System.Reflection
             RuntimeModule decoratedModule, int decoratedMetadataToken, RuntimeType attributeFilterType, int attributeCtorToken, bool mustBeInheritable)
         {
             if (decoratedModule.Assembly.ReflectionOnly)
-                throw new InvalidOperationException(Environment.GetResourceString("Arg_ReflectionOnlyCA"));
+                throw new InvalidOperationException(SR.Arg_ReflectionOnlyCA);
             Contract.EndContractBlock();
 
             CustomAttributeRecord[] car = CustomAttributeData.GetCustomAttributeRecords(decoratedModule, decoratedMetadataToken);
@@ -1580,7 +1580,7 @@ namespace System.Reflection
             RuntimeType attributeFilterType, bool mustBeInheritable, IList derivedAttributes, bool isDecoratedTargetSecurityTransparent)
         {
             if (decoratedModule.Assembly.ReflectionOnly)
-                throw new InvalidOperationException(Environment.GetResourceString("Arg_ReflectionOnlyCA"));
+                throw new InvalidOperationException(SR.Arg_ReflectionOnlyCA);
             Contract.EndContractBlock();
 
             MetadataImport scope = decoratedModule.MetadataImport;
@@ -1700,8 +1700,8 @@ namespace System.Reflection
                             if (property == null)
                             {
                                 throw new CustomAttributeFormatException(
-                                    String.Format(CultureInfo.CurrentUICulture, Environment.GetResourceString(
-                                        isProperty ? "RFLCT.InvalidPropFail" : "RFLCT.InvalidFieldFail"), name));
+                                    String.Format(CultureInfo.CurrentUICulture, 
+                                        isProperty ? SR.RFLCT_InvalidPropFail : SR.RFLCT_InvalidFieldFail, name));
                             }
 
                             RuntimeMethodInfo setMethod = property.GetSetMethod(true) as RuntimeMethodInfo;
@@ -1731,8 +1731,8 @@ namespace System.Reflection
                     catch (Exception e)
                     {
                         throw new CustomAttributeFormatException(
-                            String.Format(CultureInfo.CurrentUICulture, Environment.GetResourceString(
-                                isProperty ? "RFLCT.InvalidPropFail" : "RFLCT.InvalidFieldFail"), name), e);
+                            String.Format(CultureInfo.CurrentUICulture,
+                                isProperty ? SR.RFLCT_InvalidPropFail : SR.RFLCT_InvalidFieldFail, name), e);
                     }
                     #endregion
                 }
@@ -1905,7 +1905,7 @@ namespace System.Reflection
 
                 if (attributeUsageAttribute != null)
                     throw new FormatException(String.Format(
-                        CultureInfo.CurrentUICulture, Environment.GetResourceString("Format_AttributeUsage"), attributeType));
+                        CultureInfo.CurrentUICulture, SR.Format_AttributeUsage, attributeType));
 
                 AttributeTargets targets;
                 bool inherited, allowMultiple;

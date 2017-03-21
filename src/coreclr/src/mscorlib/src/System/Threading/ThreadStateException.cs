@@ -22,7 +22,7 @@ namespace System.Threading
     public class ThreadStateException : SystemException
     {
         public ThreadStateException()
-            : base(Environment.GetResourceString("Arg_ThreadStateException"))
+            : base(SR.Arg_ThreadStateException)
         {
             SetErrorCode(__HResults.COR_E_THREADSTATE);
         }

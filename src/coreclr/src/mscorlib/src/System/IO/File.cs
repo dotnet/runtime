@@ -93,7 +93,7 @@ namespace System.IO
                 int index = 0;
                 long fileLength = fs.Length;
                 if (fileLength > Int32.MaxValue)
-                    throw new IOException(Environment.GetResourceString("IO.IO_FileTooLong2GB"));
+                    throw new IOException(SR.IO_FileTooLong2GB);
                 int count = (int)fileLength;
                 bytes = new byte[count];
                 while (count > 0)
@@ -114,7 +114,7 @@ namespace System.IO
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
             if (path.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyPath"));
+                throw new ArgumentException(SR.Argument_EmptyPath);
             Contract.EndContractBlock();
 
             return InternalReadAllLines(path, Encoding.UTF8);

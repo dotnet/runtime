@@ -4660,13 +4660,13 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
             switch (result.failure)
             {
                 case ParseFailureKind.ArgumentNull:
-                    return new ArgumentNullException(result.failureArgumentName, Environment.GetResourceString(result.failureMessageID));
+                    return new ArgumentNullException(result.failureArgumentName, SR.GetResourceString(result.failureMessageID));
                 case ParseFailureKind.Format:
-                    return new FormatException(Environment.GetResourceString(result.failureMessageID));
+                    return new FormatException(SR.GetResourceString(result.failureMessageID));
                 case ParseFailureKind.FormatWithParameter:
-                    return new FormatException(Environment.GetResourceString(result.failureMessageID, result.failureMessageFormatArgument));
+                    return new FormatException(SR.Format(SR.GetResourceString(result.failureMessageID), result.failureMessageFormatArgument));
                 case ParseFailureKind.FormatBadDateTimeCalendar:
-                    return new FormatException(Environment.GetResourceString(result.failureMessageID, result.calendar));
+                    return new FormatException(SR.Format(SR.GetResourceString(result.failureMessageID), result.calendar));
                 default:
                     Debug.Assert(false, "Unkown DateTimeParseFailure: " + result);
                     return null;

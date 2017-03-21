@@ -93,7 +93,7 @@ namespace System
                 case StringComparison.OrdinalIgnoreCase:
                     return OrdinalIgnoreCase;
                 default:
-                    throw new ArgumentException(Environment.GetResourceString("NotSupported_StringComparison"), nameof(comparisonType));
+                    throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
             }
         }
 
@@ -131,7 +131,7 @@ namespace System
                 return ia.CompareTo(y);
             }
 
-            throw new ArgumentException(Environment.GetResourceString("Argument_ImplementIComparable"));
+            throw new ArgumentException(SR.Argument_ImplementIComparable);
         }
 
 

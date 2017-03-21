@@ -62,7 +62,7 @@ namespace System.Collections
         // 
         public ArrayList(int capacity)
         {
-            if (capacity < 0) throw new ArgumentOutOfRangeException(nameof(capacity), Environment.GetResourceString("ArgumentOutOfRange_MustBeNonNegNum", nameof(capacity)));
+            if (capacity < 0) throw new ArgumentOutOfRangeException(nameof(capacity), SR.Format(SR.ArgumentOutOfRange_MustBeNonNegNum, nameof(capacity)));
             Contract.EndContractBlock();
 
             if (capacity == 0)
@@ -78,7 +78,7 @@ namespace System.Collections
         public ArrayList(ICollection c)
         {
             if (c == null)
-                throw new ArgumentNullException(nameof(c), Environment.GetResourceString("ArgumentNull_Collection"));
+                throw new ArgumentNullException(nameof(c), SR.ArgumentNull_Collection);
             Contract.EndContractBlock();
 
             int count = c.Count;
@@ -108,7 +108,7 @@ namespace System.Collections
             {
                 if (value < _size)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(value), Environment.GetResourceString("ArgumentOutOfRange_SmallCapacity"));
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_SmallCapacity);
                 }
                 Contract.Ensures(Capacity >= 0);
                 Contract.EndContractBlock();
@@ -180,13 +180,13 @@ namespace System.Collections
         {
             get
             {
-                if (index < 0 || index >= _size) throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                if (index < 0 || index >= _size) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
                 Contract.EndContractBlock();
                 return _items[index];
             }
             set
             {
-                if (index < 0 || index >= _size) throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                if (index < 0 || index >= _size) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
                 Contract.EndContractBlock();
                 _items[index] = value;
                 _version++;
@@ -269,7 +269,7 @@ namespace System.Collections
         public virtual void CopyTo(Array array, int arrayIndex)
         {
             if ((array != null) && (array.Rank != 1))
-                throw new ArgumentException(Environment.GetResourceString("Arg_RankMultiDimNotSupported"));
+                throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
             Contract.EndContractBlock();
             // Delegate rest of error checking to Array.Copy.
             Array.Copy(_items, 0, array, arrayIndex, _size);
@@ -324,7 +324,7 @@ namespace System.Collections
         public virtual void Insert(int index, Object value)
         {
             // Note that insertions at the end are legal.
-            if (index < 0 || index > _size) throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_ArrayListInsert"));
+            if (index < 0 || index > _size) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_ArrayListInsert);
             //Contract.Ensures(Count == Contract.OldValue(Count) + 1);
             Contract.EndContractBlock();
 
@@ -346,8 +346,8 @@ namespace System.Collections
         public virtual void InsertRange(int index, ICollection c)
         {
             if (c == null)
-                throw new ArgumentNullException(nameof(c), Environment.GetResourceString("ArgumentNull_Collection"));
-            if (index < 0 || index > _size) throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentNullException(nameof(c), SR.ArgumentNull_Collection);
+            if (index < 0 || index > _size) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
             //Contract.Ensures(Count == Contract.OldValue(Count) + c.Count);
             Contract.EndContractBlock();
 
@@ -399,7 +399,7 @@ namespace System.Collections
         // 
         public virtual void RemoveAt(int index)
         {
-            if (index < 0 || index >= _size) throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_Index"));
+            if (index < 0 || index >= _size) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
             Contract.Ensures(Count >= 0);
             //Contract.Ensures(Count == Contract.OldValue(Count) - 1);
             Contract.EndContractBlock();
@@ -467,7 +467,7 @@ namespace System.Collections
                 }
                 set
                 {
-                    throw new NotSupportedException(Environment.GetResourceString("NotSupported_ReadOnlyCollection"));
+                    throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
                 }
             }
 
@@ -478,12 +478,12 @@ namespace System.Collections
 
             public virtual int Add(Object obj)
             {
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_ReadOnlyCollection"));
+                throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
             }
 
             public virtual void Clear()
             {
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_ReadOnlyCollection"));
+                throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
             }
 
             public virtual bool Contains(Object obj)
@@ -508,17 +508,17 @@ namespace System.Collections
 
             public virtual void Insert(int index, Object obj)
             {
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_ReadOnlyCollection"));
+                throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
             }
 
             public virtual void Remove(Object value)
             {
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_ReadOnlyCollection"));
+                throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
             }
 
             public virtual void RemoveAt(int index)
             {
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_ReadOnlyCollection"));
+                throw new NotSupportedException(SR.NotSupported_ReadOnlyCollection);
             }
         }
 
@@ -552,7 +552,7 @@ namespace System.Collections
             {
                 if (version != list._version)
                 {
-                    throw new InvalidOperationException(Environment.GetResourceString(ResId.InvalidOperation_EnumFailedVersion));
+                    throw new InvalidOperationException(SR.GetResourceString(ResId.InvalidOperation_EnumFailedVersion));
                 }
 
                 if (isArrayList)
@@ -594,11 +594,11 @@ namespace System.Collections
                     { // check if enumeration has not started or has terminated
                         if (index == -1)
                         {
-                            throw new InvalidOperationException(Environment.GetResourceString(ResId.InvalidOperation_EnumNotStarted));
+                            throw new InvalidOperationException(SR.GetResourceString(ResId.InvalidOperation_EnumNotStarted));
                         }
                         else
                         {
-                            throw new InvalidOperationException(Environment.GetResourceString(ResId.InvalidOperation_EnumEnded));
+                            throw new InvalidOperationException(SR.GetResourceString(ResId.InvalidOperation_EnumEnded));
                         }
                     }
 
@@ -610,7 +610,7 @@ namespace System.Collections
             {
                 if (version != list._version)
                 {
-                    throw new InvalidOperationException(Environment.GetResourceString(ResId.InvalidOperation_EnumFailedVersion));
+                    throw new InvalidOperationException(SR.GetResourceString(ResId.InvalidOperation_EnumFailedVersion));
                 }
 
                 currentElement = dummyObject;

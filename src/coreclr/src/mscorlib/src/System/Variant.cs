@@ -515,7 +515,7 @@ namespace System
                         break;
 
                     default:
-                        throw new NotSupportedException(Environment.GetResourceString("NotSupported_UnknownTypeCode", ic.GetTypeCode()));
+                        throw new NotSupportedException(SR.Format(SR.NotSupported_UnknownTypeCode, ic.GetTypeCode()));
                 }
             }
         }
@@ -561,12 +561,12 @@ namespace System
                         }
                         else
                         {
-                            throw new InvalidCastException(Environment.GetResourceString("InvalidCast_CannotCoerceByRefVariant"));
+                            throw new InvalidCastException(SR.InvalidCast_CannotCoerceByRefVariant);
                         }
                         break;
 
                     default:
-                        throw new InvalidCastException(Environment.GetResourceString("InvalidCast_CannotCoerceByRefVariant"));
+                        throw new InvalidCastException(SR.InvalidCast_CannotCoerceByRefVariant);
                 }
             }
             else
@@ -670,7 +670,7 @@ namespace System
                         break;
 
                     default:
-                        throw new InvalidCastException(Environment.GetResourceString("InvalidCast_CannotCoerceByRefVariant"));
+                        throw new InvalidCastException(SR.InvalidCast_CannotCoerceByRefVariant);
                 }
             }
         }
