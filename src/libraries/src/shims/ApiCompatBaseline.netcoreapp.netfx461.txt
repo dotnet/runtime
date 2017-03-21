@@ -1167,6 +1167,7 @@ TypesMustExist : Type 'System.Net.Configuration.WebRequestModuleElement' does no
 TypesMustExist : Type 'System.Net.Configuration.WebRequestModuleElementCollection' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Net.Configuration.WebRequestModulesSection' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Net.Configuration.WebUtilityElement' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Net.Mail.SmtpAccess' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Net.Mail.SmtpException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Net.Mail.SmtpFailedRecipientException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Net.Mail.SmtpFailedRecipientsException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
@@ -3301,4 +3302,4 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Xml.Xsl.XsltException' does not i
 MembersMustExist : Member 'System.Xml.Xsl.XslTransform.Load(System.Xml.XmlReader, System.Xml.XmlResolver, System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Xml.Xsl.XslTransform.Load(System.Xml.XPath.IXPathNavigable, System.Xml.XmlResolver, System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Xml.Xsl.XslTransform.Load(System.Xml.XPath.XPathNavigator, System.Xml.XmlResolver, System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
-Total Issues: 3289
+Total Issues: 3290
