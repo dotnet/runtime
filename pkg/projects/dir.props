@@ -3,7 +3,6 @@
   <Import Project="..\dir.props" />
   <PropertyGroup>
     <PackagePlatform>AnyCPU</PackagePlatform>
-    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
     <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">obj/$(Configuration)/</IntermediateOutputPath>
     <IntermediateOutputPath Condition="'$(NuGetRuntimeIdentifier)' != ''">$(IntermediateOutputPath)$(NuGetRuntimeIdentifier)/</IntermediateOutputPath>
     
