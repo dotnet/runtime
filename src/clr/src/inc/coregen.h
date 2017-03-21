@@ -18,5 +18,6 @@
 #define NGENWORKER_FLAGS_WINMD_RESILIENT         0x1000
 #define NGENWORKER_FLAGS_READYTORUN              0x2000
 #define NGENWORKER_FLAGS_NO_METADATA             0x4000
+#define NGENWORKER_FLAGS_SILENT                  0x8000
 
 #endif // _NGENCOMMON_H_
