@@ -12,6 +12,7 @@ namespace System.Net.Security.Tests
     public class LoggingTest : RemoteExecutorTestBase
     {
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetEventSource is only part of .NET Core")]
         public void EventSource_ExistsWithCorrectId()
         {
             Type esType = typeof(SslStream).Assembly.GetType("System.Net.NetEventSource", throwOnError: true, ignoreCase: false);
@@ -24,6 +25,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetEventSource is only part of .NET Core")]
         [ActiveIssue(16516, TestPlatforms.Windows)]
         public void EventSource_EventsRaisedAsExpected()
         {
