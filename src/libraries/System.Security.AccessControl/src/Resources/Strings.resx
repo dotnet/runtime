@@ -181,6 +181,9 @@
   <data name="InvalidOperation_OnlyValidForDS" xml:space="preserve">
     <value>Adding ACEs with Object Flags and Object GUIDs is only valid for directory-object ACLs.</value>
   </data>
+  <data name="InvalidOperation_DisconnectedPipe" xml:space="preserve">
+    <value>The pipe has been disconnected.</value>
+  </data>
   <data name="NotSupported_SetMethod" xml:space="preserve">
     <value>The 'set' method is not supported on this property.</value>
   </data>
