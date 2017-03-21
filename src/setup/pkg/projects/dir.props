@@ -3,6 +3,10 @@
   <Import Project="..\dir.props" />
   <PropertyGroup>
     <PackagePlatform>AnyCPU</PackagePlatform>
+    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
+    <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">obj/$(Configuration)/</IntermediateOutputPath>
+    <IntermediateOutputPath Condition="'$(NuGetRuntimeIdentifier)' != ''">$(IntermediateOutputPath)$(NuGetRuntimeIdentifier)/</IntermediateOutputPath>
+    
     <ProjectJsonTemplate>$(MSBuildThisProjectDirectory)project.json.template</ProjectJsonTemplate>
     <ProjectJson Condition="Exists('$(ProjectJsonTemplate)')">$(IntermediateOutputPath)project.json</ProjectJson>
     <ProjectLockJson Condition="Exists('$(ProjectJsonTemplate)')">$(IntermediateOutputPath)project.lock.json</ProjectLockJson>
