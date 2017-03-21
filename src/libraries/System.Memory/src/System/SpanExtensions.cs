@@ -145,5 +145,47 @@ namespace System
             int length = first.Length;
             return length == second.Length && SpanHelpers.SequenceEqual(ref first.DangerousGetPinnableReference(), ref second.DangerousGetPinnableReference(), length);
         }
+
+        /// <summary>
+        /// Determines whether the specified sequence appears at the start of the span.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool StartsWith(this Span<byte> span, ReadOnlySpan<byte> value)
+        {
+            int valueLength = value.Length;
+            return valueLength <= span.Length && SpanHelpers.SequenceEqual(ref span.DangerousGetPinnableReference(), ref value.DangerousGetPinnableReference(), valueLength);
+        }
+
+        /// <summary>
+        /// Determines whether the specified sequence appears at the start of the span.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool StartsWith<T>(this Span<T> span, ReadOnlySpan<T> value)
+            where T : struct, IEquatable<T>
+        {
+            int valueLength = value.Length;
+            return valueLength <= span.Length && SpanHelpers.SequenceEqual(ref span.DangerousGetPinnableReference(), ref value.DangerousGetPinnableReference(), valueLength);
+        }
+
+        /// <summary>
+        /// Determines whether the specified sequence appears at the start of the span.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool StartsWith(this ReadOnlySpan<byte> span, ReadOnlySpan<byte> value)
+        {
+            int valueLength = value.Length;
+            return valueLength <= span.Length && SpanHelpers.SequenceEqual(ref span.DangerousGetPinnableReference(), ref value.DangerousGetPinnableReference(), valueLength);
+        }
+
+        /// <summary>
+        /// Determines whether the specified sequence appears at the start of the span.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool StartsWith<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value)
+            where T : struct, IEquatable<T>
+        {
+            int valueLength = value.Length;
+            return valueLength <= span.Length && SpanHelpers.SequenceEqual(ref span.DangerousGetPinnableReference(), ref value.DangerousGetPinnableReference(), valueLength);
+        }
     }
 }

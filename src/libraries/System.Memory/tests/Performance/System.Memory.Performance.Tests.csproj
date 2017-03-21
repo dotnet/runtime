@@ -11,6 +11,7 @@
   <ItemGroup>
     <Compile Include="Perf.Span.Clear.cs" />
     <Compile Include="Perf.Span.Fill.cs" />
+    <Compile Include="Perf.Span.StartsWith.cs" />
     <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
       <Link>Common\System\PerfUtils.cs</Link>
     </Compile>
