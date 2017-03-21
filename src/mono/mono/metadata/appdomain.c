@@ -111,6 +111,9 @@ static MonoDomain *
 mono_domain_create_appdomain_checked (char *friendly_name, char *configuration_file, MonoError *error);
 
 
+static void
+mono_context_set_default_context (MonoDomain *domain);
+
 static char *
 get_shadow_assembly_location_base (MonoDomain *domain, MonoError *error);
 
@@ -299,7 +302,7 @@ mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoT
 	/* contexts use GC handles, so they must be initialized after the GC */
 	mono_context_init_checked (domain, error);
 	return_if_nok (error);
-	mono_context_set (domain->default_context);
+	mono_context_set_default_context (domain);
 
 #ifndef DISABLE_SOCKETS
 	mono_network_init ();
@@ -315,6 +318,15 @@ mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoT
 
 	return;
 }
+
+static void
+mono_context_set_default_context (MonoDomain *domain)
+{
+	HANDLE_FUNCTION_ENTER ();
+	mono_context_set_handle (MONO_HANDLE_NEW (MonoAppContext, domain->default_context));
+	HANDLE_FUNCTION_RETURN ();
+}
+
 
 static int
 mono_get_corlib_version (void)

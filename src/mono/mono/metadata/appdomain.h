@@ -130,6 +130,7 @@ MONO_RT_EXTERNAL_ONLY
 MONO_API void
 mono_context_init 				   (MonoDomain *domain);
 
+MONO_RT_EXTERNAL_ONLY
 MONO_API void 
 mono_context_set				   (MonoAppContext *new_context);
 
