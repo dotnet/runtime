@@ -63,7 +63,6 @@
     <Compile Include="System\Net\Mail\SmtpException.cs" />
     <Compile Include="System\Net\Mail\SmtpFailedRecipientException.cs" />
     <Compile Include="System\Net\Mail\SmtpFailedRecipientsException.cs" />
-    <Compile Include="System\Net\Mail\SmtpAccess.cs" />
     <Compile Include="System\Net\Mail\SmtpReplyReader.cs" />
     <Compile Include="System\Net\Mail\SmtpReplyReaderFactory.cs" />
     <Compile Include="System\Net\Mail\SmtpStatusCode.cs" />
@@ -309,7 +308,6 @@
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Security.Claims" />
     <Reference Include="System.Security.Cryptography.X509Certificates" />
-    <Reference Include="System.Security.Permissions" />
     <Reference Include="System.Security.Principal.Windows" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Tasks" />
