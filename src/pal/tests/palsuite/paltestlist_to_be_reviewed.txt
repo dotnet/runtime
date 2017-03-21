@@ -193,6 +193,8 @@ threading/OpenProcess/test1/paltest_openprocess_test1
 threading/QueueUserAPC/test1/paltest_queueuserapc_test1
 threading/setthreadcontext/test1/paltest_setthreadcontext_test1
 threading/Sleep/test1/paltest_sleep_test1
+threading/SleepEx/test1/paltest_sleepex_test1
+threading/SleepEx/test2/paltest_sleepex_test2
 threading/SuspendThread/test2/paltest_suspendthread_test2
 threading/SuspendThread/test3/paltest_suspendthread_test3
 threading/TerminateProcess/test1/paltest_terminateprocess_test1
