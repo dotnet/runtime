@@ -506,7 +506,7 @@ void RangeCheck::MergeEdgeAssertions(GenTreePtr tree, const ASSERT_VALARG_TP ass
     {
         index++;
 
-        Compiler::AssertionDsc* curAssertion = m_pCompiler->optGetAssertion((Compiler::AssertionIndex)index);
+        Compiler::AssertionDsc* curAssertion = m_pCompiler->optGetAssertion((AssertionIndex)index);
 
         // Current assertion is about array length.
         if (!curAssertion->IsArrLenArithBound() && !curAssertion->IsArrLenBound() && !curAssertion->IsConstantBound())
@@ -517,7 +517,7 @@ void RangeCheck::MergeEdgeAssertions(GenTreePtr tree, const ASSERT_VALARG_TP ass
 #ifdef DEBUG
         if (m_pCompiler->verbose)
         {
-            m_pCompiler->optPrintAssertion(curAssertion, (Compiler::AssertionIndex)index);
+            m_pCompiler->optPrintAssertion(curAssertion, (AssertionIndex)index);
         }
 #endif
 
@@ -617,7 +617,7 @@ void RangeCheck::MergeEdgeAssertions(GenTreePtr tree, const ASSERT_VALARG_TP ass
 #ifdef DEBUG
         if (m_pCompiler->verbose)
         {
-            m_pCompiler->optPrintAssertion(curAssertion, (Compiler::AssertionIndex)index);
+            m_pCompiler->optPrintAssertion(curAssertion, (AssertionIndex)index);
         }
 #endif
 
