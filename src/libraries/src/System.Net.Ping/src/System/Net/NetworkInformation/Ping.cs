@@ -275,8 +275,11 @@ namespace System.Net.NetworkInformation
             // Need to snapshot the address here, so we're sure that it's not changed between now
             // and the operation, and to be sure that IPAddress.ToString() is called and not some override.
             IPAddress addressSnapshot = (address.AddressFamily == AddressFamily.InterNetwork) ?
-                new IPAddress(address.GetAddressBytes()) :
+#pragma warning disable CS0618 // IPAddress.Address is obsoleted, but it's the most efficient way to get the Int32 IPv4 address
+                new IPAddress(address.Address) :
+#pragma warning restore CS0618
                 new IPAddress(address.GetAddressBytes(), address.ScopeId);
+
 
             CheckStart();
             try
