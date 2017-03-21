@@ -94,39 +94,39 @@ namespace System.Reflection.Emit
         #region Methods inherited from Assembly
         public override String[] GetManifestResourceNames()
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_DynamicAssembly"));
+            throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
         }
 
         public override FileStream GetFile(String name)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_DynamicAssembly"));
+            throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
         }
 
         public override FileStream[] GetFiles(bool getResourceModules)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_DynamicAssembly"));
+            throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
         }
 
         public override Stream GetManifestResourceStream(Type type, String name)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_DynamicAssembly"));
+            throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
         }
 
         public override Stream GetManifestResourceStream(String name)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_DynamicAssembly"));
+            throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
         }
 
         public override ManifestResourceInfo GetManifestResourceInfo(String resourceName)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_DynamicAssembly"));
+            throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
         }
 
         public override String Location
         {
             get
             {
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_DynamicAssembly"));
+                throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
             }
         }
 
@@ -134,13 +134,13 @@ namespace System.Reflection.Emit
         {
             get
             {
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_DynamicAssembly"));
+                throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
             }
         }
 
         public override Type[] GetExportedTypes()
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_DynamicAssembly"));
+            throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
         }
 
         public override String ImageRuntimeVersion
@@ -231,7 +231,7 @@ namespace System.Reflection.Emit
                 && access != AssemblyBuilderAccess.RunAndCollect
                 )
             {
-                throw new ArgumentException(Environment.GetResourceString("Arg_EnumIllegalVal", (int)access), nameof(access));
+                throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, (int)access), nameof(access));
             }
 
             if (securityContextSource < SecurityContextSource.CurrentAppDomain ||
@@ -441,9 +441,9 @@ namespace System.Reflection.Emit
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
             if (name.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(name));
+                throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
             if (name[0] == '\0')
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidName"), nameof(name));
+                throw new ArgumentException(SR.Argument_InvalidName, nameof(name));
             Contract.Ensures(Contract.Result<ModuleBuilder>() != null);
             Contract.EndContractBlock();
 
@@ -457,7 +457,7 @@ namespace System.Reflection.Emit
 
             // create the dynamic module- only one ModuleBuilder per AssemblyBuilder can be created
             if (m_fManifestModuleUsedAsDefinedModule == true)
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_NoMultiModuleAssembly"));
+                throw new InvalidOperationException(SR.InvalidOperation_NoMultiModuleAssembly);
 
             // Init(...) has already been called on m_manifestModuleBuilder in InitManifestModule()
             dynModule = m_manifestModuleBuilder;
@@ -511,16 +511,16 @@ namespace System.Reflection.Emit
                     continue;
 
                 if (type.Module == null || type.Module.Assembly == null)
-                    throw new ArgumentException(Environment.GetResourceString("Argument_TypeNotValid"));
+                    throw new ArgumentException(SR.Argument_TypeNotValid);
 
                 if (type.Module.Assembly == typeof(object).Module.Assembly)
                     continue;
 
                 if (type.Module.Assembly.ReflectionOnly && !ReflectionOnly)
-                    throw new InvalidOperationException(Environment.GetResourceString("Arugment_EmitMixedContext1", type.AssemblyQualifiedName));
+                    throw new InvalidOperationException(SR.Format(SR.Arugment_EmitMixedContext1, type.AssemblyQualifiedName));
 
                 if (!type.Module.Assembly.ReflectionOnly && ReflectionOnly)
-                    throw new InvalidOperationException(Environment.GetResourceString("Arugment_EmitMixedContext2", type.AssemblyQualifiedName));
+                    throw new InvalidOperationException(SR.Format(SR.Arugment_EmitMixedContext2, type.AssemblyQualifiedName));
             }
         }
 
@@ -742,7 +742,7 @@ namespace System.Reflection.Emit
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
             if (name.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(name));
+                throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
             Contract.EndContractBlock();
 
             BCLDebug.Log("DYNIL", "## DYNIL LOGGING: AssemblyBuilder.GetDynamicModule( " + name + " )");

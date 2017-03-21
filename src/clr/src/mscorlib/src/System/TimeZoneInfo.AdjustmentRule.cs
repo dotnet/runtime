@@ -144,22 +144,22 @@ namespace System
             {
                 if (dateStart.Kind != DateTimeKind.Unspecified && dateStart.Kind != DateTimeKind.Utc)
                 {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_DateTimeKindMustBeUnspecifiedOrUtc"), nameof(dateStart));
+                    throw new ArgumentException(SR.Argument_DateTimeKindMustBeUnspecifiedOrUtc, nameof(dateStart));
                 }
 
                 if (dateEnd.Kind != DateTimeKind.Unspecified && dateEnd.Kind != DateTimeKind.Utc)
                 {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_DateTimeKindMustBeUnspecifiedOrUtc"), nameof(dateEnd));
+                    throw new ArgumentException(SR.Argument_DateTimeKindMustBeUnspecifiedOrUtc, nameof(dateEnd));
                 }
 
                 if (daylightTransitionStart.Equals(daylightTransitionEnd) && !noDaylightTransitions)
                 {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_TransitionTimesAreIdentical"), nameof(daylightTransitionEnd));
+                    throw new ArgumentException(SR.Argument_TransitionTimesAreIdentical, nameof(daylightTransitionEnd));
                 }
 
                 if (dateStart > dateEnd)
                 {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_OutOfOrderDateTimes"), nameof(dateStart));
+                    throw new ArgumentException(SR.Argument_OutOfOrderDateTimes, nameof(dateStart));
                 }
 
                 // This cannot use UtcOffsetOutOfRange to account for the scenario where Samoa moved across the International Date Line,
@@ -168,22 +168,22 @@ namespace System
                 // to be -23 (what it takes to go from UTC+13 to UTC-10)
                 if (daylightDelta.TotalHours < -23.0 || daylightDelta.TotalHours > 14.0)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(daylightDelta), daylightDelta, Environment.GetResourceString("ArgumentOutOfRange_UtcOffset"));
+                    throw new ArgumentOutOfRangeException(nameof(daylightDelta), daylightDelta, SR.ArgumentOutOfRange_UtcOffset);
                 }
 
                 if (daylightDelta.Ticks % TimeSpan.TicksPerMinute != 0)
                 {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_TimeSpanHasSeconds"), nameof(daylightDelta));
+                    throw new ArgumentException(SR.Argument_TimeSpanHasSeconds, nameof(daylightDelta));
                 }
 
                 if (dateStart != DateTime.MinValue && dateStart.Kind == DateTimeKind.Unspecified && dateStart.TimeOfDay != TimeSpan.Zero)
                 {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_DateTimeHasTimeOfDay"), nameof(dateStart));
+                    throw new ArgumentException(SR.Argument_DateTimeHasTimeOfDay, nameof(dateStart));
                 }
 
                 if (dateEnd != DateTime.MaxValue && dateEnd.Kind == DateTimeKind.Unspecified && dateEnd.TimeOfDay != TimeSpan.Zero)
                 {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_DateTimeHasTimeOfDay"), nameof(dateEnd));
+                    throw new ArgumentException(SR.Argument_DateTimeHasTimeOfDay, nameof(dateEnd));
                 }
                 Contract.EndContractBlock();
             }
@@ -200,7 +200,7 @@ namespace System
                 }
                 catch (ArgumentException e)
                 {
-                    throw new SerializationException(Environment.GetResourceString("Serialization_InvalidData"), e);
+                    throw new SerializationException(SR.Serialization_InvalidData, e);
                 }
             }
 

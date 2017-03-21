@@ -96,6 +96,7 @@
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <MajorVersion>4</MajorVersion>
     <MinorVersion>6</MinorVersion>
+    <ExcludeAssemblyInfoPartialFile>true</ExcludeAssemblyInfoPartialFile>
   </PropertyGroup>
   <ItemGroup>
     <AssemblyInfoLines Include="[assembly: System.Resources.SatelliteContractVersion(&quot;$(AssemblyVersion)&quot;)]" />
@@ -627,9 +628,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Globalization\JapaneseCalendar.Win32.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\TextInfo.Windows.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\SR.cs" />
-  </ItemGroup>
   <ItemGroup Condition="'$(FeatureCoreFxGlobalization)' == 'true' and '$(TargetsUnix)' == 'true'">
     <Compile Include="$(BclSourcesRoot)\System\Globalization\EncodingTable.Unix.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\EncodingDataItem.Unix.cs" />
@@ -982,13 +980,6 @@
     <Compile Include="src\System\Runtime\RuntimeImports.cs" />
     <Compile Include="src\System\ValueTuple.cs" />
   </ItemGroup>
-  <!-- Resources -->
-  <ItemGroup>
-    <SplitTextStringResource Include="$(BclSourcesRoot)\System.Private.CoreLib.txt">
-      <ResFile>System.Private.CoreLib</ResFile>
-      <ResGenDefines>$(DefineConstants)</ResGenDefines>
-    </SplitTextStringResource>
-  </ItemGroup>
   <Import Project="shared\System.Private.CoreLib.Shared.projitems" Label="Shared" />
   <PropertyGroup>
     <CheckCDefines Condition="'$(CheckCDefines)'==''">true</CheckCDefines>
@@ -1023,6 +1014,7 @@
     <!-- Use a different nativeresource file to avoid conflicts with mscorlib-->
     <Win32Resource Condition="'$(GenerateNativeVersionInfo)'=='true'">$(IntermediateOutputPath)\System.Private.CoreLib.res</Win32Resource>
   </PropertyGroup>
-  <Import Project="GenerateSplitStringResources.targets" />
+  <!-- Import resources tools -->
+  <Import Condition="Exists('$(ToolsDir)\resources.targets')" Project="$(ToolsDir)\resources.targets" />
   <Import Project="GenerateCompilerResponseFile.targets" />
 </Project>

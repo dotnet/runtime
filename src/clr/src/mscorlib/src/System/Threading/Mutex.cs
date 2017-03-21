@@ -50,7 +50,7 @@ namespace System.Threading
 #if !PLATFORM_UNIX
             if (name != null && System.IO.Path.MaxPath < name.Length)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", Path.MaxPath), nameof(name));
+                throw new ArgumentException(SR.Format(SR.Argument_WaitHandleNameTooLong, Path.MaxPath), nameof(name));
             }
 #endif
             Contract.EndContractBlock();
@@ -128,11 +128,11 @@ namespace System.Threading
 #if PLATFORM_UNIX
                             case Win32Native.ERROR_FILENAME_EXCED_RANGE:
                                 // On Unix, length validation is done by CoreCLR's PAL after converting to utf-8
-                                throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", Interop.Sys.MaxName), "name");
+                                throw new ArgumentException(SR.Format(SR.Argument_WaitHandleNameTooLong, Interop.Sys.MaxName), "name");
 #endif
 
                             case Win32Native.ERROR_INVALID_HANDLE:
-                                throw new WaitHandleCannotBeOpenedException(Environment.GetResourceString("Threading.WaitHandleCannotBeOpenedException_InvalidHandle", m_name));
+                                throw new WaitHandleCannotBeOpenedException(SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, m_name));
                         }
                     }
                     __Error.WinIOError(errorCode, m_name);
@@ -210,7 +210,7 @@ namespace System.Threading
                     throw new WaitHandleCannotBeOpenedException();
 
                 case OpenExistingResult.NameInvalid:
-                    throw new WaitHandleCannotBeOpenedException(Environment.GetResourceString("Threading.WaitHandleCannotBeOpenedException_InvalidHandle", name));
+                    throw new WaitHandleCannotBeOpenedException(SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
 
                 case OpenExistingResult.PathNotFound:
                     __Error.WinIOError(Win32Native.ERROR_PATH_NOT_FOUND, name);
@@ -230,17 +230,17 @@ namespace System.Threading
         {
             if (name == null)
             {
-                throw new ArgumentNullException(nameof(name), Environment.GetResourceString("ArgumentNull_WithParamName"));
+                throw new ArgumentNullException(nameof(name), SR.ArgumentNull_WithParamName);
             }
 
             if (name.Length == 0)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(name));
+                throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
             }
 #if !PLATFORM_UNIX
             if (System.IO.Path.MaxPath < name.Length)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", Path.MaxPath), nameof(name));
+                throw new ArgumentException(SR.Format(SR.Argument_WaitHandleNameTooLong, Path.MaxPath), nameof(name));
             }
 #endif
             Contract.EndContractBlock();
@@ -262,7 +262,7 @@ namespace System.Threading
                 if (name != null && errorCode == Win32Native.ERROR_FILENAME_EXCED_RANGE)
                 {
                     // On Unix, length validation is done by CoreCLR's PAL after converting to utf-8
-                    throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", Interop.Sys.MaxName), nameof(name));
+                    throw new ArgumentException(SR.Format(SR.Argument_WaitHandleNameTooLong, Interop.Sys.MaxName), nameof(name));
                 }
 #endif
 
@@ -291,7 +291,7 @@ namespace System.Threading
             }
             else
             {
-                throw new ApplicationException(Environment.GetResourceString("Arg_SynchronizationLockException"));
+                throw new ApplicationException(SR.Arg_SynchronizationLockException);
             }
         }
 

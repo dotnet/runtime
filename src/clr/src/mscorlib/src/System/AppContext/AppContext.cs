@@ -116,7 +116,7 @@ namespace System
             if (switchName == null)
                 throw new ArgumentNullException(nameof(switchName));
             if (switchName.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(switchName));
+                throw new ArgumentException(SR.Argument_EmptyName, nameof(switchName));
 
             // By default, the switch is not enabled.
             isEnabled = false;
@@ -212,7 +212,7 @@ namespace System
             if (switchName == null)
                 throw new ArgumentNullException(nameof(switchName));
             if (switchName.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(switchName));
+                throw new ArgumentException(SR.Argument_EmptyName, nameof(switchName));
 
             SwitchValueState switchValue = (isEnabled ? SwitchValueState.HasTrueValue : SwitchValueState.HasFalseValue)
                                             | SwitchValueState.HasLookedForOverride;

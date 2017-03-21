@@ -98,7 +98,7 @@ namespace System
                 else // f is NaN.
                     return 1;
             }
-            throw new ArgumentException(Environment.GetResourceString("Arg_MustBeSingle"));
+            throw new ArgumentException(SR.Arg_MustBeSingle);
         }
 
 
@@ -306,7 +306,7 @@ namespace System
         /// <internalonly/>
         char IConvertible.ToChar(IFormatProvider provider)
         {
-            throw new InvalidCastException(Environment.GetResourceString("InvalidCast_FromTo", "Single", "Char"));
+            throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, "Single", "Char"));
         }
 
         /// <internalonly/>
@@ -378,7 +378,7 @@ namespace System
         /// <internalonly/>
         DateTime IConvertible.ToDateTime(IFormatProvider provider)
         {
-            throw new InvalidCastException(Environment.GetResourceString("InvalidCast_FromTo", "Single", "DateTime"));
+            throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, "Single", "DateTime"));
         }
 
         /// <internalonly/>

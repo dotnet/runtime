@@ -23,7 +23,7 @@ namespace System
 
         private DBNull(SerializationInfo info, StreamingContext context)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_DBNullSerial"));
+            throw new NotSupportedException(SR.NotSupported_DBNullSerial);
         }
 
         public static readonly DBNull Value = new DBNull();
@@ -51,85 +51,85 @@ namespace System
         /// <internalonly/>
         bool IConvertible.ToBoolean(IFormatProvider provider)
         {
-            throw new InvalidCastException(Environment.GetResourceString("InvalidCast_FromDBNull"));
+            throw new InvalidCastException(SR.InvalidCast_FromDBNull);
         }
 
         /// <internalonly/>
         char IConvertible.ToChar(IFormatProvider provider)
         {
-            throw new InvalidCastException(Environment.GetResourceString("InvalidCast_FromDBNull"));
+            throw new InvalidCastException(SR.InvalidCast_FromDBNull);
         }
 
         /// <internalonly/>
         sbyte IConvertible.ToSByte(IFormatProvider provider)
         {
-            throw new InvalidCastException(Environment.GetResourceString("InvalidCast_FromDBNull"));
+            throw new InvalidCastException(SR.InvalidCast_FromDBNull);
         }
 
         /// <internalonly/>
         byte IConvertible.ToByte(IFormatProvider provider)
         {
-            throw new InvalidCastException(Environment.GetResourceString("InvalidCast_FromDBNull"));
+            throw new InvalidCastException(SR.InvalidCast_FromDBNull);
         }
 
         /// <internalonly/>
         short IConvertible.ToInt16(IFormatProvider provider)
         {
-            throw new InvalidCastException(Environment.GetResourceString("InvalidCast_FromDBNull"));
+            throw new InvalidCastException(SR.InvalidCast_FromDBNull);
         }
 
         /// <internalonly/>
         ushort IConvertible.ToUInt16(IFormatProvider provider)
         {
-            throw new InvalidCastException(Environment.GetResourceString("InvalidCast_FromDBNull"));
+            throw new InvalidCastException(SR.InvalidCast_FromDBNull);
         }
 
         /// <internalonly/>
         int IConvertible.ToInt32(IFormatProvider provider)
         {
-            throw new InvalidCastException(Environment.GetResourceString("InvalidCast_FromDBNull"));
+            throw new InvalidCastException(SR.InvalidCast_FromDBNull);
         }
 
         /// <internalonly/>
         uint IConvertible.ToUInt32(IFormatProvider provider)
         {
-            throw new InvalidCastException(Environment.GetResourceString("InvalidCast_FromDBNull"));
+            throw new InvalidCastException(SR.InvalidCast_FromDBNull);
         }
 
         /// <internalonly/>
         long IConvertible.ToInt64(IFormatProvider provider)
         {
-            throw new InvalidCastException(Environment.GetResourceString("InvalidCast_FromDBNull"));
+            throw new InvalidCastException(SR.InvalidCast_FromDBNull);
         }
 
         /// <internalonly/>
         ulong IConvertible.ToUInt64(IFormatProvider provider)
         {
-            throw new InvalidCastException(Environment.GetResourceString("InvalidCast_FromDBNull"));
+            throw new InvalidCastException(SR.InvalidCast_FromDBNull);
         }
 
         /// <internalonly/>
         float IConvertible.ToSingle(IFormatProvider provider)
         {
-            throw new InvalidCastException(Environment.GetResourceString("InvalidCast_FromDBNull"));
+            throw new InvalidCastException(SR.InvalidCast_FromDBNull);
         }
 
         /// <internalonly/>
         double IConvertible.ToDouble(IFormatProvider provider)
         {
-            throw new InvalidCastException(Environment.GetResourceString("InvalidCast_FromDBNull"));
+            throw new InvalidCastException(SR.InvalidCast_FromDBNull);
         }
 
         /// <internalonly/>
         decimal IConvertible.ToDecimal(IFormatProvider provider)
         {
-            throw new InvalidCastException(Environment.GetResourceString("InvalidCast_FromDBNull"));
+            throw new InvalidCastException(SR.InvalidCast_FromDBNull);
         }
 
         /// <internalonly/>
         DateTime IConvertible.ToDateTime(IFormatProvider provider)
         {
-            throw new InvalidCastException(Environment.GetResourceString("InvalidCast_FromDBNull"));
+            throw new InvalidCastException(SR.InvalidCast_FromDBNull);
         }
 
         /// <internalonly/>

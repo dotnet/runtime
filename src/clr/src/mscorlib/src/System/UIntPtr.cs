@@ -57,7 +57,7 @@ namespace System
 
             if (Size == 4 && l > UInt32.MaxValue)
             {
-                throw new ArgumentException(Environment.GetResourceString("Serialization_InvalidPtrValue"));
+                throw new ArgumentException(SR.Serialization_InvalidPtrValue);
             }
 
             m_value = (void*)l;

@@ -18,7 +18,7 @@ namespace System.Reflection
         public ParameterModifier(int parameterCount)
         {
             if (parameterCount <= 0)
-                throw new ArgumentException(Environment.GetResourceString("Arg_ParmArraySize"));
+                throw new ArgumentException(SR.Arg_ParmArraySize);
             Contract.EndContractBlock();
 
             _byRef = new bool[parameterCount];

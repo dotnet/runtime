@@ -46,11 +46,11 @@ namespace System.Threading
             if (name != null)
             {
 #if PLATFORM_UNIX
-                throw new PlatformNotSupportedException(Environment.GetResourceString("PlatformNotSupported_NamedSynchronizationPrimitives"));
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
 #else
                 if (System.IO.Path.MaxPath < name.Length)
                 {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", Path.MaxPath), nameof(name));
+                    throw new ArgumentException(SR.Format(SR.Argument_WaitHandleNameTooLong, Path.MaxPath), nameof(name));
                 }
 #endif
             }
@@ -67,7 +67,7 @@ namespace System.Threading
                     break;
 
                 default:
-                    throw new ArgumentException(Environment.GetResourceString("Argument_InvalidFlag", name));
+                    throw new ArgumentException(SR.Format(SR.Argument_InvalidFlag, name));
             };
 
             if (_handle.IsInvalid)
@@ -76,7 +76,7 @@ namespace System.Threading
 
                 _handle.SetHandleAsInvalid();
                 if (null != name && 0 != name.Length && Win32Native.ERROR_INVALID_HANDLE == errorCode)
-                    throw new WaitHandleCannotBeOpenedException(Environment.GetResourceString("Threading.WaitHandleCannotBeOpenedException_InvalidHandle", name));
+                    throw new WaitHandleCannotBeOpenedException(SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
 
                 __Error.WinIOError(errorCode, name);
             }
@@ -93,11 +93,11 @@ namespace System.Threading
             if (name != null)
             {
 #if PLATFORM_UNIX
-                throw new PlatformNotSupportedException(Environment.GetResourceString("PlatformNotSupported_NamedSynchronizationPrimitives"));
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
 #else
                 if (System.IO.Path.MaxPath < name.Length)
                 {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", Path.MaxPath), nameof(name));
+                    throw new ArgumentException(SR.Format(SR.Argument_WaitHandleNameTooLong, Path.MaxPath), nameof(name));
                 }
 #endif
             }
@@ -116,7 +116,7 @@ namespace System.Threading
                     break;
 
                 default:
-                    throw new ArgumentException(Environment.GetResourceString("Argument_InvalidFlag", name));
+                    throw new ArgumentException(SR.Format(SR.Argument_InvalidFlag, name));
             };
 
             _handle = Win32Native.CreateEvent(secAttrs, isManualReset, initialState, name);
@@ -126,7 +126,7 @@ namespace System.Threading
             {
                 _handle.SetHandleAsInvalid();
                 if (null != name && 0 != name.Length && Win32Native.ERROR_INVALID_HANDLE == errorCode)
-                    throw new WaitHandleCannotBeOpenedException(Environment.GetResourceString("Threading.WaitHandleCannotBeOpenedException_InvalidHandle", name));
+                    throw new WaitHandleCannotBeOpenedException(SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
 
                 __Error.WinIOError(errorCode, name);
             }
@@ -153,7 +153,7 @@ namespace System.Threading
                     throw new WaitHandleCannotBeOpenedException();
 
                 case OpenExistingResult.NameInvalid:
-                    throw new WaitHandleCannotBeOpenedException(Environment.GetResourceString("Threading.WaitHandleCannotBeOpenedException_InvalidHandle", name));
+                    throw new WaitHandleCannotBeOpenedException(SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
 
                 case OpenExistingResult.PathNotFound:
                     __Error.WinIOError(Win32Native.ERROR_PATH_NOT_FOUND, "");
@@ -172,21 +172,21 @@ namespace System.Threading
         private static OpenExistingResult OpenExistingWorker(string name, EventWaitHandleRights rights, out EventWaitHandle result)
         {
 #if PLATFORM_UNIX
-            throw new PlatformNotSupportedException(Environment.GetResourceString("PlatformNotSupported_NamedSynchronizationPrimitives"));
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
 #else
             if (name == null)
             {
-                throw new ArgumentNullException(nameof(name), Environment.GetResourceString("ArgumentNull_WithParamName"));
+                throw new ArgumentNullException(nameof(name), SR.ArgumentNull_WithParamName);
             }
 
             if (name.Length == 0)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(name));
+                throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
             }
 
             if (null != name && System.IO.Path.MaxPath < name.Length)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", Path.MaxPath), nameof(name));
+                throw new ArgumentException(SR.Format(SR.Argument_WaitHandleNameTooLong, Path.MaxPath), nameof(name));
             }
 
             Contract.EndContractBlock();

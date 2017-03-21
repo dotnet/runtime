@@ -51,7 +51,7 @@ namespace System.Threading
     /// <remarks>
     /// <para>
     /// <see cref="SpinWait"/> encapsulates common spinning logic. On single-processor machines, yields are
-    /// always used instead of busy waits, and on computers with Intel™ processors employing Hyper-Threading™
+    /// always used instead of busy waits, and on computers with Intelï¿½ processors employing Hyper-Threadingï¿½
     /// technology, it helps to prevent hardware thread starvation. SpinWait encapsulates a good mixture of
     /// spinning and true yielding.
     /// </para>
@@ -214,7 +214,7 @@ namespace System.Threading
             if (totalMilliseconds < -1 || totalMilliseconds > Int32.MaxValue)
             {
                 throw new System.ArgumentOutOfRangeException(
-                    nameof(timeout), timeout, Environment.GetResourceString("SpinWait_SpinUntil_TimeoutWrong"));
+                    nameof(timeout), timeout, SR.SpinWait_SpinUntil_TimeoutWrong);
             }
 
             // Call wait with the timeout milliseconds
@@ -236,11 +236,11 @@ namespace System.Threading
             if (millisecondsTimeout < Timeout.Infinite)
             {
                 throw new ArgumentOutOfRangeException(
-                   nameof(millisecondsTimeout), millisecondsTimeout, Environment.GetResourceString("SpinWait_SpinUntil_TimeoutWrong"));
+                   nameof(millisecondsTimeout), millisecondsTimeout, SR.SpinWait_SpinUntil_TimeoutWrong);
             }
             if (condition == null)
             {
-                throw new ArgumentNullException(nameof(condition), Environment.GetResourceString("SpinWait_SpinUntil_ArgumentNull"));
+                throw new ArgumentNullException(nameof(condition), SR.SpinWait_SpinUntil_ArgumentNull);
             }
             uint startTime = 0;
             if (millisecondsTimeout != 0 && millisecondsTimeout != Timeout.Infinite)

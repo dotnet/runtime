@@ -259,7 +259,7 @@ namespace System.Resources
         {
             IResourceReader copyOfReader = Reader;
             if (copyOfReader == null || _resCache == null)
-                throw new ObjectDisposedException(null, Environment.GetResourceString("ObjectDisposed_ResourceSet"));
+                throw new ObjectDisposedException(null, SR.ObjectDisposed_ResourceSet);
 
             return copyOfReader.GetEnumerator();
         }
@@ -292,7 +292,7 @@ namespace System.Resources
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
             if (Reader == null || _resCache == null)
-                throw new ObjectDisposedException(null, Environment.GetResourceString("ObjectDisposed_ResourceSet"));
+                throw new ObjectDisposedException(null, SR.ObjectDisposed_ResourceSet);
             Contract.EndContractBlock();
 
             Object value = null;
@@ -301,7 +301,7 @@ namespace System.Resources
             lock (Reader)
             {
                 if (Reader == null)
-                    throw new ObjectDisposedException(null, Environment.GetResourceString("ObjectDisposed_ResourceSet"));
+                    throw new ObjectDisposedException(null, SR.ObjectDisposed_ResourceSet);
 
                 if (_defaultReader != null)
                 {

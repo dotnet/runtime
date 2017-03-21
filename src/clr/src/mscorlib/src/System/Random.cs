@@ -212,7 +212,7 @@ namespace System
         {
             if (minValue > maxValue)
             {
-                throw new ArgumentOutOfRangeException(nameof(minValue), Environment.GetResourceString("Argument_MinMaxValue", nameof(minValue), nameof(maxValue)));
+                throw new ArgumentOutOfRangeException(nameof(minValue), SR.Format(SR.Argument_MinMaxValue, nameof(minValue), nameof(maxValue)));
             }
             Contract.EndContractBlock();
 
@@ -237,7 +237,7 @@ namespace System
         {
             if (maxValue < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(maxValue), Environment.GetResourceString("ArgumentOutOfRange_MustBePositive", nameof(maxValue)));
+                throw new ArgumentOutOfRangeException(nameof(maxValue), SR.Format(SR.ArgumentOutOfRange_MustBePositive, nameof(maxValue)));
             }
             Contract.EndContractBlock();
             return (int)(Sample() * maxValue);

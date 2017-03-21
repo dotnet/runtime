@@ -127,7 +127,7 @@ namespace System
             FieldInfo fldInfo = GetFieldInfo(typeName, fieldName);
 
             if (fldInfo.IsInitOnly)
-                throw new FieldAccessException(Environment.GetResourceString("FieldAccess_InitOnly"));
+                throw new FieldAccessException(SR.FieldAccess_InitOnly);
 
             // Make sure that the value is compatible with the type
             // of field

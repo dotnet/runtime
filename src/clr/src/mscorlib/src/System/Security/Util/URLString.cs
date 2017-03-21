@@ -131,7 +131,7 @@ namespace System.Security.Util
                 PathInternal.MaxLongPath))
 #endif
             {
-                throw new PathTooLongException(Environment.GetResourceString("IO.PathTooLong"));
+                throw new PathTooLongException(SR.IO_PathTooLong);
             }
         }
     }

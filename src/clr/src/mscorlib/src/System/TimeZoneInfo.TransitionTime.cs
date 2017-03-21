@@ -75,37 +75,37 @@ namespace System
             {
                 if (timeOfDay.Kind != DateTimeKind.Unspecified)
                 {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_DateTimeKindMustBeUnspecified"), nameof(timeOfDay));
+                    throw new ArgumentException(SR.Argument_DateTimeKindMustBeUnspecified, nameof(timeOfDay));
                 }
 
                 // Month range 1-12
                 if (month < 1 || month > 12)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(month), Environment.GetResourceString("ArgumentOutOfRange_MonthParam"));
+                    throw new ArgumentOutOfRangeException(nameof(month), SR.ArgumentOutOfRange_MonthParam);
                 }
 
                 // Day range 1-31
                 if (day < 1 || day > 31)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(day), Environment.GetResourceString("ArgumentOutOfRange_DayParam"));
+                    throw new ArgumentOutOfRangeException(nameof(day), SR.ArgumentOutOfRange_DayParam);
                 }
 
                 // Week range 1-5
                 if (week < 1 || week > 5)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(week), Environment.GetResourceString("ArgumentOutOfRange_Week"));
+                    throw new ArgumentOutOfRangeException(nameof(week), SR.ArgumentOutOfRange_Week);
                 }
 
                 // DayOfWeek range 0-6
                 if ((int)dayOfWeek < 0 || (int)dayOfWeek > 6)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(dayOfWeek), Environment.GetResourceString("ArgumentOutOfRange_DayOfWeek"));
+                    throw new ArgumentOutOfRangeException(nameof(dayOfWeek), SR.ArgumentOutOfRange_DayOfWeek);
                 }
                 Contract.EndContractBlock();
 
                 if (timeOfDay.Year != 1 || timeOfDay.Month != 1 || timeOfDay.Day != 1 || (timeOfDay.Ticks % TimeSpan.TicksPerMillisecond != 0))
                 {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_DateTimeHasTicks"), nameof(timeOfDay));
+                    throw new ArgumentException(SR.Argument_DateTimeHasTicks, nameof(timeOfDay));
                 }
             }
 
@@ -120,7 +120,7 @@ namespace System
                 }
                 catch (ArgumentException e)
                 {
-                    throw new SerializationException(Environment.GetResourceString("Serialization_InvalidData"), e);
+                    throw new SerializationException(SR.Serialization_InvalidData, e);
                 }
             }
 

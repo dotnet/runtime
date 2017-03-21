@@ -50,131 +50,17 @@ namespace System
         // that includes the contents of the environment variable.
         private const int MaxSystemEnvVariableLength = 1024;
         private const int MaxUserEnvVariableLength = 255;
-
-        internal sealed class ResourceHelper
-        {
-            internal ResourceHelper(String name)
-            {
-                m_name = name;
-            }
-
-            private String m_name;
-            private ResourceManager SystemResMgr;
-
-            // To avoid infinite loops when calling GetResourceString.  See comments
-            // in GetResourceString for this field.
-            private List<string> currentlyLoading;
-
-            // process-wide state (since this is only used in one domain), 
-            // used to avoid the TypeInitialization infinite recusion
-            // in GetResourceStringCode
-            internal bool resourceManagerInited = false;
-
-            // Is this thread currently doing infinite resource lookups?
-            private int infinitelyRecursingCount;
-
-            internal String GetResourceString(String key)
-            {
-                if (key == null || key.Length == 0)
-                {
-                    Debug.Assert(false, "Environment::GetResourceString with null or empty key.  Bug in caller, or weird recursive loading problem?");
-                    return "[Resource lookup failed - null or empty resource name]";
-                }
-
-                // We have a somewhat common potential for infinite 
-                // loops with mscorlib's ResourceManager.  If "potentially dangerous"
-                // code throws an exception, we will get into an infinite loop
-                // inside the ResourceManager and this "potentially dangerous" code.
-                // Potentially dangerous code includes the IO package, CultureInfo,
-                // parts of the loader, some parts of Reflection, Security (including 
-                // custom user-written permissions that may parse an XML file at
-                // class load time), assembly load event handlers, etc.  Essentially,
-                // this is not a bounded set of code, and we need to fix the problem.
-                // Fortunately, this is limited to mscorlib's error lookups and is NOT
-                // a general problem for all user code using the ResourceManager.
-
-                // The solution is to make sure only one thread at a time can call 
-                // GetResourceString.  Also, since resource lookups can be 
-                // reentrant, if the same thread comes into GetResourceString
-                // twice looking for the exact same resource name before 
-                // returning, we're going into an infinite loop and we should 
-                // return a bogus string.  
-
-                bool lockTaken = false;
-                try
-                {
-                    Monitor.Enter(this, ref lockTaken);
-
-                    // Are we recursively looking up the same resource?  Note - our backout code will set
-                    // the ResourceHelper's currentlyLoading stack to null if an exception occurs.
-                    if (currentlyLoading != null && currentlyLoading.Count > 0 && currentlyLoading.LastIndexOf(key) != -1)
-                    {
-                        // We can start infinitely recursing for one resource lookup,
-                        // then during our failure reporting, start infinitely recursing again.
-                        // avoid that.
-                        if (infinitelyRecursingCount > 0)
-                        {
-                            return "[Resource lookup failed - infinite recursion or critical failure detected.]";
-                        }
-                        infinitelyRecursingCount++;
-
-                        // Note: our infrastructure for reporting this exception will again cause resource lookup.
-                        // This is the most direct way of dealing with that problem.
-                        string message = $"Infinite recursion during resource lookup within {System.CoreLib.Name}.  This may be a bug in {System.CoreLib.Name}, or potentially in certain extensibility points such as assembly resolve events or CultureInfo names.  Resource name: {key}";
-                        Assert.Fail("[Recursive resource lookup bug]", message, Assert.COR_E_FAILFAST, System.Diagnostics.StackTrace.TraceFormat.NoResourceLookup);
-                        Environment.FailFast(message);
-                    }
-                    if (currentlyLoading == null)
-                        currentlyLoading = new List<string>();
-
-                    // Call class constructors preemptively, so that we cannot get into an infinite
-                    // loop constructing a TypeInitializationException.  If this were omitted,
-                    // we could get the Infinite recursion assert above by failing type initialization
-                    // between the Push and Pop calls below.
-                    if (!resourceManagerInited)
-                    {
-                        RuntimeHelpers.RunClassConstructor(typeof(ResourceManager).TypeHandle);
-                        RuntimeHelpers.RunClassConstructor(typeof(ResourceReader).TypeHandle);
-                        RuntimeHelpers.RunClassConstructor(typeof(RuntimeResourceSet).TypeHandle);
-                        RuntimeHelpers.RunClassConstructor(typeof(BinaryReader).TypeHandle);
-                        resourceManagerInited = true;
-                    }
-
-                    currentlyLoading.Add(key); // Push
-
-                    if (SystemResMgr == null)
-                    {
-                        SystemResMgr = new ResourceManager(m_name, typeof(Object).Assembly);
-                    }
-                    string s = SystemResMgr.GetString(key, null);
-                    currentlyLoading.RemoveAt(currentlyLoading.Count - 1); // Pop
-
-                    Debug.Assert(s != null, "Managed resource string lookup failed.  Was your resource name misspelled?  Did you rebuild mscorlib after adding a resource to resources.txt?  Debug this w/ cordbg and bug whoever owns the code that called Environment.GetResourceString.  Resource name was: \"" + key + "\"");
-                    return s;
-                }
-                catch
-                {
-                    if (lockTaken)
-                    {
-                        // Backout code - throw away potentially corrupt state
-                        SystemResMgr = null;
-                        currentlyLoading = null;
-                    }
-                    throw;
-                }
-                finally
-                {
-                    if (lockTaken)
-                    {
-                        Monitor.Exit(this);
-                    }
-                }
-            }
-        }
-
-        private static volatile ResourceHelper m_resHelper;  // Doesn't need to be initialized as they're zero-init.
-
         private const int MaxMachineNameLength = 256;
+
+        // Looks up the resource string value for key.
+        // 
+        // if you change this method's signature then you must change the code that calls it
+        // in excep.cpp and probably you will have to visit mscorlib.h to add the new signature
+        // as well as metasig.h to create the new signature type
+        internal static String GetResourceStringLocal(String key)
+        {
+            return SR.GetResourceString(key);
+        }
 
         // Private object for locking instead of locking on a public type for SQL reliability work.
         private static Object s_InternalSyncObject;
@@ -363,7 +249,7 @@ namespace System
                 StringBuilder buf = new StringBuilder(MaxMachineNameLength);
                 int len = MaxMachineNameLength;
                 if (Win32Native.GetComputerName(buf, ref len) == 0)
-                    throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_ComputerName"));
+                    throw new InvalidOperationException(SR.InvalidOperation_ComputerName);
                 return buf.ToString();
             }
         }
@@ -520,12 +406,12 @@ namespace System
                     Microsoft.Win32.Win32Native.OSVERSIONINFO osvi = new Microsoft.Win32.Win32Native.OSVERSIONINFO();
                     if (!GetVersion(osvi))
                     {
-                        throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_GetVersion"));
+                        throw new InvalidOperationException(SR.InvalidOperation_GetVersion);
                     }
 
                     Microsoft.Win32.Win32Native.OSVERSIONINFOEX osviEx = new Microsoft.Win32.Win32Native.OSVERSIONINFOEX();
                     if (!GetVersionEx(osviEx))
-                        throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_GetVersion"));
+                        throw new InvalidOperationException(SR.InvalidOperation_GetVersion);
 
 #if PLATFORM_UNIX
                     PlatformID id = PlatformID.Unix;
@@ -598,94 +484,6 @@ namespace System
 
             // Do no include a trailing newline for backwards compatibility
             return st.ToString(System.Diagnostics.StackTrace.TraceFormat.Normal);
-        }
-
-        private static void InitResourceHelper()
-        {
-            // Only the default AppDomain should have a ResourceHelper.  All calls to 
-            // GetResourceString from any AppDomain delegate to GetResourceStringLocal 
-            // in the default AppDomain via the fcall GetResourceFromDefault.
-
-            bool tookLock = false;
-            RuntimeHelpers.PrepareConstrainedRegions();
-            try
-            {
-                Monitor.Enter(Environment.InternalSyncObject, ref tookLock);
-
-                if (m_resHelper == null)
-                {
-                    ResourceHelper rh = new ResourceHelper(System.CoreLib.Name);
-
-                    System.Threading.Thread.MemoryBarrier();
-                    m_resHelper = rh;
-                }
-            }
-            finally
-            {
-                if (tookLock)
-                    Monitor.Exit(Environment.InternalSyncObject);
-            }
-        }
-
-        // Looks up the resource string value for key.
-        // 
-        // if you change this method's signature then you must change the code that calls it
-        // in excep.cpp and probably you will have to visit mscorlib.h to add the new signature
-        // as well as metasig.h to create the new signature type
-        internal static String GetResourceStringLocal(String key)
-        {
-            if (m_resHelper == null)
-                InitResourceHelper();
-
-            return m_resHelper.GetResourceString(key);
-        }
-
-        internal static String GetResourceString(String key)
-        {
-            return GetResourceStringLocal(key);
-        }
-
-        // The reason the following overloads exist are to reduce code bloat.
-        // Since GetResourceString is basically only called when exceptions are
-        // thrown, we want the code size to be as small as possible.
-        // Using the params object[] overload works against this since the
-        // initialization of the array is done inline in the caller at the IL
-        // level. So we have overloads that simply wrap the params one.
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        internal static string GetResourceString(string key, object val0)
-        {
-            return GetResourceStringFormatted(key, new object[] { val0 });
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        internal static string GetResourceString(string key, object val0, object val1)
-        {
-            return GetResourceStringFormatted(key, new object[] { val0, val1 });
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        internal static string GetResourceString(string key, object val0, object val1, object val2)
-        {
-            return GetResourceStringFormatted(key, new object[] { val0, val1, val2 });
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        internal static string GetResourceString(string key, object val0, object val1, object val2, object val3)
-        {
-            return GetResourceStringFormatted(key, new object[] { val0, val1, val2, val3 });
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        internal static String GetResourceString(string key, params object[] values)
-        {
-            return GetResourceStringFormatted(key, values);
-        }
-
-        private static String GetResourceStringFormatted(string key, params object[] values)
-        {
-            string rs = GetResourceString(key);
-            return String.Format(CultureInfo.CurrentCulture, rs, values);
         }
 
         public static extern bool HasShutdownStarted
@@ -820,19 +618,19 @@ namespace System
             }
             if (variable.Length == 0)
             {
-                throw new ArgumentException(GetResourceString("Argument_StringZeroLength"), nameof(variable));
+                throw new ArgumentException(SR.Argument_StringZeroLength, nameof(variable));
             }
             if (variable[0] == '\0')
             {
-                throw new ArgumentException(GetResourceString("Argument_StringFirstCharIsZero"), nameof(variable));
+                throw new ArgumentException(SR.Argument_StringFirstCharIsZero, nameof(variable));
             }
             if (variable.Length >= MaxEnvVariableValueLength)
             {
-                throw new ArgumentException(GetResourceString("Argument_LongEnvVarValue"), nameof(variable));
+                throw new ArgumentException(SR.Argument_LongEnvVarValue, nameof(variable));
             }
             if (variable.IndexOf('=') != -1)
             {
-                throw new ArgumentException(GetResourceString("Argument_IllegalEnvVarName"), nameof(variable));
+                throw new ArgumentException(SR.Argument_IllegalEnvVarName, nameof(variable));
             }
 
             if (string.IsNullOrEmpty(value) || value[0] == '\0')
@@ -842,7 +640,7 @@ namespace System
             }
             else if (value.Length >= MaxEnvVariableValueLength)
             {
-                throw new ArgumentException(GetResourceString("Argument_LongEnvVarValue"), nameof(value));
+                throw new ArgumentException(SR.Argument_LongEnvVarValue, nameof(value));
             }
         }
 
@@ -852,7 +650,7 @@ namespace System
                 target != EnvironmentVariableTarget.Machine &&
                 target != EnvironmentVariableTarget.User)
             {
-                throw new ArgumentOutOfRangeException(nameof(target), target, SR.Format(GetResourceString("Arg_EnumIllegalVal"), target));
+                throw new ArgumentOutOfRangeException(nameof(target), target, SR.Format(SR.Arg_EnumIllegalVal, target));
             }
         }
 
@@ -953,7 +751,7 @@ namespace System
             }
             else
             {
-                throw new ArgumentException(GetResourceString("Arg_EnumIllegalVal", (int)target));
+                throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, (int)target));
             }
 
             using (RegistryKey environmentKey = baseKey.OpenSubKey(keyName, writable: false))
@@ -999,7 +797,7 @@ namespace System
             }
             else
             {
-                throw new ArgumentException(GetResourceString("Arg_EnumIllegalVal", (int)target));
+                throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, (int)target));
             }
 
             using (RegistryKey environmentKey = baseKey.OpenSubKey(keyName, writable: false))
@@ -1042,7 +840,7 @@ namespace System
                     case Win32Native.ERROR_FILENAME_EXCED_RANGE:
                         // The error message from Win32 is "The filename or extension is too long",
                         // which is not accurate.
-                        throw new ArgumentException(GetResourceString("Argument_LongEnvVarValue"));
+                        throw new ArgumentException(SR.Format(SR.Argument_LongEnvVarValue));
                     default:
                         throw new ArgumentException(Win32Native.GetMessage(errorCode));
                 }
@@ -1081,7 +879,7 @@ namespace System
                 const int MaxUserEnvVariableLength = 255;
                 if (variable.Length >= MaxUserEnvVariableLength)
                 {
-                    throw new ArgumentException(GetResourceString("Argument_LongEnvVarValue"), nameof(variable));
+                    throw new ArgumentException(SR.Argument_LongEnvVarValue, nameof(variable));
                 }
 
                 baseKey = Registry.CurrentUser;
@@ -1089,7 +887,7 @@ namespace System
             }
             else
             {
-                throw new ArgumentException(GetResourceString("Arg_EnumIllegalVal", (int)target));
+                throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, (int)target));
             }
 
             using (RegistryKey environmentKey = baseKey.OpenSubKey(keyName, writable: true))

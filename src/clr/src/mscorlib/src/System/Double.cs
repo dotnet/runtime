@@ -120,7 +120,7 @@ namespace System
                 else
                     return 1;
             }
-            throw new ArgumentException(Environment.GetResourceString("Arg_MustBeDouble"));
+            throw new ArgumentException(SR.Arg_MustBeDouble);
         }
 
         public int CompareTo(Double value)
@@ -330,7 +330,7 @@ namespace System
         /// <internalonly/>
         char IConvertible.ToChar(IFormatProvider provider)
         {
-            throw new InvalidCastException(Environment.GetResourceString("InvalidCast_FromTo", "Double", "Char"));
+            throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, "Double", "Char"));
         }
 
         /// <internalonly/>
@@ -402,7 +402,7 @@ namespace System
         /// <internalonly/>
         DateTime IConvertible.ToDateTime(IFormatProvider provider)
         {
-            throw new InvalidCastException(Environment.GetResourceString("InvalidCast_FromTo", "Double", "DateTime"));
+            throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, "Double", "DateTime"));
         }
 
         /// <internalonly/>

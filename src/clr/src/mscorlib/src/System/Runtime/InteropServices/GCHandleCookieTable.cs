@@ -91,7 +91,7 @@ namespace System.Runtime.InteropServices
                 }
 
                 if (cookie == GCHandleCookie.Zero)
-                    throw new OutOfMemoryException(Environment.GetResourceString("OutOfMemory_GCHandleMDA"));
+                    throw new OutOfMemoryException(SR.OutOfMemory_GCHandleMDA);
 
                 // This handle hasn't been added to the map yet so add it.
                 m_HandleToCookieMap.Add(handle, cookie);

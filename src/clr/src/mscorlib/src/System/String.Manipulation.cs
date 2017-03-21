@@ -763,15 +763,15 @@ namespace System
             }
             if (startIndex < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_StartIndex"));
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
             }
             if (count < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_NegativeCount"));
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NegativeCount);
             }
             if (startIndex > value.Length - count)
             {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_IndexCountBuffer"));
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_IndexCountBuffer);
             }
 
             if (count <= 1)
@@ -871,7 +871,7 @@ namespace System
         public String PadLeft(int totalWidth, char paddingChar)
         {
             if (totalWidth < 0)
-                throw new ArgumentOutOfRangeException(nameof(totalWidth), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(totalWidth), SR.ArgumentOutOfRange_NeedNonNegNum);
             int oldLength = Length;
             int count = totalWidth - oldLength;
             if (count <= 0)
@@ -902,7 +902,7 @@ namespace System
         public String PadRight(int totalWidth, char paddingChar)
         {
             if (totalWidth < 0)
-                throw new ArgumentOutOfRangeException(nameof(totalWidth), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(totalWidth), SR.ArgumentOutOfRange_NeedNonNegNum);
             int oldLength = Length;
             int count = totalWidth - oldLength;
             if (count <= 0)
@@ -927,13 +927,13 @@ namespace System
         {
             if (startIndex < 0)
                 throw new ArgumentOutOfRangeException(nameof(startIndex),
-                    Environment.GetResourceString("ArgumentOutOfRange_StartIndex"));
+                    SR.ArgumentOutOfRange_StartIndex);
             if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count),
-                    Environment.GetResourceString("ArgumentOutOfRange_NegativeCount"));
+                    SR.ArgumentOutOfRange_NegativeCount);
             if (count > Length - startIndex)
                 throw new ArgumentOutOfRangeException(nameof(count),
-                    Environment.GetResourceString("ArgumentOutOfRange_IndexCount"));
+                    SR.ArgumentOutOfRange_IndexCount);
             Contract.Ensures(Contract.Result<String>() != null);
             Contract.Ensures(Contract.Result<String>().Length == this.Length - count);
             Contract.EndContractBlock();
@@ -965,13 +965,13 @@ namespace System
             if (startIndex < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(startIndex),
-                        Environment.GetResourceString("ArgumentOutOfRange_StartIndex"));
+                        SR.ArgumentOutOfRange_StartIndex);
             }
 
             if (startIndex >= Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(startIndex),
-                        Environment.GetResourceString("ArgumentOutOfRange_StartIndexLessThanLength"));
+                        SR.ArgumentOutOfRange_StartIndexLessThanLength);
             }
 
             Contract.Ensures(Contract.Result<String>() != null);
@@ -1014,7 +1014,7 @@ namespace System
                     return ReplaceCore(oldValue, newValue, CultureInfo.InvariantCulture, CompareOptions.OrdinalIgnoreCase);
 
                 default:
-                    throw new ArgumentException(Environment.GetResourceString("NotSupported_StringComparison"), nameof(comparisonType));
+                    throw new ArgumentException(SR.NotSupported_StringComparison, nameof(comparisonType));
             }
         }
 
@@ -1223,10 +1223,10 @@ namespace System
         {
             if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count),
-                    Environment.GetResourceString("ArgumentOutOfRange_NegativeCount"));
+                    SR.ArgumentOutOfRange_NegativeCount);
 
             if (options < StringSplitOptions.None || options > StringSplitOptions.RemoveEmptyEntries)
-                throw new ArgumentException(Environment.GetResourceString("Arg_EnumIllegalVal", options));
+                throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, options));
             Contract.Ensures(Contract.Result<String[]>() != null);
             Contract.EndContractBlock();
 
@@ -1290,12 +1290,12 @@ namespace System
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count),
-                    Environment.GetResourceString("ArgumentOutOfRange_NegativeCount"));
+                    SR.ArgumentOutOfRange_NegativeCount);
             }
 
             if (options < StringSplitOptions.None || options > StringSplitOptions.RemoveEmptyEntries)
             {
-                throw new ArgumentException(Environment.GetResourceString("Arg_EnumIllegalVal", (int)options));
+                throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, (int)options));
             }
             Contract.EndContractBlock();
 
@@ -1591,22 +1591,22 @@ namespace System
             //Bounds Checking.
             if (startIndex < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_StartIndex"));
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
             }
 
             if (startIndex > Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(startIndex), Environment.GetResourceString("ArgumentOutOfRange_StartIndexLargerThanLength"));
+                throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndexLargerThanLength);
             }
 
             if (length < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(length), Environment.GetResourceString("ArgumentOutOfRange_NegativeLength"));
+                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NegativeLength);
             }
 
             if (startIndex > Length - length)
             {
-                throw new ArgumentOutOfRangeException(nameof(length), Environment.GetResourceString("ArgumentOutOfRange_IndexLength"));
+                throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_IndexLength);
             }
             Contract.EndContractBlock();
 

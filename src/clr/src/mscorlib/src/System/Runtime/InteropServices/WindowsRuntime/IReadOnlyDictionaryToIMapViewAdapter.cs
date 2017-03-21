@@ -40,7 +40,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             if (!keyFound)
             {
-                Exception e = new KeyNotFoundException(Environment.GetResourceString("Arg_KeyNotFound"));
+                Exception e = new KeyNotFoundException(SR.Arg_KeyNotFound);
                 e.SetErrorCode(__HResults.E_BOUNDS);
                 throw e;
             }

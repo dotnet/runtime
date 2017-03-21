@@ -141,7 +141,7 @@ namespace System
             }
             if (!(value is Char))
             {
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeChar"));
+                throw new ArgumentException(SR.Arg_MustBeChar);
             }
 
             return (m_value - ((Char)value).m_value);
@@ -189,7 +189,7 @@ namespace System
 
             if (s.Length != 1)
             {
-                throw new FormatException(Environment.GetResourceString("Format_NeedSingleChar"));
+                throw new FormatException(SR.Format_NeedSingleChar);
             }
             return s[0];
         }
@@ -475,7 +475,7 @@ namespace System
         /// <internalonly/>
         bool IConvertible.ToBoolean(IFormatProvider provider)
         {
-            throw new InvalidCastException(Environment.GetResourceString("InvalidCast_FromTo", "Char", "Boolean"));
+            throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, "Char", "Boolean"));
         }
 
         /// <internalonly/>
@@ -535,25 +535,25 @@ namespace System
         /// <internalonly/>
         float IConvertible.ToSingle(IFormatProvider provider)
         {
-            throw new InvalidCastException(Environment.GetResourceString("InvalidCast_FromTo", "Char", "Single"));
+            throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, "Char", "Single"));
         }
 
         /// <internalonly/>
         double IConvertible.ToDouble(IFormatProvider provider)
         {
-            throw new InvalidCastException(Environment.GetResourceString("InvalidCast_FromTo", "Char", "Double"));
+            throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, "Char", "Double"));
         }
 
         /// <internalonly/>
         Decimal IConvertible.ToDecimal(IFormatProvider provider)
         {
-            throw new InvalidCastException(Environment.GetResourceString("InvalidCast_FromTo", "Char", "Decimal"));
+            throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, "Char", "Decimal"));
         }
 
         /// <internalonly/>
         DateTime IConvertible.ToDateTime(IFormatProvider provider)
         {
-            throw new InvalidCastException(Environment.GetResourceString("InvalidCast_FromTo", "Char", "DateTime"));
+            throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, "Char", "DateTime"));
         }
 
         /// <internalonly/>
@@ -1038,7 +1038,7 @@ namespace System
             // are considered as irregular code unit sequence, but they are not illegal.
             if ((utf32 < 0 || utf32 > UNICODE_PLANE16_END) || (utf32 >= HIGH_SURROGATE_START && utf32 <= LOW_SURROGATE_END))
             {
-                throw new ArgumentOutOfRangeException(nameof(utf32), Environment.GetResourceString("ArgumentOutOfRange_InvalidUTF32"));
+                throw new ArgumentOutOfRangeException(nameof(utf32), SR.ArgumentOutOfRange_InvalidUTF32);
             }
             Contract.EndContractBlock();
 
@@ -1069,11 +1069,11 @@ namespace System
         {
             if (!IsHighSurrogate(highSurrogate))
             {
-                throw new ArgumentOutOfRangeException(nameof(highSurrogate), Environment.GetResourceString("ArgumentOutOfRange_InvalidHighSurrogate"));
+                throw new ArgumentOutOfRangeException(nameof(highSurrogate), SR.ArgumentOutOfRange_InvalidHighSurrogate);
             }
             if (!IsLowSurrogate(lowSurrogate))
             {
-                throw new ArgumentOutOfRangeException(nameof(lowSurrogate), Environment.GetResourceString("ArgumentOutOfRange_InvalidLowSurrogate"));
+                throw new ArgumentOutOfRangeException(nameof(lowSurrogate), SR.ArgumentOutOfRange_InvalidLowSurrogate);
             }
             Contract.EndContractBlock();
             return (((highSurrogate - CharUnicodeInfo.HIGH_SURROGATE_START) * 0x400) + (lowSurrogate - CharUnicodeInfo.LOW_SURROGATE_START) + UNICODE_PLANE01_START);
@@ -1096,7 +1096,7 @@ namespace System
 
             if (index < 0 || index >= s.Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
             }
             Contract.EndContractBlock();
             // Check if the character at index is a high surrogate.
@@ -1117,19 +1117,19 @@ namespace System
                         }
                         else
                         {
-                            throw new ArgumentException(Environment.GetResourceString("Argument_InvalidHighSurrogate", index), nameof(s));
+                            throw new ArgumentException(SR.Format(SR.Argument_InvalidHighSurrogate, index), nameof(s));
                         }
                     }
                     else
                     {
                         // Found a high surrogate at the end of the string.
-                        throw new ArgumentException(Environment.GetResourceString("Argument_InvalidHighSurrogate", index), nameof(s));
+                        throw new ArgumentException(SR.Format(SR.Argument_InvalidHighSurrogate, index), nameof(s));
                     }
                 }
                 else
                 {
                     // Find a low surrogate at the character pointed by index.
-                    throw new ArgumentException(Environment.GetResourceString("Argument_InvalidLowSurrogate", index), nameof(s));
+                    throw new ArgumentException(SR.Format(SR.Argument_InvalidLowSurrogate, index), nameof(s));
                 }
             }
             // Not a high-surrogate or low-surrogate. Genereate the UTF32 value for the BMP characters.

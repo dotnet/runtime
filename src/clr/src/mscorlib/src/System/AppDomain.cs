@@ -133,7 +133,7 @@ namespace System
                         if (nested != null)
                             nestedDelegates.Add(nested);
                         else
-                            throw new ArgumentException(Environment.GetResourceString("Arg_MustBeStatic"),
+                            throw new ArgumentException(SR.Arg_MustBeStatic,
                                list[i].Method.ReflectedType.FullName + "::" + list[i].Method.Name);
                     }
                     else
@@ -341,7 +341,7 @@ namespace System
             // uninitialized object through remoting, etc.
             if (_pDomain.IsNull())
             {
-                throw new InvalidOperationException(Environment.GetResourceString("Argument_InvalidHandle"));
+                throw new InvalidOperationException(SR.Argument_InvalidHandle);
             }
 
             return new AppDomainHandle(_pDomain);
@@ -397,20 +397,20 @@ namespace System
                 }
                 catch (FileNotFoundException e)
                 {
-                    throw new TypeLoadException(Environment.GetResourceString("Argument_NoDomainManager"), e);
+                    throw new TypeLoadException(SR.Argument_NoDomainManager, e);
                 }
                 catch (SecurityException e)
                 {
-                    throw new TypeLoadException(Environment.GetResourceString("Argument_NoDomainManager"), e);
+                    throw new TypeLoadException(SR.Argument_NoDomainManager, e);
                 }
                 catch (TypeLoadException e)
                 {
-                    throw new TypeLoadException(Environment.GetResourceString("Argument_NoDomainManager"), e);
+                    throw new TypeLoadException(SR.Argument_NoDomainManager, e);
                 }
 
                 if (_domainManager == null)
                 {
-                    throw new TypeLoadException(Environment.GetResourceString("Argument_NoDomainManager"));
+                    throw new TypeLoadException(SR.Argument_NoDomainManager);
                 }
 
                 // If this domain was not created by a managed call to CreateDomain, then the AppDomainSetup
@@ -501,7 +501,7 @@ namespace System
         {
 #if FEATURE_APPX
             if (IsAppXModel())
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_AppX", "Assembly.LoadFrom"));
+                throw new NotSupportedException(SR.Format(SR.NotSupported_AppX, "Assembly.LoadFrom"));
 #endif
         }
 
@@ -513,7 +513,7 @@ namespace System
         {
 #if FEATURE_APPX
             if (IsAppXModel())
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_AppX", "Assembly.LoadFile"));
+                throw new NotSupportedException(SR.Format(SR.NotSupported_AppX, "Assembly.LoadFile"));
 #endif
         }
 
@@ -525,7 +525,7 @@ namespace System
         {
 #if FEATURE_APPX
             if (IsAppXModel())
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_AppX", "Assembly.ReflectionOnlyLoad"));
+                throw new NotSupportedException(SR.Format(SR.NotSupported_AppX, "Assembly.ReflectionOnlyLoad"));
 #endif
         }
 
@@ -537,7 +537,7 @@ namespace System
         {
 #if FEATURE_APPX
             if (IsAppXModel())
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_AppX", "Assembly.Load(byte[], ...)"));
+                throw new NotSupportedException(SR.Format(SR.NotSupported_AppX, "Assembly.Load(byte[], ...)"));
 #endif
         }
 
@@ -682,16 +682,16 @@ namespace System
             String fn = nGetFriendlyName();
             if (fn != null)
             {
-                sb.Append(Environment.GetResourceString("Loader_Name") + fn);
+                sb.Append(SR.Loader_Name + fn);
                 sb.Append(Environment.NewLine);
             }
 
             if (_Policies == null || _Policies.Length == 0)
-                sb.Append(Environment.GetResourceString("Loader_NoContextPolicies")
+                sb.Append(SR.Loader_NoContextPolicies
                           + Environment.NewLine);
             else
             {
-                sb.Append(Environment.GetResourceString("Loader_ContextPolicies")
+                sb.Append(SR.Loader_ContextPolicies
                           + Environment.NewLine);
                 for (int i = 0; i < _Policies.Length; i++)
                 {
@@ -729,7 +729,7 @@ namespace System
             }
             if (currentVal != null)
             {
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_SetData_OnlyOnce"));
+                throw new InvalidOperationException(SR.InvalidOperation_SetData_OnlyOnce);
             }
 
             lock (((ICollection)LocalStore).SyncRoot)
@@ -785,7 +785,7 @@ namespace System
 
         private AppDomain()
         {
-            throw new NotSupportedException(Environment.GetResourceString(ResId.NotSupported_Constructor));
+            throw new NotSupportedException(SR.GetResourceString(ResId.NotSupported_Constructor));
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -1153,7 +1153,7 @@ namespace System
                             throw new ArgumentNullException("APPBASE");
 
                         if (PathInternal.IsPartiallyQualified(propertyValues[i]))
-                            throw new ArgumentException(Environment.GetResourceString("Argument_AbsolutePathRequired"));
+                            throw new ArgumentException(SR.Argument_AbsolutePathRequired);
 
                         newSetup.ApplicationBase = NormalizePath(propertyValues[i], fullCheck: true);
                     }
@@ -1168,7 +1168,7 @@ namespace System
                             case "MultiDomain": newSetup.LoaderOptimization = LoaderOptimization.MultiDomain; break;
                             case "MultiDomainHost": newSetup.LoaderOptimization = LoaderOptimization.MultiDomainHost; break;
                             case "NotSpecified": newSetup.LoaderOptimization = LoaderOptimization.NotSpecified; break;
-                            default: throw new ArgumentException(Environment.GetResourceString("Argument_UnrecognizedLoaderOptimization"), "LOADER_OPTIMIZATION");
+                            default: throw new ArgumentException(SR.Argument_UnrecognizedLoaderOptimization, "LOADER_OPTIMIZATION");
                         }
                     }
                     else if (propertyNames[i] == "TRUSTED_PLATFORM_ASSEMBLIES" ||
@@ -1254,7 +1254,7 @@ namespace System
                     continue;
 
                 if (PathInternal.IsPartiallyQualified(path))
-                    throw new ArgumentException(Environment.GetResourceString("Argument_AbsolutePathRequired"));
+                    throw new ArgumentException(SR.Argument_AbsolutePathRequired);
 
                 string appPath = NormalizePath(path, fullCheck: true);
                 sb.Append(appPath);

@@ -20,7 +20,7 @@ namespace System.Reflection
     public class CustomAttributeFormatException : FormatException
     {
         public CustomAttributeFormatException()
-            : base(Environment.GetResourceString("Arg_CustomAttributeFormatException"))
+            : base(SR.Arg_CustomAttributeFormatException)
         {
             SetErrorCode(__HResults.COR_E_CUSTOMATTRIBUTEFORMAT);
         }

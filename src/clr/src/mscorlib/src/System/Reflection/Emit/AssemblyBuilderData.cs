@@ -120,7 +120,7 @@ namespace System.Reflection.Emit
             //      if (enclosingType == null && m_assembly.GetType(strTypeName, false, false) != null)
             //      {
             //          // Cannot have two types with the same name
-            //          throw new ArgumentException(Environment.GetResourceString("Argument_DuplicateTypeName"));
+            //          throw new ArgumentException(SR.Argument_DuplicateTypeName);
             //      }
         }
 
