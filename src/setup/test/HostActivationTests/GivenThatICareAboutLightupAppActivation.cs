@@ -21,9 +21,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.LightupApp
         private static TestProjectFixture PreviouslyBuiltAndRestoredLightupAppTestProjectFixture { get; set; }
         private static TestProjectFixture PreviouslyPublishedAndRestoredLightupAppTestProjectFixture { get; set; }
 
-        private static TestProjectFixture PreviouslyBuiltAndRestoredStandaloneLightupAppTestProjectFixture { get; set; }
-        private static TestProjectFixture PreviouslyPublishedAndRestoredStandaloneLightupAppTestProjectFixture { get; set; }
-
         private static RepoDirectoriesProvider RepoDirectories { get; set; }
 
         static GivenThatICareAboutLightupAppActivation()
@@ -46,17 +43,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.LightupApp
                 .EnsureRestored(RepoDirectories.CorehostPackages, RepoDirectories.CorehostDummyPackages)
                 .PublishProject();
 
-            PreviouslyBuiltAndRestoredStandaloneLightupAppTestProjectFixture = new TestProjectFixture("LightupClientSA", RepoDirectories);
-
-            PreviouslyBuiltAndRestoredStandaloneLightupAppTestProjectFixture.EnsureRestoredForRid(PreviouslyBuiltAndRestoredStandaloneLightupAppTestProjectFixture.CurrentRid, RepoDirectories.CorehostDummyPackages)
-                .BuildProject(runtime: PreviouslyBuiltAndRestoredStandaloneLightupAppTestProjectFixture.CurrentRid);
-
-            PreviouslyPublishedAndRestoredStandaloneLightupAppTestProjectFixture = new TestProjectFixture("LightupClientSA", RepoDirectories);
-
-            PreviouslyPublishedAndRestoredStandaloneLightupAppTestProjectFixture.EnsureRestoredForRid(PreviouslyPublishedAndRestoredStandaloneLightupAppTestProjectFixture.CurrentRid,RepoDirectories.CorehostPackages, RepoDirectories.CorehostDummyPackages)
-                .PublishProject(runtime: PreviouslyPublishedAndRestoredStandaloneLightupAppTestProjectFixture.CurrentRid);
-
-            ReplaceTestProjectOutputHostInTestProjectFixture(PreviouslyBuiltAndRestoredStandaloneLightupAppTestProjectFixture);
         }
 
         // Attempt to run the app with lightup deps.json specified but lightup library missing in the expected 
@@ -75,29 +61,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.LightupApp
             var libDepsJson = fixtureLib.TestProject.DepsJson;
 
             dotnet.Exec("exec", "--additional-deps", libDepsJson, appDll)
-                .CaptureStdErr()
-                .CaptureStdOut()
-                .Execute(fExpectedToFail:true)
-                .Should()
-                .Fail()
-                .And
-                .HaveStdErrContaining("Error: assembly specified in the dependencies manifest was not found -- package: \'lightuplib\', version: \'1.0.0\', path: \'LightupLib.dll\'");
-        }
-
-        // Attempt to run a standalone app with lightup deps.json specified but missing lightup library.
-        [Fact]
-        public void Standalone_activation_of_LightupApp_NoLightupLib_Fails()
-        {
-            var fixtureLib = PreviouslyBuiltAndRestoredLightupLibTestProjectFixture
-                .Copy();
-
-            var fixtureApp = PreviouslyBuiltAndRestoredStandaloneLightupAppTestProjectFixture
-                .Copy();
-
-            var appExe = fixtureApp.TestProject.AppExe;
-            var libDepsJson = fixtureLib.TestProject.DepsJson;
-
-            Command.Create(appExe, new string[]{"--additional-deps", libDepsJson})
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute(fExpectedToFail:true)
