@@ -22,7 +22,7 @@ namespace System.Reflection
     public class InvalidFilterCriteriaException : ApplicationException
     {
         public InvalidFilterCriteriaException()
-            : base(SR.Arg_InvalidFilterCriteriaException)
+            : base(Environment.GetResourceString("Arg_InvalidFilterCriteriaException"))
         {
             SetErrorCode(__HResults.COR_E_INVALIDFILTERCRITERIA);
         }

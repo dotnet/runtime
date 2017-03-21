@@ -20,7 +20,7 @@ namespace System
     internal class AppDomainUnloadedException : SystemException
     {
         public AppDomainUnloadedException()
-            : base(SR.Arg_AppDomainUnloadedException)
+            : base(Environment.GetResourceString("Arg_AppDomainUnloadedException"))
         {
             SetErrorCode(__HResults.COR_E_APPDOMAINUNLOADED);
         }

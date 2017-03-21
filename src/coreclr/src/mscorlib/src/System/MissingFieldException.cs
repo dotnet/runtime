@@ -22,7 +22,7 @@ namespace System
     public class MissingFieldException : MissingMemberException, ISerializable
     {
         public MissingFieldException()
-            : base(SR.Arg_MissingFieldException)
+            : base(Environment.GetResourceString("Arg_MissingFieldException"))
         {
             SetErrorCode(__HResults.COR_E_MISSINGFIELD);
         }
@@ -54,7 +54,9 @@ namespace System
                 else
                 {
                     // do any desired fixups to classname here.
-                    return SR.Format(SR.MissingField_Name, (Signature != null ? FormatSignature(Signature) + " " : "") + ClassName + "." + MemberName);
+                    return Environment.GetResourceString("MissingField_Name",
+                                                                       (Signature != null ? FormatSignature(Signature) + " " : "") +
+                                                                       ClassName + "." + MemberName);
                 }
             }
         }

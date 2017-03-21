@@ -26,7 +26,7 @@ namespace System.Runtime.InteropServices
     public class ExternalException : SystemException
     {
         public ExternalException()
-            : base(SR.Arg_ExternalException)
+            : base(Environment.GetResourceString("Arg_ExternalException"))
         {
             SetErrorCode(__HResults.E_FAIL);
         }
