@@ -40,7 +40,7 @@
     <Compile Include="System\Runtime\InteropServices\ExporterEventKind.cs" />
     <Compile Include="System\Runtime\InteropServices\RegistrationClassContext.cs" />
     <Compile Include="System\Runtime\InteropServices\RegistrationConnectionType.cs" />
-    <Compile Include="System\Security\SecureStringMarshal.cs" Condition="'$(TargetGroup)'!='uapaot'" />
+    <Compile Include="System\Security\SecureStringMarshal.cs" />
   </ItemGroup>
   <ItemGroup>
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
