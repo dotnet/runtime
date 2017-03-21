@@ -97,6 +97,12 @@ mono_dump_metadata_offsets (void)
 void
 mono_metadata_cross_helpers_run (void);
 
+/*
+ * mono_metadata_cross_helpers_run:
+ *
+ *   Check that the offsets given by object-offsets.h match the offsets
+ * on the host. This only checks the metadata offsets.
+ */
 void
 mono_metadata_cross_helpers_run (void)
 {
