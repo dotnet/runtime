@@ -24,7 +24,7 @@ namespace System
     public class MissingMethodException : MissingMemberException, ISerializable
     {
         public MissingMethodException()
-            : base(SR.Arg_MissingMethodException)
+            : base(Environment.GetResourceString("Arg_MissingMethodException"))
         {
             SetErrorCode(__HResults.COR_E_MISSINGMETHOD);
         }
@@ -56,7 +56,9 @@ namespace System
                 else
                 {
                     // do any desired fixups to classname here.
-                    return SR.Format(SR.MissingMethod_Name, ClassName + "." + MemberName + (Signature != null ? " " + FormatSignature(Signature) : ""));
+                    return Environment.GetResourceString("MissingMethod_Name",
+                                                                       ClassName + "." + MemberName +
+                                                                       (Signature != null ? " " + FormatSignature(Signature) : ""));
                 }
             }
         }

@@ -231,7 +231,8 @@ namespace System.Text
                 {
                     fallbackBuffer = encoder.FallbackBuffer;
                     if (fallbackBuffer.Remaining > 0)
-                        throw new ArgumentException(SR.Format(SR.Argument_EncoderFallbackNotEmpty, this.EncodingName, encoder.Fallback.GetType()));
+                        throw new ArgumentException(Environment.GetResourceString("Argument_EncoderFallbackNotEmpty",
+                        this.EncodingName, encoder.Fallback.GetType()));
 
                     // Set our internal fallback interesting things.
                     fallbackBuffer.InternalInitialize(chars, pEnd, encoder, false);
@@ -581,7 +582,7 @@ namespace System.Text
             if (byteCount < 0)
             {
                 throw new ArgumentException(
-                        SR.Argument_ConversionOverflow);
+                        Environment.GetResourceString("Argument_ConversionOverflow"));
             }
 #endif
 
@@ -648,7 +649,8 @@ namespace System.Text
                     // We always need the fallback buffer in get bytes so we can flush any remaining ones if necessary
                     fallbackBuffer = encoder.FallbackBuffer;
                     if (fallbackBuffer.Remaining > 0 && encoder.m_throwOnOverflow)
-                        throw new ArgumentException(SR.Format(SR.Argument_EncoderFallbackNotEmpty, this.EncodingName, encoder.Fallback.GetType()));
+                        throw new ArgumentException(Environment.GetResourceString("Argument_EncoderFallbackNotEmpty",
+                        this.EncodingName, encoder.Fallback.GetType()));
 
                     // Set our internal fallback interesting things.
                     fallbackBuffer.InternalInitialize(chars, pEnd, encoder, true);
@@ -2235,7 +2237,7 @@ namespace System.Text
         {
             if (charCount < 0)
                 throw new ArgumentOutOfRangeException(nameof(charCount),
-                     SR.ArgumentOutOfRange_NeedNonNegNum);
+                     Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.EndContractBlock();
 
             // Characters would be # of characters + 1 in case left over high surrogate is ? * max fallback
@@ -2248,7 +2250,7 @@ namespace System.Text
             byteCount *= 3;
 
             if (byteCount > 0x7fffffff)
-                throw new ArgumentOutOfRangeException(nameof(charCount), SR.ArgumentOutOfRange_GetByteCountOverflow);
+                throw new ArgumentOutOfRangeException(nameof(charCount), Environment.GetResourceString("ArgumentOutOfRange_GetByteCountOverflow"));
 
             return (int)byteCount;
         }
@@ -2258,7 +2260,7 @@ namespace System.Text
         {
             if (byteCount < 0)
                 throw new ArgumentOutOfRangeException(nameof(byteCount),
-                     SR.ArgumentOutOfRange_NeedNonNegNum);
+                     Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             Contract.EndContractBlock();
 
             // Figure out our length, 1 char per input byte + 1 char if 1st byte is last byte of 4 byte surrogate pair
@@ -2272,7 +2274,7 @@ namespace System.Text
             }
 
             if (charCount > 0x7fffffff)
-                throw new ArgumentOutOfRangeException(nameof(byteCount), SR.ArgumentOutOfRange_GetCharCountOverflow);
+                throw new ArgumentOutOfRangeException(nameof(byteCount), Environment.GetResourceString("ArgumentOutOfRange_GetCharCountOverflow"));
 
             return (int)charCount;
         }

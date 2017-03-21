@@ -224,7 +224,8 @@ namespace System.Text
         {
             // Throw it, using our complete character
             throw new ArgumentException(
-                SR.Format(SR.Argument_RecursiveFallback, charRecursive), "chars");
+                Environment.GetResourceString("Argument_RecursiveFallback",
+                    charRecursive), "chars");
         }
     }
 }
