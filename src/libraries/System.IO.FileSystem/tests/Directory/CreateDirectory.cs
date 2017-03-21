@@ -220,7 +220,6 @@ namespace System.IO.Tests
 
         #region PlatformSpecific
 
-        // This is updated to be correct, need to update CoreCLR path code so this will pass on all platforms
         [Theory, MemberData(nameof(PathsWithInvalidColons))]
         [PlatformSpecific(TestPlatforms.Windows)]  // invalid colons throws ArgumentException
         public void PathWithInvalidColons_ThrowsArgumentException(string invalidPath)
