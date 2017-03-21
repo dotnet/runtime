@@ -25,7 +25,17 @@ namespace System.Diagnostics {
     public Activity SetEndTime(DateTime endTimeUtc) {throw null;}
     public Activity Start() {throw null;}
     public void Stop() {}
-    public static Activity Current {get { throw null; } private set {} }
+    public static Activity Current 
+    {
+#if ALLOW_PARTIALLY_TRUSTED_CALLERS
+        [System.Security.SecuritySafeCriticalAttribute]
+#endif
+        get { throw null; } 
+#if ALLOW_PARTIALLY_TRUSTED_CALLERS
+       [System.Security.SecuritySafeCriticalAttribute]
+#endif
+        private set {}
+    }
   }
   public abstract partial class DiagnosticSource {
     public Activity StartActivity(Activity activity, object args) {throw null;}
