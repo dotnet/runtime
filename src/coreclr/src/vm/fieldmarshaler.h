@@ -85,7 +85,12 @@ enum NStructFieldType
 //=======================================================================
 // Magic number for default struct packing size.
 //=======================================================================
+#if defined(_TARGET_X86_) && defined(UNIX_X86_ABI)
+// A double is 4-byte aligned on GCC (without -malign-dobule)
+#define DEFAULT_PACKING_SIZE 4
+#else // _TARGET_X86_ && UNIX_X86_ABI
 #define DEFAULT_PACKING_SIZE 8
+#endif // !_TARGET_X86_ || !UNIX_X86_ABI
 
 
 //=======================================================================
