@@ -124,7 +124,12 @@ BOOL UTIL_IsExecuteBitsSet( struct stat * stat_data )
     }
     
     /* Check for read permissions. */
-    if ( stat_data->st_uid == geteuid() )
+    if ( 0 == geteuid() )
+    {
+        /* The process owner is root */
+        bRetVal = TRUE;
+    }
+    else if ( stat_data->st_uid == geteuid() )
     {
         /* The process owner is the file owner as well. */
         if ( ( stat_data->st_mode & S_IXUSR ) )
