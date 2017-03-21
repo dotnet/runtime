@@ -153,36 +153,5 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.LightupApp
                 .And
                 .HaveStdOutContaining("Exception: Failed to load the lightup assembly!");
         }
-
-        /*
-         * This method is needed to workaround dotnet build not placing the host from the package
-         * graph in the build output.
-         * https://github.com/dotnet/cli/issues/2343
-         */
-        private static void ReplaceTestProjectOutputHostInTestProjectFixture(TestProjectFixture testProjectFixture)
-        {
-            var dotnet = testProjectFixture.BuiltDotnet;
-
-            var testProjectHost = testProjectFixture.TestProject.AppExe;
-            var testProjectHostPolicy = testProjectFixture.TestProject.HostPolicyDll;
-            var testProjectHostFxr = testProjectFixture.TestProject.HostFxrDll;
-
-            if (!File.Exists(testProjectHost) || !File.Exists(testProjectHostPolicy))
-            {
-                throw new Exception("host or hostpolicy does not exist in test project output. Is this a standalone app?");
-            }
-
-            var dotnetHost = Path.Combine(dotnet.GreatestVersionSharedFxPath, $"dotnet{testProjectFixture.ExeExtension}");
-            var dotnetHostPolicy = Path.Combine(dotnet.GreatestVersionSharedFxPath, $"{testProjectFixture.SharedLibraryPrefix}hostpolicy{testProjectFixture.SharedLibraryExtension}");
-            var dotnetHostFxr = Path.Combine(dotnet.GreatestVersionSharedFxPath, $"{testProjectFixture.SharedLibraryPrefix}hostfxr{testProjectFixture.SharedLibraryExtension}");
-
-            File.Copy(dotnetHost, testProjectHost, true);
-            File.Copy(dotnetHostPolicy, testProjectHostPolicy, true);
-
-            if (File.Exists(testProjectHostFxr))
-            {
-                File.Copy(dotnetHostFxr, testProjectHostFxr, true);
-            }
-        }
     }
 }
