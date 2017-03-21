@@ -17583,10 +17583,28 @@ BasicBlock* Compiler::fgAddCodeRef(BasicBlock* srcBlk, unsigned refData, Special
         // this restriction could be removed with more careful code
         // generation for BBJ_THROW (i.e. range check failed).
         //
+        // For Linux/x86, we possibly need to insert stack alignment adjustment
+        // before the first stack argument pushed for every call. But we
+        // don't know what the stack alignment adjustment will be when
+        // we morph a tree that calls fgAddCodeRef(), so the stack depth
+        // number will be incorrect. For now, simply force all functions with
+        // these helpers to have EBP frames. It might be possible to make
+        // this less conservative. E.g., for top-level (not nested) calls
+        // without stack args, the stack pointer hasn't changed and stack
+        // depth will be known to be zero. Or, figure out a way to update
+        // or generate all required helpers after all stack alignment
+        // has been added, and the stack level at each call to fgAddCodeRef()
+        // is known, or can be recalculated.
+        CLANG_FORMAT_COMMENT_ANCHOR;
+
+#if defined(UNIX_X86_ABI)
+        codeGen->setFrameRequired(true);
+#else  // !defined(UNIX_X86_ABI)
         if (add->acdStkLvl != stkDepth)
         {
             codeGen->setFrameRequired(true);
         }
+#endif // !defined(UNIX_X86_ABI)
 #endif // _TARGET_X86_
 
         return add->acdDstBlk;
