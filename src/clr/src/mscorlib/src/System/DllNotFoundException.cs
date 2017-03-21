@@ -21,7 +21,7 @@ namespace System
     public class DllNotFoundException : TypeLoadException
     {
         public DllNotFoundException()
-            : base(SR.Arg_DllNotFoundException)
+            : base(Environment.GetResourceString("Arg_DllNotFoundException"))
         {
             SetErrorCode(__HResults.COR_E_DLLNOTFOUND);
         }

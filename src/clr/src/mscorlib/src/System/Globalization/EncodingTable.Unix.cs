@@ -21,7 +21,7 @@ namespace System.Globalization
                 CodePageDataItem dataItem = s_encodingDataTableItems[i];
 
                 arrayEncodingInfo[i] = new EncodingInfo(dataItem.CodePage, dataItem.WebName,
-                    SR.GetResourceString(dataItem.DisplayNameResourceKey));
+                    Environment.GetResourceString(dataItem.DisplayNameResourceKey));
             }
 
             return arrayEncodingInfo;
@@ -45,7 +45,7 @@ namespace System.Globalization
             throw new ArgumentException(
                 string.Format(
                     CultureInfo.CurrentCulture,
-                    SR.Argument_EncodingNotSupported, name), nameof(name));
+                    Environment.GetResourceString("Argument_EncodingNotSupported"), name), nameof(name));
         }
 
         internal static CodePageDataItem GetCodePageDataItem(int codepage)

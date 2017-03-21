@@ -30,7 +30,7 @@ namespace System.Reflection
 
         // private constructor.  This is not called.
         private ReflectionTypeLoadException()
-            : base(SR.ReflectionTypeLoad_LoadFailed)
+            : base(Environment.GetResourceString("ReflectionTypeLoad_LoadFailed"))
         {
             SetErrorCode(__HResults.COR_E_REFLECTIONTYPELOAD);
         }
