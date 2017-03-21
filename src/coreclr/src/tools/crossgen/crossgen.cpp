@@ -108,6 +108,7 @@ void PrintUsageHelper()
        W("\n")
        W("    /? or /help          - Display this screen\n")
        W("    /nologo              - Prevents displaying the logo\n")
+       W("    /silent              - Do not display completion message\n")
        W("    @response.rsp        - Process command line arguments from specified\n")
        W("                           response file\n")
        W("    /partialtrust        - Assembly will be run in a partial trust domain.\n")
@@ -497,6 +498,10 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
         else if (MatchParameter(*argv, W("nologo")))
         {
             fDisplayLogo = false;
+        }
+        else if (MatchParameter(*argv, W("silent")))
+        {
+            dwFlags |= NGENWORKER_FLAGS_SILENT;
         }
         else if (MatchParameter(*argv, W("Tuning")))
         {

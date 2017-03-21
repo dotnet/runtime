@@ -105,7 +105,7 @@ STDAPI NGenWorker(LPCWSTR pwzFilename, DWORD dwFlags, LPCWSTR pwzPlatformAssembl
         ngo.fDebug = false;
         ngo.fDebugOpt = false;
         ngo.fProf = false;
-        ngo.fSilent = false;
+        ngo.fSilent = (dwFlags & NGENWORKER_FLAGS_SILENT) != 0;
         ngo.lpszExecutableFileName = pwzFilename;
 
         // V2 (Whidbey)
