@@ -946,11 +946,6 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
             GenTreePutArgStk(GT_PUTARG_STK, type, arg, info->slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(info->numSlots),
                              call->IsFastTailCall(), call);
 
-#if defined(UNIX_X86_ABI)
-        assert((info->padStkAlign > 0 && info->numSlots > 0) || (info->padStkAlign == 0));
-        putArg->AsPutArgStk()->setArgPadding(info->padStkAlign);
-#endif
-
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
         // If the ArgTabEntry indicates that this arg is a struct
         // get and store the number of slots that are references.

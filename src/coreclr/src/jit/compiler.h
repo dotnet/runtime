@@ -1194,11 +1194,6 @@ struct fgArgTabEntry
     unsigned alignment;  // 1 or 2 (slots/registers)
     unsigned lateArgInx; // index into gtCallLateArgs list
     unsigned tmpNum;     // the LclVar number if we had to force evaluation of this arg
-#if defined(UNIX_X86_ABI)
-    unsigned padStkAlign; // Count of number of padding slots for stack alignment. For each Call, only the first
-                          // argument may have a value to emit "sub esp, n" to adjust the stack before pushing
-                          // the argument.
-#endif
 
     bool isSplit : 1;       // True when this argument is split between the registers and OutArg area
     bool needTmp : 1;       // True when we force this argument's evaluation into a temp LclVar
@@ -1276,9 +1271,14 @@ class fgArgInfo
     unsigned     argCount;    // Updatable arg count value
     unsigned     nextSlotNum; // Updatable slot count value
     unsigned     stkLevel;    // Stack depth when we make this call (for x86)
+
 #if defined(UNIX_X86_ABI)
-    unsigned padStkAlign; // Count of number of padding slots for stack alignment. This value is used to turn back
-                          // stack pointer before it was adjusted after each Call
+    bool     alignmentDone; // Updateable flag, set to 'true' after we've done any required alignment.
+    unsigned stkSizeBytes;  // Size of stack used by this call, in bytes. Calculated during fgMorphArgs().
+    unsigned padStkAlign;   // Stack alignment in bytes required before arguments are pushed for this call.
+                            // Computed dynamically during codegen, based on stkSizeBytes and the current
+                            // stack level (genStackLevel) when the first stack adjustment is made for
+                            // this call.
 #endif
 
 #if FEATURE_FIXED_OUT_ARGS
@@ -1333,10 +1333,6 @@ public:
 
     void ArgsComplete();
 
-#if defined(UNIX_X86_ABI)
-    void ArgsAlignPadding();
-#endif
-
     void SortArgs();
 
     void EvalArgsToTemps();
@@ -1356,12 +1352,6 @@ public:
     {
         return nextSlotNum;
     }
-#if defined(UNIX_X86_ABI)
-    unsigned GetPadStackAlign()
-    {
-        return padStkAlign;
-    }
-#endif
     bool HasRegArgs()
     {
         return hasRegArgs;
@@ -1384,6 +1374,40 @@ public:
         outArgSize = newVal;
     }
 #endif // FEATURE_FIXED_OUT_ARGS
+
+    void ComputeStackAlignment(unsigned curStackLevelInBytes)
+    {
+#if defined(UNIX_X86_ABI)
+        padStkAlign = AlignmentPad(curStackLevelInBytes, STACK_ALIGN);
+#endif // defined(UNIX_X86_ABI)
+    }
+
+    void SetStkSizeBytes(unsigned newStkSizeBytes)
+    {
+#if defined(UNIX_X86_ABI)
+        stkSizeBytes = newStkSizeBytes;
+#endif // defined(UNIX_X86_ABI)
+    }
+
+#if defined(UNIX_X86_ABI)
+    unsigned GetStkAlign()
+    {
+        return padStkAlign;
+    }
+    unsigned GetStkSizeBytes() const
+    {
+        return stkSizeBytes;
+    }
+    bool IsStkAlignmentDone() const
+    {
+        return alignmentDone;
+    }
+    void SetStkAlignmentDone()
+    {
+        alignmentDone = true;
+    }
+#endif // defined(UNIX_X86_ABI)
+
     // Get the late arg for arg at position argIndex.  Caller must ensure this position has a late arg.
     GenTreePtr GetLateArg(unsigned argIndex);
 };
