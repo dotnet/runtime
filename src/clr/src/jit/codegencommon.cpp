@@ -10368,6 +10368,8 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
 
     ScopedSetVariable<bool> _setGeneratingProlog(&compiler->compGeneratingProlog, true);
 
+    gcInfo.gcResetForBB();
+
     compiler->unwindBegProlog();
 
     // This is the end of the OS-reported prolog for purposes of unwinding
