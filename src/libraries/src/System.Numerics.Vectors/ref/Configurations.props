@@ -8,6 +8,7 @@
       netcoreapp;
       uap;
       netfx;
+      netstandard;
       net46;
       $(PackageConfigurations);
     </BuildConfigurations>
