@@ -540,7 +540,7 @@ namespace System.IO
             return sb.ToString();
         }
         
-        internal virtual int ReadBuffer() {
+        internal int ReadBuffer() {
             charLen = 0;
             charPos = 0;
 
@@ -1254,12 +1254,6 @@ namespace System.IO
             {
                 return String.Empty;
             }
-
-            internal override int ReadBuffer() 
-            {
-                return 0;
-            }
-
         }
     }
 }
