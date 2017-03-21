@@ -55,7 +55,7 @@ namespace System.Reflection
                 // Not all parameters have tokens. Parameters may have no token 
                 // if they have no name and no attributes.
                 if (cParamDefs > sigArgCount + 1 /* return type */)
-                    throw new BadImageFormatException(Environment.GetResourceString("BadImageFormat_ParameterSignatureMismatch"));
+                    throw new BadImageFormatException(SR.BadImageFormat_ParameterSignatureMismatch);
 
                 for (int i = 0; i < cParamDefs; i++)
                 {
@@ -71,7 +71,7 @@ namespace System.Reflection
                     {
                         // more than one return parameter?
                         if (returnParameter != null)
-                            throw new BadImageFormatException(Environment.GetResourceString("BadImageFormat_ParameterSignatureMismatch"));
+                            throw new BadImageFormatException(SR.BadImageFormat_ParameterSignatureMismatch);
 
                         returnParameter = new RuntimeParameterInfo(sig, scope, tkParamDef, position, attr, member);
                     }
@@ -79,7 +79,7 @@ namespace System.Reflection
                     {
                         // position beyong sigArgCount?
                         if (position >= sigArgCount)
-                            throw new BadImageFormatException(Environment.GetResourceString("BadImageFormat_ParameterSignatureMismatch"));
+                            throw new BadImageFormatException(SR.BadImageFormat_ParameterSignatureMismatch);
 
                         args[position] = new RuntimeParameterInfo(sig, scope, tkParamDef, position, attr, member);
                     }
@@ -496,7 +496,7 @@ namespace System.Reflection
             RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
             if (attributeRuntimeType == null)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), nameof(attributeType));
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
         }
@@ -513,7 +513,7 @@ namespace System.Reflection
             RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
             if (attributeRuntimeType == null)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), nameof(attributeType));
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.IsDefined(this, attributeRuntimeType);
         }

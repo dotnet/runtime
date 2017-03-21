@@ -32,7 +32,7 @@ namespace System.Runtime.Serialization
             set
             {
                 if (value < 1)
-                    throw new ArgumentException(Environment.GetResourceString("Serialization_OptionalFieldVersionValue"));
+                    throw new ArgumentException(SR.Serialization_OptionalFieldVersionValue);
                 Contract.EndContractBlock();
                 versionAdded = value;
             }

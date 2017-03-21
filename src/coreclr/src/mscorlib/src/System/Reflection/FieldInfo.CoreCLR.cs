@@ -11,14 +11,14 @@ namespace System.Reflection
         public static FieldInfo GetFieldFromHandle(RuntimeFieldHandle handle)
         {
             if (handle.IsNullHandle())
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidHandle"), nameof(handle));
+                throw new ArgumentException(SR.Argument_InvalidHandle, nameof(handle));
 
             FieldInfo f = RuntimeType.GetFieldInfo(handle.GetRuntimeFieldInfo());
 
             Type declaringType = f.DeclaringType;
             if (declaringType != null && declaringType.IsGenericType)
                 throw new ArgumentException(String.Format(
-                    CultureInfo.CurrentCulture, Environment.GetResourceString("Argument_FieldDeclaringTypeGeneric"),
+                    CultureInfo.CurrentCulture, SR.Argument_FieldDeclaringTypeGeneric,
                     f.Name, declaringType.GetGenericTypeDefinition()));
 
             return f;
@@ -27,7 +27,7 @@ namespace System.Reflection
         public static FieldInfo GetFieldFromHandle(RuntimeFieldHandle handle, RuntimeTypeHandle declaringType)
         {
             if (handle.IsNullHandle())
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidHandle"));
+                throw new ArgumentException(SR.Argument_InvalidHandle);
 
             return RuntimeType.GetFieldInfo(declaringType.GetRuntimeType(), handle.GetRuntimeFieldInfo());
         }

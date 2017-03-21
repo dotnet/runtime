@@ -45,7 +45,7 @@ namespace System.Text
                     throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, nameof(strInput));
 
                 case Interop.Errors.ERROR_NOT_ENOUGH_MEMORY:
-                    throw new OutOfMemoryException(SR.Arg_OutOfMemoryException);
+                    throw new OutOfMemoryException();
 
                 default:
                     throw new InvalidOperationException(SR.Format(SR.UnknownError_Num, lastError));
@@ -83,7 +83,7 @@ namespace System.Text
                 // a trivial math function...
                 // Can't really be Out of Memory, but just in case:
                 if (lastError == Interop.Errors.ERROR_NOT_ENOUGH_MEMORY)
-                    throw new OutOfMemoryException(SR.Arg_OutOfMemoryException);
+                    throw new OutOfMemoryException();
 
                 // Who knows what happened?  Not us!
                 throw new InvalidOperationException(SR.Format(SR.UnknownError_Num, lastError));
@@ -123,7 +123,7 @@ namespace System.Text
                         throw new ArgumentException(SR.Argument_InvalidCharSequenceNoIndex, nameof(strInput));
 
                     case Interop.Errors.ERROR_NOT_ENOUGH_MEMORY:
-                        throw new OutOfMemoryException(SR.Arg_OutOfMemoryException);
+                        throw new OutOfMemoryException();
 
                     default:
                         // We shouldn't get here...

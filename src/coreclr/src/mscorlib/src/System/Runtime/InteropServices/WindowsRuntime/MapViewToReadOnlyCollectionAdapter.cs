@@ -46,7 +46,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
                 if (((uint)Int32.MaxValue) < size)
                 {
-                    throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_CollectionBackingDictionaryTooLarge"));
+                    throw new InvalidOperationException(SR.InvalidOperation_CollectionBackingDictionaryTooLarge);
                 }
 
                 return (int)size;
@@ -58,7 +58,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
                 if (((uint)Int32.MaxValue) < size)
                 {
-                    throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_CollectionBackingListTooLarge"));
+                    throw new InvalidOperationException(SR.InvalidOperation_CollectionBackingListTooLarge);
                 }
 
                 return (int)size;

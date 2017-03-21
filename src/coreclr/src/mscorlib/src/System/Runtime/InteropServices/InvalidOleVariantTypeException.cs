@@ -20,7 +20,7 @@ namespace System.Runtime.InteropServices
     public class InvalidOleVariantTypeException : SystemException
     {
         public InvalidOleVariantTypeException()
-            : base(Environment.GetResourceString("Arg_InvalidOleVariantTypeException"))
+            : base(SR.Arg_InvalidOleVariantTypeException)
         {
             SetErrorCode(__HResults.COR_E_INVALIDOLEVARIANTTYPE);
         }

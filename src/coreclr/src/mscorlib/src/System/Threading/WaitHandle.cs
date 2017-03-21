@@ -153,7 +153,7 @@ namespace System.Threading
         {
             if (millisecondsTimeout < -1)
             {
-                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
+                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             }
             Contract.EndContractBlock();
             return WaitOne((long)millisecondsTimeout, exitContext);
@@ -164,7 +164,7 @@ namespace System.Threading
             long tm = (long)timeout.TotalMilliseconds;
             if (-1 > tm || (long)Int32.MaxValue < tm)
             {
-                throw new ArgumentOutOfRangeException(nameof(timeout), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
+                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             }
             return WaitOne(tm, exitContext);
         }
@@ -195,7 +195,7 @@ namespace System.Threading
         {
             if (waitableSafeHandle == null)
             {
-                throw new ObjectDisposedException(null, Environment.GetResourceString("ObjectDisposed_Generic"));
+                throw new ObjectDisposedException(null, SR.ObjectDisposed_Generic);
             }
             Contract.EndContractBlock();
             int ret = WaitOneNative(waitableSafeHandle, (uint)millisecondsTimeout, hasThreadAffinity, exitContext);
@@ -216,7 +216,7 @@ namespace System.Threading
             // This is required to support the Wait which FAS needs (otherwise recursive dependency comes in)
             if (safeWaitHandle == null)
             {
-                throw new ObjectDisposedException(null, Environment.GetResourceString("ObjectDisposed_Generic"));
+                throw new ObjectDisposedException(null, SR.ObjectDisposed_Generic);
             }
             Contract.EndContractBlock();
 
@@ -248,7 +248,7 @@ namespace System.Threading
         {
             if (waitHandles == null)
             {
-                throw new ArgumentNullException(nameof(waitHandles), Environment.GetResourceString("ArgumentNull_Waithandles"));
+                throw new ArgumentNullException(nameof(waitHandles), SR.ArgumentNull_Waithandles);
             }
             if (waitHandles.Length == 0)
             {
@@ -261,15 +261,15 @@ namespace System.Threading
                 // in CoreCLR, and ArgumentNullException in the desktop CLR.  This is ugly, but so is breaking
                 // user code.
                 //
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyWaithandleArray"));
+                throw new ArgumentException(SR.Argument_EmptyWaithandleArray);
             }
             if (waitHandles.Length > MAX_WAITHANDLES)
             {
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_MaxWaitHandles"));
+                throw new NotSupportedException(SR.NotSupported_MaxWaitHandles);
             }
             if (-1 > millisecondsTimeout)
             {
-                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
+                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             }
             Contract.EndContractBlock();
             WaitHandle[] internalWaitHandles = new WaitHandle[waitHandles.Length];
@@ -278,7 +278,7 @@ namespace System.Threading
                 WaitHandle waitHandle = waitHandles[i];
 
                 if (waitHandle == null)
-                    throw new ArgumentNullException("waitHandles[" + i + "]", Environment.GetResourceString("ArgumentNull_ArrayElement"));
+                    throw new ArgumentNullException("waitHandles[" + i + "]", SR.ArgumentNull_ArrayElement);
 
                 internalWaitHandles[i] = waitHandle;
             }
@@ -312,7 +312,7 @@ namespace System.Threading
             long tm = (long)timeout.TotalMilliseconds;
             if (-1 > tm || (long)Int32.MaxValue < tm)
             {
-                throw new ArgumentOutOfRangeException(nameof(timeout), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
+                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             }
             return WaitAll(waitHandles, (int)tm, exitContext);
         }
@@ -350,19 +350,19 @@ namespace System.Threading
         {
             if (waitHandles == null)
             {
-                throw new ArgumentNullException(nameof(waitHandles), Environment.GetResourceString("ArgumentNull_Waithandles"));
+                throw new ArgumentNullException(nameof(waitHandles), SR.ArgumentNull_Waithandles);
             }
             if (waitHandles.Length == 0)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyWaithandleArray"));
+                throw new ArgumentException(SR.Argument_EmptyWaithandleArray);
             }
             if (MAX_WAITHANDLES < waitHandles.Length)
             {
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_MaxWaitHandles"));
+                throw new NotSupportedException(SR.NotSupported_MaxWaitHandles);
             }
             if (-1 > millisecondsTimeout)
             {
-                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
+                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             }
             Contract.EndContractBlock();
             WaitHandle[] internalWaitHandles = new WaitHandle[waitHandles.Length];
@@ -371,7 +371,7 @@ namespace System.Threading
                 WaitHandle waitHandle = waitHandles[i];
 
                 if (waitHandle == null)
-                    throw new ArgumentNullException("waitHandles[" + i + "]", Environment.GetResourceString("ArgumentNull_ArrayElement"));
+                    throw new ArgumentNullException("waitHandles[" + i + "]", SR.ArgumentNull_ArrayElement);
 
                 internalWaitHandles[i] = waitHandle;
             }
@@ -409,7 +409,7 @@ namespace System.Threading
             long tm = (long)timeout.TotalMilliseconds;
             if (-1 > tm || (long)Int32.MaxValue < tm)
             {
-                throw new ArgumentOutOfRangeException(nameof(timeout), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
+                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             }
             return WaitAny(waitHandles, (int)tm, exitContext);
         }
@@ -466,7 +466,7 @@ namespace System.Threading
             long tm = (long)timeout.TotalMilliseconds;
             if (-1 > tm || (long)Int32.MaxValue < tm)
             {
-                throw new ArgumentOutOfRangeException(nameof(timeout), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
+                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             }
             return SignalAndWait(toSignal, toWaitOn, (int)tm, exitContext);
 #endif
@@ -492,7 +492,7 @@ namespace System.Threading
             }
             if (-1 > millisecondsTimeout)
             {
-                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
+                throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             }
             Contract.EndContractBlock();
 
@@ -507,7 +507,7 @@ namespace System.Threading
 
             if (ERROR_TOO_MANY_POSTS == ret)
             {
-                throw new InvalidOperationException(Environment.GetResourceString("Threading.WaitHandleTooManyPosts"));
+                throw new InvalidOperationException(SR.Threading_WaitHandleTooManyPosts);
             }
 
             //Object was signaled

@@ -203,9 +203,9 @@ namespace System.Collections
         public Hashtable(int capacity, float loadFactor)
         {
             if (capacity < 0)
-                throw new ArgumentOutOfRangeException(nameof(capacity), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (!(loadFactor >= 0.1f && loadFactor <= 1.0f))
-                throw new ArgumentOutOfRangeException(nameof(loadFactor), Environment.GetResourceString("ArgumentOutOfRange_HashtableLoadFactor", .1, 1.0));
+                throw new ArgumentOutOfRangeException(nameof(loadFactor), SR.Format(SR.ArgumentOutOfRange_HashtableLoadFactor, .1, 1.0));
             Contract.EndContractBlock();
 
             // Based on perf work, .72 is the optimal load factor for this table.  
@@ -213,7 +213,7 @@ namespace System.Collections
 
             double rawsize = capacity / this.loadFactor;
             if (rawsize > Int32.MaxValue)
-                throw new ArgumentException(Environment.GetResourceString("Arg_HTCapacityOverflow"));
+                throw new ArgumentException(SR.Arg_HTCapacityOverflow);
 
             // Avoid awfully small sizes
             int hashsize = (rawsize > InitialSize) ? HashHelpers.GetPrime((int)rawsize) : InitialSize;
@@ -343,7 +343,7 @@ namespace System.Collections
         {
             if (key == null)
             {
-                throw new ArgumentNullException(nameof(key), Environment.GetResourceString("ArgumentNull_Key"));
+                throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
             }
             Contract.EndContractBlock();
 
@@ -415,13 +415,13 @@ namespace System.Collections
         public virtual void CopyTo(Array array, int arrayIndex)
         {
             if (array == null)
-                throw new ArgumentNullException(nameof(array), Environment.GetResourceString("ArgumentNull_Array"));
+                throw new ArgumentNullException(nameof(array), SR.ArgumentNull_Array);
             if (array.Rank != 1)
-                throw new ArgumentException(Environment.GetResourceString("Arg_RankMultiDimNotSupported"));
+                throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
             if (arrayIndex < 0)
-                throw new ArgumentOutOfRangeException(nameof(arrayIndex), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(arrayIndex), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (array.Length - arrayIndex < Count)
-                throw new ArgumentException(Environment.GetResourceString("Arg_ArrayPlusOffTooSmall"));
+                throw new ArgumentException(SR.Arg_ArrayPlusOffTooSmall);
             Contract.EndContractBlock();
             CopyEntries(array, arrayIndex);
         }
@@ -455,7 +455,7 @@ namespace System.Collections
             {
                 if (key == null)
                 {
-                    throw new ArgumentNullException(nameof(key), Environment.GetResourceString("ArgumentNull_Key"));
+                    throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
                 }
                 Contract.EndContractBlock();
 
@@ -698,7 +698,7 @@ namespace System.Collections
         {
             if (key == null)
             {
-                throw new ArgumentNullException(nameof(key), Environment.GetResourceString("ArgumentNull_Key"));
+                throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
             }
             Contract.EndContractBlock();
             if (count >= loadsize)
@@ -760,7 +760,7 @@ namespace System.Collections
                 {
                     if (add)
                     {
-                        throw new ArgumentException(Environment.GetResourceString("Argument_AddingDuplicate__", buckets[bucketNumber].key, key));
+                        throw new ArgumentException(SR.Format(SR.Argument_AddingDuplicate__, buckets[bucketNumber].key, key));
                     }
                     isWriterInProgress = true;
                     buckets[bucketNumber].val = nvalue;
@@ -804,7 +804,7 @@ namespace System.Collections
             // Then verify that our double hash function (h2, described at top of file)
             // meets the requirements described above. You should never see this assert.
             Debug.Assert(false, "hash table insert failed!  Load factor too high, or our double hashing function is incorrect.");
-            throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_HashInsertFailed"));
+            throw new InvalidOperationException(SR.InvalidOperation_HashInsertFailed);
         }
 
         private void putEntry(bucket[] newBuckets, Object key, Object nvalue, int hashcode)
@@ -841,7 +841,7 @@ namespace System.Collections
         {
             if (key == null)
             {
-                throw new ArgumentNullException(nameof(key), Environment.GetResourceString("ArgumentNull_Key"));
+                throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
             }
             Contract.EndContractBlock();
             Debug.Assert(!isWriterInProgress, "Race condition detected in usages of Hashtable - multiple threads appear to be writing to a Hashtable instance simultaneously!  Don't do that - use Hashtable.Synchronized.");
@@ -880,7 +880,7 @@ namespace System.Collections
                 bn = (int)(((long)bn + incr) % (uint)buckets.Length);
             } while (b.hash_coll < 0 && ++ntry < buckets.Length);
 
-            //throw new ArgumentException(Environment.GetResourceString("Arg_RemoveArgNotFound"));
+            //throw new ArgumentException(SR.Arg_RemoveArgNotFound);
         }
 
         // Returns the object to synchronize on for this hash table.
@@ -975,7 +975,7 @@ namespace System.Collections
                 // Explicitly check to see if anyone changed the Hashtable while we 
                 // were serializing it.  That's a race condition in their code.
                 if (version != oldVersion)
-                    throw new InvalidOperationException(Environment.GetResourceString(ResId.InvalidOperation_EnumFailedVersion));
+                    throw new InvalidOperationException(SR.GetResourceString(ResId.InvalidOperation_EnumFailedVersion));
             }
         }
 
@@ -995,7 +995,7 @@ namespace System.Collections
 
             if (siInfo == null)
             {
-                throw new SerializationException(Environment.GetResourceString("Serialization_InvalidOnDeser"));
+                throw new SerializationException(SR.Serialization_InvalidOnDeser);
             }
 
             int hashsize = 0;
@@ -1052,21 +1052,21 @@ namespace System.Collections
 
             if (serKeys == null)
             {
-                throw new SerializationException(Environment.GetResourceString("Serialization_MissingKeys"));
+                throw new SerializationException(SR.Serialization_MissingKeys);
             }
             if (serValues == null)
             {
-                throw new SerializationException(Environment.GetResourceString("Serialization_MissingValues"));
+                throw new SerializationException(SR.Serialization_MissingValues);
             }
             if (serKeys.Length != serValues.Length)
             {
-                throw new SerializationException(Environment.GetResourceString("Serialization_KeyValueDifferentSizes"));
+                throw new SerializationException(SR.Serialization_KeyValueDifferentSizes);
             }
             for (int i = 0; i < serKeys.Length; i++)
             {
                 if (serKeys[i] == null)
                 {
-                    throw new SerializationException(Environment.GetResourceString("Serialization_NullKey"));
+                    throw new SerializationException(SR.Serialization_NullKey);
                 }
                 Insert(serKeys[i], serValues[i], true);
             }
@@ -1094,12 +1094,12 @@ namespace System.Collections
                 if (array == null)
                     throw new ArgumentNullException(nameof(array));
                 if (array.Rank != 1)
-                    throw new ArgumentException(Environment.GetResourceString("Arg_RankMultiDimNotSupported"));
+                    throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
                 if (arrayIndex < 0)
-                    throw new ArgumentOutOfRangeException(nameof(arrayIndex), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                    throw new ArgumentOutOfRangeException(nameof(arrayIndex), SR.ArgumentOutOfRange_NeedNonNegNum);
                 Contract.EndContractBlock();
                 if (array.Length - arrayIndex < _hashtable.count)
-                    throw new ArgumentException(Environment.GetResourceString("Arg_ArrayPlusOffTooSmall"));
+                    throw new ArgumentException(SR.Arg_ArrayPlusOffTooSmall);
                 _hashtable.CopyKeys(array, arrayIndex);
             }
 
@@ -1141,12 +1141,12 @@ namespace System.Collections
                 if (array == null)
                     throw new ArgumentNullException(nameof(array));
                 if (array.Rank != 1)
-                    throw new ArgumentException(Environment.GetResourceString("Arg_RankMultiDimNotSupported"));
+                    throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
                 if (arrayIndex < 0)
-                    throw new ArgumentOutOfRangeException(nameof(arrayIndex), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                    throw new ArgumentOutOfRangeException(nameof(arrayIndex), SR.ArgumentOutOfRange_NeedNonNegNum);
                 Contract.EndContractBlock();
                 if (array.Length - arrayIndex < _hashtable.count)
-                    throw new ArgumentException(Environment.GetResourceString("Arg_ArrayPlusOffTooSmall"));
+                    throw new ArgumentException(SR.Arg_ArrayPlusOffTooSmall);
                 _hashtable.CopyValues(array, arrayIndex);
             }
 
@@ -1273,7 +1273,7 @@ namespace System.Collections
             {
                 if (key == null)
                 {
-                    throw new ArgumentNullException(nameof(key), Environment.GetResourceString("ArgumentNull_Key"));
+                    throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
                 }
                 Contract.EndContractBlock();
                 return _table.ContainsKey(key);
@@ -1386,14 +1386,14 @@ namespace System.Collections
             {
                 get
                 {
-                    if (current == false) throw new InvalidOperationException(Environment.GetResourceString(ResId.InvalidOperation_EnumNotStarted));
+                    if (current == false) throw new InvalidOperationException(SR.GetResourceString(ResId.InvalidOperation_EnumNotStarted));
                     return currentKey;
                 }
             }
 
             public virtual bool MoveNext()
             {
-                if (version != hashtable.version) throw new InvalidOperationException(Environment.GetResourceString(ResId.InvalidOperation_EnumFailedVersion));
+                if (version != hashtable.version) throw new InvalidOperationException(SR.GetResourceString(ResId.InvalidOperation_EnumFailedVersion));
                 while (bucket > 0)
                 {
                     bucket--;
@@ -1414,7 +1414,7 @@ namespace System.Collections
             {
                 get
                 {
-                    if (current == false) throw new InvalidOperationException(Environment.GetResourceString(ResId.InvalidOperation_EnumOpCantHappen));
+                    if (current == false) throw new InvalidOperationException(SR.GetResourceString(ResId.InvalidOperation_EnumOpCantHappen));
                     return new DictionaryEntry(currentKey, currentValue);
                 }
             }
@@ -1424,7 +1424,7 @@ namespace System.Collections
             {
                 get
                 {
-                    if (current == false) throw new InvalidOperationException(Environment.GetResourceString(ResId.InvalidOperation_EnumOpCantHappen));
+                    if (current == false) throw new InvalidOperationException(SR.GetResourceString(ResId.InvalidOperation_EnumOpCantHappen));
 
                     if (getObjectRetType == Keys)
                         return currentKey;
@@ -1439,14 +1439,14 @@ namespace System.Collections
             {
                 get
                 {
-                    if (current == false) throw new InvalidOperationException(Environment.GetResourceString(ResId.InvalidOperation_EnumOpCantHappen));
+                    if (current == false) throw new InvalidOperationException(SR.GetResourceString(ResId.InvalidOperation_EnumOpCantHappen));
                     return currentValue;
                 }
             }
 
             public virtual void Reset()
             {
-                if (version != hashtable.version) throw new InvalidOperationException(Environment.GetResourceString(ResId.InvalidOperation_EnumFailedVersion));
+                if (version != hashtable.version) throw new InvalidOperationException(SR.GetResourceString(ResId.InvalidOperation_EnumFailedVersion));
                 current = false;
                 bucket = hashtable.buckets.Length;
                 currentKey = null;
@@ -1523,7 +1523,7 @@ namespace System.Collections
         public static int GetPrime(int min)
         {
             if (min < 0)
-                throw new ArgumentException(Environment.GetResourceString("Arg_HTCapacityOverflow"));
+                throw new ArgumentException(SR.Arg_HTCapacityOverflow);
             Contract.EndContractBlock();
 
             for (int i = 0; i < primes.Length; i++)

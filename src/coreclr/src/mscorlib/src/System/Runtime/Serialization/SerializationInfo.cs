@@ -331,7 +331,7 @@ namespace System.Runtime.Serialization
             if (m_nameToIndex.ContainsKey(name))
             {
                 BCLDebug.Trace("SER", "[SerializationInfo.AddValue]Tried to add ", name, " twice to the SI.");
-                throw new SerializationException(Environment.GetResourceString("Serialization_SameNameTwice"));
+                throw new SerializationException(SR.Serialization_SameNameTwice);
             }
             m_nameToIndex.Add(name, m_currMember);
 
@@ -415,7 +415,7 @@ namespace System.Runtime.Serialization
             int index = FindElement(name);
             if (index == -1)
             {
-                throw new SerializationException(Environment.GetResourceString("Serialization_NotFound", name));
+                throw new SerializationException(SR.Format(SR.Serialization_NotFound, name));
             }
 
             Debug.Assert(index < m_data.Length, "[SerializationInfo.GetElement]index<m_data.Length");
@@ -458,7 +458,7 @@ namespace System.Runtime.Serialization
 
             RuntimeType rt = type as RuntimeType;
             if (rt == null)
-                throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeType"));
+                throw new ArgumentException(SR.Argument_MustBeRuntimeType);
 
             Type foundType;
             Object value;

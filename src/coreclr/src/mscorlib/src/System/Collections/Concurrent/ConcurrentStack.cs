@@ -135,7 +135,7 @@ namespace System.Collections.Concurrent
         {
             get
             {
-                throw new NotSupportedException(Environment.GetResourceString("ConcurrentCollection_SyncRoot_NotSupported"));
+                throw new NotSupportedException(SR.ConcurrentCollection_SyncRoot_NotSupported);
             }
         }
 

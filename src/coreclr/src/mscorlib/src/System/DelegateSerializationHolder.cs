@@ -28,10 +28,10 @@ namespace System
             Type c = delegateType.BaseType;
 
             if (c == null || (c != typeof(Delegate) && c != typeof(MulticastDelegate)))
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeDelegate"), "type");
+                throw new ArgumentException(SR.Arg_MustBeDelegate, "type");
 
             if (method.DeclaringType == null)
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_GlobalMethodSerialization"));
+                throw new NotSupportedException(SR.NotSupported_GlobalMethodSerialization);
 
             DelegateEntry de = new DelegateEntry(delegateType.FullName, delegateType.Module.Assembly.FullName, target,
                 method.ReflectedType.Module.Assembly.FullName, method.ReflectedType.FullName, method.Name);
@@ -170,7 +170,7 @@ namespace System
         private void ThrowInsufficientState(string field)
         {
             throw new SerializationException(
-                Environment.GetResourceString("Serialization_InsufficientDeserializationState", field));
+                SR.Format(SR.Serialization_InsufficientDeserializationState, field));
         }
 
         private DelegateEntry OldDelegateWireFormat(SerializationInfo info, StreamingContext context)
@@ -272,7 +272,7 @@ namespace System
         #region ISerializable
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_DelegateSerHolderSerial"));
+            throw new NotSupportedException(SR.NotSupported_DelegateSerHolderSerial);
         }
         #endregion
     }

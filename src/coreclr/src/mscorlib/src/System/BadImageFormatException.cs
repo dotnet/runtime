@@ -26,7 +26,7 @@ namespace System
         private String _fusionLog;  // fusion log (when applicable)
 
         public BadImageFormatException()
-            : base(Environment.GetResourceString("Arg_BadImageFormatException"))
+            : base(SR.Arg_BadImageFormatException)
         {
             SetErrorCode(__HResults.COR_E_BADIMAGEFORMAT);
         }
@@ -71,7 +71,7 @@ namespace System
             {
                 if ((_fileName == null) &&
                     (HResult == System.__HResults.COR_E_EXCEPTION))
-                    _message = Environment.GetResourceString("Arg_BadImageFormatException");
+                    _message = SR.Arg_BadImageFormatException;
 
                 else
                     _message = FileLoadException.FormatFileLoadExceptionMessage(_fileName, HResult);
@@ -88,7 +88,7 @@ namespace System
             String s = GetType().FullName + ": " + Message;
 
             if (_fileName != null && _fileName.Length != 0)
-                s += Environment.NewLine + Environment.GetResourceString("IO.FileName_Name", _fileName);
+                s += Environment.NewLine + SR.Format(SR.IO_FileName_Name, _fileName);
 
             if (InnerException != null)
                 s = s + " ---> " + InnerException.ToString();

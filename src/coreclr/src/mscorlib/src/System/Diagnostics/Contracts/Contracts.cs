@@ -640,7 +640,7 @@ namespace System.Diagnostics.Contracts
         {
             if (fromInclusive > toExclusive)
 #if CORECLR
-                throw new ArgumentException(Environment.GetResourceString("Argument_ToExclusiveLessThanFromExclusive"));
+                throw new ArgumentException(SR.Argument_ToExclusiveLessThanFromExclusive);
 #else
                 throw new ArgumentException("fromInclusive must be less than or equal to toExclusive.");
 #endif
@@ -700,7 +700,7 @@ namespace System.Diagnostics.Contracts
         {
             if (fromInclusive > toExclusive)
 #if CORECLR
-                throw new ArgumentException(Environment.GetResourceString("Argument_ToExclusiveLessThanFromExclusive"));
+                throw new ArgumentException(SR.Argument_ToExclusiveLessThanFromExclusive);
 #else
                 throw new ArgumentException("fromInclusive must be less than or equal to toExclusive.");
 #endif

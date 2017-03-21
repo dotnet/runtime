@@ -23,7 +23,7 @@ namespace System.Reflection
     public sealed class AmbiguousMatchException : SystemException
     {
         public AmbiguousMatchException()
-            : base(Environment.GetResourceString("RFLCT.Ambiguous"))
+            : base(SR.RFLCT_Ambiguous)
         {
             SetErrorCode(__HResults.COR_E_AMBIGUOUSMATCH);
         }

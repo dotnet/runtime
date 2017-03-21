@@ -261,7 +261,7 @@ namespace System
                         // with it for "file:\\" + "\\server" and "file:\\\" + "\localpath"
                         if ((len > 8) &&
                              ((path[8] == '\\') || (path[8] == '/')))
-                            throw new ArgumentException(Environment.GetResourceString("Argument_InvalidPathChars"));
+                            throw new ArgumentException(SR.Argument_InvalidPathChars);
 
                         // file:\\\ means local path
                         else
@@ -369,7 +369,7 @@ namespace System
                     String appBase = Value[(int)LoaderInformation.ApplicationBaseValue];
 
                     if ((appBase == null) || (appBase.Length == 0))
-                        throw new MemberAccessException(Environment.GetResourceString("AppDomain_AppBaseNotSet"));
+                        throw new MemberAccessException(SR.AppDomain_AppBaseNotSet);
 
                     StringBuilder result = StringBuilderCache.Acquire();
 

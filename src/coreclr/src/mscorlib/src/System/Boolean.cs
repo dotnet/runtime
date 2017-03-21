@@ -134,7 +134,7 @@ namespace System
             }
             if (!(obj is Boolean))
             {
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeBoolean"));
+                throw new ArgumentException(SR.Arg_MustBeBoolean);
             }
 
             if (m_value == ((Boolean)obj).m_value)
@@ -174,7 +174,7 @@ namespace System
             Boolean result = false;
             if (!TryParse(value, out result))
             {
-                throw new FormatException(Environment.GetResourceString("Format_BadBoolean"));
+                throw new FormatException(SR.Format_BadBoolean);
             }
             else
             {
@@ -268,7 +268,7 @@ namespace System
         /// <internalonly/>
         char IConvertible.ToChar(IFormatProvider provider)
         {
-            throw new InvalidCastException(Environment.GetResourceString("InvalidCast_FromTo", "Boolean", "Char"));
+            throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, "Boolean", "Char"));
         }
 
         /// <internalonly/>
@@ -340,7 +340,7 @@ namespace System
         /// <internalonly/>
         DateTime IConvertible.ToDateTime(IFormatProvider provider)
         {
-            throw new InvalidCastException(Environment.GetResourceString("InvalidCast_FromTo", "Boolean", "DateTime"));
+            throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, "Boolean", "DateTime"));
         }
 
         /// <internalonly/>
