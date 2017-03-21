@@ -4752,6 +4752,8 @@ bool CodeGen::genEmitOptimizedGCWriteBarrier(GCInfo::WriteBarrierForm writeBarri
 // Produce code for a GT_CALL node
 void CodeGen::genCallInstruction(GenTreeCall* call)
 {
+    genAlignStackBeforeCall(call);
+
     gtCallTypes callType = (gtCallTypes)call->gtCallType;
 
     IL_OFFSETX ilOffset = BAD_IL_OFFSET;
@@ -5173,14 +5175,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         // clang-format on
     }
 
-#if defined(UNIX_X86_ABI)
-    // Put back the stack pointer if there was any padding for stack alignment
-    unsigned padStackAlign = call->fgArgInfo->GetPadStackAlign();
-    if (padStackAlign != 0)
-    {
-        inst_RV_IV(INS_add, REG_SPBASE, padStackAlign * TARGET_POINTER_SIZE, EA_PTRSIZE);
-    }
-#endif // UNIX_X86_ABI
+    genRemoveAlignmentAfterCall(call);
 
     // if it was a pinvoke we may have needed to get the address of a label
     if (genPendingCallLabel)
@@ -7502,7 +7497,80 @@ unsigned CodeGen::getBaseVarForPutArgStk(GenTreePtr treeNode)
     return baseVarNum;
 }
 
+//---------------------------------------------------------------------
+// genAlignStackBeforeCall: Align the stack if necessary before a call.
+//
+// Arguments:
+//    putArgStk - the putArgStk node.
+//
+void CodeGen::genAlignStackBeforeCall(GenTreePutArgStk* putArgStk)
+{
+#if defined(UNIX_X86_ABI)
+
+    genAlignStackBeforeCall(putArgStk->gtCall);
+
+#endif // UNIX_X86_ABI
+}
+
+//---------------------------------------------------------------------
+// genAlignStackBeforeCall: Align the stack if necessary before a call.
+//
+// Arguments:
+//    call - the call node.
+//
+void CodeGen::genAlignStackBeforeCall(GenTreeCall* call)
+{
+#if defined(UNIX_X86_ABI)
+
+    // Have we aligned the stack yet?
+    if (!call->fgArgInfo->IsStkAlignmentDone())
+    {
+        // We haven't done any stack alignment yet for this call.  We might need to create
+        // an alignment adjustment, even if this function itself doesn't have any stack args.
+        // This can happen if this function call is part of a nested call sequence, and the outer
+        // call has already pushed some arguments.
+
+        unsigned stkLevel = genStackLevel + call->fgArgInfo->GetStkSizeBytes();
+        call->fgArgInfo->ComputeStackAlignment(stkLevel);
+
+        unsigned padStkAlign = call->fgArgInfo->GetStkAlign();
+        if (padStkAlign != 0)
+        {
+            // Now generate the alignment
+            inst_RV_IV(INS_sub, REG_SPBASE, padStkAlign, EA_PTRSIZE);
+            AddStackLevel(padStkAlign);
+            AddNestedAlignment(padStkAlign);
+        }
+
+        call->fgArgInfo->SetStkAlignmentDone();
+    }
+
+#endif // UNIX_X86_ABI
+}
+
+//---------------------------------------------------------------------
+// genRemoveAlignmentAfterCall: After a call, remove the alignment
+// added before the call, if any.
+//
+// Arguments:
+//    call - the call node.
+//
+void CodeGen::genRemoveAlignmentAfterCall(GenTreeCall* call)
+{
+#if defined(UNIX_X86_ABI)
+    // Put back the stack pointer if there was any padding for stack alignment
+    unsigned padStkAlign = call->fgArgInfo->GetStkAlign();
+    if (padStkAlign != 0)
+    {
+        inst_RV_IV(INS_add, REG_SPBASE, padStkAlign, EA_PTRSIZE);
+        SubtractStackLevel(padStkAlign);
+        SubtractNestedAlignment(padStkAlign);
+    }
+#endif // UNIX_X86_ABI
+}
+
 #ifdef _TARGET_X86_
+
 //---------------------------------------------------------------------
 // genAdjustStackForPutArgStk:
 //    adjust the stack pointer for a putArgStk node if necessary.
@@ -7754,14 +7822,14 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
         }
         else
         {
-#if defined(_TARGET_X86_) && defined(FEATURE_SIMD)
+#if defined(FEATURE_SIMD)
             if (fieldType == TYP_SIMD12)
             {
                 assert(genIsValidFloatReg(simdTmpReg));
                 genStoreSIMD12ToStack(argReg, simdTmpReg);
             }
             else
-#endif // defined(_TARGET_X86_) && defined(FEATURE_SIMD)
+#endif // defined(FEATURE_SIMD)
             {
                 genStoreRegToStackArg(fieldType, argReg, fieldOffset - currentOffset);
             }
@@ -7799,15 +7867,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* putArgStk)
 
 #ifdef _TARGET_X86_
 
-#if defined(UNIX_X86_ABI)
-    // For each call, first stack argument has the padding for alignment
-    // if this value is not zero, use it to adjust the ESP
-    unsigned argPadding = putArgStk->getArgPadding();
-    if (argPadding != 0)
-    {
-        inst_RV_IV(INS_sub, REG_SPBASE, argPadding * TARGET_POINTER_SIZE, EA_PTRSIZE);
-    }
-#endif
+    genAlignStackBeforeCall(putArgStk);
 
     if (varTypeIsStruct(targetType))
     {
