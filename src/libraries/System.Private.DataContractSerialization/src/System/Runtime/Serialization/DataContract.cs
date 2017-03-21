@@ -2106,10 +2106,8 @@ namespace System.Runtime.Serialization
                         {
                             knownDataContracts = new DataContractDictionary();
                         }
-                        if (!knownDataContracts.ContainsKey(itemDataContract.StableName))
-                        {
-                            knownDataContracts.Add(itemDataContract.StableName, itemDataContract);
-                        }
+
+                        knownDataContracts.TryAdd(itemDataContract.StableName, itemDataContract);
                     }
                 }
                 catch (InvalidDataContractException)

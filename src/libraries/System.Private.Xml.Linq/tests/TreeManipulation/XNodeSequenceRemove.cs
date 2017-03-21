@@ -735,9 +735,9 @@ namespace XLinqTests
             var expectedNodesForParent = new Dictionary<XContainer, List<ExpectedValue>>();
             foreach (XContainer p in parents)
             {
-                if (p != null && !expectedNodesForParent.ContainsKey(p))
+                if (p != null)
                 {
-                    expectedNodesForParent.Add(p, p.Nodes().Except(toRemoveCopy.Where(x => x != null)).Select(a => new ExpectedValue(!(a is XText), a)).ProcessNodes().ToList());
+                    expectedNodesForParent.TryAdd(p, p.Nodes().Except(toRemoveCopy.Where(x => x != null)).Select(a => new ExpectedValue(!(a is XText), a)).ProcessNodes().ToList());
                 }
             }
 

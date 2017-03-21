@@ -84,9 +84,8 @@ namespace System.Linq.Expressions.Compiler
         /// </summary>
         internal void AddReference(object value, Type type)
         {
-            if (!_indexes.ContainsKey(value))
+            if (_indexes.TryAdd(value, _values.Count))
             {
-                _indexes.Add(value, _values.Count);
                 _values.Add(value);
             }
             Helpers.IncrementCount(new TypedConstant(value, type), _references);

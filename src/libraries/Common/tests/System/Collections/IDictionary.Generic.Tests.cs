@@ -766,8 +766,7 @@ namespace System.Collections.Tests
             {
                 IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
                 TKey missingKey = default(TKey);
-                if (!dictionary.ContainsKey(missingKey))
-                    dictionary.Add(missingKey, CreateTValue(5341));
+                dictionary.TryAdd(missingKey, CreateTValue(5341));
                 Assert.True(dictionary.Remove(missingKey));
             }
         }
@@ -797,8 +796,7 @@ namespace System.Collections.Tests
                 TKey missingKey = GetNewKey(dictionary);
                 TValue value = CreateTValue(5123);
                 TValue outValue;
-                if (!dictionary.ContainsKey(missingKey))
-                    dictionary.Add(missingKey, value);
+                dictionary.TryAdd(missingKey, value);
                 Assert.True(dictionary.TryGetValue(missingKey, out outValue));
                 Assert.Equal(value, outValue);
             }
@@ -833,8 +831,7 @@ namespace System.Collections.Tests
                 TKey missingKey = default(TKey);
                 TValue value = CreateTValue(5123);
                 TValue outValue;
-                if (!dictionary.ContainsKey(missingKey))
-                    dictionary.Add(missingKey, value);
+                dictionary.TryAdd(missingKey, value);
                 Assert.True(dictionary.TryGetValue(missingKey, out outValue));
                 Assert.Equal(value, outValue);
             }

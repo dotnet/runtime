@@ -1182,10 +1182,9 @@ namespace System.Data.Common
             {
                 string uniqueName = columnName + uniqueIndex.ToString(CultureInfo.InvariantCulture);
                 string lowerName = uniqueName.ToLower(CultureInfo.InvariantCulture);
-                if (!hash.ContainsKey(lowerName))
+                if (hash.TryAdd(lowerName, index))
                 {
                     columnName = uniqueName;
-                    hash.Add(lowerName, index);
                     break;
                 }
             }

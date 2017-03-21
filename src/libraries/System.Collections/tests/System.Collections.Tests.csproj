@@ -65,6 +65,9 @@
     <Compile Include="$(CommonTestPath)\System\ObjectCloner.cs">
       <Link>Common\System\ObjectCloner.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\DictionaryExtensions.cs">
+      <Link>Common\System\Collections\DictionaryExtensions.cs</Link>
+    </Compile>
     <!-- Generic tests -->
     <Compile Include="Generic\SortedSet\SortedSet.TreeSubSet.Tests.cs" />
     <Compile Include="StructuralComparisonsTests.cs" />
@@ -83,7 +86,6 @@
     <Compile Include="Generic\Dictionary\HashCollisionScenarios\OutOfBoundsRegression.cs" />
     <Compile Include="Generic\Dictionary\Dictionary.Generic.cs" />
     <Compile Include="Generic\Dictionary\Dictionary.Generic.Tests.cs" />
-    <Compile Include="Generic\Dictionary\Dictionary.Generic.Tests.netcoreapp.cs" Condition="'$(TargetGroup)'=='netcoreapp'" />
     <Compile Include="Generic\Dictionary\Dictionary.Generic.Tests.Keys.cs" />
     <Compile Include="Generic\Dictionary\Dictionary.Generic.Tests.Values.cs" />
     <Compile Include="Generic\HashSet\HashSet.Generic.cs" />

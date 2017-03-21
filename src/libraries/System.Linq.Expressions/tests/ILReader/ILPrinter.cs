@@ -120,10 +120,7 @@ namespace System.Linq.Expressions.Tests
 
             lock (_cache)
             {
-                if (!_cache.ContainsKey(handle))
-                {
-                    _cache.Add(handle, type);
-                }
+                _cache.TryAdd(handle, type);
             }
         }
 

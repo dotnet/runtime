@@ -269,6 +269,9 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(IsInterpreting)' != 'true' ">
+    <Compile Include="$(CommonTestPath)\System\Collections\DictionaryExtensions.cs">
+      <Link>Common\System\Collections\DictionaryExtensions.cs</Link>
+    </Compile>
     <Compile Include="ILReader\DynamicMethodILProvider.cs" />
     <Compile Include="ILReader\DynamicScopeTokenResolver.cs" />
     <Compile Include="ILReader\FormatProvider.cs" />

@@ -245,9 +245,9 @@ namespace XLinqTests
             var expectedAttrsForParent = new Dictionary<XElement, List<ExpectedValue>>();
             foreach (XElement p in parents)
             {
-                if (p != null && !expectedAttrsForParent.ContainsKey(p))
+                if (p != null)
                 {
-                    expectedAttrsForParent.Add(p, p.Attributes().Except(copyAllAttributes.Where(x => x != null)).Select(a => new ExpectedValue(true, a)).ToList());
+                    expectedAttrsForParent.TryAdd(p, p.Attributes().Except(copyAllAttributes.Where(x => x != null)).Select(a => new ExpectedValue(true, a)).ToList());
                 }
             }
 

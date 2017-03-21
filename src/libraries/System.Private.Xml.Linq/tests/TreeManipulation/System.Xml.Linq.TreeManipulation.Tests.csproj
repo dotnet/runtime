@@ -10,6 +10,9 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(CommonTestPath)\System\Collections\DictionaryExtensions.cs">
+      <Link>Common\System\Collections\DictionaryExtensions.cs</Link>
+    </Compile>
     <Compile Include="AddFirstAddFirstIntoDocument.cs" />
     <Compile Include="AddFirstInvalidIntoXDocument.cs" />
     <Compile Include="AddFirstSingeNodeAddIntoElement.cs" />
