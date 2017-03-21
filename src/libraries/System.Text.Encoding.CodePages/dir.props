@@ -3,8 +3,5 @@
   <Import Project="..\dir.props" />
   <PropertyGroup>
     <AssemblyVersion>4.1.0.0</AssemblyVersion>
-    <IsNETCoreApp>true</IsNETCoreApp>
-    <IsNETCoreAppRef>false</IsNETCoreAppRef>
-    <IsUAP>true</IsUAP>
   </PropertyGroup>
 </Project>
