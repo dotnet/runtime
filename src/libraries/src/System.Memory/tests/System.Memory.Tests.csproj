@@ -36,6 +36,8 @@
     <Compile Include="Span\SequenceEqual.byte.cs" />
     <Compile Include="Span\SequenceEqual.char.cs" />
     <Compile Include="Span\Slice.cs" />
+    <Compile Include="Span\StartsWith.T.cs" />
+    <Compile Include="Span\StartsWith.byte.cs" />
     <Compile Include="Span\TestHelpers.cs" />
     <Compile Include="Span\ToArray.cs" />
   </ItemGroup>
@@ -62,6 +64,8 @@
     <Compile Include="ReadOnlySpan\SequenceEqual.byte.cs" />
     <Compile Include="ReadOnlySpan\SequenceEqual.char.cs" />
     <Compile Include="ReadOnlySpan\Slice.cs" />
+    <Compile Include="ReadOnlySpan\StartsWith.T.cs" />
+    <Compile Include="ReadOnlySpan\StartsWith.byte.cs" />
     <Compile Include="ReadOnlySpan\StringSlice.cs" />
     <Compile Include="ReadOnlySpan\TestHelpers.cs" />
     <Compile Include="ReadOnlySpan\ToArray.cs" />
