@@ -67,4 +67,7 @@
   <data name="InvalidOperation_PipeNotYetConnected" xml:space="preserve">
     <value>Pipe is not connected.</value>
   </data>
+  <data name="IO_IO_PipeBroken" xml:space="preserve">
+    <value>Pipe is broken.</value>
+  </data>
 </root>
