@@ -331,71 +331,10 @@ namespace System
             if ((uint)length > (uint)destLength)
                 return false;
 
-            unsafe
-            {
-                ref T src = ref DangerousGetPinnableReference();
-                ref T dst = ref destination.DangerousGetPinnableReference();
-
-                IntPtr srcMinusDst = Unsafe.ByteOffset<T>(ref dst, ref src);
-                bool srcGreaterThanDst = (sizeof(IntPtr) == sizeof(int)) ? srcMinusDst.ToInt32() >= 0 : srcMinusDst.ToInt64() >= 0;
-                IntPtr tailDiff;
-
-                if (srcGreaterThanDst)
-                {
-                    // If the start of source is greater than the start of destination, then we need to calculate
-                    // the different between the end of destination relative to the start of source.
-                    tailDiff = Unsafe.ByteOffset<T>(ref Unsafe.Add<T>(ref dst, destLength), ref src);
-                }
-                else
-                {
-                    // If the start of source is less than the start of destination, then we need to calculate
-                    // the different between the end of source relative to the start of destunation.
-                    tailDiff = Unsafe.ByteOffset<T>(ref Unsafe.Add<T>(ref src, length), ref dst);
-                }
-
-                // If the source is entirely before or entirely after the destination and the type inside the span is not
-                // itself a reference type or containing reference types, then we can do a simple block copy of the data.
-                bool isOverlapped = (sizeof(IntPtr) == sizeof(int)) ? tailDiff.ToInt32() < 0 : tailDiff.ToInt64() < 0;
-                if (!isOverlapped && !SpanHelpers.IsReferenceOrContainsReferences<T>())
-                {
-                    ref byte dstBytes = ref Unsafe.As<T, byte>(ref dst);
-                    ref byte srcBytes = ref Unsafe.As<T, byte>(ref src);
-                    ulong byteCount = (ulong)length * (ulong)Unsafe.SizeOf<T>();
-                    ulong index = 0;
-
-                    while (index < byteCount)
-                    {
-                        uint blockSize = byteCount > uint.MaxValue ? uint.MaxValue : (uint)byteCount;
-                        Unsafe.CopyBlock(
-                            ref Unsafe.Add(ref dstBytes, (IntPtr)index),
-                            ref Unsafe.Add(ref srcBytes, (IntPtr)index),
-                            blockSize);
-                        index += blockSize;
-                    }
-                }
-                else
-                {
-                    if (srcGreaterThanDst)
-                    {
-                        // Source address greater than or equal to destination address. Can do normal copy.
-                        for (int i = 0; i < length; i++)
-                        {
-                            Unsafe.Add<T>(ref dst, i) = Unsafe.Add<T>(ref src, i);
-                        }
-                    }
-                    else
-                    {
-                        // Source address less than destination address. Must do backward copy.
-                        int i = length;
-                        while (i-- != 0)
-                        {
-                            Unsafe.Add<T>(ref dst, i) = Unsafe.Add<T>(ref src, i);
-                        }
-                    }
-                }
-
-                return true;
-            }
+            ref T src = ref DangerousGetPinnableReference();
+            ref T dst = ref destination.DangerousGetPinnableReference();
+            SpanHelpers.CopyTo<T>(ref dst, destLength, ref src, length);
+            return true;
         }
 
         /// <summary>
