@@ -197,15 +197,13 @@ namespace System.IO.Tests
 
         #region PlatformSpecific
 
-        // This is updated to be correct, need to update CoreCLR path code so this will pass on all platforms
-        [ActiveIssue(15098)]
         [Theory MemberData(nameof(PathsWithInvalidColons))]
-        [PlatformSpecific(TestPlatforms.Windows)]  // Illegal colons throws ArgumentException
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsPathWithIllegalColons(string invalidPath)
         {
             FileInfo testFile = new FileInfo(GetTestFilePath());
             testFile.Create().Dispose();
-            Assert.Throws<ArgumentException>(() => Move(testFile.FullName, invalidPath));
+            Assert.Throws<NotSupportedException>(() => Move(testFile.FullName, invalidPath));
         }
 
         [Fact]
