@@ -107,6 +107,11 @@ CodeGen::CodeGen(Compiler* theCompiler) : CodeGenInterface(theCompiler)
     m_stkArgVarNum = BAD_VAR_NUM;
 #endif
 
+#if defined(UNIX_X86_ABI)
+    curNestedAlignment = 0;
+    maxNestedAlignment = 0;
+#endif
+
     regTracker.rsTrackInit(compiler, &regSet);
     gcInfo.regSet        = &regSet;
     m_cgEmitter          = new (compiler->getAllocator()) emitter();
@@ -3201,7 +3206,7 @@ void CodeGen::genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode)
                                         genTypeStSz(TYP_LONG) +       // longs/doubles may be transferred via stack, etc
                                         (compiler->compTailCallUsed ? 4 : 0); // CORINFO_HELP_TAILCALL args
 #if defined(UNIX_X86_ABI)
-        maxAllowedStackDepth += genTypeStSz(TYP_INT) * 3; // stack align for x86 - allow up to 3 INT's for padding
+        maxAllowedStackDepth += maxNestedAlignment;
 #endif
         noway_assert(getEmitter()->emitMaxStackDepth <= maxAllowedStackDepth);
     }
