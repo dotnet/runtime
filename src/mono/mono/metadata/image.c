@@ -535,9 +535,9 @@ load_metadata_ptrs (MonoImage *image, MonoCLIImageInfo *iinfo)
 	}
 
 	i = ((MonoImageLoader*)image->loader)->load_tables (image);
-	g_assert (image->heap_guid.data);
 
 	if (!image->metadata_only) {
+		g_assert (image->heap_guid.data);
 		g_assert (image->heap_guid.size >= 16);
 
 		image->guid = mono_guid_to_string ((guint8*)image->heap_guid.data);
