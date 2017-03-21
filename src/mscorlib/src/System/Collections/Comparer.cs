@@ -87,7 +87,7 @@ namespace System.Collections
             if (ib != null)
                 return -ib.CompareTo(a);
 
-            throw new ArgumentException(Environment.GetResourceString("Argument_ImplementIComparable"));
+            throw new ArgumentException(SR.Argument_ImplementIComparable);
         }
 
         public void GetObjectData(SerializationInfo info, StreamingContext context)

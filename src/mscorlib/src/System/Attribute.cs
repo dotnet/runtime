@@ -431,7 +431,7 @@ namespace System
                 return AttributeUsageAttribute.Default;
 
             throw new FormatException(
-                Environment.GetResourceString("Format_AttributeUsage", type));
+                SR.Format(SR.Format_AttributeUsage, type));
         }
 
         private static Attribute[] CreateAttributeArrayHelper(Type elementType, int elementCount)
@@ -459,7 +459,7 @@ namespace System
                 throw new ArgumentNullException(nameof(type));
 
             if (!type.IsSubclassOf(typeof(Attribute)) && type != typeof(Attribute))
-                throw new ArgumentException(Environment.GetResourceString("Argument_MustHaveAttributeBaseClass"));
+                throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass);
             Contract.EndContractBlock();
 
             switch (element.MemberType)
@@ -514,7 +514,7 @@ namespace System
                 throw new ArgumentNullException(nameof(attributeType));
 
             if (!attributeType.IsSubclassOf(typeof(Attribute)) && attributeType != typeof(Attribute))
-                throw new ArgumentException(Environment.GetResourceString("Argument_MustHaveAttributeBaseClass"));
+                throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass);
             Contract.EndContractBlock();
 
             switch (element.MemberType)
@@ -545,7 +545,7 @@ namespace System
             if (attrib.Length == 1)
                 return attrib[0];
 
-            throw new AmbiguousMatchException(Environment.GetResourceString("RFLCT.AmbigCust"));
+            throw new AmbiguousMatchException(SR.RFLCT_AmbigCust);
         }
 
         #endregion
@@ -570,10 +570,10 @@ namespace System
                 throw new ArgumentNullException(nameof(attributeType));
 
             if (!attributeType.IsSubclassOf(typeof(Attribute)) && attributeType != typeof(Attribute))
-                throw new ArgumentException(Environment.GetResourceString("Argument_MustHaveAttributeBaseClass"));
+                throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass);
 
             if (element.Member == null)
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidParameterInfo"), nameof(element));
+                throw new ArgumentException(SR.Argument_InvalidParameterInfo, nameof(element));
 
             Contract.EndContractBlock();
 
@@ -590,7 +590,7 @@ namespace System
                 throw new ArgumentNullException(nameof(element));
 
             if (element.Member == null)
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidParameterInfo"), nameof(element));
+                throw new ArgumentException(SR.Argument_InvalidParameterInfo, nameof(element));
 
             Contract.EndContractBlock();
 
@@ -616,7 +616,7 @@ namespace System
                 throw new ArgumentNullException(nameof(attributeType));
 
             if (!attributeType.IsSubclassOf(typeof(Attribute)) && attributeType != typeof(Attribute))
-                throw new ArgumentException(Environment.GetResourceString("Argument_MustHaveAttributeBaseClass"));
+                throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass);
             Contract.EndContractBlock();
 
             MemberInfo member = element.Member;
@@ -634,7 +634,7 @@ namespace System
 
                 default:
                     Debug.Assert(false, "Invalid type for ParameterInfo member in Attribute class");
-                    throw new ArgumentException(Environment.GetResourceString("Argument_InvalidParamInfo"));
+                    throw new ArgumentException(SR.Argument_InvalidParamInfo);
             }
         }
 
@@ -658,7 +658,7 @@ namespace System
             if (attrib.Length == 1)
                 return attrib[0];
 
-            throw new AmbiguousMatchException(Environment.GetResourceString("RFLCT.AmbigCust"));
+            throw new AmbiguousMatchException(SR.RFLCT_AmbigCust);
         }
 
         #endregion
@@ -692,7 +692,7 @@ namespace System
                 throw new ArgumentNullException(nameof(attributeType));
 
             if (!attributeType.IsSubclassOf(typeof(Attribute)) && attributeType != typeof(Attribute))
-                throw new ArgumentException(Environment.GetResourceString("Argument_MustHaveAttributeBaseClass"));
+                throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass);
             Contract.EndContractBlock();
 
             return (Attribute[])element.GetCustomAttributes(attributeType, inherit);
@@ -713,7 +713,7 @@ namespace System
                 throw new ArgumentNullException(nameof(attributeType));
 
             if (!attributeType.IsSubclassOf(typeof(Attribute)) && attributeType != typeof(Attribute))
-                throw new ArgumentException(Environment.GetResourceString("Argument_MustHaveAttributeBaseClass"));
+                throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass);
             Contract.EndContractBlock();
 
             return element.IsDefined(attributeType, false);
@@ -736,7 +736,7 @@ namespace System
             if (attrib.Length == 1)
                 return attrib[0];
 
-            throw new AmbiguousMatchException(Environment.GetResourceString("RFLCT.AmbigCust"));
+            throw new AmbiguousMatchException(SR.RFLCT_AmbigCust);
         }
 
         #endregion
@@ -756,7 +756,7 @@ namespace System
                 throw new ArgumentNullException(nameof(attributeType));
 
             if (!attributeType.IsSubclassOf(typeof(Attribute)) && attributeType != typeof(Attribute))
-                throw new ArgumentException(Environment.GetResourceString("Argument_MustHaveAttributeBaseClass"));
+                throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass);
             Contract.EndContractBlock();
 
             return (Attribute[])element.GetCustomAttributes(attributeType, inherit);
@@ -791,7 +791,7 @@ namespace System
                 throw new ArgumentNullException(nameof(attributeType));
 
             if (!attributeType.IsSubclassOf(typeof(Attribute)) && attributeType != typeof(Attribute))
-                throw new ArgumentException(Environment.GetResourceString("Argument_MustHaveAttributeBaseClass"));
+                throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass);
             Contract.EndContractBlock();
 
             return element.IsDefined(attributeType, false);
@@ -814,7 +814,7 @@ namespace System
             if (attrib.Length == 1)
                 return attrib[0];
 
-            throw new AmbiguousMatchException(Environment.GetResourceString("RFLCT.AmbigCust"));
+            throw new AmbiguousMatchException(SR.RFLCT_AmbigCust);
         }
 
         #endregion

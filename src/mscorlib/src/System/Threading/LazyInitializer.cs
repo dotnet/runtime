@@ -128,7 +128,7 @@ namespace System.Threading
             T value = valueFactory();
             if (value == null)
             {
-                throw new InvalidOperationException(Environment.GetResourceString("Lazy_StaticInit_InvalidOperation"));
+                throw new InvalidOperationException(SR.Lazy_StaticInit_InvalidOperation);
             }
 
             Interlocked.CompareExchange(ref target, value, null);
@@ -257,7 +257,7 @@ namespace System.Threading
                     Volatile.Write(ref target, valueFactory());
                     if (target == null)
                     {
-                        throw new InvalidOperationException(Environment.GetResourceString("Lazy_StaticInit_InvalidOperation"));
+                        throw new InvalidOperationException(SR.Lazy_StaticInit_InvalidOperation);
                     }
                 }
             }
@@ -279,7 +279,7 @@ namespace System.Threading
             }
             catch (MissingMethodException)
             {
-                throw new MissingMemberException(Environment.GetResourceString("Lazy_CreateValue_NoParameterlessCtorForT"));
+                throw new MissingMemberException(SR.Lazy_CreateValue_NoParameterlessCtorForT);
             }
         }
     }

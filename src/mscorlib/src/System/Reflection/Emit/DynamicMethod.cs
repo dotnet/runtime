@@ -217,18 +217,18 @@ namespace System.Reflection.Emit
         {
             // only static public for method attributes
             if ((attributes & ~MethodAttributes.MemberAccessMask) != MethodAttributes.Static)
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_DynamicMethodFlags"));
+                throw new NotSupportedException(SR.NotSupported_DynamicMethodFlags);
             if ((attributes & MethodAttributes.MemberAccessMask) != MethodAttributes.Public)
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_DynamicMethodFlags"));
+                throw new NotSupportedException(SR.NotSupported_DynamicMethodFlags);
             Contract.EndContractBlock();
 
             // only standard or varargs supported
             if (callingConvention != CallingConventions.Standard && callingConvention != CallingConventions.VarArgs)
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_DynamicMethodFlags"));
+                throw new NotSupportedException(SR.NotSupported_DynamicMethodFlags);
 
             // vararg is not supported at the moment
             if (callingConvention == CallingConventions.VarArgs)
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_DynamicMethodFlags"));
+                throw new NotSupportedException(SR.NotSupported_DynamicMethodFlags);
         }
 
         // We create a transparent assembly to host DynamicMethods. Since the assembly does not have any
@@ -288,10 +288,10 @@ namespace System.Reflection.Emit
                 for (int i = 0; i < signature.Length; i++)
                 {
                     if (signature[i] == null)
-                        throw new ArgumentException(Environment.GetResourceString("Arg_InvalidTypeInSignature"));
+                        throw new ArgumentException(SR.Arg_InvalidTypeInSignature);
                     m_parameterTypes[i] = signature[i].UnderlyingSystemType as RuntimeType;
                     if (m_parameterTypes[i] == null || !(m_parameterTypes[i] is RuntimeType) || m_parameterTypes[i] == (RuntimeType)typeof(void))
-                        throw new ArgumentException(Environment.GetResourceString("Arg_InvalidTypeInSignature"));
+                        throw new ArgumentException(SR.Arg_InvalidTypeInSignature);
                 }
             }
             else
@@ -302,7 +302,7 @@ namespace System.Reflection.Emit
             // check and store the return value
             m_returnType = (returnType == null) ? (RuntimeType)typeof(void) : returnType.UnderlyingSystemType as RuntimeType;
             if ((m_returnType == null) || !(m_returnType is RuntimeType) || m_returnType.IsByRef)
-                throw new NotSupportedException(Environment.GetResourceString("Arg_InvalidTypeInRetType"));
+                throw new NotSupportedException(SR.Arg_InvalidTypeInRetType);
 
             if (transparentMethod)
             {
@@ -331,7 +331,7 @@ namespace System.Reflection.Emit
                     {
                         if (rtOwner.HasElementType || rtOwner.ContainsGenericParameters
                             || rtOwner.IsGenericParameter || rtOwner.IsInterface)
-                            throw new ArgumentException(Environment.GetResourceString("Argument_InvalidTypeForDynamicMethod"));
+                            throw new ArgumentException(SR.Argument_InvalidTypeForDynamicMethod);
 
                         m_typeOwner = rtOwner;
                         m_module = rtOwner.GetRuntimeModule();
@@ -400,7 +400,7 @@ namespace System.Reflection.Emit
                         else
                         {
                             if (m_ilGenerator == null || m_ilGenerator.ILOffset == 0)
-                                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_BadEmptyMethodBody", Name));
+                                throw new InvalidOperationException(SR.Format(SR.InvalidOperation_BadEmptyMethodBody, Name));
 
                             m_ilGenerator.GetCallableMethod(m_module, this);
                         }
@@ -425,7 +425,7 @@ namespace System.Reflection.Emit
         public override Module Module { get { return m_dynMethod.Module; } }
 
         // we cannot return a MethodHandle because we cannot track it via GC so this method is off limits
-        public override RuntimeMethodHandle MethodHandle { get { throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_NotAllowedInDynamicMethod")); } }
+        public override RuntimeMethodHandle MethodHandle { get { throw new InvalidOperationException(SR.InvalidOperation_NotAllowedInDynamicMethod); } }
 
         public override MethodAttributes Attributes { get { return m_dynMethod.Attributes; } }
 
@@ -465,7 +465,7 @@ namespace System.Reflection.Emit
         public override Object Invoke(Object obj, BindingFlags invokeAttr, Binder binder, Object[] parameters, CultureInfo culture)
         {
             if ((CallingConvention & CallingConventions.VarArgs) == CallingConventions.VarArgs)
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_CallToVarArg"));
+                throw new NotSupportedException(SR.NotSupported_CallToVarArg);
             Contract.EndContractBlock();
 
             //
@@ -486,7 +486,7 @@ namespace System.Reflection.Emit
             int formalCount = sig.Arguments.Length;
             int actualCount = (parameters != null) ? parameters.Length : 0;
             if (formalCount != actualCount)
-                throw new TargetParameterCountException(Environment.GetResourceString("Arg_ParmCnt"));
+                throw new TargetParameterCountException(SR.Arg_ParmCnt);
 
             // if we are here we passed all the previous checks. Time to look at the arguments
             Object retValue = null;
@@ -529,7 +529,7 @@ namespace System.Reflection.Emit
         public ParameterBuilder DefineParameter(int position, ParameterAttributes attributes, String parameterName)
         {
             if (position < 0 || position > m_parameterTypes.Length)
-                throw new ArgumentOutOfRangeException(Environment.GetResourceString("ArgumentOutOfRange_ParamSequence"));
+                throw new ArgumentOutOfRangeException(SR.ArgumentOutOfRange_ParamSequence);
             position--; // it's 1 based. 0 is the return value
 
             if (position >= 0)
@@ -631,7 +631,7 @@ namespace System.Reflection.Emit
 
             public override RuntimeMethodHandle MethodHandle
             {
-                get { throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_NotAllowedInDynamicMethod")); }
+                get { throw new InvalidOperationException(SR.InvalidOperation_NotAllowedInDynamicMethod); }
             }
 
             public override MethodAttributes Attributes
@@ -671,7 +671,7 @@ namespace System.Reflection.Emit
                 // If we allowed use of RTDynamicMethod, the creator of the DynamicMethod would
                 // not be able to bound access to the DynamicMethod. Hence, we do not allow
                 // direct use of RTDynamicMethod.
-                throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeMethodInfo"), "this");
+                throw new ArgumentException(SR.Argument_MustBeRuntimeMethodInfo, "this");
             }
 
             public override Object[] GetCustomAttributes(Type attributeType, bool inherit)

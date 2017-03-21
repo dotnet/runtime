@@ -39,7 +39,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             uint size = _this.Size;
             if (((uint)Int32.MaxValue) < size)
             {
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_CollectionBackingListTooLarge"));
+                throw new InvalidOperationException(SR.InvalidOperation_CollectionBackingListTooLarge);
             }
 
             return (int)size;
@@ -68,7 +68,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             // ICollection expects the destination array to be single-dimensional.
             if (array.Rank != 1)
-                throw new ArgumentException(Environment.GetResourceString("Arg_RankMultiDimNotSupported"));
+                throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
 
             int destLB = array.GetLowerBound(0);
 
@@ -88,10 +88,10 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             // list.CopyTo(items, 0);
 
             if (srcLen > (destLen - (arrayIndex - destLB)))
-                throw new ArgumentException(Environment.GetResourceString("Argument_InsufficientSpaceToCopyCollection"));
+                throw new ArgumentException(SR.Argument_InsufficientSpaceToCopyCollection);
 
             if (arrayIndex - destLB > destLen)
-                throw new ArgumentException(Environment.GetResourceString("Argument_IndexOutOfArrayBounds"));
+                throw new ArgumentException(SR.Argument_IndexOutOfArrayBounds);
 
             // We need to verify the index as we;
             IBindableVector _this = JitHelpers.UnsafeCast<IBindableVector>(this);

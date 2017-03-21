@@ -95,7 +95,7 @@ namespace System.Globalization
             throw new ArgumentException(
                 String.Format(
                     CultureInfo.CurrentCulture,
-                    Environment.GetResourceString("Argument_EncodingNotSupported"), name), nameof(name));
+                    SR.Argument_EncodingNotSupported, name), nameof(name));
         }
 
         // Return a list of all EncodingInfo objects describing all of our encodings
@@ -117,7 +117,7 @@ namespace System.Globalization
             for (i = 0; i < lastCodePageItem; i++)
             {
                 arrayEncodingInfo[i] = new EncodingInfo(codePageDataPtr[i].codePage, CodePageDataItem.CreateString(codePageDataPtr[i].Names, 0),
-                    Environment.GetResourceString("Globalization.cp_" + codePageDataPtr[i].codePage));
+                    SR.GetResourceString("Globalization_cp_" + codePageDataPtr[i].codePage));
             }
 
             return arrayEncodingInfo;

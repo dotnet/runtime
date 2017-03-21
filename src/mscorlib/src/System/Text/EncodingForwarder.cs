@@ -39,15 +39,15 @@ namespace System.Text
             Debug.Assert(encoding != null); // this parameter should only be affected internally, so just do a debug check here
             if (chars == null)
             {
-                throw new ArgumentNullException(nameof(chars), Environment.GetResourceString("ArgumentNull_Array"));
+                throw new ArgumentNullException(nameof(chars), SR.ArgumentNull_Array);
             }
             if (index < 0 || count < 0)
             {
-                throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             if (chars.Length - index < count)
             {
-                throw new ArgumentOutOfRangeException(nameof(chars), Environment.GetResourceString("ArgumentOutOfRange_IndexCountBuffer"));
+                throw new ArgumentOutOfRangeException(nameof(chars), SR.ArgumentOutOfRange_IndexCountBuffer);
             }
             Contract.EndContractBlock();
 
@@ -88,11 +88,11 @@ namespace System.Text
             Debug.Assert(encoding != null);
             if (chars == null)
             {
-                throw new ArgumentNullException(nameof(chars), Environment.GetResourceString("ArgumentNull_Array"));
+                throw new ArgumentNullException(nameof(chars), SR.ArgumentNull_Array);
             }
             if (count < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             Contract.EndContractBlock();
 
@@ -106,21 +106,21 @@ namespace System.Text
             if (s == null || bytes == null)
             {
                 string stringName = encoding is ASCIIEncoding ? "chars" : nameof(s); // ASCIIEncoding calls the first parameter chars
-                throw new ArgumentNullException(s == null ? stringName : nameof(bytes), Environment.GetResourceString("ArgumentNull_Array"));
+                throw new ArgumentNullException(s == null ? stringName : nameof(bytes), SR.ArgumentNull_Array);
             }
             if (charIndex < 0 || charCount < 0)
             {
-                throw new ArgumentOutOfRangeException(charIndex < 0 ? nameof(charIndex) : nameof(charCount), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(charIndex < 0 ? nameof(charIndex) : nameof(charCount), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             if (s.Length - charIndex < charCount)
             {
                 string stringName = encoding is ASCIIEncoding ? "chars" : nameof(s); // ASCIIEncoding calls the first parameter chars
                 // Duplicate the above check since we don't want the overhead of a type check on the general path
-                throw new ArgumentOutOfRangeException(stringName, Environment.GetResourceString("ArgumentOutOfRange_IndexCount"));
+                throw new ArgumentOutOfRangeException(stringName, SR.ArgumentOutOfRange_IndexCount);
             }
             if (byteIndex < 0 || byteIndex > bytes.Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(byteIndex), Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(byteIndex), SR.ArgumentOutOfRange_Index);
             }
             Contract.EndContractBlock();
 
@@ -141,19 +141,19 @@ namespace System.Text
             Debug.Assert(encoding != null);
             if (chars == null || bytes == null)
             {
-                throw new ArgumentNullException(chars == null ? nameof(chars) : nameof(bytes), Environment.GetResourceString("ArgumentNull_Array"));
+                throw new ArgumentNullException(chars == null ? nameof(chars) : nameof(bytes), SR.ArgumentNull_Array);
             }
             if (charIndex < 0 || charCount < 0)
             {
-                throw new ArgumentOutOfRangeException(charIndex < 0 ? nameof(charIndex) : nameof(charCount), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(charIndex < 0 ? nameof(charIndex) : nameof(charCount), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             if (chars.Length - charIndex < charCount)
             {
-                throw new ArgumentOutOfRangeException(nameof(chars), Environment.GetResourceString("ArgumentOutOfRange_IndexCountBuffer"));
+                throw new ArgumentOutOfRangeException(nameof(chars), SR.ArgumentOutOfRange_IndexCountBuffer);
             }
             if (byteIndex < 0 || byteIndex > bytes.Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(byteIndex), Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(byteIndex), SR.ArgumentOutOfRange_Index);
             }
             Contract.EndContractBlock();
 
@@ -181,11 +181,11 @@ namespace System.Text
             Debug.Assert(encoding != null);
             if (bytes == null || chars == null)
             {
-                throw new ArgumentNullException(bytes == null ? nameof(bytes) : nameof(chars), Environment.GetResourceString("ArgumentNull_Array"));
+                throw new ArgumentNullException(bytes == null ? nameof(bytes) : nameof(chars), SR.ArgumentNull_Array);
             }
             if (charCount < 0 || byteCount < 0)
             {
-                throw new ArgumentOutOfRangeException(charCount < 0 ? nameof(charCount) : nameof(byteCount), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(charCount < 0 ? nameof(charCount) : nameof(byteCount), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             Contract.EndContractBlock();
 
@@ -197,15 +197,15 @@ namespace System.Text
             Debug.Assert(encoding != null);
             if (bytes == null)
             {
-                throw new ArgumentNullException(nameof(bytes), Environment.GetResourceString("ArgumentNull_Array"));
+                throw new ArgumentNullException(nameof(bytes), SR.ArgumentNull_Array);
             }
             if (index < 0 || count < 0)
             {
-                throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             if (bytes.Length - index < count)
             {
-                throw new ArgumentOutOfRangeException(nameof(bytes), Environment.GetResourceString("ArgumentOutOfRange_IndexCountBuffer"));
+                throw new ArgumentOutOfRangeException(nameof(bytes), SR.ArgumentOutOfRange_IndexCountBuffer);
             }
             Contract.EndContractBlock();
 
@@ -223,11 +223,11 @@ namespace System.Text
             Debug.Assert(encoding != null);
             if (bytes == null)
             {
-                throw new ArgumentNullException(nameof(bytes), Environment.GetResourceString("ArgumentNull_Array"));
+                throw new ArgumentNullException(nameof(bytes), SR.ArgumentNull_Array);
             }
             if (count < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             Contract.EndContractBlock();
 
@@ -239,19 +239,19 @@ namespace System.Text
             Debug.Assert(encoding != null);
             if (bytes == null || chars == null)
             {
-                throw new ArgumentNullException(bytes == null ? nameof(bytes) : nameof(chars), Environment.GetResourceString("ArgumentNull_Array"));
+                throw new ArgumentNullException(bytes == null ? nameof(bytes) : nameof(chars), SR.ArgumentNull_Array);
             }
             if (byteIndex < 0 || byteCount < 0)
             {
-                throw new ArgumentOutOfRangeException(byteIndex < 0 ? nameof(byteIndex) : nameof(byteCount), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(byteIndex < 0 ? nameof(byteIndex) : nameof(byteCount), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             if (bytes.Length - byteIndex < byteCount)
             {
-                throw new ArgumentOutOfRangeException(nameof(bytes), Environment.GetResourceString("ArgumentOutOfRange_IndexCountBuffer"));
+                throw new ArgumentOutOfRangeException(nameof(bytes), SR.ArgumentOutOfRange_IndexCountBuffer);
             }
             if (charIndex < 0 || charIndex > chars.Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(charIndex), Environment.GetResourceString("ArgumentOutOfRange_Index"));
+                throw new ArgumentOutOfRangeException(nameof(charIndex), SR.ArgumentOutOfRange_Index);
             }
             Contract.EndContractBlock();
 
@@ -277,11 +277,11 @@ namespace System.Text
             Debug.Assert(encoding != null);
             if (bytes == null || chars == null)
             {
-                throw new ArgumentNullException(bytes == null ? nameof(bytes) : nameof(chars), Environment.GetResourceString("ArgumentNull_Array"));
+                throw new ArgumentNullException(bytes == null ? nameof(bytes) : nameof(chars), SR.ArgumentNull_Array);
             }
             if (charCount < 0 || byteCount < 0)
             {
-                throw new ArgumentOutOfRangeException(charCount < 0 ? nameof(charCount) : nameof(byteCount), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(charCount < 0 ? nameof(charCount) : nameof(byteCount), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             Contract.EndContractBlock();
 
@@ -293,7 +293,7 @@ namespace System.Text
             Debug.Assert(encoding != null);
             if (bytes == null)
             {
-                throw new ArgumentNullException(nameof(bytes), Environment.GetResourceString("ArgumentNull_Array"));
+                throw new ArgumentNullException(nameof(bytes), SR.ArgumentNull_Array);
             }
             if (index < 0 || count < 0)
             {
@@ -301,11 +301,11 @@ namespace System.Text
                 bool ascii = encoding is ASCIIEncoding;
                 string indexName = ascii ? "byteIndex" : nameof(index);
                 string countName = ascii ? "byteCount" : nameof(count);
-                throw new ArgumentOutOfRangeException(index < 0 ? indexName : countName, Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(index < 0 ? indexName : countName, SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             if (bytes.Length - index < count)
             {
-                throw new ArgumentOutOfRangeException(nameof(bytes), Environment.GetResourceString("ArgumentOutOfRange_IndexCountBuffer"));
+                throw new ArgumentOutOfRangeException(nameof(bytes), SR.ArgumentOutOfRange_IndexCountBuffer);
             }
             Contract.EndContractBlock();
 

@@ -20,17 +20,17 @@ namespace System.Threading
         {
             if (initialCount < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(initialCount), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(initialCount), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
             if (maximumCount < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(maximumCount), Environment.GetResourceString("ArgumentOutOfRange_NeedPosNum"));
+                throw new ArgumentOutOfRangeException(nameof(maximumCount), SR.ArgumentOutOfRange_NeedPosNum);
             }
 
             if (initialCount > maximumCount)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_SemaphoreInitialMaximum"));
+                throw new ArgumentException(SR.Argument_SemaphoreInitialMaximum);
             }
 
             SafeWaitHandle myHandle = CreateSemaphone(initialCount, maximumCount, name);
@@ -41,7 +41,7 @@ namespace System.Threading
 
                 if (null != name && 0 != name.Length && Win32Native.ERROR_INVALID_HANDLE == errorCode)
                     throw new WaitHandleCannotBeOpenedException(
-                        Environment.GetResourceString("Threading.WaitHandleCannotBeOpenedException_InvalidHandle", name));
+                        SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
 
                 __Error.WinIOError();
             }
@@ -52,17 +52,17 @@ namespace System.Threading
         {
             if (initialCount < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(initialCount), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(initialCount), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
             if (maximumCount < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(maximumCount), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(maximumCount), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
             if (initialCount > maximumCount)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_SemaphoreInitialMaximum"));
+                throw new ArgumentException(SR.Argument_SemaphoreInitialMaximum);
             }
 
             SafeWaitHandle myHandle = CreateSemaphone(initialCount, maximumCount, name);
@@ -72,7 +72,7 @@ namespace System.Threading
             {
                 if (null != name && 0 != name.Length && Win32Native.ERROR_INVALID_HANDLE == errorCode)
                     throw new WaitHandleCannotBeOpenedException(
-                        Environment.GetResourceString("Threading.WaitHandleCannotBeOpenedException_InvalidHandle", name));
+                        SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
                 __Error.WinIOError();
             }
             createdNew = errorCode != Win32Native.ERROR_ALREADY_EXISTS;
@@ -89,10 +89,10 @@ namespace System.Threading
             if (name != null)
             {
 #if PLATFORM_UNIX
-                throw new PlatformNotSupportedException(Environment.GetResourceString("PlatformNotSupported_NamedSynchronizationPrimitives"));
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
 #else
                 if (name.Length > Path.MaxPath)
-                    throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", Path.MaxPath), nameof(name));
+                    throw new ArgumentException(SR.Format(SR.Argument_WaitHandleNameTooLong, Path.MaxPath), nameof(name));
 #endif
             }
 
@@ -111,7 +111,7 @@ namespace System.Threading
                 case OpenExistingResult.NameNotFound:
                     throw new WaitHandleCannotBeOpenedException();
                 case OpenExistingResult.NameInvalid:
-                    throw new WaitHandleCannotBeOpenedException(Environment.GetResourceString("Threading.WaitHandleCannotBeOpenedException_InvalidHandle", name));
+                    throw new WaitHandleCannotBeOpenedException(SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
                 case OpenExistingResult.PathNotFound:
                     throw new IOException(Win32Native.GetMessage(Win32Native.ERROR_PATH_NOT_FOUND));
                 default:
@@ -127,14 +127,14 @@ namespace System.Threading
         private static OpenExistingResult OpenExistingWorker(string name, out Semaphore result)
         {
 #if PLATFORM_UNIX
-            throw new PlatformNotSupportedException(Environment.GetResourceString("PlatformNotSupported_NamedSynchronizationPrimitives"));
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
 #else
             if (name == null)
-                throw new ArgumentNullException(nameof(name), Environment.GetResourceString("ArgumentNull_WithParamName"));
+                throw new ArgumentNullException(nameof(name), SR.ArgumentNull_WithParamName);
             if (name.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(name));
+                throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
             if (name.Length > Path.MaxPath)
-                throw new ArgumentException(Environment.GetResourceString("Argument_WaitHandleNameTooLong", Path.MaxPath), nameof(name));
+                throw new ArgumentException(SR.Format(SR.Argument_WaitHandleNameTooLong, Path.MaxPath), nameof(name));
 
             const int SYNCHRONIZE = 0x00100000;
             const int SEMAPHORE_MODIFY_STATE = 0x00000002;
@@ -173,7 +173,7 @@ namespace System.Threading
         {
             if (releaseCount < 1)
             {
-                throw new ArgumentOutOfRangeException(nameof(releaseCount), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(releaseCount), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
             //If ReleaseSempahore returns false when the specified value would cause

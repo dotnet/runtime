@@ -42,7 +42,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                         {
                             if (String.IsNullOrEmpty(assemblyFile))
                             {   // DesignerNamespaceResolve event returned null or empty file name - that is not allowed
-                                throw new ArgumentException(Environment.GetResourceString("Arg_EmptyOrNullString"), "DesignerNamespaceResolveEventArgs.ResolvedAssemblyFiles");
+                                throw new ArgumentException(SR.Arg_EmptyOrNullString, "DesignerNamespaceResolveEventArgs.ResolvedAssemblyFiles");
                             }
                             retAssemblyFiles[retIndex] = assemblyFile;
                             retIndex++;

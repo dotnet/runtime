@@ -140,7 +140,7 @@ namespace System.Runtime.InteropServices
                 ValidateHandle();
 
                 // You can only get the address of pinned handles.
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_HandleIsNotPinned"));
+                throw new InvalidOperationException(SR.InvalidOperation_HandleIsNotPinned);
             }
 
             // Get the address.

@@ -71,7 +71,7 @@ namespace System.IO
             if (encoding == null)
                 throw new ArgumentNullException(nameof(encoding));
             if (!output.CanWrite)
-                throw new ArgumentException(Environment.GetResourceString("Argument_StreamNotWritable"));
+                throw new ArgumentException(SR.Argument_StreamNotWritable);
             Contract.EndContractBlock();
 
             OutStream = output;
@@ -188,7 +188,7 @@ namespace System.IO
         public unsafe virtual void Write(char ch)
         {
             if (Char.IsSurrogate(ch))
-                throw new ArgumentException(Environment.GetResourceString("Arg_SurrogatesNotAllowedAsSingleChar"));
+                throw new ArgumentException(SR.Arg_SurrogatesNotAllowedAsSingleChar);
             Contract.EndContractBlock();
 
             Debug.Assert(_encoding.GetMaxByteCount(1) <= 16, "_encoding.GetMaxByteCount(1) <= 16)");

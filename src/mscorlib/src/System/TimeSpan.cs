@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -93,7 +93,7 @@ namespace System
         {
             Int64 totalMilliSeconds = ((Int64)days * 3600 * 24 + (Int64)hours * 3600 + (Int64)minutes * 60 + seconds) * 1000 + milliseconds;
             if (totalMilliSeconds > MaxMilliSeconds || totalMilliSeconds < MinMilliSeconds)
-                throw new ArgumentOutOfRangeException(null, Environment.GetResourceString("Overflow_TimeSpanTooLong"));
+                throw new ArgumentOutOfRangeException(null, SR.Overflow_TimeSpanTooLong);
             _ticks = (long)totalMilliSeconds * TicksPerMillisecond;
         }
 
@@ -169,7 +169,7 @@ namespace System
             // sign was opposite.
             // >> 63 gives the sign bit (either 64 1's or 64 0's).
             if ((_ticks >> 63 == ts._ticks >> 63) && (_ticks >> 63 != result >> 63))
-                throw new OverflowException(Environment.GetResourceString("Overflow_TimeSpanTooLong"));
+                throw new OverflowException(SR.Overflow_TimeSpanTooLong);
             return new TimeSpan(result);
         }
 
@@ -189,7 +189,7 @@ namespace System
         {
             if (value == null) return 1;
             if (!(value is TimeSpan))
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeTimeSpan"));
+                throw new ArgumentException(SR.Arg_MustBeTimeSpan);
             long t = ((TimeSpan)value)._ticks;
             if (_ticks > t) return 1;
             if (_ticks < t) return -1;
@@ -212,7 +212,7 @@ namespace System
         public TimeSpan Duration()
         {
             if (Ticks == TimeSpan.MinValue.Ticks)
-                throw new OverflowException(Environment.GetResourceString("Overflow_Duration"));
+                throw new OverflowException(SR.Overflow_Duration);
             Contract.EndContractBlock();
             return new TimeSpan(_ticks >= 0 ? _ticks : -_ticks);
         }
@@ -249,12 +249,12 @@ namespace System
         private static TimeSpan Interval(double value, int scale)
         {
             if (Double.IsNaN(value))
-                throw new ArgumentException(Environment.GetResourceString("Arg_CannotBeNaN"));
+                throw new ArgumentException(SR.Arg_CannotBeNaN);
             Contract.EndContractBlock();
             double tmp = value * scale;
             double millis = tmp + (value >= 0 ? 0.5 : -0.5);
             if ((millis > Int64.MaxValue / TicksPerMillisecond) || (millis < Int64.MinValue / TicksPerMillisecond))
-                throw new OverflowException(Environment.GetResourceString("Overflow_TimeSpanTooLong"));
+                throw new OverflowException(SR.Overflow_TimeSpanTooLong);
             return new TimeSpan((long)millis * TicksPerMillisecond);
         }
 
@@ -271,7 +271,7 @@ namespace System
         public TimeSpan Negate()
         {
             if (Ticks == TimeSpan.MinValue.Ticks)
-                throw new OverflowException(Environment.GetResourceString("Overflow_NegateTwosCompNum"));
+                throw new OverflowException(SR.Overflow_NegateTwosCompNum);
             Contract.EndContractBlock();
             return new TimeSpan(-_ticks);
         }
@@ -288,7 +288,7 @@ namespace System
             // sign was opposite from the first argument's sign.
             // >> 63 gives the sign bit (either 64 1's or 64 0's).
             if ((_ticks >> 63 != ts._ticks >> 63) && (_ticks >> 63 != result >> 63))
-                throw new OverflowException(Environment.GetResourceString("Overflow_TimeSpanTooLong"));
+                throw new OverflowException(SR.Overflow_TimeSpanTooLong);
             return new TimeSpan(result);
         }
 
@@ -303,7 +303,7 @@ namespace System
             // which is less than 2^44, meaning we won't overflow totalSeconds.
             long totalSeconds = (long)hour * 3600 + (long)minute * 60 + (long)second;
             if (totalSeconds > MaxSeconds || totalSeconds < MinSeconds)
-                throw new ArgumentOutOfRangeException(null, Environment.GetResourceString("Overflow_TimeSpanTooLong"));
+                throw new ArgumentOutOfRangeException(null, SR.Overflow_TimeSpanTooLong);
             return totalSeconds * TicksPerSecond;
         }
 
@@ -386,7 +386,7 @@ namespace System
         public static TimeSpan operator -(TimeSpan t)
         {
             if (t._ticks == TimeSpan.MinValue._ticks)
-                throw new OverflowException(Environment.GetResourceString("Overflow_NegateTwosCompNum"));
+                throw new OverflowException(SR.Overflow_NegateTwosCompNum);
             return new TimeSpan(-t._ticks);
         }
 
@@ -409,7 +409,7 @@ namespace System
         {
             if (double.IsNaN(factor))
             {
-                throw new ArgumentException(Environment.GetResourceString("Arg_CannotBeNaN"), nameof(factor));
+                throw new ArgumentException(SR.Arg_CannotBeNaN, nameof(factor));
             }
 
             // Rounding to the nearest tick is as close to the result we would have with unlimited
@@ -417,7 +417,7 @@ namespace System
             double ticks = Math.Round(timeSpan.Ticks * factor);
             if (ticks > long.MaxValue | ticks < long.MinValue)
             {
-                throw new OverflowException(Environment.GetResourceString("Overflow_TimeSpanTooLong"));
+                throw new OverflowException(SR.Overflow_TimeSpanTooLong);
             }
 
             return FromTicks((long)ticks);
@@ -429,13 +429,13 @@ namespace System
         {
             if (double.IsNaN(divisor))
             {
-                throw new ArgumentException(Environment.GetResourceString("Arg_CannotBeNaN"), nameof(divisor));
+                throw new ArgumentException(SR.Arg_CannotBeNaN, nameof(divisor));
             }
 
             double ticks = Math.Round(timeSpan.Ticks / divisor);
             if (ticks > long.MaxValue | ticks < long.MinValue || double.IsNaN(ticks))
             {
-                throw new OverflowException(Environment.GetResourceString("Overflow_TimeSpanTooLong"));
+                throw new OverflowException(SR.Overflow_TimeSpanTooLong);
             }
 
             return FromTicks((long)ticks);

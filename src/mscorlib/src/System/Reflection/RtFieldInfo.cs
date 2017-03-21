@@ -114,12 +114,12 @@ namespace System.Reflection
                 {
                     if (target == null)
                     {
-                        throw new TargetException(Environment.GetResourceString("RFLCT.Targ_StatFldReqTarg"));
+                        throw new TargetException(SR.RFLCT_Targ_StatFldReqTarg);
                     }
                     else
                     {
                         throw new ArgumentException(
-                            String.Format(CultureInfo.CurrentUICulture, Environment.GetResourceString("Arg_FieldDeclTarget"),
+                            String.Format(CultureInfo.CurrentUICulture, SR.Arg_FieldDeclTarget,
                                 Name, m_declaringType, target.GetType()));
                     }
                 }
@@ -146,10 +146,10 @@ namespace System.Reflection
             if ((invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE) != 0)
             {
                 if (declaringType != null && declaringType.ContainsGenericParameters)
-                    throw new InvalidOperationException(Environment.GetResourceString("Arg_UnboundGenField"));
+                    throw new InvalidOperationException(SR.Arg_UnboundGenField);
 
                 if ((declaringType == null && Module.Assembly.ReflectionOnly) || declaringType is ReflectionOnlyType)
-                    throw new InvalidOperationException(Environment.GetResourceString("Arg_ReflectionOnlyField"));
+                    throw new InvalidOperationException(SR.Arg_ReflectionOnlyField);
 
                 throw new FieldAccessException();
             }
@@ -214,10 +214,10 @@ namespace System.Reflection
             if ((invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE) != 0)
             {
                 if (declaringType != null && DeclaringType.ContainsGenericParameters)
-                    throw new InvalidOperationException(Environment.GetResourceString("Arg_UnboundGenField"));
+                    throw new InvalidOperationException(SR.Arg_UnboundGenField);
 
                 if ((declaringType == null && Module.Assembly.ReflectionOnly) || declaringType is ReflectionOnlyType)
-                    throw new InvalidOperationException(Environment.GetResourceString("Arg_ReflectionOnlyField"));
+                    throw new InvalidOperationException(SR.Arg_ReflectionOnlyField);
 
                 throw new FieldAccessException();
             }
@@ -307,7 +307,7 @@ namespace System.Reflection
         public override Object GetValueDirect(TypedReference obj)
         {
             if (obj.IsNull)
-                throw new ArgumentException(Environment.GetResourceString("Arg_TypedReference_Null"));
+                throw new ArgumentException(SR.Arg_TypedReference_Null);
             Contract.EndContractBlock();
 
             unsafe
@@ -330,7 +330,7 @@ namespace System.Reflection
         public override void SetValueDirect(TypedReference obj, Object value)
         {
             if (obj.IsNull)
-                throw new ArgumentException(Environment.GetResourceString("Arg_TypedReference_Null"));
+                throw new ArgumentException(SR.Arg_TypedReference_Null);
             Contract.EndContractBlock();
 
             unsafe
@@ -346,7 +346,7 @@ namespace System.Reflection
             {
                 Type declaringType = DeclaringType;
                 if ((declaringType == null && Module.Assembly.ReflectionOnly) || declaringType is ReflectionOnlyType)
-                    throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_NotAllowedInReflectionOnly"));
+                    throw new InvalidOperationException(SR.InvalidOperation_NotAllowedInReflectionOnly);
                 return new RuntimeFieldHandle(this);
             }
         }

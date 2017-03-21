@@ -287,7 +287,7 @@ namespace System.Reflection
             RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
             if (attributeRuntimeType == null)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), nameof(attributeType));
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType, inherit);
         }
@@ -301,7 +301,7 @@ namespace System.Reflection
             RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
             if (attributeRuntimeType == null)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), nameof(attributeType));
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.IsDefined(this, attributeRuntimeType, inherit);
         }
@@ -404,7 +404,7 @@ namespace System.Reflection
             {
                 Type declaringType = DeclaringType;
                 if ((declaringType == null && Module.Assembly.ReflectionOnly) || declaringType is ReflectionOnlyType)
-                    throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_NotAllowedInReflectionOnly"));
+                    throw new InvalidOperationException(SR.InvalidOperation_NotAllowedInReflectionOnly);
                 return new RuntimeMethodHandle(this);
             }
         }
@@ -437,9 +437,9 @@ namespace System.Reflection
                 if (!m_declaringType.IsInstanceOfType(target))
                 {
                     if (target == null)
-                        throw new TargetException(Environment.GetResourceString("RFLCT.Targ_StatMethReqTarg"));
+                        throw new TargetException(SR.RFLCT_Targ_StatMethReqTarg);
                     else
-                        throw new TargetException(Environment.GetResourceString("RFLCT.Targ_ITargMismatch"));
+                        throw new TargetException(SR.RFLCT_Targ_ITargMismatch);
                 }
             }
         }
@@ -450,7 +450,7 @@ namespace System.Reflection
             Type declaringType = DeclaringType;
             if ((declaringType == null && Module.Assembly.ReflectionOnly) || declaringType is ReflectionOnlyType)
             {
-                throw new InvalidOperationException(Environment.GetResourceString("Arg_ReflectionOnlyInvoke"));
+                throw new InvalidOperationException(SR.Arg_ReflectionOnlyInvoke);
             }
             // method is on a class that contains stack pointers
             else if ((InvocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_CONTAINS_STACK_POINTERS) != 0)
@@ -465,7 +465,7 @@ namespace System.Reflection
             // method is generic or on a generic class
             else if (DeclaringType.ContainsGenericParameters || ContainsGenericParameters)
             {
-                throw new InvalidOperationException(Environment.GetResourceString("Arg_UnboundGenParam"));
+                throw new InvalidOperationException(SR.Arg_UnboundGenParam);
             }
             // method is abstract class
             else if (IsAbstract)
@@ -475,7 +475,7 @@ namespace System.Reflection
             // ByRef return are not allowed in reflection
             else if (ReturnType.IsByRef)
             {
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_ByRefReturn"));
+                throw new NotSupportedException(SR.NotSupported_ByRefReturn);
             }
 
             throw new TargetException();
@@ -540,7 +540,7 @@ namespace System.Reflection
             CheckConsistency(obj);
 
             if (formalCount != actualCount)
-                throw new TargetParameterCountException(Environment.GetResourceString("Arg_ParmCnt"));
+                throw new TargetParameterCountException(SR.Arg_ParmCnt);
 
             if (actualCount != 0)
                 return CheckArguments(parameters, binder, invokeAttr, culture, sig);
@@ -642,15 +642,15 @@ namespace System.Reflection
 
             RuntimeType rtType = delegateType as RuntimeType;
             if (rtType == null)
-                throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeType"), nameof(delegateType));
+                throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(delegateType));
 
             if (!rtType.IsDelegate())
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeDelegate"), nameof(delegateType));
+                throw new ArgumentException(SR.Arg_MustBeDelegate, nameof(delegateType));
 
             Delegate d = Delegate.CreateDelegateInternal(rtType, this, firstArgument, bindingFlags, ref stackMark);
             if (d == null)
             {
-                throw new ArgumentException(Environment.GetResourceString("Arg_DlgtTargMeth"));
+                throw new ArgumentException(SR.Arg_DlgtTargMeth);
             }
 
             return d;
@@ -669,7 +669,7 @@ namespace System.Reflection
 
             if (!IsGenericMethodDefinition)
                 throw new InvalidOperationException(
-                    Environment.GetResourceString("Arg_NotGenericMethodDefinition", this));
+                    SR.Format(SR.Arg_NotGenericMethodDefinition, this));
 
             for (int i = 0; i < methodInstantiation.Length; i++)
             {
@@ -777,7 +777,7 @@ namespace System.Reflection
             Contract.EndContractBlock();
 
             if (m_reflectedTypeCache.IsGlobal)
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_GlobalMethodSerialization"));
+                throw new NotSupportedException(SR.NotSupported_GlobalMethodSerialization);
 
             MemberInfoSerializationHolder.GetSerializationInfo(
                 info,

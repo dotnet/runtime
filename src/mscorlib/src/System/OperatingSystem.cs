@@ -35,7 +35,7 @@ namespace System
             if (platform < PlatformID.Win32S || platform > PlatformID.MacOSX)
             {
                 throw new ArgumentException(
-                    Environment.GetResourceString("Arg_EnumIllegalVal", (int)platform),
+                    SR.Format(SR.Arg_EnumIllegalVal, (int)platform),
                     nameof(platform));
             }
 
@@ -69,7 +69,7 @@ namespace System
 
             if (_version == null)
             {
-                throw new SerializationException(Environment.GetResourceString("Serialization_MissField", "_version"));
+                throw new SerializationException(SR.Format(SR.Serialization_MissField, "_version"));
             }
         }
 

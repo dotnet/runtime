@@ -60,7 +60,7 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(encoding));
             }
             if (!input.CanRead)
-                throw new ArgumentException(Environment.GetResourceString("Argument_StreamNotReadable"));
+                throw new ArgumentException(SR.Argument_StreamNotReadable);
             Contract.EndContractBlock();
             m_stream = input;
             m_decoder = encoding.GetDecoder();
@@ -264,7 +264,7 @@ namespace System.IO
             catch (ArgumentException e)
             {
                 // ReadDecimal cannot leak out ArgumentException
-                throw new IOException(Environment.GetResourceString("Arg_DecBitCtor"), e);
+                throw new IOException(SR.Arg_DecBitCtor, e);
             }
         }
 
@@ -285,7 +285,7 @@ namespace System.IO
             stringLength = Read7BitEncodedInt();
             if (stringLength < 0)
             {
-                throw new IOException(Environment.GetResourceString("IO.IO_InvalidStringLen_Len", stringLength));
+                throw new IOException(SR.Format(SR.IO_InvalidStringLen_Len, stringLength));
             }
 
             if (stringLength == 0)
@@ -332,19 +332,19 @@ namespace System.IO
         {
             if (buffer == null)
             {
-                throw new ArgumentNullException(nameof(buffer), Environment.GetResourceString("ArgumentNull_Buffer"));
+                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
             }
             if (index < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             if (count < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             if (buffer.Length - index < count)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
+                throw new ArgumentException(SR.Argument_InvalidOffLen);
             }
             Contract.Ensures(Contract.Result<int>() >= 0);
             Contract.Ensures(Contract.Result<int>() <= count);
@@ -524,7 +524,7 @@ namespace System.IO
         {
             if (count < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             Contract.Ensures(Contract.Result<char[]>() != null);
             Contract.Ensures(Contract.Result<char[]>().Length <= count);
@@ -555,13 +555,13 @@ namespace System.IO
         public virtual int Read(byte[] buffer, int index, int count)
         {
             if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer), Environment.GetResourceString("ArgumentNull_Buffer"));
+                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
             if (index < 0)
-                throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (buffer.Length - index < count)
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
+                throw new ArgumentException(SR.Argument_InvalidOffLen);
             Contract.Ensures(Contract.Result<int>() >= 0);
             Contract.Ensures(Contract.Result<int>() <= count);
             Contract.EndContractBlock();
@@ -572,7 +572,7 @@ namespace System.IO
 
         public virtual byte[] ReadBytes(int count)
         {
-            if (count < 0) throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+            if (count < 0) throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             Contract.Ensures(Contract.Result<byte[]>() != null);
             Contract.Ensures(Contract.Result<byte[]>().Length <= Contract.OldValue(count));
             Contract.EndContractBlock();
@@ -610,7 +610,7 @@ namespace System.IO
         {
             if (m_buffer != null && (numBytes < 0 || numBytes > m_buffer.Length))
             {
-                throw new ArgumentOutOfRangeException(nameof(numBytes), Environment.GetResourceString("ArgumentOutOfRange_BinaryReaderFillBuffer"));
+                throw new ArgumentOutOfRangeException(nameof(numBytes), SR.ArgumentOutOfRange_BinaryReaderFillBuffer);
             }
             int bytesRead = 0;
             int n = 0;
@@ -652,7 +652,7 @@ namespace System.IO
                 // Check for a corrupted stream.  Read a max of 5 bytes.
                 // In a future version, add a DataFormatException.
                 if (shift == 5 * 7)  // 5 bytes max per Int32, shift += 7
-                    throw new FormatException(Environment.GetResourceString("Format_Bad7BitInt32"));
+                    throw new FormatException(SR.Format_Bad7BitInt32);
 
                 // ReadByte handles end of stream cases for us.
                 b = ReadByte();

@@ -66,7 +66,7 @@ namespace System.Reflection.Emit
 
                 if (curIndex != format.Length)
                     // ByRef has to be the last char!!
-                    throw new ArgumentException(Environment.GetResourceString("Argument_BadSigFormat"));
+                    throw new ArgumentException(SR.Argument_BadSigFormat);
 
                 symbolType.SetElementType(baseType);
                 return symbolType;
@@ -128,7 +128,7 @@ namespace System.Reflection.Emit
                         if (format[curIndex] != '.')
                         {
                             // bad format!! Throw exception
-                            throw new ArgumentException(Environment.GetResourceString("Argument_BadSigFormat"));
+                            throw new ArgumentException(SR.Argument_BadSigFormat);
                         }
 
                         curIndex++;
@@ -158,7 +158,7 @@ namespace System.Reflection.Emit
                             {
                                 // User specified upper bound less than lower bound, this is an error.
                                 // Throw error exception.
-                                throw new ArgumentException(Environment.GetResourceString("Argument_BadSigFormat"));
+                                throw new ArgumentException(SR.Argument_BadSigFormat);
                             }
                         }
                     }
@@ -176,7 +176,7 @@ namespace System.Reflection.Emit
                     }
                     else if (format[curIndex] != ']')
                     {
-                        throw new ArgumentException(Environment.GetResourceString("Argument_BadSigFormat"));
+                        throw new ArgumentException(SR.Argument_BadSigFormat);
                     }
                 }
 
@@ -313,7 +313,7 @@ namespace System.Reflection.Emit
         public override int GetArrayRank()
         {
             if (!IsArray)
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_SubclassOverride"));
+                throw new NotSupportedException(SR.NotSupported_SubclassOverride);
             Contract.EndContractBlock();
 
             return m_cRank;
@@ -321,13 +321,13 @@ namespace System.Reflection.Emit
 
         public override Guid GUID
         {
-            get { throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType")); }
+            get { throw new NotSupportedException(SR.NotSupported_NonReflectedType); }
         }
 
         public override Object InvokeMember(String name, BindingFlags invokeAttr, Binder binder, Object target,
             Object[] args, ParameterModifier[] modifiers, CultureInfo culture, String[] namedParameters)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
+            throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
         public override Module Module
@@ -355,7 +355,7 @@ namespace System.Reflection.Emit
 
         public override RuntimeTypeHandle TypeHandle
         {
-            get { throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType")); }
+            get { throw new NotSupportedException(SR.NotSupported_NonReflectedType); }
         }
 
         public override String Name
@@ -406,94 +406,94 @@ namespace System.Reflection.Emit
         protected override ConstructorInfo GetConstructorImpl(BindingFlags bindingAttr, Binder binder,
                 CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
+            throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
         public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
+            throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
         protected override MethodInfo GetMethodImpl(String name, BindingFlags bindingAttr, Binder binder,
                 CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
+            throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
         public override MethodInfo[] GetMethods(BindingFlags bindingAttr)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
+            throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
         public override FieldInfo GetField(String name, BindingFlags bindingAttr)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
+            throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
         public override FieldInfo[] GetFields(BindingFlags bindingAttr)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
+            throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
         public override Type GetInterface(String name, bool ignoreCase)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
+            throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
         public override Type[] GetInterfaces()
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
+            throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
         public override EventInfo GetEvent(String name, BindingFlags bindingAttr)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
+            throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
         public override EventInfo[] GetEvents()
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
+            throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
         protected override PropertyInfo GetPropertyImpl(String name, BindingFlags bindingAttr, Binder binder,
                 Type returnType, Type[] types, ParameterModifier[] modifiers)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
+            throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
         public override PropertyInfo[] GetProperties(BindingFlags bindingAttr)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
+            throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
         public override Type[] GetNestedTypes(BindingFlags bindingAttr)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
+            throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
         public override Type GetNestedType(String name, BindingFlags bindingAttr)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
+            throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
         public override MemberInfo[] GetMember(String name, MemberTypes type, BindingFlags bindingAttr)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
+            throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
+            throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
         public override InterfaceMapping GetInterfaceMap(Type interfaceType)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
+            throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
         public override EventInfo[] GetEvents(BindingFlags bindingAttr)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
+            throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
         protected override TypeAttributes GetAttributeFlagsImpl()
@@ -559,17 +559,17 @@ namespace System.Reflection.Emit
 
         public override Object[] GetCustomAttributes(bool inherit)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
+            throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
         public override Object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
+            throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
         public override bool IsDefined(Type attributeType, bool inherit)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_NonReflectedType"));
+            throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
         #endregion
     }
