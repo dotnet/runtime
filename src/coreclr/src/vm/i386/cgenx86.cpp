@@ -742,7 +742,7 @@ void ResumableFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 
 #ifdef WIN64EXCEPTIONS
 
-    memcpy(pRD->pCurrentContext, &m_Regs, sizeof(CONTEXT));
+    CopyMemory(pRD->pCurrentContext, m_Regs, sizeof(T_CONTEXT));
 
     pRD->SP = m_Regs->Esp;
     pRD->ControlPC = m_Regs->Eip;
