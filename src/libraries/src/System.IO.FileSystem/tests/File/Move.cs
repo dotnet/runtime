@@ -197,9 +197,8 @@ namespace System.IO.Tests
 
         #region PlatformSpecific
 
-        // This is updated to be correct, need to update CoreCLR path code so this will pass on all platforms
         [Theory MemberData(nameof(PathsWithInvalidColons))]
-        [PlatformSpecific(TestPlatforms.Windows)]  // Illegal colons throws ArgumentException
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsPathWithIllegalColons(string invalidPath)
         {
             FileInfo testFile = new FileInfo(GetTestFilePath());
