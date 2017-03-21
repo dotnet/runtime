@@ -12,6 +12,7 @@ namespace System.Net.Primitives.Functional.Tests
     public class LoggingTest : RemoteExecutorTestBase
     {
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetEventSource is only part of .NET Core")]
         public void EventSource_ExistsWithCorrectId()
         {
             Type esType = typeof(IPAddress).Assembly.GetType("System.Net.NetEventSource", throwOnError: true, ignoreCase: false);
@@ -24,6 +25,7 @@ namespace System.Net.Primitives.Functional.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetEventSource is only part of .NET Core")]
         public void EventSource_EventsRaisedAsExpected()
         {
             RemoteInvoke(() =>
