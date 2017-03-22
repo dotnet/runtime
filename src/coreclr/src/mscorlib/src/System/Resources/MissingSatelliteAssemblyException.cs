@@ -26,7 +26,7 @@ namespace System.Resources
         private String _cultureName;
 
         public MissingSatelliteAssemblyException()
-            : base(SR.MissingSatelliteAssembly_Default)
+            : base(Environment.GetResourceString("MissingSatelliteAssembly_Default"))
         {
             SetErrorCode(System.__HResults.COR_E_MISSINGSATELLITEASSEMBLY);
         }
