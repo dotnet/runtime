@@ -44,6 +44,12 @@
 
     <Exec Command="$(GenFacadesCmd) -contracts:&quot;@(NETStandardContracts)&quot; @&quot;$(GenFacadesResponseFile)&quot;" WorkingDirectory="$(ToolRuntimePath)" />
 
+    <WriteSigningRequired
+        Condition="'$(SkipSigning)' != 'true' and '$(SignType)' != 'oss'"
+        AuthenticodeSig="Microsoft"
+        StrongNameSig="StrongName"
+        MarkerFile="$(GenFacadesOutputPath)%(GenFacadesContracts.Filename)%(GenFacadesContracts.Extension).requires_signing" />
+
     <Touch Files="$(GenFacadesSemaphoreFile)" AlwaysCreate="true" />
   </Target>
 
