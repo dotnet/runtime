@@ -70,6 +70,7 @@ namespace System.Data.SqlClient.SNI
         internal const int HandshakeFailureError = 31;
         internal const int InternalExceptionError = 35;
         internal const int ConnOpenFailedError = 40;
+        internal const int ErrorSpnLookup = 44;
         internal const int LocalDBErrorCode = 50;
         internal const int MultiSubnetFailoverWithMoreThan64IPs = 47;
         internal const int MultiSubnetFailoverWithInstanceSpecified = 48;
