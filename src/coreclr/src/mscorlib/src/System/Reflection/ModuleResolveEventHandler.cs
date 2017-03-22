@@ -4,6 +4,6 @@
 
 namespace System.Reflection
 {
-    [Serializable]
-    public delegate Module ModuleResolveEventHandler(Object sender, ResolveEventArgs e);
+    public delegate Module ModuleResolveEventHandler(object sender, ResolveEventArgs e);
 }
+

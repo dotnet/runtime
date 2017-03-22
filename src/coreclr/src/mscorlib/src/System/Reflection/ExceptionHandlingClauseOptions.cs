@@ -4,12 +4,13 @@
 
 namespace System.Reflection
 {
-    public enum ImageFileMachine
+    [Flags()]
+    public enum ExceptionHandlingClauseOptions : int
     {
-        I386 = 0x014c,
-        IA64 = 0x0200,
-        AMD64 = 0x8664,
-        ARM = 0x01c4,
+        Clause = 0x0,
+        Filter = 0x1,
+        Finally = 0x2,
+        Fault = 0x4,
     }
 }
 

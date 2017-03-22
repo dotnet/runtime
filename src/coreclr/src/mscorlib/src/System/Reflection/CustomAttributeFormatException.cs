@@ -2,41 +2,29 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-//
-// CustomAttributeFormatException is thrown when the binary format of a 
-// 
-//    custom attribute is invalid.
-//
-//
+using System.Runtime.Serialization;
 
 namespace System.Reflection
 {
-    using System;
-    using ApplicationException = System.ApplicationException;
-    using System.Runtime.Serialization;
     [Serializable]
     public class CustomAttributeFormatException : FormatException
     {
         public CustomAttributeFormatException()
-            : base(SR.Arg_CustomAttributeFormatException)
+            : this(SR.Arg_CustomAttributeFormatException)
         {
-            SetErrorCode(__HResults.COR_E_CUSTOMATTRIBUTEFORMAT);
         }
 
-        public CustomAttributeFormatException(String message) : base(message)
+        public CustomAttributeFormatException(string message)
+            : this(message, null)
         {
-            SetErrorCode(__HResults.COR_E_CUSTOMATTRIBUTEFORMAT);
         }
 
-        public CustomAttributeFormatException(String message, Exception inner) : base(message, inner)
+        public CustomAttributeFormatException(string message, Exception inner)
+            : base(message, inner)
         {
-            SetErrorCode(__HResults.COR_E_CUSTOMATTRIBUTEFORMAT);
+            HResult = __HResults.COR_E_CUSTOMATTRIBUTEFORMAT;
         }
 
-        protected CustomAttributeFormatException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
-        }
+        protected CustomAttributeFormatException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 }

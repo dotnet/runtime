@@ -2,13 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-
 namespace System.Reflection
 {
     // This Enum matchs the CorFieldAttr defined in CorHdr.h
-    [Serializable]
-    [Flags()]
+    [Flags]
     public enum FieldAttributes
     {
         // member access mask - Use this mask to retrieve accessibility information.
@@ -33,11 +30,11 @@ namespace System.Reflection
         // interop attributes
         PinvokeImpl = 0x2000,        // Implementation is forwarded through pinvoke.
 
-        // Reserved flags for runtime use only.
-        ReservedMask = 0x9500,
         RTSpecialName = 0x0400,     // Runtime(metadata internal APIs) should check name encoding.
         HasFieldMarshal = 0x1000,     // Field has marshalling information.
         HasDefault = 0x8000,     // Field has default.
         HasFieldRVA = 0x0100,     // Field has RVA.
+
+        ReservedMask = 0x9500,
     }
 }
