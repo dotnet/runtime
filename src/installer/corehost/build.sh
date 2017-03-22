@@ -168,15 +168,15 @@ __base_rid=$__rid_plat-$__build_arch_lowcase
 export __CrossToolChainTargetRID=$__base_rid
 
 # Set up the environment to be used for building with clang.
-if which "clang-3.5" > /dev/null 2>&1; then
-    export CC="$(which clang-3.5)"
-    export CXX="$(which clang++-3.5)"
-elif which "clang-3.6" > /dev/null 2>&1; then
-    export CC="$(which clang-3.6)"
-    export CXX="$(which clang++-3.6)"
-elif which clang > /dev/null 2>&1; then
-    export CC="$(which clang)"
-    export CXX="$(which clang++)"
+if command -v "clang-3.5" > /dev/null 2>&1; then
+    export CC="$(command -v clang-3.5)"
+    export CXX="$(command -v clang++-3.5)"
+elif command -v "clang-3.6" > /dev/null 2>&1; then
+    export CC="$(command -v clang-3.6)"
+    export CXX="$(command -v clang++-3.6)"
+elif command -v clang > /dev/null 2>&1; then
+    export CC="$(command -v clang)"
+    export CXX="$(command -v clang++)"
 else
     echo "Unable to find Clang Compiler"
     echo "Install clang-3.5 or clang3.6"
@@ -187,9 +187,9 @@ echo "Building Corehost from $DIR to $(pwd)"
 set -x # turn on trace
 if [ $__CrossBuild == 1 ]; then
     # clang-3.6 is default compiler for cross compilation
-    if which "clang-3.6" > /dev/null 2>&1; then
-        export CC="$(which clang-3.6)"
-        export CXX="$(which clang++-3.6)"
+    if command -v "clang-3.6" > /dev/null 2>&1; then
+        export CC="$(command -v clang-3.6)"
+        export CXX="$(command -v clang++-3.6)"
     else
         echo "Unable to find Clang 3.6 Compiler"
         echo "Install clang-3.6 for cross compilation"
