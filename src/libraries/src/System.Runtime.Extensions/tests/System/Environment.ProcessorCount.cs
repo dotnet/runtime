@@ -26,6 +26,7 @@ namespace System.Tests
             Assert.Equal(expected, actual);
         }
 
+#if Unix
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Uses P/Invokes to get processor information
         [Fact]
         public void Unix_ProcessorCountTest()
@@ -47,6 +48,7 @@ namespace System.Tests
 
         [DllImport("libc")]
         private static extern long sysconf(int name);
+#endif
 
         [DllImport("kernel32.dll", SetLastError = true)]
         internal static extern void GetSystemInfo(ref SYSTEM_INFO lpSystemInfo);
