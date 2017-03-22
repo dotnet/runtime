@@ -210,6 +210,12 @@
       "values": [ "x86", "x64", "arm", "arm64" ],
       "defaultValue": "${CPUArch}"
     },
+    "PortableBuild": {
+      "description": "Indicates if this is a portable build.",
+      "valueType": "property",
+      "values": [ "0", "1"],
+      "defaultValue": "0"
+    },
     "Rebuild": {
       "description": "Specifies rebuild target.",
       "valueType": "target",
@@ -442,6 +448,12 @@
           "description": "Skips restoring packages during build.",
           "settings": {
             "RestoreDuringBuild": false
+          }
+        },
+        "portable": {
+          "description": "Triggers a portable build.",
+          "settings": {
+            "PortableBuild": "1"
           }
         },
         "BuildTarget": {
