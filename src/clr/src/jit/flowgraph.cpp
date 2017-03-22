@@ -12471,7 +12471,7 @@ void Compiler::fgPrintEdgeWeights()
 
                 if (edge->flEdgeWeightMin < BB_MAX_WEIGHT)
                 {
-                    printf("(%s", refCntWtd2str(edge->flEdgeWeightMin));
+                    printf("(%u", edge->flEdgeWeightMin);
                 }
                 else
                 {
@@ -12481,7 +12481,7 @@ void Compiler::fgPrintEdgeWeights()
                 {
                     if (edge->flEdgeWeightMax < BB_MAX_WEIGHT)
                     {
-                        printf("..%s", refCntWtd2str(edge->flEdgeWeightMax));
+                        printf("..%u", edge->flEdgeWeightMax);
                     }
                     else
                     {
@@ -19522,8 +19522,28 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
     }
     else
     {
-        printf("%6s", refCntWtd2str(block->getBBWeight(this)));
+        BasicBlock::weight_t weight = block->getBBWeight(this);
+
+        if (weight > 99999) // Is it going to be more than 6 characters?
+        {
+            if (weight <= 99999 * BB_UNITY_WEIGHT)
+            {
+                // print weight in this format ddddd.
+                printf("%5u.", (weight + (BB_UNITY_WEIGHT / 2)) / BB_UNITY_WEIGHT);
+            }
+            else // print weight in terms of k (i.e. 156k )
+            {
+                // print weight in this format dddddk
+                BasicBlock::weight_t weightK = weight / 1000;
+                printf("%5uk", (weightK + (BB_UNITY_WEIGHT / 2)) / BB_UNITY_WEIGHT);
+            }
+        }
+        else // print weight in this format ddd.dd
+        {
+            printf("%6s", refCntWtd2str(weight));
+        }
     }
+    printf(" ");
 
     //
     // Display optional IBC weight column.
@@ -19811,11 +19831,11 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
     // clang-format off
 
     printf("\n");
-    printf("------%*s------------------------------------%*s-----------------------%*s----------------------------------------\n",
+    printf("------%*s-------------------------------------%*s-----------------------%*s----------------------------------------\n",
         padWidth, "------------",
         ibcColWidth, "------------",
         maxBlockNumWidth, "----");
-    printf("BBnum %*sdescAddr ref try hnd %s     weight  %*s%s [IL range]      [jump]%*s    [EH region]         [flags]\n",
+    printf("BBnum %*sdescAddr ref try hnd %s     weight  %*s%s  [IL range]     [jump]%*s    [EH region]         [flags]\n",
         padWidth, "",
         fgCheapPredsValid       ? "cheap preds" :
         (fgComputePredsDone     ? "preds      "
@@ -19825,7 +19845,7 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
                                 : ""),
         maxBlockNumWidth, ""
         );
-    printf("------%*s------------------------------------%*s-----------------------%*s----------------------------------------\n",
+    printf("------%*s-------------------------------------%*s-----------------------%*s----------------------------------------\n",
         padWidth, "------------",
         ibcColWidth, "------------",
         maxBlockNumWidth, "----");
@@ -19849,16 +19869,16 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
 
         if (block == fgFirstColdBlock)
         {
-            printf("~~~~~~%*s~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~%*s~~~~~~~~~~~~~~~~~~~~~~~%*s~~~~~~~~~~~~~~~~~~~~~~~~~"
-                   "~~~~~~~~~~~~~~~\n",
+            printf("~~~~~~%*s~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~%*s~~~~~~~~~~~~~~~~~~~~~~~%*s~~~~~~~~~~~~~~~~~~~~~~~~"
+                   "~~~~~~~~~~~~~~~~\n",
                    padWidth, "~~~~~~~~~~~~", ibcColWidth, "~~~~~~~~~~~~", maxBlockNumWidth, "~~~~");
         }
 
 #if FEATURE_EH_FUNCLETS
         if (block == fgFirstFuncletBB)
         {
-            printf("++++++%*s++++++++++++++++++++++++++++++++++++%*s+++++++++++++++++++++++%*s+++++++++++++++++++++++++"
-                   "+++++++++++++++ funclets follow\n",
+            printf("++++++%*s+++++++++++++++++++++++++++++++++++++%*s+++++++++++++++++++++++%*s++++++++++++++++++++++++"
+                   "++++++++++++++++ funclets follow\n",
                    padWidth, "++++++++++++", ibcColWidth, "++++++++++++", maxBlockNumWidth, "++++");
         }
 #endif // FEATURE_EH_FUNCLETS
@@ -19871,8 +19891,8 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
         }
     }
 
-    printf("------%*s------------------------------------%*s-----------------------%*s---------------------------------"
-           "-------\n",
+    printf("------%*s-------------------------------------%*s-----------------------%*s--------------------------------"
+           "--------\n",
            padWidth, "------------", ibcColWidth, "------------", maxBlockNumWidth, "----");
 
     if (dumpTrees)
