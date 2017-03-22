@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Threading;
 using System.Reflection;
 using System.Diagnostics;
 using System.Globalization;
@@ -327,6 +328,21 @@ namespace System
         public virtual bool Equals(Type o) => o == null ? false : object.ReferenceEquals(this.UnderlyingSystemType, o.UnderlyingSystemType);
 
         public static Type ReflectionOnlyGetType(string typeName, bool throwIfNotFound, bool ignoreCase) { throw new PlatformNotSupportedException(SR.PlatformNotSupported_ReflectionOnly); }
+
+        public static Binder DefaultBinder
+        {
+            get
+            {
+                if (s_defaultBinder == null)
+                {
+                    DefaultBinder binder = new DefaultBinder();
+                    Interlocked.CompareExchange<Binder>(ref s_defaultBinder, binder, null);
+                }
+                return s_defaultBinder;
+            }
+        }
+
+        private static volatile Binder s_defaultBinder;
 
         public static readonly char Delimiter = '.';
         public static readonly Type[] EmptyTypes = Array.Empty<Type>();
