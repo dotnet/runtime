@@ -29,19 +29,12 @@
     </ItemGroup>
   </Target>
 
-  <Import Project="$(ToolsDir)/Build.Common.targets" Condition="Exists('$(ToolsDir)/Build.Common.targets')" />
-
-  <!-- permit a wrapping build system to contribute targets to this build -->
-  <Import Condition="Exists('$(MSBuildThisFileDirectory)..\open.targets')" Project="$(MSBuildThisFileDirectory)..\open.targets" />
-
-  <Import Project="$(MSBuildThisFileDirectory)referenceFromRuntime.targets" />
-
   <!-- Corefx-specific binplacing properties -->
   <PropertyGroup>
     <IsRuntimeAssembly Condition="'$(IsRuntimeAssembly)'=='' AND '$(IsReferenceAssembly)' != 'true' AND '$(BinPlaceRef)' != 'true' AND '$(IsTestProject)' != 'true'">true</IsRuntimeAssembly>
     <!-- Try to determine if this is a simple library without a ref project.
          https://github.com/dotnet/corefx/issues/14291 is tracking cleaning this up -->
-    <IsRuntimeAndReferenceAssembly Condition="'$(IsRuntimeAndReferenceAssembly)' == '' and '$(IsRuntimeAssembly)' == 'true' and Exists('$(SourceDir)/$(AssemblyName)') and !Exists('$(SourceDir)/$(AssemblyName)/ref') and !$(AssemblyName.StartsWith('System.Private'))">true</IsRuntimeAndReferenceAssembly>
+    <IsRuntimeAndReferenceAssembly Condition="'$(IsRuntimeAndReferenceAssembly)' == '' and '$(IsRuntimeAssembly)' == 'true' and Exists('$(SourceDir)/$(MSBuildProjectName)') and !Exists('$(SourceDir)/$(MSBuildProjectName)/ref') and !$(MSBuildProjectName.StartsWith('System.Private'))">true</IsRuntimeAndReferenceAssembly>
     <IsNETCoreAppRef Condition="'$(IsNETCoreAppRef)' == ''">$(IsNETCoreApp)</IsNETCoreAppRef>
     <IsUAPRef Condition="'$(IsUAPRef)' == ''">$(IsUAP)</IsUAPRef>
 
@@ -53,8 +46,6 @@
 
     <!-- if building desktop facade and bin placing the runtime, then we need to bin place the refs too -->
     <BinPlaceRef Condition="'$(BuildingDesktopFacade)' == 'true' And '$(BinPlaceRuntime)' == 'true'">true</BinPlaceRef>
-
-    <EnableBinPlacing Condition="'$(BinPlaceRef)' == 'true' OR '$(BinPlaceRuntime)' == 'true'">true</EnableBinPlacing>
   </PropertyGroup>
 
   <ItemGroup Condition="'@(BinPlaceConfiguration)' == ''">
@@ -108,6 +99,13 @@
       <RefPath>$(RefRootPath)netfx/</RefPath>
     </BinPlaceConfiguration>
   </ItemGroup>
+
+  <Import Project="$(ToolsDir)/Build.Common.targets" Condition="Exists('$(ToolsDir)/Build.Common.targets')" />
+
+  <!-- permit a wrapping build system to contribute targets to this build -->
+  <Import Condition="Exists('$(MSBuildThisFileDirectory)..\open.targets')" Project="$(MSBuildThisFileDirectory)..\open.targets" />
+
+  <Import Project="$(MSBuildThisFileDirectory)referenceFromRuntime.targets" />
 
   <PropertyGroup>
     <!-- We don't use any of MSBuild's resolution logic for resolving the framework, so just set these two properties to any folder that exists to skip
