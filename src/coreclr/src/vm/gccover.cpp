@@ -1759,7 +1759,10 @@ void DoGcStress (PCONTEXT regs, MethodDesc *pMD)
     // Do the actual stress work
     //
 
-    if (!GCHeapUtilities::GetGCHeap()->StressHeap())
+    // BUG(github #10318) - when not using allocation contexts, the alloc lock
+    // must be acquired here. Until fixed, this assert prevents random heap corruption.
+    assert(GCHeapUtilities::UseThreadAllocationContexts());
+    if (!GCHeapUtilities::GetGCHeap()->StressHeap(GetThread()->GetAllocContext()))
         UpdateGCStressInstructionWithoutGC ();
 
     // Must flush instruction cache before returning as instruction has been modified.

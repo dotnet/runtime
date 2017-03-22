@@ -696,8 +696,9 @@ public:
     ===========================================================================
     */
 
-    // Returns TRUE if GC actually happens, otherwise FALSE
-    virtual BOOL StressHeap(gc_alloc_context* acontext = 0) = 0;
+    // Returns TRUE if GC actually happens, otherwise FALSE. The passed alloc context
+    // must not be null.
+    virtual BOOL StressHeap(gc_alloc_context* acontext) = 0;
 
     /*
     ===========================================================================
