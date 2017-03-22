@@ -18,16 +18,13 @@ namespace System.Tests
 
         internal static string GetComputerName()
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
+#if !Unix
                 return Environment.GetEnvironmentVariable("COMPUTERNAME");
-            }
-            else
-            {
+#else
                 string temp = Interop.Sys.GetNodeName();
                 int index = temp.IndexOf('.');
                 return index < 0 ? temp : temp.Substring(0, index);
-            }
+#endif
         }
     }
 }

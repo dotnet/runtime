@@ -4,6 +4,7 @@
   <PropertyGroup>
     <ProjectGuid>{6C314C9B-3D28-4B05-9B4C-B57A00A9B3B9}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants Condition="'$(TargetsUnix)' == 'true'" >$(DefineConstants);Unix</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
@@ -79,7 +80,7 @@
     <Compile Include="System\Progress.cs" />
     <Compile Include="System\Random.cs" />
     <Compile Include="System\StringComparer.cs" />
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetNodeName.cs">
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetNodeName.cs" Condition="'$(TargetsUnix)' == 'true'">
       <Link>Common\Interop\Unix\System.Native\Interop.GetNodeName.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
