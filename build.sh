@@ -17,7 +17,7 @@ done
 DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 
 # Some things depend on HOME and it may not be set. We should fix those things, but until then, we just patch a value in
-if [ -z "$HOME" ]; then
+if [ -z "$HOME" ] || [ ! -d "$HOME" ]; then
     export HOME=$DIR/artifacts/home
 
     [ ! -d "$HOME" ] || rm -Rf $HOME
