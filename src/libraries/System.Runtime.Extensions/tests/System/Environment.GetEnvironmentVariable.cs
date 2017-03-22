@@ -11,7 +11,7 @@ using Xunit;
 
 namespace System.Tests
 {
-    public class GetEnvironmentVariable
+    public partial class GetEnvironmentVariable
     {
         [Fact]
         public void InvalidArguments_ThrowsExceptions()
@@ -268,19 +268,23 @@ namespace System.Tests
         private static void SetEnvironmentVariableWithPInvoke(string name, string value)
         {
             bool success =
-                RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
-                    SetEnvironmentVariable(name, value) :
+#if !Unix
+                    SetEnvironmentVariable(name, value);
+#else
                     (value != null ? setenv(name, value, 1) : unsetenv(name)) == 0;
+#endif
             Assert.True(success);
         }
 
-        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        [DllImport("kernel32.dll", EntryPoint = "SetEnvironmentVariableW" , CharSet = CharSet.Unicode, SetLastError = true)]
         private static extern bool SetEnvironmentVariable(string lpName, string lpValue);
 
+#if Unix
         [DllImport("libc")]
         private static extern int setenv(string name, string value, int overwrite);
 
         [DllImport("libc")]
         private static extern int unsetenv(string name);
+#endif
     }
 }

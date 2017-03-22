@@ -697,7 +697,7 @@ namespace System.IO.Tests
         }
 
         // Windows-only P/Invoke to create 8.3 short names from long names
-        [DllImport("kernel32.dll", CharSet = CharSet.Ansi)]
+        [DllImport("kernel32.dll", EntryPoint = "GetShortPathNameW" ,CharSet = CharSet.Unicode)]
         private static extern uint GetShortPathName(string lpszLongPath, StringBuilder lpszShortPath, int cchBuffer);
     }
 }
