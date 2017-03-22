@@ -1,5 +1,5 @@
 DEFAULT_APPNAME Error: 0 : Failed to find or load matching assembly 'System.IO.FileSystem.AccessControl'.
-DEFAULT_APPNAME Error: 0 : Unable to resolve assembly 'Assembly(Name=System.IO.FileSystem.AccessControl, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)' referenced by the implementation assembly 'Assembly(Name=mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)'.
+DEFAULT_APPNAME Error: 0 : Unable to resolve assembly 'Assembly(Name=System.IO.FileSystem.AccessControl, Version=0.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)' referenced by the implementation assembly 'Assembly(Name=mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)'.
 Compat issues with assembly netstandard:
 TypesMustExist : Type 'System.Net.Cookie' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Net.CookieCollection.Add(System.Net.Cookie)' does not exist in the implementation but it does exist in the contract.
@@ -22,6 +22,7 @@ MembersMustExist : Member 'System.Net.CookieContainer.Add(System.Uri, System.Net
 TypesMustExist : Type 'System.Net.CookieException' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Core:
 MembersMustExist : Member 'System.Security.Cryptography.ECDsa.Create(System.Security.Cryptography.ECCurve)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Cryptography.ECDsaCng..ctor(System.Security.Cryptography.ECCurve)' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.IO.FileSystem.AccessControl:
 TypesMustExist : Type 'System.IO.FileSystemAclExtensions' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.AccessControl.DirectoryObjectSecurity' does not exist in the implementation but it does exist in the contract.
@@ -44,4 +45,4 @@ Compat issues with assembly System.Security.Cryptography.Algorithms:
 MembersMustExist : Member 'System.Security.Cryptography.ECDsa.Create(System.Security.Cryptography.ECCurve)' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Security.Cryptography.Cng:
 MembersMustExist : Member 'System.Security.Cryptography.ECDsaCng..ctor(System.Security.Cryptography.ECCurve)' does not exist in the implementation but it does exist in the contract.
-Total Issues: 37
+Total Issues: 38
