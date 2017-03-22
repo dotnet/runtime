@@ -219,7 +219,7 @@
   <Target Name="BinPlace"
           DependsOnTargets="GetBinPlaceDirs;BinPlaceFiles;BinPlaceProps"
           AfterTargets="CopyFilesToOutputDirectory"
-          Condition="'$(BinPlaceRef)' == 'true' OR '$(BinPlaceRuntime)' == 'true'" />
+          Condition="'$(EnableBinPlacing)' == 'true'" />
   
   <Target Name="BinPlaceFiles"
           Condition="'@(BinPlaceDir)' != ''"
@@ -278,6 +278,7 @@
     </ItemGroup>
   </Target>
 
+  <UsingTask TaskName="FindBestConfigurations" AssemblyFile="$(CoreFxToolsTaskDir)CoreFx.Tools.dll"/>
   <Target Name="GetBinPlaceDirs" DependsOnTargets="GetBuildConfigurations">
     <!-- find which, if any, build configuration of this project is best
          for each binplace configuration -->
@@ -299,10 +300,6 @@
     </ItemGroup>
   </Target>
 
-  <ItemGroup>
-    <AdditionalCleanDirectories Include="$(BinDir)netcoreapp" />
-  </ItemGroup>
-
   <!-- Incremental clean only cleans paths under Intermediate or OutDir, handle additional paths -->
   <Target Name="_CleanGetCurrentAdditionalFileWrites" BeforeTargets="_CleanGetCurrentAndPriorFileWrites">
     <!-- find files under paths we care about and add them to _CleanCurrentFileWrites to ensure they are written to the file list -->
@@ -310,6 +307,11 @@
       <Output TaskParameter="InPath" ItemName="_CleanCurrentFileWrites" />
     </FindUnderPath>
   </Target>
+
+  <ItemGroup>
+    <AdditionalCleanDirectories Include="%(BinPlaceConfiguration.RefPath)" />
+    <AdditionalCleanDirectories Include="%(BinPlaceConfiguration.RuntimePath)" />
+  </ItemGroup>
 
   <Target Name="IncrementalCleanAdditionalDirectories" BeforeTargets="IncrementalClean">
     <ItemGroup>
