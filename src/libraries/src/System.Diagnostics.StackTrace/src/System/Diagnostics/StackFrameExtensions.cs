@@ -27,5 +27,15 @@ namespace System.Diagnostics
         {
             return stackFrame.GetFileName() != null;
         }
+
+        public static IntPtr GetNativeIP(this StackFrame stackFrame)
+        {
+            return IntPtr.Zero;
+        }
+
+        public static IntPtr GetNativeImageBase(this StackFrame stackFrame)
+        {
+            return IntPtr.Zero;
+        }
     }
 }
