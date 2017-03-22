@@ -205,7 +205,7 @@ namespace System.Collections.Concurrent
         /// cref="ICollection"/>. This property is not supported.
         /// </summary>
         /// <exception cref="NotSupportedException">The SyncRoot property is not supported.</exception>
-        object ICollection.SyncRoot { get { throw new NotSupportedException(Environment.GetResourceString("ConcurrentCollection_SyncRoot_NotSupported")); } }
+        object ICollection.SyncRoot { get { throw new NotSupportedException(SR.ConcurrentCollection_SyncRoot_NotSupported); } }
 
         /// <summary>Returns an enumerator that iterates through a collection.</summary>
         /// <returns>An <see cref="IEnumerator"/> that can be used to iterate through the collection.</returns>
@@ -443,7 +443,7 @@ namespace System.Collections.Concurrent
             long count = GetCount(head, headHead, tail, tailTail);
             if (index > array.Length - count)
             {
-                throw new ArgumentException(Environment.GetResourceString("Arg_ArrayPlusOffTooSmall"));
+                throw new ArgumentException(SR.Arg_ArrayPlusOffTooSmall);
             }
 
             // Copy the items to the target array

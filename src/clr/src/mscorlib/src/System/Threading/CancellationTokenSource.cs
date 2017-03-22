@@ -600,7 +600,7 @@ namespace System.Threading
         // separation enables inlining of ThrowIfDisposed
         private static void ThrowObjectDisposedException()
         {
-            throw new ObjectDisposedException(null, Environment.GetResourceString("CancellationTokenSource_Disposed"));
+            throw new ObjectDisposedException(null, SR.CancellationTokenSource_Disposed);
         }
 
         /// <summary>
@@ -891,7 +891,7 @@ namespace System.Threading
             switch (tokens.Length)
             {
                 case 0:
-                    throw new ArgumentException(Environment.GetResourceString("CancellationToken_CreateLinkedToken_TokensIsEmpty"));
+                    throw new ArgumentException(SR.CancellationToken_CreateLinkedToken_TokensIsEmpty);
                 case 1:
                     return CreateLinkedTokenSource(tokens[0]);
                 case 2:

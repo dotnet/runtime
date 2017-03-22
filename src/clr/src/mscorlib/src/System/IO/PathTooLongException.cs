@@ -23,7 +23,7 @@ namespace System.IO
     public class PathTooLongException : IOException
     {
         public PathTooLongException()
-            : base(Environment.GetResourceString("IO.PathTooLong"))
+            : base(SR.IO_PathTooLong)
         {
             SetErrorCode(__HResults.COR_E_PATHTOOLONG);
         }

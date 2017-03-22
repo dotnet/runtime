@@ -348,7 +348,7 @@ namespace System
             }
             else if (id.Length == 0 || id.Length > MaxKeyLength || id.Contains("\0"))
             {
-                throw new TimeZoneNotFoundException(Environment.GetResourceString("TimeZoneNotFound_MissingData", id));
+                throw new TimeZoneNotFoundException(SR.Format(SR.TimeZoneNotFound_MissingData, id));
             }
 
             TimeZoneInfo value;
@@ -369,15 +369,15 @@ namespace System
             }
             else if (result == TimeZoneInfoResult.InvalidTimeZoneException)
             {
-                throw new InvalidTimeZoneException(Environment.GetResourceString("InvalidTimeZone_InvalidRegistryData", id), e);
+                throw new InvalidTimeZoneException(SR.Format(SR.InvalidTimeZone_InvalidRegistryData, id), e);
             }
             else if (result == TimeZoneInfoResult.SecurityException)
             {
-                throw new SecurityException(Environment.GetResourceString("Security_CannotReadRegistryData", id), e);
+                throw new SecurityException(SR.Format(SR.Security_CannotReadRegistryData, id), e);
             }
             else
             {
-                throw new TimeZoneNotFoundException(Environment.GetResourceString("TimeZoneNotFound_MissingData", id), e);
+                throw new TimeZoneNotFoundException(SR.Format(SR.TimeZoneNotFound_MissingData, id), e);
             }
         }
 

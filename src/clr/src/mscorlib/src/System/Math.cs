@@ -113,7 +113,7 @@ namespace System
         public static double Round(double value, int digits)
         {
             if ((digits < 0) || (digits > maxRoundingDigits))
-                throw new ArgumentOutOfRangeException(nameof(digits), Environment.GetResourceString("ArgumentOutOfRange_RoundingDigits"));
+                throw new ArgumentOutOfRangeException(nameof(digits), SR.ArgumentOutOfRange_RoundingDigits);
             Contract.EndContractBlock();
             return InternalRound(value, digits, MidpointRounding.ToEven);
         }
@@ -126,10 +126,10 @@ namespace System
         public static double Round(double value, int digits, MidpointRounding mode)
         {
             if ((digits < 0) || (digits > maxRoundingDigits))
-                throw new ArgumentOutOfRangeException(nameof(digits), Environment.GetResourceString("ArgumentOutOfRange_RoundingDigits"));
+                throw new ArgumentOutOfRangeException(nameof(digits), SR.ArgumentOutOfRange_RoundingDigits);
             if (mode < MidpointRounding.ToEven || mode > MidpointRounding.AwayFromZero)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidEnumValue", mode, nameof(MidpointRounding)), nameof(mode));
+                throw new ArgumentException(SR.Format(SR.Argument_InvalidEnumValue, mode, nameof(MidpointRounding)), nameof(mode));
             }
             Contract.EndContractBlock();
             return InternalRound(value, digits, mode);
@@ -243,7 +243,7 @@ namespace System
         {
             Contract.Requires(value < 0, "AbsHelper should only be called for negative values! (workaround for JIT inlining)");
             if (value == SByte.MinValue)
-                throw new OverflowException(Environment.GetResourceString("Overflow_NegateTwosCompNum"));
+                throw new OverflowException(SR.Overflow_NegateTwosCompNum);
             Contract.EndContractBlock();
             return ((sbyte)(-value));
         }
@@ -260,7 +260,7 @@ namespace System
         {
             Contract.Requires(value < 0, "AbsHelper should only be called for negative values! (workaround for JIT inlining)");
             if (value == Int16.MinValue)
-                throw new OverflowException(Environment.GetResourceString("Overflow_NegateTwosCompNum"));
+                throw new OverflowException(SR.Overflow_NegateTwosCompNum);
             Contract.EndContractBlock();
             return (short)-value;
         }
@@ -277,7 +277,7 @@ namespace System
         {
             Contract.Requires(value < 0, "AbsHelper should only be called for negative values! (workaround for JIT inlining)");
             if (value == Int32.MinValue)
-                throw new OverflowException(Environment.GetResourceString("Overflow_NegateTwosCompNum"));
+                throw new OverflowException(SR.Overflow_NegateTwosCompNum);
             Contract.EndContractBlock();
             return -value;
         }
@@ -294,7 +294,7 @@ namespace System
         {
             Contract.Requires(value < 0, "AbsHelper should only be called for negative values! (workaround for JIT inlining)");
             if (value == Int64.MinValue)
-                throw new OverflowException(Environment.GetResourceString("Overflow_NegateTwosCompNum"));
+                throw new OverflowException(SR.Overflow_NegateTwosCompNum);
             Contract.EndContractBlock();
             return -value;
         }
@@ -631,7 +631,7 @@ namespace System
 
         private static void ThrowMinMaxException<T>(T min, T max)
         {
-            throw new ArgumentException(Environment.GetResourceString("Argument_MinMaxValue", min, max));
+            throw new ArgumentException(SR.Format(SR.Argument_MinMaxValue, min, max));
         }
 
         /*=====================================Log======================================
@@ -713,7 +713,7 @@ namespace System
                 return 1;
             else if (value == 0)
                 return 0;
-            throw new ArithmeticException(Environment.GetResourceString("Arithmetic_NaN"));
+            throw new ArithmeticException(SR.Arithmetic_NaN);
         }
 
         public static int Sign(double value)
@@ -724,7 +724,7 @@ namespace System
                 return 1;
             else if (value == 0)
                 return 0;
-            throw new ArithmeticException(Environment.GetResourceString("Arithmetic_NaN"));
+            throw new ArithmeticException(SR.Arithmetic_NaN);
         }
 
         public static int Sign(Decimal value)

@@ -48,7 +48,7 @@ namespace System.Runtime.Serialization
 
             if (!(type is RuntimeType))
             {
-                throw new SerializationException(Environment.GetResourceString("Serialization_InvalidType", type.ToString()));
+                throw new SerializationException(SR.Format(SR.Serialization_InvalidType, type.ToString()));
             }
 
             return nativeGetUninitializedObject((RuntimeType)type);

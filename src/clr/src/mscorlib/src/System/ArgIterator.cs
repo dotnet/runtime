@@ -131,7 +131,7 @@ namespace System
         // Inherited from object
         public override bool Equals(Object o)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_NYI"));
+            throw new NotSupportedException(SR.NotSupported_NYI);
         }
 #else
         public ArgIterator(RuntimeArgumentHandle arglist)

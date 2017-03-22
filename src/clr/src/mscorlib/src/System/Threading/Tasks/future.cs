@@ -374,7 +374,7 @@ namespace System.Threading.Tasks
         {
             get
             {
-                return IsRanToCompletion ? "" + m_result : Environment.GetResourceString("TaskT_DebuggerNoResult");
+                return IsRanToCompletion ? "" + m_result : SR.TaskT_DebuggerNoResult;
             }
         }
 

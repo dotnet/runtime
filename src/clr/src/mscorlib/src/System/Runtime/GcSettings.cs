@@ -50,7 +50,7 @@ namespace System.Runtime
             {
                 if ((value < GCLatencyMode.Batch) || (value > GCLatencyMode.SustainedLowLatency))
                 {
-                    throw new ArgumentOutOfRangeException(Environment.GetResourceString("ArgumentOutOfRange_Enum"));
+                    throw new ArgumentOutOfRangeException(SR.ArgumentOutOfRange_Enum);
                 }
                 Contract.EndContractBlock();
 
@@ -72,7 +72,7 @@ namespace System.Runtime
                 if ((value < GCLargeObjectHeapCompactionMode.Default) ||
                     (value > GCLargeObjectHeapCompactionMode.CompactOnce))
                 {
-                    throw new ArgumentOutOfRangeException(Environment.GetResourceString("ArgumentOutOfRange_Enum"));
+                    throw new ArgumentOutOfRangeException(SR.ArgumentOutOfRange_Enum);
                 }
                 Contract.EndContractBlock();
 

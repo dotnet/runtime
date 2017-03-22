@@ -48,7 +48,7 @@ namespace System
                 return m_value - ((Int16)value).m_value;
             }
 
-            throw new ArgumentException(Environment.GetResourceString("Arg_MustBeInt16"));
+            throw new ArgumentException(SR.Arg_MustBeInt16);
         }
 
         public int CompareTo(Int16 value)
@@ -145,7 +145,7 @@ namespace System
             }
             catch (OverflowException e)
             {
-                throw new OverflowException(Environment.GetResourceString("Overflow_Int16"), e);
+                throw new OverflowException(SR.Overflow_Int16, e);
             }
 
             // We need this check here since we don't allow signs to specified in hex numbers. So we fixup the result
@@ -154,12 +154,12 @@ namespace System
             { // We are parsing a hexadecimal number
                 if ((i < 0) || (i > UInt16.MaxValue))
                 {
-                    throw new OverflowException(Environment.GetResourceString("Overflow_Int16"));
+                    throw new OverflowException(SR.Overflow_Int16);
                 }
                 return (short)i;
             }
 
-            if (i < MinValue || i > MaxValue) throw new OverflowException(Environment.GetResourceString("Overflow_Int16"));
+            if (i < MinValue || i > MaxValue) throw new OverflowException(SR.Overflow_Int16);
             return (short)i;
         }
 
@@ -294,7 +294,7 @@ namespace System
         /// <internalonly/>
         DateTime IConvertible.ToDateTime(IFormatProvider provider)
         {
-            throw new InvalidCastException(Environment.GetResourceString("InvalidCast_FromTo", "Int16", "DateTime"));
+            throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, "Int16", "DateTime"));
         }
 
         /// <internalonly/>

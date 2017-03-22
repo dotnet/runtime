@@ -98,7 +98,7 @@ namespace System
 
 
             if (_className == null || HResult == 0)
-                throw new SerializationException(Environment.GetResourceString("Serialization_InsufficientState"));
+                throw new SerializationException(SR.Serialization_InsufficientState);
 
             // If we are constructing a new exception after a cross-appdomain call...
             if (context.State == StreamingContextStates.CrossAppDomain)
@@ -130,7 +130,7 @@ namespace System
                     {
                         _className = GetClassName();
                     }
-                    return Environment.GetResourceString("Exception_WasThrown", _className);
+                    return SR.Format(SR.Exception_WasThrown, _className);
                 }
                 else
                 {
@@ -388,7 +388,7 @@ namespace System
                             if (moduleBuilder != null)
                                 rtModule = moduleBuilder.InternalModule;
                             else
-                                throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeReflectionObject"));
+                                throw new ArgumentException(SR.Argument_MustBeRuntimeReflectionObject);
                         }
 
                         _source = rtModule.GetRuntimeAssembly().GetSimpleName();
@@ -422,7 +422,7 @@ namespace System
             if (_innerException != null)
             {
                 s = s + " ---> " + _innerException.ToString(needFileLineInfo, needMessage) + Environment.NewLine +
-                "   " + Environment.GetResourceString("Exception_EndOfInnerExceptionStack");
+                "   " + SR.Exception_EndOfInnerExceptionStack;
             }
 
             string stackTrace = GetStackTrace(needFileLineInfo);

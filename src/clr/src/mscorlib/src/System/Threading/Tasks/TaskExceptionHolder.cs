@@ -127,7 +127,7 @@ namespace System.Threading.Tasks
 
                 // First, publish the unobserved exception and allow users to observe it
                 AggregateException exceptionToThrow = new AggregateException(
-                    Environment.GetResourceString("TaskExceptionHolder_UnhandledException"),
+                    SR.TaskExceptionHolder_UnhandledException,
                     m_faultExceptions);
                 UnobservedTaskExceptionEventArgs ueea = new UnobservedTaskExceptionEventArgs(exceptionToThrow);
                 TaskScheduler.PublishUnobservedTaskException(m_task, ueea);
@@ -276,7 +276,7 @@ namespace System.Threading.Tasks
                         // Anything else is a programming error
                         else
                         {
-                            throw new ArgumentException(Environment.GetResourceString("TaskExceptionHolder_UnknownExceptionType"), nameof(exceptionObject));
+                            throw new ArgumentException(SR.TaskExceptionHolder_UnknownExceptionType, nameof(exceptionObject));
                         }
                     }
                 }

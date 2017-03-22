@@ -676,7 +676,7 @@ namespace System
 
             if (!NumberBufferToDecimal(number.PackForNative(), ref result))
             {
-                throw new OverflowException(Environment.GetResourceString("Overflow_Decimal"));
+                throw new OverflowException(SR.Overflow_Decimal);
             }
             return result;
         }
@@ -710,12 +710,12 @@ namespace System
                 {
                     return Double.NaN;
                 }
-                throw new FormatException(Environment.GetResourceString("Format_InvalidString"));
+                throw new FormatException(SR.Format_InvalidString);
             }
 
             if (!NumberBufferToDouble(number.PackForNative(), ref d))
             {
-                throw new OverflowException(Environment.GetResourceString("Overflow_Double"));
+                throw new OverflowException(SR.Overflow_Double);
             }
 
             return d;
@@ -733,14 +733,14 @@ namespace System
             {
                 if (!HexNumberToInt32(ref number, ref i))
                 {
-                    throw new OverflowException(Environment.GetResourceString("Overflow_Int32"));
+                    throw new OverflowException(SR.Overflow_Int32);
                 }
             }
             else
             {
                 if (!NumberToInt32(ref number, ref i))
                 {
-                    throw new OverflowException(Environment.GetResourceString("Overflow_Int32"));
+                    throw new OverflowException(SR.Overflow_Int32);
                 }
             }
             return i;
@@ -758,14 +758,14 @@ namespace System
             {
                 if (!HexNumberToInt64(ref number, ref i))
                 {
-                    throw new OverflowException(Environment.GetResourceString("Overflow_Int64"));
+                    throw new OverflowException(SR.Overflow_Int64);
                 }
             }
             else
             {
                 if (!NumberToInt64(ref number, ref i))
                 {
-                    throw new OverflowException(Environment.GetResourceString("Overflow_Int64"));
+                    throw new OverflowException(SR.Overflow_Int64);
                 }
             }
             return i;
@@ -1014,17 +1014,17 @@ namespace System
                 {
                     return Single.NaN;
                 }
-                throw new FormatException(Environment.GetResourceString("Format_InvalidString"));
+                throw new FormatException(SR.Format_InvalidString);
             }
 
             if (!NumberBufferToDouble(number.PackForNative(), ref d))
             {
-                throw new OverflowException(Environment.GetResourceString("Overflow_Single"));
+                throw new OverflowException(SR.Overflow_Single);
             }
             Single castSingle = (Single)d;
             if (Single.IsInfinity(castSingle))
             {
-                throw new OverflowException(Environment.GetResourceString("Overflow_Single"));
+                throw new OverflowException(SR.Overflow_Single);
             }
             return castSingle;
         }
@@ -1041,14 +1041,14 @@ namespace System
             {
                 if (!HexNumberToUInt32(ref number, ref i))
                 {
-                    throw new OverflowException(Environment.GetResourceString("Overflow_UInt32"));
+                    throw new OverflowException(SR.Overflow_UInt32);
                 }
             }
             else
             {
                 if (!NumberToUInt32(ref number, ref i))
                 {
-                    throw new OverflowException(Environment.GetResourceString("Overflow_UInt32"));
+                    throw new OverflowException(SR.Overflow_UInt32);
                 }
             }
 
@@ -1066,14 +1066,14 @@ namespace System
             {
                 if (!HexNumberToUInt64(ref number, ref i))
                 {
-                    throw new OverflowException(Environment.GetResourceString("Overflow_UInt64"));
+                    throw new OverflowException(SR.Overflow_UInt64);
                 }
             }
             else
             {
                 if (!NumberToUInt64(ref number, ref i))
                 {
-                    throw new OverflowException(Environment.GetResourceString("Overflow_UInt64"));
+                    throw new OverflowException(SR.Overflow_UInt64);
                 }
             }
             return i;
@@ -1093,7 +1093,7 @@ namespace System
                 if (!ParseNumber(ref p, options, ref number, null, info, parseDecimal)
                     || (p - stringPointer < str.Length && !TrailingZeros(str, (int)(p - stringPointer))))
                 {
-                    throw new FormatException(Environment.GetResourceString("Format_InvalidString"));
+                    throw new FormatException(SR.Format_InvalidString);
                 }
             }
         }

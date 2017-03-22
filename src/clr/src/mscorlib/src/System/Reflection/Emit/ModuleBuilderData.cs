@@ -46,7 +46,7 @@ namespace System.Reflection.Emit
                 if (strExtension == null || strExtension == String.Empty)
                 {
                     // This is required by our loader. It cannot load module file that does not have file extension.
-                    throw new ArgumentException(Environment.GetResourceString("Argument_NoModuleFileExtension", strFileName));
+                    throw new ArgumentException(SR.Format(SR.Argument_NoModuleFileExtension, strFileName));
                 }
                 m_strFileName = strFileName;
             }

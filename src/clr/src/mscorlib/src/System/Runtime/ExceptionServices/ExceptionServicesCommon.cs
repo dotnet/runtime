@@ -101,7 +101,7 @@ namespace System.Runtime.ExceptionServices
         {
             if (source == null)
             {
-                throw new ArgumentNullException(nameof(source), Environment.GetResourceString("ArgumentNull_Obj"));
+                throw new ArgumentNullException(nameof(source), SR.ArgumentNull_Obj);
             }
 
             return new ExceptionDispatchInfo(source);

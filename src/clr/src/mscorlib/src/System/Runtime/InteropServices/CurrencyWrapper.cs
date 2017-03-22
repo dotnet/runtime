@@ -27,7 +27,7 @@ namespace System.Runtime.InteropServices
         public CurrencyWrapper(Object obj)
         {
             if (!(obj is Decimal))
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeDecimal"), nameof(obj));
+                throw new ArgumentException(SR.Arg_MustBeDecimal, nameof(obj));
             m_WrappedObject = (Decimal)obj;
         }
 

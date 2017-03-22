@@ -219,7 +219,7 @@ namespace System
             }
             catch (IOException ex)
             {
-                e = new InvalidTimeZoneException(Environment.GetResourceString("InvalidTimeZone_InvalidFileData", id, timeZoneFilePath), ex);
+                e = new InvalidTimeZoneException(SR.Format(SR.InvalidTimeZone_InvalidFileData, id, timeZoneFilePath), ex);
                 return TimeZoneInfoResult.InvalidTimeZoneException;
             }
 
@@ -227,7 +227,7 @@ namespace System
 
             if (value == null)
             {
-                e = new InvalidTimeZoneException(Environment.GetResourceString("InvalidTimeZone_InvalidFileData", id, timeZoneFilePath));
+                e = new InvalidTimeZoneException(SR.Format(SR.InvalidTimeZone_InvalidFileData, id, timeZoneFilePath));
                 return TimeZoneInfoResult.InvalidTimeZoneException;
             }
 
@@ -571,7 +571,7 @@ namespace System
             }
             else if (id.Length == 0 || id.Contains("\0"))
             {
-                throw new TimeZoneNotFoundException(Environment.GetResourceString("TimeZoneNotFound_MissingData", id));
+                throw new TimeZoneNotFoundException(SR.Format(SR.TimeZoneNotFound_MissingData, id));
             }
 
             TimeZoneInfo value;
@@ -598,11 +598,11 @@ namespace System
             }
             else if (result == TimeZoneInfoResult.SecurityException)
             {
-                throw new SecurityException(Environment.GetResourceString("Security_CannotReadFileData", id), e);
+                throw new SecurityException(SR.Format(SR.Security_CannotReadFileData, id), e);
             }
             else
             {
-                throw new TimeZoneNotFoundException(Environment.GetResourceString("TimeZoneNotFound_MissingData", id), e);
+                throw new TimeZoneNotFoundException(SR.Format(SR.TimeZoneNotFound_MissingData, id), e);
             }
         }
 
@@ -926,7 +926,7 @@ namespace System
                 return transitionTypes[0];
             }
 
-            throw new InvalidTimeZoneException(Environment.GetResourceString("InvalidTimeZone_NoTTInfoStructures"));
+            throw new InvalidTimeZoneException(SR.InvalidTimeZone_NoTTInfoStructures);
         }
 
         /// <summary>
@@ -1060,7 +1060,7 @@ namespace System
                 DayOfWeek day;
                 if (!TZif_ParseMDateRule(date, out month, out week, out day))
                 {
-                    throw new InvalidTimeZoneException(Environment.GetResourceString("InvalidTimeZone_UnparseablePosixMDateString", date));
+                    throw new InvalidTimeZoneException(SR.Format(SR.InvalidTimeZone_UnparseablePosixMDateString, date));
                 }
 
                 DateTime timeOfDay;
@@ -1103,7 +1103,7 @@ namespace System
                 // One of them *could* be supported if we relaxed the TransitionTime validation rules, and allowed
                 // "IsFixedDateRule = true, Month = 0, Day = n" to mean the nth day of the year, picking one of the rules above
 
-                throw new InvalidTimeZoneException(Environment.GetResourceString("InvalidTimeZone_JulianDayNotSupported"));
+                throw new InvalidTimeZoneException(SR.InvalidTimeZone_JulianDayNotSupported);
             }
         }
 
@@ -1425,7 +1425,7 @@ namespace System
             {
                 if (data == null || data.Length < index + Length)
                 {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_TimeZoneInfoInvalidTZif"), nameof(data));
+                    throw new ArgumentException(SR.Argument_TimeZoneInfoInvalidTZif, nameof(data));
                 }
                 Contract.EndContractBlock();
                 UtcOffset = new TimeSpan(0, 0, TZif_ToInt32(data, index + 00));
@@ -1461,7 +1461,7 @@ namespace System
                 if (Magic != 0x545A6966)
                 {
                     // 0x545A6966 = {0x54, 0x5A, 0x69, 0x66} = "TZif"
-                    throw new ArgumentException(Environment.GetResourceString("Argument_TimeZoneInfoBadTZif"), nameof(data));
+                    throw new ArgumentException(SR.Argument_TimeZoneInfoBadTZif, nameof(data));
                 }
 
                 byte version = data[index + 04];

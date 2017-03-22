@@ -9,7 +9,7 @@
 // The old way to throw an exception generates quite a lot IL code and assembly code.
 // Following is an example:
 //     C# source
-//          throw new ArgumentNullException(nameof(key), Environment.GetResourceString("ArgumentNull_Key"));
+//          throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
 //     IL code:
 //          IL_0003:  ldstr      "key"
 //          IL_0008:  ldstr      "ArgumentNull_Key"
@@ -52,7 +52,7 @@ namespace System
 
         internal static void ThrowInvalidTypeWithPointersNotSupported(Type targetType)
         {
-            throw new ArgumentException(Environment.GetResourceString("Argument_InvalidTypeWithPointersNotSupported", targetType));
+            throw new ArgumentException(SR.Format(SR.Argument_InvalidTypeWithPointersNotSupported, targetType));
         }
 
         internal static void ThrowIndexOutOfRangeException()
@@ -67,17 +67,17 @@ namespace System
 
         internal static void ThrowArgumentException_DestinationTooShort()
         {
-            throw new ArgumentException(Environment.GetResourceString("Argument_DestinationTooShort"));
+            throw new ArgumentException(SR.Argument_DestinationTooShort);
         }
 
         internal static void ThrowNotSupportedException_CannotCallEqualsOnSpan()
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_CannotCallEqualsOnSpan"));
+            throw new NotSupportedException(SR.NotSupported_CannotCallEqualsOnSpan);
         }
 
         internal static void ThrowNotSupportedException_CannotCallGetHashCodeOnSpan()
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_CannotCallGetHashCodeOnSpan"));
+            throw new NotSupportedException(SR.NotSupported_CannotCallGetHashCodeOnSpan);
         }
 
         internal static void ThrowArgumentOutOfRange_IndexException()
@@ -122,7 +122,7 @@ namespace System
 
         private static ArgumentException GetAddingDuplicateWithKeyArgumentException(object key)
         {
-            return new ArgumentException(Environment.GetResourceString("Argument_AddingDuplicateWithKey", key));
+            return new ArgumentException(SR.Format(SR.Argument_AddingDuplicateWithKey, key));
         }
 
         internal static void ThrowAddingDuplicateWithKeyArgumentException(object key)
@@ -290,12 +290,12 @@ namespace System
 
         private static ArgumentException GetWrongKeyTypeArgumentException(object key, Type targetType)
         {
-            return new ArgumentException(Environment.GetResourceString("Arg_WrongType", key, targetType), nameof(key));
+            return new ArgumentException(SR.Format(SR.Arg_WrongType, key, targetType), nameof(key));
         }
 
         private static ArgumentException GetWrongValueTypeArgumentException(object value, Type targetType)
         {
-            return new ArgumentException(Environment.GetResourceString("Arg_WrongType", value, targetType), nameof(value));
+            return new ArgumentException(SR.Format(SR.Arg_WrongType, value, targetType), nameof(value));
         }
 
         internal static ArgumentOutOfRangeException GetArgumentOutOfRangeException(ExceptionArgument argument, ExceptionResource resource)
@@ -341,7 +341,7 @@ namespace System
             Debug.Assert(Enum.IsDefined(typeof(ExceptionResource), resource),
                 "The enum value is not defined, please check the ExceptionResource Enum.");
 
-            return Environment.GetResourceString(resource.ToString());
+            return SR.GetResourceString(resource.ToString());
         }
     }
 

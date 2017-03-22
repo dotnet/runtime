@@ -98,11 +98,11 @@ namespace System.IO
             get
             {
                 Contract.Ensures(Contract.Result<int>() >= 0);
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_TimeoutsNotSupported"));
+                throw new InvalidOperationException(SR.InvalidOperation_TimeoutsNotSupported);
             }
             set
             {
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_TimeoutsNotSupported"));
+                throw new InvalidOperationException(SR.InvalidOperation_TimeoutsNotSupported);
             }
         }
 
@@ -111,11 +111,11 @@ namespace System.IO
             get
             {
                 Contract.Ensures(Contract.Result<int>() >= 0);
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_TimeoutsNotSupported"));
+                throw new InvalidOperationException(SR.InvalidOperation_TimeoutsNotSupported);
             }
             set
             {
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_TimeoutsNotSupported"));
+                throw new InvalidOperationException(SR.InvalidOperation_TimeoutsNotSupported);
             }
         }
 
@@ -382,15 +382,15 @@ namespace System.IO
 
             if (readTask == null)
             {
-                throw new ArgumentException(Environment.GetResourceString("InvalidOperation_WrongAsyncResultOrEndReadCalledMultiple"));
+                throw new ArgumentException(SR.InvalidOperation_WrongAsyncResultOrEndReadCalledMultiple);
             }
             else if (readTask != asyncResult)
             {
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_WrongAsyncResultOrEndReadCalledMultiple"));
+                throw new InvalidOperationException(SR.InvalidOperation_WrongAsyncResultOrEndReadCalledMultiple);
             }
             else if (!readTask._isRead)
             {
-                throw new ArgumentException(Environment.GetResourceString("InvalidOperation_WrongAsyncResultOrEndReadCalledMultiple"));
+                throw new ArgumentException(SR.InvalidOperation_WrongAsyncResultOrEndReadCalledMultiple);
             }
 
             try
@@ -566,15 +566,15 @@ namespace System.IO
             var writeTask = _activeReadWriteTask;
             if (writeTask == null)
             {
-                throw new ArgumentException(Environment.GetResourceString("InvalidOperation_WrongAsyncResultOrEndWriteCalledMultiple"));
+                throw new ArgumentException(SR.InvalidOperation_WrongAsyncResultOrEndWriteCalledMultiple);
             }
             else if (writeTask != asyncResult)
             {
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_WrongAsyncResultOrEndWriteCalledMultiple"));
+                throw new InvalidOperationException(SR.InvalidOperation_WrongAsyncResultOrEndWriteCalledMultiple);
             }
             else if (writeTask._isRead)
             {
-                throw new ArgumentException(Environment.GetResourceString("InvalidOperation_WrongAsyncResultOrEndWriteCalledMultiple"));
+                throw new ArgumentException(SR.InvalidOperation_WrongAsyncResultOrEndWriteCalledMultiple);
             }
 
             try
