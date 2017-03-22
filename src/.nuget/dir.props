@@ -61,9 +61,13 @@
     <When Condition="'$(PackageRID)' != ''" />
     <When Condition="'$(_runtimeOSFamily)' == 'win'">
       <PropertyGroup>
-        <PackageRID Condition="'$(ArchGroup)' == 'x86' OR '$(ArchGroup)' == 'x64'">win7-$(ArchGroup)</PackageRID>
-        <PackageRID Condition="'$(ArchGroup)' == 'arm'">win8-$(ArchGroup)</PackageRID>
-        <PackageRID Condition="'$(ArchGroup)' == 'arm64'">win10-$(ArchGroup)</PackageRID>
+        <RIDPlatform>win7</RIDPlatform>
+        <RIDPlatform Condition="'$(ArchGroup)' == 'arm'">win8</RIDPlatform>
+        <RIDPlatform Condition="'$(ArchGroup)' == 'arm64'">win10</RIDPlatform>
+        
+        <!-- Set the platform part of the RID if we are doing a portable build -->
+        <RIDPlatform Condition="'$(PortableBuild)' == '1'">win</RIDPlatform>
+        <PackageRID>$(RIDPlatform)-$(ArchGroup)</PackageRID>
       </PropertyGroup>
     </When>
     <When Condition="'$(_runtimeOSFamily)' == 'osx'">
