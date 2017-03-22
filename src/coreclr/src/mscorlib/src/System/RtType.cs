@@ -2481,24 +2481,6 @@ namespace System
             }
         }
 
-        internal bool IsSpecialSerializableType()
-        {
-            RuntimeType rt = this;
-            do
-            {
-                // In all sane cases we only need to compare the direct level base type with
-                // System.Enum and System.MulticastDelegate. However, a generic argument can
-                // have a base type constraint that is Delegate or even a real delegate type.
-                // Let's maintain compatibility and return true for them.
-                if (rt == RuntimeType.DelegateType || rt == RuntimeType.EnumType)
-                    return true;
-
-                rt = rt.GetBaseType();
-            } while (rt != null);
-
-            return false;
-        }
-
         private string GetDefaultMemberName()
         {
             return Cache.GetDefaultMemberName();
