@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Reflection;
-using System.Threading;
 using System.Runtime.CompilerServices;
 using System.Diagnostics.Contracts;
 using StackCrawlMark = System.Threading.StackCrawlMark;
@@ -12,9 +11,6 @@ namespace System
 {
     public abstract partial class Type : MemberInfo, IReflect
     {
-        // The Default binder.  We create a single one and expose that.
-        private static Binder defaultBinder;
-
         public bool IsInterface
         {
             get
@@ -23,21 +19,6 @@ namespace System
                 if (rt != null)
                     return RuntimeTypeHandle.IsInterface(rt);
                 return ((GetAttributeFlagsImpl() & TypeAttributes.ClassSemanticsMask) == TypeAttributes.Interface);
-            }
-        }
-
-        public virtual bool IsSerializable
-        {
-            get
-            {
-                if ((GetAttributeFlagsImpl() & TypeAttributes.Serializable) != 0)
-                    return true;
-
-                RuntimeType rt = this.UnderlyingSystemType as RuntimeType;
-                if (rt != null)
-                    return rt.IsSpecialSerializableType();
-
-                return false;
             }
         }
 
@@ -119,27 +100,6 @@ namespace System
         public static Type GetTypeFromCLSID(Guid clsid, String server, bool throwOnError)
         {
             return RuntimeType.GetTypeFromCLSIDImpl(clsid, server, throwOnError);
-        }
-
-        // Return the Default binder used by the system.
-        static public Binder DefaultBinder
-        {
-            get
-            {
-                // Allocate the default binder if it hasn't been allocated yet.
-                if (defaultBinder == null)
-                    CreateBinder();
-                return defaultBinder;
-            }
-        }
-
-        static private void CreateBinder()
-        {
-            if (defaultBinder == null)
-            {
-                DefaultBinder binder = new DefaultBinder();
-                Interlocked.CompareExchange<Binder>(ref defaultBinder, binder, null);
-            }
         }
 
         internal virtual RuntimeTypeHandle GetTypeHandleInternal()
