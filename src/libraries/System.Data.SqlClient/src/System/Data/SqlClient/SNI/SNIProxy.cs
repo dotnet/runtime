@@ -820,7 +820,7 @@ namespace System.Data.SqlClient.SNI
                     for ( int i = 4; i < tokensByBackSlash.Length-1; i++)
                     {
                         pipeNameBuilder.Append(tokensByBackSlash[i]);
-                        pipeNameBuilder.Append(Path.PathSeparator);
+                        pipeNameBuilder.Append(Path.DirectorySeparatorChar);
                     }
                     // Append the last part without a "/"
                     pipeNameBuilder.Append(tokensByBackSlash[tokensByBackSlash.Length - 1]);
