@@ -1,5 +1,5 @@
 DEFAULT_APPNAME Error: 0 : Failed to find or load matching assembly 'System.IO.FileSystem.AccessControl'.
-DEFAULT_APPNAME Error: 0 : Unable to resolve assembly 'Assembly(Name=System.IO.FileSystem.AccessControl, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)' referenced by the implementation assembly 'Assembly(Name=mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)'.
+DEFAULT_APPNAME Error: 0 : Unable to resolve assembly 'Assembly(Name=System.IO.FileSystem.AccessControl, Version=0.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)' referenced by the implementation assembly 'Assembly(Name=mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)'.
 Compat issues with assembly mscorlib:
 TypesMustExist : Type 'System.AppContext' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.AppDomain.add_AssemblyLoad(System.AssemblyLoadEventHandler)' does not exist in the implementation but it does exist in the contract.

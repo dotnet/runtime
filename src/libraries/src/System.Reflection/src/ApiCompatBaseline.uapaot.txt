@@ -1,7 +1,4 @@
 Compat issues with assembly System.Reflection:
-MembersMustExist : Member 'System.Reflection.Assembly.GetFile(System.String)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Reflection.Assembly.GetFiles()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Reflection.Assembly.GetFiles(System.Boolean)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.FieldInfo.GetValueDirect(System.TypedReference)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.FieldInfo.SetValueDirect(System.TypedReference, System.Object)' does not exist in the implementation but it does exist in the contract.
-Total Issues: 5
+Total Issues: 2
