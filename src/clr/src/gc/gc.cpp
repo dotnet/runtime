@@ -34101,6 +34101,7 @@ BOOL GCHeap::StressHeap(gc_alloc_context * context)
 {
 #if defined(STRESS_HEAP) && !defined(FEATURE_REDHAWK)
     alloc_context* acontext = static_cast<alloc_context*>(context);
+    assert(context != nullptr);
 
     // if GC stress was dynamically disabled during this run we return FALSE
     if (!GCStressPolicy::IsEnabled())
@@ -34181,9 +34182,6 @@ BOOL GCHeap::StressHeap(gc_alloc_context * context)
 
 #ifndef MULTIPLE_HEAPS
     static int32_t OneAtATime = -1;
-
-    if (acontext == 0)
-        acontext = generation_alloc_context (pGenGCHeap->generation_of(0));
 
     // Only bother with this if the stress level is big enough and if nobody else is
     // doing it right now.  Note that some callers are inside the AllocLock and are
@@ -34495,10 +34493,6 @@ GCHeap::AllocLHeap( size_t size, uint32_t flags REQD_ALIGN_DCL)
     PREFIX_ASSUME(hp != NULL);
 #endif //_PREFAST_
 #endif //MULTIPLE_HEAPS
-
-#ifndef FEATURE_REDHAWK
-    GCStress<gc_on_alloc>::MaybeTrigger(generation_alloc_context(hp->generation_of(0)));
-#endif // FEATURE_REDHAWK
 
     alloc_context* acontext = generation_alloc_context (hp->generation_of (max_generation+1));
 
