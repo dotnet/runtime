@@ -2,15 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// 
-
-
-using System;
-
 namespace System.Reflection
 {
     // This Enum matchs the CorMethodImpl defined in CorHdr.h
-    [Serializable]
     public enum MethodImplAttributes
     {
         // code impl mask
@@ -39,6 +33,6 @@ namespace System.Reflection
         AggressiveInlining = 0x0100,   // Method should be inlined if possible.
         NoOptimization = 0x0040,   // Method may not be optimized.
 
-        MaxMethodImplVal = 0xFFFF,   // Range check value
+        MaxMethodImplVal = 0xffff,
     }
 }

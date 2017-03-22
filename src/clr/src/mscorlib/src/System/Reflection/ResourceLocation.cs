@@ -4,12 +4,12 @@
 
 namespace System.Reflection
 {
-    public enum ImageFileMachine
+    [Flags]
+    public enum ResourceLocation
     {
-        I386 = 0x014c,
-        IA64 = 0x0200,
-        AMD64 = 0x8664,
-        ARM = 0x01c4,
+        ContainedInAnotherAssembly = 2,
+        ContainedInManifestFile = 4,
+        Embedded = 1,
     }
 }
 

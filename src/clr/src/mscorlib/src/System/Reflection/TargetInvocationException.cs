@@ -2,19 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-//
-// TargetInvocationException is used to report an exception that was thrown
-// 
-//    by the target of an invocation.
-//
-// 
-// 
-//
-
-
-using System;
 using System.Runtime.Serialization;
 
 namespace System.Reflection
@@ -22,33 +9,18 @@ namespace System.Reflection
     [Serializable]
     public sealed class TargetInvocationException : ApplicationException
     {
-        // This exception is not creatable without specifying the
-        //    inner exception.
-        private TargetInvocationException()
-            : base(SR.Arg_TargetInvocationException)
-        {
-            SetErrorCode(__HResults.COR_E_TARGETINVOCATION);
-        }
-
-        // This is called from within the runtime.
-        private TargetInvocationException(String message) : base(message)
-        {
-            SetErrorCode(__HResults.COR_E_TARGETINVOCATION);
-        }
-
-        public TargetInvocationException(System.Exception inner)
+        public TargetInvocationException(Exception inner)
             : base(SR.Arg_TargetInvocationException, inner)
         {
-            SetErrorCode(__HResults.COR_E_TARGETINVOCATION);
+            HResult = __HResults.COR_E_TARGETINVOCATION;
         }
 
-        public TargetInvocationException(String message, Exception inner) : base(message, inner)
+        public TargetInvocationException(string message, Exception inner)
+            : base(message, inner)
         {
-            SetErrorCode(__HResults.COR_E_TARGETINVOCATION);
+            HResult = __HResults.COR_E_TARGETINVOCATION;
         }
 
-        internal TargetInvocationException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
-        }
+        internal TargetInvocationException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 }

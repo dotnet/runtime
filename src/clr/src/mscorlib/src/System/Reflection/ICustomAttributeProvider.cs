@@ -2,31 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-//
-// ICustomAttributeProvider is an interface that is implemented by reflection
-// 
-//    objects which support custom attributes.
-//
-//
-
-using System;
-
 namespace System.Reflection
 {
-    // Interface does not need to be marked with the serializable attribute
     public interface ICustomAttributeProvider
     {
-        // Return an array of custom attributes identified by Type
-        Object[] GetCustomAttributes(Type attributeType, bool inherit);
-
-
-        // Return an array of all of the custom attributes (named attributes are not included)
-        Object[] GetCustomAttributes(bool inherit);
-
-
-        // Returns true if one or more instance of attributeType is defined on this member. 
+        object[] GetCustomAttributes(bool inherit);
+        object[] GetCustomAttributes(Type attributeType, bool inherit);
         bool IsDefined(Type attributeType, bool inherit);
     }
 }

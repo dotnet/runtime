@@ -2,28 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*============================================================
-**
-**
-** 
-**
-**
-** Purpose: Encapsulate access to a public/private key pair
-**          used to sign strong name assemblies.
-**
-**
-===========================================================*/
-
-using System;
 using System.IO;
-using System.Runtime.CompilerServices;
-using System.Runtime.ConstrainedExecution;
-using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
-using System.Security;
-using System.Runtime.Versioning;
-using Microsoft.Win32;
-using System.Diagnostics.Contracts;
 
 namespace System.Reflection
 {
@@ -32,7 +12,7 @@ namespace System.Reflection
     {
         private bool _keyPairExported;
         private byte[] _keyPairArray;
-        private String _keyPairContainer;
+        private string _keyPairContainer;
         private byte[] _publicKey;
 
         // Build key pair from file.
@@ -40,7 +20,6 @@ namespace System.Reflection
         {
             if (keyPairFile == null)
                 throw new ArgumentNullException(nameof(keyPairFile));
-            Contract.EndContractBlock();
 
             int length = (int)keyPairFile.Length;
             _keyPairArray = new byte[length];
@@ -54,7 +33,6 @@ namespace System.Reflection
         {
             if (keyPairArray == null)
                 throw new ArgumentNullException(nameof(keyPairArray));
-            Contract.EndContractBlock();
 
             _keyPairArray = new byte[keyPairArray.Length];
             Array.Copy(keyPairArray, _keyPairArray, keyPairArray.Length);
@@ -70,7 +48,7 @@ namespace System.Reflection
             _publicKey = (byte[])info.GetValue("_publicKey", typeof(byte[]));
         }
 
-        public StrongNameKeyPair(String keyPairContainer)
+        public StrongNameKeyPair(string keyPairContainer)
         {
             throw new PlatformNotSupportedException();
         }
@@ -83,7 +61,6 @@ namespace System.Reflection
             }
         }
 
-        /// <internalonly/>
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
             info.AddValue("_keyPairExported", _keyPairExported);
@@ -92,7 +69,6 @@ namespace System.Reflection
             info.AddValue("_publicKey", _publicKey);
         }
 
-        /// <internalonly/>
-        void IDeserializationCallback.OnDeserialization(Object sender) { }
+        void IDeserializationCallback.OnDeserialization(object sender) { }
     }
 }

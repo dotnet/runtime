@@ -2,14 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-////////////////////////////////////////////////////////////////////////////////
-// 
-
-using System;
-
 namespace System.Reflection
 {
-    [Serializable]
     [Flags]
     public enum MethodAttributes
     {
@@ -48,9 +42,9 @@ namespace System.Reflection
         UnmanagedExport = 0x0008,     // Managed method exported via thunk to unmanaged code.
         RTSpecialName = 0x1000,     // Runtime should check name encoding.
 
-        // Reserved flags for runtime use only.
-        ReservedMask = 0xd000,
         HasSecurity = 0x4000,     // Method has security associate with it.
         RequireSecObject = 0x8000,     // Method calls another method containing security code.
+
+        ReservedMask = 0xd000,
     }
 }

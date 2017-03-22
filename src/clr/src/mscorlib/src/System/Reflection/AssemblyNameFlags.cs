@@ -2,25 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*============================================================
-**
-** 
-** 
-** 
-**
-**
-** Purpose: Flags controlling how an AssemblyName is used
-**          during binding
-**
-**
-===========================================================*/
-
-using System;
-
 namespace System.Reflection
 {
-    [Serializable]
-    [FlagsAttribute()]
+    [Flags]
     public enum AssemblyNameFlags
     {
         None = 0x0000,
@@ -33,23 +17,5 @@ namespace System.Reflection
         EnableJITcompileTracking = 0x8000,
         Retargetable = 0x0100,
         //ContentType             = 0x0E00, // Bits describing the ContentType are accessible via AssemblyName.ContentType
-    }
-
-    [Serializable]
-    public enum AssemblyContentType
-    {
-        Default = 0x0000,
-        WindowsRuntime = 0x0001
-    }
-
-    [Serializable]
-    public enum ProcessorArchitecture
-    {
-        None = 0x0000,
-        MSIL = 0x0001,
-        X86 = 0x0002,
-        IA64 = 0x0003,
-        Amd64 = 0x0004,
-        Arm = 0x0005
     }
 }
