@@ -50,7 +50,7 @@ namespace System
                 if (m_value > i) return 1;
                 return 0;
             }
-            throw new ArgumentException(Environment.GetResourceString("Arg_MustBeUInt64"));
+            throw new ArgumentException(SR.Arg_MustBeUInt64);
         }
 
         public int CompareTo(UInt64 value)
@@ -236,7 +236,7 @@ namespace System
         /// <internalonly/>
         DateTime IConvertible.ToDateTime(IFormatProvider provider)
         {
-            throw new InvalidCastException(Environment.GetResourceString("InvalidCast_FromTo", "UInt64", "DateTime"));
+            throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, "UInt64", "DateTime"));
         }
 
         /// <internalonly/>

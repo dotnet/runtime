@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <UsingTask TaskName="GenerateResourcesCode" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll" />
+
+  <PropertyGroup>
+    <GenerateResourceMSBuildRuntime>CurrentRuntime</GenerateResourceMSBuildRuntime>
+    <GenerateResourceMSBuildArchitecture>CurrentArchitecture</GenerateResourceMSBuildArchitecture>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <ResourcesSourceOutputDirectory Condition="'$(ResourcesSourceOutputDirectory)' == ''">$(MSBuildProjectDirectory)/Resources/</ResourcesSourceOutputDirectory>
+    <StringResourcesPath Condition="'$(StringResourcesPath)'=='' And Exists('$(ResourcesSourceOutputDirectory)Strings.resx')">$(ResourcesSourceOutputDirectory)/Strings.resx</StringResourcesPath>
+    <IntermediateResOutputFileFullPath Condition="'$(MSBuildProjectExtension)' == '.csproj'">$(IntermediateOutputPath)SR.cs</IntermediateResOutputFileFullPath>
+    <IntermediateResOutputFileFullPath Condition="'$(MSBuildProjectExtension)' == '.vbproj'">$(IntermediateOutputPath)SR.vb</IntermediateResOutputFileFullPath>
+    <DefineConstants Condition="'$(ConfigurationGroup)' == 'Debug'">$(DefineConstants);DEBUGRESOURCES</DefineConstants>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(StringResourcesPath)'!=''">
+      <CompileDependsOn>
+          GenerateResourcesSource;
+          $(CompileDependsOn);
+      </CompileDependsOn>
+  </PropertyGroup>
+
+  <Target Name="GenerateResourcesSource"
+          Condition="'$(StringResourcesPath)'!='' AND '$(OmitResources)'!='true'"
+          Inputs="$(StringResourcesPath)"
+          Outputs="$(IntermediateResOutputFileFullPath)">
+    
+    
+
+    <GenerateResourcesCode
+        ResxFilePath="$(StringResourcesPath)" 
+        OutputSourceFilePath="$(IntermediateResOutputFileFullPath)" 
+        AssemblyName="$(AssemblyName)" />
+
+    <ItemGroup>
+      <!-- The following Compile element has to be included dynamically inside the Target otherwise intellisense will not work -->
+      <Compile Include="$(IntermediateResOutputFileFullPath)" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <FileWrites Include="$(IntermediateResOutputFileFullPath)" />
+    </ItemGroup>
+  </Target>
+  
+  <ItemGroup Condition="'$(StringResourcesPath)'!='' AND '$(OmitResources)'!='true'">
+    <EmbeddedResource Include="$(StringResourcesPath)">
+      <Visible>true</Visible>
+      <LogicalName>FxResources.$(AssemblyName).SR.resources</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+  
+  <Choose>
+    <When Condition="Exists('$(StringResourcesPath)') And '$(SkipCommonResourcesIncludes)'=='' AND '$(OmitResources)'!='true'">
+      <Choose>
+        <When Condition="'$(MSBuildProjectExtension)' == '.csproj'">
+          <ItemGroup>
+            <Compile Include="$(CommonPath)/System/SR.cs">
+              <Visible>true</Visible>
+              <Link>Resources/Common/SR.cs</Link>
+            </Compile>
+          </ItemGroup>
+        </When>
+        <When Condition="'$(MSBuildProjectExtension)' == '.vbproj'">
+          <ItemGroup>
+            <Compile Include="$(CommonPath)/System/SR.vb">
+              <Visible>true</Visible>
+              <Link>Resources/Common/SR.vb</Link>
+            </Compile>
+          </ItemGroup>
+        </When>
+      </Choose>
+    </When>
+  </Choose>
+</Project>

@@ -159,7 +159,7 @@ namespace System
         {
             if ((digits < 0) || (digits > maxRoundingDigits))
             {
-                throw new ArgumentOutOfRangeException(nameof(digits), Environment.GetResourceString("ArgumentOutOfRange_RoundingDigits"));
+                throw new ArgumentOutOfRangeException(nameof(digits), SR.ArgumentOutOfRange_RoundingDigits);
             }
             Contract.EndContractBlock();
 
@@ -170,12 +170,12 @@ namespace System
         {
             if ((digits < 0) || (digits > maxRoundingDigits))
             {
-                throw new ArgumentOutOfRangeException(nameof(digits), Environment.GetResourceString("ArgumentOutOfRange_RoundingDigits"));
+                throw new ArgumentOutOfRangeException(nameof(digits), SR.ArgumentOutOfRange_RoundingDigits);
             }
 
             if (mode < MidpointRounding.ToEven || mode > MidpointRounding.AwayFromZero)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidEnumx", mode, nameof(MidpointRounding)), nameof(mode));
+                throw new ArgumentException(SR.Format(SR.Argument_InvalidEnum, mode, nameof(MidpointRounding)), nameof(mode));
             }
             Contract.EndContractBlock();
 
@@ -186,7 +186,7 @@ namespace System
         {
             if (mode < MidpointRounding.ToEven || mode > MidpointRounding.AwayFromZero)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidEnumx", mode, nameof(MidpointRounding)), nameof(mode));
+                throw new ArgumentException(SR.Format(SR.Argument_InvalidEnum, mode, nameof(MidpointRounding)), nameof(mode));
             }
             Contract.EndContractBlock();
 

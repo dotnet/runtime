@@ -192,7 +192,7 @@ namespace System.Reflection.Emit
 
         public override Type GetGenericTypeDefinition() { throw new InvalidOperationException(); }
 
-        public override Type MakeGenericType(params Type[] typeArguments) { throw new InvalidOperationException(Environment.GetResourceString("Arg_NotGenericTypeDefinition")); }
+        public override Type MakeGenericType(params Type[] typeArguments) { throw new InvalidOperationException(SR.Arg_NotGenericTypeDefinition); }
 
         protected override bool IsValueTypeImpl() { return false; }
 

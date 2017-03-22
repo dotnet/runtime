@@ -240,9 +240,9 @@ namespace System.Runtime.InteropServices
             if (t == null)
                 throw new ArgumentNullException(nameof(t));
             if (!(t is RuntimeType))
-                throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeType"), nameof(t));
+                throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(t));
             if (t.IsGenericType)
-                throw new ArgumentException(Environment.GetResourceString("Argument_NeedNonGenericType"), nameof(t));
+                throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(t));
             Contract.EndContractBlock();
 
             return SizeOfHelper(t, true);
@@ -296,10 +296,10 @@ namespace System.Runtime.InteropServices
 
             FieldInfo f = t.GetField(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             if (f == null)
-                throw new ArgumentException(Environment.GetResourceString("Argument_OffsetOfFieldNotFound", t.FullName), nameof(fieldName));
+                throw new ArgumentException(SR.Format(SR.Argument_OffsetOfFieldNotFound, t.FullName), nameof(fieldName));
             RtFieldInfo rtField = f as RtFieldInfo;
             if (rtField == null)
-                throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeFieldInfo"), nameof(fieldName));
+                throw new ArgumentException(SR.Argument_MustBeRuntimeFieldInfo, nameof(fieldName));
 
             return OffsetOfHelper(rtField);
         }
@@ -799,7 +799,7 @@ namespace System.Runtime.InteropServices
             RuntimeMethodInfo rmi = m as RuntimeMethodInfo;
 
             if (rmi == null)
-                throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeMethodInfo"));
+                throw new ArgumentException(SR.Argument_MustBeRuntimeMethodInfo);
 
             InternalPrelink(rmi);
         }
@@ -866,12 +866,12 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentNullException(nameof(structureType));
 
             if (structureType.IsGenericType)
-                throw new ArgumentException(Environment.GetResourceString("Argument_NeedNonGenericType"), nameof(structureType));
+                throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(structureType));
 
             RuntimeType rt = structureType.UnderlyingSystemType as RuntimeType;
 
             if (rt == null)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), nameof(structureType));
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(structureType));
 
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
 
@@ -925,7 +925,7 @@ namespace System.Runtime.InteropServices
             }
 
             if (rtModule == null)
-                throw new ArgumentNullException(nameof(m), Environment.GetResourceString("Argument_MustBeRuntimeModule"));
+                throw new ArgumentNullException(nameof(m), SR.Argument_MustBeRuntimeModule);
 
             return GetHINSTANCE(rtModule.GetNativeHandle());
         }
@@ -1424,7 +1424,7 @@ namespace System.Runtime.InteropServices
             }
             catch (InvalidCastException)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_ObjNotComObject"), nameof(o));
+                throw new ArgumentException(SR.Argument_ObjNotComObject, nameof(o));
             }
 
             return co.ReleaseSelf();
@@ -1453,7 +1453,7 @@ namespace System.Runtime.InteropServices
             }
             catch (InvalidCastException)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_ObjNotComObject"), nameof(o));
+                throw new ArgumentException(SR.Argument_ObjNotComObject, nameof(o));
             }
 
             co.FinalReleaseSelf();
@@ -1495,13 +1495,13 @@ namespace System.Runtime.InteropServices
             if (t == null)
                 throw new ArgumentNullException(nameof(t));
             if (!t.IsCOMObject)
-                throw new ArgumentException(Environment.GetResourceString("Argument_TypeNotComObject"), nameof(t));
+                throw new ArgumentException(SR.Argument_TypeNotComObject, nameof(t));
             if (t.IsGenericType)
-                throw new ArgumentException(Environment.GetResourceString("Argument_NeedNonGenericType"), nameof(t));
+                throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(t));
             Contract.EndContractBlock();
 
             if (t.IsWindowsRuntimeObject)
-                throw new ArgumentException(Environment.GetResourceString("Argument_TypeIsWinRTType"), nameof(t));
+                throw new ArgumentException(SR.Argument_TypeIsWinRTType, nameof(t));
 
             // Check for the null case.
             if (o == null)
@@ -1509,9 +1509,9 @@ namespace System.Runtime.InteropServices
 
             // Make sure the object is a COM object.
             if (!o.GetType().IsCOMObject)
-                throw new ArgumentException(Environment.GetResourceString("Argument_ObjNotComObject"), nameof(o));
+                throw new ArgumentException(SR.Argument_ObjNotComObject, nameof(o));
             if (o.GetType().IsWindowsRuntimeObject)
-                throw new ArgumentException(Environment.GetResourceString("Argument_ObjIsWinRTObject"), nameof(o));
+                throw new ArgumentException(SR.Argument_ObjIsWinRTObject, nameof(o));
 
             // Check to see if the type of the object is the requested type.
             if (o.GetType() == t)
@@ -1621,9 +1621,9 @@ namespace System.Runtime.InteropServices
             if (type == null)
                 throw new ArgumentNullException(nameof(type));
             if (type.IsImport)
-                throw new ArgumentException(Environment.GetResourceString("Argument_TypeMustNotBeComImport"), nameof(type));
+                throw new ArgumentException(SR.Argument_TypeMustNotBeComImport, nameof(type));
             if (type.IsGenericType)
-                throw new ArgumentException(Environment.GetResourceString("Argument_NeedNonGenericType"), nameof(type));
+                throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(type));
             Contract.EndContractBlock();
 
             IList<CustomAttributeData> cas = CustomAttributeData.GetCustomAttributes(type);
@@ -1724,14 +1724,14 @@ namespace System.Runtime.InteropServices
             Contract.EndContractBlock();
 
             if ((t as RuntimeType) == null)
-                throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeType"), nameof(t));
+                throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(t));
 
             if (t.IsGenericType)
-                throw new ArgumentException(Environment.GetResourceString("Argument_NeedNonGenericType"), nameof(t));
+                throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(t));
 
             Type c = t.BaseType;
             if (c == null || (c != typeof(Delegate) && c != typeof(MulticastDelegate)))
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeDelegate"), nameof(t));
+                throw new ArgumentException(SR.Arg_MustBeDelegate, nameof(t));
 
             return GetDelegateForFunctionPointerInternal(ptr, t);
         }

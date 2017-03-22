@@ -32,7 +32,7 @@ namespace System.IO
         private String _fusionLog;  // fusion log (when applicable)
 
         public FileLoadException()
-            : base(Environment.GetResourceString("IO.FileLoad"))
+            : base(SR.IO_FileLoad)
         {
             SetErrorCode(__HResults.COR_E_FILELOAD);
         }
@@ -87,7 +87,7 @@ namespace System.IO
             String s = GetType().FullName + ": " + Message;
 
             if (_fileName != null && _fileName.Length != 0)
-                s += Environment.NewLine + Environment.GetResourceString("IO.FileName_Name", _fileName);
+                s += Environment.NewLine + SR.Format(SR.IO_FileName_Name, _fileName);
 
             if (InnerException != null)
                 s = s + " ---> " + InnerException.ToString();

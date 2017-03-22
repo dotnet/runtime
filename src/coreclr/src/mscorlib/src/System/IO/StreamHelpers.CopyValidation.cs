@@ -17,29 +17,29 @@ namespace System.IO
 
             if (bufferSize <= 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), bufferSize, Environment.GetResourceString("ArgumentOutOfRange_NeedPosNum"));
+                throw new ArgumentOutOfRangeException(nameof(bufferSize), bufferSize, SR.ArgumentOutOfRange_NeedPosNum);
             }
 
             bool sourceCanRead = source.CanRead;
             if (!sourceCanRead && !source.CanWrite)
             {
-                throw new ObjectDisposedException(null, Environment.GetResourceString("ObjectDisposed_StreamClosed"));
+                throw new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);
             }
 
             bool destinationCanWrite = destination.CanWrite;
             if (!destinationCanWrite && !destination.CanRead)
             {
-                throw new ObjectDisposedException(nameof(destination), Environment.GetResourceString("ObjectDisposed_StreamClosed"));
+                throw new ObjectDisposedException(nameof(destination), SR.ObjectDisposed_StreamClosed);
             }
 
             if (!sourceCanRead)
             {
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_UnreadableStream"));
+                throw new NotSupportedException(SR.NotSupported_UnreadableStream);
             }
 
             if (!destinationCanWrite)
             {
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_UnwritableStream"));
+                throw new NotSupportedException(SR.NotSupported_UnwritableStream);
             }
         }
     }

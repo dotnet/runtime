@@ -93,7 +93,7 @@ namespace System.Runtime.Loader
 
             if (PathInternal.IsPartiallyQualified(assemblyPath))
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_AbsolutePathRequired"), nameof(assemblyPath));
+                throw new ArgumentException(SR.Argument_AbsolutePathRequired, nameof(assemblyPath));
             }
 
             RuntimeAssembly loadedAssembly = null;
@@ -110,12 +110,12 @@ namespace System.Runtime.Loader
 
             if (PathInternal.IsPartiallyQualified(nativeImagePath))
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_AbsolutePathRequired"), nameof(nativeImagePath));
+                throw new ArgumentException(SR.Argument_AbsolutePathRequired, nameof(nativeImagePath));
             }
 
             if (assemblyPath != null && PathInternal.IsPartiallyQualified(assemblyPath))
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_AbsolutePathRequired"), nameof(assemblyPath));
+                throw new ArgumentException(SR.Argument_AbsolutePathRequired, nameof(assemblyPath));
             }
 
             // Basic validation has succeeded - lets try to load the NI image.
@@ -139,7 +139,7 @@ namespace System.Runtime.Loader
 
             if (assembly.Length <= 0)
             {
-                throw new BadImageFormatException(Environment.GetResourceString("BadImageFormat_BadILFormat"));
+                throw new BadImageFormatException(SR.BadImageFormat_BadILFormat);
             }
 
             int iAssemblyStreamLength = (int)assembly.Length;
@@ -236,7 +236,7 @@ namespace System.Runtime.Loader
 
             // The simple names should match at the very least
             if (String.IsNullOrEmpty(loadedSimpleName) || (!requestedSimpleName.Equals(loadedSimpleName, StringComparison.InvariantCultureIgnoreCase)))
-                throw new InvalidOperationException(Environment.GetResourceString("Argument_CustomAssemblyLoadContextRequestedNameMismatch"));
+                throw new InvalidOperationException(SR.Argument_CustomAssemblyLoadContextRequestedNameMismatch);
 
             return assembly;
         }
@@ -269,7 +269,7 @@ namespace System.Runtime.Loader
             // throw an exception if we do not find any assembly.
             if (assembly == null)
             {
-                throw new FileNotFoundException(Environment.GetResourceString("IO.FileLoad"), simpleName);
+                throw new FileNotFoundException(SR.IO_FileLoad, simpleName);
             }
 
             return assembly;
@@ -297,11 +297,11 @@ namespace System.Runtime.Loader
             }
             if (unmanagedDllPath.Length == 0)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyPath"), nameof(unmanagedDllPath));
+                throw new ArgumentException(SR.Argument_EmptyPath, nameof(unmanagedDllPath));
             }
             if (PathInternal.IsPartiallyQualified(unmanagedDllPath))
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_AbsolutePathRequired"), nameof(unmanagedDllPath));
+                throw new ArgumentException(SR.Argument_AbsolutePathRequired, nameof(unmanagedDllPath));
             }
 
             return InternalLoadUnmanagedDllFromPath(unmanagedDllPath);

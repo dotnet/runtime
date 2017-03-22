@@ -50,7 +50,7 @@ namespace System
             if (b == null)
                 throw new ArgumentNullException(nameof(b));
             if (b.Length != 16)
-                throw new ArgumentException(Environment.GetResourceString("Arg_GuidArrayCtor", "16"), nameof(b));
+                throw new ArgumentException(SR.Format(SR.Arg_GuidArrayCtor, "16"), nameof(b));
             Contract.EndContractBlock();
 
             _a = ((int)b[3] << 24) | ((int)b[2] << 16) | ((int)b[1] << 8) | b[0];
@@ -91,7 +91,7 @@ namespace System
                 throw new ArgumentNullException(nameof(d));
             // Check that array is not too big
             if (d.Length != 8)
-                throw new ArgumentException(Environment.GetResourceString("Arg_GuidArrayCtor", "8"), nameof(d));
+                throw new ArgumentException(SR.Format(SR.Arg_GuidArrayCtor, "8"), nameof(d));
             Contract.EndContractBlock();
 
             _a = a;
@@ -212,23 +212,23 @@ namespace System
                 switch (m_failure)
                 {
                     case ParseFailureKind.ArgumentNull:
-                        return new ArgumentNullException(m_failureArgumentName, Environment.GetResourceString(m_failureMessageID));
+                        return new ArgumentNullException(m_failureArgumentName, SR.GetResourceString(m_failureMessageID));
 
                     case ParseFailureKind.FormatWithInnerException:
-                        return new FormatException(Environment.GetResourceString(m_failureMessageID), m_innerException);
+                        return new FormatException(SR.GetResourceString(m_failureMessageID), m_innerException);
 
                     case ParseFailureKind.FormatWithParameter:
-                        return new FormatException(Environment.GetResourceString(m_failureMessageID, m_failureMessageFormatArgument));
+                        return new FormatException(SR.Format(SR.GetResourceString(m_failureMessageID), m_failureMessageFormatArgument));
 
                     case ParseFailureKind.Format:
-                        return new FormatException(Environment.GetResourceString(m_failureMessageID));
+                        return new FormatException(SR.GetResourceString(m_failureMessageID));
 
                     case ParseFailureKind.NativeException:
                         return m_innerException;
 
                     default:
                         Debug.Assert(false, "Unknown GuidParseFailure: " + m_failure);
-                        return new FormatException(Environment.GetResourceString("Format_GuidUnrecognized"));
+                        return new FormatException(SR.Format_GuidUnrecognized);
                 }
             }
         }
@@ -310,7 +310,7 @@ namespace System
             if (format.Length != 1)
             {
                 // all acceptable format strings are of length 1
-                throw new FormatException(Environment.GetResourceString("Format_InvalidGuidFormatSpecification"));
+                throw new FormatException(SR.Format_InvalidGuidFormatSpecification);
             }
 
             GuidStyles style;
@@ -337,7 +337,7 @@ namespace System
             }
             else
             {
-                throw new FormatException(Environment.GetResourceString("Format_InvalidGuidFormatSpecification"));
+                throw new FormatException(SR.Format_InvalidGuidFormatSpecification);
             }
 
             GuidResult result = new GuidResult();
@@ -883,7 +883,7 @@ namespace System
                 }
                 else if (parseResult.throwStyle == GuidParseThrowStyle.AllButOverflow)
                 {
-                    throw new FormatException(Environment.GetResourceString("Format_GuidUnrecognized"), ex);
+                    throw new FormatException(SR.Format_GuidUnrecognized, ex);
                 }
                 else
                 {
@@ -935,7 +935,7 @@ namespace System
                 }
                 else if (parseResult.throwStyle == GuidParseThrowStyle.AllButOverflow)
                 {
-                    throw new FormatException(Environment.GetResourceString("Format_GuidUnrecognized"), ex);
+                    throw new FormatException(SR.Format_GuidUnrecognized, ex);
                 }
                 else
                 {
@@ -1110,7 +1110,7 @@ namespace System
             }
             if (!(value is Guid))
             {
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeGuid"), nameof(value));
+                throw new ArgumentException(SR.Arg_MustBeGuid, nameof(value));
             }
             Guid g = (Guid)value;
 
@@ -1331,7 +1331,7 @@ namespace System
             if (format.Length != 1)
             {
                 // all acceptable format strings are of length 1
-                throw new FormatException(Environment.GetResourceString("Format_InvalidGuidFormatSpecification"));
+                throw new FormatException(SR.Format_InvalidGuidFormatSpecification);
             }
 
             char formatCh = format[0];
@@ -1384,7 +1384,7 @@ namespace System
             }
             else
             {
-                throw new FormatException(Environment.GetResourceString("Format_InvalidGuidFormatSpecification"));
+                throw new FormatException(SR.Format_InvalidGuidFormatSpecification);
             }
 
             unsafe

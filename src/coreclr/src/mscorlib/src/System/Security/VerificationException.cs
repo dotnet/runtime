@@ -14,7 +14,7 @@ namespace System.Security
     public class VerificationException : SystemException
     {
         public VerificationException()
-            : base(Environment.GetResourceString("Verification_Exception"))
+            : base(SR.Verification_Exception)
         {
             SetErrorCode(__HResults.COR_E_VERIFICATION);
         }

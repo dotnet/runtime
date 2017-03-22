@@ -25,7 +25,7 @@ namespace System.Threading
         private Mutex m_Mutex = null;
 
         public AbandonedMutexException()
-            : base(Environment.GetResourceString("Threading.AbandonedMutexException"))
+            : base(SR.Threading_AbandonedMutexException)
         {
             SetErrorCode(__HResults.COR_E_ABANDONEDMUTEX);
         }
@@ -43,7 +43,7 @@ namespace System.Threading
         }
 
         public AbandonedMutexException(int location, WaitHandle handle)
-            : base(Environment.GetResourceString("Threading.AbandonedMutexException"))
+            : base(SR.Threading_AbandonedMutexException)
         {
             SetErrorCode(__HResults.COR_E_ABANDONEDMUTEX);
             SetupException(location, handle);

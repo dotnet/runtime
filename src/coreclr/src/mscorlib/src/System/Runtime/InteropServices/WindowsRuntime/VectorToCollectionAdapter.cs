@@ -38,7 +38,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             uint size = _this.Size;
             if (((uint)Int32.MaxValue) < size)
             {
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_CollectionBackingListTooLarge"));
+                throw new InvalidOperationException(SR.InvalidOperation_CollectionBackingListTooLarge);
             }
 
             return (int)size;
@@ -83,10 +83,10 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 throw new ArgumentOutOfRangeException(nameof(arrayIndex));
 
             if (array.Length <= arrayIndex && Count<T>() > 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_IndexOutOfArrayBounds"));
+                throw new ArgumentException(SR.Argument_IndexOutOfArrayBounds);
 
             if (array.Length - arrayIndex < Count<T>())
-                throw new ArgumentException(Environment.GetResourceString("Argument_InsufficientSpaceToCopyCollection"));
+                throw new ArgumentException(SR.Argument_InsufficientSpaceToCopyCollection);
 
             Contract.EndContractBlock();
 
@@ -111,7 +111,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             if (((uint)Int32.MaxValue) < index)
             {
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_CollectionBackingListTooLarge"));
+                throw new InvalidOperationException(SR.InvalidOperation_CollectionBackingListTooLarge);
             }
 
             VectorToListAdapter.RemoveAtHelper<T>(_this, index);

@@ -62,7 +62,7 @@ namespace System.Globalization
 
                     return FormatStandard(value, false, format, pattern);
                 }
-                throw new FormatException(Environment.GetResourceString("Format_InvalidString"));
+                throw new FormatException(SR.Format_InvalidString);
             }
 
             return FormatCustomized(value, format, DateTimeFormatInfo.GetInstance(formatProvider));
@@ -191,19 +191,19 @@ namespace System.Globalization
                     case 'h':
                         tokenLen = DateTimeFormat.ParseRepeatPattern(format, i, ch);
                         if (tokenLen > 2)
-                            throw new FormatException(Environment.GetResourceString("Format_InvalidString"));
+                            throw new FormatException(SR.Format_InvalidString);
                         DateTimeFormat.FormatDigits(result, hours, tokenLen);
                         break;
                     case 'm':
                         tokenLen = DateTimeFormat.ParseRepeatPattern(format, i, ch);
                         if (tokenLen > 2)
-                            throw new FormatException(Environment.GetResourceString("Format_InvalidString"));
+                            throw new FormatException(SR.Format_InvalidString);
                         DateTimeFormat.FormatDigits(result, minutes, tokenLen);
                         break;
                     case 's':
                         tokenLen = DateTimeFormat.ParseRepeatPattern(format, i, ch);
                         if (tokenLen > 2)
-                            throw new FormatException(Environment.GetResourceString("Format_InvalidString"));
+                            throw new FormatException(SR.Format_InvalidString);
                         DateTimeFormat.FormatDigits(result, seconds, tokenLen);
                         break;
                     case 'f':
@@ -212,7 +212,7 @@ namespace System.Globalization
                         //
                         tokenLen = DateTimeFormat.ParseRepeatPattern(format, i, ch);
                         if (tokenLen > DateTimeFormat.MaxSecondsFractionDigits)
-                            throw new FormatException(Environment.GetResourceString("Format_InvalidString"));
+                            throw new FormatException(SR.Format_InvalidString);
 
                         tmp = (long)fraction;
                         tmp /= (long)Math.Pow(10, DateTimeFormat.MaxSecondsFractionDigits - tokenLen);
@@ -224,7 +224,7 @@ namespace System.Globalization
                         //
                         tokenLen = DateTimeFormat.ParseRepeatPattern(format, i, ch);
                         if (tokenLen > DateTimeFormat.MaxSecondsFractionDigits)
-                            throw new FormatException(Environment.GetResourceString("Format_InvalidString"));
+                            throw new FormatException(SR.Format_InvalidString);
 
                         tmp = (long)fraction;
                         tmp /= (long)Math.Pow(10, DateTimeFormat.MaxSecondsFractionDigits - tokenLen);
@@ -253,7 +253,7 @@ namespace System.Globalization
                         //
                         tokenLen = DateTimeFormat.ParseRepeatPattern(format, i, ch);
                         if (tokenLen > 8)
-                            throw new FormatException(Environment.GetResourceString("Format_InvalidString"));
+                            throw new FormatException(SR.Format_InvalidString);
                         DateTimeFormat.FormatDigits(result, day, tokenLen, true);
                         break;
                     case '\'':
@@ -278,7 +278,7 @@ namespace System.Globalization
                             // This means that '%' is at the end of the format string or
                             // "%%" appears in the format string.
                             //
-                            throw new FormatException(Environment.GetResourceString("Format_InvalidString"));
+                            throw new FormatException(SR.Format_InvalidString);
                         }
                         break;
                     case '\\':
@@ -296,11 +296,11 @@ namespace System.Globalization
                             //
                             // This means that '\' is at the end of the formatting string.
                             //
-                            throw new FormatException(Environment.GetResourceString("Format_InvalidString"));
+                            throw new FormatException(SR.Format_InvalidString);
                         }
                         break;
                     default:
-                        throw new FormatException(Environment.GetResourceString("Format_InvalidString"));
+                        throw new FormatException(SR.Format_InvalidString);
                 }
                 i += tokenLen;
             }

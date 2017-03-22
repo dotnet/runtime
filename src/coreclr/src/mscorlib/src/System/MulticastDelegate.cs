@@ -59,11 +59,11 @@ namespace System
                 // One can only create delegates on RuntimeMethodInfo and DynamicMethod.
                 // If it is not a RuntimeMethodInfo (must be a DynamicMethod) or if it is an unmanaged function pointer, throw
                 if (!(method is RuntimeMethodInfo) || IsUnmanagedFunctionPtr())
-                    throw new SerializationException(Environment.GetResourceString("Serialization_InvalidDelegateType"));
+                    throw new SerializationException(SR.Serialization_InvalidDelegateType);
 
                 // We can't deal with secure delegates either.
                 if (!InvocationListLogicallyNull() && !_invocationCount.IsNull() && !_methodPtrAux.IsNull())
-                    throw new SerializationException(Environment.GetResourceString("Serialization_InvalidDelegateType"));
+                    throw new SerializationException(SR.Serialization_InvalidDelegateType);
 
                 DelegateSerializationHolder.GetDelegateSerializationInfo(info, this.GetType(), Target, method, targetIndex);
             }
@@ -91,7 +91,7 @@ namespace System
                 }
                 // if nothing was serialized it is a delegate over a DynamicMethod, so just throw
                 if (nextDe == null)
-                    throw new SerializationException(Environment.GetResourceString("Serialization_InvalidDelegateType"));
+                    throw new SerializationException(SR.Serialization_InvalidDelegateType);
             }
         }
 
@@ -266,7 +266,7 @@ namespace System
 
             // Verify that the types are the same...
             if (!InternalEqualTypes(this, follow))
-                throw new ArgumentException(Environment.GetResourceString("Arg_DlgtTypeMis"));
+                throw new ArgumentException(SR.Arg_DlgtTypeMis);
 
             MulticastDelegate dFollow = (MulticastDelegate)follow;
             Object[] resultList;
@@ -592,7 +592,7 @@ namespace System
         [System.Diagnostics.DebuggerNonUserCode]
         private void ThrowNullThisInDelegateToInstance()
         {
-            throw new ArgumentException(Environment.GetResourceString("Arg_DlgtNullInst"));
+            throw new ArgumentException(SR.Arg_DlgtNullInst);
         }
 
         [System.Diagnostics.DebuggerNonUserCode]

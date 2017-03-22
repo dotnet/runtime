@@ -64,7 +64,7 @@ namespace System.IO
         {
             if (capacity < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(capacity), Environment.GetResourceString("ArgumentOutOfRange_NegativeCapacity"));
+                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_NegativeCapacity);
             }
             Contract.EndContractBlock();
 
@@ -84,7 +84,7 @@ namespace System.IO
 
         public MemoryStream(byte[] buffer, bool writable)
         {
-            if (buffer == null) throw new ArgumentNullException(nameof(buffer), Environment.GetResourceString("ArgumentNull_Buffer"));
+            if (buffer == null) throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
             Contract.EndContractBlock();
             _buffer = buffer;
             _length = _capacity = buffer.Length;
@@ -107,13 +107,13 @@ namespace System.IO
         public MemoryStream(byte[] buffer, int index, int count, bool writable, bool publiclyVisible)
         {
             if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer), Environment.GetResourceString("ArgumentNull_Buffer"));
+                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
             if (index < 0)
-                throw new ArgumentOutOfRangeException(nameof(index), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (buffer.Length - index < count)
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
+                throw new ArgumentException(SR.Argument_InvalidOffLen);
             Contract.EndContractBlock();
 
             _buffer = buffer;
@@ -173,7 +173,7 @@ namespace System.IO
         {
             // Check for overflow
             if (value < 0)
-                throw new IOException(Environment.GetResourceString("IO.IO_StreamTooLong"));
+                throw new IOException(SR.IO_StreamTooLong);
             if (value > _capacity)
             {
                 int newCapacity = value;
@@ -218,7 +218,7 @@ namespace System.IO
         public virtual byte[] GetBuffer()
         {
             if (!_exposable)
-                throw new UnauthorizedAccessException(Environment.GetResourceString("UnauthorizedAccess_MemStreamBuffer"));
+                throw new UnauthorizedAccessException(SR.UnauthorizedAccess_MemStreamBuffer);
             return _buffer;
         }
 
@@ -302,7 +302,7 @@ namespace System.IO
             {
                 // Only update the capacity if the MS is expandable and the value is different than the current capacity.
                 // Special behavior if the MS isn't expandable: we don't throw if value is the same as the current capacity
-                if (value < Length) throw new ArgumentOutOfRangeException(nameof(value), Environment.GetResourceString("ArgumentOutOfRange_SmallCapacity"));
+                if (value < Length) throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_SmallCapacity);
                 Contract.Ensures(_capacity - _origin == value);
                 Contract.EndContractBlock();
 
@@ -346,14 +346,14 @@ namespace System.IO
             set
             {
                 if (value < 0)
-                    throw new ArgumentOutOfRangeException(nameof(value), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedNonNegNum);
                 Contract.Ensures(Position == value);
                 Contract.EndContractBlock();
 
                 if (!_isOpen) __Error.StreamIsClosed();
 
                 if (value > MemStreamMaxLength)
-                    throw new ArgumentOutOfRangeException(nameof(value), Environment.GetResourceString("ArgumentOutOfRange_StreamLength"));
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_StreamLength);
                 _position = _origin + (int)value;
             }
         }
@@ -361,13 +361,13 @@ namespace System.IO
         public override int Read([In, Out] byte[] buffer, int offset, int count)
         {
             if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer), Environment.GetResourceString("ArgumentNull_Buffer"));
+                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
             if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (buffer.Length - offset < count)
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
+                throw new ArgumentException(SR.Argument_InvalidOffLen);
             Contract.EndContractBlock();
 
             if (!_isOpen) __Error.StreamIsClosed();
@@ -395,13 +395,13 @@ namespace System.IO
         public override Task<int> ReadAsync(Byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer), Environment.GetResourceString("ArgumentNull_Buffer"));
+                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
             if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (buffer.Length - offset < count)
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
+                throw new ArgumentException(SR.Argument_InvalidOffLen);
             Contract.EndContractBlock(); // contract validation copied from Read(...)
 
             // If cancellation was requested, bail early
@@ -513,14 +513,14 @@ namespace System.IO
             if (!_isOpen) __Error.StreamIsClosed();
 
             if (offset > MemStreamMaxLength)
-                throw new ArgumentOutOfRangeException(nameof(offset), Environment.GetResourceString("ArgumentOutOfRange_StreamLength"));
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_StreamLength);
             switch (loc)
             {
                 case SeekOrigin.Begin:
                     {
                         int tempPosition = unchecked(_origin + (int)offset);
                         if (offset < 0 || tempPosition < _origin)
-                            throw new IOException(Environment.GetResourceString("IO.IO_SeekBeforeBegin"));
+                            throw new IOException(SR.IO_SeekBeforeBegin);
                         _position = tempPosition;
                         break;
                     }
@@ -528,7 +528,7 @@ namespace System.IO
                     {
                         int tempPosition = unchecked(_position + (int)offset);
                         if (unchecked(_position + offset) < _origin || tempPosition < _origin)
-                            throw new IOException(Environment.GetResourceString("IO.IO_SeekBeforeBegin"));
+                            throw new IOException(SR.IO_SeekBeforeBegin);
                         _position = tempPosition;
                         break;
                     }
@@ -536,12 +536,12 @@ namespace System.IO
                     {
                         int tempPosition = unchecked(_length + (int)offset);
                         if (unchecked(_length + offset) < _origin || tempPosition < _origin)
-                            throw new IOException(Environment.GetResourceString("IO.IO_SeekBeforeBegin"));
+                            throw new IOException(SR.IO_SeekBeforeBegin);
                         _position = tempPosition;
                         break;
                     }
                 default:
-                    throw new ArgumentException(Environment.GetResourceString("Argument_InvalidSeekOrigin"));
+                    throw new ArgumentException(SR.Argument_InvalidSeekOrigin);
             }
 
             Debug.Assert(_position >= 0, "_position >= 0");
@@ -562,7 +562,7 @@ namespace System.IO
         {
             if (value < 0 || value > Int32.MaxValue)
             {
-                throw new ArgumentOutOfRangeException(nameof(value), Environment.GetResourceString("ArgumentOutOfRange_StreamLength"));
+                throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_StreamLength);
             }
             Contract.Ensures(_length - _origin == value);
             Contract.EndContractBlock();
@@ -572,7 +572,7 @@ namespace System.IO
             Debug.Assert(MemStreamMaxLength == Int32.MaxValue);  // Check parameter validation logic in this method if this fails.
             if (value > (Int32.MaxValue - _origin))
             {
-                throw new ArgumentOutOfRangeException(nameof(value), Environment.GetResourceString("ArgumentOutOfRange_StreamLength"));
+                throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_StreamLength);
             }
 
             int newLength = _origin + (int)value;
@@ -594,13 +594,13 @@ namespace System.IO
         public override void Write(byte[] buffer, int offset, int count)
         {
             if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer), Environment.GetResourceString("ArgumentNull_Buffer"));
+                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
             if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (buffer.Length - offset < count)
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
+                throw new ArgumentException(SR.Argument_InvalidOffLen);
             Contract.EndContractBlock();
 
             if (!_isOpen) __Error.StreamIsClosed();
@@ -609,7 +609,7 @@ namespace System.IO
             int i = _position + count;
             // Check for overflow
             if (i < 0)
-                throw new IOException(Environment.GetResourceString("IO.IO_StreamTooLong"));
+                throw new IOException(SR.IO_StreamTooLong);
 
             if (i > _length)
             {
@@ -638,13 +638,13 @@ namespace System.IO
         public override Task WriteAsync(Byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer), Environment.GetResourceString("ArgumentNull_Buffer"));
+                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
             if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (buffer.Length - offset < count)
-                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
+                throw new ArgumentException(SR.Argument_InvalidOffLen);
             Contract.EndContractBlock(); // contract validation copied from Write(...)
 
             // If cancellation is already requested, bail early
@@ -692,7 +692,7 @@ namespace System.IO
         public virtual void WriteTo(Stream stream)
         {
             if (stream == null)
-                throw new ArgumentNullException(nameof(stream), Environment.GetResourceString("ArgumentNull_Stream"));
+                throw new ArgumentNullException(nameof(stream), SR.ArgumentNull_Stream);
             Contract.EndContractBlock();
 
             if (!_isOpen) __Error.StreamIsClosed();
