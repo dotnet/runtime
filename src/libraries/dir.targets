@@ -55,6 +55,7 @@
     <BinPlaceRef Condition="'$(BuildingDesktopFacade)' == 'true' And '$(BinPlaceRuntime)' == 'true'">true</BinPlaceRef>
 
     <BinPlaceUseHardlinksIfPossible Condition="'$(BinPlaceUseHardlinksIfPossible)' == ''">true</BinPlaceUseHardlinksIfPossible>
+    <EnableBinPlacing Condition="'$(BinPlaceRef)' == 'true' OR '$(BinPlaceRuntime)' == 'true'">true</EnableBinPlacing>
   </PropertyGroup>
 
   <ItemGroup Condition="'@(BinPlaceConfiguration)' == ''">
