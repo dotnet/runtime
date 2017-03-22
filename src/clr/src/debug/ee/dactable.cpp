@@ -21,14 +21,6 @@
 #include "../../vm/gcenv.h"
 #include "../../vm/ecall.h"
 #include "../../vm/rcwwalker.h"
-#include "../../gc/gc.h"
-#include "../../gc/gcscan.h"
-
-#undef SERVER_GC
-namespace WKS {
-#include "../../gc/gcimpl.h"
-#include "../../gc/gcpriv.h"
-}
 
 #ifdef DEBUGGING_SUPPORTED
 

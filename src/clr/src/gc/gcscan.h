@@ -89,11 +89,7 @@ class GCScan
 
     static void VerifyHandleTable(int condemned, int max_gen, ScanContext* sc);
     
-#ifdef DACCESS_COMPILE    
-    SVAL_DECL(int32_t, m_GcStructuresInvalidCnt);
-#else
     static VOLATILE(int32_t) m_GcStructuresInvalidCnt;
-#endif //DACCESS_COMPILE
 };
 
 // These two functions are utilized to scan the heap if requested by ETW

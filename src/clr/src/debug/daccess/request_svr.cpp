@@ -210,6 +210,7 @@ ClrDataAccess::EnumSvrGlobalMemoryRegions(CLRDataEnumMemoryFlags flags)
     DacEnumMemoryRegion(g_gcDacGlobals->g_heaps.GetAddr(),
                     sizeof(TADDR) * *g_gcDacGlobals->n_heaps);
 
+    g_gcDacGlobals->gc_structures_invalid_cnt.EnumMem();
     g_gcDacGlobals->g_heaps.EnumMem();
     
     for (int i=0; i < *g_gcDacGlobals->n_heaps; i++)
