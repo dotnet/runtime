@@ -197,12 +197,9 @@ namespace System.Net.Sockets
             {
                 acceptSocket = new Socket(_addressFamily, _socketType, _protocolType);
             }
-            else
+            else if (acceptSocket._rightEndPoint != null && (!checkDisconnected || !acceptSocket._isDisconnected))
             {
-                if (acceptSocket._rightEndPoint != null && (!checkDisconnected || !acceptSocket._isDisconnected))
-                {
-                    throw new InvalidOperationException(SR.Format(SR.net_sockets_namedmustnotbebound, propertyName));
-                }
+                throw new InvalidOperationException(SR.Format(SR.net_sockets_namedmustnotbebound, propertyName));
             }
 
             handle = acceptSocket._handle;
