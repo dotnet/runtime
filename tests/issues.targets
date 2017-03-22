@@ -1734,5 +1734,20 @@
             <Issue>needs triage</Issue>
         </ExcludeList>
     </ItemGroup>
+
+    <!-- Failures while testing via ILLINK -->
+    
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(RunTestsViaIllink)' == 'true'">
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\superpmi\superpmicollect\superpmicollect.cmd">
+            <!-- Linker runs reset CORE_ROOT to the linked directory based on superpmicollect.exe.
+                 The test runs other benchmarks to collect superpmi data.
+                 These tests cannot run from the binaries generated wrt superpmicollect.exe -->
+            <Issue>By Test Infrastructure design</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\RVAInit\nested\nested.cmd">
+            <!-- Data refered from static field is dropped -->
+            <Issue>Bug</Issue>
+        </ExcludeList>
+    </ItemGroup>
     
 </Project>
