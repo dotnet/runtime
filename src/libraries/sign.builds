@@ -4,17 +4,13 @@
   <Import Project="dir.props" />
   <Import Project="..\dir.targets" />
 
-  <PropertyGroup>
-    <OutDir>$(BinDir)</OutDir>
-  </PropertyGroup>
-
   <UsingTask AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll" TaskName="ReadSigningRequired" />
 
   <ItemGroup>
     <WindowsNativeLocation Include="$(NativeBinDir)\clrcompression.dll" />
     <WindowsNativeLocation Include="$(NativeBinDir)_aot\clrcompression.dll" />
   </ItemGroup>
-  
+
   <Target Name="GenerateSignForWindowsNative">
     <WriteSigningRequired AuthenticodeSig="$(AuthenticodeSig)"
                           MarkerFile="%(WindowsNativeLocation.Identity).requires_signing" />
@@ -25,7 +21,8 @@
           DependsOnTargets="GenerateSignForWindowsNative">
     <!-- read all of the marker files and populate the FilesToSign item group -->
     <ItemGroup>
-      <SignMarkerFile Include="$(OutDir)**\*.requires_signing" />
+      <!-- Note: this also looks for things under bin\obj which require signing like the shims -->
+      <SignMarkerFile Include="$(BinDir)**\*.requires_signing" />
     </ItemGroup>
     <ReadSigningRequired MarkerFiles="@(SignMarkerFile)">
       <Output TaskParameter="SigningMetadata" ItemName="FilesToSign" />
