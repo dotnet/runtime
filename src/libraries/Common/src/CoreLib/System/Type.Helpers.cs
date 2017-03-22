@@ -9,6 +9,34 @@ namespace System
     // This file collects the longer methods of Type to make the main Type class more readable.
     public abstract partial class Type : MemberInfo, IReflect
     {
+        public virtual bool IsSerializable
+        {
+            get
+            {
+                if ((GetAttributeFlagsImpl() & TypeAttributes.Serializable) != 0)
+                    return true;
+
+                Type underlyingType = UnderlyingSystemType;
+                if (underlyingType.IsRuntimeImplemented())
+                {
+                    do
+                    {
+                        // In all sane cases we only need to compare the direct level base type with
+                        // System.Enum and System.MulticastDelegate. However, a generic parameter can
+                        // have a base type constraint that is Delegate or even a real delegate type.
+                        // Let's maintain compatibility and return true for them.
+                        if (underlyingType == typeof(Delegate) || underlyingType == typeof(Enum))
+                            return true;
+
+                        underlyingType = underlyingType.BaseType;
+                    }
+                    while (underlyingType != null);
+                }
+
+                return false;
+            }
+        }
+
         public virtual bool ContainsGenericParameters
         {
             get
