@@ -301,7 +301,7 @@
   </Target>
 
   <!-- Incremental clean only cleans paths under Intermediate or OutDir, handle additional paths -->
-  <Target Name="_CleanGetCurrentAdditionalFileWrites" BeforeTargets="_CleanGetCurrentAndPriorFileWrites">
+  <Target Name="_CleanGetCurrentAdditionalFileWrites" BeforeTargets="_CleanGetCurrentAndPriorFileWrites" Condition="'@(AdditionalCleanDirectories)' != ''">
     <!-- find files under paths we care about and add them to _CleanCurrentFileWrites to ensure they are written to the file list -->
     <FindUnderPath Path="%(AdditionalCleanDirectories.Identity)" Files="@(FileWrites)" UpdateToAbsolutePaths="true">
       <Output TaskParameter="InPath" ItemName="_CleanCurrentFileWrites" />
@@ -313,7 +313,7 @@
     <AdditionalCleanDirectories Include="%(BinPlaceConfiguration.RuntimePath)" />
   </ItemGroup>
 
-  <Target Name="IncrementalCleanAdditionalDirectories" BeforeTargets="IncrementalClean">
+  <Target Name="IncrementalCleanAdditionalDirectories" BeforeTargets="IncrementalClean" Condition="'@(AdditionalCleanDirectories)' != ''">
     <ItemGroup>
       <_CleanOrphanAdditionalFileWrites Include="@(_CleanPriorFileWrites)" Exclude="@(_CleanCurrentFileWrites)" />
     </ItemGroup>
