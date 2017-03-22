@@ -7285,10 +7285,20 @@ ves_icall_MonoMethod_get_base_method (MonoReflectionMethodHandle m, gboolean def
 
 	MonoMethod *base = mono_method_get_base_method (method, definition, error);
 	return_val_if_nok (error, MONO_HANDLE_CAST (MonoReflectionMethod, NULL_HANDLE));
-	if (base == method)
-		return m;
-	else
-		return mono_method_get_object_handle (mono_domain_get (), base, NULL, error);
+	if (base == method) {
+		/* we want to short-circuit and return 'm' here. But we should
+		   return the same method object that
+		   mono_method_get_object_handle, below would return.  Since
+		   that call takes NULL for the reftype argument, it will take
+		   base->klass as the reflected type for the MonoMethod.  So we
+		   need to check that m also has base->klass as the reflected
+		   type. */
+		MonoReflectionTypeHandle orig_reftype = MONO_HANDLE_NEW_GET (MonoReflectionType, m, reftype);
+		MonoClass *orig_klass = mono_class_from_mono_type (MONO_HANDLE_GETVAL (orig_reftype, type));
+		if (base->klass == orig_klass)
+			return m;
+	}
+	return mono_method_get_object_handle (mono_domain_get (), base, NULL, error);
 }
 
 ICALL_EXPORT MonoStringHandle
