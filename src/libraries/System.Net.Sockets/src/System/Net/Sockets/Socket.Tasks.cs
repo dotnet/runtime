@@ -56,11 +56,10 @@ namespace System.Net.Sockets
             {
                 // No instance has been created yet, so create one.
                 saea = new TaskSocketAsyncEventArgs<Socket>();
-                saea.Completed += (_, e) => CompleteAccept((TaskSocketAsyncEventArgs<Socket>)e);
+                saea.Completed += (s, e) => CompleteAccept((Socket)s, (TaskSocketAsyncEventArgs<Socket>)e);
             }
 
             // Configure the SAEA.
-            saea.UserToken = this;
             saea.AcceptSocket = acceptSocket;
 
             // Initiate the accept operation.
@@ -482,10 +481,9 @@ namespace System.Net.Sockets
         }
 
         /// <summary>Completes the SocketAsyncEventArg's Task with the result of the send or receive, and returns it to the specified pool.</summary>
-        private static void CompleteAccept(TaskSocketAsyncEventArgs<Socket> saea)
+        private static void CompleteAccept(Socket s, TaskSocketAsyncEventArgs<Socket> saea)
         {
             // Pull the relevant state off of the SAEA
-            Socket s = (Socket)saea.UserToken;
             SocketError error = saea.SocketError;
             Socket acceptSocket = saea.AcceptSocket;
 
@@ -511,10 +509,9 @@ namespace System.Net.Sockets
         }
 
         /// <summary>Completes the SocketAsyncEventArg's Task with the result of the send or receive, and returns it to the specified pool.</summary>
-        private static void CompleteSendReceive(Int32TaskSocketAsyncEventArgs saea, bool isReceive)
+        private static void CompleteSendReceive(Socket s, Int32TaskSocketAsyncEventArgs saea, bool isReceive)
         {
             // Pull the relevant state off of the SAEA
-            Socket s = (Socket)saea.UserToken;
             SocketError error = saea.SocketError;
             int bytesTransferred = saea.BytesTransferred;
             bool wrapExceptionsInIOExceptions = saea._wrapExceptionsInIOExceptions;
@@ -573,13 +570,11 @@ namespace System.Net.Sockets
                 // No instance has been created yet, so create one.
                 saea = new Int32TaskSocketAsyncEventArgs();
                 var handler = isReceive ? // branch to avoid capturing isReceive on every call
-                    new EventHandler<SocketAsyncEventArgs>((_, e) => CompleteSendReceive((Int32TaskSocketAsyncEventArgs)e, isReceive: true)) :
-                    new EventHandler<SocketAsyncEventArgs>((_, e) => CompleteSendReceive((Int32TaskSocketAsyncEventArgs)e, isReceive: false));
+                    new EventHandler<SocketAsyncEventArgs>((s, e) => CompleteSendReceive((Socket)s, (Int32TaskSocketAsyncEventArgs)e, isReceive: true)) :
+                    new EventHandler<SocketAsyncEventArgs>((s, e) => CompleteSendReceive((Socket)s, (Int32TaskSocketAsyncEventArgs)e, isReceive: false));
                 saea.Completed += handler;
             }
 
-            // We got an instance. Configure and return it.
-            saea.UserToken = this;
             return saea;
         }
 
@@ -594,7 +589,6 @@ namespace System.Net.Sockets
             // Reset state on the SAEA before returning it.  But do not reset buffer state.  That'll be done
             // if necessary by the consumer, but we want to keep the buffers due to likely subsequent reuse
             // and the costs associated with changing them.
-            saea.UserToken = null;
             saea._accessed = false;
             saea._builder = default(AsyncTaskMethodBuilder<int>);
             saea._wrapExceptionsInIOExceptions = false;
@@ -625,7 +619,6 @@ namespace System.Net.Sockets
             // if necessary by the consumer, but we want to keep the buffers due to likely subsequent reuse
             // and the costs associated with changing them.
             saea.AcceptSocket = null;
-            saea.UserToken = null;
             saea._accessed = false;
             saea._builder = default(AsyncTaskMethodBuilder<Socket>);
 
