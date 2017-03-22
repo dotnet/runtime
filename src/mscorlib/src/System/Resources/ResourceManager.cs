@@ -310,7 +310,7 @@ namespace System.Resources
             Contract.EndContractBlock();
 
             if (!(assembly is RuntimeAssembly))
-                throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeAssembly"));
+                throw new ArgumentException(SR.Argument_MustBeRuntimeAssembly);
 
             MainAssembly = assembly;
             BaseNameField = baseName;
@@ -340,13 +340,13 @@ namespace System.Resources
             Contract.EndContractBlock();
 
             if (!(assembly is RuntimeAssembly))
-                throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeAssembly"));
+                throw new ArgumentException(SR.Argument_MustBeRuntimeAssembly);
 
             MainAssembly = assembly;
             BaseNameField = baseName;
 
             if (usingResourceSet != null && (usingResourceSet != _minResourceSet) && !(usingResourceSet.IsSubclassOf(_minResourceSet)))
-                throw new ArgumentException(Environment.GetResourceString("Arg_ResMgrNotResSet"), nameof(usingResourceSet));
+                throw new ArgumentException(SR.Arg_ResMgrNotResSet, nameof(usingResourceSet));
             _userResourceSet = usingResourceSet;
 
             CommonAssemblyInit();
@@ -367,7 +367,7 @@ namespace System.Resources
             Contract.EndContractBlock();
 
             if (!(resourceSource is RuntimeType))
-                throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeType"));
+                throw new ArgumentException(SR.Argument_MustBeRuntimeType);
 
             _locationInfo = resourceSource;
             MainAssembly = _locationInfo.Assembly;
@@ -758,7 +758,7 @@ namespace System.Resources
             // Ensure that the assembly reference is not null
             if (a == null)
             {
-                throw new ArgumentNullException(nameof(a), Environment.GetResourceString("ArgumentNull_Assembly"));
+                throw new ArgumentNullException(nameof(a), SR.ArgumentNull_Assembly);
             }
             Contract.EndContractBlock();
 
@@ -1120,9 +1120,9 @@ namespace System.Resources
                     // Always throw if we did not fully succeed in initializing the WinRT Resource Manager.
 
                     if (_PRIExceptionInfo != null && _PRIExceptionInfo._PackageSimpleName != null && _PRIExceptionInfo._ResWFile != null)
-                        throw new MissingManifestResourceException(Environment.GetResourceString("MissingManifestResource_ResWFileNotLoaded", _PRIExceptionInfo._ResWFile, _PRIExceptionInfo._PackageSimpleName));
+                        throw new MissingManifestResourceException(SR.Format(SR.MissingManifestResource_ResWFileNotLoaded, _PRIExceptionInfo._ResWFile, _PRIExceptionInfo._PackageSimpleName));
 
-                    throw new MissingManifestResourceException(Environment.GetResourceString("MissingManifestResource_NoPRIresources"));
+                    throw new MissingManifestResourceException(SR.MissingManifestResource_NoPRIresources);
                 }
 
                 // Throws WinRT hresults.
@@ -1299,7 +1299,7 @@ namespace System.Resources
             Object obj = GetObject(name, culture, false);
             UnmanagedMemoryStream ums = obj as UnmanagedMemoryStream;
             if (ums == null && obj != null)
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_ResourceNotStream_Name", name));
+                throw new InvalidOperationException(SR.Format(SR.InvalidOperation_ResourceNotStream_Name, name));
             return ums;
         }
 

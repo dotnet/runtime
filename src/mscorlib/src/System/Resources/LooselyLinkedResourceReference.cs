@@ -39,9 +39,9 @@ namespace System.Resources {
             if (typeName == null)
                 throw new ArgumentNullException(nameof(typeName));
             if (looselyLinkedResourceName.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(looselyLinkedResourceName));
+                throw new ArgumentException(SR.Argument_EmptyName, nameof(looselyLinkedResourceName));
             if (typeName.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(typeName));
+                throw new ArgumentException(SR.Argument_EmptyName, nameof(typeName));
             Contract.EndContractBlock();
             
             _manifestResourceName = looselyLinkedResourceName;
@@ -64,7 +64,7 @@ namespace System.Resources {
 
             Stream data = assembly.GetManifestResourceStream(_manifestResourceName);
             if (data == null)
-                throw new MissingManifestResourceException(Environment.GetResourceString("MissingManifestResource_LooselyLinked", _manifestResourceName, assembly.FullName));
+                throw new MissingManifestResourceException(SR.Format(SR.MissingManifestResource_LooselyLinked, _manifestResourceName, assembly.FullName));
 
             Type type = Type.GetType(_typeName, true);
             

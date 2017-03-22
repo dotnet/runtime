@@ -107,19 +107,19 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             MethodInfo accessor = getValue ? m_property.GetGetMethod(true) : m_property.GetSetMethod(true);
 
             if (accessor == null)
-                throw new ArgumentException(System.Environment.GetResourceString(getValue ? "Arg_GetMethNotFnd" : "Arg_SetMethNotFnd"));
+                throw new ArgumentException(getValue ? SR.Arg_GetMethNotFnd : SR.Arg_SetMethNotFnd);
 
             if (!accessor.IsPublic)
                 throw new MethodAccessException(
                     String.Format(
                         CultureInfo.CurrentCulture,
-                        Environment.GetResourceString("Arg_MethodAccessException_WithMethodName"),
+                        SR.Arg_MethodAccessException_WithMethodName,
                         accessor.ToString(),
                         accessor.DeclaringType.FullName));
 
             RuntimeMethodInfo rtMethod = accessor as RuntimeMethodInfo;
             if (rtMethod == null)
-                throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeMethodInfo"));
+                throw new ArgumentException(SR.Argument_MustBeRuntimeMethodInfo);
 
             // We can safely skip access check because this is only used in full trust scenarios.
             // And we have already verified that the property accessor is public.

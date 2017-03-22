@@ -94,8 +94,7 @@ namespace System.Text
 
             // Known index
             throw new DecoderFallbackException(
-                Environment.GetResourceString("Argument_InvalidCodePageBytesIndex",
-                   strBytes, index), bytesUnknown, index);
+                SR.Format(SR.Argument_InvalidCodePageBytesIndex, strBytes, index), bytesUnknown, index);
         }
     }
 
@@ -107,7 +106,7 @@ namespace System.Text
         private int index = 0;
 
         public DecoderFallbackException()
-            : base(Environment.GetResourceString("Arg_ArgumentException"))
+            : base(SR.Arg_ArgumentException)
         {
             SetErrorCode(__HResults.COR_E_ARGUMENT);
         }

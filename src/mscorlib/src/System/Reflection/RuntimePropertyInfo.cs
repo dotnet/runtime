@@ -162,7 +162,7 @@ namespace System.Reflection
             RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
             if (attributeRuntimeType == null)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), nameof(attributeType));
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
         }
@@ -176,7 +176,7 @@ namespace System.Reflection
             RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
             if (attributeRuntimeType == null)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), nameof(attributeType));
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.IsDefined(this, attributeRuntimeType);
         }
@@ -249,7 +249,7 @@ namespace System.Reflection
 
             if (defaultValue == DBNull.Value)
                 // Arg_EnumLitValueNotFound -> "Literal value was not found."
-                throw new InvalidOperationException(Environment.GetResourceString("Arg_EnumLitValueNotFound"));
+                throw new InvalidOperationException(SR.Arg_EnumLitValueNotFound);
 
             return defaultValue;
         }
@@ -400,7 +400,7 @@ namespace System.Reflection
         {
             MethodInfo m = GetGetMethod(true);
             if (m == null)
-                throw new ArgumentException(System.Environment.GetResourceString("Arg_GetMethNotFnd"));
+                throw new ArgumentException(System.SR.Arg_GetMethNotFnd);
             return m.Invoke(obj, invokeAttr, binder, index, null);
         }
 
@@ -423,7 +423,7 @@ namespace System.Reflection
             MethodInfo m = GetSetMethod(true);
 
             if (m == null)
-                throw new ArgumentException(System.Environment.GetResourceString("Arg_SetMethNotFnd"));
+                throw new ArgumentException(System.SR.Arg_SetMethNotFnd);
 
             Object[] args = null;
 

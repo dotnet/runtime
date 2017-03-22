@@ -46,7 +46,7 @@ namespace System
             {
                 return ((int)m_value - (int)(((UInt16)value).m_value));
             }
-            throw new ArgumentException(Environment.GetResourceString("Arg_MustBeUInt16"));
+            throw new ArgumentException(SR.Arg_MustBeUInt16);
         }
 
         public int CompareTo(UInt16 value)
@@ -137,10 +137,10 @@ namespace System
             }
             catch (OverflowException e)
             {
-                throw new OverflowException(Environment.GetResourceString("Overflow_UInt16"), e);
+                throw new OverflowException(SR.Overflow_UInt16, e);
             }
 
-            if (i > MaxValue) throw new OverflowException(Environment.GetResourceString("Overflow_UInt16"));
+            if (i > MaxValue) throw new OverflowException(SR.Overflow_UInt16);
             return (ushort)i;
         }
 
@@ -263,7 +263,7 @@ namespace System
         /// <internalonly/>
         DateTime IConvertible.ToDateTime(IFormatProvider provider)
         {
-            throw new InvalidCastException(Environment.GetResourceString("InvalidCast_FromTo", "UInt16", "DateTime"));
+            throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, "UInt16", "DateTime"));
         }
 
         /// <internalonly/>

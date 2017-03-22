@@ -12,7 +12,7 @@ namespace System.Threading
     [ComVisibleAttribute(false)]
     public class SemaphoreFullException : SystemException
     {
-        public SemaphoreFullException() : base(Environment.GetResourceString("Threading_SemaphoreFullException"))
+        public SemaphoreFullException() : base(SR.Threading_SemaphoreFullException)
         {
         }
 

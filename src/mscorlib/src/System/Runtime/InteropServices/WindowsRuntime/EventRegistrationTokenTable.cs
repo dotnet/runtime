@@ -28,7 +28,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             // static check at construction time
             if (!typeof(Delegate).IsAssignableFrom(typeof(T)))
             {
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_EventTokenTableRequiresDelegate", typeof(T)));
+                throw new InvalidOperationException(SR.Format(SR.InvalidOperation_EventTokenTableRequiresDelegate, typeof (T)));
             }
         }
 

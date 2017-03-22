@@ -32,7 +32,7 @@ namespace System
             // Create local copy to avoid a race condition
             RuntimeType type = m_type;
             if (type == null)
-                throw new ArgumentNullException(null, Environment.GetResourceString("Arg_InvalidHandle"));
+                throw new ArgumentNullException(null, SR.Arg_InvalidHandle);
             return new RuntimeTypeHandle(type);
         }
 
@@ -42,7 +42,7 @@ namespace System
             // Create local copy to avoid a race condition
             RuntimeType type = m_type;
             if (type == null)
-                throw new ArgumentNullException(null, Environment.GetResourceString("Arg_InvalidHandle"));
+                throw new ArgumentNullException(null, SR.Arg_InvalidHandle);
             return type;
         }
 
@@ -462,7 +462,7 @@ namespace System
             if (name == null || name.Length == 0)
             {
                 if (throwOnError)
-                    throw new TypeLoadException(Environment.GetResourceString("Arg_TypeLoadNullStr"));
+                    throw new TypeLoadException(SR.Arg_TypeLoadNullStr);
 
                 return null;
             }
@@ -611,7 +611,7 @@ namespace System
             RuntimeType type = GetTypeChecked();
 
             if (!IsGenericVariable(type))
-                throw new InvalidOperationException(Environment.GetResourceString("Arg_NotGenericParameter"));
+                throw new InvalidOperationException(SR.Arg_NotGenericParameter);
 
             return GetGenericVariableIndex(type);
         }
@@ -664,7 +664,7 @@ namespace System
             m_type = m;
 
             if (m_type == null)
-                throw new SerializationException(Environment.GetResourceString("Serialization_InsufficientState"));
+                throw new SerializationException(SR.Serialization_InsufficientState);
         }
 
         public void GetObjectData(SerializationInfo info, StreamingContext context)
@@ -674,7 +674,7 @@ namespace System
             Contract.EndContractBlock();
 
             if (m_type == null)
-                throw new SerializationException(Environment.GetResourceString("Serialization_InvalidFieldState"));
+                throw new SerializationException(SR.Serialization_InvalidFieldState);
 
             info.AddValue("TypeObj", m_type, typeof(RuntimeType));
         }
@@ -773,7 +773,7 @@ namespace System
         internal static IRuntimeMethodInfo EnsureNonNullMethodInfo(IRuntimeMethodInfo method)
         {
             if (method == null)
-                throw new ArgumentNullException(null, Environment.GetResourceString("Arg_InvalidHandle"));
+                throw new ArgumentNullException(null, SR.Arg_InvalidHandle);
             return method;
         }
 
@@ -807,7 +807,7 @@ namespace System
             m_value = m.MethodHandle.m_value;
 
             if (m_value == null)
-                throw new SerializationException(Environment.GetResourceString("Serialization_InsufficientState"));
+                throw new SerializationException(SR.Serialization_InsufficientState);
         }
 
         public void GetObjectData(SerializationInfo info, StreamingContext context)
@@ -817,7 +817,7 @@ namespace System
             Contract.EndContractBlock();
 
             if (m_value == null)
-                throw new SerializationException(Environment.GetResourceString("Serialization_InvalidFieldState"));
+                throw new SerializationException(SR.Serialization_InvalidFieldState);
 
             // This is either a RuntimeMethodInfo or a RuntimeConstructorInfo
             MethodBase methodInfo = RuntimeType.GetMethodBase(m_value);
@@ -1158,7 +1158,7 @@ namespace System
             // Create local copy to avoid a race condition
             IRuntimeFieldInfo field = m_ptr;
             if (field == null)
-                throw new ArgumentNullException(null, Environment.GetResourceString("Arg_InvalidHandle"));
+                throw new ArgumentNullException(null, SR.Arg_InvalidHandle);
             return new RuntimeFieldHandle(field);
         }
 
@@ -1306,12 +1306,12 @@ namespace System
             FieldInfo f = (RuntimeFieldInfo)info.GetValue("FieldObj", typeof(RuntimeFieldInfo));
 
             if (f == null)
-                throw new SerializationException(Environment.GetResourceString("Serialization_InsufficientState"));
+                throw new SerializationException(SR.Serialization_InsufficientState);
 
             m_ptr = f.FieldHandle.m_ptr;
 
             if (m_ptr == null)
-                throw new SerializationException(Environment.GetResourceString("Serialization_InsufficientState"));
+                throw new SerializationException(SR.Serialization_InsufficientState);
         }
 
         public void GetObjectData(SerializationInfo info, StreamingContext context)
@@ -1321,7 +1321,7 @@ namespace System
             Contract.EndContractBlock();
 
             if (m_ptr == null)
-                throw new SerializationException(Environment.GetResourceString("Serialization_InvalidFieldState"));
+                throw new SerializationException(SR.Serialization_InvalidFieldState);
 
             RuntimeFieldInfo fldInfo = (RuntimeFieldInfo)RuntimeType.GetFieldInfo(this.GetRuntimeFieldInfo());
 
@@ -1399,7 +1399,7 @@ namespace System
         {
             // Make sure we have a valid Module to resolve against.
             if (module == null)
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_NullModuleHandle"));
+                throw new InvalidOperationException(SR.InvalidOperation_NullModuleHandle);
         }
 
         // SQL-CLR LKG9 Compiler dependency
@@ -1418,7 +1418,7 @@ namespace System
             ValidateModulePointer(module);
             if (!ModuleHandle.GetMetadataImport(module).IsValidToken(typeToken))
                 throw new ArgumentOutOfRangeException(nameof(typeToken),
-                    Environment.GetResourceString("Argument_InvalidToken", typeToken, new ModuleHandle(module)));
+                    SR.Format(SR.Argument_InvalidToken, typeToken, new ModuleHandle(module)));
 
             int typeInstCount, methodInstCount;
             IntPtr[] typeInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(typeInstantiationContext, out typeInstCount);
@@ -1472,7 +1472,7 @@ namespace System
             ValidateModulePointer(module);
             if (!ModuleHandle.GetMetadataImport(module.GetNativeHandle()).IsValidToken(methodToken))
                 throw new ArgumentOutOfRangeException(nameof(methodToken),
-                    Environment.GetResourceString("Argument_InvalidToken", methodToken, new ModuleHandle(module)));
+                    SR.Format(SR.Argument_InvalidToken, methodToken, new ModuleHandle(module)));
 
             fixed (IntPtr* typeInstArgs = typeInstantiationContext, methodInstArgs = methodInstantiationContext)
             {
@@ -1500,7 +1500,7 @@ namespace System
             ValidateModulePointer(module);
             if (!ModuleHandle.GetMetadataImport(module.GetNativeHandle()).IsValidToken(fieldToken))
                 throw new ArgumentOutOfRangeException(nameof(fieldToken),
-                    Environment.GetResourceString("Argument_InvalidToken", fieldToken, new ModuleHandle(module)));
+                    SR.Format(SR.Argument_InvalidToken, fieldToken, new ModuleHandle(module)));
 
             // defensive copy to be sure array is not mutated from the outside during processing
             int typeInstCount, methodInstCount;

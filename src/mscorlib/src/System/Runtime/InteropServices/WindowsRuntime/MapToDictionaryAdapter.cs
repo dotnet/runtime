@@ -88,7 +88,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 throw new ArgumentNullException(nameof(key));
 
             if (ContainsKey<K, V>(key))
-                throw new ArgumentException(Environment.GetResourceString("Argument_AddingDuplicate"));
+                throw new ArgumentException(SR.Argument_AddingDuplicate);
 
             Contract.EndContractBlock();
 
@@ -158,7 +158,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             catch (Exception ex)
             {
                 if (__HResults.E_BOUNDS == ex._HResult)
-                    throw new KeyNotFoundException(Environment.GetResourceString("Arg_KeyNotFound"));
+                    throw new KeyNotFoundException(SR.Arg_KeyNotFound);
                 throw;
             }
         }

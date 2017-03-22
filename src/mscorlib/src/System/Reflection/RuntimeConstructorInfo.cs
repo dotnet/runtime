@@ -142,9 +142,9 @@ namespace System.Reflection
             if (!m_declaringType.IsInstanceOfType(target))
             {
                 if (target == null)
-                    throw new TargetException(Environment.GetResourceString("RFLCT.Targ_StatMethReqTarg"));
+                    throw new TargetException(SR.RFLCT_Targ_StatMethReqTarg);
 
-                throw new TargetException(Environment.GetResourceString("RFLCT.Targ_ITargMismatch"));
+                throw new TargetException(SR.RFLCT_Targ_ITargMismatch);
             }
         }
 
@@ -177,7 +177,7 @@ namespace System.Reflection
             RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
             if (attributeRuntimeType == null)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), nameof(attributeType));
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
         }
@@ -191,7 +191,7 @@ namespace System.Reflection
             RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
             if (attributeRuntimeType == null)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), nameof(attributeType));
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.IsDefined(this, attributeRuntimeType);
         }
@@ -277,7 +277,7 @@ namespace System.Reflection
             {
                 Type declaringType = DeclaringType;
                 if ((declaringType == null && Module.Assembly.ReflectionOnly) || declaringType is ReflectionOnlyType)
-                    throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_NotAllowedInReflectionOnly"));
+                    throw new InvalidOperationException(SR.InvalidOperation_NotAllowedInReflectionOnly);
                 return new RuntimeMethodHandle(this);
             }
         }
@@ -306,17 +306,17 @@ namespace System.Reflection
 
             // ctor is ReflectOnly
             if (declaringType is ReflectionOnlyType)
-                throw new InvalidOperationException(Environment.GetResourceString("Arg_ReflectionOnlyInvoke"));
+                throw new InvalidOperationException(SR.Arg_ReflectionOnlyInvoke);
 
             // ctor is declared on interface class
             else if (declaringType.IsInterface)
                 throw new MemberAccessException(
-                    String.Format(CultureInfo.CurrentUICulture, Environment.GetResourceString("Acc_CreateInterfaceEx"), declaringType));
+                    String.Format(CultureInfo.CurrentUICulture, SR.Acc_CreateInterfaceEx, declaringType));
 
             // ctor is on an abstract class
             else if (declaringType.IsAbstract)
                 throw new MemberAccessException(
-                    String.Format(CultureInfo.CurrentUICulture, Environment.GetResourceString("Acc_CreateAbstEx"), declaringType));
+                    String.Format(CultureInfo.CurrentUICulture, SR.Acc_CreateAbstEx, declaringType));
 
             // ctor is on a class that contains stack pointers
             else if (declaringType.GetRootElementType() == typeof(ArgIterator))
@@ -330,12 +330,12 @@ namespace System.Reflection
             else if (declaringType.ContainsGenericParameters)
             {
                 throw new MemberAccessException(
-                    String.Format(CultureInfo.CurrentUICulture, Environment.GetResourceString("Acc_CreateGenericEx"), declaringType));
+                    String.Format(CultureInfo.CurrentUICulture, SR.Acc_CreateGenericEx, declaringType));
             }
 
             // ctor is declared on System.Void
             else if (declaringType == typeof(void))
-                throw new MemberAccessException(Environment.GetResourceString("Access_Void"));
+                throw new MemberAccessException(SR.Access_Void);
         }
 
         internal void ThrowNoInvokeException()
@@ -344,7 +344,7 @@ namespace System.Reflection
 
             // ctor is .cctor
             if ((Attributes & MethodAttributes.Static) == MethodAttributes.Static)
-                throw new MemberAccessException(Environment.GetResourceString("Acc_NotClassInit"));
+                throw new MemberAccessException(SR.Acc_NotClassInit);
 
             throw new TargetException();
         }
@@ -376,7 +376,7 @@ namespace System.Reflection
             int formalCount = sig.Arguments.Length;
             int actualCount = (parameters != null) ? parameters.Length : 0;
             if (formalCount != actualCount)
-                throw new TargetParameterCountException(Environment.GetResourceString("Arg_ParmCnt"));
+                throw new TargetParameterCountException(SR.Arg_ParmCnt);
 
             // if we are here we passed all the previous checks. Time to look at the arguments
             if (actualCount > 0)
@@ -443,7 +443,7 @@ namespace System.Reflection
             int formalCount = sig.Arguments.Length;
             int actualCount = (parameters != null) ? parameters.Length : 0;
             if (formalCount != actualCount)
-                throw new TargetParameterCountException(Environment.GetResourceString("Arg_ParmCnt"));
+                throw new TargetParameterCountException(SR.Arg_ParmCnt);
 
             // We don't need to explicitly invoke the class constructor here,
             // JIT/NGen will insert the call to .cctor in the instance ctor.

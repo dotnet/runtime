@@ -15,7 +15,7 @@ namespace System.Threading
 
     public class WaitHandleCannotBeOpenedException : ApplicationException
     {
-        public WaitHandleCannotBeOpenedException() : base(Environment.GetResourceString("Threading.WaitHandleCannotBeOpenedException"))
+        public WaitHandleCannotBeOpenedException() : base(SR.Threading_WaitHandleCannotBeOpenedException)
         {
             SetErrorCode(__HResults.COR_E_WAITHANDLECANNOTBEOPENED);
         }

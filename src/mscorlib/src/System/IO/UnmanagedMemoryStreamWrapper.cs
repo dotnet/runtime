@@ -70,7 +70,7 @@ namespace System.IO
 
         public override byte[] GetBuffer()
         {
-            throw new UnauthorizedAccessException(Environment.GetResourceString("UnauthorizedAccess_MemStreamBuffer"));
+            throw new UnauthorizedAccessException(SR.UnauthorizedAccess_MemStreamBuffer);
         }
 
         public override bool TryGetBuffer(out ArraySegment<byte> buffer)
@@ -88,7 +88,7 @@ namespace System.IO
             [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Skip extra error checking to avoid *potential* AppCompat problems.
             set
             {
-                throw new IOException(Environment.GetResourceString("IO.IO_FixedCapacity"));
+                throw new IOException(SR.IO_FixedCapacity);
             }
         }
 
@@ -151,7 +151,7 @@ namespace System.IO
         public unsafe override void WriteTo(Stream stream)
         {
             if (stream == null)
-                throw new ArgumentNullException(nameof(stream), Environment.GetResourceString("ArgumentNull_Stream"));
+                throw new ArgumentNullException(nameof(stream), SR.ArgumentNull_Stream);
             Contract.EndContractBlock();
 
             if (!_unmanagedStream._isOpen) __Error.StreamIsClosed();
@@ -178,19 +178,19 @@ namespace System.IO
                 throw new ArgumentNullException(nameof(destination));
 
             if (bufferSize <= 0)
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), Environment.GetResourceString("ArgumentOutOfRange_NeedPosNum"));
+                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
 
             if (!CanRead && !CanWrite)
-                throw new ObjectDisposedException(null, Environment.GetResourceString("ObjectDisposed_StreamClosed"));
+                throw new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);
 
             if (!destination.CanRead && !destination.CanWrite)
-                throw new ObjectDisposedException(nameof(destination), Environment.GetResourceString("ObjectDisposed_StreamClosed"));
+                throw new ObjectDisposedException(nameof(destination), SR.ObjectDisposed_StreamClosed);
 
             if (!CanRead)
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_UnreadableStream"));
+                throw new NotSupportedException(SR.NotSupported_UnreadableStream);
 
             if (!destination.CanWrite)
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_UnwritableStream"));
+                throw new NotSupportedException(SR.NotSupported_UnwritableStream);
 
             Contract.EndContractBlock();
 

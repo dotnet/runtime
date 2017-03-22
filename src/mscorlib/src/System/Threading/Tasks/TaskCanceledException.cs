@@ -28,7 +28,7 @@ namespace System.Threading.Tasks
         /// <summary>
         /// Initializes a new instance of the <see cref="T:System.Threading.Tasks.TaskCanceledException"/> class.
         /// </summary>
-        public TaskCanceledException() : base(Environment.GetResourceString("TaskCanceledException_ctor_DefaultMessage"))
+        public TaskCanceledException() : base(SR.TaskCanceledException_ctor_DefaultMessage)
         {
         }
 
@@ -58,7 +58,7 @@ namespace System.Threading.Tasks
         /// </summary>
         /// <param name="task">A task that has been canceled.</param>
         public TaskCanceledException(Task task) :
-            base(Environment.GetResourceString("TaskCanceledException_ctor_DefaultMessage"), task != null ? task.CancellationToken : new CancellationToken())
+            base(SR.TaskCanceledException_ctor_DefaultMessage, task != null ? task.CancellationToken : new CancellationToken())
         {
             m_canceledTask = task;
         }

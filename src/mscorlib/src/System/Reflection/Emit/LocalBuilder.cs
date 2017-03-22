@@ -76,14 +76,14 @@ namespace System.Reflection.Emit
             if (methodBuilder.IsTypeCreated())
             {
                 // cannot change method after its containing type has been created
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_TypeHasBeenCreated"));
+                throw new InvalidOperationException(SR.InvalidOperation_TypeHasBeenCreated);
             }
 
             // set the name and range of offset for the local
             if (dynMod.GetSymWriter() == null)
             {
                 // cannot set local name if not debug module
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_NotADebugModule"));
+                throw new InvalidOperationException(SR.InvalidOperation_NotADebugModule);
             }
 
             sigHelp = SignatureHelper.GetFieldSigHelper(dynMod);

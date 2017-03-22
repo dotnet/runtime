@@ -296,7 +296,7 @@ namespace System.Reflection
             RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
             if (attributeRuntimeType == null)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), nameof(attributeType));
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
         }
@@ -310,7 +310,7 @@ namespace System.Reflection
             RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
             if (attributeRuntimeType == null)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), nameof(attributeType));
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.IsDefined(this, attributeRuntimeType);
         }
@@ -382,7 +382,7 @@ namespace System.Reflection
 
             if ((assemblyString.Length == 0) ||
                 (assemblyString[0] == '\0'))
-                throw new ArgumentException(Environment.GetResourceString("Format_StringZeroLength"));
+                throw new ArgumentException(SR.Format_StringZeroLength);
 
             if (forIntrospection)
                 AppDomain.CheckReflectionOnlyLoadSupported();
@@ -715,7 +715,7 @@ namespace System.Reflection
             {
                 //Console.WriteLine("Creating an unmanaged memory stream of length "+length);
                 if (length > Int64.MaxValue)
-                    throw new NotImplementedException(Environment.GetResourceString("NotImplemented_ResourcesLongerThan2^63"));
+                    throw new NotImplementedException(SR.NotImplemented_ResourcesLongerThanInt64Max);
 
                 return new UnmanagedMemoryStream(pbInMemoryResource, (long)length, (long)length, FileAccess.Read);
             }
@@ -891,7 +891,7 @@ namespace System.Reflection
 
             if (retAssembly == this || (retAssembly == null && throwOnFileNotFound))
             {
-                throw new FileNotFoundException(String.Format(culture, Environment.GetResourceString("IO.FileNotFound_FileName"), an.Name));
+                throw new FileNotFoundException(String.Format(culture, SR.IO_FileNotFound_FileName, an.Name));
             }
 
             return retAssembly;

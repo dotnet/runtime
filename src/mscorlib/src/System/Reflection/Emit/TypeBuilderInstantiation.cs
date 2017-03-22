@@ -221,7 +221,7 @@ namespace System.Reflection.Emit
         }
         public override MethodBase DeclaringMethod { get { return null; } }
         public override Type GetGenericTypeDefinition() { return m_type; }
-        public override Type MakeGenericType(params Type[] inst) { throw new InvalidOperationException(Environment.GetResourceString("Arg_NotGenericTypeDefinition")); }
+        public override Type MakeGenericType(params Type[] inst) { throw new InvalidOperationException(SR.Arg_NotGenericTypeDefinition); }
         public override bool IsAssignableFrom(Type c) { throw new NotSupportedException(); }
 
         [Pure]

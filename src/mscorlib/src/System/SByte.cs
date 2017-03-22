@@ -47,7 +47,7 @@ namespace System
             }
             if (!(obj is SByte))
             {
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeSByte"));
+                throw new ArgumentException(SR.Arg_MustBeSByte);
             }
             return m_value - ((SByte)obj).m_value;
         }
@@ -156,19 +156,19 @@ namespace System
             }
             catch (OverflowException e)
             {
-                throw new OverflowException(Environment.GetResourceString("Overflow_SByte"), e);
+                throw new OverflowException(SR.Overflow_SByte, e);
             }
 
             if ((style & NumberStyles.AllowHexSpecifier) != 0)
             { // We are parsing a hexadecimal number
                 if ((i < 0) || i > Byte.MaxValue)
                 {
-                    throw new OverflowException(Environment.GetResourceString("Overflow_SByte"));
+                    throw new OverflowException(SR.Overflow_SByte);
                 }
                 return (sbyte)i;
             }
 
-            if (i < MinValue || i > MaxValue) throw new OverflowException(Environment.GetResourceString("Overflow_SByte"));
+            if (i < MinValue || i > MaxValue) throw new OverflowException(SR.Overflow_SByte);
             return (sbyte)i;
         }
 
@@ -303,7 +303,7 @@ namespace System
         /// <internalonly/>
         DateTime IConvertible.ToDateTime(IFormatProvider provider)
         {
-            throw new InvalidCastException(Environment.GetResourceString("InvalidCast_FromTo", "SByte", "DateTime"));
+            throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, "SByte", "DateTime"));
         }
 
         /// <internalonly/>
