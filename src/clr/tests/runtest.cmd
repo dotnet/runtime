@@ -160,6 +160,10 @@ if defined __AgainstPackages (
     set __msbuildCommonArgs=%__msbuildCommonArgs% /p:BuildTestsAgainstPackages=true
 )
 
+if defined DoLink (
+    set __msbuildCommonArgs=%__msbuildCommonArgs% /p:RunTestsViaIllink=true
+)
+
 REM Prepare the Test Drop
 REM Cleans any NI from the last run
 powershell "Get-ChildItem -path %__TestWorkingDir% -Include '*.ni.*' -Recurse -Force | Remove-Item -force"
