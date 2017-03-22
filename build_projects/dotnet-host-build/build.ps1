@@ -102,7 +102,7 @@ if (!(Test-Path "$RepoRoot\artifacts"))
 }
 
 # Install a stage 0
-$DOTNET_INSTALL_SCRIPT_URL="https://raw.githubusercontent.com/dotnet/cli/rel/1.0.0/scripts/obtain/dotnet-install.ps1"
+$DOTNET_INSTALL_SCRIPT_URL="https://raw.githubusercontent.com/dotnet/cli/master/scripts/obtain/dotnet-install.ps1"
 Invoke-WebRequest $DOTNET_INSTALL_SCRIPT_URL -OutFile "$RepoRoot\artifacts\dotnet-install.ps1"
 
 & "$RepoRoot\artifacts\dotnet-install.ps1" -Version 1.0.0-preview3-003886 -Architecture $Architecture -Verbose
