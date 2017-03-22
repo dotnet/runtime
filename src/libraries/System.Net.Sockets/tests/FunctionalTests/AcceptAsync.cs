@@ -249,7 +249,11 @@ namespace System.Net.Sockets.Tests
                 }
                 else
                 {
-                    Assert.Throws<InvalidOperationException>(() => listener.AcceptAsync(server).GetAwaiter().GetResult());
+                    if (listener.AcceptAsync(saea))
+                    {
+                        are.WaitOne();
+                    }
+                    Assert.Equal(SocketError.InvalidArgument, saea.SocketError);
                 }
             }
         }
