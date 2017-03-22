@@ -17595,7 +17595,7 @@ Compiler::fgWalkResult Compiler::fgMorphLocalField(GenTreePtr tree, fgWalkData* 
  */
 void Compiler::fgMarkImplicitByRefArgs()
 {
-#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+#if (defined(_TARGET_AMD64_) && !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)) || defined(_TARGET_ARM64_)
 #ifdef DEBUG
     if (verbose)
     {
@@ -17623,7 +17623,6 @@ void Compiler::fgMarkImplicitByRefArgs()
                 size                         = info.compCompHnd->getClassSize(typeHnd);
             }
 
-#if !defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 #if defined(_TARGET_AMD64_)
             if (size > REGSIZE_BYTES || (size & (size - 1)) != 0)
 #elif defined(_TARGET_ARM64_)
@@ -17658,11 +17657,10 @@ void Compiler::fgMarkImplicitByRefArgs()
                 }
 #endif // DEBUG
             }
-#endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
         }
     }
 
-#endif // _TARGET_AMD64_ || _TARGET_ARM64_
+#endif // (_TARGET_AMD64_ && !FEATURE_UNIX_AMD64_STRUCT_PASSING) || _TARGET_ARM64_
 }
 
 /*****************************************************************************
@@ -17672,11 +17670,11 @@ void Compiler::fgMarkImplicitByRefArgs()
  */
 bool Compiler::fgMorphImplicitByRefArgs(GenTreePtr* pTree, fgWalkData* fgWalkPre)
 {
-#if !defined(_TARGET_AMD64_) && !defined(_TARGET_ARM64_)
+#if (!defined(_TARGET_AMD64_) || defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)) && !defined(_TARGET_ARM64_)
 
     return false;
 
-#else // _TARGET_AMD64_ || _TARGET_ARM64_
+#else // (_TARGET_AMD64_ && !FEATURE_UNIX_AMD64_STRUCT_PASSING) || _TARGET_ARM64_
 
     GenTree* tree = *pTree;
     assert((tree->gtOper == GT_LCL_VAR) || ((tree->gtOper == GT_ADDR) && (tree->gtOp.gtOp1->gtOper == GT_LCL_VAR)));
@@ -17750,7 +17748,7 @@ bool Compiler::fgMorphImplicitByRefArgs(GenTreePtr* pTree, fgWalkData* fgWalkPre
     *pTree = tree;
     return true;
 
-#endif // _TARGET_AMD64_ || _TARGET_ARM64_
+#endif // (_TARGET_AMD64_ && !FEATURE_UNIX_AMD64_STRUCT_PASSING) || _TARGET_ARM64_
 }
 
 // An "AddrExposedContext" expresses the calling context in which an address expression occurs.
