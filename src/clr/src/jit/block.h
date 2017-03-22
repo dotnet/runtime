@@ -545,8 +545,7 @@ struct BasicBlock : private LIR::Range
     void setBBProfileWeight(unsigned weight)
     {
         this->bbFlags |= BBF_PROF_WEIGHT;
-        // Check if the multiplication by BB_UNITY_WEIGHT will overflow.
-        this->bbWeight = (weight <= BB_MAX_WEIGHT / BB_UNITY_WEIGHT) ? weight * BB_UNITY_WEIGHT : BB_MAX_WEIGHT;
+        this->bbWeight = weight;
     }
 
     // modifyBBWeight -- same as setBBWeight, but also make sure that if the block is rarely run, it stays that
