@@ -5,7 +5,7 @@
     <AssemblyName>System.Diagnostics.StackTrace</AssemblyName>
     <ProjectGuid>{02304469-722E-4723-92A1-820B9A37D275}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='netcoreapp' or '$(TargetGroup)'=='uap' or '$(TargetGroup)' == 'netfx'">true</IsPartialFacadeAssembly>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <!-- Disable 1685 (aka multiple type definitions) warning so it doesn't turn into an error -->
     <NoWarn>$(NoWarn);1685</NoWarn>
   </PropertyGroup>
@@ -20,10 +20,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Release|AnyCPU'" />
-  <ItemGroup>
-    <Compile Include="System\Diagnostics\StackFrameExtensions.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap' or '$(TargetGroup)' == 'uapaot'">
+  <ItemGroup Condition="'$(TargetGroup)' != 'netfx'">
     <Compile Include="System\Diagnostics\SymbolStore\ISymbolBinder.cs" />
     <Compile Include="System\Diagnostics\SymbolStore\ISymbolDocument.cs" />
     <Compile Include="System\Diagnostics\SymbolStore\ISymbolMethod.cs" />
@@ -38,7 +35,7 @@
     <Compile Include="System\Diagnostics\SymbolStore\SymLanguageType.cs" />
     <Compile Include="System\Diagnostics\SymbolStore\SymLanguageVendor.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp' or '$(TargetGroup)' == 'uap'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap'">
     <Compile Include="System\Diagnostics\StackTraceSymbols.CoreCLR.cs" />
     <ProjectReference Include="..\..\System.Collections\src\System.Collections.csproj" />
     <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj" />
@@ -49,13 +46,10 @@
     <ProjectReference Include="..\..\System.Reflection.Metadata\src\System.Reflection.Metadata.csproj" />
     <ProjectReference Include="..\..\System.Collections.Immutable\src\System.Collections.Immutable.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp' or '$(TargetGroup)' == 'uap' or '$(TargetGroup)' == 'netfx'">
-    <Compile Include="System\Diagnostics\StackFrameExtensions.CoreCLR.cs" />
+  <ItemGroup Condition="'$(TargetGroup)' != 'uapaot'">
+    <Compile Include="System\Diagnostics\StackFrameExtensions.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='uapaot'">
-    <Compile Include="System\Diagnostics\StackTrace.CoreRT.cs" />
-    <Compile Include="System\Diagnostics\StackFrame.CoreRT.cs" />
-    <Compile Include="System\Diagnostics\StackFrameExtensions.CoreRT.cs" />
+  <ItemGroup Condition="'$(TargetGroup)' == 'uapaot'">
     <Compile Include="System\Diagnostics\SymbolStore\ISymbolDocumentWriter.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'netfx'">
