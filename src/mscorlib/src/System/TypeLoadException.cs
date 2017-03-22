@@ -27,7 +27,7 @@ namespace System
     public class TypeLoadException : SystemException, ISerializable
     {
         public TypeLoadException()
-            : base(SR.Arg_TypeLoadException)
+            : base(Environment.GetResourceString("Arg_TypeLoadException"))
         {
             SetErrorCode(__HResults.COR_E_TYPELOAD);
         }
@@ -59,14 +59,14 @@ namespace System
             {
                 if ((ClassName == null) &&
                     (ResourceId == 0))
-                    _message = SR.Arg_TypeLoadException;
+                    _message = Environment.GetResourceString("Arg_TypeLoadException");
 
                 else
                 {
                     if (AssemblyName == null)
-                        AssemblyName = SR.IO_UnknownFileName;
+                        AssemblyName = Environment.GetResourceString("IO_UnknownFileName");
                     if (ClassName == null)
-                        ClassName = SR.IO_UnknownFileName;
+                        ClassName = Environment.GetResourceString("IO_UnknownFileName");
 
                     String format = null;
                     GetTypeLoadExceptionMessage(ResourceId, JitHelpers.GetStringHandleOnStack(ref format));

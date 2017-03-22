@@ -103,7 +103,7 @@ namespace System.IO
             Task t = _asyncReadTask;
 
             if (t != null && !t.IsCompleted)
-                throw new InvalidOperationException(SR.InvalidOperation_AsyncIOInProgress);
+                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_AsyncIOInProgress"));
         }
 
         // StreamReader by default will ignore illegal UTF8 characters. We don't want to 
@@ -149,9 +149,9 @@ namespace System.IO
             if (stream == null || encoding == null)
                 throw new ArgumentNullException((stream == null ? nameof(stream) : nameof(encoding)));
             if (!stream.CanRead)
-                throw new ArgumentException(SR.Argument_StreamNotReadable);
+                throw new ArgumentException(Environment.GetResourceString("Argument_StreamNotReadable"));
             if (bufferSize <= 0)
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
+                throw new ArgumentOutOfRangeException(nameof(bufferSize), Environment.GetResourceString("ArgumentOutOfRange_NeedPosNum"));
             Contract.EndContractBlock();
 
             Init(stream, encoding, detectEncodingFromByteOrderMarks, bufferSize, leaveOpen);
@@ -181,9 +181,9 @@ namespace System.IO
             if (path==null || encoding==null)
                 throw new ArgumentNullException((path==null ? nameof(path) : nameof(encoding)));
             if (path.Length==0)
-                throw new ArgumentException(SR.Argument_EmptyPath);
+                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyPath"));
             if (bufferSize <= 0)
-                throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
+                throw new ArgumentOutOfRangeException(nameof(bufferSize), Environment.GetResourceString("ArgumentOutOfRange_NeedPosNum"));
             Contract.EndContractBlock();
 
             Stream stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, DefaultFileStreamBufferSize, FileOptions.SequentialScan);
@@ -338,11 +338,11 @@ namespace System.IO
         public override int Read([In, Out] char[] buffer, int index, int count)
         {
             if (buffer==null)
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
+                throw new ArgumentNullException(nameof(buffer), Environment.GetResourceString("ArgumentNull_Buffer"));
             if (index < 0 || count < 0)
-                throw new ArgumentOutOfRangeException((index < 0 ? nameof(index) : nameof(count)), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException((index < 0 ? nameof(index) : nameof(count)), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (buffer.Length - index < count)
-                throw new ArgumentException(SR.Argument_InvalidOffLen);
+                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
             Contract.EndContractBlock();
 
             if (stream == null)
@@ -396,11 +396,11 @@ namespace System.IO
         public override int ReadBlock([In, Out] char[] buffer, int index, int count)
         {
             if (buffer==null)
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
+                throw new ArgumentNullException(nameof(buffer), Environment.GetResourceString("ArgumentNull_Buffer"));
             if (index < 0 || count < 0)
-                throw new ArgumentOutOfRangeException((index < 0 ? nameof(index) : nameof(count)), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException((index < 0 ? nameof(index) : nameof(count)), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (buffer.Length - index < count)
-                throw new ArgumentException(SR.Argument_InvalidOffLen);
+                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
             Contract.EndContractBlock();
 
             if (stream == null)
@@ -872,11 +872,11 @@ namespace System.IO
         public override Task<int> ReadAsync(char[] buffer, int index, int count)
         {
             if (buffer==null)
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
+                throw new ArgumentNullException(nameof(buffer), Environment.GetResourceString("ArgumentNull_Buffer"));
             if (index < 0 || count < 0)
-                throw new ArgumentOutOfRangeException((index < 0 ? nameof(index) : nameof(count)), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException((index < 0 ? nameof(index) : nameof(count)), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (buffer.Length - index < count)
-                throw new ArgumentException(SR.Argument_InvalidOffLen);
+                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
             Contract.EndContractBlock();
 
             // If we have been inherited into a subclass, the following implementation could be incorrect
@@ -1058,11 +1058,11 @@ namespace System.IO
         public override Task<int> ReadBlockAsync(char[] buffer, int index, int count)
         {
             if (buffer==null)
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
+                throw new ArgumentNullException(nameof(buffer), Environment.GetResourceString("ArgumentNull_Buffer"));
             if (index < 0 || count < 0)
-                throw new ArgumentOutOfRangeException((index < 0 ? nameof(index) : nameof(count)), SR.ArgumentOutOfRange_NeedNonNegNum);
+                throw new ArgumentOutOfRangeException((index < 0 ? nameof(index) : nameof(count)), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
             if (buffer.Length - index < count)
-                throw new ArgumentException(SR.Argument_InvalidOffLen);
+                throw new ArgumentException(Environment.GetResourceString("Argument_InvalidOffLen"));
             Contract.EndContractBlock();
 
             // If we have been inherited into a subclass, the following implementation could be incorrect

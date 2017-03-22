@@ -54,7 +54,8 @@ namespace System.Text
         {
             // Fall back our char
             throw new EncoderFallbackException(
-                SR.Format(SR.Argument_InvalidCodePageConversionIndex, (int)charUnknown, index), charUnknown, index);
+                Environment.GetResourceString("Argument_InvalidCodePageConversionIndex",
+                    (int)charUnknown, index), charUnknown, index);
         }
 
         public override bool Fallback(char charUnknownHigh, char charUnknownLow, int index)
@@ -62,12 +63,14 @@ namespace System.Text
             if (!Char.IsHighSurrogate(charUnknownHigh))
             {
                 throw new ArgumentOutOfRangeException(nameof(charUnknownHigh),
-                    SR.Format(SR.ArgumentOutOfRange_Range, 0xD800, 0xDBFF));
+                    Environment.GetResourceString("ArgumentOutOfRange_Range",
+                    0xD800, 0xDBFF));
             }
             if (!Char.IsLowSurrogate(charUnknownLow))
             {
                 throw new ArgumentOutOfRangeException(nameof(charUnknownLow),
-                    SR.Format(SR.ArgumentOutOfRange_Range, 0xDC00, 0xDFFF));
+                    Environment.GetResourceString("ArgumentOutOfRange_Range",
+                    0xDC00, 0xDFFF));
             }
             Contract.EndContractBlock();
 
@@ -75,7 +78,8 @@ namespace System.Text
 
             // Fall back our char
             throw new EncoderFallbackException(
-                SR.Format(SR.Argument_InvalidCodePageConversionIndex, iTemp, index), charUnknownHigh, charUnknownLow, index);
+                Environment.GetResourceString("Argument_InvalidCodePageConversionIndex",
+                    iTemp, index), charUnknownHigh, charUnknownLow, index);
         }
 
         public override char GetNextChar()
@@ -108,7 +112,7 @@ namespace System.Text
         private int index;
 
         public EncoderFallbackException()
-            : base(SR.Arg_ArgumentException)
+            : base(Environment.GetResourceString("Arg_ArgumentException"))
         {
             SetErrorCode(__HResults.COR_E_ARGUMENT);
         }
@@ -142,12 +146,14 @@ namespace System.Text
             if (!Char.IsHighSurrogate(charUnknownHigh))
             {
                 throw new ArgumentOutOfRangeException(nameof(charUnknownHigh),
-                    SR.Format(SR.ArgumentOutOfRange_Range, 0xD800, 0xDBFF));
+                    Environment.GetResourceString("ArgumentOutOfRange_Range",
+                    0xD800, 0xDBFF));
             }
             if (!Char.IsLowSurrogate(charUnknownLow))
             {
                 throw new ArgumentOutOfRangeException(nameof(CharUnknownLow),
-                    SR.Format(SR.ArgumentOutOfRange_Range, 0xDC00, 0xDFFF));
+                    Environment.GetResourceString("ArgumentOutOfRange_Range",
+                    0xDC00, 0xDFFF));
             }
             Contract.EndContractBlock();
 

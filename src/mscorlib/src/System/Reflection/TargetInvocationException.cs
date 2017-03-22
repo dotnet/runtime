@@ -25,7 +25,7 @@ namespace System.Reflection
         // This exception is not creatable without specifying the
         //    inner exception.
         private TargetInvocationException()
-            : base(SR.Arg_TargetInvocationException)
+            : base(Environment.GetResourceString("Arg_TargetInvocationException"))
         {
             SetErrorCode(__HResults.COR_E_TARGETINVOCATION);
         }
@@ -37,7 +37,7 @@ namespace System.Reflection
         }
 
         public TargetInvocationException(System.Exception inner)
-            : base(SR.Arg_TargetInvocationException, inner)
+            : base(Environment.GetResourceString("Arg_TargetInvocationException"), inner)
         {
             SetErrorCode(__HResults.COR_E_TARGETINVOCATION);
         }
