@@ -11,7 +11,7 @@
 
     <!-- Distro rid is passed as runtimeos-arch-->
     <_parseDistroRid>$(__DistroRid)</_parseDistroRid>
-    <_parseDistroRid Condition="'$(_parseDistroRid)' == '' and '$(__BuildOS)' == 'OSX'">osx.10.10-x64</_parseDistroRid>
+    <_parseDistroRid Condition="'$(_parseDistroRid)' == '' and '$(__BuildOS)' == 'OSX'">osx.10.12-x64</_parseDistroRid>
     <_distroRidIndex>$(_parseDistroRid.IndexOfAny("-"))</_distroRidIndex>
     <_archRidIndex>$([MSBuild]::Add($(_distroRidIndex), 1))</_archRidIndex>
     <OSRid Condition="'$(OSRid)' == '' and '$(_distroRidIndex)' != '-1'">$(_parseDistroRid.SubString(0, $(_distroRidIndex)))</OSRid>
@@ -68,7 +68,7 @@
     </When>
     <When Condition="'$(_runtimeOSFamily)' == 'osx'">
       <PropertyGroup>
-        <PackageRID>osx.10.10-$(ArchGroup)</PackageRID>
+        <PackageRID>osx.10.12-$(ArchGroup)</PackageRID>
       </PropertyGroup>
     </When>
     <When Condition="'$(_runtimeOSFamily)' == 'rhel'">
@@ -125,7 +125,7 @@
     <OfficialBuildRID Include="ubuntu.16.10-x64" />
   </ItemGroup>
   <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';OSX;'))">
-    <OfficialBuildRID Include="osx.10.10-x64" />
+    <OfficialBuildRID Include="osx.10.12-x64" />
   </ItemGroup>
   <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';Windows_NT;'))">
     <OfficialBuildRID Include="win7-x86">
