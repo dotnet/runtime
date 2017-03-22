@@ -2372,7 +2372,8 @@ namespace System.Threading.Tasks
         {
             Contract.Requires(tasks != null);
 
-            // Create a promise task to be returned to the user
+            // Create a promise task to be returned to the user.
+            // (If this logic ever changes, also update CommonCWAnyLogicCleanup.)
             var promise = new CompleteOnInvokePromise(tasks);
 
             // At the completion of any of the tasks, complete the promise.
@@ -2420,6 +2421,17 @@ namespace System.Threading.Tasks
             return promise;
         }
 
+        /// <summary>
+        /// Cleans up the operations performed by CommonCWAnyLogic in a case where
+        /// the created continuation task is being discarded.
+        /// </summary>
+        /// <param name="continuation">The task returned from CommonCWAnyLogic.</param>
+        internal static void CommonCWAnyLogicCleanup(Task<Task> continuation)
+        {
+            // Force cleanup of the promise (e.g. removing continuations from each
+            // constituent task), by completing the promise with any value.
+            ((CompleteOnInvokePromise)continuation).Invoke(null);
+        }
 
         /// <summary>
         /// Creates a continuation <see cref="T:System.Threading.Tasks.Task">Task</see>
