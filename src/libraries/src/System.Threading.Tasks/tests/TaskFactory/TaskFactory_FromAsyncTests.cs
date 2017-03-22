@@ -560,7 +560,6 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/coreclr/issues/7892")] // BinaryCompatibility reverting FromAsync to .NET 4 behavior, causing invokesCallback=false to fail
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
