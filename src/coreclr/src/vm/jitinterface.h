@@ -735,6 +735,12 @@ public:
         CORINFO_CONTEXT_HANDLE ownerType
         );
 
+    CORINFO_METHOD_HANDLE resolveVirtualMethodHelper(
+        CORINFO_METHOD_HANDLE virtualMethod,
+        CORINFO_CLASS_HANDLE implementingClass,
+        CORINFO_CONTEXT_HANDLE ownerType
+        );
+
     CorInfoIntrinsics getIntrinsicID(CORINFO_METHOD_HANDLE method,
                                      bool * pMustExpand = NULL);
 
