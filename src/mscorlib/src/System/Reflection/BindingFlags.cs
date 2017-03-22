@@ -2,22 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-//
-// BindingFlags are a set of flags that control the binding and invocation process
-// 
-//    in Reflection.  There are two processes.  The first is selection of a Member which
-//    is the binding phase.  The second, is invocation.  These flags control how this
-//    process works.
-//
-//
-
-using System;
-
 namespace System.Reflection
 {
-    [Serializable]
     [Flags]
     public enum BindingFlags
     {
@@ -28,13 +14,13 @@ namespace System.Reflection
         Default = 0x00,
 
         // These flags indicate what to search for when binding
-        IgnoreCase = 0x01,        // Ignore the case of Names while searching
+        IgnoreCase = 0x01,          // Ignore the case of Names while searching
         DeclaredOnly = 0x02,        // Only look at the members declared on the Type
-        Instance = 0x04,        // Include Instance members in search
-        Static = 0x08,        // Include Static members in search
-        Public = 0x10,        // Include Public members in search
-        NonPublic = 0x20,        // Include Non-Public members in search
-        FlattenHierarchy = 0x40,        // Rollup the statics into the class.
+        Instance = 0x04,            // Include Instance members in search
+        Static = 0x08,              // Include Static members in search
+        Public = 0x10,              // Include Public members in search
+        NonPublic = 0x20,           // Include Non-Public members in search
+        FlattenHierarchy = 0x40,    // Rollup the statics into the class.
 
         // These flags are used by InvokeMember to determine
         // what type of member we are trying to Invoke.
@@ -51,7 +37,7 @@ namespace System.Reflection
         PutDispProperty = 0x4000,
         PutRefDispProperty = 0x8000,
 
-        ExactBinding = 0x010000,        // Bind with Exact Type matching, No Change type
+        ExactBinding = 0x010000,    // Bind with Exact Type matching, No Change type
         SuppressChangeType = 0x020000,
 
         // DefaultValueBinding will return the set of methods having ArgCount or 
@@ -59,6 +45,6 @@ namespace System.Reflection
         OptionalParamBinding = 0x040000,
 
         // These are a couple of misc attributes used
-        IgnoreReturn = 0x01000000,    // This is used in COM Interop
+        IgnoreReturn = 0x01000000,  // This is used in COM Interop
     }
 }

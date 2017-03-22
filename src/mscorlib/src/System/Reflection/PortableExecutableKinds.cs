@@ -5,7 +5,6 @@
 namespace System.Reflection
 {
     [Flags]
-    [Serializable]
     public enum PortableExecutableKinds
     {
         NotAPortableExecutableImage = 0x0,
@@ -16,3 +15,4 @@ namespace System.Reflection
         Preferred32Bit = 0x10,
     }
 }
+

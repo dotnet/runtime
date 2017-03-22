@@ -2,45 +2,31 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics.Contracts;
-using System;
-
 namespace System.Reflection
 {
     [Serializable]
     public struct ParameterModifier
     {
-        #region Private Data Members
-        private bool[] _byRef;
-        #endregion
-
-        #region Constructor
         public ParameterModifier(int parameterCount)
         {
             if (parameterCount <= 0)
                 throw new ArgumentException(SR.Arg_ParmArraySize);
-            Contract.EndContractBlock();
 
-            _byRef = new bool[parameterCount];
+            IsByRefArray = new bool[parameterCount];
         }
-        #endregion
 
-        #region Internal Members
-        internal bool[] IsByRefArray { get { return _byRef; } }
-        #endregion
-
-        #region Public Members
         public bool this[int index]
         {
             get
             {
-                return _byRef[index];
+                return IsByRefArray[index];
             }
             set
             {
-                _byRef[index] = value;
+                IsByRefArray[index] = value;
             }
         }
-        #endregion
+
+        internal bool[] IsByRefArray { get; }
     }
 }

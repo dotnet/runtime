@@ -3,12 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
-using System;
 
 namespace System.Reflection
 {
     // This Enum matchs the CorTypeAttr defined in CorHdr.h
-    [Serializable]
     [Flags]
     public enum TypeAttributes
     {
@@ -43,7 +41,6 @@ namespace System.Reflection
         // Implementation attributes.
         Import = 0x00001000,     // Class / interface is imported
         Serializable = 0x00002000,     // The class is Serializable.
-
         WindowsRuntime = 0x00004000,     // Type is a Windows Runtime type.
 
         // Use tdStringFormatMask to retrieve string information for native interop
@@ -58,9 +55,9 @@ namespace System.Reflection
 
         BeforeFieldInit = 0x00100000,     // Initialize the class any time before first static field access.
 
-        // Flags reserved for runtime use.
-        ReservedMask = 0x00040800,
         RTSpecialName = 0x00000800,     // Runtime should check name encoding.
         HasSecurity = 0x00040000,     // Class has security associate with it.
+
+        ReservedMask = 0x00040800,
     }
 }

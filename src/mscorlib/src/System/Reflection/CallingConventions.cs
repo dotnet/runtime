@@ -2,21 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-//
-// CallingConventions is a set of Bits representing the calling conventions
-// 
-//    in the system.
-//
-//
-
-using System.Runtime.InteropServices;
-using System;
+// CallingConventions is a set of Bits representing the calling conventions in the system.
 
 namespace System.Reflection
 {
-    [Serializable]
     [Flags]
     public enum CallingConventions
     {

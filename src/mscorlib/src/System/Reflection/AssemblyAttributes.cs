@@ -2,388 +2,258 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*=============================================================================
-**
-** 
-** 
-**
-**
-** Purpose: For Assembly-related custom attributes.
-**
-**
-=============================================================================*/
-
-
-using System;
 using System.Configuration.Assemblies;
-using System.Diagnostics.Contracts;
 
 namespace System.Reflection
 {
     [AttributeUsage(AttributeTargets.Assembly, Inherited = false)]
     public sealed class AssemblyCopyrightAttribute : Attribute
     {
-        private String m_copyright;
-
-        public AssemblyCopyrightAttribute(String copyright)
+        public AssemblyCopyrightAttribute(string copyright)
         {
-            m_copyright = copyright;
+            Copyright = copyright;
         }
 
-        public String Copyright
-        {
-            get { return m_copyright; }
-        }
+        public string Copyright { get; }
     }
-
 
     [AttributeUsage(AttributeTargets.Assembly, Inherited = false)]
     public sealed class AssemblyTrademarkAttribute : Attribute
     {
-        private String m_trademark;
-
-        public AssemblyTrademarkAttribute(String trademark)
+        public AssemblyTrademarkAttribute(string trademark)
         {
-            m_trademark = trademark;
+            Trademark = trademark;
         }
 
-        public String Trademark
-        {
-            get { return m_trademark; }
-        }
+        public string Trademark { get; }
     }
 
 
     [AttributeUsage(AttributeTargets.Assembly, Inherited = false)]
     public sealed class AssemblyProductAttribute : Attribute
     {
-        private String m_product;
-
-        public AssemblyProductAttribute(String product)
+        public AssemblyProductAttribute(string product)
         {
-            m_product = product;
+            Product = product;
         }
 
-        public String Product
-        {
-            get { return m_product; }
-        }
+        public string Product { get; }
     }
-
 
     [AttributeUsage(AttributeTargets.Assembly, Inherited = false)]
     public sealed class AssemblyCompanyAttribute : Attribute
     {
-        private String m_company;
-
-        public AssemblyCompanyAttribute(String company)
+        public AssemblyCompanyAttribute(string company)
         {
-            m_company = company;
+            Company = company;
         }
 
-        public String Company
-        {
-            get { return m_company; }
-        }
+        public string Company { get; }
     }
-
 
     [AttributeUsage(AttributeTargets.Assembly, Inherited = false)]
     public sealed class AssemblyDescriptionAttribute : Attribute
     {
-        private String m_description;
-
-        public AssemblyDescriptionAttribute(String description)
+        public AssemblyDescriptionAttribute(string description)
         {
-            m_description = description;
+            Description = description;
         }
 
-        public String Description
-        {
-            get { return m_description; }
-        }
+        public string Description { get; }
     }
-
 
     [AttributeUsage(AttributeTargets.Assembly, Inherited = false)]
     public sealed class AssemblyTitleAttribute : Attribute
     {
-        private String m_title;
-
-        public AssemblyTitleAttribute(String title)
+        public AssemblyTitleAttribute(string title)
         {
-            m_title = title;
+            Title = title;
         }
 
-        public String Title
-        {
-            get { return m_title; }
-        }
+        public string Title { get; }
     }
-
 
     [AttributeUsage(AttributeTargets.Assembly, Inherited = false)]
     public sealed class AssemblyConfigurationAttribute : Attribute
     {
-        private String m_configuration;
-
-        public AssemblyConfigurationAttribute(String configuration)
+        public AssemblyConfigurationAttribute(string configuration)
         {
-            m_configuration = configuration;
+            Configuration = configuration;
         }
 
-        public String Configuration
-        {
-            get { return m_configuration; }
-        }
+        public string Configuration { get; }
     }
-
 
     [AttributeUsage(AttributeTargets.Assembly, Inherited = false)]
     public sealed class AssemblyDefaultAliasAttribute : Attribute
     {
-        private String m_defaultAlias;
-
-        public AssemblyDefaultAliasAttribute(String defaultAlias)
+        public AssemblyDefaultAliasAttribute(string defaultAlias)
         {
-            m_defaultAlias = defaultAlias;
+            DefaultAlias = defaultAlias;
         }
 
-        public String DefaultAlias
-        {
-            get { return m_defaultAlias; }
-        }
+        public string DefaultAlias { get; }
     }
-
 
     [AttributeUsage(AttributeTargets.Assembly, Inherited = false)]
     public sealed class AssemblyInformationalVersionAttribute : Attribute
     {
-        private String m_informationalVersion;
-
-        public AssemblyInformationalVersionAttribute(String informationalVersion)
+        public AssemblyInformationalVersionAttribute(string informationalVersion)
         {
-            m_informationalVersion = informationalVersion;
+            InformationalVersion = informationalVersion;
         }
 
-        public String InformationalVersion
-        {
-            get { return m_informationalVersion; }
-        }
+        public string InformationalVersion { get; }
     }
-
 
     [AttributeUsage(AttributeTargets.Assembly, Inherited = false)]
     public sealed class AssemblyFileVersionAttribute : Attribute
     {
-        private String _version;
-
-        public AssemblyFileVersionAttribute(String version)
+        public AssemblyFileVersionAttribute(string version)
         {
             if (version == null)
                 throw new ArgumentNullException(nameof(version));
-            Contract.EndContractBlock();
-            _version = version;
+            Version = version;
         }
 
-        public String Version
-        {
-            get { return _version; }
-        }
+        public string Version { get; }
     }
-
 
     [AttributeUsage(AttributeTargets.Assembly, Inherited = false)]
     public unsafe sealed class AssemblyCultureAttribute : Attribute
     {
-        private String m_culture;
-
-        public AssemblyCultureAttribute(String culture)
+        public AssemblyCultureAttribute(string culture)
         {
-            m_culture = culture;
+            Culture = culture;
         }
 
-        public String Culture
-        {
-            get { return m_culture; }
-        }
+        public string Culture { get; }
     }
-
 
     [AttributeUsage(AttributeTargets.Assembly, Inherited = false)]
     public unsafe sealed class AssemblyVersionAttribute : Attribute
     {
-        private String m_version;
-
-        public AssemblyVersionAttribute(String version)
+        public AssemblyVersionAttribute(string version)
         {
-            m_version = version;
+            Version = version;
         }
 
-        public String Version
-        {
-            get { return m_version; }
-        }
+        public string Version { get; }
     }
-
 
     [AttributeUsage(AttributeTargets.Assembly, Inherited = false)]
     public sealed class AssemblyKeyFileAttribute : Attribute
     {
-        private String m_keyFile;
-
-        public AssemblyKeyFileAttribute(String keyFile)
+        public AssemblyKeyFileAttribute(string keyFile)
         {
-            m_keyFile = keyFile;
+            KeyFile = keyFile;
         }
 
-        public String KeyFile
-        {
-            get { return m_keyFile; }
-        }
+        public string KeyFile { get; }
     }
-
 
     [AttributeUsage(AttributeTargets.Assembly, Inherited = false)]
     public sealed class AssemblyDelaySignAttribute : Attribute
     {
-        private bool m_delaySign;
-
         public AssemblyDelaySignAttribute(bool delaySign)
         {
-            m_delaySign = delaySign;
+            DelaySign = delaySign;
         }
 
-        public bool DelaySign
-        {
-            get
-            { return m_delaySign; }
-        }
+        public bool DelaySign { get; }
     }
-
 
     [AttributeUsage(AttributeTargets.Assembly, Inherited = false)]
     public unsafe sealed class AssemblyAlgorithmIdAttribute : Attribute
     {
-        private uint m_algId;
-
         public AssemblyAlgorithmIdAttribute(AssemblyHashAlgorithm algorithmId)
         {
-            m_algId = (uint)algorithmId;
+            AlgorithmId = (uint)algorithmId;
         }
 
         [CLSCompliant(false)]
         public AssemblyAlgorithmIdAttribute(uint algorithmId)
         {
-            m_algId = algorithmId;
+            AlgorithmId = algorithmId;
         }
 
         [CLSCompliant(false)]
-        public uint AlgorithmId
-        {
-            get { return m_algId; }
-        }
+        public uint AlgorithmId { get; }
     }
-
 
     [AttributeUsage(AttributeTargets.Assembly, Inherited = false)]
     public unsafe sealed class AssemblyFlagsAttribute : Attribute
     {
-        private AssemblyNameFlags m_flags;
+        private AssemblyNameFlags _flags;
 
         [Obsolete("This constructor has been deprecated. Please use AssemblyFlagsAttribute(AssemblyNameFlags) instead. http://go.microsoft.com/fwlink/?linkid=14202")]
         [CLSCompliant(false)]
         public AssemblyFlagsAttribute(uint flags)
         {
-            m_flags = (AssemblyNameFlags)flags;
+            _flags = (AssemblyNameFlags)flags;
         }
 
         [Obsolete("This property has been deprecated. Please use AssemblyFlags instead. http://go.microsoft.com/fwlink/?linkid=14202")]
         [CLSCompliant(false)]
         public uint Flags
         {
-            get { return (uint)m_flags; }
+            get { return (uint)_flags; }
         }
 
-        // This, of course, should be typed as AssemblyNameFlags.  The compat police don't allow such changes.
         public int AssemblyFlags
         {
-            get { return (int)m_flags; }
+            get { return (int)_flags; }
         }
 
         [Obsolete("This constructor has been deprecated. Please use AssemblyFlagsAttribute(AssemblyNameFlags) instead. http://go.microsoft.com/fwlink/?linkid=14202")]
         public AssemblyFlagsAttribute(int assemblyFlags)
         {
-            m_flags = (AssemblyNameFlags)assemblyFlags;
+            _flags = (AssemblyNameFlags)assemblyFlags;
         }
-
 
         public AssemblyFlagsAttribute(AssemblyNameFlags assemblyFlags)
         {
-            m_flags = assemblyFlags;
+            _flags = assemblyFlags;
         }
     }
 
     [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true, Inherited = false)]
     public sealed class AssemblyMetadataAttribute : Attribute
     {
-        private String m_key;
-        private String m_value;
-
         public AssemblyMetadataAttribute(string key, string value)
         {
-            m_key = key;
-            m_value = value;
+            Key = key;
+            Value = value;
         }
 
-        public string Key
-        {
-            get { return m_key; }
-        }
+        public string Key { get; }
 
-        public string Value
-        {
-            get { return m_value; }
-        }
+        public string Value { get; }
     }
 
     [AttributeUsage(AttributeTargets.Assembly, Inherited = false, AllowMultiple = false)]
     public sealed class AssemblySignatureKeyAttribute : Attribute
     {
-        private String _publicKey;
-        private String _countersignature;
-
-        public AssemblySignatureKeyAttribute(String publicKey, String countersignature)
+        public AssemblySignatureKeyAttribute(string publicKey, string countersignature)
         {
-            _publicKey = publicKey;
-            _countersignature = countersignature;
+            PublicKey = publicKey;
+            Countersignature = countersignature;
         }
 
-        public String PublicKey
-        {
-            get { return _publicKey; }
-        }
+        public string PublicKey { get; }
 
-        public String Countersignature
-        {
-            get { return _countersignature; }
-        }
+        public string Countersignature { get; }
     }
 
     [AttributeUsage(AttributeTargets.Assembly, Inherited = false)]
     public sealed class AssemblyKeyNameAttribute : Attribute
     {
-        private String m_keyName;
-
-        public AssemblyKeyNameAttribute(String keyName)
+        public AssemblyKeyNameAttribute(string keyName)
         {
-            m_keyName = keyName;
+            KeyName = keyName;
         }
 
-        public String KeyName
-        {
-            get { return m_keyName; }
-        }
+        public string KeyName { get; }
     }
 }
 
