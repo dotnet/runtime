@@ -8714,12 +8714,16 @@ void CEEInfo::getMethodVTableOffset (CORINFO_METHOD_HANDLE methodHnd,
 }
 
 /*********************************************************************/
-static CORINFO_METHOD_HANDLE resolveVirtualMethodHelper(MethodDesc* callerMethod,
-                                                        CORINFO_METHOD_HANDLE baseMethod,
-                                                        CORINFO_CLASS_HANDLE derivedClass,
-                                                        CORINFO_CONTEXT_HANDLE ownerType)
+CORINFO_METHOD_HANDLE CEEInfo::resolveVirtualMethodHelper(CORINFO_METHOD_HANDLE baseMethod,
+                                                          CORINFO_CLASS_HANDLE derivedClass,
+                                                          CORINFO_CONTEXT_HANDLE ownerType)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL {
+        SO_TOLERANT;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
 
     MethodDesc* pBaseMD = GetMethod(baseMethod);
     MethodTable* pBaseMT = pBaseMD->GetMethodTable();
@@ -8747,6 +8751,15 @@ static CORINFO_METHOD_HANDLE resolveVirtualMethodHelper(MethodDesc* callerMethod
 
     if (pBaseMT->IsInterface())
     {
+
+#ifdef FEATURE_COMINTEROP
+        // Don't try and devirtualize com interface calls.
+        if (pDerivedMT->IsComObjectType())
+        {
+            return nullptr;
+        }
+#endif // FEATURE_COMINTEROP
+
         // Interface call devirtualization.
         //
         // We must ensure that pDerivedMT actually implements the
@@ -8760,7 +8773,17 @@ static CORINFO_METHOD_HANDLE resolveVirtualMethodHelper(MethodDesc* callerMethod
         // safely devirtualize.
         if (ownerType != nullptr)
         {
-            pDevirtMD = pDerivedMT->GetMethodDescForInterfaceMethod(GetTypeFromContext(ownerType), pBaseMD);
+            TypeHandle OwnerClsHnd = GetTypeFromContext(ownerType);
+            MethodTable* pOwnerMT = OwnerClsHnd.GetMethodTable();
+
+            // If the derived class is a shared class, make sure the
+            // owner class is too.
+            if (pDerivedMT->IsSharedByGenericInstantiations())
+            {
+                pOwnerMT = pOwnerMT->GetCanonicalMethodTable();
+            }
+
+            pDevirtMD = pDerivedMT->GetMethodDescForInterfaceMethod(TypeHandle(pOwnerMT), pBaseMD);
         }
         else if (!pBaseMD->HasClassOrMethodInstantiation())
         {
@@ -8810,6 +8833,7 @@ static CORINFO_METHOD_HANDLE resolveVirtualMethodHelper(MethodDesc* callerMethod
     // bubble information and if so, disallow it.
     if (IsReadyToRunCompilation())
     {
+        MethodDesc* callerMethod = m_pMethodBeingCompiled;
         Assembly* pCallerAssembly = callerMethod->GetModule()->GetAssembly();
         bool allowDevirt =
             IsInSameVersionBubble(pCallerAssembly , pDevirtMD->GetModule()->GetAssembly())
@@ -8829,13 +8853,18 @@ CORINFO_METHOD_HANDLE CEEInfo::resolveVirtualMethod(CORINFO_METHOD_HANDLE method
                                                     CORINFO_CLASS_HANDLE derivedClass,
                                                     CORINFO_CONTEXT_HANDLE ownerType)
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL {
+        SO_TOLERANT;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
 
     CORINFO_METHOD_HANDLE result = nullptr;
 
     JIT_TO_EE_TRANSITION();
 
-    result = resolveVirtualMethodHelper(m_pMethodBeingCompiled, methodHnd, derivedClass, ownerType);
+    result = resolveVirtualMethodHelper(methodHnd, derivedClass, ownerType);
 
     EE_TO_JIT_TRANSITION();
 
