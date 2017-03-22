@@ -2,7 +2,7 @@
   "frameworks": {
     "{TFM}": {
       "dependencies": {
-        "NETStandard.Library": "2.0.0-beta-25121-01"
+        "NETStandard.Library": "2.0.0-beta-25122-01"
       }
     }
   }

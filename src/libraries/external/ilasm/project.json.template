@@ -2,7 +2,7 @@
   "frameworks": {
     "{TFM}": {
       "dependencies": {
-        "Microsoft.NETCore.Platforms": "2.0.0-beta-25122-01",
+        "Microsoft.NETCore.Platforms": "2.0.0-beta-25122-02",
         "Microsoft.NETCore.Runtime.CoreCLR": "2.0.0-beta-25121-02",
         "Microsoft.NETCore.ILAsm": "2.0.0-beta-25121-02"
       }
