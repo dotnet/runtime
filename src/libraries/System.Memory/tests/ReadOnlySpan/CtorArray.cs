@@ -106,6 +106,32 @@ namespace System.SpanTests
             span = new ReadOnlySpan<int>(aAsIntArray, 0, aAsIntArray.Length);
             span.Validate<int>(42, -1);
         }
+
+        [Fact]
+        public static void CtorVariantArrayType()
+        {
+            // For ReadOnlySpan<T>, variant arrays are allowed for string to object
+            // and reference type to object.
+
+            ReadOnlySpan<object> span;
+
+            string[] strArray = { "Hello" };
+            span = new ReadOnlySpan<object>(strArray);
+            span.Validate("Hello");
+            span = new ReadOnlySpan<object>(strArray, 0);
+            span.Validate("Hello");
+            span = new ReadOnlySpan<object>(strArray, 0, strArray.Length);
+            span.Validate("Hello");
+
+            TestClass c1 = new TestClass();
+            TestClass c2 = new TestClass();
+            TestClass[] clsArray = { c1, c2 };
+            span = new ReadOnlySpan<object>(clsArray);
+            span.Validate(c1, c2);
+            span = new ReadOnlySpan<object>(clsArray, 0);
+            span.Validate(c1, c2);
+            span = new ReadOnlySpan<object>(clsArray, 0, clsArray.Length);
+            span.Validate(c1, c2);
+        }
     }
 }
-
