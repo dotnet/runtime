@@ -5029,6 +5029,10 @@ namespace System.Threading.Tasks
                     signaledTaskIndex = Array.IndexOf(tasks, firstCompleted.Result);
                     Debug.Assert(signaledTaskIndex >= 0);
                 }
+                else
+                {
+                    TaskFactory.CommonCWAnyLogicCleanup(firstCompleted);
+                }
             }
 
             // We need to prevent the tasks array from being GC'ed until we come out of the wait.
