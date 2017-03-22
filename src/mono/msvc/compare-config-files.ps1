@@ -36,7 +36,8 @@ $comparedLines | foreach {
     {
 		##Look for diffs.
 		$mono_version = (Select-String -InputObject $_.InputObject -pattern '#define VERSION \"(.*)\"')
-		if ($mono_version -eq $null) {
+		$mono_corlib_version = (Select-String -InputObject $_.InputObject -pattern '#define MONO_CORLIB_VERSION')
+		if ($mono_version -eq $null -And $mono_corlib_version -eq $null) {
 			Write-Host "Changes detected, versions doesn't match. Configuration must to be replaced."
 			exit 1;
 		}

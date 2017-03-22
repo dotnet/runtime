@@ -81,9 +81,17 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <CustomBuildAfterTargets>PostBuildEvent</CustomBuildAfterTargets>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <CustomBuildAfterTargets>PostBuildEvent</CustomBuildAfterTargets>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <CustomBuildAfterTargets>PostBuildEvent</CustomBuildAfterTargets>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <CustomBuildAfterTargets>PostBuildEvent</CustomBuildAfterTargets>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <PreBuildEvent>
@@ -123,9 +131,13 @@
       <SubSystem>Console</SubSystem>
       <TargetMachine>MachineX86</TargetMachine>
     </Link>
-    <PostBuildEvent>
+    <PostBuildEvent />
+    <CustomBuildStep>
       <Command>runmdesc.bat "$(TargetPath)" $(Platform)</Command>
-    </PostBuildEvent>
+      <Message>genmdesc.exe Custom Build Step.</Message>
+      <Outputs>$(MONO_INCLUDE_DIR)\mini\cpu-x86.h</Outputs>
+      <Inputs>$(MONO_INCLUDE_DIR)\mini\cpu-x86.md</Inputs>
+    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <PreBuildEvent>
@@ -166,9 +178,19 @@
       <SubSystem>Console</SubSystem>
       <TargetMachine>MachineX64</TargetMachine>
     </Link>
-    <PostBuildEvent>
+    <PostBuildEvent />
+    <CustomBuildStep>
       <Command>runmdesc.bat "$(TargetPath)" $(Platform)</Command>
-    </PostBuildEvent>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Message>genmdesc.exe Custom Build Step.</Message>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Outputs>$(MONO_INCLUDE_DIR)\mini\cpu-amd64.h</Outputs>
+    </CustomBuildStep>
+    <CustomBuildStep>
+      <Inputs>$(MONO_INCLUDE_DIR)\mini\cpu-amd64.md</Inputs>
+    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <PreBuildEvent>
@@ -207,9 +229,13 @@
       <TargetMachine>MachineX86</TargetMachine>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
-    <PostBuildEvent>
+    <PostBuildEvent />
+    <CustomBuildStep>
       <Command>runmdesc.bat "$(TargetPath)" $(Platform)</Command>
-    </PostBuildEvent>
+      <Message>genmdesc.exe Custom Build Step.</Message>
+      <Outputs>$(MONO_INCLUDE_DIR)\mini\cpu-x86.h</Outputs>
+      <Inputs>$(MONO_INCLUDE_DIR)\mini\cpu-x86.md</Inputs>
+    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <PreBuildEvent>
@@ -250,9 +276,13 @@
       <TargetMachine>MachineX64</TargetMachine>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
-    <PostBuildEvent>
+    <PostBuildEvent />
+    <CustomBuildStep>
       <Command>runmdesc.bat "$(TargetPath)" $(Platform)</Command>
-    </PostBuildEvent>
+      <Outputs>$(MONO_INCLUDE_DIR)\mini\cpu-amd64.h</Outputs>
+      <Inputs>$(MONO_INCLUDE_DIR)\mini\cpu-amd64.md</Inputs>
+      <Message>genmdesc.exe Custom Build Step.</Message>
+    </CustomBuildStep>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\mono\mini\genmdesc.c">
