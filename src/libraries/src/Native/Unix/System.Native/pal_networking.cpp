@@ -167,30 +167,14 @@ constexpr T Max(T left, T right)
 
 static void ConvertByteArrayToIn6Addr(in6_addr& addr, const uint8_t* buffer, int32_t bufferLength)
 {
-#if HAVE_IN6_U
-    assert(bufferLength == ARRAY_SIZE(addr.__in6_u.__u6_addr8));
-    memcpy_s(addr.__in6_u.__u6_addr8, ARRAY_SIZE(addr.__in6_u.__u6_addr8), buffer, UnsignedCast(bufferLength));
-#elif HAVE_U6_ADDR
-    assert(bufferLength == ARRAY_SIZE(addr.__u6_addr.__u6_addr8));
-    memcpy_s(addr.__u6_addr.__u6_addr8, ARRAY_SIZE(addr.__u6_addr.__u6_addr8), buffer, UnsignedCast(bufferLength));
-#else
     assert(bufferLength == ARRAY_SIZE(addr.s6_addr));
     memcpy_s(addr.s6_addr, ARRAY_SIZE(addr.s6_addr), buffer, UnsignedCast(bufferLength));
-#endif
 }
 
 static void ConvertIn6AddrToByteArray(uint8_t* buffer, int32_t bufferLength, const in6_addr& addr)
 {
-#if HAVE_IN6_U
-    assert(bufferLength == ARRAY_SIZE(addr.__in6_u.__u6_addr8));
-    memcpy_s(buffer, UnsignedCast(bufferLength), addr.__in6_u.__u6_addr8, ARRAY_SIZE(addr.__in6_u.__u6_addr8));
-#elif HAVE_U6_ADDR
-    assert(bufferLength == ARRAY_SIZE(addr.__u6_addr.__u6_addr8));
-    memcpy_s(buffer, UnsignedCast(bufferLength), addr.__u6_addr.__u6_addr8, ARRAY_SIZE(addr.__u6_addr.__u6_addr8));
-#else
     assert(bufferLength == ARRAY_SIZE(addr.s6_addr));
     memcpy_s(buffer, UnsignedCast(bufferLength), addr.s6_addr, ARRAY_SIZE(addr.s6_addr));
-#endif
 }
 
 static void ConvertByteArrayToSockAddrIn6(sockaddr_in6& addr, const uint8_t* buffer, int32_t bufferLength)
