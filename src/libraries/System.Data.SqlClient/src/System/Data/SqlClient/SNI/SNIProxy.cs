@@ -308,19 +308,35 @@ namespace System.Data.SqlClient.SNI
                 return null;
             }
 
-            SNIHandle sniHandle = null;
+            if (isIntegratedSecurity)
+            {
+                string hostName = details.ServerName;
+                int connPort = details.Port;
+                string connInstanceName = details.InstanceName;
 
+                try
+                {
+                    spnBuffer = GetSqlServerSPN(hostName, (connPort >= 0 ? connPort.ToString() : connInstanceName));
+                }
+                catch (Exception e)
+                {
+                    SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.INVALID_PROV, SNICommon.ErrorSpnLookup, e);
+                    return null;
+                }
+            }
+
+            SNIHandle sniHandle = null;
             switch (details.ConnectionProtocol)
             {
                 case DataSource.Protocol.TCP:
-                    sniHandle = CreateTcpHandle(details, timerExpire, callbackObject, parallel, ref spnBuffer, isIntegratedSecurity);
+                    sniHandle = CreateTcpHandle(details, timerExpire, callbackObject, parallel);
                     break;
                 case DataSource.Protocol.NP:
                     sniHandle = CreateNpHandle(details, timerExpire, callbackObject, parallel);
                     break;
                 case DataSource.Protocol.None:
                     // default to using tcp if no protocol is provided
-                    sniHandle = CreateTcpHandle(details, timerExpire, callbackObject, parallel, ref spnBuffer, isIntegratedSecurity);
+                    sniHandle = CreateTcpHandle(details, timerExpire, callbackObject, parallel);
                     break;
                 default:
                     Debug.Fail($"Unexpected connection protocol: {details.ConnectionProtocol}");
@@ -330,16 +346,17 @@ namespace System.Data.SqlClient.SNI
             return sniHandle;
         }
 
-        private static byte[] MakeMsSqlServerSPN(string fullyQualifiedDomainName, int port = DefaultSqlServerPort)
+        private static byte[] GetSqlServerSPN(string hostNameOrAddress, string instanceName)
         {
-            string serverSpn = SqlServerSpnHeader + "/" + fullyQualifiedDomainName + ":" + port;
-            return Encoding.UTF8.GetBytes(serverSpn);
-        }
-
-        private static string GetFullyQualifiedDomainName(string hostNameOrAddress)
-        {
+            Debug.Assert(!string.IsNullOrWhiteSpace(hostNameOrAddress));
             IPHostEntry hostEntry = Dns.GetHostEntry(hostNameOrAddress);
-            return hostEntry.HostName;
+            string fullyQualifiedDomainName = hostEntry.HostName;
+            if (string.IsNullOrWhiteSpace(instanceName))
+            {
+                instanceName = DefaultSqlServerPort.ToString();
+            }
+            string serverSpn = SqlServerSpnHeader + "/" + fullyQualifiedDomainName + ":" + instanceName;
+            return Encoding.UTF8.GetBytes(serverSpn);
         }
 
         /// <summary>
@@ -350,7 +367,7 @@ namespace System.Data.SqlClient.SNI
         /// <param name="callbackObject">Asynchronous I/O callback object</param>
         /// <param name="parallel">Should MultiSubnetFailover be used</param>
         /// <returns>SNITCPHandle</returns>
-        private SNITCPHandle CreateTcpHandle(DataSource details, long timerExpire, object callbackObject, bool parallel, ref byte[] spnBuffer, bool isIntegratedSecurity)
+        private SNITCPHandle CreateTcpHandle(DataSource details, long timerExpire, object callbackObject, bool parallel)
         {
             // TCP Format: 
             // tcp:<host name>\<instance name>
@@ -373,22 +390,8 @@ namespace System.Data.SqlClient.SNI
                 }
             }
 
-            if (hostName != null && port > 0 && isIntegratedSecurity)
-            {
-                try
-                {
-                    hostName = GetFullyQualifiedDomainName(hostName);
-                    spnBuffer = MakeMsSqlServerSPN(hostName, port);
-                }
-                catch (Exception e)
-                {
-                    SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.TCP_PROV, SNICommon.InvalidConnStringError, e);
-                    return null;
-                }
-            }
-
             return (hostName != null && port > 0) ?
-                 new SNITCPHandle(hostName, port, timerExpire, callbackObject, parallel) : null;
+                new SNITCPHandle(hostName, port, timerExpire, callbackObject, parallel) : null;
         }
 
         /// <summary>
