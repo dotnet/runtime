@@ -211,7 +211,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mono.Http-net_4_x", "mcs/cl
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mono.Cairo-net_4_x", "mcs/class/Mono.Cairo/Mono.Cairo-net_4_x.csproj", "{D76A0C93-56FE-4339-99A8-B7A3D49D6DDE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mono.Cecil-net_4_x", "mcs/class/legacy/Mono.Cecil/Mono.Cecil-net_4_x.csproj", "{6DE38817-EC25-433A-AE58-0D30C5E6C460}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mono.Cecil-net_4_x", "mcs/class/Mono.Cecil/Mono.Cecil-net_4_x.csproj", "{2C0D558F-0B38-4691-967E-A910A1B995C1}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mono.Cecil.Mdb-net_4_x", "mcs/class/Mono.Cecil.Mdb/Mono.Cecil.Mdb-net_4_x.csproj", "{CF14D34A-F69B-47FB-A99C-D25C77198F30}"
 EndProject
@@ -304,6 +304,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Workflow.Runtime-net_4_x", "mcs/class/System.Workflow.Runtime/System.Workflow.Runtime-net_4_x.csproj", "{E4180397-83B3-4F7B-9878-6891698F7C52}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "System.Reflection.Context-net_4_x", "mcs/class/System.Reflection.Context/System.Reflection.Context-net_4_x.csproj", "{50A4818C-4BD7-49DB-AD2C-FF3FB0A9D392}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "legacy_Mono.Cecil-net_4_x", "mcs/class/legacy/Mono.Cecil/legacy_Mono.Cecil-net_4_x.csproj", "{CF1339E8-584B-4B3D-9A93-6F4AFDAFEE66}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Facades_System.Security.Cryptography.X509Certificates-net_4_x", "mcs/class/Facades/System.Security.Cryptography.X509Certificates/Facades_System.Security.Cryptography.X509Certificates-net_4_x.csproj", "{C2E71C2B-A806-4FEB-AE2D-A5BE884E3BA7}"
 EndProject
@@ -1099,10 +1101,10 @@ Global
 		{D76A0C93-56FE-4339-99A8-B7A3D49D6DDE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D76A0C93-56FE-4339-99A8-B7A3D49D6DDE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D76A0C93-56FE-4339-99A8-B7A3D49D6DDE}.Release|Any CPU.Build.0 = Release|Any CPU
-		{6DE38817-EC25-433A-AE58-0D30C5E6C460}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{6DE38817-EC25-433A-AE58-0D30C5E6C460}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{6DE38817-EC25-433A-AE58-0D30C5E6C460}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{6DE38817-EC25-433A-AE58-0D30C5E6C460}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2C0D558F-0B38-4691-967E-A910A1B995C1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2C0D558F-0B38-4691-967E-A910A1B995C1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2C0D558F-0B38-4691-967E-A910A1B995C1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2C0D558F-0B38-4691-967E-A910A1B995C1}.Release|Any CPU.Build.0 = Release|Any CPU
 		{CF14D34A-F69B-47FB-A99C-D25C77198F30}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{CF14D34A-F69B-47FB-A99C-D25C77198F30}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CF14D34A-F69B-47FB-A99C-D25C77198F30}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -1287,6 +1289,10 @@ Global
 		{50A4818C-4BD7-49DB-AD2C-FF3FB0A9D392}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{50A4818C-4BD7-49DB-AD2C-FF3FB0A9D392}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{50A4818C-4BD7-49DB-AD2C-FF3FB0A9D392}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CF1339E8-584B-4B3D-9A93-6F4AFDAFEE66}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CF1339E8-584B-4B3D-9A93-6F4AFDAFEE66}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CF1339E8-584B-4B3D-9A93-6F4AFDAFEE66}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CF1339E8-584B-4B3D-9A93-6F4AFDAFEE66}.Release|Any CPU.Build.0 = Release|Any CPU
 		{C2E71C2B-A806-4FEB-AE2D-A5BE884E3BA7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{C2E71C2B-A806-4FEB-AE2D-A5BE884E3BA7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C2E71C2B-A806-4FEB-AE2D-A5BE884E3BA7}.Release|Any CPU.ActiveCfg = Release|Any CPU
