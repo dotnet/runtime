@@ -36,7 +36,7 @@ namespace System.Runtime.Serialization
 
         private static SerializationOption _option = SerializationOption.ReflectionAsBackup;
         private static bool _optionAlreadySet;
-        public static SerializationOption Option
+        internal static SerializationOption Option
         {
             get { return _option; }
             set

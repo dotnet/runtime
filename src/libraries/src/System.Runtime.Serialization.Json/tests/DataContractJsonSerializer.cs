@@ -25,7 +25,7 @@ public static partial class DataContractJsonSerializerTests
 
     static DataContractJsonSerializerTests()
     {
-        var method = typeof(DataContractSerializer).GetMethod(SerializationOptionSetterName);
+        var method = typeof(DataContractSerializer).GetMethod(SerializationOptionSetterName, BindingFlags.NonPublic | BindingFlags.Static);
         Assert.True(method != null, $"No method named {SerializationOptionSetterName}");
         method.Invoke(null, new object[] { 1 });
     }
