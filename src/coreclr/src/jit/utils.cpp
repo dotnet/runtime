@@ -698,18 +698,24 @@ const char* refCntWtd2str(unsigned refCntWtd)
 
     nump = (nump == num1) ? num2 : num1;
 
-    unsigned valueInt  = refCntWtd / BB_UNITY_WEIGHT;
-    unsigned valueFrac = refCntWtd % BB_UNITY_WEIGHT;
-
-    if (valueFrac == 0)
+    if (refCntWtd == BB_MAX_WEIGHT)
     {
-        sprintf_s(temp, bufSize, "%2u  ", valueInt);
+        sprintf_s(temp, bufSize, "MAX   ");
     }
     else
     {
-        sprintf_s(temp, bufSize, "%2u.%1u", valueInt, (valueFrac * 10 / BB_UNITY_WEIGHT));
-    }
+        unsigned valueInt  = refCntWtd / BB_UNITY_WEIGHT;
+        unsigned valueFrac = refCntWtd % BB_UNITY_WEIGHT;
 
+        if (valueFrac == 0)
+        {
+            sprintf_s(temp, bufSize, "%u   ", valueInt);
+        }
+        else
+        {
+            sprintf_s(temp, bufSize, "%u.%02u", valueInt, (valueFrac * 100 / BB_UNITY_WEIGHT));
+        }
+    }
     return temp;
 }
 
