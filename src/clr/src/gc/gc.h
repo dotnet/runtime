@@ -31,6 +31,11 @@ Module Name:
 
 #ifdef FEATURE_STANDALONE_GC
 #include "gcenv.ee.standalone.inl"
+
+// GCStress does not currently work with Standalone GC
+#ifdef STRESS_HEAP
+ #undef STRESS_HEAP
+#endif // STRESS_HEAP
 #endif // FEATURE_STANDALONE_GC
 
 /*
