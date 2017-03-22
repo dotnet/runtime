@@ -554,7 +554,7 @@ static gint
 get_errno_from_g_file_error (gint error)
 {
 	switch (error) {
-#ifdef EACCESS
+#ifdef EACCES
 	case G_FILE_ERROR_ACCES: return EACCES;
 #endif
 #ifdef ENAMETOOLONG
