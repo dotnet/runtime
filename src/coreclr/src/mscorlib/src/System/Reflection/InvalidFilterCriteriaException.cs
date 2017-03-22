@@ -2,43 +2,29 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-//
-// InvalidFilterCriteriaException is thrown in FindMembers when the
-// 
-//    filter criteria is not valid for the type of filter being used. 
-//
-// 
-//  
-//
+using System.Runtime.Serialization;
 
 namespace System.Reflection
 {
-    using System;
-    using System.Runtime.Serialization;
-    using ApplicationException = System.ApplicationException;
     [Serializable]
     public class InvalidFilterCriteriaException : ApplicationException
     {
         public InvalidFilterCriteriaException()
-            : base(SR.Arg_InvalidFilterCriteriaException)
+            : this(SR.Arg_InvalidFilterCriteriaException)
         {
-            SetErrorCode(__HResults.COR_E_INVALIDFILTERCRITERIA);
         }
 
-        public InvalidFilterCriteriaException(String message) : base(message)
+        public InvalidFilterCriteriaException(string message)
+            : this(message, null)
         {
-            SetErrorCode(__HResults.COR_E_INVALIDFILTERCRITERIA);
         }
 
-        public InvalidFilterCriteriaException(String message, Exception inner) : base(message, inner)
+        public InvalidFilterCriteriaException(string message, Exception inner)
+            : base(message, inner)
         {
-            SetErrorCode(__HResults.COR_E_INVALIDFILTERCRITERIA);
+            HResult = __HResults.COR_E_INVALIDFILTERCRITERIA;
         }
 
-        protected InvalidFilterCriteriaException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
-        }
+        protected InvalidFilterCriteriaException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 }

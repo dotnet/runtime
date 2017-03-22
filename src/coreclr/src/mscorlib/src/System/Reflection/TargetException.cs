@@ -2,19 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-//
-// TargetException is thrown when the target to an Invoke is invalid.  This may
-// 
-//    occur because the caller doesn't have access to the member, or the target doesn't
-//    define the member, etc.
-//
-// 
-//  
-//
-
-using System;
 using System.Runtime.Serialization;
 
 namespace System.Reflection
@@ -22,23 +9,21 @@ namespace System.Reflection
     [Serializable]
     public class TargetException : ApplicationException
     {
-        public TargetException() : base()
+        public TargetException()
+            : this(null)
         {
-            SetErrorCode(__HResults.COR_E_TARGET);
         }
 
-        public TargetException(String message) : base(message)
+        public TargetException(string message)
+            : this(message, null)
         {
-            SetErrorCode(__HResults.COR_E_TARGET);
         }
 
-        public TargetException(String message, Exception inner) : base(message, inner)
+        public TargetException(string message, Exception inner) : base(message, inner)
         {
-            SetErrorCode(__HResults.COR_E_TARGET);
+            HResult = __HResults.COR_E_TARGET;
         }
 
-        protected TargetException(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
-        }
+        protected TargetException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 }

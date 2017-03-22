@@ -2,19 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*=============================================================================
-**
-**
-** 
-**
-**
-** Purpose: For Assembly-related stuff.
-**
-**
-=============================================================================*/
-
-using System;
-
 namespace System.Reflection
 {
     public abstract class ReflectionContext
@@ -34,3 +21,4 @@ namespace System.Reflection
         }
     }
 }
+
