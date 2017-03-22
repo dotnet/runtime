@@ -215,7 +215,11 @@
     </ItemGroup>
   </Target>
 
-  <!-- Binplacing targets -->
+  <!-- Binplacing targets and properties -->
+  <PropertyGroup>
+    <BinPlaceUseHardlinksIfPossible Condition="'$(BinPlaceUseHardlinksIfPossible)' == ''">true</BinPlaceUseHardlinksIfPossible>
+  </PropertyGroup>
+
   <Target Name="BinPlace"
           DependsOnTargets="GetBinPlaceDirs;BinPlaceFiles;BinPlaceProps"
           AfterTargets="CopyFilesToOutputDirectory"
