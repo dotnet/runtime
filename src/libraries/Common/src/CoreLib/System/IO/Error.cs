@@ -18,7 +18,7 @@ namespace System.IO
     {
         internal static Exception GetStreamIsClosed()
         {
-            return new ObjectDisposedException(null, SR.ObjectDisposed_StreamIsClosed);
+            return new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);
         }
 
         internal static Exception GetEndOfFile()
