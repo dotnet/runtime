@@ -30,7 +30,6 @@
 #include "corhost.h"
 #include "comdelegate.h"
 #include "finalizerthread.h"
-#include "gcscan.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -2518,7 +2517,7 @@ BOOL ObjHeader::Validate (BOOL bVerifySyncBlkIndex)
         //rest of the DWORD is SyncBlk Index
         if (!(bits & BIT_SBLK_IS_HASHCODE))
         {
-            if (bVerifySyncBlkIndex  && GCScan::GetGcRuntimeStructuresValid ())
+            if (bVerifySyncBlkIndex  && GCHeapUtilities::GetGCHeap()->RuntimeStructuresValid ())
             {
                 DWORD sbIndex = bits & MASK_SYNCBLOCKINDEX;
                 ASSERT_AND_CHECK(SyncTableEntry::GetSyncTableEntry()[sbIndex].m_Object == obj);             
