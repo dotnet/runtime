@@ -202,8 +202,7 @@ namespace System.Text
 
                 // We mustn't have left over fallback data when counting
                 if (fallbackBuffer.Remaining > 0)
-                    throw new ArgumentException(Environment.GetResourceString("Argument_EncoderFallbackNotEmpty",
-                    this.EncodingName, encoder.Fallback.GetType()));
+                    throw new ArgumentException(SR.Format(SR.Argument_EncoderFallbackNotEmpty, this.EncodingName, encoder.Fallback.GetType()));
             }
             else
             {
@@ -301,8 +300,7 @@ namespace System.Text
 
             // Check for overflows.
             if (byteCount < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString(
-                    "ArgumentOutOfRange_GetByteCountOverflow"));
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_GetByteCountOverflow);
 
             // Shouldn't have anything in fallback buffer for GetByteCount
             // (don't have to check m_throwOnOverflow for count)
@@ -339,8 +337,7 @@ namespace System.Text
 
                 // We mustn't have left over fallback data when not converting
                 if (encoder.m_throwOnOverflow && fallbackBuffer.Remaining > 0)
-                    throw new ArgumentException(Environment.GetResourceString("Argument_EncoderFallbackNotEmpty",
-                    this.EncodingName, encoder.Fallback.GetType()));
+                    throw new ArgumentException(SR.Format(SR.Argument_EncoderFallbackNotEmpty, this.EncodingName, encoder.Fallback.GetType()));
             }
             else
             {
@@ -647,7 +644,7 @@ namespace System.Text
 
             // Check for overflows.
             if (charCount < 0)
-                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_GetByteCountOverflow"));
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_GetByteCountOverflow);
 
             // Shouldn't have anything in fallback buffer for GetCharCount
             // (don't have to check m_throwOnOverflow for chars or count)
@@ -907,7 +904,7 @@ namespace System.Text
         {
             if (charCount < 0)
                 throw new ArgumentOutOfRangeException(nameof(charCount),
-                     Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                     SR.ArgumentOutOfRange_NeedNonNegNum);
             Contract.EndContractBlock();
 
             // Characters would be # of characters + 1 in case left over high surrogate is ? * max fallback
@@ -920,7 +917,7 @@ namespace System.Text
             byteCount *= 4;
 
             if (byteCount > 0x7fffffff)
-                throw new ArgumentOutOfRangeException(nameof(charCount), Environment.GetResourceString("ArgumentOutOfRange_GetByteCountOverflow"));
+                throw new ArgumentOutOfRangeException(nameof(charCount), SR.ArgumentOutOfRange_GetByteCountOverflow);
 
             return (int)byteCount;
         }
@@ -930,7 +927,7 @@ namespace System.Text
         {
             if (byteCount < 0)
                 throw new ArgumentOutOfRangeException(nameof(byteCount),
-                     Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                     SR.ArgumentOutOfRange_NeedNonNegNum);
             Contract.EndContractBlock();
 
             // A supplementary character becomes 2 surrogate characters, so 4 input bytes becomes 2 chars,
@@ -950,7 +947,7 @@ namespace System.Text
             }
 
             if (charCount > 0x7fffffff)
-                throw new ArgumentOutOfRangeException(nameof(byteCount), Environment.GetResourceString("ArgumentOutOfRange_GetCharCountOverflow"));
+                throw new ArgumentOutOfRangeException(nameof(byteCount), SR.ArgumentOutOfRange_GetCharCountOverflow);
 
             return (int)charCount;
         }

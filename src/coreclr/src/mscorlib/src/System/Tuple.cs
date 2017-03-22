@@ -148,7 +148,7 @@ namespace System
 
             if (objTuple == null)
             {
-                throw new ArgumentException(Environment.GetResourceString("ArgumentException_TupleIncorrectType", this.GetType().ToString()), "other");
+                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), "other");
             }
 
             return comparer.Compare(m_Item1, objTuple.m_Item1);
@@ -250,7 +250,7 @@ namespace System
 
             if (objTuple == null)
             {
-                throw new ArgumentException(Environment.GetResourceString("ArgumentException_TupleIncorrectType", this.GetType().ToString()), "other");
+                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), "other");
             }
 
             int c = 0;
@@ -367,7 +367,7 @@ namespace System
 
             if (objTuple == null)
             {
-                throw new ArgumentException(Environment.GetResourceString("ArgumentException_TupleIncorrectType", this.GetType().ToString()), "other");
+                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), "other");
             }
 
             int c = 0;
@@ -495,7 +495,7 @@ namespace System
 
             if (objTuple == null)
             {
-                throw new ArgumentException(Environment.GetResourceString("ArgumentException_TupleIncorrectType", this.GetType().ToString()), "other");
+                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), "other");
             }
 
             int c = 0;
@@ -634,7 +634,7 @@ namespace System
 
             if (objTuple == null)
             {
-                throw new ArgumentException(Environment.GetResourceString("ArgumentException_TupleIncorrectType", this.GetType().ToString()), "other");
+                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), "other");
             }
 
             int c = 0;
@@ -784,7 +784,7 @@ namespace System
 
             if (objTuple == null)
             {
-                throw new ArgumentException(Environment.GetResourceString("ArgumentException_TupleIncorrectType", this.GetType().ToString()), "other");
+                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), "other");
             }
 
             int c = 0;
@@ -945,7 +945,7 @@ namespace System
 
             if (objTuple == null)
             {
-                throw new ArgumentException(Environment.GetResourceString("ArgumentException_TupleIncorrectType", this.GetType().ToString()), "other");
+                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), "other");
             }
 
             int c = 0;
@@ -1077,7 +1077,7 @@ namespace System
         {
             if (!(rest is ITupleInternal))
             {
-                throw new ArgumentException(Environment.GetResourceString("ArgumentException_TupleLastArgumentNotATuple"));
+                throw new ArgumentException(SR.ArgumentException_TupleLastArgumentNotATuple);
             }
 
             m_Item1 = item1;
@@ -1122,7 +1122,7 @@ namespace System
 
             if (objTuple == null)
             {
-                throw new ArgumentException(Environment.GetResourceString("ArgumentException_TupleIncorrectType", this.GetType().ToString()), "other");
+                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), "other");
             }
 
             int c = 0;

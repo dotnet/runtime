@@ -128,7 +128,7 @@ namespace System.Diagnostics.Tracing
 
         private static string GetResourceString(string key, params object[] args)
         {
-            return Environment.GetResourceString(key, args);
+            return SR.Format(SR.GetResourceString(key), args);
         }
 
         private static readonly bool m_EventSourcePreventRecursion = false;
@@ -214,7 +214,7 @@ namespace System.Diagnostics.Tracing
     {
         internal static string GetResourceString(string key, params object[] args)
         {
-            return Environment.GetResourceString(key, args);
+            return SR.Format(SR.GetResourceString(key), args);
         }
     }
 }

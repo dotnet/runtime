@@ -55,7 +55,7 @@ namespace System.IO
             if (searchPattern == null)
                 throw new ArgumentNullException(nameof(searchPattern));
             if ((searchOption != SearchOption.TopDirectoryOnly) && (searchOption != SearchOption.AllDirectories))
-                throw new ArgumentOutOfRangeException(nameof(searchOption), Environment.GetResourceString("ArgumentOutOfRange_Enum"));
+                throw new ArgumentOutOfRangeException(nameof(searchOption), SR.ArgumentOutOfRange_Enum);
             Contract.Ensures(Contract.Result<IEnumerable<String>>() != null);
             Contract.EndContractBlock();
 
@@ -135,9 +135,9 @@ namespace System.IO
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
             if (path.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_PathEmpty"));
+                throw new ArgumentException(SR.Argument_PathEmpty);
             if (path.Length >= Path.MaxPath)
-                throw new PathTooLongException(Environment.GetResourceString("IO.PathTooLong"));
+                throw new PathTooLongException(SR.IO_PathTooLong);
 
             String fulldestDirName = Path.GetFullPath(path);
 

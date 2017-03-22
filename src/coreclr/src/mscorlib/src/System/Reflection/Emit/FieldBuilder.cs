@@ -31,16 +31,16 @@ namespace System.Reflection.Emit
                 throw new ArgumentNullException(nameof(fieldName));
 
             if (fieldName.Length == 0)
-                throw new ArgumentException(Environment.GetResourceString("Argument_EmptyName"), nameof(fieldName));
+                throw new ArgumentException(SR.Argument_EmptyName, nameof(fieldName));
 
             if (fieldName[0] == '\0')
-                throw new ArgumentException(Environment.GetResourceString("Argument_IllegalName"), nameof(fieldName));
+                throw new ArgumentException(SR.Argument_IllegalName, nameof(fieldName));
 
             if (type == null)
                 throw new ArgumentNullException(nameof(type));
 
             if (type == typeof(void))
-                throw new ArgumentException(Environment.GetResourceString("Argument_BadFieldType"));
+                throw new ArgumentException(SR.Argument_BadFieldType);
             Contract.EndContractBlock();
 
             m_fieldName = fieldName;
@@ -121,7 +121,7 @@ namespace System.Reflection.Emit
             // a NotSupportedException for Save-only dynamic assemblies.
             // Otherwise, it could cause the .cctor to be executed.
 
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_DynamicModule"));
+            throw new NotSupportedException(SR.NotSupported_DynamicModule);
         }
 
         public override void SetValue(Object obj, Object val, BindingFlags invokeAttr, Binder binder, CultureInfo culture)
@@ -130,12 +130,12 @@ namespace System.Reflection.Emit
             // a NotSupportedException for Save-only dynamic assemblies.
             // Otherwise, it could cause the .cctor to be executed.
 
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_DynamicModule"));
+            throw new NotSupportedException(SR.NotSupported_DynamicModule);
         }
 
         public override RuntimeFieldHandle FieldHandle
         {
-            get { throw new NotSupportedException(Environment.GetResourceString("NotSupported_DynamicModule")); }
+            get { throw new NotSupportedException(SR.NotSupported_DynamicModule); }
         }
 
         public override FieldAttributes Attributes
@@ -148,17 +148,17 @@ namespace System.Reflection.Emit
         #region ICustomAttributeProvider Implementation
         public override Object[] GetCustomAttributes(bool inherit)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_DynamicModule"));
+            throw new NotSupportedException(SR.NotSupported_DynamicModule);
         }
 
         public override Object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_DynamicModule"));
+            throw new NotSupportedException(SR.NotSupported_DynamicModule);
         }
 
         public override bool IsDefined(Type attributeType, bool inherit)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_DynamicModule"));
+            throw new NotSupportedException(SR.NotSupported_DynamicModule);
         }
 
         #endregion

@@ -74,7 +74,7 @@ namespace System
             if (typeName == null)
                 throw new ArgumentNullException(nameof(typeName));
             if (typeName.Length > 0 && typeName[0] == '\0')
-                throw new ArgumentException(Environment.GetResourceString("Format_StringZeroLength"));
+                throw new ArgumentException(SR.Format_StringZeroLength);
             Contract.EndContractBlock();
 
             Type ret = null;
@@ -143,7 +143,7 @@ namespace System
             {
                 // This can only happen if the type name is an empty string or if the first char is '\0'
                 if (throwOnError)
-                    throw new TypeLoadException(Environment.GetResourceString("Arg_TypeLoadNullStr"));
+                    throw new TypeLoadException(SR.Arg_TypeLoadNullStr);
 
                 return null;
             }
@@ -221,7 +221,7 @@ namespace System
                 assembly = assemblyResolver(new AssemblyName(asmName));
                 if (assembly == null && throwOnError)
                 {
-                    throw new FileNotFoundException(Environment.GetResourceString("FileNotFound_ResolveAssembly", asmName));
+                    throw new FileNotFoundException(SR.Format(SR.FileNotFound_ResolveAssembly, asmName));
                 }
             }
 
@@ -245,8 +245,8 @@ namespace System
                 if (type == null && throwOnError)
                 {
                     string errorString = assembly == null ?
-                        Environment.GetResourceString("TypeLoad_ResolveType", OuterMostTypeName) :
-                        Environment.GetResourceString("TypeLoad_ResolveTypeFromAssembly", OuterMostTypeName, assembly.FullName);
+                        SR.Format(SR.TypeLoad_ResolveType, OuterMostTypeName):
+                        SR.Format(SR.TypeLoad_ResolveTypeFromAssembly, OuterMostTypeName, assembly.FullName);
 
                     throw new TypeLoadException(errorString);
                 }
@@ -277,7 +277,7 @@ namespace System
                     if (type == null)
                     {
                         if (throwOnError)
-                            throw new TypeLoadException(Environment.GetResourceString("TypeLoad_ResolveNestedType", names[i], names[i - 1]));
+                            throw new TypeLoadException(SR.Format(SR.TypeLoad_ResolveNestedType, names[i], names[i - 1]));
                         else
                             break;
                     }

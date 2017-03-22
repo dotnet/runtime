@@ -199,14 +199,14 @@ namespace System
         private void ThrowInsufficientInformation(string field)
         {
             throw new SerializationException(
-                Environment.GetResourceString("Serialization_InsufficientDeserializationState", field));
+                SR.Format(SR.Serialization_InsufficientDeserializationState, field));
         }
         #endregion
 
         #region ISerializable
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_UnitySerHolder"));
+            throw new NotSupportedException(SR.NotSupported_UnitySerHolder);
         }
         #endregion
 
@@ -292,7 +292,7 @@ namespace System
 
                         if (namedModule == null)
                             throw new SerializationException(
-                                Environment.GetResourceString("Serialization_UnableToFindModule", m_data, m_assemblyName));
+                                SR.Format(SR.Serialization_UnableToFindModule, m_data, m_assemblyName));
 
                         return namedModule;
                     }
@@ -311,7 +311,7 @@ namespace System
                     }
 
                 default:
-                    throw new ArgumentException(Environment.GetResourceString("Argument_InvalidUnity"));
+                    throw new ArgumentException(SR.Argument_InvalidUnity);
             }
         }
         #endregion

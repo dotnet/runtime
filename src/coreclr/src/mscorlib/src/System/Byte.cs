@@ -51,7 +51,7 @@ namespace System
             }
             if (!(value is Byte))
             {
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeByte"));
+                throw new ArgumentException(SR.Arg_MustBeByte);
             }
 
             return m_value - (((Byte)value).m_value);
@@ -123,10 +123,10 @@ namespace System
             }
             catch (OverflowException e)
             {
-                throw new OverflowException(Environment.GetResourceString("Overflow_Byte"), e);
+                throw new OverflowException(SR.Overflow_Byte, e);
             }
 
-            if (i < MinValue || i > MaxValue) throw new OverflowException(Environment.GetResourceString("Overflow_Byte"));
+            if (i < MinValue || i > MaxValue) throw new OverflowException(SR.Overflow_Byte);
             return (byte)i;
         }
 
@@ -276,7 +276,7 @@ namespace System
         /// <internalonly/>
         DateTime IConvertible.ToDateTime(IFormatProvider provider)
         {
-            throw new InvalidCastException(Environment.GetResourceString("InvalidCast_FromTo", "Byte", "DateTime"));
+            throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, "Byte", "DateTime"));
         }
 
         /// <internalonly/>

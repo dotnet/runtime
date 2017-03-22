@@ -33,7 +33,7 @@ namespace System.IO
         private String _maybeFullPath;  // For debuggers on partial trust code
 
         public IOException()
-            : base(Environment.GetResourceString("Arg_IOException"))
+            : base(SR.Arg_IOException)
         {
             SetErrorCode(__HResults.COR_E_IO);
         }

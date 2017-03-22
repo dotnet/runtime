@@ -172,7 +172,7 @@ namespace System.Threading
                 throw new ArgumentNullException(nameof(start));
             }
             if (0 > maxStackSize)
-                throw new ArgumentOutOfRangeException(nameof(maxStackSize), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(maxStackSize), SR.ArgumentOutOfRange_NeedNonNegNum);
             Contract.EndContractBlock();
             SetStartHelper((Delegate)start, maxStackSize);
         }
@@ -193,7 +193,7 @@ namespace System.Threading
                 throw new ArgumentNullException(nameof(start));
             }
             if (0 > maxStackSize)
-                throw new ArgumentOutOfRangeException(nameof(maxStackSize), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(maxStackSize), SR.ArgumentOutOfRange_NeedNonNegNum);
             Contract.EndContractBlock();
             SetStartHelper((Delegate)start, maxStackSize);
         }
@@ -218,7 +218,7 @@ namespace System.Threading
             // There are ways how to create an unitialized objects through remoting, etc. Avoid AVing in the EE by throwing a nice
             // exception here.
             if (thread.IsNull())
-                throw new ArgumentException(null, Environment.GetResourceString("Argument_InvalidHandle"));
+                throw new ArgumentException(null, SR.Argument_InvalidHandle);
 
             return new ThreadHandle(thread);
         }
@@ -248,7 +248,7 @@ namespace System.Threading
                 //We expect the thread to be setup with a ParameterizedThreadStart
                 //    if this constructor is called.
                 //If we got here then that wasn't the case
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_ThreadWrongThreadStart"));
+                throw new InvalidOperationException(SR.InvalidOperation_ThreadWrongThreadStart);
             }
             m_ThreadStartArg = parameter;
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
@@ -322,7 +322,7 @@ namespace System.Threading
         {
             long tm = (long)timeout.TotalMilliseconds;
             if (tm < -1 || tm > (long)Int32.MaxValue)
-                throw new ArgumentOutOfRangeException(nameof(timeout), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegOrNegative1"));
+                throw new ArgumentOutOfRangeException(nameof(timeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             Sleep((int)tm);
         }
 
@@ -538,7 +538,7 @@ namespace System.Threading
                 lock (this)
                 {
                     if (m_Name != null)
-                        throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_WriteOnce"));
+                        throw new InvalidOperationException(SR.InvalidOperation_WriteOnce);
                     m_Name = value;
 
                     InformThreadNameChange(GetNativeHandle(), value, (value != null) ? value.Length : 0);

@@ -34,9 +34,9 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index));
             if (array.Length <= index && this.Count > 0)
-                throw new ArgumentException(Environment.GetResourceString("Arg_IndexOutOfRangeException"));
+                throw new ArgumentException(SR.Arg_IndexOutOfRangeException);
             if (array.Length - index < dictionary.Count)
-                throw new ArgumentException(Environment.GetResourceString("Argument_InsufficientSpaceToCopyCollection"));
+                throw new ArgumentException(SR.Argument_InsufficientSpaceToCopyCollection);
 
             int i = index;
             foreach (KeyValuePair<TKey, TValue> mapping in dictionary)
@@ -57,12 +57,12 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         void ICollection<TValue>.Add(TValue item)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_ValueCollectionSet"));
+            throw new NotSupportedException(SR.NotSupported_ValueCollectionSet);
         }
 
         void ICollection<TValue>.Clear()
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_ValueCollectionSet"));
+            throw new NotSupportedException(SR.NotSupported_ValueCollectionSet);
         }
 
         public bool Contains(TValue item)
@@ -76,7 +76,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         bool ICollection<TValue>.Remove(TValue item)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_ValueCollectionSet"));
+            throw new NotSupportedException(SR.NotSupported_ValueCollectionSet);
         }
 
         IEnumerator IEnumerable.GetEnumerator()

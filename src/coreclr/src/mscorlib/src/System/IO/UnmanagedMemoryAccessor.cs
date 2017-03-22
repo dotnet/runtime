@@ -65,15 +65,15 @@ namespace System.IO
             }
             if (offset < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(offset), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             if (capacity < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(capacity), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(capacity), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             if (buffer.ByteLength < (UInt64)(offset + capacity))
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_OffsetAndCapacityOutOfBounds"));
+                throw new ArgumentException(SR.Argument_OffsetAndCapacityOutOfBounds);
             }
             if (access < FileAccess.Read || access > FileAccess.ReadWrite)
             {
@@ -83,7 +83,7 @@ namespace System.IO
 
             if (_isOpen)
             {
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_CalledTwice"));
+                throw new InvalidOperationException(SR.InvalidOperation_CalledTwice);
             }
 
             unsafe
@@ -95,7 +95,7 @@ namespace System.IO
                     buffer.AcquirePointer(ref pointer);
                     if (((byte*)((Int64)pointer + offset + capacity)) < pointer)
                     {
-                        throw new ArgumentException(Environment.GetResourceString("Argument_UnmanagedMemAccessorWrapAround"));
+                        throw new ArgumentException(SR.Argument_UnmanagedMemAccessorWrapAround);
                     }
                 }
                 finally
@@ -314,7 +314,7 @@ namespace System.IO
             // Check for invalid Decimal values
             if (!((flags & ~(SignMask | ScaleMask)) == 0 && (flags & ScaleMask) <= (28 << 16)))
             {
-                throw new ArgumentException(Environment.GetResourceString("Arg_BadDecimal")); // Throw same Exception type as Decimal(int[]) ctor for compat
+                throw new ArgumentException(SR.Arg_BadDecimal); // Throw same Exception type as Decimal(int[]) ctor for compat
             }
 
             bool isNegative = (flags & SignMask) != 0;
@@ -502,17 +502,17 @@ namespace System.IO
         {
             if (position < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(position), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             Contract.EndContractBlock();
 
             if (!_isOpen)
             {
-                throw new ObjectDisposedException("UnmanagedMemoryAccessor", Environment.GetResourceString("ObjectDisposed_ViewAccessorClosed"));
+                throw new ObjectDisposedException("UnmanagedMemoryAccessor", SR.ObjectDisposed_ViewAccessorClosed);
             }
             if (!CanRead)
             {
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_Reading"));
+                throw new NotSupportedException(SR.NotSupported_Reading);
             }
 
             UInt32 sizeOfT = Marshal.SizeOfType(typeof(T));
@@ -520,11 +520,11 @@ namespace System.IO
             {
                 if (position >= _capacity)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(position), Environment.GetResourceString("ArgumentOutOfRange_PositionLessThanCapacityRequired"));
+                    throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_PositionLessThanCapacityRequired);
                 }
                 else
                 {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_NotEnoughBytesToRead", typeof(T).FullName), nameof(position));
+                    throw new ArgumentException(SR.Format(SR.Argument_NotEnoughBytesToRead, typeof (T).FullName), nameof(position));
                 }
             }
 
@@ -545,31 +545,31 @@ namespace System.IO
             }
             if (offset < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(offset), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             if (count < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             if (array.Length - offset < count)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_OffsetAndLengthOutOfBounds"));
+                throw new ArgumentException(SR.Argument_OffsetAndLengthOutOfBounds);
             }
             Contract.EndContractBlock();
             if (!CanRead)
             {
                 if (!_isOpen)
                 {
-                    throw new ObjectDisposedException("UnmanagedMemoryAccessor", Environment.GetResourceString("ObjectDisposed_ViewAccessorClosed"));
+                    throw new ObjectDisposedException("UnmanagedMemoryAccessor", SR.ObjectDisposed_ViewAccessorClosed);
                 }
                 else
                 {
-                    throw new NotSupportedException(Environment.GetResourceString("NotSupported_Reading"));
+                    throw new NotSupportedException(SR.NotSupported_Reading);
                 }
             }
             if (position < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(position), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
             UInt32 sizeOfT = Marshal.AlignedSizeOf<T>();
@@ -577,7 +577,7 @@ namespace System.IO
             // only check position and ask for fewer Ts if count is too big
             if (position >= _capacity)
             {
-                throw new ArgumentOutOfRangeException(nameof(position), Environment.GetResourceString("ArgumentOutOfRange_PositionLessThanCapacityRequired"));
+                throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_PositionLessThanCapacityRequired);
             }
 
             int n = count;
@@ -903,17 +903,17 @@ namespace System.IO
         {
             if (position < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(position), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             Contract.EndContractBlock();
 
             if (!_isOpen)
             {
-                throw new ObjectDisposedException("UnmanagedMemoryAccessor", Environment.GetResourceString("ObjectDisposed_ViewAccessorClosed"));
+                throw new ObjectDisposedException("UnmanagedMemoryAccessor", SR.ObjectDisposed_ViewAccessorClosed);
             }
             if (!CanWrite)
             {
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_Writing"));
+                throw new NotSupportedException(SR.NotSupported_Writing);
             }
 
             UInt32 sizeOfT = Marshal.SizeOfType(typeof(T));
@@ -921,11 +921,11 @@ namespace System.IO
             {
                 if (position >= _capacity)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(position), Environment.GetResourceString("ArgumentOutOfRange_PositionLessThanCapacityRequired"));
+                    throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_PositionLessThanCapacityRequired);
                 }
                 else
                 {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_NotEnoughBytesToWrite", typeof(T).FullName), nameof(position));
+                    throw new ArgumentException(SR.Format(SR.Argument_NotEnoughBytesToWrite, typeof (T).FullName), nameof(position));
                 }
             }
 
@@ -943,33 +943,33 @@ namespace System.IO
             }
             if (offset < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(offset), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             if (count < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(count), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             if (array.Length - offset < count)
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_OffsetAndLengthOutOfBounds"));
+                throw new ArgumentException(SR.Argument_OffsetAndLengthOutOfBounds);
             }
             if (position < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(position), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             if (position >= Capacity)
             {
-                throw new ArgumentOutOfRangeException(nameof(position), Environment.GetResourceString("ArgumentOutOfRange_PositionLessThanCapacityRequired"));
+                throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_PositionLessThanCapacityRequired);
             }
             Contract.EndContractBlock();
 
             if (!_isOpen)
             {
-                throw new ObjectDisposedException("UnmanagedMemoryAccessor", Environment.GetResourceString("ObjectDisposed_ViewAccessorClosed"));
+                throw new ObjectDisposedException("UnmanagedMemoryAccessor", SR.ObjectDisposed_ViewAccessorClosed);
             }
             if (!CanWrite)
             {
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_Writing"));
+                throw new NotSupportedException(SR.NotSupported_Writing);
             }
 
             _buffer.WriteArray<T>((UInt64)(_offset + position), array, offset, count);
@@ -1031,26 +1031,26 @@ namespace System.IO
         {
             if (!_isOpen)
             {
-                throw new ObjectDisposedException("UnmanagedMemoryAccessor", Environment.GetResourceString("ObjectDisposed_ViewAccessorClosed"));
+                throw new ObjectDisposedException("UnmanagedMemoryAccessor", SR.ObjectDisposed_ViewAccessorClosed);
             }
             if (!CanRead)
             {
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_Reading"));
+                throw new NotSupportedException(SR.NotSupported_Reading);
             }
             if (position < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(position), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             Contract.EndContractBlock();
             if (position > _capacity - sizeOfType)
             {
                 if (position >= _capacity)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(position), Environment.GetResourceString("ArgumentOutOfRange_PositionLessThanCapacityRequired"));
+                    throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_PositionLessThanCapacityRequired);
                 }
                 else
                 {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_NotEnoughBytesToRead"), nameof(position));
+                    throw new ArgumentException(SR.Argument_NotEnoughBytesToRead, nameof(position));
                 }
             }
         }
@@ -1059,26 +1059,26 @@ namespace System.IO
         {
             if (!_isOpen)
             {
-                throw new ObjectDisposedException("UnmanagedMemoryAccessor", Environment.GetResourceString("ObjectDisposed_ViewAccessorClosed"));
+                throw new ObjectDisposedException("UnmanagedMemoryAccessor", SR.ObjectDisposed_ViewAccessorClosed);
             }
             if (!CanWrite)
             {
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_Writing"));
+                throw new NotSupportedException(SR.NotSupported_Writing);
             }
             if (position < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(position), Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
             Contract.EndContractBlock();
             if (position > _capacity - sizeOfType)
             {
                 if (position >= _capacity)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(position), Environment.GetResourceString("ArgumentOutOfRange_PositionLessThanCapacityRequired"));
+                    throw new ArgumentOutOfRangeException(nameof(position), SR.ArgumentOutOfRange_PositionLessThanCapacityRequired);
                 }
                 else
                 {
-                    throw new ArgumentException(Environment.GetResourceString("Argument_NotEnoughBytesToWrite", nameof(Byte)), nameof(position));
+                    throw new ArgumentException(SR.Format(SR.Argument_NotEnoughBytesToWrite, nameof(Byte)), nameof(position));
                 }
             }
         }

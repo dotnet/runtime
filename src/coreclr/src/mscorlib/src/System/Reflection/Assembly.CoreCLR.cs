@@ -47,7 +47,7 @@ namespace System.Reflection
                                         byte[] hashValue,
                                         AssemblyHashAlgorithm hashAlgorithm)
         {
-            throw new NotSupportedException(Environment.GetResourceString("NotSupported_AssemblyLoadFromHash"));
+            throw new NotSupportedException(SR.NotSupported_AssemblyLoadFromHash);
         }
 
         // Locate an assembly by the long form of the assembly name. 
@@ -104,7 +104,7 @@ namespace System.Reflection
 
             if (assemblyRef != null && assemblyRef.CodeBase != null)
             {
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_AssemblyLoadCodeBase"));
+                throw new NotSupportedException(SR.NotSupported_AssemblyLoadCodeBase);
             }
 
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
@@ -121,7 +121,7 @@ namespace System.Reflection
 
             if (assemblyRef != null && assemblyRef.CodeBase != null)
             {
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_AssemblyLoadCodeBase"));
+                throw new NotSupportedException(SR.NotSupported_AssemblyLoadCodeBase);
             }
 
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
@@ -164,7 +164,7 @@ namespace System.Reflection
 
             if (PathInternal.IsPartiallyQualified(path))
             {
-                throw new ArgumentException(Environment.GetResourceString("Argument_AbsolutePathRequired"), nameof(path));
+                throw new ArgumentException(SR.Argument_AbsolutePathRequired, nameof(path));
             }
 
             string normalizedPath = Path.GetFullPath(path);

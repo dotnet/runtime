@@ -23,7 +23,7 @@ namespace System.Threading
     public class SynchronizationLockException : SystemException
     {
         public SynchronizationLockException()
-            : base(Environment.GetResourceString("Arg_SynchronizationLockException"))
+            : base(SR.Arg_SynchronizationLockException)
         {
             SetErrorCode(__HResults.COR_E_SYNCHRONIZATIONLOCK);
         }

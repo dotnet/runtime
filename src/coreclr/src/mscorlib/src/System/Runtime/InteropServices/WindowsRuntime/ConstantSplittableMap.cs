@@ -102,7 +102,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             if (!found)
             {
-                Exception e = new KeyNotFoundException(Environment.GetResourceString("Arg_KeyNotFound"));
+                Exception e = new KeyNotFoundException(SR.Arg_KeyNotFound);
                 e.SetErrorCode(__HResults.E_BOUNDS);
                 throw e;
             }
@@ -205,8 +205,8 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             {
                 get
                 {
-                    if (_current < _start) throw new InvalidOperationException(Environment.GetResourceString(ResId.InvalidOperation_EnumNotStarted));
-                    if (_current > _end) throw new InvalidOperationException(Environment.GetResourceString(ResId.InvalidOperation_EnumEnded));
+                    if (_current < _start) throw new InvalidOperationException(SR.GetResourceString(ResId.InvalidOperation_EnumNotStarted));
+                    if (_current > _end) throw new InvalidOperationException(SR.GetResourceString(ResId.InvalidOperation_EnumEnded));
                     return new CLRIKeyValuePairImpl<TKey, TValue>(ref _array[_current]);
                 }
             }

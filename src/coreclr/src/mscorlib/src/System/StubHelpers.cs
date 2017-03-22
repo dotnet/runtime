@@ -532,7 +532,7 @@ namespace System.StubHelpers
         internal static unsafe IntPtr ConvertToNative(string managed)
         {
             if (!Environment.IsWinRTSupported)
-                throw new PlatformNotSupportedException(Environment.GetResourceString("PlatformNotSupported_WinRT"));
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_WinRT);
             if (managed == null)
                 throw new ArgumentNullException(); // We don't have enough information to get the argument name 
 
@@ -552,7 +552,7 @@ namespace System.StubHelpers
                                                                [Out] HSTRING_HEADER* hstringHeader)
         {
             if (!Environment.IsWinRTSupported)
-                throw new PlatformNotSupportedException(Environment.GetResourceString("PlatformNotSupported_WinRT"));
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_WinRT);
             if (managed == null)
                 throw new ArgumentNullException();  // We don't have enough information to get the argument name 
 
@@ -571,7 +571,7 @@ namespace System.StubHelpers
         {
             if (!Environment.IsWinRTSupported)
             {
-                throw new PlatformNotSupportedException(Environment.GetResourceString("PlatformNotSupported_WinRT"));
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_WinRT);
             }
 
             return WindowsRuntimeMarshal.HStringToString(hstring);
@@ -1003,7 +1003,7 @@ namespace System.StubHelpers
                     }
 
                 default:
-                    throw new ArgumentException(Environment.GetResourceString("Arg_NDirectBadObject"));
+                    throw new ArgumentException(SR.Arg_NDirectBadObject);
             }
 
             // marshal the object as C-style array (UnmanagedType.LPArray)
@@ -1170,7 +1170,7 @@ namespace System.StubHelpers
                 return IntPtr.Zero;
 
             if (pManagedHome is ArrayWithOffset)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MarshalAsAnyRestriction"));
+                throw new ArgumentException(SR.Arg_MarshalAsAnyRestriction);
 
             IntPtr pNativeHome;
 
@@ -1202,7 +1202,7 @@ namespace System.StubHelpers
                 else
                 {
                     // this type is not supported for AsAny marshaling
-                    throw new ArgumentException(Environment.GetResourceString("Arg_NDirectBadObject"));
+                    throw new ArgumentException(SR.Arg_NDirectBadObject);
                 }
             }
 
@@ -1328,7 +1328,7 @@ namespace System.StubHelpers
         {
             if (!Environment.IsWinRTSupported)
             {
-                throw new PlatformNotSupportedException(Environment.GetResourceString("PlatformNotSupported_WinRT"));
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_WinRT);
             }
 
             string typeName;
@@ -1336,7 +1336,7 @@ namespace System.StubHelpers
             {
                 if (managedType.GetType() != typeof(System.RuntimeType))
                 {   // The type should be exactly System.RuntimeType (and not its child System.ReflectionOnlyType, or other System.Type children)
-                    throw new ArgumentException(Environment.GetResourceString("Argument_WinRTSystemRuntimeType", managedType.GetType().ToString()));
+                    throw new ArgumentException(SR.Format(SR.Argument_WinRTSystemRuntimeType, managedType.GetType().ToString()));
                 }
 
                 bool isPrimitive;
@@ -1371,7 +1371,7 @@ namespace System.StubHelpers
         {
             if (!Environment.IsWinRTSupported)
             {
-                throw new PlatformNotSupportedException(Environment.GetResourceString("PlatformNotSupported_WinRT"));
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_WinRT);
             }
 
             string typeName = WindowsRuntimeMarshal.HStringToString(pNativeType->typeName);
@@ -1392,7 +1392,7 @@ namespace System.StubHelpers
 
                 // TypeSource must match
                 if (isPrimitive != (pNativeType->typeKind == TypeKind.Primitive))
-                    throw new ArgumentException(Environment.GetResourceString("Argument_Unexpected_TypeSource"));
+                    throw new ArgumentException(SR.Argument_Unexpected_TypeSource);
             }
         }
 
@@ -1414,7 +1414,7 @@ namespace System.StubHelpers
         {
             if (!Environment.IsWinRTSupported)
             {
-                throw new PlatformNotSupportedException(Environment.GetResourceString("PlatformNotSupported_WinRT"));
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_WinRT);
             }
 
             if (ex == null)
@@ -1429,7 +1429,7 @@ namespace System.StubHelpers
 
             if (!Environment.IsWinRTSupported)
             {
-                throw new PlatformNotSupportedException(Environment.GetResourceString("PlatformNotSupported_WinRT"));
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_WinRT);
             }
 
             Exception e = null;
@@ -1722,7 +1722,7 @@ namespace System.StubHelpers
         {
             if (length > 0x7ffffff0)
             {
-                throw new MarshalDirectiveException(Environment.GetResourceString("Marshaler_StringTooLong"));
+                throw new MarshalDirectiveException(SR.Marshaler_StringTooLong);
             }
         }
 

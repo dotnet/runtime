@@ -66,7 +66,7 @@ namespace System
             Contract.EndContractBlock();
 
             if (type is System.Reflection.Emit.TypeBuilder)
-                throw new NotSupportedException(Environment.GetResourceString("NotSupported_CreateInstanceWithTypeBuilder"));
+                throw new NotSupportedException(SR.NotSupported_CreateInstanceWithTypeBuilder);
 
             // If they didn't specify a lookup, then we will provide the default lookup.
             if ((bindingAttr & (BindingFlags)LookupMask) == 0)
@@ -74,13 +74,13 @@ namespace System
 
             if (activationAttributes != null && activationAttributes.Length > 0)
             {
-                throw new PlatformNotSupportedException(Environment.GetResourceString("NotSupported_ActivAttr"));
+                throw new PlatformNotSupportedException(SR.NotSupported_ActivAttr);
             }
 
             RuntimeType rt = type.UnderlyingSystemType as RuntimeType;
 
             if (rt == null)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), nameof(type));
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(type));
 
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return rt.CreateInstanceImpl(bindingAttr, binder, args, culture, activationAttributes, ref stackMark);
@@ -164,7 +164,7 @@ namespace System
             RuntimeType rt = type.UnderlyingSystemType as RuntimeType;
 
             if (rt == null)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"), nameof(type));
+                throw new ArgumentException(SR.Arg_MustBeType, nameof(type));
 
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return rt.CreateInstanceDefaultCtor(!nonPublic, false, true, ref stackMark);
@@ -178,7 +178,7 @@ namespace System
             // This is a workaround to maintain compatibility with V2. Without this we would throw a NotSupportedException for void[].
             // Array, Ref, and Pointer types don't have default constructors.
             if (rt.HasElementType)
-                throw new MissingMethodException(Environment.GetResourceString("Arg_NoDefCTor"));
+                throw new MissingMethodException(SR.Arg_NoDefCTor);
 
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
 
@@ -371,7 +371,7 @@ namespace System
             if (Attr.Length > 0)
             {
                 if (((ComVisibleAttribute)Attr[0]).Value == false)
-                    throw new TypeLoadException(Environment.GetResourceString("Argument_TypeMustBeVisibleFromCom"));
+                    throw new TypeLoadException(SR.Argument_TypeMustBeVisibleFromCom);
             }
 
             Log(assembly != null, "CreateInstance:: ", "Loaded " + assembly.FullName, "Failed to Load: " + assemblyName);

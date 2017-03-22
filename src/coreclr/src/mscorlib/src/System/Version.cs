@@ -38,16 +38,16 @@ namespace System
         public Version(int major, int minor, int build, int revision)
         {
             if (major < 0)
-                throw new ArgumentOutOfRangeException(nameof(major), Environment.GetResourceString("ArgumentOutOfRange_Version"));
+                throw new ArgumentOutOfRangeException(nameof(major), SR.ArgumentOutOfRange_Version);
 
             if (minor < 0)
-                throw new ArgumentOutOfRangeException(nameof(minor), Environment.GetResourceString("ArgumentOutOfRange_Version"));
+                throw new ArgumentOutOfRangeException(nameof(minor), SR.ArgumentOutOfRange_Version);
 
             if (build < 0)
-                throw new ArgumentOutOfRangeException(nameof(build), Environment.GetResourceString("ArgumentOutOfRange_Version"));
+                throw new ArgumentOutOfRangeException(nameof(build), SR.ArgumentOutOfRange_Version);
 
             if (revision < 0)
-                throw new ArgumentOutOfRangeException(nameof(revision), Environment.GetResourceString("ArgumentOutOfRange_Version"));
+                throw new ArgumentOutOfRangeException(nameof(revision), SR.ArgumentOutOfRange_Version);
             Contract.EndContractBlock();
 
             _Major = major;
@@ -59,13 +59,13 @@ namespace System
         public Version(int major, int minor, int build)
         {
             if (major < 0)
-                throw new ArgumentOutOfRangeException(nameof(major), Environment.GetResourceString("ArgumentOutOfRange_Version"));
+                throw new ArgumentOutOfRangeException(nameof(major), SR.ArgumentOutOfRange_Version);
 
             if (minor < 0)
-                throw new ArgumentOutOfRangeException(nameof(minor), Environment.GetResourceString("ArgumentOutOfRange_Version"));
+                throw new ArgumentOutOfRangeException(nameof(minor), SR.ArgumentOutOfRange_Version);
 
             if (build < 0)
-                throw new ArgumentOutOfRangeException(nameof(build), Environment.GetResourceString("ArgumentOutOfRange_Version"));
+                throw new ArgumentOutOfRangeException(nameof(build), SR.ArgumentOutOfRange_Version);
 
             Contract.EndContractBlock();
 
@@ -77,10 +77,10 @@ namespace System
         public Version(int major, int minor)
         {
             if (major < 0)
-                throw new ArgumentOutOfRangeException(nameof(major), Environment.GetResourceString("ArgumentOutOfRange_Version"));
+                throw new ArgumentOutOfRangeException(nameof(major), SR.ArgumentOutOfRange_Version);
 
             if (minor < 0)
-                throw new ArgumentOutOfRangeException(nameof(minor), Environment.GetResourceString("ArgumentOutOfRange_Version"));
+                throw new ArgumentOutOfRangeException(nameof(minor), SR.ArgumentOutOfRange_Version);
             Contract.EndContractBlock();
 
             _Major = major;
@@ -158,7 +158,7 @@ namespace System
             Version v = version as Version;
             if (v == null)
             {
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeVersion"));
+                throw new ArgumentException(SR.Arg_MustBeVersion);
             }
 
             return CompareTo(v);
@@ -230,7 +230,7 @@ namespace System
                     return StringBuilderCache.GetStringAndRelease(sb);
                 default:
                     if (_Build == -1)
-                        throw new ArgumentException(Environment.GetResourceString("ArgumentOutOfRange_Bounds_Lower_Upper", "0", "2"), nameof(fieldCount));
+                        throw new ArgumentException(SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, "0", "2"), nameof(fieldCount));
 
                     if (fieldCount == 3)
                     {
@@ -244,7 +244,7 @@ namespace System
                     }
 
                     if (_Revision == -1)
-                        throw new ArgumentException(Environment.GetResourceString("ArgumentOutOfRange_Bounds_Lower_Upper", "0", "3"), nameof(fieldCount));
+                        throw new ArgumentException(SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, "0", "3"), nameof(fieldCount));
 
                     if (fieldCount == 4)
                     {
@@ -259,7 +259,7 @@ namespace System
                         return StringBuilderCache.GetStringAndRelease(sb);
                     }
 
-                    throw new ArgumentException(Environment.GetResourceString("ArgumentOutOfRange_Bounds_Lower_Upper", "0", "4"), nameof(fieldCount));
+                    throw new ArgumentException(SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, "0", "4"), nameof(fieldCount));
             }
         }
 
@@ -476,9 +476,9 @@ namespace System
                     case ParseFailureKind.ArgumentNullException:
                         return new ArgumentNullException(m_argumentName);
                     case ParseFailureKind.ArgumentException:
-                        return new ArgumentException(Environment.GetResourceString("Arg_VersionString"));
+                        return new ArgumentException(SR.Arg_VersionString);
                     case ParseFailureKind.ArgumentOutOfRangeException:
-                        return new ArgumentOutOfRangeException(m_exceptionArgument, Environment.GetResourceString("ArgumentOutOfRange_Version"));
+                        return new ArgumentOutOfRangeException(m_exceptionArgument, SR.ArgumentOutOfRange_Version);
                     case ParseFailureKind.FormatException:
                         // Regenerate the FormatException as would be thrown by Int32.Parse()
                         try
@@ -494,10 +494,10 @@ namespace System
                             return e;
                         }
                         Debug.Assert(false, "Int32.Parse() did not throw exception but TryParse failed: " + m_exceptionArgument);
-                        return new FormatException(Environment.GetResourceString("Format_InvalidString"));
+                        return new FormatException(SR.Format_InvalidString);
                     default:
                         Debug.Assert(false, "Unmatched case in Version.GetVersionParseException() for value: " + m_failure);
-                        return new ArgumentException(Environment.GetResourceString("Arg_VersionString"));
+                        return new ArgumentException(SR.Arg_VersionString);
                 }
             }
         }

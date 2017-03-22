@@ -283,7 +283,7 @@ namespace System.Diagnostics
         {
             if (skipFrames < 0)
                 throw new ArgumentOutOfRangeException(nameof(skipFrames),
-                    Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                    SR.ArgumentOutOfRange_NeedNonNegNum);
             Contract.EndContractBlock();
 
             m_iNumOfFrames = 0;
@@ -299,7 +299,7 @@ namespace System.Diagnostics
         {
             if (skipFrames < 0)
                 throw new ArgumentOutOfRangeException(nameof(skipFrames),
-                    Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                    SR.ArgumentOutOfRange_NeedNonNegNum);
             Contract.EndContractBlock();
 
             m_iNumOfFrames = 0;
@@ -344,7 +344,7 @@ namespace System.Diagnostics
 
             if (skipFrames < 0)
                 throw new ArgumentOutOfRangeException(nameof(skipFrames),
-                    Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                    SR.ArgumentOutOfRange_NeedNonNegNum);
             Contract.EndContractBlock();
 
             m_iNumOfFrames = 0;
@@ -363,7 +363,7 @@ namespace System.Diagnostics
 
             if (skipFrames < 0)
                 throw new ArgumentOutOfRangeException(nameof(skipFrames),
-                    Environment.GetResourceString("ArgumentOutOfRange_NeedNonNegNum"));
+                    SR.ArgumentOutOfRange_NeedNonNegNum);
             Contract.EndContractBlock();
 
             m_iNumOfFrames = 0;
@@ -539,8 +539,8 @@ namespace System.Diagnostics
 
             if (traceFormat != TraceFormat.NoResourceLookup)
             {
-                word_At = Environment.GetResourceString("Word_At");
-                inFileLineNum = Environment.GetResourceString("StackTrace_InFileLineNumber");
+                word_At = SR.Word_At;
+                inFileLineNum = SR.StackTrace_InFileLineNumber;
             }
 
             bool fFirstFrame = true;
@@ -658,7 +658,7 @@ namespace System.Diagnostics
                     if (sf.GetIsLastFrameFromForeignExceptionStackTrace())
                     {
                         sb.Append(Environment.NewLine);
-                        sb.Append(Environment.GetResourceString("Exception_EndStackTraceFromPreviousThrow"));
+                        sb.Append(SR.Exception_EndStackTraceFromPreviousThrow);
                     }
                 }
             }

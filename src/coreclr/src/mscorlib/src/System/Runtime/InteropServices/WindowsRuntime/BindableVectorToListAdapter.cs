@@ -60,7 +60,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             uint size = _this.Size;
             if (((uint)Int32.MaxValue) < size)
             {
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_CollectionBackingListTooLarge"));
+                throw new InvalidOperationException(SR.InvalidOperation_CollectionBackingListTooLarge);
             }
 
             return (int)(size - 1);
@@ -109,7 +109,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             if (((uint)Int32.MaxValue) < index)
             {
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_CollectionBackingListTooLarge"));
+                throw new InvalidOperationException(SR.InvalidOperation_CollectionBackingListTooLarge);
             }
 
             return (int)index;
@@ -137,7 +137,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             {
                 if (((uint)Int32.MaxValue) < index)
                 {
-                    throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_CollectionBackingListTooLarge"));
+                    throw new InvalidOperationException(SR.InvalidOperation_CollectionBackingListTooLarge);
                 }
 
                 RemoveAtHelper(_this, index);

@@ -20,7 +20,7 @@ namespace System.Runtime.InteropServices
     public class SafeArrayRankMismatchException : SystemException
     {
         public SafeArrayRankMismatchException()
-            : base(Environment.GetResourceString("Arg_SafeArrayRankMismatchException"))
+            : base(SR.Arg_SafeArrayRankMismatchException)
         {
             SetErrorCode(__HResults.COR_E_SAFEARRAYRANKMISMATCH);
         }

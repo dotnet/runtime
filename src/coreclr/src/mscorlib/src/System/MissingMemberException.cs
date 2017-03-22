@@ -26,7 +26,7 @@ namespace System
     public class MissingMemberException : MemberAccessException, ISerializable
     {
         public MissingMemberException()
-            : base(Environment.GetResourceString("Arg_MissingMemberException"))
+            : base(SR.Arg_MissingMemberException)
         {
             SetErrorCode(__HResults.COR_E_MISSINGMEMBER);
         }
@@ -61,9 +61,7 @@ namespace System
                 else
                 {
                     // do any desired fixups to classname here.
-                    return Environment.GetResourceString("MissingMember_Name",
-                                                                       ClassName + "." + MemberName +
-                                                                       (Signature != null ? " " + FormatSignature(Signature) : ""));
+                    return SR.Format(SR.MissingMember_Name, ClassName + "." + MemberName + (Signature != null ? " " + FormatSignature(Signature) : ""));
                 }
             }
         }

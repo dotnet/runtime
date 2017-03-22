@@ -51,7 +51,7 @@ namespace System
                 if (m_value > i) return 1;
                 return 0;
             }
-            throw new ArgumentException(Environment.GetResourceString("Arg_MustBeInt32"));
+            throw new ArgumentException(SR.Arg_MustBeInt32);
         }
 
         public int CompareTo(int value)
@@ -256,7 +256,7 @@ namespace System
         /// <internalonly/>
         DateTime IConvertible.ToDateTime(IFormatProvider provider)
         {
-            throw new InvalidCastException(Environment.GetResourceString("InvalidCast_FromTo", "Int32", "DateTime"));
+            throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, "Int32", "DateTime"));
         }
 
         /// <internalonly/>
