@@ -20,9 +20,9 @@ namespace System.Runtime.Serialization
         private delegate object CollectionReadItemDelegate(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, CollectionDataContract collectionContract, Type itemType, string itemName, string itemNs);
         private delegate object CollectionSetItemDelegate(object resultCollection, object collectionItem, int itemIndex);
 
-        private static readonly MethodInfo s_getCollectionSetItemDelegateMethod = typeof(ReflectionReader).GetMethod(nameof(GetCollectionSetItemDelegate), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
-        private static readonly MethodInfo s_objectToKeyValuePairGetKey = typeof(ReflectionReader).GetMethod(nameof(ObjectToKeyValuePairGetKey), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
-        private static readonly MethodInfo s_objectToKeyValuePairGetValue = typeof(ReflectionReader).GetMethod(nameof(ObjectToKeyValuePairGetValue), BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
+        private static readonly MethodInfo s_getCollectionSetItemDelegateMethod = typeof(ReflectionReader).GetTypeInfo().GetDeclaredMethod(nameof(GetCollectionSetItemDelegate));
+        private static readonly MethodInfo s_objectToKeyValuePairGetKey = typeof(ReflectionReader).GetTypeInfo().GetDeclaredMethod(nameof(ObjectToKeyValuePairGetKey));
+        private static readonly MethodInfo s_objectToKeyValuePairGetValue = typeof(ReflectionReader).GetTypeInfo().GetDeclaredMethod(nameof(ObjectToKeyValuePairGetValue));
 
         private static readonly Type[] s_arrayConstructorParameters = new Type[] { Globals.TypeOfInt };
         private static readonly object[] s_arrayConstructorArguments = new object[] { 32 };
