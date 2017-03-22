@@ -16,6 +16,7 @@
 #include <glib.h>
 
 #include <mono/metadata/object.h>
+#include "mono/metadata/handle.h"
 #include "mono/utils/mono-compiler.h"
 #include "mono/utils/mono-membar.h"
 #include "mono/utils/mono-threads.h"
@@ -177,8 +178,13 @@ void ves_icall_System_Threading_Thread_MemoryBarrier (void);
 void ves_icall_System_Threading_Thread_Interrupt_internal (MonoThread *this_obj);
 void ves_icall_System_Threading_Thread_SpinWait_nop (void);
 
-void ves_icall_System_Runtime_Remoting_Contexts_Context_RegisterContext (MonoAppContext *ctx);
-void ves_icall_System_Runtime_Remoting_Contexts_Context_ReleaseContext (MonoAppContext *ctx);
+void
+mono_threads_register_app_context (MonoAppContext* ctx, MonoError *error);
+void
+mono_threads_release_app_context (MonoAppContext* ctx, MonoError *error);
+
+void ves_icall_System_Runtime_Remoting_Contexts_Context_RegisterContext (MonoAppContextHandle ctx, MonoError *error);
+void ves_icall_System_Runtime_Remoting_Contexts_Context_ReleaseContext (MonoAppContextHandle ctx, MonoError *error);
 
 MonoInternalThread *mono_thread_internal_current (void);
 

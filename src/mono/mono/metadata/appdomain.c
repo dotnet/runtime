@@ -397,7 +397,8 @@ mono_context_init_checked (MonoDomain *domain, MonoError *error)
 
 	context->domain_id = domain->domain_id;
 	context->context_id = 0;
-	ves_icall_System_Runtime_Remoting_Contexts_Context_RegisterContext (context);
+	mono_threads_register_app_context (context, error);
+	mono_error_assert_ok (error);
 	domain->default_context = context;
 }
 
