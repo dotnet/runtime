@@ -2810,7 +2810,7 @@ namespace System
                     for (int j = 1; j < candidates.Count; j++)
                     {
                         MethodInfo methodInfo = candidates[j];
-                        if (!System.DefaultBinder.CompareMethodSigAndName(methodInfo, firstCandidate))
+                        if (!System.DefaultBinder.CompareMethodSig(methodInfo, firstCandidate))
                         {
                             throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
                         }
