@@ -18521,7 +18521,14 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
         // the time of jitting, objClass has no subclasses that
         // override this method), then perhaps we'd be willing to
         // make a bet...?
-        JITDUMP("    Class NOT final or exact, no devirtualization\n");
+        JITDUMP("    Class not final or exact, method not final, no devirtualization\n");
+        return;
+    }
+
+    // For interface calls we must have an exact type or final class.
+    if (isInterface && !isExact && !objClassIsFinal)
+    {
+        JITDUMP("    Class not final or exact for interface, no devirtualization\n");
         return;
     }
 
