@@ -61,14 +61,15 @@
       "displayName": "Start detached container",
       "timeoutInMinutes": 0,
       "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "1.*",
+        "id": "6c731c3c-3c68-459a-a5c9-bde6e6595b5b",
+        "versionSpec": "2.*",
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "docker",
-        "arguments": "run --privileged -d -w $(PB_GitDirectory) -v $(System.DefaultWorkingDirectory)/$(PB_RepoName):$(PB_GitDirectory) --name $(PB_DockerContainerName) $(PB_DockerImageName) sleep 7200",
-        "workingFolder": "",
+        "scriptPath": "$(PB_RepoName)/scripts/docker-as-current-user.sh",
+        "args": "run --privileged -d -w $(PB_GitDirectory) -v $(System.DefaultWorkingDirectory)/$(PB_RepoName):$(PB_GitDirectory) --name $(PB_DockerContainerName) $(PB_DockerImageName) sleep 7200",
+        "disableAutoCwd": "false",
+        "cwd": "",
         "failOnStandardError": "false"
       }
     },
@@ -76,17 +77,18 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Run Build",
+      "displayName": "Exec build",
       "timeoutInMinutes": 0,
       "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "1.*",
+        "id": "6c731c3c-3c68-459a-a5c9-bde6e6595b5b",
+        "versionSpec": "2.*",
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "docker",
-        "arguments": "exec --privileged -e ROOTFS_DIR -e PUBLISH_TO_AZURE_BLOB -e CONNECTION_STRING -e CLI_NUGET_FEED_URL -e CLI_NUGET_API_KEY -e NUGET_FEED_URL -e NUGET_API_KEY -e GITHUB_PASSWORD $(PB_DockerContainerName) $(PB_GitDirectory)/build.sh $(CommonArguments) $(BuildArguments) $(portableLinux) --env-vars \"DISABLE_CROSSGEN=1,TARGETPLATFORM=$(PB_Architecture),TARGETRID=$(TargetRid),CROSS=1\"",
-        "workingFolder": "",
+        "scriptPath": "$(PB_RepoName)/scripts/docker-as-current-user.sh",
+        "args": "exec --privileged -e HOME -e ROOTFS_DIR -e PUBLISH_TO_AZURE_BLOB -e CONNECTION_STRING -e CLI_NUGET_FEED_URL -e CLI_NUGET_API_KEY -e NUGET_FEED_URL -e NUGET_API_KEY -e GITHUB_PASSWORD $(PB_DockerContainerName) $(PB_GitDirectory)/build.sh $(CommonArguments) $(BuildArguments) $(portableLinux) --env-vars \"DISABLE_CROSSGEN=1,TARGETPLATFORM=$(PB_Architecture),TARGETRID=$(TargetRid),CROSS=1\"",
+        "disableAutoCwd": "false",
+        "cwd": "",
         "failOnStandardError": "false"
       }
     },
@@ -247,7 +249,7 @@
       "value": "core-setup"
     },
     "PB_GitDirectory": {
-      "value": "/root/core-setup"
+      "value": "/opt/code/core-setup"
     },
     "PB_DockerContainerName": {
       "value": "$(Build.BuildId)"
