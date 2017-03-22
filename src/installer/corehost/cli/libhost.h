@@ -228,10 +228,8 @@ struct hostpolicy_init_t
             make_clrstr_arr(input->config_values.len, input->config_values.arr, &init->cfg_values);
 
             init->fx_dir = input->fx_dir;
-            init->fx_ver = input->fx_ver;
             init->fx_name = input->fx_name;
             init->deps_file = input->deps_file;
-            init->additional_deps_serialized = input->additional_deps_serialized;
             init->is_portable = input->is_portable;
 
             make_palstr_arr(input->probe_paths.len, input->probe_paths.arr, &init->probe_paths);
@@ -246,11 +244,17 @@ struct hostpolicy_init_t
                 offsetof(host_interface_t, host_mode) + sizeof(input->host_mode));
         }
 
-		//An old hostfxr before we added TFM struct field, will not provide it. 
-		//The version_lo (sizeof) the old hostfxr saw at build time would be smaller and we should not attempt to read tfm in that case.
+        //An old hostfxr may not provide these fields.
+        //The version_lo (sizeof) the old hostfxr saw at build time will be
+        //smaller and we should not attempt to read the fields in that case.
         if (input->version_lo >= offsetof(host_interface_t, tfm) + sizeof(input->tfm))
         {
             init->tfm = input->tfm;
+        }
+        if (input->version_lo >= offsetof(host_interface_t, fx_ver) + sizeof(input->fx_ver))
+        {
+            init->additional_deps_serialized = input->additional_deps_serialized;
+            init->fx_ver = input->fx_ver;
         }
 
         return true;
