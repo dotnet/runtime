@@ -26,8 +26,7 @@ def static getOSGroup(def os) {
         'FreeBSD':'FreeBSD',
         'CentOS7.1': 'Linux',
         'OpenSUSE42.1': 'Linux',
-        'Tizen': 'Linux',
-        'LinuxARMEmulator': 'Linux']
+        'Tizen': 'Linux']
     def osGroup = osGroupMap.get(os, null)
     assert osGroup != null : "Could not find os group for ${os}"
     return osGroupMap[os]
@@ -50,7 +49,6 @@ class Constants {
                'CentOS7.1',
                'OpenSUSE42.1',
                'RHEL7.2',
-               'LinuxARMEmulator',
                'Ubuntu16.04',
                'Ubuntu16.10',
                'Tizen',
@@ -305,7 +303,7 @@ def static genStressModeScriptStep(def os, def stressModeName, def stressModeVar
 
 // Calculates the name of the build job based on some typical parameters.
 //
-def static getJobName(def configuration, def architecture, def os, def scenario, def isBuildOnly, def isLinuxEmulatorBuild = false) {
+def static getJobName(def configuration, def architecture, def os, def scenario, def isBuildOnly) {
     // If the architecture is x64, do not add that info into the build name.
     // Need to change around some systems and other builds to pick up the right builds
     // to do that.
@@ -331,26 +329,16 @@ def static getJobName(def configuration, def architecture, def os, def scenario,
             break
         case 'arm64':
             // These are cross builds
-            if (isLinuxEmulatorBuild == false) {
-                baseName = architecture.toLowerCase() + '_cross_' + configuration.toLowerCase() + '_' + os.toLowerCase()
-            }
-            else {
-                baseName = architecture.toLowerCase() + '_emulator_cross_' + configuration.toLowerCase() + '_' + os.toLowerCase()
-            }
+            baseName = architecture.toLowerCase() + '_cross_' + configuration.toLowerCase() + '_' + os.toLowerCase()
             break
         case 'arm':
             // These are cross builds
-            if (isLinuxEmulatorBuild == false) {
-                if (os == 'Tizen') {
-                    // ABI: softfp
-                    baseName = 'armel_cross_' + configuration.toLowerCase() + '_' + os.toLowerCase()
-                }
-                else {
-                    baseName = architecture.toLowerCase() + '_cross_' + configuration.toLowerCase() + '_' + os.toLowerCase()
-                }
+            if (os == 'Tizen') {
+                // ABI: softfp
+                baseName = 'armel_cross_' + configuration.toLowerCase() + '_' + os.toLowerCase()
             }
             else {
-                baseName = architecture.toLowerCase() + '_emulator_cross_' + configuration.toLowerCase() + '_' + os.toLowerCase()
+                baseName = architecture.toLowerCase() + '_cross_' + configuration.toLowerCase() + '_' + os.toLowerCase()
             }
             break
         case 'x86':
@@ -368,7 +356,7 @@ def static getJobName(def configuration, def architecture, def os, def scenario,
     return baseName + suffix
 }
 
-def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def os, def configuration, def scenario, def isFlowJob, def isWindowsBuildOnlyJob, def isLinuxEmulatorBuild, def bidailyCrossList) {
+def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def os, def configuration, def scenario, def isFlowJob, def isWindowsBuildOnlyJob, def bidailyCrossList) {
     // Check scenario.
     switch (scenario) {
         case 'default':
@@ -643,7 +631,7 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
 // flow job that rolls up the build and test for non-windows OS's.  // If the job is a windows build only job,
 // it's just used for internal builds
 // If you add a job with a trigger phrase, please add that phrase to coreclr/Documentation/project-docs/ci-trigger-phrases.md
-def static addTriggers(def job, def branch, def isPR, def architecture, def os, def configuration, def scenario, def isFlowJob, def isWindowsBuildOnlyJob, def isLinuxEmulatorBuild) {
+def static addTriggers(def job, def branch, def isPR, def architecture, def os, def configuration, def scenario, def isFlowJob, def isWindowsBuildOnlyJob) {
     if (isWindowsBuildOnlyJob) {
         return
     }
@@ -651,7 +639,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
     def bidailyCrossList = ['RHEL7.2', 'Debian8.4']
     // Non pull request builds.
     if (!isPR) {
-        addNonPRTriggers(job, branch, isPR, architecture, os, configuration, scenario, isFlowJob, isWindowsBuildOnlyJob, isLinuxEmulatorBuild, bidailyCrossList)
+        addNonPRTriggers(job, branch, isPR, architecture, os, configuration, scenario, isFlowJob, isWindowsBuildOnlyJob, bidailyCrossList)
         return
     }
     // Pull request builds.  Generally these fall into two categories: default triggers and on-demand triggers
@@ -688,8 +676,13 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                         Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Pri 1 Build & Test", "(?i).*test\\W+${os}\\W+${scenario}.*")
                     }
                     break
-                case 'Fedora23':
                 case 'Ubuntu16.04':
+                    assert !isFlowJob
+                    assert scenario == 'default'
+                    // Distinguish with the other architectures (arm and x86)
+                    Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration} Build", "(?i).*test\\W+${os}\\W+${architecture}.*")
+                    break
+                case 'Fedora23':
                 case 'Ubuntu16.10':
                 case 'OpenSUSE42.1':
                     assert !isFlowJob
@@ -1021,22 +1014,23 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
             assert scenario == 'default'
             switch (os) {
                 case 'Ubuntu':
-                    if (isLinuxEmulatorBuild == false) {
-                        // Removing the regex will cause this to run on each PR.
-                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build", "(?i).*test\\W+Ubuntu\\W+arm\\W+cross\\W+${configuration}.*")
+                case 'Ubuntu16.04':
+                    if ((os == 'Ubuntu' && configuration == 'Release') || (os == 'Ubuntu16.04' && configuration == 'Debug')) {
+                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build")
                     }
                     else {
-                        Utilities.addGithubPRTriggerForBranch(job, branch, "Linux ARM Emulator Cross ${configuration} Build")
+                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build", "(?i).*test\\W+${os}\\W+${architecture}\\W+Cross\\W+${configuration}\\W+Build.*")
                     }
-                    break
-                case 'Ubuntu16.04':
-                    // Removing the regex will cause this to run on each PR.
-                    Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build", "(?i).*test\\W+Ubuntu16.04\\W+arm\\W+cross\\W+${configuration}.*")
                     break;
                 case 'Tizen':
                     architecture='armel'
                     // Removing the regex will cause this to run on each PR.
-                    Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build", "(?i).*test\\W+Tizen\\W+armel\\W+cross\\W+${configuration}.*")
+                    if (configuration == 'Release' || configuration == 'Debug') {
+                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build")
+                    }
+                    else {
+                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build", "(?i).*test\\W+${os}\\W+${architecture}\\W+Cross\\W+${configuration}\\W+Build.*")
+                    }
                     break;
                 case 'Windows_NT':
                     if (configuration == 'Debug' || configuration == 'Release')
@@ -1412,7 +1406,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
     }
 }
 
-def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR, def architecture, def configuration, def os, def enableCorefxTesting, def isBuildOnly, def isLinuxEmulatorBuild) {
+def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR, def architecture, def configuration, def os, def enableCorefxTesting, def isBuildOnly) {
     def buildCommands = [];
     def osGroup = getOSGroup(os)
     def lowerConfiguration = configuration.toLowerCase()
@@ -1770,73 +1764,40 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                     Utilities.addArchival(newJob, "bin/Product/**", "bin/Product/**/.nuget/**")
                     break
                 case 'arm':
-                    if (isLinuxEmulatorBuild == false) {
-                        // Cross builds for ARM runs on Ubuntu, Ubuntu16.04 and Tizen currently
-                        assert (os == 'Ubuntu') || (os == 'Ubuntu16.04') || (os == 'Tizen')
+                    // Cross builds for ARM runs on Ubuntu, Ubuntu16.04 and Tizen currently
+                    assert (os == 'Ubuntu') || (os == 'Ubuntu16.04') || (os == 'Tizen')
 
-                        // default values for Ubuntu
-                        def arm_abi="arm"
-                        def linuxCodeName="trusty"
-                        if (os == 'Ubuntu16.04') {
-                            linuxCodeName="xenial"
-                        }
-                        else if (os == 'Tizen') {
-                            arm_abi="armel"
-                            linuxCodeName="tizen"
-                        }
-
-                        // Unzip the Windows test binaries first. Exit with 0
-                        buildCommands += "unzip -q -o ./bin/tests/tests.zip -d ./bin/tests/Windows_NT.x64.${configuration} || exit 0"
-
-                        // Unpack the corefx binaries
-                        buildCommands += "mkdir ./bin/CoreFxBinDir"
-                        buildCommands += "tar -xf ./bin/build.tar.gz -C ./bin/CoreFxBinDir"
-
-                        // Call the ARM CI script to cross build and test using docker
-                        buildCommands += """./tests/scripts/arm32_ci_script.sh \\
-                        --mode=docker \\
-                        --${arm_abi} \\
-                        --linuxCodeName=${linuxCodeName} \\
-                        --buildConfig=${lowerConfiguration} \\
-                        --testRootDir=./bin/tests/Windows_NT.x64.${configuration} \\
-                        --coreFxBinDir=./bin/CoreFxBinDir \\
-                        --testDirFile=./tests/testsRunningInsideARM.txt"""
-
-                        // Basic archiving of the build, no pal tests
-                        Utilities.addArchival(newJob, "bin/Product/**", "bin/Product/**/.nuget/**")
-                        break
+                    // default values for Ubuntu
+                    def arm_abi="arm"
+                    def linuxCodeName="trusty"
+                    if (os == 'Ubuntu16.04') {
+                        linuxCodeName="xenial"
                     }
-                    else {
-                        assert os == 'Ubuntu'
-                        // Make sure the build configuration is either of debug or release
-                        assert ( lowerConfiguration == 'debug' ) || ( lowerConfiguration == 'release' )
-
-                        // Setup variables to hold emulator folder path and the rootfs mount path
-                        def armemul_path = '/opt/linux-arm-emulator'
-                        def armrootfs_mountpath = '/opt/linux-arm-emulator-root'
-
-                        // Unzip the Windows test binaries first. Exit with 0
-                        buildCommands += "unzip -q -o ./bin/tests/tests.zip -d ./bin/tests/Windows_NT.x64.${configuration} || exit 0"
-
-                        // Unpack the corefx binaries
-                        buildCommands += "mkdir ./bin/CoreFxBinDir"
-                        buildCommands += "tar -xf ./bin/build.tar.gz -C ./bin/CoreFxBinDir"
-
-                        // Call the ARM emulator build script to cross build and test using the ARM emulator rootfs
-                        buildCommands += """./tests/scripts/arm32_ci_script.sh \\
-                        --emulatorPath=${armemul_path} \\
-                        --mountPath=${armrootfs_mountpath} \\
-                        --buildConfig=${lowerConfiguration} \\
-                        --testRootDir=./bin/tests/Windows_NT.x64.${configuration} \\
-                        --coreFxNativeBinDir=./bin/Linux.armel.${configuration} \\
-                        --coreFxBinDir=\"./bin/Linux.AnyCPU.${configuration};./bin/Unix.AnyCPU.${configuration};./bin/AnyOS.AnyCPU.${configuration}\" \\
-                        --testDirFile=./tests/testsRunningInsideARM.txt"""
-
-
-                        // Basic archiving of the build
-                        Utilities.addArchival(newJob, "bin/Product/**", "bin/Product/**/.nuget/**")
-                        break
+                    else if (os == 'Tizen') {
+                        arm_abi="armel"
+                        linuxCodeName="tizen"
                     }
+
+                    // Unzip the Windows test binaries first. Exit with 0
+                    buildCommands += "unzip -q -o ./bin/tests/tests.zip -d ./bin/tests/Windows_NT.x64.${configuration} || exit 0"
+
+                    // Unpack the corefx binaries
+                    buildCommands += "mkdir ./bin/CoreFxBinDir"
+                    buildCommands += "tar -xf ./bin/build.tar.gz -C ./bin/CoreFxBinDir"
+
+                    // Call the ARM CI script to cross build and test using docker
+                    buildCommands += """./tests/scripts/arm32_ci_script.sh \\
+                    --mode=docker \\
+                    --${arm_abi} \\
+                    --linuxCodeName=${linuxCodeName} \\
+                    --buildConfig=${lowerConfiguration} \\
+                    --testRootDir=./bin/tests/Windows_NT.x64.${configuration} \\
+                    --coreFxBinDir=./bin/CoreFxBinDir \\
+                    --testDirFile=./tests/testsRunningInsideARM.txt"""
+
+                    // Basic archiving of the build, no pal tests
+                    Utilities.addArchival(newJob, "bin/Product/**", "bin/Product/**/.nuget/**")
+                    break
                 default:
                     println("Unknown architecture: ${architecture}");
                     assert false
@@ -1876,23 +1837,6 @@ combinedScenarios.each { scenario ->
                         {
                             return
                         }
-                    }
-                    // If the OS is LinuxARMEmulator and arch is arm, set the isLinuxEmulatorBuild
-                    // flag to true and reset the os to Ubuntu
-                    // The isLinuxEmulatorBuild flag will be used at a later time to execute the right
-                    // set of build commands
-                    // The tuples (LinuxARMEmulator, other architectures) are not handled and control returns
-                    def isLinuxEmulatorBuild = false
-                    if (os == 'LinuxARMEmulator' && architecture == 'arm') {
-                        // Cross Builds only in Debug and Release modes allowed
-                        if ( configuration == 'Checked' ) {
-                            return
-                        }
-
-                        isLinuxEmulatorBuild = true
-                        os = 'Ubuntu'
-                    } else if (os == 'LinuxARMEmulator') {
-                        return
                     }
                     // Tizen is only supported for arm architecture
                     if (os == 'Tizen' && architecture != 'arm') {
@@ -2136,7 +2080,7 @@ combinedScenarios.each { scenario ->
 
                     // Calculate names
                     def lowerConfiguration = configuration.toLowerCase()
-                    def jobName = getJobName(configuration, architecture, os, scenario, isBuildOnly, isLinuxEmulatorBuild)
+                    def jobName = getJobName(configuration, architecture, os, scenario, isBuildOnly)
                     def folderName = getJobFolder(scenario)
 
                     // Create the new job
@@ -2146,9 +2090,9 @@ combinedScenarios.each { scenario ->
 
                     // Add all the standard options
                     Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
-                    addTriggers(newJob, branch, isPR, architecture, os, configuration, scenario, false, isBuildOnly, isLinuxEmulatorBuild)
+                    addTriggers(newJob, branch, isPR, architecture, os, configuration, scenario, false, isBuildOnly)
 
-                    def buildCommands = calculateBuildCommands(newJob, scenario, branch, isPR, architecture, configuration, os, enableCorefxTesting, isBuildOnly, isLinuxEmulatorBuild)
+                    def buildCommands = calculateBuildCommands(newJob, scenario, branch, isPR, architecture, configuration, os, enableCorefxTesting, isBuildOnly)
                     def osGroup = getOSGroup(os)
 
                     newJob.with {
@@ -2159,36 +2103,8 @@ combinedScenarios.each { scenario ->
                                 }
                             }
                             else {
-                                // Setup corefx and Windows test binaries for Linux ARM Emulator Build
-                                // and cross build for ubuntu-arm, ubuntu16.04-arm and tizen-armel
-                                if (isLinuxEmulatorBuild) {
-                                    // Define the Windows Tests and Corefx build job names
-                                    def WindowTestsName = projectFolder + '/' +
-                                                          Utilities.getFullJobName(project,
-                                                                                   getJobName(lowerConfiguration,
-                                                                                              'x64' ,
-                                                                                              'windows_nt',
-                                                                                              'default',
-                                                                                              true),
-                                                                                   false)
-                                    def corefxFolder = Utilities.getFolderName('dotnet/corefx') + '/' +
-                                                       Utilities.getFolderName(branch)
-
-                                    // Copy the Windows test binaries and the Corefx build binaries
-                                    copyArtifacts(WindowTestsName) {
-                                        excludePatterns('**/testResults.xml', '**/*.ni.dll')
-                                        buildSelector {
-                                            latestSuccessful(true)
-                                        }
-                                    }
-                                    copyArtifacts("${corefxFolder}/tizen_armel_cross_${lowerConfiguration}") {
-                                        includePatterns('bin/build.tar.gz')
-                                        buildSelector {
-                                            latestSuccessful(true)
-                                        }
-                                    }
-                                }
-                                else if ( architecture == 'arm' && ( os == 'Ubuntu' || os == 'Ubuntu16.04' || os == 'Tizen')) {
+                                // Setup corefx and Windows test binaries for Linux cross build for ubuntu-arm, ubuntu16.04-arm and tizen-armel
+                                if ( architecture == 'arm' && ( os == 'Ubuntu' || os == 'Ubuntu16.04' || os == 'Tizen')) {
                                     // Cross build for ubuntu-arm, ubuntu16.04-arm and tizen-armel
                                     // Define the Windows Tests and Corefx build job names
                                     def WindowTestsName = projectFolder + '/' +
@@ -2734,7 +2650,7 @@ build(params + [CORECLR_BUILD: coreclrBuildJob.build.number,
 
                     setMachineAffinity(newFlowJob, os, architecture)
                     Utilities.standardJobSetup(newFlowJob, project, isPR, "*/${branch}")
-                    addTriggers(newFlowJob, branch, isPR, architecture, os, configuration, scenario, true, false, false)
+                    addTriggers(newFlowJob, branch, isPR, architecture, os, configuration, scenario, true, false)
                 } // configuration
             } // os
         } // architecture
