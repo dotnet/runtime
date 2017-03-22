@@ -28,6 +28,7 @@
       <GenFacadesArgs>$(GenFacadesArgs) -facadePath:"$(GenFacadesOutputPath)"</GenFacadesArgs>
       <GenFacadesArgs>$(GenFacadesArgs) -producePdb:false</GenFacadesArgs>
       <GenFacadesArgs>$(GenFacadesArgs) -assemblyFileVersion:$(AssemblyFileVersion)</GenFacadesArgs>
+      <GenFacadesArgs>$(GenFacadesArgs) -forceZeroVersionSeeds</GenFacadesArgs>
       <!-- TODO: We should remove this flag once we have all the types for netstandard -->
       <GenFacadesArgs>$(GenFacadesArgs) -ignoreMissingTypes</GenFacadesArgs>
     </PropertyGroup>
