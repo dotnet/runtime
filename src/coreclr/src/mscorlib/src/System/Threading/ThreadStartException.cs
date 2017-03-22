@@ -14,13 +14,13 @@ namespace System.Threading
     public sealed class ThreadStartException : SystemException
     {
         private ThreadStartException()
-            : base(SR.Arg_ThreadStartException)
+            : base(Environment.GetResourceString("Arg_ThreadStartException"))
         {
             SetErrorCode(__HResults.COR_E_THREADSTART);
         }
 
         private ThreadStartException(Exception reason)
-            : base(SR.Arg_ThreadStartException, reason)
+            : base(Environment.GetResourceString("Arg_ThreadStartException"), reason)
         {
             SetErrorCode(__HResults.COR_E_THREADSTART);
         }

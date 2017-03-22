@@ -67,7 +67,7 @@ namespace System.Diagnostics
                     if (Debugger.Launch() == false)
                     {
                         throw new InvalidOperationException(
-                                SR.InvalidOperation_DebuggerLaunchFailed);
+                                Environment.GetResourceString("InvalidOperation_DebuggerLaunchFailed"));
                     }
                 }
             }

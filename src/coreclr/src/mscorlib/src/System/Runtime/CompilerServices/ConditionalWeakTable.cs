@@ -973,7 +973,7 @@ namespace System.Runtime.CompilerServices
             {
                 if (_invalid)
                 {
-                    throw new InvalidOperationException(SR.InvalidOperation_CollectionCorrupted);
+                    throw new InvalidOperationException(Environment.GetResourceString("CollectionCorrupted"));
                 }
             }
 
