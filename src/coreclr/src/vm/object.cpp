@@ -19,7 +19,6 @@
 #include "eeconfig.h"
 #include "gcheaputilities.h"
 #include "field.h"
-#include "gcscan.h"
 #include "argdestination.h"
 
 
@@ -1773,12 +1772,13 @@ VOID Object::ValidateInner(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncB
 
         lastTest = 7;
 
+        _ASSERTE(GCHeapUtilities::IsGCHeapInitialized());
         // try to validate next object's header
         if (bDeep 
             && bVerifyNextHeader 
-            && GCScan::GetGcRuntimeStructuresValid ()
+            && GCHeapUtilities::GetGCHeap()->RuntimeStructuresValid()
             //NextObj could be very slow if concurrent GC is going on
-            && !(GCHeapUtilities::IsGCHeapInitialized() && GCHeapUtilities::GetGCHeap ()->IsConcurrentGCInProgress ()))
+            && !GCHeapUtilities::GetGCHeap ()->IsConcurrentGCInProgress ())
         {
             Object * nextObj = GCHeapUtilities::GetGCHeap ()->NextObj (this);
             if ((nextObj != NULL) &&
