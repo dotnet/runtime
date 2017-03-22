@@ -31,10 +31,8 @@ namespace System.Net.Sockets
         private static readonly Int32TaskSocketAsyncEventArgs s_rentedSentinel = new Int32TaskSocketAsyncEventArgs();
         /// <summary>Cached task with a 0 value.</summary>
         private static readonly Task<int> s_zeroTask = Task.FromResult(0);
-        /// <summary>Cached SocketAsyncEventArgs for Task-based ReceiveAsync APIs.</summary>
-        private Int32TaskSocketAsyncEventArgs _cachedReceiveEventArgs;
-        /// <summary>Cached SocketAsyncEventArgs for Task-based SendAsync APIs.</summary>
-        private Int32TaskSocketAsyncEventArgs _cachedSendEventArgs;
+        /// <summary>Cached event args used with Task-based async operations.</summary>
+        private CachedEventArgs _cachedTaskEventArgs;
 
         internal Task<Socket> AcceptAsync(Socket acceptSocket)
         {
@@ -467,9 +465,10 @@ namespace System.Net.Sockets
         private Int32TaskSocketAsyncEventArgs RentSocketAsyncEventArgs(bool isReceive)
         {
             // Get any cached SocketAsyncEventArg we may have.
+            CachedEventArgs cea = LazyInitializer.EnsureInitialized(ref _cachedTaskEventArgs);
             Int32TaskSocketAsyncEventArgs saea = isReceive ?
-                Interlocked.Exchange(ref _cachedReceiveEventArgs, s_rentedSentinel) :
-                Interlocked.Exchange(ref _cachedSendEventArgs, s_rentedSentinel);
+                Interlocked.Exchange(ref cea.Receive, s_rentedSentinel) :
+                Interlocked.Exchange(ref cea.Send, s_rentedSentinel);
 
             if (saea == s_rentedSentinel)
             {
@@ -500,6 +499,7 @@ namespace System.Net.Sockets
         /// <param name="isReceive">true if this instance is used for receives; false if used for sends.</param>
         private void ReturnSocketAsyncEventArgs(Int32TaskSocketAsyncEventArgs saea, bool isReceive)
         {
+            Debug.Assert(_cachedTaskEventArgs != null, "Should have been initialized when renting");
             Debug.Assert(saea != s_rentedSentinel);
 
             // Reset state on the SAEA before returning it.  But do not reset buffer state.  That'll be done
@@ -514,24 +514,34 @@ namespace System.Net.Sockets
             // never null or another instance.
             if (isReceive)
             {
-                Debug.Assert(_cachedReceiveEventArgs == s_rentedSentinel);
-                Volatile.Write(ref _cachedReceiveEventArgs, saea);
+                Debug.Assert(_cachedTaskEventArgs.Receive == s_rentedSentinel);
+                Volatile.Write(ref _cachedTaskEventArgs.Receive, saea);
             }
             else
             {
-                Debug.Assert(_cachedSendEventArgs == s_rentedSentinel);
-                Volatile.Write(ref _cachedSendEventArgs, saea);
+                Debug.Assert(_cachedTaskEventArgs.Send == s_rentedSentinel);
+                Volatile.Write(ref _cachedTaskEventArgs.Send, saea);
             }
         }
 
         /// <summary>Dispose of any cached <see cref="Int32TaskSocketAsyncEventArgs"/> instances.</summary>
         private void DisposeCachedTaskSocketAsyncEventArgs()
         {
-            Int32TaskSocketAsyncEventArgs e = Interlocked.Exchange(ref _cachedReceiveEventArgs, s_rentedSentinel);
-            if (e != s_rentedSentinel) e?.Dispose();
+            CachedEventArgs cea = _cachedTaskEventArgs;
+            if (cea != null)
+            {
+                Int32TaskSocketAsyncEventArgs e = Interlocked.Exchange(ref cea.Receive, s_rentedSentinel);
+                if (e != s_rentedSentinel)
+                {
+                    e?.Dispose();
+                }
 
-            e = Interlocked.Exchange(ref _cachedSendEventArgs, s_rentedSentinel);
-            if (e != s_rentedSentinel) e?.Dispose();
+                e = Interlocked.Exchange(ref cea.Send, s_rentedSentinel);
+                if (e != s_rentedSentinel)
+                {
+                    e?.Dispose();
+                }
+            }
         }
 
         /// <summary>A TaskCompletionSource that carries an extra field of strongly-typed state.</summary>
@@ -548,8 +558,17 @@ namespace System.Net.Sockets
             public StateTaskCompletionSource(object baseState) : base(baseState) { }
         }
 
+        /// <summary>Cached event args used with Task-based async operations.</summary>
+        private sealed class CachedEventArgs
+        {
+            /// <summary>Cached instance for receive operations.</summary>
+            public Int32TaskSocketAsyncEventArgs Receive;
+            /// <summary>Cached instance for send operations.</summary>
+            public Int32TaskSocketAsyncEventArgs Send;
+        }
+
         /// <summary>A SocketAsyncEventArgs with an associated async method builder.</summary>
-        internal sealed class Int32TaskSocketAsyncEventArgs : SocketAsyncEventArgs
+        private sealed class Int32TaskSocketAsyncEventArgs : SocketAsyncEventArgs
         {
             /// <summary>A cached, successfully completed task.</summary>
             internal Task<int> _successfullyCompletedTask;
