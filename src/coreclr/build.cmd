@@ -98,6 +98,9 @@ set __BuildPackages=1
 set __BuildNativeCoreLib=1
 set __RestoreOptData=1
 
+REM Is this a portable build?
+set __IsPortableBuild=
+
 :Arg_Loop
 if "%1" == "" goto ArgsDone
 
@@ -114,6 +117,8 @@ if /i "%1" == "arm64"               (set __BuildArchArm64=1&set processedArgs=!p
 if /i "%1" == "debug"               (set __BuildTypeDebug=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "checked"             (set __BuildTypeChecked=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "release"             (set __BuildTypeRelease=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+
+if /i "%1" == "portable"             (set __IsPortableBuild=-portable&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 REM All arguments after this point will be passed through directly to build.cmd on nested invocations
 REM using the "all" argument, and must be added to the __PassThroughArgs variable.
@@ -474,7 +479,7 @@ if %__BuildPackages% EQU 1 (
 	set __MsbuildErr=/flp2:ErrorsOnly;LogFile="%__LogsDir%\Nuget_%__BuildOS%__%__BuildArch%__%__BuildType%.err"
 
     REM The conditions as to what to build are captured in the builds file.
-    @call %__ProjectDir%\run.cmd build -Project=%__SourceDir%\.nuget\packages.builds -platform=%__BuildArch% -MsBuildLog=!__MsbuildLog! -MsBuildWrn=!__MsbuildWrn! -MsBuildErr=!__MsbuildErr! %__RunArgs% %__UnprocessedBuildArgs%
+    @call %__ProjectDir%\run.cmd build -Project=%__SourceDir%\.nuget\packages.builds %__IsPortableBuild% -platform=%__BuildArch% -MsBuildLog=!__MsbuildLog! -MsBuildWrn=!__MsbuildWrn! -MsBuildErr=!__MsbuildErr! %__RunArgs% %__UnprocessedBuildArgs%
 
     if not !errorlevel! == 0 (
         echo %__MsgPrefix%Error: Nuget package generation failed build failed. Refer to the build log files for details:
@@ -643,6 +648,7 @@ echo -sequential: force a non-parallel build ^(default is to build in parallel
 echo     using all processors^).
 echo -officialbuildid=^<ID^>: specify the official build ID to be used by this build.
 echo -Rebuild: passes /t:rebuild to the build projects.
+echo portable : build for portable RID.
 echo.
 echo If "all" is specified, then all build architectures and types are built. If, in addition,
 echo one or more build architectures or types is specified, then only those build architectures

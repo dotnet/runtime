@@ -38,7 +38,7 @@ usage()
     echo "skiptests - skip the tests in the 'tests' subdirectory."
     echo "skipnuget - skip building nuget packages."
     echo "skiprestoreoptdata - skip restoring optimization data used by profile-based optimizations."
-    echo "portableLinux - build for Portable Linux Distribution"
+    echo "portable - build for portable RID."
     echo "verbose - optional argument to enable verbose build output."
     echo "-skiprestore: skip restoring packages ^(default: packages are restored during build^)."
 	echo "-disableoss: Disable Open Source Signing for System.Private.CoreLib."
@@ -85,8 +85,12 @@ initTargetDistroRid()
     fi
 
     # Portable builds target the base RID only for Linux based platforms
-    if [ $__PortableLinux == 1 ]; then
-        export __DistroRid="linux-$__BuildArch"
+    if [ $__PortableBuild == 1 ]; then
+        if [ "$__BuildOS" == "Linux" ]; then
+            export __DistroRid="linux-$__BuildArch"
+        elif [ "$__BuildOS" == "OSX" ]; then
+            export __DistroRid="osx-$__BuildArch"
+        fi
     fi
 }
 
@@ -573,7 +577,7 @@ __DistroRid=""
 __cmakeargs=""
 __SkipGenerateVersion=0
 __DoCrossArchBuild=0
-__PortableLinux=0
+__PortableBuild=0
 __msbuildonunsupportedplatform=0
 __PgoOptDataVersion=""
 __IbcOptDataVersion=""
@@ -630,15 +634,10 @@ while :; do
             __CrossBuild=1
             ;;
             
-        portablelinux)
-            if [ "$__BuildOS" == "Linux" ]; then
-                __PortableLinux=1
-            else
-                echo "ERROR: portableLinux not supported for non-Linux platforms."
-                exit 1
-            fi
+        portable)
+            __PortableBuild=1
             ;;
-            
+
         verbose)
             __VerboseBuild=1
             ;;
