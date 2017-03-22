@@ -183,18 +183,6 @@ check_type_size(
 set(CMAKE_EXTRA_INCLUDE_FILES) # reset CMAKE_EXTRA_INCLUDE_FILES
 # /statfs
 
-check_struct_has_member(
-    "struct in6_addr"
-    __in6_u
-    "netdb.h"
-    HAVE_IN6_U)
-
-check_struct_has_member(
-    "struct in6_addr"
-    __u6_addr
-    "netdb.h"
-    HAVE_U6_ADDR)
-
 check_cxx_source_compiles(
     "
     #include <string.h>
