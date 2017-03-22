@@ -681,6 +681,11 @@ void GCHeap::UnregisterFrozenSegment(segment_handle seg)
 #endif // FEATURE_BASICFREEZE
 }
 
+bool GCHeap::RuntimeStructuresValid()
+{
+    return GCScan::GetGcRuntimeStructuresValid();
+}
+
 
 #endif // !DACCESS_COMPILE
 

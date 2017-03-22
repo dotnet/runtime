@@ -91,6 +91,8 @@ public:
 
     void     SetGCInProgress(BOOL fInProgress);
 
+    bool RuntimeStructuresValid();
+
     CLREvent * GetWaitForGCEvent();
 
     HRESULT Initialize ();

@@ -19,11 +19,7 @@
 #include "gc.h"
 #include "objecthandle.h"
 
-#ifdef DACCESS_COMPILE
-SVAL_IMPL_INIT(int32_t, GCScan, m_GcStructuresInvalidCnt, 1);
-#else //DACCESS_COMPILE
 VOLATILE(int32_t) GCScan::m_GcStructuresInvalidCnt = 1;
-#endif //DACCESS_COMPILE
 
 bool GCScan::GetGcRuntimeStructuresValid ()
 {
@@ -33,18 +29,7 @@ bool GCScan::GetGcRuntimeStructuresValid ()
     return (int32_t)m_GcStructuresInvalidCnt == 0;
 }
 
-#ifdef DACCESS_COMPILE
-
-#ifndef FEATURE_REDHAWK
-void
-GCScan::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
-{
-    UNREFERENCED_PARAMETER(flags);
-    m_GcStructuresInvalidCnt.EnumMem();
-}
-#endif
-
-#else
+#ifndef DACCESS_COMPILE
 
 //
 // Dependent handle promotion scan support
