@@ -9,6 +9,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Reflection;
 using System.Threading;
 using System.Xml;
 using System.Xml.Linq;
@@ -22,7 +23,7 @@ public static partial class XmlSerializerTests
 
     static XmlSerializerTests()
     {
-        var method = typeof(XmlSerializer).GetMethod(SerializationModeSetterName);
+        var method = typeof(XmlSerializer).GetMethod(SerializationModeSetterName, BindingFlags.NonPublic | BindingFlags.Static);
         Assert.True(method != null, $"No method named {SerializationModeSetterName}");
         method.Invoke(null, new object[] { 1 });
     }

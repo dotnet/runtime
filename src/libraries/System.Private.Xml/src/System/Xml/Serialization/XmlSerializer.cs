@@ -113,14 +113,14 @@ namespace System.Xml.Serialization
     /// </devdoc>
     public class XmlSerializer
     {
-        public enum SerializationMode
+        internal enum SerializationMode
         {
             CodeGenOnly,
             ReflectionOnly,
             ReflectionAsBackup
         }
 
-        public static SerializationMode Mode { get; set; } = SerializationMode.ReflectionAsBackup;
+        internal static SerializationMode Mode { get; set; } = SerializationMode.ReflectionAsBackup;
 
         private static bool ReflectionMethodEnabled
         {
@@ -139,8 +139,10 @@ namespace System.Xml.Serialization
         private XmlDeserializationEvents _events = new XmlDeserializationEvents();
 #if uapaot
         private XmlSerializer innerSerializer;
-#endif
         public string DefaultNamespace = null;
+#else
+        internal string DefaultNamespace = null;
+#endif
         private Type rootType;
 
         private static TempAssemblyCache s_cache = new TempAssemblyCache();
