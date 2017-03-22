@@ -112,6 +112,9 @@
   <data name="ArgumentOutOfRange_InvalidInputStreamOptionsEnumValue" xml:space="preserve">
     <value>The specified value is not a valid member of the InputStreamOptions enumeration.</value>
   </data>
+  <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
+    <value>Non-negative number required.</value>
+  </data>
   <data name="ArgumentOutOfRange_WinRtAdapterBufferSizeMayNotBeNegative" xml:space="preserve">
     <value>The buffer size for a Windows Runtime stream adapter may not be negative. Use a positive buffer size or 0 to disable buffering.</value>
   </data>
