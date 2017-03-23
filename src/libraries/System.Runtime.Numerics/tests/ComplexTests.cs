@@ -892,6 +892,7 @@ namespace System.Numerics.Tests
             yield return new object[] { RandomPositiveDouble(), RandomNegativePhase() }; // Fourth quadrant
         }
 
+        [ActiveIssue("https://github.com/dotnet/coreclr/issues/9806")]
         [Theory]
         [MemberData(nameof(FromPolarCoordinates_TestData))]
         [MemberData(nameof(Invalid_2_TestData))]
