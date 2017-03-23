@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace System.Security.Cryptography.Xml
 {
-    internal class RSAPKCS1SHA512SignatureDescription : RSAPKCS1SignatureDescriptionBase
+    internal class RSAPKCS1SHA512SignatureDescription : RSAPKCS1SignatureDescription
     {
         public RSAPKCS1SHA512SignatureDescription() : base("SHA512")
         {
