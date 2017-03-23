@@ -168,6 +168,7 @@ set(SOURCES
   map/virtual.cpp
   memory/heap.cpp
   memory/local.cpp
+  misc/cgroup.cpp
   misc/dbgmsg.cpp
   misc/environ.cpp
   misc/error.cpp
