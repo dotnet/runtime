@@ -277,11 +277,6 @@ RegMeta::CreateNewMD()
         INDEBUG(m_pStgdb->m_MiniMd.Debug_SetLock(m_pSemReadWrite);)
     }
     
-#ifdef FEATURE_METADATA_EMIT_ALL
-    // initialize the embedded merger
-    m_newMerger.Init(this);
-#endif //FEATURE_METADATA_EMIT_ALL
-    
 ErrExit:
     return hr;
 } // RegMeta::CreateNewMD
@@ -340,11 +335,6 @@ HRESULT RegMeta::OpenExistingMD(
 
     if (!IsOfReOpen(dwOpenFlags))
     {
-#ifdef FEATURE_METADATA_EMIT_ALL
-        // initialize the embedded merger
-        m_newMerger.Init(this);
-#endif //FEATURE_METADATA_EMIT_ALL
-
         // There must always be a Global Module class and its the first entry in
         // the TypeDef table.
         m_tdModule = TokenFromRid(1, mdtTypeDef);
@@ -398,11 +388,6 @@ HRESULT RegMeta::OpenExistingMD(
 
     if (!IsOfReOpen(dwOpenFlags))
     {
-#ifdef FEATURE_METADATA_EMIT_ALL
-        // initialize the embedded merger
-        m_newMerger.Init(this);
-#endif //FEATURE_METADATA_EMIT_ALL
-
         // There must always be a Global Module class and its the first entry in
         // the TypeDef table.
         m_tdModule = TokenFromRid(1, mdtTypeDef);
