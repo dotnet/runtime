@@ -16,6 +16,14 @@ namespace Microsoft.CSharp.RuntimeBinder
     /// </summary>
     internal sealed class CSharpBinaryOperationBinder : BinaryOperationBinder, ICSharpBinder
     {
+        public void PopulateSymbolTableWithName(SymbolTable symbolTable, Type callingType, ArgumentObject[] arguments)
+        {
+            string name = Operation.GetCLROperatorName();
+            Debug.Assert(name != null);
+            symbolTable.PopulateSymbolTableWithName(name, null, arguments[0].Type);
+            symbolTable.PopulateSymbolTableWithName(name, null, arguments[1].Type);
+        }
+
         public bool IsBinderThatCanHaveRefReceiver => false;
 
         public bool IsChecked { get; }

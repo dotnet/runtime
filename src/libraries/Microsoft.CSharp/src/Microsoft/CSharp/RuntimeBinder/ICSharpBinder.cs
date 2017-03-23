@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Dynamic;
 using System.Linq.Expressions;
@@ -22,5 +23,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         // and indexers ("v[d] = v[d]"). Note that properties are not here because they
         // are only dispatched dynamically when the receiver is dynamic, and hence boxed.
         bool IsBinderThatCanHaveRefReceiver { get; }
+
+        void PopulateSymbolTableWithName(SymbolTable symbolTable, Type callingType, ArgumentObject[] arguments);
     }
 }
