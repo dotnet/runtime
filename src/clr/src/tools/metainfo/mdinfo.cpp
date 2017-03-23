@@ -1418,7 +1418,7 @@ void MDInfo::DisplayFields(mdTypeDef inTypeDef, COR_FIELD_OFFSET *rFieldOffset, 
             if (cFieldOffset)
             {
                 bool found = false;
-                for (ULONG iLayout = 0; i < cFieldOffset; ++iLayout)
+                for (ULONG iLayout = 0; iLayout < cFieldOffset; ++iLayout)
                 {
                     if (RidFromToken(rFieldOffset[iLayout].ridOfField) == RidFromToken(fields[i]))
                     {
