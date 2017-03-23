@@ -937,7 +937,9 @@ NESTED_ENTRY DelayLoad_Helper\suffix, _TEXT, NoHandler
 
     mov         esi, esp
 
-    push        \frameFlags
+.att_syntax
+    pushl       $\frameFlags
+.intel_syntax noprefix
     push        ecx             // module
     push        edx             // section index
 
