@@ -1,8 +1,7 @@
 # Process this file with autoconf to produce a configure script.
 #AC_PREREQ([2.62])
 
-# when bumping version number below, keep it in sync with man/mono.1 too
-AC_INIT(mono, [4.9.4],
+AC_INIT(mono, [5.1.0],
         [http://bugzilla.xamarin.com/enter_bug.cgi?classification=Mono])
 
 AC_CONFIG_SRCDIR([README.md])
