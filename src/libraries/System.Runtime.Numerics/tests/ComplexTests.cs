@@ -892,11 +892,61 @@ namespace System.Numerics.Tests
             yield return new object[] { RandomPositiveDouble(), RandomNegativePhase() }; // Fourth quadrant
         }
 
-        [ActiveIssue("https://github.com/dotnet/coreclr/issues/9806")]
         [Theory]
         [MemberData(nameof(FromPolarCoordinates_TestData))]
         [MemberData(nameof(Invalid_2_TestData))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void FromPolarCoordinates(double magnitude, double phase)
+        {
+            Complex complex = Complex.FromPolarCoordinates(magnitude, phase);
+
+            // double.IsNaN(magnitude) is checked in the verification method.
+            if (double.IsNaN(phase) || double.IsInfinity(phase))
+            {
+                magnitude = double.NaN;
+                phase = double.NaN;
+            }
+            // Special check in Complex.Abs method
+            else if (double.IsInfinity(magnitude))
+            {
+                magnitude = double.PositiveInfinity;
+                phase = double.NaN;
+            }
+
+            if (double.IsInfinity(complex.Imaginary) && double.IsInfinity(complex.Real))
+            {
+                if (double.IsNegativeInfinity(complex.Imaginary))
+                {
+                    if (double.IsNegativeInfinity(complex.Real))
+                    {
+                        phase = -3 * Math.PI / 4;
+                    }
+                    else
+                    {
+                        phase = -Math.PI / 4;
+                    }
+                }
+                else if (double.IsNegativeInfinity(complex.Real))
+                {
+                    phase = 3 * Math.PI / 4;
+                }
+                else
+                {
+                    phase = Math.PI / 4;
+                }
+            }
+
+            VerifyMagnitudePhaseProperties(complex, magnitude, phase);
+
+            complex = new Complex(complex.Real, complex.Imaginary);
+            VerifyMagnitudePhaseProperties(complex, magnitude, phase);
+        }
+
+        [Theory]
+        [MemberData(nameof(FromPolarCoordinates_TestData))]
+        [MemberData(nameof(Invalid_2_TestData))]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
+        public static void FromPolarCoordinates_Legacy(double magnitude, double phase)
         {
             Complex complex = Complex.FromPolarCoordinates(magnitude, phase);
 
