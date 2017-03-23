@@ -8,7 +8,6 @@ if /i "%1" == "-?"     goto Usage
 if /i "%1" == "-h"     goto Usage
 if /i "%1" == "-help"  goto Usage
 if /i "%1" == "clone"  (set doClone=1&shift&goto Arg_Loop)
-if /i "%1" == "setenv" (set setEnv=1&shift&goto Arg_Loop)
 if /i "%1" == "x64"    (set rid=win10-x64&shift&goto Arg_Loop)
 if /i "%1" == "x86"    (set rid=win10-x86&shift&goto Arg_Loop)
 
@@ -27,22 +26,19 @@ cd ..\linker
 ..\corebuild\Tools\dotnetcli\dotnet.exe publish -r %rid% -c netcore_Relase
 popd
 
-if not defined setEnv goto Done
-echo set ILLINK=%cd%\linker\linker\bin\netcore_Relase\netcoreapp2.0\%rid%\publish\illink.exe
-endlocal && set ILLINK=%cd%\linker\linker\bin\netcore_Relase\netcoreapp2.0\%rid%\publish\illink.exe
-
+echo Built %cd%\linker\linker\bin\netcore_Release\netcoreapp2.0\%rid%\publish\illink.exe
 :Done
 exit /b 0
 
 :Usage
 echo.
-echo.Build the ILLINK for CoreCLR testing
+echo.Build ILLINKer for CoreCLR testing
 echo.
 echo.Usage:
-echo     build_illink.cmd [clone] [setenv] runtime-ID
+echo     build_illink.cmd [clone] [setenv] [arch]
 echo.Where:
 echo.-? -h -help: view this message.
-echo.clone: Clone the repository https://github.com/mono/linker
-echo.set: set ILLINK to the path to illink.exe
-echo.runtime-ID: The os-architecture configuration to build: x64 (default) or x86
+echo.clone      : Clone the repository https://github.com/mono/linker
+echo.arch       : The architecture to build: x64 (default) or x86
+echo.
 goto Done
