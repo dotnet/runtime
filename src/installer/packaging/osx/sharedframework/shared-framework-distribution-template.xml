@@ -6,7 +6,7 @@
     <options customize="never" require-scripts="false" />
     <volume-check>
         <allowed-os-version>
-            <os-version min="10.10" />
+            <os-version min="10.12" />
         </allowed-os-version>
     </volume-check>
     <choices-outline>
