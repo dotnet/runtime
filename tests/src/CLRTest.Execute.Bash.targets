@@ -29,23 +29,29 @@ WARNING:   When setting properties based on their current state (for example:
 
       <IlasmRoundTripBashScript Condition="'$(IlasmRoundTrip)'=='true'">
       <![CDATA[
-echo "$CORE_ROOT/ildasm" -raweh -out=$(DisassemblyName) $(InputAssemblyName)
-"$CORE_ROOT/ildasm" -raweh -out=$(DisassemblyName) $(InputAssemblyName)
-ERRORLEVEL=$?
-if [  $ERRORLEVEL -ne 0 ]
+# Disable Ilasm round-tripping for Linker tests.
+# Todo: Ilasm round-trip on linked binaries.
+      
+if [ -z "$DoLink" ]; 
 then
-  echo EXECUTION OF ILDASM - FAILED $ERRORLEVEL
-  exit 1
-fi
+  echo "$CORE_ROOT/ildasm" -raweh -out=$(DisassemblyName) $(InputAssemblyName)
+  "$CORE_ROOT/ildasm" -raweh -out=$(DisassemblyName) $(InputAssemblyName)
+  ERRORLEVEL=$?
+  if [  $ERRORLEVEL -ne 0 ]
+  then
+    echo EXECUTION OF ILDASM - FAILED $ERRORLEVEL
+    exit 1
+  fi
 
-echo "$CORE_ROOT/ilasm" -output=$(TargetAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
-"$CORE_ROOT/ilasm" -output=$(TargetAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
-ERRORLEVEL=$?
-if [ $ERRORLEVEL -ne 0 ]
-then
-  echo EXECUTION OF ILASM - FAILED $ERRORLEVEL
-  exit 1
-fi
+  echo "$CORE_ROOT/ilasm" -output=$(TargetAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
+  "$CORE_ROOT/ilasm" -output=$(TargetAssemblyName) $(_IlasmSwitches) $(DisassemblyName)
+  ERRORLEVEL=$?
+  if [ $ERRORLEVEL -ne 0 ]
+  then
+    echo EXECUTION OF ILASM - FAILED $ERRORLEVEL
+    exit 1
+  fi
+fi    
       ]]>
       </IlasmRoundTripBashScript>
     </PropertyGroup>
@@ -181,25 +187,113 @@ fi
       </BashCLRTestExecutionScriptArgument>
     </ItemGroup>
 
+      <PropertyGroup>
+          <ReflectionRootsXml>$(MSBuildProjectName).reflect.xml</ReflectionRootsXml>
+          <BashLinkerTestLaunchCmds>
+              <![CDATA[
+# Linker commands
+
+LinkBin=__Link
+Assemblies="-a System.Private.CoreLib"
+ReflectionRoots=
+
+shopt -s nullglob
+
+if [ ! -z "$DoLink" ]; 
+then
+  if [ ! -x "$ILLINK" ]; 
+  then
+    echo "Illink executable [$ILLINK] Invalid"
+    exit 1
+  fi
+  
+  # Clean up old Linked binaries, if any
+  rm -rf $LinkBin
     
-    <PropertyGroup>
+  # Remove Native images, since the goal is to run from Linked binaries
+  rm -f *.ni.*
+
+  # Use hints for reflection roots, if provided in $(ReflectionRootsXml)
+  if [ -f $(ReflectionRootsXml) ]; 
+  then
+    ReflectionRoots="-x $(ReflectionRootsXml)"
+  fi
+
+  # Include all .exe files in this directory as entry points (some tests had multiple .exe file modules)
+  for bin in *.exe *.dll; 
+  do 
+    Assemblies="$Assemblies -a $bin"
+  done
+
+  # Run dotnet-linker
+  # Run the Linker such that all assemblies except System.Private.Corlib.dll are linked
+  # Debug symbol generation needs some fixes, and is currently omitted.
+  # Once this is fixed, add -b true option.
+  echo "$ILLINK -out $LinkBin -d $CORE_ROOT -c link -l none -t $Assemblies $ReflectionRoots"
+  $ILLINK -out $LinkBin -d $CORE_ROOT -c link -l none -t $Assemblies $ReflectionRoots
+  ERRORLEVEL=$?
+  if [  $ERRORLEVEL -ne 0 ]
+  then
+    echo ILLINK FAILED $ERRORLEVEL
+    if [ ! -z "$KeepLinkedBinaries" ]; 
+    then
+      rm -rf $LinkBin
+    fi
+    exit 1
+  fi
+  
+  # Copy CORECLR native binaries to $LinkBin, so that we can run the test based on that directory
+  cp $CORE_ROOT/clrjit.dll $LinkBin
+  cp $CORE_ROOT/coreclr.dll $LinkBin 
+  cp $CORE_ROOT/mscorrc.dll $LinkBin
+  cp $CORE_ROOT/CoreRun.exe $LinkBin
+  # Copy some files that may be arguments
+  cp *.txt $LinkBin
+
+  ExePath=$LinkBin/$(InputAssemblyName)
+  export CORE_ROOT=$PWD/$LinkBin
+fi
+]]>
+          </BashLinkerTestLaunchCmds>
+          <BashLinkerTestCleanupCmds>
+              <![CDATA[
+# Clean up the LinkBin directories after test execution.
+# Otherwise, RunTests may run out of disk space.
+
+if [ ! -z "$DoLink" ]; 
+then
+  if [ ! -z "$KeepLinkedBinaries" ]; 
+  then
+    rm -rf $LinkBin
+  fi
+fi
+]]>
+          </BashLinkerTestCleanupCmds>
+      </PropertyGroup>
+      <PropertyGroup>
       <_CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"$CORE_ROOT/corerun"</_CLRTestRunFile>
       <BashCLRTestLaunchCmds Condition="'$(IlasmRoundTrip)'=='true'"><![CDATA[
-echo $(_CLRTestRunFile) $(TargetAssemblyName) $CLRTestExecutionArguments 
-$(_CLRTestRunFile) $(TargetAssemblyName) $CLRTestExecutionArguments 
-if [  $? -ne $CLRTestExpectedExitCode ]
-then
-  echo END EXECUTION OF IL{D}ASM BINARY - FAILED $? vs $CLRTestExpectedExitCode
-  echo FAILED
-  exit 1
+if [ -z "$DoLink" ]; then
+  echo $(_CLRTestRunFile) $(TargetAssemblyName) $CLRTestExecutionArguments 
+  $(_CLRTestRunFile) $(TargetAssemblyName) $CLRTestExecutionArguments 
+  if [  $? -ne $CLRTestExpectedExitCode ]
+  then
+    echo END EXECUTION OF IL{D}ASM BINARY - FAILED $? vs $CLRTestExpectedExitCode
+    echo FAILED
+    exit 1
+  fi
 fi
       ]]></BashCLRTestLaunchCmds>
 
-      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun'"><![CDATA[
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun'">
+    <![CDATA[
+ExePath=$(InputAssemblyName)
+$(BashLinkerTestLaunchCmds)
 $(BashCLRTestLaunchCmds)
-echo $_DebuggerFullPath $(_CLRTestRunFile) $(InputAssemblyName) $CLRTestExecutionArguments 
-$_DebuggerFullPath $(_CLRTestRunFile) $(InputAssemblyName) $CLRTestExecutionArguments 
+echo $_DebuggerFullPath $(_CLRTestRunFile) $ExePath $CLRTestExecutionArguments 
+$_DebuggerFullPath $(_CLRTestRunFile) $ExePath $CLRTestExecutionArguments 
 CLRTestExitCode=$?
+$(BashLinkerTestCleanupCmds)
       ]]></BashCLRTestLaunchCmds>
       <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'RunOnly'"><![CDATA[
 $(BashCLRTestLaunchCmds)

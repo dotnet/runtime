@@ -56,6 +56,7 @@ function print_usage {
     echo '    8: GC on every allowable NGEN instr   16: GC only on a unique stack trace'
     echo '  --long-gc                        : Runs the long GC tests'
     echo '  --gcsimulator                    : Runs the GCSimulator tests'
+    echo '  --link <ILlink>                  : Runs the tests after linking via ILlink'
     echo '  --show-time                      : Print execution sequence and running time for each test'
     echo '  --no-lf-conversion               : Do not execute LF conversion before running test script'
     echo '  --build-overlay-only             : Exit after overlay directory is populated'
@@ -960,7 +961,7 @@ buildOverlayOnly=
 gcsimulator=
 longgc=
 limitedCoreDumps=
-
+illinker=
 ((disableEventLogging = 0))
 ((serverGC = 0))
 
@@ -993,6 +994,10 @@ do
             ;;
         --jitforcerelocs)
             export COMPlus_ForceRelocs=1
+            ;;
+        --link=*)
+            export ILLINK=${i#*=}
+            export DoLink=true
             ;;
         --jitdisasm)
             jitdisasm=1
