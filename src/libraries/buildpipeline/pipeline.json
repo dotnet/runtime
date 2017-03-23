@@ -85,7 +85,7 @@
             "PB_DockerTag": "rhel7_prereqs_2",
             "PB_BuildArguments": "-buildArch=x64 -Release -portableLinux",
             "PB_SyncArguments": "-p -portableLinux -- /p:ArchGroup=x64",
-            "PB_TargetQueue": "Redhat.72.Amd64+Debian.82.Amd64+Ubuntu1404.Amd64+Ubuntu1604.Amd64+Ubuntu.1610.Amd64+suse.421.amd64"
+            "PB_TargetQueue": "Redhat.72.Amd64+Debian.82.Amd64+Ubuntu1404.Amd64+Ubuntu1604.Amd64+Ubuntu.1610.Amd64+suse.421.amd64+fedora.25.amd64"
           },
           "ReportingParameters": {
             "OperatingSystem": "RedHat 7",
@@ -469,7 +469,7 @@
             "PB_DockerTag": "rhel7_prereqs_2",
             "PB_BuildArguments": "-buildArch=x64 -Debug -portableLinux",
             "PB_SyncArguments": "-p -portableLinux -- /p:ArchGroup=x64",
-            "PB_TargetQueue": "Redhat.72.Amd64+Debian.82.Amd64+Ubuntu1404.Amd64+Ubuntu1604.Amd64+Ubuntu.1610.Amd64+suse.421.amd64"
+            "PB_TargetQueue": "Redhat.72.Amd64+Debian.82.Amd64+Ubuntu1404.Amd64+Ubuntu1604.Amd64+Ubuntu.1610.Amd64+suse.421.amd64+fedora.25.amd64"
           },
           "ReportingParameters": {
             "OperatingSystem": "RedHat 7",
