@@ -408,7 +408,6 @@
     <Compile Include="$(BclSourcesRoot)\System\UInt32.cs" />
     <Compile Include="$(BclSourcesRoot)\System\UInt64.cs" />
     <Compile Include="$(BclSourcesRoot)\System\UIntPtr.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\UnitySerializationHolder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\ValueType.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Version.cs" />
     <Compile Include="$(BclSourcesRoot)\System\WeakReference.cs" />
@@ -470,7 +469,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\MdImport.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\MemberFilter.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\MemberInfo.Internal.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\MemberInfoSerializationHolder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\MemberSerializationStringGenerator.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\MemberTypes.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodAttributes.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodBase.CoreCLR.cs" />

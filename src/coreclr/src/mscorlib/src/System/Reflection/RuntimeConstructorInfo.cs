@@ -468,14 +468,7 @@ namespace System.Reflection
             if (info == null)
                 throw new ArgumentNullException(nameof(info));
             Contract.EndContractBlock();
-            MemberInfoSerializationHolder.GetSerializationInfo(
-                info,
-                Name,
-                ReflectedTypeInternal,
-                ToString(),
-                SerializationToString(),
-                MemberTypes.Constructor,
-                null);
+            MemberInfoSerializationHolder.GetSerializationInfo(info, this);
         }
 
         internal string SerializationToString()

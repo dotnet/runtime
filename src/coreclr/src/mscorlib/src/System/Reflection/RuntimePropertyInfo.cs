@@ -455,14 +455,7 @@ namespace System.Reflection
                 throw new ArgumentNullException(nameof(info));
             Contract.EndContractBlock();
 
-            MemberInfoSerializationHolder.GetSerializationInfo(
-                info,
-                Name,
-                ReflectedTypeInternal,
-                ToString(),
-                SerializationToString(),
-                MemberTypes.Property,
-                null);
+            MemberInfoSerializationHolder.GetSerializationInfo(info, this);
         }
 
         internal string SerializationToString()
