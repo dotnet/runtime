@@ -360,12 +360,12 @@ size_t GCToOSInterface::GetVirtualMemoryLimit()
 }
 
 
+static size_t g_RestrictedPhysicalMemoryLimit = (size_t)MAX_PTR;
+
 #ifndef FEATURE_PAL
 
 typedef BOOL (WINAPI *PGET_PROCESS_MEMORY_INFO)(HANDLE handle, PROCESS_MEMORY_COUNTERS* memCounters, uint32_t cb);
 static PGET_PROCESS_MEMORY_INFO GCGetProcessMemoryInfo = 0;
-
-static size_t g_RestrictedPhysicalMemoryLimit = (size_t)MAX_PTR;
 
 typedef BOOL (WINAPI *PIS_PROCESS_IN_JOB)(HANDLE processHandle, HANDLE jobHandle, BOOL* result);
 typedef BOOL (WINAPI *PQUERY_INFORMATION_JOB_OBJECT)(HANDLE jobHandle, JOBOBJECTINFOCLASS jobObjectInfoClass, void* lpJobObjectInfo, DWORD cbJobObjectInfoLength, LPDWORD lpReturnLength);
@@ -455,6 +455,21 @@ exit:
     return g_RestrictedPhysicalMemoryLimit;
 }
 
+#else
+
+static size_t GetRestrictedPhysicalMemoryLimit()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    // The limit was cached already
+    if (g_RestrictedPhysicalMemoryLimit != (size_t)MAX_PTR)
+        return g_RestrictedPhysicalMemoryLimit;
+
+    size_t memory_limit = PAL_GetRestrictedPhysicalMemoryLimit();
+    
+    VolatileStore(&g_RestrictedPhysicalMemoryLimit, memory_limit);
+    return g_RestrictedPhysicalMemoryLimit;
+}
 #endif // FEATURE_PAL
 
 
@@ -465,11 +480,9 @@ uint64_t GCToOSInterface::GetPhysicalMemoryLimit()
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifndef FEATURE_PAL
     size_t restricted_limit = GetRestrictedPhysicalMemoryLimit();
     if (restricted_limit != 0)
         return restricted_limit;
-#endif
 
     MEMORYSTATUSEX memStatus;
     ::GetProcessMemoryLoad(&memStatus);
@@ -489,17 +502,29 @@ void GCToOSInterface::GetMemoryStatus(uint32_t* memory_load, uint64_t* available
 {
     LIMITED_METHOD_CONTRACT;
 
-#ifndef FEATURE_PAL
     uint64_t restricted_limit = GetRestrictedPhysicalMemoryLimit();
     if (restricted_limit != 0)
     {
+        size_t workingSetSize;
+        BOOL status = FALSE;
+#ifndef FEATURE_PAL
         PROCESS_MEMORY_COUNTERS pmc;
-        if (GCGetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc)))
+        status = GCGetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc));
+        workingSetSize = pmc.WorkingSetSize;
+#else
+        status = PAL_GetWorkingSetSize(&workingSetSize);
+#endif
+        if(status)
         {
             if (memory_load)
-                *memory_load = (uint32_t)((float)pmc.WorkingSetSize * 100.0 / (float)restricted_limit);
+                *memory_load = (uint32_t)((float)workingSetSize * 100.0 / (float)restricted_limit);
             if (available_physical)
-                *available_physical = restricted_limit - pmc.WorkingSetSize;
+            {
+                if(workingSetSize > restricted_limit)
+                    *available_physical = 0;
+                else
+                    *available_physical = restricted_limit - workingSetSize;
+            }
             // Available page file doesn't mean much when physical memory is restricted since
             // we don't know how much of it is available to this process so we are not going to 
             // bother to make another OS call for it.
@@ -509,7 +534,6 @@ void GCToOSInterface::GetMemoryStatus(uint32_t* memory_load, uint64_t* available
             return;
         }
     }
-#endif
 
     MEMORYSTATUSEX ms;
     ::GetProcessMemoryLoad(&ms);
