@@ -51,7 +51,10 @@
     <BinPlaceConfiguration Condition="'$(BinPlaceILCInputFolder)' == 'true'" Include="uapaot-$(_bc_OSGroup)">
       <RuntimePath>$(ILCFXInputFolder)</RuntimePath>
     </BinPlaceConfiguration>
-
+    <!-- And the UAP folder for the F5 (CoreCLR UAP-debugging) scenario -->
+    <BinPlaceConfiguration Condition="'$(BinPlaceUAPFramework)' == 'true'" Include="uap-$(_bc_OSGroup)">
+      <RuntimePath>$(UAPTestSharedFrameworkPath)</RuntimePath>
+    </BinPlaceConfiguration>
     <!-- binplace targeting packs which may be different from BuildConfiguration -->
     <BinPlaceConfiguration Include="netstandard">
       <RefPath>$(RefRootPath)netstandard/</RefPath>

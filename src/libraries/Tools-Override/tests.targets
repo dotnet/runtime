@@ -215,6 +215,38 @@
       <PostExecutionTestCommandLines Include="copy /y testResults.xml %EXECUTION_DIR%\" />
     </ItemGroup>
 
+    <PropertyGroup Condition="'$(BuildingUAPVertical)' == 'true'">
+      <!-- The location where the logs will be written by the test runner -->
+      <UAP_Results_Path Condition="'$(UAP_Results_Path)'==''">%USERPROFILE%\Documents\TestResults\</UAP_Results_Path>
+
+      <_Runtime_Path>%RUNTIME_PATH%\UAPLayout\</_Runtime_Path>
+      <!-- Make sure the path only has one type of slashes -->
+      <_Runtime_Path>$(_Runtime_Path.Replace('/', '\'))</_Runtime_Path>
+
+      <!-- The test execution command is different for UAP. -->
+      <TestCommandLine>%RUNTIME_PATH%\Launcher\WindowsStoreAppLauncher.exe -test appxmanifest.xml $(XunitArguments) $(XunitTraitOptions)</TestCommandLine>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(BuildingUAPVertical)' == 'true'" >
+      <!-- Copy the runner files into the test directory -->
+      <RunnerFolderContents Include="$(NETCoreAppTestRootPath)\Runner\**\*" />
+
+      <TestCommandLines Include="mkdir Assets" />
+      <TestCommandLines Include="mkdir entrypoint" />
+      <TestCommandLines Include="mkdir Properties" />
+      <TestCommandLines Include="mkdir WinMetadata" />
+      <TestCommandLines Include="mklink /H %(RunnerFolderContents.RecursiveDir)%(RunnerFolderContents.Filename)%(RunnerFolderContents.Extension) %RUNTIME_PATH%\Runner\%(RunnerFolderContents.RecursiveDir)%(RunnerFolderContents.Filename)%(RunnerFolderContents.Extension)" />
+
+      <!-- Copy the runtime binaries over -->
+      <RuntimePathContents Include="$(RuntimePath)\**\*" />
+      <TestCommandLines Include="mklink /H %(RuntimePathContents.RecursiveDir)%(RuntimePathContents.Filename)%(RuntimePathContents.Extension) $(_Runtime_Path)%(RuntimePathContents.Filename)%(RuntimePathContents.Extension)" />
+
+      <!-- Copy the log files and the results files from the Documents folder to the test folder -->
+      <PostExecutionTestCommandLines Include="move $(UAP_Results_Path)$(XunitTestAssembly).xml .\$(XunitResultsFileName)" /> 
+      <PostExecutionTestCommandLines Include="move $(UAP_Results_Path)$(XunitTestAssembly).txt .\logs.txt" />
+      <PostExecutionTestCommandLines Include="type logs.txt" />
+    </ItemGroup>
+      
     <ItemGroup Condition="'$(Performance)'!='true'">
       <!-- On Windows, call prevents the test command from making execution end prematurely -->
       <TestCommandLines  Condition="'$(TargetOS)'=='Windows_NT'" Include="call $(TestCommandLine)"/>
@@ -247,6 +279,10 @@
 
     <MakeDir Condition="'$(CoverageEnabledForProject)'=='true'" Directories="$(CoverageReportDir)" />
     <Error Text="TestILCFolder property is required for running uapaot tests. Please pass in the full path to the directory that contains ilc.exe to msbuild using /p:TestILCFolder=path_to_ilc_dir.exe" Condition="'$(BuildingUAPAOTVertical)' == 'true' AND '$(TestILCFolder)' == ''" />
+
+    <!-- For UAP, make sure the Runner and Launcher folder exist, otherwise the tests cannot run -->
+    <Error Text="We cannot run the tests for UAP because either the Runner or the Launcher could not be found. You need to specify the UAPToolsFolder property when calling build.cmd to fix this."
+          Condition="'$(BuildingUAPVertical)'=='true' and (!Exists('$(NETCoreAppTestRootPath)\Runner') or !Exists('$(NETCoreAppTestRootPath)\Launcher'))" />
 
     <Exec Command="$(TestPath)/$(RunnerScriptName) $(TestSharedFxDir)"
           CustomErrorRegularExpression="Failed: [^0]"

@@ -253,6 +253,7 @@
     <!-- We add extra binplacing for the test shared framework until we can get hardlinking with the runtime directory working on all platforms -->
     <BinPlaceTestSharedFramework Condition="'$(_bc_TargetGroup)' == 'netcoreapp'">true</BinPlaceTestSharedFramework>
     <BinPlaceILCInputFolder Condition="'$(_bc_TargetGroup)' == 'uapaot' And '$(BinPlaceILCInputFolder)' == ''">true</BinPlaceILCInputFolder>
+    <BinPlaceUAPFramework Condition="'$(_bc_TargetGroup)' == 'uap'">true</BinPlaceUAPFramework>
 
     <NETCoreAppTestSharedFxVersion>9.9.9</NETCoreAppTestSharedFxVersion>
     <NETCoreAppTestRootPath>$(BinDir)testhost/$(BuildConfiguration)/</NETCoreAppTestRootPath>
@@ -260,8 +261,11 @@
     <NETCoreAppTestSharedFrameworkPath>$(NETCoreAppTestRootPath)shared/Microsoft.NETCore.App/$(NETCoreAppTestSharedFxVersion)/</NETCoreAppTestSharedFrameworkPath>
     <ILCFXInputFolder>$(NETCoreAppTestRootPath)ILCInputFolder</ILCFXInputFolder>
 
+    <!-- For UAP, we'll produce the layout and hard-link this into each test's directory --> 	
+    <UAPTestSharedFrameworkPath>$(NETCoreAppTestRootPath)UAPLayout</UAPTestSharedFrameworkPath>	
+
     <!-- Constructed shared fx path for testing -->
-    <TestSharedFxDir Condition="'$(BinPlaceTestSharedFramework)' == 'true'">$(NETCoreAppTestRootPath)</TestSharedFxDir>
+    <TestSharedFxDir Condition="'$(BinPlaceTestSharedFramework)' == 'true' or '$(BinPlaceUAPFramework)'=='true'">$(NETCoreAppTestRootPath)</TestSharedFxDir>
     <TestSharedFxDir Condition="'$(BuildingUAPAOTVertical)' == 'true'">$(ILCFXInputFolder)</TestSharedFxDir>
     <UseDotNetNativeToolchain Condition="'$(BuildingUAPAOTVertical)' == 'true' And '$(TestILCFolder)' != ''">true</UseDotNetNativeToolchain>
 
