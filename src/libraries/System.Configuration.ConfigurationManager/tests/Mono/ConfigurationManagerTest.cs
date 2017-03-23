@@ -320,13 +320,13 @@ namespace MonoTests.System.Configuration
         [Fact]
         public void TestFileMap()
         {
-            var name = Path.GetRandomFileName() + ".config";
-            Assert.False(File.Exists(name));
-
-            try
+            using (var temp = new TempDirectory())
             {
+                string configPath = Path.Combine(temp.Path, Path.GetRandomFileName() + ".config");
+                Assert.False(File.Exists(configPath));
+
                 var map = new ExeConfigurationFileMap();
-                map.ExeConfigFilename = name;
+                map.ExeConfigFilename = configPath;
 
                 var config = ConfigurationManager.OpenMappedExeConfiguration(
                     map, ConfigurationUserLevel.None);
@@ -335,12 +335,8 @@ namespace MonoTests.System.Configuration
 
                 config.Save();
 
-                Assert.True(File.Exists(name), "#1");
-                Assert.True(File.Exists(Path.GetFullPath(name)), "#2");
-            }
-            finally
-            {
-                File.Delete(name);
+                Assert.True(File.Exists(configPath), "#1");
+                Assert.True(File.Exists(Path.GetFullPath(configPath)), "#2");
             }
         }
 
@@ -373,13 +369,13 @@ namespace MonoTests.System.Configuration
         [Fact]
         public void TestContext2()
         {
-            var name = Path.GetRandomFileName() + ".config";
-            Assert.False(File.Exists(name));
-
-            try
+            using (var temp = new TempDirectory())
             {
+                string configPath = Path.Combine(temp.Path, Path.GetRandomFileName() + ".config");
+                Assert.False(File.Exists(configPath));
+
                 var map = new ExeConfigurationFileMap();
-                map.ExeConfigFilename = name;
+                map.ExeConfigFilename = configPath;
 
                 var config = ConfigurationManager.OpenMappedExeConfiguration(
                     map, ConfigurationUserLevel.None);
@@ -389,11 +385,7 @@ namespace MonoTests.System.Configuration
 
                 config.Save();
 
-                Assert.True(File.Exists(name), "#1");
-            }
-            finally
-            {
-                File.Delete(name);
+                Assert.True(File.Exists(configPath), "#1");
             }
         }
 
