@@ -501,7 +501,7 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.ArgumentOutOfRange_MustBeNonNegNum, nameof(count)));
         }
 
-        private static unsafe int wcslen(char* ptr)
+        internal static unsafe int wcslen(char* ptr)
         {
             char* end = ptr;
 
