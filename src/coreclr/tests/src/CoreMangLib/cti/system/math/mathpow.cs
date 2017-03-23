@@ -217,7 +217,7 @@ public class MathPow
         {
             double d = Math.Pow(- 1, double.NegativeInfinity);
 
-            if (!double.IsNaN(d))
+            if (d != 1)
             {
                 TestLibrary.TestFramework.LogError("007.1", "Return value is wrong!");
                 retVal = false;

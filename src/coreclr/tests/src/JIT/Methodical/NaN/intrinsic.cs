@@ -582,11 +582,11 @@ namespace JitTest
                 TestAtan2(Double.NaN, Double.PositiveInfinity, Double.NaN);
                 TestAtan2(Double.NaN, Double.NegativeInfinity, Double.NaN);
                 TestAtan2(Double.PositiveInfinity, Double.NaN, Double.NaN);
-                TestAtan2(Double.PositiveInfinity, Double.PositiveInfinity, Double.NaN);
-                TestAtan2(Double.PositiveInfinity, Double.NegativeInfinity, Double.NaN);
+                TestAtan2(Double.PositiveInfinity, Double.PositiveInfinity, Math.PI / 4);
+                TestAtan2(Double.PositiveInfinity, Double.NegativeInfinity, 3 * Math.PI / 4);
                 TestAtan2(Double.NegativeInfinity, Double.NaN, Double.NaN);
-                TestAtan2(Double.NegativeInfinity, Double.PositiveInfinity, Double.NaN);
-                TestAtan2(Double.NegativeInfinity, Double.NegativeInfinity, Double.NaN);
+                TestAtan2(Double.NegativeInfinity, Double.PositiveInfinity, -Math.PI / 4);
+                TestAtan2(Double.NegativeInfinity, Double.NegativeInfinity, -3 * Math.PI / 4);
             }
             catch (Exception ex)
             {

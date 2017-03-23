@@ -2846,13 +2846,13 @@
                                                           float64)
         IL_0783:  ldc.r8     (00 00 00 00 00 00 F0 7F)
         IL_078c:  ldc.r8     (00 00 00 00 00 00 F0 7F)
-        IL_0795:  ldc.r8     (FF FF FF FF FF FF FF 7F)
+        IL_0795:  ldc.r8     0.78539816339744828
         IL_079e:  call       void JitTest.Test::TestAtan2(float64,
                                                           float64,
                                                           float64)
         IL_07a3:  ldc.r8     (00 00 00 00 00 00 F0 7F)
         IL_07ac:  ldc.r8     (00 00 00 00 00 00 F0 FF)
-        IL_07b5:  ldc.r8     (FF FF FF FF FF FF FF 7F)
+        IL_07b5:  ldc.r8     2.3561944901923448
         IL_07be:  call       void JitTest.Test::TestAtan2(float64,
                                                           float64,
                                                           float64)
@@ -2864,13 +2864,13 @@
                                                           float64)
         IL_07e3:  ldc.r8     (00 00 00 00 00 00 F0 FF)
         IL_07ec:  ldc.r8     (00 00 00 00 00 00 F0 7F)
-        IL_07f5:  ldc.r8     (FF FF FF FF FF FF FF 7F)
+        IL_07f5:  ldc.r8     -0.78539816339744828
         IL_07fe:  call       void JitTest.Test::TestAtan2(float64,
                                                           float64,
                                                           float64)
         IL_0803:  ldc.r8     (00 00 00 00 00 00 F0 FF)
         IL_080c:  ldc.r8     (00 00 00 00 00 00 F0 FF)
-        IL_0815:  ldc.r8     (FF FF FF FF FF FF FF 7F)
+        IL_0815:  ldc.r8     -2.3561944901923448
         IL_081e:  call       void JitTest.Test::TestAtan2(float64,
                                                           float64,
                                                           float64)
