@@ -839,7 +839,7 @@ namespace System.Tests
         [InlineData(-0.63661977236758134,    -1.0,                     0.0)]    // value: -(2 / pi)
         [InlineData(-0.43429448190325183,    -1.0,                     0.0)]    // value: -(log10(e))
         [InlineData(-0.31830988618379067,    -1.0,                     0.0)]    // value: -(1 / pi)
-        [InlineData(-0.0,                    -0.0,                     0.0)]
+        [InlineData(-0.0,                    -0.0,                     0.0, Skip = "https://github.com/dotnet/coreclr/issues/10288")]
         [InlineData( double.NaN,              double.NaN,              0.0)]
         [InlineData( 0.0,                     0.0,                     0.0)]
         [InlineData( 0.31830988618379067,     0.0,                     0.0)]    // value:  (1 / pi)
