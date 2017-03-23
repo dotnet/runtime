@@ -11,9 +11,9 @@
     <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
 
-    <!-- NOTE: this test simply takes too long to complete under heap verify. It is not fundamentally incompatible. -->
-    <GCStressIncompatible Condition="'$(Platform)' == 'x86'">true</GCStressIncompatible>
-    <HeapVerifyIncompatible Condition="'$(Platform)' == 'x86'">true</HeapVerifyIncompatible>
+    <!-- NOTE: This test takes too long and internally times out under GCStress/heap verify. It is not fundamentally incompatible if stress testing is fast enough.  -->
+    <GCStressIncompatible>true</GCStressIncompatible>
+    <HeapVerifyIncompatible>true</HeapVerifyIncompatible>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
