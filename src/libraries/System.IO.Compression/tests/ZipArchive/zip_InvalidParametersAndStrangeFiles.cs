@@ -220,7 +220,7 @@ namespace System.IO.Compression.Tests
         {
             string zipname = strange("largetrailingwhitespacedeflation.zip");
             string entryname = "A/B/C/D";
-            using (FileStream stream = File.Open(zipname, FileMode.Open, FileAccess.ReadWrite))
+            using (FileStream stream = File.Open(zipname, FileMode.Open, FileAccess.Read))
             using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Read))
             {
                 ZipArchiveEntry entry = archive.GetEntry(entryname);
