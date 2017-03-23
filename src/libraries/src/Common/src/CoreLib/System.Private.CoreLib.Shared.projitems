@@ -211,6 +211,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\StringSplitOptions.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\SystemException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Normalization.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\StringBuilder.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\ThreadAttributes.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\DeferredDisposableLifetime.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Timeout.cs"/>
