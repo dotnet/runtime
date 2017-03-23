@@ -385,6 +385,47 @@ namespace Microsoft.CSharp.RuntimeBinder
             return e;
         }
 
+        private Type GetArgumentType(ICSharpBinder p, CSharpArgumentInfo argInfo, Expression param, DynamicMetaObject arg, int index)
+        {
+            Type t = argInfo.UseCompileTimeType ? param.Type : arg.LimitType;
+            Debug.Assert(t != null);
+
+            if ((argInfo.Flags & (CSharpArgumentInfoFlags.IsRef | CSharpArgumentInfoFlags.IsOut)) != 0)
+            {
+                // If we have a ref our an out parameter, make the byref type.
+                // If we have the receiver of a call or invoke that is ref, it must be because of 
+                // a struct caller. Don't persist the ref for that.
+                if (!(index == 0 && IsBinderThatCanHaveRefReceiver(p)))
+                {
+                    t = t.MakeByRefType();
+                }
+            }
+            else if (!argInfo.UseCompileTimeType)
+            {
+                // If we don't have ref or out, then pick the best type to represent this value.
+                // If the runtime value has a type that is not accessible, then we pick an
+                // accessible type that is "closest" in some sense, where we recursively widen
+                // components of type that can validly vary covariantly.
+
+                // This ensures that the type we pick is something that the user could have written.
+
+                CType actualType = _symbolTable.GetCTypeFromType(t);
+                CType bestType;
+
+                bool res = _semanticChecker.GetTypeManager().GetBestAccessibleType(_semanticChecker, _bindingContext, actualType, out bestType);
+
+                // Since the actual type of these arguments are never going to be pointer
+                // types or ref/out types (they are in fact boxed into an object), we have
+                // a guarantee that we will always be able to find a best accessible type
+                // (which, in the worst case, may be object).
+                Debug.Assert(res, "Unexpected failure of GetBestAccessibleType in construction of argument array");
+
+                t = bestType.AssociatedSystemType;
+            }
+
+            return t;
+        }
+
         /////////////////////////////////////////////////////////////////////////////////
 
         private ArgumentObject[] CreateArgumentArray(
@@ -396,48 +437,6 @@ namespace Microsoft.CSharp.RuntimeBinder
             // these arguments.
 
             List<ArgumentObject> list = new List<ArgumentObject>();
-            Func<ICSharpBinder, CSharpArgumentInfo, Expression, DynamicMetaObject, int, Type> getArgumentType = null;
-
-            getArgumentType = (p, argInfo, param, arg, index) =>
-                {
-                    Type t = argInfo.UseCompileTimeType ? param.Type : arg.LimitType;
-                    Debug.Assert(t != null);
-
-                    if ((argInfo.Flags & (CSharpArgumentInfoFlags.IsRef | CSharpArgumentInfoFlags.IsOut)) != 0)
-                    {
-                        // If we have a ref our an out parameter, make the byref type.
-                        // If we have the receiver of a call or invoke that is ref, it must be because of 
-                        // a struct caller. Don't persist the ref for that.
-                        if (!(index == 0 && IsBinderThatCanHaveRefReceiver(p)))
-                        {
-                            t = t.MakeByRefType();
-                        }
-                    }
-                    else if (!argInfo.UseCompileTimeType)
-                    {
-                        // If we don't have ref or out, then pick the best type to represent this value.
-                        // If the runtime value has a type that is not accessible, then we pick an
-                        // accessible type that is "closest" in some sense, where we recursively widen
-                        // components of type that can validly vary covariantly.
-
-                        // This ensures that the type we pick is something that the user could have written.
-
-                        CType actualType = _symbolTable.GetCTypeFromType(t);
-                        CType bestType;
-
-                        bool res = _semanticChecker.GetTypeManager().GetBestAccessibleType(_semanticChecker, _bindingContext, actualType, out bestType);
-                        
-                        // Since the actual type of these arguments are never going to be pointer
-                        // types or ref/out types (they are in fact boxed into an object), we have
-                        // a guarantee that we will always be able to find a best accessible type
-                        // (which, in the worst case, may be object).
-                        Debug.Assert(res, "Unexpected failure of GetBestAccessibleType in construction of argument array");
-
-                        t = bestType.AssociatedSystemType;
-                    }
-
-                    return t;
-                };
 
             int i = 0;
             foreach (var curParam in parameters)
@@ -445,7 +444,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 ArgumentObject a = new ArgumentObject();
                 a.Value = args[i].Value;
                 a.Info = payload.GetArgumentInfo(i);
-                a.Type = getArgumentType(payload, a.Info, curParam, args[i], i);
+                a.Type = GetArgumentType(payload, a.Info, curParam, args[i], i);
 
                 Debug.Assert(a.Type != null);
                 list.Add(a);
