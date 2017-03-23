@@ -102,9 +102,12 @@ Note: Area triage will apply the new scheme (issue types and assignee) throughou
 ### Triage rules - simplified
 
 1. Each issue has exactly one **area-&#42;** label
+    * Motivation: Issues with multiple areas have loose responbility (everyone blames the other side) and issues are double counted in reports.
 1. Issue has no **Assignee**, unless someone is working on the issue at the moment
+    * Motivation: Observation is that contributors are less likely to grab assigned issues, no matter what the repo rules say.
 1. Use **up for grabs** as much as possible, ideally with a quick note about next steps / complexity of the issue
 1. Set milestone to **Future**, unless you can 95%-commit you can fund the issue in specific milestone
+    * Motivation: Helps communicate desire/timeline to community. Can spark further priority/impact discussion.
 1. Each issue has exactly one "*issue type*" label (**bug**, **enhancement**, **api-needs-work**, **test bug**, **test enhancement**, **question**, **documentation**, etc.)
     * Don't be afraid to be wrong when deciding 'bug' vs. 'test bug' (flip a coin if you must). The most useful values for tracking are 'api-&#42;' vs. 'enhancement', 'question', and 'documentation'.
 1. Don't be afraid to say no, or close issues - just explain why and be polite
