@@ -107,6 +107,7 @@ namespace System.Tests
             Assert.Equal(-1.5707963267949, Math.Atan(double.NegativeInfinity), 4);
         }
 
+        [ActiveIssue("https://github.com/dotnet/coreclr/issues/9806")]
         [Fact]
         public static void Atan2()
         {
@@ -258,6 +259,7 @@ namespace System.Tests
             Assert.Equal(double.NaN, Math.Log10(double.NegativeInfinity));
         }
 
+        [ActiveIssue("https://github.com/dotnet/coreclr/issues/9806")]
         [Fact]
         public static void Pow()
         {
