@@ -75,6 +75,9 @@ mono_is_sr_mono_cmethod (MonoClass *klass);
 gboolean
 mono_is_sr_mono_property (MonoClass *klass);
 
+MonoType*
+mono_reflection_type_get_handle (MonoReflectionType *ref, MonoError *error);
+
 gpointer
 mono_reflection_resolve_object (MonoImage *image, MonoObject *obj, MonoClass **handle_class, MonoGenericContext *context, MonoError *error);
 
