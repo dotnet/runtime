@@ -24,14 +24,14 @@
     <Compile Include="System\SpanExtensions.cs" />
     <Compile Include="System\SpanHelpers.T.cs" />
     <Compile Include="System\SpanHelpers.byte.cs" />
-    <Compile Include="System\SpanHelpers.Clear.cs" />
-    <Compile Include="System\ThrowHelper.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="System\ReadOnlySpan.cs" />
     <Compile Include="System\Span.cs" />
     <Compile Include="System\SpanHelpers.cs" />
     <Compile Include="System\Pinnable.cs" />
+    <Compile Include="System\ThrowHelper.cs" />
+    <Compile Include="System\SpanHelpers.Clear.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Reference Include="System.Diagnostics.Debug" />
