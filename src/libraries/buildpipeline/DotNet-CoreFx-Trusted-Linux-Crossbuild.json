@@ -416,7 +416,7 @@
       "value": "/crossrootfs/$(PB_Architecture)",
       "allowOverride": true
     },
-    "portableLinux": {
+    "portableBuild": {
       "value": ""
     },
     "PB_CleanAgent": {

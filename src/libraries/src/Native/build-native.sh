@@ -14,7 +14,7 @@ usage()
     echo "cross - optional argument to signify cross compilation,"
     echo "      - will use ROOTFS_DIR environment variable if set."
     echo "staticLibLink - Optional argument to statically link any native library."
-    echo "portableLinux - Optional argument to build native libraries portable over GLIBC based Linux distros."
+    echo "portable - Optional argument to build native libraries portable over GLIBC based Linux distros."
     echo "stripSymbols - Optional argument to strip native symbols during the build."
     echo "generateversion - Pass this in to get a version on the build output."
     echo "cmakeargs - user-settable additional arguments passed to CMake."
@@ -155,7 +155,7 @@ __VerboseBuild=false
 __ClangMajorVersion=0
 __ClangMinorVersion=0
 __StaticLibLink=0
-__PortableLinux=0
+__PortableBuild=0
 
 CPUName=$(uname -p)
 # Some Linux platforms report unknown for platform, but the arch for machine.
@@ -166,6 +166,46 @@ fi
 if [ $CPUName == "i686" ]; then
     __BuildArch=x86
 fi
+
+# Use uname to determine what the OS is.
+OSName=$(uname -s)
+case $OSName in
+    Linux)
+        __BuildOS=Linux
+        __HostOS=Linux
+        ;;
+
+    Darwin)
+        __BuildOS=OSX
+        __HostOS=OSX
+        ;;
+
+    FreeBSD)
+        __BuildOS=FreeBSD
+        __HostOS=FreeBSD
+        ;;
+
+    OpenBSD)
+        __BuildOS=OpenBSD
+        __HostOS=OpenBSD
+        ;;
+
+    NetBSD)
+        __BuildOS=NetBSD
+        __HostOS=NetBSD
+        ;;
+
+    SunOS)
+        __BuildOS=SunOS
+        __HostOS=SunOS
+        ;;
+
+    *)
+        echo "Unsupported OS $OSName detected, configuring as if for Linux"
+        __BuildOS=Linux
+        __HostOS=Linux
+        ;;
+esac
 
 while :; do
     if [ $# -le 0 ]; then
@@ -229,8 +269,11 @@ while :; do
         staticliblink)
             __StaticLibLink=1
             ;;
-        portablelinux)
-            __PortableLinux=1
+        -portable)
+            # Portable native components are only supported on Linux
+            if [ "$__HostOS" == "Linux" ]; then
+                __PortableBuild=1
+            fi
             ;;
         generateversion)
             __generateversionsource=true
@@ -286,7 +329,7 @@ while :; do
     shift
 done
 
-__CMakeExtraArgs="$__CMakeExtraArgs -DFEATURE_DISTRO_AGNOSTIC_SSL=$__PortableLinux"
+__CMakeExtraArgs="$__CMakeExtraArgs -DFEATURE_DISTRO_AGNOSTIC_SSL=$__PortableBuild"
 __CMakeExtraArgs="$__CMakeExtraArgs -DCMAKE_STATIC_LIB_LINK=$__StaticLibLink"
 
 # Set cross build
