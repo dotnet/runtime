@@ -111,6 +111,8 @@ extern "C" uint32_t* g_gc_card_table;
 extern "C" uint8_t* g_gc_lowest_address;
 extern "C" uint8_t* g_gc_highest_address;
 
+::IGCHandleTable*  CreateGCHandleTable();
+
 namespace WKS {
     ::IGCHeapInternal* CreateGCHeap();
     class GCHeap;
@@ -261,6 +263,9 @@ extern void FinalizeWeakReference(Object * obj);
 
 // The single GC heap instance, shared with the VM.
 extern IGCHeapInternal* g_theGCHeap;
+
+// The single GC handle table instance, shared with the VM.
+extern IGCHandleTable* g_theGCHandleTable;
 
 #ifndef DACCESS_COMPILE
 inline bool IsGCInProgress(bool bConsiderGCStart = false)
