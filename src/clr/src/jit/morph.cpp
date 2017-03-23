@@ -10820,7 +10820,6 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                             op1->gtOp.gtOp1 = gtNewOperNode(GT_NOP, TYP_INT, op1->gtCast.CastOp());
                             op1->gtFlags &= ~GTF_ALL_EFFECT;
                             op1->gtFlags |= (op1->gtCast.CastOp()->gtFlags & GTF_ALL_EFFECT);
-                            op1->gtFlags |= GTF_DONT_CSE;
                         }
 
                         if (op2->gtCast.CastOp()->OperGet() != GT_NOP)
@@ -10828,8 +10827,10 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                             op2->gtOp.gtOp1 = gtNewOperNode(GT_NOP, TYP_INT, op2->gtCast.CastOp());
                             op2->gtFlags &= ~GTF_ALL_EFFECT;
                             op2->gtFlags |= (op2->gtCast.CastOp()->gtFlags & GTF_ALL_EFFECT);
-                            op2->gtFlags |= GTF_DONT_CSE;
                         }
+
+                        op1->gtFlags |= GTF_DONT_CSE;
+                        op2->gtFlags |= GTF_DONT_CSE;
 
                         tree->gtFlags &= ~GTF_ALL_EFFECT;
                         tree->gtFlags |= ((op1->gtFlags | op2->gtFlags) & GTF_ALL_EFFECT);
