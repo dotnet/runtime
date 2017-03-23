@@ -90,6 +90,7 @@ namespace System.Tests
             AssertEqual(-MathF.PI / 2.0f, MathF.Atan(float.NegativeInfinity), CrossPlatformMachineEpsilon * 10);
         }
 
+        [ActiveIssue("https://github.com/dotnet/coreclr/issues/9806")]
         [Fact]
         public static void Atan2()
         {
@@ -238,6 +239,7 @@ namespace System.Tests
             Assert.Equal(float.NaN, MathF.Min(float.NaN, float.NaN));
         }
 
+        [ActiveIssue("https://github.com/dotnet/coreclr/issues/9806")]
         [Fact]
         public static void Pow()
         {
