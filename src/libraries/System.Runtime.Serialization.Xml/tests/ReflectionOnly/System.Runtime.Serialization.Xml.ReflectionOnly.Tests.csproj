@@ -9,13 +9,17 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <Compile Include="$(TestSourceFolder)..\SerializationTypes.netcoreapp.cs" />
+    <Compile Include="$(TestSourceFolder)..\DataContractSerializer.netcoreapp.cs" />
+    <Compile Include="$(TestSourceFolder)..\DataContractSerializerStressTests.netcoreapp.cs" />
+  </ItemGroup>
   <ItemGroup>
     <Compile Include="$(TestSourceFolder)..\Utils.cs" />
     <Compile Include="$(TestSourceFolder)..\SerializationTypes.cs" />
     <Compile Include="$(TestSourceFolder)..\SerializationTypes.CoreCLR.cs" />
     <Compile Include="$(TestSourceFolder)..\DataContractSerializer.cs" />
     <Compile Include="$(TestSourceFolder)..\DataContractSerializer.CoreCLR.cs" />
-    <Compile Include="$(TestSourceFolder)..\DataContractSerializerStressTests.cs" />
     <Compile Include="$(TestSourceFolder)..\DataContractSerializerTestData.cs" />
     <Compile Include="$(TestSourceFolder)..\MyResolver.cs" />
     <Compile Include="$(TestSourceFolder)..\XmlDictionaryReaderTests.cs" />
