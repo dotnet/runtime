@@ -24,19 +24,82 @@ namespace System.Net.Sockets
 
     public partial class Socket
     {
+        /// <summary>Handler for completed AcceptAsync operations.</summary>
+        private static readonly EventHandler<SocketAsyncEventArgs> AcceptCompletedHandler = (s, e) => CompleteAccept((Socket)s, (TaskSocketAsyncEventArgs<Socket>)e);
+        /// <summary>Handler for completed ReceiveAsync operations.</summary>
+        private static readonly EventHandler<SocketAsyncEventArgs> ReceiveCompletedHandler = (s, e) => CompleteSendReceive((Socket)s, (Int32TaskSocketAsyncEventArgs)e, isReceive: true);
+        /// <summary>Handler for completed SendAsync operations.</summary>
+        private static readonly EventHandler<SocketAsyncEventArgs> SendCompletedHandler = (s, e) => CompleteSendReceive((Socket)s, (Int32TaskSocketAsyncEventArgs)e, isReceive: false);
         /// <summary>
-        /// Sentinel that can be stored into one of the cached fields to indicate that an instance
+        /// Sentinel that can be stored into one of the Socket cached fields to indicate that an instance
         /// was previously created but is currently being used by another concurrent operation.
         /// </summary>
-        private static readonly Int32TaskSocketAsyncEventArgs s_rentedSentinel = new Int32TaskSocketAsyncEventArgs();
+        private static readonly TaskSocketAsyncEventArgs<Socket> s_rentedSocketSentinel = new TaskSocketAsyncEventArgs<Socket>();
+        /// <summary>
+        /// Sentinel that can be stored into one of the Int32 fields to indicate that an instance
+        /// was previously created but is currently being used by another concurrent operation.
+        /// </summary>
+        private static readonly Int32TaskSocketAsyncEventArgs s_rentedInt32Sentinel = new Int32TaskSocketAsyncEventArgs();
         /// <summary>Cached task with a 0 value.</summary>
         private static readonly Task<int> s_zeroTask = Task.FromResult(0);
-        /// <summary>Cached SocketAsyncEventArgs for Task-based ReceiveAsync APIs.</summary>
-        private Int32TaskSocketAsyncEventArgs _cachedReceiveEventArgs;
-        /// <summary>Cached SocketAsyncEventArgs for Task-based SendAsync APIs.</summary>
-        private Int32TaskSocketAsyncEventArgs _cachedSendEventArgs;
+
+        /// <summary>Cached event args used with Task-based async operations.</summary>
+        private CachedTaskEventArgs _cachedTaskEventArgs;
 
         internal Task<Socket> AcceptAsync(Socket acceptSocket)
+        {
+            // Get any cached SocketAsyncEventArg we may have.
+            TaskSocketAsyncEventArgs<Socket> saea = Interlocked.Exchange(ref LazyInitializer.EnsureInitialized(ref _cachedTaskEventArgs).Accept, s_rentedSocketSentinel);
+            if (saea == s_rentedSocketSentinel)
+            {
+                // An instance was once created (or is currently being created elsewhere), but some other
+                // concurrent operation is using it. Since we can store at most one, and since an individual
+                // APM operation is less expensive than creating a new SAEA and using it only once, we simply
+                // fall back to using an APM implementation.
+                return AcceptAsyncApm(acceptSocket);
+            }
+            else if (saea == null)
+            {
+                // No instance has been created yet, so create one.
+                saea = new TaskSocketAsyncEventArgs<Socket>();
+                saea.Completed += AcceptCompletedHandler;
+            }
+
+            // Configure the SAEA.
+            saea.AcceptSocket = acceptSocket;
+
+            // Initiate the accept operation.
+            Task<Socket> t;
+            if (AcceptAsync(saea))
+            {
+                // The operation is completing asynchronously (it may have already completed).
+                // Get the task for the operation, with appropriate synchronization to coordinate
+                // with the async callback that'll be completing the task.
+                bool responsibleForReturningToPool;
+                t = saea.GetCompletionResponsibility(out responsibleForReturningToPool).Task;
+                if (responsibleForReturningToPool)
+                {
+                    // We're responsible for returning it only if the callback has already been invoked
+                    // and gotten what it needs from the SAEA; otherwise, the callback will return it.
+                    ReturnSocketAsyncEventArgs(saea);
+                }
+            }
+            else
+            {
+                // The operation completed synchronously.  Get a task for it.
+                t = saea.SocketError == SocketError.Success ?
+                    Task.FromResult(saea.AcceptSocket) :
+                    Task.FromException<Socket>(GetException(saea.SocketError));
+
+                // There won't be a callback, and we're done with the SAEA, so return it to the pool.
+                ReturnSocketAsyncEventArgs(saea);
+            }
+
+            return t;
+        }
+
+        /// <summary>Implements Task-returning AcceptAsync on top of Begin/EndAsync.</summary>
+        private Task<Socket> AcceptAsyncApm(Socket acceptSocket)
         {
             var tcs = new TaskCompletionSource<Socket>(this);
             BeginAccept(acceptSocket, 0, iar =>
@@ -424,10 +487,37 @@ namespace System.Net.Sockets
         }
 
         /// <summary>Completes the SocketAsyncEventArg's Task with the result of the send or receive, and returns it to the specified pool.</summary>
-        private static void CompleteSendReceive(Int32TaskSocketAsyncEventArgs saea, bool isReceive)
+        private static void CompleteAccept(Socket s, TaskSocketAsyncEventArgs<Socket> saea)
         {
             // Pull the relevant state off of the SAEA
-            Socket s = (Socket)saea.UserToken;
+            SocketError error = saea.SocketError;
+            Socket acceptSocket = saea.AcceptSocket;
+
+            // Synchronize with the initiating thread. If the synchronous caller already got what
+            // it needs from the SAEA, then we can return it to the pool now. Otherwise, it'll be
+            // responsible for returning it once it's gotten what it needs from it.
+            bool responsibleForReturningToPool;
+            AsyncTaskMethodBuilder<Socket> builder = saea.GetCompletionResponsibility(out responsibleForReturningToPool);
+            if (responsibleForReturningToPool)
+            {
+                s.ReturnSocketAsyncEventArgs(saea);
+            }
+
+            // Complete the builder/task with the results.
+            if (error == SocketError.Success)
+            {
+                builder.SetResult(acceptSocket);
+            }
+            else
+            {
+                builder.SetException(GetException(error));
+            }
+        }
+
+        /// <summary>Completes the SocketAsyncEventArg's Task with the result of the send or receive, and returns it to the specified pool.</summary>
+        private static void CompleteSendReceive(Socket s, Int32TaskSocketAsyncEventArgs saea, bool isReceive)
+        {
+            // Pull the relevant state off of the SAEA
             SocketError error = saea.SocketError;
             int bytesTransferred = saea.BytesTransferred;
             bool wrapExceptionsInIOExceptions = saea._wrapExceptionsInIOExceptions;
@@ -467,11 +557,12 @@ namespace System.Net.Sockets
         private Int32TaskSocketAsyncEventArgs RentSocketAsyncEventArgs(bool isReceive)
         {
             // Get any cached SocketAsyncEventArg we may have.
+            CachedTaskEventArgs cea = LazyInitializer.EnsureInitialized(ref _cachedTaskEventArgs);
             Int32TaskSocketAsyncEventArgs saea = isReceive ?
-                Interlocked.Exchange(ref _cachedReceiveEventArgs, s_rentedSentinel) :
-                Interlocked.Exchange(ref _cachedSendEventArgs, s_rentedSentinel);
+                Interlocked.Exchange(ref cea.Receive, s_rentedInt32Sentinel) :
+                Interlocked.Exchange(ref cea.Send, s_rentedInt32Sentinel);
 
-            if (saea == s_rentedSentinel)
+            if (saea == s_rentedInt32Sentinel)
             {
                 // An instance was once created (or is currently being created elsewhere), but some other
                 // concurrent operation is using it. Since we can store at most one, and since an individual
@@ -484,14 +575,9 @@ namespace System.Net.Sockets
             {
                 // No instance has been created yet, so create one.
                 saea = new Int32TaskSocketAsyncEventArgs();
-                var handler = isReceive ? // branch to avoid capturing isReceive on every call
-                    new EventHandler<SocketAsyncEventArgs>((_, e) => CompleteSendReceive((Int32TaskSocketAsyncEventArgs)e, isReceive: true)) :
-                    new EventHandler<SocketAsyncEventArgs>((_, e) => CompleteSendReceive((Int32TaskSocketAsyncEventArgs)e, isReceive: false));
-                saea.Completed += handler;
+                saea.Completed += isReceive ? ReceiveCompletedHandler : SendCompletedHandler;
             }
 
-            // We got an instance. Configure and return it.
-            saea.UserToken = this;
             return saea;
         }
 
@@ -500,12 +586,12 @@ namespace System.Net.Sockets
         /// <param name="isReceive">true if this instance is used for receives; false if used for sends.</param>
         private void ReturnSocketAsyncEventArgs(Int32TaskSocketAsyncEventArgs saea, bool isReceive)
         {
-            Debug.Assert(saea != s_rentedSentinel);
+            Debug.Assert(_cachedTaskEventArgs != null, "Should have been initialized when renting");
+            Debug.Assert(saea != s_rentedInt32Sentinel);
 
             // Reset state on the SAEA before returning it.  But do not reset buffer state.  That'll be done
             // if necessary by the consumer, but we want to keep the buffers due to likely subsequent reuse
             // and the costs associated with changing them.
-            saea.UserToken = null;
             saea._accessed = false;
             saea._builder = default(AsyncTaskMethodBuilder<int>);
             saea._wrapExceptionsInIOExceptions = false;
@@ -514,24 +600,47 @@ namespace System.Net.Sockets
             // never null or another instance.
             if (isReceive)
             {
-                Debug.Assert(_cachedReceiveEventArgs == s_rentedSentinel);
-                Volatile.Write(ref _cachedReceiveEventArgs, saea);
+                Debug.Assert(_cachedTaskEventArgs.Receive == s_rentedInt32Sentinel);
+                Volatile.Write(ref _cachedTaskEventArgs.Receive, saea);
             }
             else
             {
-                Debug.Assert(_cachedSendEventArgs == s_rentedSentinel);
-                Volatile.Write(ref _cachedSendEventArgs, saea);
+                Debug.Assert(_cachedTaskEventArgs.Send == s_rentedInt32Sentinel);
+                Volatile.Write(ref _cachedTaskEventArgs.Send, saea);
             }
+        }
+
+        /// <summary>Returns a <see cref="Int32TaskSocketAsyncEventArgs"/> instance for reuse.</summary>
+        /// <param name="saea">The instance to return.</param>
+        /// <param name="isReceive">true if this instance is used for receives; false if used for sends.</param>
+        private void ReturnSocketAsyncEventArgs(TaskSocketAsyncEventArgs<Socket> saea)
+        {
+            Debug.Assert(_cachedTaskEventArgs != null, "Should have been initialized when renting");
+            Debug.Assert(saea != s_rentedSocketSentinel);
+
+            // Reset state on the SAEA before returning it.  But do not reset buffer state.  That'll be done
+            // if necessary by the consumer, but we want to keep the buffers due to likely subsequent reuse
+            // and the costs associated with changing them.
+            saea.AcceptSocket = null;
+            saea._accessed = false;
+            saea._builder = default(AsyncTaskMethodBuilder<Socket>);
+
+            // Write this instance back as a cached instance.  It should only ever be overwriting the sentinel,
+            // never null or another instance.
+            Debug.Assert(_cachedTaskEventArgs.Accept == s_rentedSocketSentinel);
+            Volatile.Write(ref _cachedTaskEventArgs.Accept, saea);
         }
 
         /// <summary>Dispose of any cached <see cref="Int32TaskSocketAsyncEventArgs"/> instances.</summary>
         private void DisposeCachedTaskSocketAsyncEventArgs()
         {
-            Int32TaskSocketAsyncEventArgs e = Interlocked.Exchange(ref _cachedReceiveEventArgs, s_rentedSentinel);
-            if (e != s_rentedSentinel) e?.Dispose();
-
-            e = Interlocked.Exchange(ref _cachedSendEventArgs, s_rentedSentinel);
-            if (e != s_rentedSentinel) e?.Dispose();
+            CachedTaskEventArgs cea = _cachedTaskEventArgs;
+            if (cea != null)
+            {
+                Interlocked.Exchange(ref cea.Accept, s_rentedSocketSentinel)?.Dispose();
+                Interlocked.Exchange(ref cea.Receive, s_rentedInt32Sentinel)?.Dispose();
+                Interlocked.Exchange(ref cea.Send, s_rentedInt32Sentinel)?.Dispose();
+            }
         }
 
         /// <summary>A TaskCompletionSource that carries an extra field of strongly-typed state.</summary>
@@ -548,18 +657,25 @@ namespace System.Net.Sockets
             public StateTaskCompletionSource(object baseState) : base(baseState) { }
         }
 
-        /// <summary>A SocketAsyncEventArgs with an associated async method builder.</summary>
-        internal sealed class Int32TaskSocketAsyncEventArgs : SocketAsyncEventArgs
+        /// <summary>Cached event args used with Task-based async operations.</summary>
+        private sealed class CachedTaskEventArgs
         {
-            /// <summary>A cached, successfully completed task.</summary>
-            internal Task<int> _successfullyCompletedTask;
+            /// <summary>Cached instance for accept operations.</summary>
+            public TaskSocketAsyncEventArgs<Socket> Accept;
+            /// <summary>Cached instance for receive operations.</summary>
+            public Int32TaskSocketAsyncEventArgs Receive;
+            /// <summary>Cached instance for send operations.</summary>
+            public Int32TaskSocketAsyncEventArgs Send;
+        }
+
+        /// <summary>A SocketAsyncEventArgs with an associated async method builder.</summary>
+        private class TaskSocketAsyncEventArgs<TResult> : SocketAsyncEventArgs
+        {
             /// <summary>
             /// The builder used to create the Task representing the result of the async operation.
             /// This is a mutable struct.
             /// </summary>
-            internal AsyncTaskMethodBuilder<int> _builder;
-            /// <summary>Whether exceptions that emerge should be wrapped in IOExceptions.</summary>
-            internal bool _wrapExceptionsInIOExceptions;
+            internal AsyncTaskMethodBuilder<TResult> _builder;
             /// <summary>
             /// Whether the instance was already accessed as part of the operation.  We expect
             /// at most two accesses: one from the synchronous caller to initiate the operation,
@@ -571,7 +687,7 @@ namespace System.Net.Sockets
             internal bool _accessed = false;
 
             /// <summary>Gets the builder's task with appropriate synchronization.</summary>
-            internal AsyncTaskMethodBuilder<int> GetCompletionResponsibility(out bool responsibleForReturningToPool)
+            internal AsyncTaskMethodBuilder<TResult> GetCompletionResponsibility(out bool responsibleForReturningToPool)
             {
                 lock (this)
                 {
@@ -581,6 +697,15 @@ namespace System.Net.Sockets
                     return _builder;
                 }
             }
+        }
+
+        /// <summary>A SocketAsyncEventArgs with an associated async method builder.</summary>
+        private sealed class Int32TaskSocketAsyncEventArgs : TaskSocketAsyncEventArgs<int>
+        {
+            /// <summary>A cached, successfully completed task.</summary>
+            internal Task<int> _successfullyCompletedTask;
+            /// <summary>Whether exceptions that emerge should be wrapped in IOExceptions.</summary>
+            internal bool _wrapExceptionsInIOExceptions;
         }
     }
 }
