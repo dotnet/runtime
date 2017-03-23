@@ -181,30 +181,6 @@ private:
 
 //*********************************************************************
 //
-// Merge Token manager. This class is created in GetSaveSize as an agent to 
-// notify linker regarding token movements. It does not have the ability to
-// keep track token movement.
-//
-//*********************************************************************
-class MergeTokenManager : public IMapToken
-{
-public:
-    STDMETHODIMP QueryInterface(REFIID riid, PVOID *pp);
-    STDMETHODIMP_(ULONG) AddRef();
-    STDMETHODIMP_(ULONG) Release();
-    STDMETHODIMP Map(mdToken tkImp, mdToken tkEmit);
-    MergeTokenManager(MDTOKENMAP *pTkMapList, IUnknown *pHandler);
-    virtual ~MergeTokenManager();
-private:
-    LONG        m_cRef;
-    MDTOKENMAP  *m_pTkMapList;
-    IMapToken   *m_pDefaultHostRemap;
-};
-
-
-
-//*********************************************************************
-//
 // This CMapToken class implemented the IMapToken. It is used in RegMeta for
 // filter process. This class can track all of the tokens are mapped. It also 
 // supplies a Find function. 
