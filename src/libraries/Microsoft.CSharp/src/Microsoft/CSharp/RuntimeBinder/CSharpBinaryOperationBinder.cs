@@ -16,6 +16,8 @@ namespace Microsoft.CSharp.RuntimeBinder
     /// </summary>
     internal sealed class CSharpBinaryOperationBinder : BinaryOperationBinder, ICSharpBinder
     {
+        public bool IsBinderThatCanHaveRefReceiver => false;
+
         public bool IsChecked { get; }
 
         internal bool IsLogicalOperation { get { return (_binopFlags & CSharpBinaryOperationFlags.LogicalOperation) != 0; } }

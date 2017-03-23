@@ -12,6 +12,8 @@ namespace Microsoft.CSharp.RuntimeBinder
     /// </summary>
     internal sealed class CSharpIsEventBinder : DynamicMetaObjectBinder, ICSharpBinder
     {
+        public bool IsBinderThatCanHaveRefReceiver => false;
+
         CSharpArgumentInfo ICSharpBinder.GetArgumentInfo(int index) => CSharpArgumentInfo.None;
 
         internal string Name { get; }

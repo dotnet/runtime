@@ -14,6 +14,8 @@ namespace Microsoft.CSharp.RuntimeBinder
     /// </summary>
     internal sealed class CSharpSetMemberBinder : SetMemberBinder, ICSharpBinder
     {
+        public bool IsBinderThatCanHaveRefReceiver => false;
+
         internal bool IsCompoundAssignment { get; }
 
         public bool IsChecked { get; }

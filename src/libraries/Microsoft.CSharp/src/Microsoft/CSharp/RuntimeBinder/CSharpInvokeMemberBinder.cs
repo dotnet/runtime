@@ -14,6 +14,7 @@ namespace Microsoft.CSharp.RuntimeBinder
     /// </summary>
     internal sealed class CSharpInvokeMemberBinder : InvokeMemberBinder, ICSharpInvokeOrInvokeMemberBinder
     {
+        public bool IsBinderThatCanHaveRefReceiver => true;
         bool ICSharpInvokeOrInvokeMemberBinder.StaticCall { get { return _argumentInfo[0] != null && _argumentInfo[0].IsStaticType; } }
 
         public CSharpCallFlags Flags { get { return _flags; } }

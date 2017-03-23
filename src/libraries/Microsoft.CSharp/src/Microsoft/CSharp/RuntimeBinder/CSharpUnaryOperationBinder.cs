@@ -16,6 +16,8 @@ namespace Microsoft.CSharp.RuntimeBinder
     /// </summary>
     internal sealed class CSharpUnaryOperationBinder : UnaryOperationBinder, ICSharpBinder
     {
+        public bool IsBinderThatCanHaveRefReceiver => false;
+
         public bool IsChecked { get; }
 
         public Type CallingContext { get; }

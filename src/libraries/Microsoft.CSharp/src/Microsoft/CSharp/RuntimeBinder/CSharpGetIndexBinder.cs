@@ -14,6 +14,8 @@ namespace Microsoft.CSharp.RuntimeBinder
     /// </summary>
     internal sealed class CSharpGetIndexBinder : GetIndexBinder, ICSharpBinder
     {
+        public bool IsBinderThatCanHaveRefReceiver => true;
+
         public Type CallingContext { get; }
 
         public bool IsChecked => false;
