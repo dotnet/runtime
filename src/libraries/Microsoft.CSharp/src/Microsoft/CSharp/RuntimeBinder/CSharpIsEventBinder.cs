@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Dynamic;
+using Microsoft.CSharp.RuntimeBinder.Semantics;
 
 namespace Microsoft.CSharp.RuntimeBinder
 {
@@ -12,6 +14,9 @@ namespace Microsoft.CSharp.RuntimeBinder
     /// </summary>
     internal sealed class CSharpIsEventBinder : DynamicMetaObjectBinder, ICSharpBinder
     {
+        public EXPR DispatchPayload(RuntimeBinder runtimeBinder, ArgumentObject[] arguments, Dictionary<int, LocalVariableSymbol> dictionary)
+            => runtimeBinder.BindIsEvent(this, arguments, dictionary);
+
         public void PopulateSymbolTableWithName(SymbolTable symbolTable, Type callingType, ArgumentObject[] arguments)
             => symbolTable.PopulateSymbolTableWithName(Name, null, arguments[0].Info.IsStaticType ? arguments[0].Value as Type : arguments[0].Type);
         public bool IsBinderThatCanHaveRefReceiver => false;

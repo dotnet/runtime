@@ -3,7 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Dynamic;
+using Microsoft.CSharp.RuntimeBinder.Semantics;
 
 namespace Microsoft.CSharp.RuntimeBinder
 {
@@ -13,6 +16,14 @@ namespace Microsoft.CSharp.RuntimeBinder
     /// </summary>
     internal sealed class CSharpConvertBinder : ConvertBinder, ICSharpBinder
     {
+        public EXPR DispatchPayload(RuntimeBinder runtimeBinder, ArgumentObject[] arguments, Dictionary<int, LocalVariableSymbol> dictionary)
+        {
+            Debug.Assert(arguments.Length == 1);
+            return Explicit
+                ? runtimeBinder.BindExplicitConversion(arguments, Type, dictionary)
+                : runtimeBinder.BindImplicitConversion(arguments, Type, dictionary, ConversionKind == CSharpConversionKind.ArrayCreationConversion);
+        }
+
         public void PopulateSymbolTableWithName(SymbolTable symbolTable, Type callingType, ArgumentObject[] arguments)
         {
             // Conversions don't need to do anything, since they're just conversions!

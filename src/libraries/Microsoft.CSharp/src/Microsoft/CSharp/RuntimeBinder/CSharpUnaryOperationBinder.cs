@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
 using System.Linq.Expressions;
+using Microsoft.CSharp.RuntimeBinder.Semantics;
 using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder
@@ -17,6 +18,8 @@ namespace Microsoft.CSharp.RuntimeBinder
     /// </summary>
     internal sealed class CSharpUnaryOperationBinder : UnaryOperationBinder, ICSharpBinder
     {
+        public EXPR DispatchPayload(RuntimeBinder runtimeBinder, ArgumentObject[] arguments, Dictionary<int, LocalVariableSymbol> dictionary)
+            => runtimeBinder.BindUnaryOperation(this, arguments, dictionary);
         public void PopulateSymbolTableWithName(SymbolTable symbolTable, Type callingType, ArgumentObject[] arguments)
             => symbolTable.PopulateSymbolTableWithName(Operation.GetCLROperatorName(), null, arguments[0].Type);
 
