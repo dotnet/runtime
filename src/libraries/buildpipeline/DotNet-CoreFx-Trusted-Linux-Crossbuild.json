@@ -316,7 +316,7 @@
       },
       "inputs": {
         "filename": "$(Build.SourcesDirectory)/corefx/Tools/msbuild.sh",
-        "arguments": "/p:AgentDirectory=$(Agent.HomeDirectory) /p:DoClean=$(PB_CleanAgent)",
+        "arguments": "cleanupagent.proj /p:AgentDirectory=$(Agent.HomeDirectory) /p:DoClean=$(PB_CleanAgent)",
         "workingFolder": "$(Build.SourcesDirectory)/corefx/Tools/scripts/vstsagent/",
         "failOnStandardError": "false"
       }
