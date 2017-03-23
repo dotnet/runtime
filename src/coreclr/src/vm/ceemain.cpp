@@ -862,19 +862,20 @@ void EEStartupHelper(COINITIEE fFlags)
 
 #ifndef CROSSGEN_COMPILE
 
+        InitializeGarbageCollector();
+
         // Initialize remoting
 
-        // weak_short, weak_long, strong; no pin
-        if (!Ref_Initialize())
+        if (!GCHeapUtilities::GetGCHandleTable()->Initialize())
+        {
             IfFailGo(E_OUTOFMEMORY);
+        }
 
         // Initialize contexts
         Context::Initialize();
 
         g_pEEShutDownEvent = new CLREvent();
         g_pEEShutDownEvent->CreateManualEvent(FALSE);
-
-
 
 #ifdef FEATURE_IPCMAN
         // Initialize CCLRSecurityAttributeManager
@@ -884,7 +885,6 @@ void EEStartupHelper(COINITIEE fFlags)
         VirtualCallStubManager::InitStatic();
 
         GCInterface::m_MemoryPressureLock.Init(CrstGCMemoryPressure);
-
 
 #endif // CROSSGEN_COMPILE
 
@@ -907,9 +907,6 @@ void EEStartupHelper(COINITIEE fFlags)
         // This isn't done as part of InitializeGarbageCollector() above because thread
         // creation requires AppDomains to have been set up.
         FinalizerThread::FinalizerThreadCreate();
-
-        // Now we really have fully initialized the garbage collector
-        SetGarbageCollectorFullyInitialized();
 
 #ifndef FEATURE_PAL
         // Watson initialization must precede InitializeDebugger() and InstallUnhandledExceptionFilter() 
@@ -1014,7 +1011,14 @@ void EEStartupHelper(COINITIEE fFlags)
         }
 #endif
 
-        InitializeGarbageCollector();
+        // This isn't done as part of InitializeGarbageCollector() above because it
+        // requires write barriers to have been set up on x86, which happens as part
+        // of InitJITHelpers1.
+        hr = g_pGCHeap->Initialize();
+        IfFailGo(hr);
+
+        // Now we really have fully initialized the garbage collector
+        SetGarbageCollectorFullyInitialized();
 
         InitializePinHandleTable();
 
@@ -1852,7 +1856,7 @@ part2:
 #ifdef SHOULD_WE_CLEANUP
                 if (!g_fFastExitProcess)
                 {
-                    Ref_Shutdown(); // shut down the handle table
+                    GCHeapUtilities::GetGCHandleTable()->Shutdown();
                 }
 #endif /* SHOULD_WE_CLEANUP */
 
@@ -2455,15 +2459,17 @@ void InitializeGarbageCollector()
     IGCToCLR* gcToClr = nullptr;
 #endif
 
+    IGCHandleTable *pGcHandleTable;
 
     IGCHeap *pGCHeap;
-    if (!InitializeGarbageCollector(gcToClr, &pGCHeap, &g_gc_dac_vars)) 
+    if (!InitializeGarbageCollector(gcToClr, &pGCHeap, &pGcHandleTable, &g_gc_dac_vars)) 
     {
         ThrowOutOfMemory();
     }
 
     assert(pGCHeap != nullptr);
     g_pGCHeap = pGCHeap;
+    g_pGCHandleTable = pGcHandleTable;
     g_gcDacGlobals = &g_gc_dac_vars;
 
     // Apparently the Windows linker removes global variables if they are never
@@ -2471,9 +2477,6 @@ void InitializeGarbageCollector()
     // only the DAC will read from it. This forces the linker to include
     // g_gcDacGlobals.
     volatile void* _dummy = g_gcDacGlobals;
-
-    hr = pGCHeap->Initialize();
-    IfFailThrow(hr);
 }
 
 /*****************************************************************************/

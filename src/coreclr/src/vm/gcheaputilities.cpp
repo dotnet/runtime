@@ -22,6 +22,8 @@ uint32_t* g_card_bundle_table = nullptr;
 // This is the global GC heap, maintained by the VM.
 GPTR_IMPL(IGCHeap, g_pGCHeap);
 
+IGCHandleTable* g_pGCHandleTable = nullptr;
+
 GcDacVars g_gc_dac_vars;
 GPTR_IMPL(GcDacVars, g_gcDacGlobals);
 
