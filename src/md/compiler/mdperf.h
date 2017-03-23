@@ -143,7 +143,6 @@
     MD_FUNC(GetCustomAttributeProps)\
     MD_FUNC(FindTypeRef)\
     MD_FUNC(RefToDefOptimization)\
-    MD_FUNC(ProcessFilter)\
     MD_FUNC(DefineAssembly)\
     MD_FUNC(DefineAssemblyRef)\
     MD_FUNC(DefineFile)\
