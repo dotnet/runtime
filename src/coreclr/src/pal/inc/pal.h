@@ -538,7 +538,6 @@ PAL_ProbeMemory(
     BOOL fWriteAccess);
 
 /******************* winuser.h Entrypoints *******************************/
-
 PALIMPORT
 LPSTR
 PALAPI
@@ -2532,6 +2531,16 @@ PALIMPORT
 DWORD
 PALAPI
 PAL_GetLogicalCpuCountFromOS(VOID);
+
+PALIMPORT
+size_t
+PALAPI
+PAL_GetRestrictedPhysicalMemoryLimit(VOID);
+
+PALIMPORT
+BOOL
+PALAPI
+PAL_GetWorkingSetSize(size_t* val);
 
 PALIMPORT
 size_t
