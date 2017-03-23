@@ -18,6 +18,5 @@ namespace Microsoft.CSharp.RuntimeBinder
         CSharpCallFlags Flags { get; }
         string Name { get; }
         IList<Type> TypeArguments { get; }
-        IList<CSharpArgumentInfo> ArgumentInfo { get; }
     }
 }
