@@ -14,6 +14,9 @@ namespace Microsoft.CSharp.RuntimeBinder
     /// </summary>
     internal sealed class CSharpGetIndexBinder : GetIndexBinder, ICSharpBinder
     {
+        public void PopulateSymbolTableWithName(SymbolTable symbolTable, Type callingType, ArgumentObject[] arguments)
+            => symbolTable.PopulateSymbolTableWithName(SpecialNames.Indexer, null, arguments[0].Type);
+
         public bool IsBinderThatCanHaveRefReceiver => true;
 
         public Type CallingContext { get; }

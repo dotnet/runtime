@@ -14,6 +14,9 @@ namespace Microsoft.CSharp.RuntimeBinder
     /// </summary>
     internal sealed class CSharpSetMemberBinder : SetMemberBinder, ICSharpBinder
     {
+        public void PopulateSymbolTableWithName(SymbolTable symbolTable, Type callingType, ArgumentObject[] arguments)
+            => symbolTable.PopulateSymbolTableWithName(Name, null, arguments[0].Type);
+
         public bool IsBinderThatCanHaveRefReceiver => false;
 
         internal bool IsCompoundAssignment { get; }

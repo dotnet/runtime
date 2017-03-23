@@ -13,6 +13,13 @@ namespace Microsoft.CSharp.RuntimeBinder
     /// </summary>
     internal sealed class CSharpConvertBinder : ConvertBinder, ICSharpBinder
     {
+        public void PopulateSymbolTableWithName(SymbolTable symbolTable, Type callingType, ArgumentObject[] arguments)
+        {
+            // Conversions don't need to do anything, since they're just conversions!
+            // After we add payload information, we add conversions for all argument
+            // types anyway, so that will get handled there.            
+        }
+
         public bool IsBinderThatCanHaveRefReceiver => false;
 
         CSharpArgumentInfo ICSharpBinder.GetArgumentInfo(int index) => CSharpArgumentInfo.None;

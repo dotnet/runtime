@@ -42,18 +42,6 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private readonly object _bindLock = new object();
 
-        // This class is used to keep the tuple of runtime object values and 
-        // the type that we want to use for the argument. This is different than the runtime
-        // value's type because unless the static time type was dynamic, we want to use the
-        // static time type. Also, we may have null values, in which case we would not be 
-        // able to get the type.
-        private sealed class ArgumentObject
-        {
-            internal Type Type;
-            internal object Value;
-            internal CSharpArgumentInfo Info;
-        }
-
         /////////////////////////////////////////////////////////////////////////////////
         // Methods
 
@@ -199,8 +187,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             // Once we've loaded all the standard conversions into the symbol table,
             // we can call into the binder to bind the actual call.
 
-            ICSharpInvokeOrInvokeMemberBinder callOrInvoke = payload as ICSharpInvokeOrInvokeMemberBinder;
-            PopulateSymbolTableWithPayloadInformation(payload, arguments[0].Type, arguments);
+            payload.PopulateSymbolTableWithName(_symbolTable, arguments[0].Type, arguments);
             AddConversionsForArguments(arguments);
 
             // When we do any bind, we perform the following steps:
@@ -409,115 +396,40 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private void PopulateSymbolTableWithPayloadInformation(
-            ICSharpBinder payload,
-            Type callingType,
+        internal static void PopulateSymbolTableWithPayloadInformation(
+            SymbolTable symbolTable, ICSharpInvokeOrInvokeMemberBinder callOrInvoke, Type callingType,
             ArgumentObject[] arguments)
         {
-            ICSharpInvokeOrInvokeMemberBinder callOrInvoke;
-            CSharpGetMemberBinder getmember;
-            CSharpSetMemberBinder setmember;
+            Type type;
 
-            if ((callOrInvoke = payload as ICSharpInvokeOrInvokeMemberBinder) != null)
+            if (callOrInvoke.StaticCall)
             {
-                Type type;
-
-                if (callOrInvoke.StaticCall)
+                type = arguments[0].Value as Type;
+                if (type == null)
                 {
-                    type = arguments[0].Value as Type;
-                    if (type == null)
-                    {
-                        Debug.Assert(false, "Cannot make static call without specifying a type");
-                        throw Error.InternalCompilerError();
-                    }
-                }
-                else
-                {
-                    type = callingType;
-                }
-                _symbolTable.PopulateSymbolTableWithName(
-                    callOrInvoke.Name,
-                    callOrInvoke.TypeArguments,
-                    type);
-
-                // If it looks like we're invoking a get_ or a set_, load the property as well.
-                // This is because we need COM indexed properties called via method calls to 
-                // work the same as it used to.
-                if (callOrInvoke.Name.StartsWith("set_", StringComparison.Ordinal) ||
-                    callOrInvoke.Name.StartsWith("get_", StringComparison.Ordinal))
-                {
-                    _symbolTable.PopulateSymbolTableWithName(
-                        callOrInvoke.Name.Substring(4), //remove prefix
-                        callOrInvoke.TypeArguments,
-                        type);
-                }
-            }
-            else if ((getmember = payload as CSharpGetMemberBinder) != null)
-            {
-                _symbolTable.PopulateSymbolTableWithName(
-                    getmember.Name,
-                    null,
-                    arguments[0].Type);
-            }
-            else if ((setmember = payload as CSharpSetMemberBinder) != null)
-            {
-                _symbolTable.PopulateSymbolTableWithName(
-                    setmember.Name,
-                    null,
-                    arguments[0].Type);
-            }
-            else if (payload is CSharpGetIndexBinder || payload is CSharpSetIndexBinder)
-            {
-                _symbolTable.PopulateSymbolTableWithName(
-                    SpecialNames.Indexer,
-                    null,
-                    arguments[0].Type);
-            }
-            else if (payload is CSharpBinaryOperationBinder)
-            {
-                CSharpBinaryOperationBinder op = payload as CSharpBinaryOperationBinder;
-                if (GetCLROperatorName(op.Operation) == null)
-                {
-                    Debug.Assert(false, "Unknown operator: " + op.Operation);
+                    Debug.Assert(false, "Cannot make static call without specifying a type");
                     throw Error.InternalCompilerError();
                 }
-                _symbolTable.PopulateSymbolTableWithName(
-                    GetCLROperatorName(op.Operation),
-                    null,
-                    arguments[0].Type);
-                _symbolTable.PopulateSymbolTableWithName(
-                    GetCLROperatorName(op.Operation),
-                    null,
-                    arguments[1].Type);
             }
-            else if (payload is CSharpUnaryOperationBinder)
+            else
             {
-                CSharpUnaryOperationBinder op = payload as CSharpUnaryOperationBinder;
-                _symbolTable.PopulateSymbolTableWithName(
-                    GetCLROperatorName(op.Operation),
-                    null,
-                    arguments[0].Type);
+                type = callingType;
             }
-            else if (payload is CSharpIsEventBinder)
-            {
-                CSharpIsEventBinder op = payload as CSharpIsEventBinder;
+            symbolTable.PopulateSymbolTableWithName(
+                callOrInvoke.Name,
+                callOrInvoke.TypeArguments,
+                type);
 
-                // Populate the symbol table with the LHS.
-                _symbolTable.PopulateSymbolTableWithName(
-                    op.Name,
-                    null,
-                    arguments[0].Info.IsStaticType ? arguments[0].Value as Type : arguments[0].Type);
-            }
-            else if (!(payload is CSharpConvertBinder))
+            // If it looks like we're invoking a get_ or a set_, load the property as well.
+            // This is because we need COM indexed properties called via method calls to 
+            // work the same as it used to.
+            if (callOrInvoke.Name.StartsWith("set_", StringComparison.Ordinal) ||
+                callOrInvoke.Name.StartsWith("get_", StringComparison.Ordinal))
             {
-                // Conversions don't need to do anything, since they're just conversions!
-                // After we add payload information, we add conversions for all argument
-                // types anyway, so that will get handled there.
-                //
-                // All other unknown payload types will generate an error.
-
-                Debug.Assert(false, "Unknown payload kind");
-                throw Error.InternalCompilerError();
+                symbolTable.PopulateSymbolTableWithName(
+                    callOrInvoke.Name.Substring(4), //remove prefix
+                    callOrInvoke.TypeArguments,
+                    type);
             }
         }
 
@@ -1546,90 +1458,6 @@ namespace Microsoft.CSharp.RuntimeBinder
         }
 
         /////////////////////////////////////////////////////////////////////////////////
-
-        private static string GetCLROperatorName(ExpressionType p)
-        {
-            switch (p)
-            {
-                default:
-                    return null;
-
-                // Binary Operators
-                case ExpressionType.Add:
-                    return SpecialNames.CLR_Add;
-                case ExpressionType.Subtract:
-                    return SpecialNames.CLR_Subtract;
-                case ExpressionType.Multiply:
-                    return SpecialNames.CLR_Multiply;
-                case ExpressionType.Divide:
-                    return SpecialNames.CLR_Division;
-                case ExpressionType.Modulo:
-                    return SpecialNames.CLR_Modulus;
-                case ExpressionType.LeftShift:
-                    return SpecialNames.CLR_LShift;
-                case ExpressionType.RightShift:
-                    return SpecialNames.CLR_RShift;
-                case ExpressionType.LessThan:
-                    return SpecialNames.CLR_LT;
-                case ExpressionType.GreaterThan:
-                    return SpecialNames.CLR_GT;
-                case ExpressionType.LessThanOrEqual:
-                    return SpecialNames.CLR_LTE;
-                case ExpressionType.GreaterThanOrEqual:
-                    return SpecialNames.CLR_GTE;
-                case ExpressionType.Equal:
-                    return SpecialNames.CLR_Equality;
-                case ExpressionType.NotEqual:
-                    return SpecialNames.CLR_Inequality;
-                case ExpressionType.And:
-                    return SpecialNames.CLR_BitwiseAnd;
-                case ExpressionType.ExclusiveOr:
-                    return SpecialNames.CLR_ExclusiveOr;
-                case ExpressionType.Or:
-                    return SpecialNames.CLR_BitwiseOr;
-
-                // "op_LogicalNot";
-                case ExpressionType.AddAssign:
-                    return SpecialNames.CLR_InPlaceAdd;
-                case ExpressionType.SubtractAssign:
-                    return SpecialNames.CLR_InPlaceSubtract;
-                case ExpressionType.MultiplyAssign:
-                    return SpecialNames.CLR_InPlaceMultiply;
-                case ExpressionType.DivideAssign:
-                    return SpecialNames.CLR_InPlaceDivide;
-                case ExpressionType.ModuloAssign:
-                    return SpecialNames.CLR_InPlaceModulus;
-                case ExpressionType.AndAssign:
-                    return SpecialNames.CLR_InPlaceBitwiseAnd;
-                case ExpressionType.ExclusiveOrAssign:
-                    return SpecialNames.CLR_InPlaceExclusiveOr;
-                case ExpressionType.OrAssign:
-                    return SpecialNames.CLR_InPlaceBitwiseOr;
-                case ExpressionType.LeftShiftAssign:
-                    return SpecialNames.CLR_InPlaceLShift;
-                case ExpressionType.RightShiftAssign:
-                    return SpecialNames.CLR_InPlaceRShift;
-
-                // Unary Operators
-                case ExpressionType.Negate:
-                    return SpecialNames.CLR_UnaryNegation;
-                case ExpressionType.UnaryPlus:
-                    return SpecialNames.CLR_UnaryPlus;
-                case ExpressionType.Not:
-                    return SpecialNames.CLR_LogicalNot;
-                case ExpressionType.OnesComplement:
-                    return SpecialNames.CLR_OnesComplement;
-                case ExpressionType.IsTrue:
-                    return SpecialNames.CLR_True;
-                case ExpressionType.IsFalse:
-                    return SpecialNames.CLR_False;
-
-                case ExpressionType.Increment:
-                    return SpecialNames.CLR_PreIncrement;
-                case ExpressionType.Decrement:
-                    return SpecialNames.CLR_PreDecrement;
-            }
-        }
 
         #endregion
 

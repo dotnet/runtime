@@ -18,6 +18,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Microsoft\CSharp\ExtentFlags.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ArgumentObject.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Binder.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\BinderHelper.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\CSharpArgumentInfo.cs" />
