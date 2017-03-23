@@ -26,9 +26,6 @@
       Lines="$([System.IO.File]::ReadAllText('$(ProjectJsonTemplate)').Replace('{RID}', $(NuGetRuntimeIdentifier)).Replace('{TFM}', $(NuGetTargetMoniker)).Replace('{PackageId}', $(TargetingPackNugetPackageId)))"
       Overwrite="true"
                       />
-
-    <!-- if lock file exists be sure to update timestamp otherwise we could get in a state of aways calling restore but the lock file not being updated -->
-    <Touch Condition="Exists('$(ProjectLockJson)')" Files="$(ProjectLockJson)" />
   </Target>
 
   <!-- Override build and GetTargetPath to return all items deployed -->
