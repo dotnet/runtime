@@ -7,7 +7,7 @@ using System.Collections.Generic;
 
 namespace Microsoft.CSharp.RuntimeBinder
 {
-    internal interface ICSharpInvokeOrInvokeMemberBinder
+    internal interface ICSharpInvokeOrInvokeMemberBinder : ICSharpBinder
     {
         // Helper methods.
         bool StaticCall { get; }

@@ -17,6 +17,8 @@ namespace Microsoft.CSharp.RuntimeBinder
         public IList<CSharpArgumentInfo> ArgumentInfo { get { return _argumentInfo.AsReadOnly(); } }
         private readonly List<CSharpArgumentInfo> _argumentInfo;
 
+        CSharpArgumentInfo ICSharpBinder.GetArgumentInfo(int index) => _argumentInfo[index];
+
         public bool StaticCall { get { return true; } }
         public IList<Type> TypeArguments { get { return Array.Empty<Type>(); } }
         public string Name { get { return ".ctor"; } }

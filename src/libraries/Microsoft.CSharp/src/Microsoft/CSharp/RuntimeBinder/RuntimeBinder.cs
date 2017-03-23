@@ -134,6 +134,14 @@ namespace Microsoft.CSharp.RuntimeBinder
             // ...subsequent calls that were cache hits, i.e., already bound, took less
             // than 1/1000 sec for the whole 4000 of them.
 
+            ICSharpBinder binder = payload as ICSharpBinder;
+            if (binder == null)
+            {
+                Debug.Assert(false, "Unknown payload kind");
+                throw Error.InternalCompilerError();
+            }
+
+
             lock (_bindLock)
             {
                 // this is a strategy for realizing correct binding when the symboltable
@@ -150,14 +158,14 @@ namespace Microsoft.CSharp.RuntimeBinder
 
                 try
                 {
-                    return BindCore(payload, parameters, args, out deferredBinding);
+                    return BindCore(binder, parameters, args, out deferredBinding);
                 }
                 catch (ResetBindException)
                 {
                     Reset();
                     try
                     {
-                        return BindCore(payload, parameters, args, out deferredBinding);
+                        return BindCore(binder, parameters, args, out deferredBinding);
                     }
                     catch (ResetBindException)
                     {
@@ -170,7 +178,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         }
 
         private Expression BindCore(
-            DynamicMetaObjectBinder payload,
+            ICSharpBinder payload,
             IEnumerable<Expression> parameters,
             DynamicMetaObject[] args,
             out DynamicMetaObject deferredBinding)
@@ -234,7 +242,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         #region Helpers
 
         private bool DeferBinding(
-            DynamicMetaObjectBinder payload,
+            ICSharpBinder payload,
             ArgumentObject[] arguments,
             DynamicMetaObject[] args,
             Dictionary<int, LocalVariableSymbol> dictionary,
@@ -290,7 +298,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             return false;
         }
 
-        private void InitializeCallingContext(DynamicMetaObjectBinder payload)
+        private void InitializeCallingContext(ICSharpBinder payload)
         {
             // Set the context if the payload specifies it. Currently we only use this for calls.
             Type t = null;
@@ -380,7 +388,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         private ArgumentObject[] CreateArgumentArray(
-                DynamicMetaObjectBinder payload,
+                ICSharpBinder payload,
                 IEnumerable<Expression> parameters,
                 DynamicMetaObject[] args)
         {
@@ -388,47 +396,8 @@ namespace Microsoft.CSharp.RuntimeBinder
             // these arguments.
 
             List<ArgumentObject> list = new List<ArgumentObject>();
-            Func<DynamicMetaObjectBinder, CSharpArgumentInfo, Expression, DynamicMetaObject, int, Type> getArgumentType = null;
-            Func<DynamicMetaObjectBinder, int, CSharpArgumentInfo> getArgumentInfo = null;
+            Func<ICSharpBinder, CSharpArgumentInfo, Expression, DynamicMetaObject, int, Type> getArgumentType = null;
 
-            // Quick delegate to set the type.
-            if (payload is ICSharpInvokeOrInvokeMemberBinder)
-            {
-                getArgumentInfo = (p, index) => (p as ICSharpInvokeOrInvokeMemberBinder).ArgumentInfo[index];
-            }
-            else if (payload is CSharpBinaryOperationBinder)
-            {
-                getArgumentInfo = (p, index) => (p as CSharpBinaryOperationBinder).ArgumentInfo[index];
-            }
-            else if (payload is CSharpUnaryOperationBinder)
-            {
-                getArgumentInfo = (p, index) => (p as CSharpUnaryOperationBinder).ArgumentInfo[index];
-            }
-            else if (payload is CSharpGetMemberBinder)
-            {
-                getArgumentInfo = (p, index) => (p as CSharpGetMemberBinder).ArgumentInfo[index];
-            }
-            else if (payload is CSharpSetMemberBinder)
-            {
-                getArgumentInfo = (p, index) => (p as CSharpSetMemberBinder).ArgumentInfo[index];
-            }
-            else if (payload is CSharpGetIndexBinder)
-            {
-                getArgumentInfo = (p, index) => (p as CSharpGetIndexBinder).ArgumentInfo[index];
-            }
-            else if (payload is CSharpSetIndexBinder)
-            {
-                getArgumentInfo = (p, index) => (p as CSharpSetIndexBinder).ArgumentInfo[index];
-            }
-            else if (payload is CSharpConvertBinder || payload is CSharpIsEventBinder)
-            {
-                getArgumentInfo = (p, index) => CSharpArgumentInfo.None;
-            }
-            else
-            {
-                Debug.Assert(false, "Unknown payload kind");
-                throw Error.InternalCompilerError();
-            }
             getArgumentType = (p, argInfo, param, arg, index) =>
                 {
                     Type t = argInfo.UseCompileTimeType ? param.Type : arg.LimitType;
@@ -475,7 +444,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             {
                 ArgumentObject a = new ArgumentObject();
                 a.Value = args[i].Value;
-                a.Info = getArgumentInfo(payload, i);
+                a.Info = payload.GetArgumentInfo(i);
                 a.Type = getArgumentType(payload, a.Info, curParam, args[i], i);
 
                 Debug.Assert(a.Type != null);
@@ -489,7 +458,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private bool IsBinderThatCanHaveRefReceiver(DynamicMetaObjectBinder binder)
+        private bool IsBinderThatCanHaveRefReceiver(ICSharpBinder binder)
         {
             // This is true for any binder that is eligible to take value type receiver 
             // objects as a ref (for mutable operations). Such as calls ("v.M(d)"),
@@ -501,7 +470,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         private void PopulateSymbolTableWithPayloadInformation(
-            DynamicMetaObjectBinder payload,
+            ICSharpBinder payload,
             Type callingType,
             ArgumentObject[] arguments)
         {
@@ -625,7 +594,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         private EXPR DispatchPayload(
-            DynamicMetaObjectBinder payload,
+            ICSharpBinder payload,
             ArgumentObject[] arguments,
             Dictionary<int, LocalVariableSymbol> dictionary)
         {
@@ -703,7 +672,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         // local as a ref type.
 
         private void PopulateLocalScope(
-            DynamicMetaObjectBinder payload,
+            ICSharpBinder payload,
             Scope pScope,
             ArgumentObject[] arguments,
             IEnumerable<Expression> parameterExpressions,
@@ -1728,7 +1697,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         private EXPR BindProperty(
-            DynamicMetaObjectBinder payload,
+            ICSharpBinder payload,
             ArgumentObject argument,
             LocalVariableSymbol local,
             EXPR optionalIndexerArguments,
@@ -1887,7 +1856,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         private EXPR BindAssignment(
-            DynamicMetaObjectBinder payload,
+            ICSharpBinder payload,
             ArgumentObject[] arguments,
             Dictionary<int, LocalVariableSymbol> dictionary)
         {
@@ -1976,7 +1945,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         }
         #endregion
 
-        private string GetName(DynamicMetaObjectBinder payload)
+        private string GetName(ICSharpBinder payload)
         {
             string result = null;
             if (payload is CSharpGetMemberBinder)
@@ -1998,7 +1967,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private BindingFlag GetBindingFlags(DynamicMetaObjectBinder payload)
+        private BindingFlag GetBindingFlags(ICSharpBinder payload)
         {
             if ((payload is CSharpGetMemberBinder) ||
                 (payload is CSharpGetIndexBinder))

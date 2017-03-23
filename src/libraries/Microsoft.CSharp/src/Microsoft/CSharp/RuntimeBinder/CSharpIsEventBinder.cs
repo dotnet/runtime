@@ -10,8 +10,10 @@ namespace Microsoft.CSharp.RuntimeBinder
     /// <summary>
     /// Used to test whether a dynamic member over which += or -= is used is an event member.
     /// </summary>
-    internal sealed class CSharpIsEventBinder : DynamicMetaObjectBinder
+    internal sealed class CSharpIsEventBinder : DynamicMetaObjectBinder, ICSharpBinder
     {
+        CSharpArgumentInfo ICSharpBinder.GetArgumentInfo(int index) => CSharpArgumentInfo.None;
+
         internal string Name { get; }
 
         internal Type CallingContext { get; }

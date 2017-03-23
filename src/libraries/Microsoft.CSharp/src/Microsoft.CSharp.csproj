@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -50,6 +50,7 @@
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Errors\MessageID.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Errors\UserStringBuilder.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\ExpressionTreeCallRewriter.cs" />
+    <Compile Include="Microsoft\CSharp\RuntimeBinder\ICSharpBinder.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\ICSharpInvokeOrInvokeMemberBinder.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\ResetBindException.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\RuntimeBinder.cs" />
