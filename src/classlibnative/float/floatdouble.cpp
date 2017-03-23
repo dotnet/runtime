@@ -9,8 +9,6 @@
 
 #include "floatdouble.h"
 
-#define IS_DBL_INFINITY(x)         (((*((INT64*)((void*)&x))) & I64(0x7FFFFFFFFFFFFFFF)) == I64(0x7FF0000000000000))
-
 // The default compilation mode is /fp:precise, which disables floating-point intrinsics. This
 // default compilation mode has previously caused performance regressions in floating-point code.
 // We enable /fp:fast semantics for the majority of the math functions, as it will speed up performance
@@ -85,13 +83,6 @@ FCIMPLEND
 ==============================================================================*/
 FCIMPL2_VV(double, COMDouble::Atan2, double y, double x)
     FCALL_CONTRACT;
-
-    // atan2(+/-INFINITY, +/-INFINITY) produces +/-0.78539816339744828 (x is +INFINITY) and
-    // +/-2.3561944901923448 (x is -INFINITY) instead of the expected value of NaN. We handle
-    // that case here ourselves.
-    if (IS_DBL_INFINITY(y) && IS_DBL_INFINITY(x)) {
-        return (double)(y / x);
-    }
 
     return (double)atan2(y, x);
 FCIMPLEND
@@ -173,24 +164,6 @@ FCIMPLEND
 ==============================================================================*/
 FCIMPL2_VV(double, COMDouble::Pow, double x, double y)
     FCALL_CONTRACT;
-
-    // The CRT version of pow preserves the NaN payload of x over the NaN payload of y.
-
-    if(_isnan(y)) {
-        return y; // IEEE 754-2008: NaN payload must be preserved
-    }
-
-    if(_isnan(x)) {
-        return x; // IEEE 754-2008: NaN payload must be preserved
-    }
-
-    // The CRT version of pow does not return NaN for pow(-1.0, +/-INFINITY) and
-    // instead returns +1.0.
-
-    if(IS_DBL_INFINITY(y) && (x == -1.0)) {
-        INT64 result = CLR_NAN_64;
-        return (*((double*)((INT64*)&result)));
-    }
 
     return (double)pow(x, y);
 FCIMPLEND
