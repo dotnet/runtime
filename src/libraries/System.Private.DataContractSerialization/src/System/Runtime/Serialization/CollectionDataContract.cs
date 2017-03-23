@@ -142,9 +142,9 @@ namespace System.Runtime.Serialization
 #endif
     {
         private XmlDictionaryString _collectionItemName;
-        
+
         private XmlDictionaryString _childElementNamespace;
-        
+
         private DataContract _itemContract;
 
         private CollectionDataContractCriticalHelper _helper;
@@ -801,7 +801,7 @@ namespace System.Runtime.Serialization
                 {
                     if (s_buildIncrementCollectionCountDelegateMethod == null)
                     {
-                        s_buildIncrementCollectionCountDelegateMethod = typeof(CollectionDataContractCriticalHelper).GetTypeInfo().GetDeclaredMethod(nameof(BuildIncrementCollectionCountDelegate));
+                        s_buildIncrementCollectionCountDelegateMethod = typeof(CollectionDataContractCriticalHelper).GetMethod(nameof(BuildIncrementCollectionCountDelegate), Globals.ScanAllMembers);
                     }
 
                     return s_buildIncrementCollectionCountDelegateMethod;
@@ -813,7 +813,7 @@ namespace System.Runtime.Serialization
                 return (xmlwriter, obj, context) =>
                 {
                     context.IncrementCollectionCountGeneric<T>(xmlwriter, (ICollection<T>)obj);
-    
+
                 };
             }
 
@@ -833,7 +833,7 @@ namespace System.Runtime.Serialization
                         _createGenericDictionaryEnumeratorDelegate = (CreateGenericDictionaryEnumeratorDelegate)buildCreateGenericDictionaryEnumerator.Invoke(null, Array.Empty<object>());
                     }
 
-                    enumerator = _createGenericDictionaryEnumeratorDelegate(enumerator);                                       
+                    enumerator = _createGenericDictionaryEnumeratorDelegate(enumerator);
                 }
                 else if (Kind == CollectionKind.Dictionary)
                 {
@@ -899,7 +899,7 @@ namespace System.Runtime.Serialization
                 {
                     if (s_buildCreateGenericDictionaryEnumerator == null)
                     {
-                        s_buildCreateGenericDictionaryEnumerator = typeof(CollectionDataContractCriticalHelper).GetTypeInfo().GetDeclaredMethod(nameof(BuildCreateGenericDictionaryEnumerator));
+                        s_buildCreateGenericDictionaryEnumerator = typeof(CollectionDataContractCriticalHelper).GetMethod(nameof(BuildCreateGenericDictionaryEnumerator), Globals.ScanAllMembers);
                     }
 
                     return s_buildCreateGenericDictionaryEnumerator;
@@ -1016,7 +1016,7 @@ namespace System.Runtime.Serialization
         internal static MethodInfo GetTargetMethodWithName(string name, Type type, Type interfaceType)
         {
             Type t = type.GetInterfaces().Where(it => it.Equals(interfaceType)).FirstOrDefault();
-            return t?.GetTypeInfo().GetDeclaredMethod(name);
+            return t?.GetMethod(name);
         }
 
         private static bool IsArraySegment(Type t)

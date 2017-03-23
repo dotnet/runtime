@@ -1384,7 +1384,7 @@ namespace System.Runtime.Serialization
                     _isKeyValuePairAdapter = true;
                     _keyValuePairGenericArguments = type.GetGenericArguments();
                     _keyValuePairCtorInfo = type.GetConstructor(Globals.ScanAllMembers, new Type[] { Globals.TypeOfKeyValuePair.MakeGenericType(_keyValuePairGenericArguments) });
-                    _getKeyValuePairMethodInfo = type.GetTypeInfo().GetDeclaredMethod("GetKeyValuePair");
+                    _getKeyValuePairMethodInfo = type.GetMethod("GetKeyValuePair", Globals.ScanAllMembers);
                 }
             }
 
