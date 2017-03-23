@@ -1541,7 +1541,6 @@ namespace System.Tests
         [InlineData(-3.1415926535897932,      -0.0,                     CrossPlatformMachineEpsilon)]       // value: -(pi)
         [InlineData(-2.7182818284590452,       0.45054953406980750,     CrossPlatformMachineEpsilon)]       // value: -(e)
         [InlineData(-2.3025850929940457,       1.1134071468135374,      CrossPlatformMachineEpsilon * 10)]  // value: -(ln(10))
-        [InlineData(-1.5707963267948966,      -16331239353195370.0,     0.0)]                               // value: -(pi / 2)
         [InlineData(-1.4426950408889634,      -7.7635756709721848,      CrossPlatformMachineEpsilon * 10)]  // value: -(log2(e))
         [InlineData(-1.4142135623730950,      -6.3341191670421916,      CrossPlatformMachineEpsilon * 10)]  // value: -(sqrt(2))
         [InlineData(-1.1283791670955126,      -2.1108768356626451,      CrossPlatformMachineEpsilon * 10)]  // value: -(2 / sqrt(pi))
@@ -1565,12 +1564,29 @@ namespace System.Tests
         [InlineData( 1.1283791670955126,       2.1108768356626451,      CrossPlatformMachineEpsilon * 10)]  // value:  (2 / sqrt(pi))
         [InlineData( 1.4142135623730950,       6.3341191670421916,      CrossPlatformMachineEpsilon * 10)]  // value:  (sqrt(2))
         [InlineData( 1.4426950408889634,       7.7635756709721848,      CrossPlatformMachineEpsilon * 10)]  // value:  (log2(e))
-        [InlineData( 1.5707963267948966,       16331239353195370.0,     0.0)]                               // value:  (pi / 2)
         [InlineData( 2.3025850929940457,      -1.1134071468135374,      CrossPlatformMachineEpsilon * 10)]  // value:  (ln(10))
         [InlineData( 2.7182818284590452,      -0.45054953406980750,     CrossPlatformMachineEpsilon)]       // value:  (e)
         [InlineData( 3.1415926535897932,       0.0,                     CrossPlatformMachineEpsilon)]       // value:  (pi)
         [InlineData( double.PositiveInfinity,  double.NaN,              0.0)]
         public static void Tan(double value, double expectedResult, double allowedVariance)
+        {
+            AssertEqual(expectedResult, Math.Tan(value), allowedVariance);
+        }
+
+        [Theory]
+        [InlineData(-1.5707963267948966,      -16331239353195370.0,     0.0)]                               // value: -(pi / 2)
+        [InlineData( 1.5707963267948966,       16331239353195370.0,     0.0)]                               // value:  (pi / 2)
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public static void Tan_PiOver2(double value, double expectedResult, double allowedVariance)
+        {
+            AssertEqual(expectedResult, Math.Tan(value), allowedVariance);
+        }
+
+        [Theory]
+        [InlineData(-1.5707963267948966,      -16331778728383844.0,     0.0)]                               // value: -(pi / 2)
+        [InlineData( 1.5707963267948966,       16331778728383844.0,     0.0)]                               // value:  (pi / 2)
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
+        public static void Tan_PiOver2_Legacy(double value, double expectedResult, double allowedVariance)
         {
             AssertEqual(expectedResult, Math.Tan(value), allowedVariance);
         }
