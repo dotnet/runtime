@@ -238,7 +238,7 @@ def buildArchConfiguration = ['Debug': 'x86',
                         shell("sudo PATH=\$PATH:/usr/local/bin HOME=\$WORKSPACE/tempHome ./build-tests.sh -${configurationGroup.toLowerCase()} -outerloop -- /p:IsCIBuild=true")
                     }
                     else {
-                        def portableLinux = (osName == 'PortableLinux') ? '-portableLinux' : ''
+                        def portableLinux = (osName == 'PortableLinux') ? '-portable' : ''
                         shell("sudo HOME=\$WORKSPACE/tempHome ./build.sh -${configurationGroup.toLowerCase()} ${portableLinux}")
                         shell("sudo HOME=\$WORKSPACE/tempHome ./build-tests.sh -${configurationGroup.toLowerCase()} -outerloop -- /p:IsCIBuild=true")
                     }
@@ -408,7 +408,7 @@ def buildArchConfiguration = ['Debug': 'x86',
                         else {
                             // Use Server GC for Ubuntu/OSX Debug PR build & test
                             def useServerGC = (configurationGroup == 'Release' && isPR) ? 'useServerGC' : ''
-                            def portableLinux = (osName == 'PortableLinux') ? '-portableLinux' : ''
+                            def portableLinux = (osName == 'PortableLinux') ? '-portable' : ''
                             shell("HOME=\$WORKSPACE/tempHome ./build.sh -${configurationGroup.toLowerCase()} -framework:${targetGroup} -os:${osGroup} ${portableLinux} -buildArch:${archGroup}")
                             shell("HOME=\$WORKSPACE/tempHome ./build-tests.sh -${configurationGroup.toLowerCase()} -framework:${targetGroup} -os:${osGroup} -buildArch:${archGroup} -- ${useServerGC} /p:IsCIBuild=true")
                             // Tar up the appropriate bits.
