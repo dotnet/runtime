@@ -2,19 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections;
-using System.ComponentModel;
-using System.Data;
 using System.Data.Common;
-using System.Diagnostics;
-using System.Globalization;
-using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using System.Security;
-using System.Security.Permissions;
-using System.Text;
-using System.Threading;
 
 namespace System.Data.Odbc
 {

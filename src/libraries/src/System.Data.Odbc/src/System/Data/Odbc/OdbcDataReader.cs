@@ -2,11 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Data.Common;
 using System.Data.ProviderBase;
 using System.Diagnostics;
@@ -14,7 +11,6 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;              // StringBuilder
-using System.Threading;
 
 namespace System.Data.Odbc
 {
@@ -63,8 +59,6 @@ namespace System.Data.Odbc
 
         internal OdbcDataReader(OdbcCommand command, CMDWrapper cmdWrapper, CommandBehavior commandbehavior)
         {
-            OdbcConnection.VerifyExecutePermission();
-
             Debug.Assert(command != null, "Command null on OdbcDataReader ctor");
             _command = command;
             _commandBehavior = commandbehavior;
@@ -155,7 +149,7 @@ namespace System.Data.Odbc
             }
         }
 
-        override public int Depth
+        public override int Depth
         {
             get
             {
@@ -167,7 +161,7 @@ namespace System.Data.Odbc
             }
         }
 
-        override public int FieldCount
+        public override int FieldCount
         {
             get
             {
@@ -198,7 +192,7 @@ namespace System.Data.Odbc
         // May be called at any time
         // Basically it calls Read and sets a flag so that the actual Read call will be skipped once
         //
-        override public bool HasRows
+        public override bool HasRows
         {
             get
             {
@@ -254,7 +248,7 @@ namespace System.Data.Odbc
             return retcode;
         }
 
-        override public bool IsClosed
+        public override bool IsClosed
         {
             get
             {
@@ -293,7 +287,7 @@ namespace System.Data.Odbc
         }
 
 
-        override public int RecordsAffected
+        public override int RecordsAffected
         {
             get
             {
@@ -301,7 +295,7 @@ namespace System.Data.Odbc
             }
         }
 
-        override public object this[int i]
+        public override object this[int i]
         {
             get
             {
@@ -309,7 +303,7 @@ namespace System.Data.Odbc
             }
         }
 
-        override public object this[string value]
+        public override object this[string value]
         {
             get
             {
@@ -317,7 +311,7 @@ namespace System.Data.Odbc
             }
         }
 
-        override public void Close()
+        public override void Close()
         {
             Close(false);
         }
@@ -405,7 +399,7 @@ namespace System.Data.Odbc
             //base.Dispose(disposing)
         }
 
-        override public String GetDataTypeName(int i)
+        public override String GetDataTypeName(int i)
         {
             if (null != _dataCache)
             {
@@ -419,12 +413,12 @@ namespace System.Data.Odbc
             throw ADP.DataReaderNoData();
         }
 
-        override public IEnumerator GetEnumerator()
+        public override IEnumerator GetEnumerator()
         {
             return new DbEnumerator((IDataReader)this, IsCommandBehavior(CommandBehavior.CloseConnection));
         }
 
-        override public Type GetFieldType(int i)
+        public override Type GetFieldType(int i)
         {
             if (null != _dataCache)
             {
@@ -438,7 +432,7 @@ namespace System.Data.Odbc
             throw ADP.DataReaderNoData();
         }
 
-        override public String GetName(int i)
+        public override String GetName(int i)
         {
             if (null != _dataCache)
             {
@@ -456,7 +450,7 @@ namespace System.Data.Odbc
             throw ADP.DataReaderNoData();
         }
 
-        override public int GetOrdinal(string value)
+        public override int GetOrdinal(string value)
         {
             if (null == _fieldNameLookup)
             {
@@ -576,7 +570,7 @@ namespace System.Data.Odbc
             }
         }
 
-        override public object GetValue(int i)
+        public override object GetValue(int i)
         {
             if (_isRead)
             {
@@ -589,7 +583,7 @@ namespace System.Data.Odbc
             throw ADP.DataReaderNoData();
         }
 
-        override public int GetValues(object[] values)
+        public override int GetValues(object[] values)
         {
             if (_isRead)
             {
@@ -628,7 +622,7 @@ namespace System.Data.Odbc
             return typeMap;
         }
 
-        override public bool IsDBNull(int i)
+        public override bool IsDBNull(int i)
         {
             //  Note: ODBC SQLGetData doesn't allow retriving the column value twice.
             //  The reational is that for ForwardOnly access (the default and LCD of drivers)
@@ -684,7 +678,7 @@ namespace System.Data.Odbc
             }
         }
 
-        override public Byte GetByte(int i)
+        public override Byte GetByte(int i)
         {
             return (Byte)internalGetByte(i);
         }
@@ -705,7 +699,7 @@ namespace System.Data.Odbc
             throw ADP.DataReaderNoData();
         }
 
-        override public Char GetChar(int i)
+        public override Char GetChar(int i)
         {
             return (Char)internalGetChar(i);
         }
@@ -725,7 +719,7 @@ namespace System.Data.Odbc
             throw ADP.DataReaderNoData();
         }
 
-        override public Int16 GetInt16(int i)
+        public override Int16 GetInt16(int i)
         {
             return (Int16)internalGetInt16(i);
         }
@@ -745,7 +739,7 @@ namespace System.Data.Odbc
             throw ADP.DataReaderNoData();
         }
 
-        override public Int32 GetInt32(int i)
+        public override Int32 GetInt32(int i)
         {
             return (Int32)internalGetInt32(i);
         }
@@ -765,7 +759,7 @@ namespace System.Data.Odbc
             throw ADP.DataReaderNoData();
         }
 
-        override public Int64 GetInt64(int i)
+        public override Int64 GetInt64(int i)
         {
             return (Int64)internalGetInt64(i);
         }
@@ -793,7 +787,7 @@ namespace System.Data.Odbc
             throw ADP.DataReaderNoData();
         }
 
-        override public bool GetBoolean(int i)
+        public override bool GetBoolean(int i)
         {
             return (bool)internalGetBoolean(i);
         }
@@ -813,7 +807,7 @@ namespace System.Data.Odbc
             throw ADP.DataReaderNoData();
         }
 
-        override public float GetFloat(int i)
+        public override float GetFloat(int i)
         {
             return (float)internalGetFloat(i);
         }
@@ -854,7 +848,7 @@ namespace System.Data.Odbc
             throw ADP.DataReaderNoData();
         }
 
-        override public DateTime GetDateTime(int i)
+        public override DateTime GetDateTime(int i)
         {
             return (DateTime)internalGetDateTime(i);
         }
@@ -875,7 +869,7 @@ namespace System.Data.Odbc
             throw ADP.DataReaderNoData();
         }
 
-        override public decimal GetDecimal(int i)
+        public override decimal GetDecimal(int i)
         {
             return (decimal)internalGetDecimal(i);
         }
@@ -913,7 +907,7 @@ namespace System.Data.Odbc
             throw ADP.DataReaderNoData();
         }
 
-        override public double GetDouble(int i)
+        public override double GetDouble(int i)
         {
             return (double)internalGetDouble(i);
         }
@@ -933,7 +927,7 @@ namespace System.Data.Odbc
             throw ADP.DataReaderNoData();
         }
 
-        override public Guid GetGuid(int i)
+        public override Guid GetGuid(int i)
         {
             return (Guid)internalGetGuid(i);
         }
@@ -954,7 +948,7 @@ namespace System.Data.Odbc
             throw ADP.DataReaderNoData();
         }
 
-        override public String GetString(int i)
+        public override String GetString(int i)
         {
             return (String)internalGetString(i);
         }
@@ -1094,11 +1088,11 @@ namespace System.Data.Odbc
             }
         }
 
-        override public long GetBytes(int i, long dataIndex, byte[] buffer, int bufferIndex, int length)
+        public override long GetBytes(int i, long dataIndex, byte[] buffer, int bufferIndex, int length)
         {
             return GetBytesOrChars(i, dataIndex, buffer, false /* bytes buffer */, bufferIndex, length);
         }
-        override public long GetChars(int i, long dataIndex, char[] buffer, int bufferIndex, int length)
+        public override long GetChars(int i, long dataIndex, char[] buffer, int bufferIndex, int length)
         {
             return GetBytesOrChars(i, dataIndex, buffer, true /* chars buffer */, bufferIndex, length);
         }
@@ -1832,7 +1826,7 @@ namespace System.Data.Odbc
             }
         }
 
-        override public bool Read()
+        public override bool Read()
         {
             if (IsClosed)
             {
@@ -1929,7 +1923,7 @@ namespace System.Data.Odbc
             }
         }
 
-        override public bool NextResult()
+        public override bool NextResult()
         {
             return NextResult(false, false);
         }
@@ -2009,10 +2003,6 @@ namespace System.Data.Odbc
             } while ((!singleResult && hasMoreResults && !hasColumns)  // repeat for results with no columns
                      || ((ODBC32.RetCode.NO_DATA != retcode) && allresults && (loop < MaxConsecutiveFailure)) // or process all results until done
                      || (singleResult && hasMoreResults));           // or for any result in singelResult mode
-            if (MaxConsecutiveFailure <= loop)
-            {
-                Bid.Trace("<odbc.OdbcDataReader.NextResult|INFO> 2000 consecutive failed results");
-            }
 
             if (retcode == ODBC32.RetCode.NO_DATA)
             {
@@ -2204,7 +2194,7 @@ namespace System.Data.Odbc
                     // find it by parsing the statement
 
                     QualifiedTableName qualifiedTableName = new QualifiedTableName(Connection.QuoteChar(ADP.GetSchemaTable), GetTableNameFromCommandText());
-                    if (!ADP.IsEmpty(qualifiedTableName.Table))
+                    if (!string.IsNullOrEmpty(qualifiedTableName.Table))
                     { // fxcop
                         SetBaseTableNames(qualifiedTableName);
                         if (RetrieveKeyInfo(needkeyinfo, qualifiedTableName, false) <= 0)
@@ -2254,7 +2244,7 @@ namespace System.Data.Odbc
         // The default values are already defined in DbSchemaRows (see DbSchemaRows.cs) so there is no need to set any default value
         //
 
-        override public DataTable GetSchemaTable()
+        public override DataTable GetSchemaTable()
         {
             if (IsClosed)
             { // MDAC 68331
@@ -2700,7 +2690,7 @@ namespace System.Data.Odbc
 
         internal bool SameIndexColumn(String currentindexname, String indexname, int ordinal, int ncols)
         {
-            if (ADP.IsEmpty(currentindexname))
+            if (string.IsNullOrEmpty(currentindexname))
             {
                 return false;
             }
@@ -2717,7 +2707,7 @@ namespace System.Data.Odbc
 
         internal int GetOrdinalFromBaseColName(String columnname, String tablename)
         {
-            if (ADP.IsEmpty(columnname))
+            if (string.IsNullOrEmpty(columnname))
             {
                 return -1;
             }
@@ -2729,7 +2719,7 @@ namespace System.Data.Odbc
                     if ((_metadata[i].baseColumnName != null) &&
                         (columnname == _metadata[i].baseColumnName))
                     {
-                        if (!ADP.IsEmpty(tablename))
+                        if (!string.IsNullOrEmpty(tablename))
                         {
                             if (tablename == _metadata[i].baseTableName)
                             {
@@ -2760,7 +2750,7 @@ namespace System.Data.Odbc
                 return null;
             }
             String localcmdtext = _cmdText;
-            if (ADP.IsEmpty(localcmdtext))
+            if (string.IsNullOrEmpty(localcmdtext))
             { // fxcop
                 return null;
             }
@@ -2881,7 +2871,7 @@ namespace System.Data.Odbc
             {
                 _quoteChar = quoteChar;
 
-                string[] names = DbCommandBuilder.ParseProcedureName(qualifiedname, quoteChar, quoteChar);
+                string[] names = ParseProcedureName(qualifiedname, quoteChar, quoteChar);
                 _catalogName = UnQuote(names[1]);
                 _schemaName = UnQuote(names[2]);
                 _quotedTableName = names[3];
@@ -2905,9 +2895,93 @@ namespace System.Data.Odbc
                 }
                 return str;
             }
+
+            // Note: copy-and pasted from internal DbCommandBuilder implementation
+            // Note: Per definition (ODBC reference) the CatalogSeparator comes before and after the
+            // catalog name, the SchemaSeparator is undefined. Does it come between Schema and Table?
+            internal static string[] ParseProcedureName(string name, string quotePrefix, string quoteSuffix)
+            {
+                // Procedure may consist of up to four parts:
+                // 0) Server
+                // 1) Catalog
+                // 2) Schema
+                // 3) ProcedureName
+                //
+                // Parse the string into four parts, allowing the last part to contain '.'s.
+                // If less than four period delimited parts, use the parts from procedure backwards.
+                //
+                const string Separator = ".";
+
+                string[] qualifiers = new string[4];
+                if (!string.IsNullOrEmpty(name))
+                {
+                    bool useQuotes = !string.IsNullOrEmpty(quotePrefix) && !string.IsNullOrEmpty(quoteSuffix);
+
+                    int currentPos = 0, parts;
+                    for (parts = 0; (parts < qualifiers.Length) && (currentPos < name.Length); ++parts)
+                    {
+                        int startPos = currentPos;
+
+                        // does the part begin with a quotePrefix?
+                        if (useQuotes && (name.IndexOf(quotePrefix, currentPos, quotePrefix.Length, StringComparison.Ordinal) == currentPos))
+                        {
+                            currentPos += quotePrefix.Length; // move past the quotePrefix
+
+                            // search for the quoteSuffix (or end of string)
+                            while (currentPos < name.Length)
+                            {
+                                currentPos = name.IndexOf(quoteSuffix, currentPos, StringComparison.Ordinal);
+                                if (currentPos < 0)
+                                {
+                                    // error condition, no quoteSuffix
+                                    currentPos = name.Length;
+                                    break;
+                                }
+                                else
+                                {
+                                    currentPos += quoteSuffix.Length; // move past the quoteSuffix
+
+                                    // is this a double quoteSuffix?
+                                    if ((currentPos < name.Length) && (name.IndexOf(quoteSuffix, currentPos, quoteSuffix.Length, StringComparison.Ordinal) == currentPos))
+                                    {
+                                        // a second quoteSuffix, continue search for terminating quoteSuffix
+                                        currentPos += quoteSuffix.Length; // move past the second quoteSuffix
+                                    }
+                                    else
+                                    {
+                                        // found the terminating quoteSuffix
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+
+                        // search for separator (either no quotePrefix or already past quoteSuffix)
+                        if (currentPos < name.Length)
+                        {
+                            currentPos = name.IndexOf(Separator, currentPos, StringComparison.Ordinal);
+                            if ((currentPos < 0) || (parts == qualifiers.Length - 1))
+                            {
+                                // last part that can be found
+                                currentPos = name.Length;
+                            }
+                        }
+
+                        qualifiers[parts] = name.Substring(startPos, currentPos - startPos);
+                        currentPos += Separator.Length;
+                    }
+
+                    // allign the qualifiers if we had less than MaxQualifiers
+                    for (int j = qualifiers.Length - 1; 0 <= j; --j)
+                    {
+                        qualifiers[j] = ((0 < parts) ? qualifiers[--parts] : null);
+                    }
+                }
+                return qualifiers;
+            }
         }
 
-        sealed private class MetaData
+        private sealed class MetaData
         {
             internal int ordinal;
             internal TypeMap typemap;

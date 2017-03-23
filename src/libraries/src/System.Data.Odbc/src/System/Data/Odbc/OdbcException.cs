@@ -2,13 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections;       //ICollection
-using System.ComponentModel;    //Component
-using System.Data;
 using System.Data.Common;
-using System.Globalization;
-using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Text;
 
@@ -21,7 +15,7 @@ namespace System.Data.Odbc
 
         private ODBC32.RETCODE _retcode;    // DO NOT REMOVE! only needed for serialization purposes, because Everett had it.
 
-        static internal OdbcException CreateException(OdbcErrorCollection errors, ODBC32.RetCode retcode)
+        internal static OdbcException CreateException(OdbcErrorCollection errors, ODBC32.RetCode retcode)
         {
             StringBuilder builder = new StringBuilder();
             foreach (OdbcError error in errors)
@@ -31,7 +25,7 @@ namespace System.Data.Odbc
                     builder.Append(Environment.NewLine);
                 }
 
-                builder.Append(Res.GetString(Res.Odbc_ExceptionMessage, ODBC32.RetcodeToString(retcode), error.SQLState, error.Message)); // MDAC 68337
+                builder.Append(SR.GetString(SR.Odbc_ExceptionMessage, ODBC32.RetcodeToString(retcode), error.SQLState, error.Message)); // MDAC 68337
             }
             OdbcException exception = new OdbcException(builder.ToString(), errors);
             return exception;
@@ -60,7 +54,7 @@ namespace System.Data.Odbc
         }
 
         [System.Security.Permissions.SecurityPermissionAttribute(System.Security.Permissions.SecurityAction.LinkDemand, Flags = System.Security.Permissions.SecurityPermissionFlag.SerializationFormatter)]
-        override public void GetObjectData(SerializationInfo si, StreamingContext context)
+        public override void GetObjectData(SerializationInfo si, StreamingContext context)
         {
             // MDAC 72003
             if (null == si)
@@ -73,14 +67,14 @@ namespace System.Data.Odbc
         }
 
         // mdac bug 62559 - if we don't have it return nothing (empty string)
-        override public string Source
+        public override string Source
         {
             get
             {
                 if (0 < Errors.Count)
                 {
                     string source = Errors[0].Source;
-                    return ADP.IsEmpty(source) ? "" : source; // base.Source;
+                    return string.IsNullOrEmpty(source) ? "" : source; // base.Source;
                 }
                 return ""; // base.Source;
             }

@@ -2,20 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections;
-using System.ComponentModel;
-using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
-using System.Globalization;
 using System.Runtime.CompilerServices;
-using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
-using System.Security;
-using System.Security.Permissions;
 using System.Text;
-using System.Threading;
 
 namespace System.Data.Odbc
 {
@@ -79,7 +70,6 @@ namespace System.Data.Odbc
                     }
                 }
             }
-            Bid.TraceSqlReturn("<odbc.SQLAllocHandle|API|ODBC|RET> %08X{SQLRETURN}\n", retcode);
 
             if ((ADP.PtrZero == base.handle) || (ODBC32.RetCode.SUCCESS != retcode))
             {
@@ -145,7 +135,7 @@ namespace System.Data.Odbc
             }
         }
 
-        override protected bool ReleaseHandle()
+        protected override bool ReleaseHandle()
         {
             // NOTE: The SafeHandle class guarantees this will be called exactly once and is non-interrutible.
             IntPtr handle = base.handle;
@@ -162,7 +152,6 @@ namespace System.Data.Odbc
                     case ODBC32.SQL_HANDLE.ENV:
                     case ODBC32.SQL_HANDLE.STMT:
                         ODBC32.RetCode retcode = UnsafeNativeMethods.SQLFreeHandle(handleType, handle);
-                        Bid.TraceSqlReturn("<odbc.SQLFreeHandle|API|ODBC|RET> %08X{SQLRETURN}\n", retcode);
                         break;
 
                     case ODBC32.SQL_HANDLE.DESC:

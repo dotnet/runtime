@@ -2,10 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Data;
 using System.Data.Common;
-using System.Threading;
 
 namespace System.Data.Odbc
 {
@@ -17,14 +14,12 @@ namespace System.Data.Odbc
 
         internal OdbcTransaction(OdbcConnection connection, IsolationLevel isolevel, OdbcConnectionHandle handle)
         {
-            OdbcConnection.VerifyExecutePermission();
-
             _connection = connection;
             _isolevel = isolevel;
             _handle = handle;
         }
 
-        new public OdbcConnection Connection
+        public new OdbcConnection Connection
         { // MDAC 66655
             get
             {
@@ -32,7 +27,7 @@ namespace System.Data.Odbc
             }
         }
 
-        override protected DbConnection DbConnection
+        protected override DbConnection DbConnection
         { // MDAC 66655
             get
             {
@@ -40,7 +35,7 @@ namespace System.Data.Odbc
             }
         }
 
-        override public IsolationLevel IsolationLevel
+        public override IsolationLevel IsolationLevel
         {
             get
             {
@@ -82,10 +77,8 @@ namespace System.Data.Odbc
             }
         }
 
-        override public void Commit()
+        public override void Commit()
         {
-            OdbcConnection.ExecutePermission.Demand(); // MDAC 81476
-
             OdbcConnection connection = _connection;
             if (null == connection)
             {
@@ -158,7 +151,7 @@ namespace System.Data.Odbc
             base.Dispose(disposing);
         }
 
-        override public void Rollback()
+        public override void Rollback()
         {
             OdbcConnection connection = _connection;
             if (null == connection)

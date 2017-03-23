@@ -2,24 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.ComponentModel;
-using System.Data;
 using System.Data.Common;
-using System.Data.ProviderBase;
 using System.Data.SqlTypes;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading;
 
 namespace System.Data.Odbc
 {
-    [
-    TypeConverterAttribute(typeof(System.Data.Odbc.OdbcParameter.OdbcParameterConverter))
-    ]
-    public sealed partial class OdbcParameter : DbParameter, ICloneable, IDbDataParameter
+    public sealed partial class OdbcParameter : DbParameter, ICloneable, IDataParameter, IDbDataParameter
     {
         private bool _hasChanged;
         private bool _userSpecifiedType;
@@ -153,7 +146,7 @@ namespace System.Data.Odbc
             this.Value = value;
         }
 
-        override public System.Data.DbType DbType
+        public override System.Data.DbType DbType
         {
             get
             {
@@ -181,9 +174,6 @@ namespace System.Data.Odbc
 
         [
         DefaultValue(OdbcType.NChar),
-        RefreshProperties(RefreshProperties.All),
-        ResCategoryAttribute(Res.DataCategory_Data),
-        ResDescriptionAttribute(Res.OdbcParameter_OdbcType),
         System.Data.Common.DbProviderSpecificTypePropertyAttribute(true),
         ]
         public OdbcType OdbcType
@@ -230,11 +220,7 @@ namespace System.Data.Odbc
             }
         }
 
-        [
-        ResCategoryAttribute(Res.DataCategory_Data),
-        ResDescriptionAttribute(Res.DbParameter_ParameterName),
-        ]
-        override public string ParameterName
+        public override string ParameterName
         { // V1.2.3300, XXXParameter V1.0.3300
             get
             {
@@ -251,10 +237,7 @@ namespace System.Data.Odbc
             }
         }
 
-        [DefaultValue((Byte)0)] // MDAC 65862
-        [ResCategoryAttribute(Res.DataCategory_Data)]
-        [ResDescriptionAttribute(Res.DbDataParameter_Precision)]
-        public new Byte Precision
+        public new byte Precision
         {
             get
             {
@@ -290,10 +273,7 @@ namespace System.Data.Odbc
             return (0 != _precision);
         }
 
-        [DefaultValue((Byte)0)] // MDAC 65862
-        [ResCategoryAttribute(Res.DataCategory_Data)]
-        [ResDescriptionAttribute(Res.DbDataParameter_Scale)]
-        public new Byte Scale
+        public new byte Scale
         {
             get
             {
@@ -885,7 +865,6 @@ namespace System.Data.Odbc
             {
                 if ("07006" == command.GetDiagSqlState())
                 {
-                    Bid.Trace("<odbc.OdbcParameter.Bind|ERR> Call to BindParameter returned errorcode [07006]\n");
                     command.Connection.FlagRestrictedSqlBindType(_bindtype._sql_type);
                     if (allowReentrance)
                     {
@@ -1122,13 +1101,7 @@ namespace System.Data.Odbc
             }
         }
 
-        [
-        RefreshProperties(RefreshProperties.All),
-        ResCategoryAttribute(Res.DataCategory_Data),
-        ResDescriptionAttribute(Res.DbParameter_Value),
-        TypeConverterAttribute(typeof(StringConverter)),
-        ]
-        override public object Value
+        public override object Value
         { // V1.2.3300, XXXParameter V1.0.3300
             get
             {
@@ -1154,126 +1127,6 @@ namespace System.Data.Odbc
         private int ValueSize(object value)
         {
             return ValueSizeCore(value);
-        }
-
-        // implemented as nested class to take advantage of the private/protected ShouldSerializeXXX methods
-        internal sealed class OdbcParameterConverter : ExpandableObjectConverter
-        {
-            // converter classes should have public ctor
-            public OdbcParameterConverter()
-            {
-            }
-
-            public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
-            {
-                if (destinationType == typeof(System.ComponentModel.Design.Serialization.InstanceDescriptor))
-                {
-                    return true;
-                }
-                return base.CanConvertTo(context, destinationType);
-            }
-
-            public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
-            {
-                if (destinationType == null)
-                {
-                    throw ADP.ArgumentNull("destinationType");
-                }
-
-                if (destinationType == typeof(System.ComponentModel.Design.Serialization.InstanceDescriptor) && value is OdbcParameter)
-                {
-                    OdbcParameter p = (OdbcParameter)value;
-
-                    // MDAC 67321 - reducing parameter generated code
-                    int flags = 0; // if part of the collection - the parametername can't be empty
-
-                    if (OdbcType.NChar != p.OdbcType)
-                    {
-                        flags |= 1;
-                    }
-                    if (p.ShouldSerializeSize())
-                    {
-                        flags |= 2;
-                    }
-                    if (!ADP.IsEmpty(p.SourceColumn))
-                    {
-                        flags |= 4;
-                    }
-                    if (null != p.Value)
-                    {
-                        flags |= 8;
-                    }
-                    if ((ParameterDirection.Input != p.Direction) || p.IsNullable
-                        || p.ShouldSerializePrecision() || p.ShouldSerializeScale()
-                        || (DataRowVersion.Current != p.SourceVersion))
-                    {
-                        flags |= 16; // V1.0 everything
-                    }
-                    if (p.SourceColumnNullMapping)
-                    {
-                        flags |= 32; // v2.0 everything
-                    }
-
-                    Type[] ctorParams;
-                    object[] ctorValues;
-                    switch (flags)
-                    {
-                        case 0: // ParameterName
-                        case 1: // SqlDbType
-                            ctorParams = new Type[] { typeof(string), typeof(OdbcType) };
-                            ctorValues = new object[] { p.ParameterName, p.OdbcType };
-                            break;
-                        case 2: // Size
-                        case 3: // Size, SqlDbType
-                            ctorParams = new Type[] { typeof(string), typeof(OdbcType), typeof(int) };
-                            ctorValues = new object[] { p.ParameterName, p.OdbcType, p.Size };
-                            break;
-                        case 4: // SourceColumn
-                        case 5: // SourceColumn, SqlDbType
-                        case 6: // SourceColumn, Size
-                        case 7: // SourceColumn, Size, SqlDbType
-                            ctorParams = new Type[] { typeof(string), typeof(OdbcType), typeof(int), typeof(string) };
-                            ctorValues = new object[] { p.ParameterName, p.OdbcType, p.Size, p.SourceColumn };
-                            break;
-                        case 8: // Value
-                            ctorParams = new Type[] { typeof(string), typeof(object) };
-                            ctorValues = new object[] { p.ParameterName, p.Value };
-                            break;
-                        default:
-                            if (0 == (32 & flags))
-                            { // V1.0 everything
-                                ctorParams = new Type[] {
-                                typeof(string), typeof(OdbcType), typeof(int), typeof(ParameterDirection),
-                                typeof(bool), typeof(byte), typeof(byte), typeof(string),
-                                typeof(DataRowVersion), typeof(object) };
-                                ctorValues = new object[] {
-                                p.ParameterName, p.OdbcType,  p.Size, p.Direction,
-                                p.IsNullable, p.PrecisionInternal, p.ScaleInternal, p.SourceColumn,
-                                p.SourceVersion, p.Value };
-                            }
-                            else
-                            { // v2.0 everything - round trip all browsable properties + precision/scale
-                                ctorParams = new Type[] {
-                                typeof(string), typeof(OdbcType), typeof(int), typeof(ParameterDirection),
-                                typeof(byte), typeof(byte),
-                                typeof(string), typeof(DataRowVersion), typeof(bool),
-                                typeof(object) };
-                                ctorValues = new object[] {
-                                p.ParameterName, p.OdbcType,  p.Size, p.Direction,
-                                p.PrecisionInternal, p.ScaleInternal,
-                                p.SourceColumn, p.SourceVersion, p.SourceColumnNullMapping,
-                                p.Value };
-                            }
-                            break;
-                    }
-                    System.Reflection.ConstructorInfo ctor = typeof(OdbcParameter).GetConstructor(ctorParams);
-                    if (null != ctor)
-                    {
-                        return new System.ComponentModel.Design.Serialization.InstanceDescriptor(ctor, ctorValues);
-                    }
-                }
-                return base.ConvertTo(context, culture, value, destinationType);
-            }
         }
     }
 }
