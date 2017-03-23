@@ -30,7 +30,6 @@ namespace System
     }
 }
 
-
 namespace System.Data.Common
 {
     internal static class ADP
@@ -41,7 +40,6 @@ namespace System.Data.Common
         // The exception is then returned to the caller, so that the caller may then throw from its
         // location so that the catcher of the exception will have the appropriate call stack.
         // This class is used so that there will be compile time checking of error messages.
-
         internal static Exception ExceptionWithStackTrace(Exception e)
         {
             try
@@ -249,6 +247,12 @@ namespace System.Data.Common
             return e;
         }
 
+        internal static ArgumentException BadParameterName(string parameterName)
+        {
+            ArgumentException e = new ArgumentException(SR.GetString(SR.ADP_BadParameterName, parameterName));
+            return e;
+        }
+
         internal static void CheckArgumentNull(object value, string parameterName)
         {
             if (null == value)
@@ -256,8 +260,6 @@ namespace System.Data.Common
                 throw ArgumentNull(parameterName);
             }
         }
-
-
 
         internal static bool IsCatchableExceptionType(Exception e)
         {
@@ -304,6 +306,13 @@ namespace System.Data.Common
             return InvalidEnumerationValue(typeof(CommandType), (int)value);
         }
 
+        internal static void ValidateCommandBehavior(CommandBehavior value)
+        {
+            if (((int)value < 0) || (0x3F < (int)value))
+            {
+                throw InvalidEnumerationValue(typeof(CommandBehavior), (int)value);
+            }
+        }
 
         // IDbConnection.BeginTransaction, OleDbTransaction.Begin
         internal static ArgumentOutOfRangeException InvalidIsolationLevel(IsolationLevel value)
@@ -361,6 +370,15 @@ namespace System.Data.Common
             return InvalidEnumerationValue(typeof(UpdateRowSource), (int)value);
         }
 
+        internal static ArgumentOutOfRangeException NotSupportedCommandBehavior(CommandBehavior value, string method)
+        {
+            return NotSupportedEnumerationValue(typeof(CommandBehavior), value.ToString(), method);
+        }
+
+        internal static ArgumentOutOfRangeException NotSupportedEnumerationValue(Type type, string value, string method)
+        {
+            return ADP.ArgumentOutOfRange(SR.GetString(SR.ADP_NotSupportedEnumerationValue, type.Name, value, method), type.Name);
+        }
 
         //
         // DbConnectionOptions, DataAccess
@@ -813,7 +831,6 @@ namespace System.Data.Common
             return InvalidOperation(SR.GetString(SR.ADP_TransactionZombied, obj.GetType().Name));
         }
 
-
         // global constant strings
         internal const string Parameter = "Parameter";
         internal const string ParameterName = "ParameterName";
@@ -826,11 +843,24 @@ namespace System.Data.Common
         internal const int DefaultConnectionTimeout = DbConnectionStringDefaults.ConnectTimeout;
         internal const float FailoverTimeoutStep = 0.08F;    // fraction of timeout to use for fast failover connections
 
-        // security issue, don't rely upon public static readonly values - AS/URT 109635
-        internal static readonly String StrEmpty = ""; // String.Empty
+        // security issue, don't rely upon public static readonly values
+        internal static readonly string StrEmpty = ""; // String.Empty
 
         internal const int CharSize = sizeof(char);
 
+        internal static Delegate FindBuilder(MulticastDelegate mcd)
+        {
+            if (null != mcd)
+            {
+                foreach (Delegate del in mcd.GetInvocationList())
+                {
+                    if (del.Target is DbCommandBuilder)
+                        return del;
+                }
+            }
+
+            return null;
+        }
 
         internal static void TimerCurrent(out long ticks)
         {
@@ -891,7 +921,7 @@ namespace System.Data.Common
             return result;
         }
 
-        internal static string MachineName() 
+        internal static string MachineName()
         {
             return Environment.MachineName;
         }
