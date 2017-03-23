@@ -15,5 +15,8 @@
       <Type  Name="IEnumerable`1" Dynamic="Required All" />
       <Type  Name="IEnumerator`1" Dynamic="Required All" />
     </Namespace>
+    <Namespace Name="System">
+      <Type  Name="DBNull" Dynamic="Required All" />
+    </Namespace>
   </Library>
 </Directives>
