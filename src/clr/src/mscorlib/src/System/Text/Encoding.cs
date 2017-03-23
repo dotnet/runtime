@@ -538,7 +538,7 @@ namespace System.Text
         {
             get
             {
-                return SR.GetResourceString("Globalization.cp_" + m_codePage.ToString());
+                return SR.GetResourceString("Globalization_cp_" + m_codePage.ToString());
             }
         }
 
