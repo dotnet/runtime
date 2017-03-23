@@ -13,6 +13,7 @@ namespace System.Security.Policy
         public virtual bool NoPrompt { get; set; }
         public virtual bool Persist { get; set; }
         public virtual TrustManagerUIContext UIContext { get; set; }
+        public virtual ApplicationIdentity PreviousApplicationIdentity { get; set; }
     }
     public enum TrustManagerUIContext
     {
