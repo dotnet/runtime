@@ -621,6 +621,12 @@
             "__BuildArch": "default"
           }
         },
+        "portable": {
+          "description": "Triggers a portable build.",
+          "settings": {
+            "PortableBuild": "1"
+          }
+        },
         "buildType": {
           "description": "Specifies configuration to publish, can be Release, Debug or Checked.",
           "settings": {

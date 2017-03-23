@@ -634,7 +634,7 @@ while :; do
             __CrossBuild=1
             ;;
             
-        portable)
+        -portable)
             __PortableBuild=1
             ;;
 
