@@ -16,12 +16,12 @@ namespace Microsoft.CSharp.RuntimeBinder
     /// </summary>
     internal sealed class CSharpBinaryOperationBinder : BinaryOperationBinder, ICSharpBinder
     {
-        internal bool IsChecked { get; }
+        public bool IsChecked { get; }
 
         internal bool IsLogicalOperation { get { return (_binopFlags & CSharpBinaryOperationFlags.LogicalOperation) != 0; } }
         private readonly CSharpBinaryOperationFlags _binopFlags;
 
-        internal Type CallingContext { get; }
+        public Type CallingContext { get; }
 
         private readonly List<CSharpArgumentInfo> _argumentInfo;
 

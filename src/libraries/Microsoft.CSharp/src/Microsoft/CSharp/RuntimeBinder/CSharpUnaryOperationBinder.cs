@@ -16,9 +16,9 @@ namespace Microsoft.CSharp.RuntimeBinder
     /// </summary>
     internal sealed class CSharpUnaryOperationBinder : UnaryOperationBinder, ICSharpBinder
     {
-        internal bool IsChecked { get; }
+        public bool IsChecked { get; }
 
-        internal Type CallingContext { get; }
+        public Type CallingContext { get; }
 
         private readonly List<CSharpArgumentInfo> _argumentInfo;
 

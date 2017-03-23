@@ -16,9 +16,9 @@ namespace Microsoft.CSharp.RuntimeBinder
     {
         internal bool IsCompoundAssignment { get; }
 
-        internal bool IsChecked { get; }
+        public bool IsChecked { get; }
 
-        internal Type CallingContext { get; }
+        public Type CallingContext { get; }
 
         private readonly List<CSharpArgumentInfo> _argumentInfo;
 

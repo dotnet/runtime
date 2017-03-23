@@ -14,7 +14,6 @@ namespace Microsoft.CSharp.RuntimeBinder
         bool ResultDiscarded { get; }
 
         // Members.
-        Type CallingContext { get; }
         CSharpCallFlags Flags { get; }
         string Name { get; }
         IList<Type> TypeArguments { get; }

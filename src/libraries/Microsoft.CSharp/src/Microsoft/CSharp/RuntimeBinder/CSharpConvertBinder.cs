@@ -17,9 +17,9 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         internal CSharpConversionKind ConversionKind { get; }
 
-        internal bool IsChecked { get; }
+        public bool IsChecked { get; }
 
-        internal Type CallingContext { get; }
+        public Type CallingContext { get; }
 
         private readonly RuntimeBinder _binder;
 

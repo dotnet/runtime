@@ -14,7 +14,9 @@ namespace Microsoft.CSharp.RuntimeBinder
     /// </summary>
     internal sealed class CSharpGetIndexBinder : GetIndexBinder, ICSharpBinder
     {
-        internal Type CallingContext { get; }
+        public Type CallingContext { get; }
+
+        public bool IsChecked => false;
 
         private readonly List<CSharpArgumentInfo> _argumentInfo;
 

@@ -16,7 +16,9 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         internal string Name { get; }
 
-        internal Type CallingContext { get; }
+        public Type CallingContext { get; }
+
+        public bool IsChecked => false;
 
         private readonly RuntimeBinder _binder;
 
