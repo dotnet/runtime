@@ -11,6 +11,7 @@ set(MDCOMPILER_SOURCES
   import.cpp
   importhelper.cpp
   mdutil.cpp
+  newmerger.cpp
   regmeta.cpp
   regmeta_compilersupport.cpp
   regmeta_emit.cpp
