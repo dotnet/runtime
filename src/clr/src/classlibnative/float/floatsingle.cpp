@@ -9,17 +9,11 @@
 
 #include "floatsingle.h"
 
-#define IS_FLT_INFINITY(x)         (((*((INT32*)((void*)&x))) & 0x7FFFFFFF) == 0x7F800000)
-
 // Windows x86 and Windows ARM/ARM64 may not define _isnanf() or _copysignf() but they do
 // define _isnan() and _copysign(). We will redirect the macros to these other functions if
 // the macro is not defined for the platform. This has the side effect of a possible implicit
 // upcasting for arguments passed in and an explicit downcasting for the _copysign() call.
 #if (defined(_TARGET_X86_) || defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)) && !defined(FEATURE_PAL)
-
-#if !defined(_isnanf)
-#define _isnanf      _isnan
-#endif
 
 #if !defined(_copysignf)
 #define _copysignf   (float)_copysign
@@ -87,13 +81,6 @@ FCIMPLEND
 ==============================================================================*/
 FCIMPL2_VV(float, COMSingle::Atan2, float y, float x)
     FCALL_CONTRACT;
-
-    // atan2f(+/-INFINITY, +/-INFINITY) produces +/-0.785398163f (x is +INFINITY) and
-    // +/-2.35619449f (x is -INFINITY) instead of the expected value of NaN. We handle
-    // that case here ourselves.
-    if (IS_FLT_INFINITY(y) && IS_FLT_INFINITY(x)) {
-        return (float)(y / x);
-    }
 
     return (float)atan2f(y, x);
 FCIMPLEND
@@ -175,24 +162,6 @@ FCIMPLEND
 ==============================================================================*/
 FCIMPL2_VV(float, COMSingle::Pow, float x, float y)
     FCALL_CONTRACT;
-
-    // The CRT version of pow preserves the NaN payload of x over the NaN payload of y.
-
-    if(_isnanf(y)) {
-        return y; // IEEE 754-2008: NaN payload must be preserved
-    }
-
-    if(_isnanf(x)) {
-        return x; // IEEE 754-2008: NaN payload must be preserved
-    }
-
-    // The CRT version of powf does not return NaN for powf(-1.0f, +/-INFINITY) and
-    // instead returns +1.0f.
-
-    if(IS_FLT_INFINITY(y) && (x == -1.0f)) {
-        INT32 result = CLR_NAN_32;
-        return (*((float*)((INT32*)&result)));
-    }
 
     return (float)powf(x, y);
 FCIMPLEND

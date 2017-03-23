@@ -216,7 +216,7 @@ public class MathFPow
         {
             float f = MathF.Pow(-1, float.NegativeInfinity);
 
-            if (!float.IsNaN(f))
+            if (f != 1)
             {
                 TestLibrary.TestFramework.LogError("007.1", "Return value is wrong!");
                 retVal = false;

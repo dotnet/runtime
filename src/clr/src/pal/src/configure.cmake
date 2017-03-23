@@ -728,9 +728,9 @@ check_cxx_source_runs("
 int main(void) {
   double infinity = 1.0 / 0.0;
   if (pow(1.0, infinity) != 1.0 || pow(1.0, -infinity) != 1.0) {
-    exit(1)
+    exit(1);
   }
-  if (!isnan(pow(-1.0, infinity)) || !isnan(pow(-1.0, -infinity))) {
+  if (pow(-1.0, infinity) != 1.0 || pow(-1.0, -infinity) != 1.0) {
     exit(1);
   }
   if (pow(0.0, infinity) != 0.0) {
@@ -742,7 +742,7 @@ int main(void) {
   if (pow(-1.1, infinity) != infinity || pow(1.1, infinity) != infinity) {
     exit(1);
   }
-  if (pow(-1.1, -infinity) != 0.0 || pow(1.1, infinity) != 0.0) {
+  if (pow(-1.1, -infinity) != 0.0 || pow(1.1, -infinity) != 0.0) {
     exit(1);
   }
   if (pow(-0.0, -1) != -infinity) {
