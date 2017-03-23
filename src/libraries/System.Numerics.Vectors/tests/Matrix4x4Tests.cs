@@ -2516,5 +2516,32 @@ namespace System.Numerics.Tests
             Assert.Equal(new IntPtr(basePtr + 14), new IntPtr(&mat.M43));
             Assert.Equal(new IntPtr(basePtr + 15), new IntPtr(&mat.M44));
         }
+
+        [Fact]
+        public void PerspectiveFarPlaneAtInfinityTest()
+        {
+            var nearPlaneDistance = 0.125f;
+            var m = Matrix4x4.CreatePerspective(1.0f, 1.0f, nearPlaneDistance, float.PositiveInfinity);
+            Assert.Equal(-1.0f, m.M33);
+            Assert.Equal(-nearPlaneDistance, m.M43);
+        }
+
+        [Fact]
+        public void PerspectiveFieldOfViewFarPlaneAtInfinityTest()
+        {
+            var nearPlaneDistance = 0.125f;
+            var m = Matrix4x4.CreatePerspectiveFieldOfView(MathHelper.ToRadians(60.0f), 1.5f, nearPlaneDistance, float.PositiveInfinity);
+            Assert.Equal(-1.0f, m.M33);
+            Assert.Equal(-nearPlaneDistance, m.M43);
+        }
+
+        [Fact]
+        public void PerspectiveOffCenterFarPlaneAtInfinityTest()
+        {
+            var nearPlaneDistance = 0.125f;
+            var m = Matrix4x4.CreatePerspectiveOffCenter(0.0f, 0.0f, 1.0f, 1.0f, nearPlaneDistance, float.PositiveInfinity);
+            Assert.Equal(-1.0f, m.M33);
+            Assert.Equal(-nearPlaneDistance, m.M43);
+        }
     }
 }
