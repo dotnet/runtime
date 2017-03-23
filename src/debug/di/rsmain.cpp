@@ -60,7 +60,7 @@ const char * GetDebugCodeName(DWORD dwCode)
         "(5) EXIT_PROCESS_DEBUG_EVENT",
         "(6) LOAD_DLL_DEBUG_EVENT",
         "(7) UNLOAD_DLL_DEBUG_EVENT",
-        "(8) OUTPUT_DEBUG_STRING_EVENT"
+        "(8) OUTPUT_DEBUG_STRING_EVENT",
         "(9) RIP_EVENT",// <-- only on Win9X
     };
 
