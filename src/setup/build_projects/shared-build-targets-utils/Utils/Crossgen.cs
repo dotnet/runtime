@@ -161,7 +161,7 @@ namespace Microsoft.DotNet.Cli.Build
             }
             else if (CurrentPlatform.IsOSX)
             {
-                rid = "osx.10.10-x64";
+                rid = "osx.10.12-x64";
             }
             else if (CurrentPlatform.IsCentOS || CurrentPlatform.IsRHEL)
             {

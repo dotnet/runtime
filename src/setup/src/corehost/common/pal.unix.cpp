@@ -292,8 +292,8 @@ pal::string_t pal::get_current_os_rid_platform()
             int minorVersion = stoi(release.substr(0, pos)) - 4;
             if (minorVersion < 10)
             {
-                // On OSX, our minimum supported RID is 10.10.
-                minorVersion = 10;
+                // On OSX, our minimum supported RID is 10.12.
+                minorVersion = 12;
             }
 
             ridOS.append(_X("osx.10."));

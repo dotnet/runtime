@@ -148,13 +148,13 @@ __cmake_defines="${__cmake_defines} ${__arch_define}"
 # __rid_plat is the base RID that corehost is shipped for, effectively, the name of the folder in "runtimes/{__rid_plat}/native/" inside the nupkgs.
 __rid_plat=
 if [ "$(uname -s)" == "Darwin" ]; then
-    __rid_plat=osx.10.10
+    __rid_plat=osx.10.12
 else
     init_rid_plat
 fi
 
 if [ -z $__rid_plat ]; then
-    echo "Unknown base rid (eg.: osx.10.10, ubuntu.14.04) being targeted"
+    echo "Unknown base rid (eg.: osx.10.12, ubuntu.14.04) being targeted"
     exit -1
 fi
 
