@@ -109,6 +109,9 @@
   <data name="ADP_InvalidEnumerationValue" xml:space="preserve">
     <value>The {0} enumeration value, {1}, is invalid.</value>
   </data>
+  <data name="ADP_NotSupportedEnumerationValue" xml:space="preserve">
+    <value>The {0} enumeration value, {1}, is not supported by the {2} method.</value>
+  </data>
   <data name="ADP_InvalidOffsetValue" xml:space="preserve">
     <value>Invalid parameter Offset value '{0}'. The value must be greater than or equal to 0.</value>
   </data>
@@ -264,6 +267,9 @@
   </data>
   <data name="ADP_ParameterValueOutOfRange" xml:space="preserve">
     <value>Parameter value '{0}' is out of range.</value>
+  </data>
+  <data name="ADP_BadParameterName" xml:space="preserve">
+    <value>Specified parameter name '{0}' is not valid.</value>
   </data>
   <data name="ADP_InvalidSizeValue" xml:space="preserve">
     <value>Invalid parameter Size value '{0}'. The value must be greater than or equal to 0.</value>

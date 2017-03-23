@@ -87,6 +87,7 @@
     <Compile Include="System\Data\SqlClient\SqlConnectionString.cs" />
     <Compile Include="System\Data\SqlClient\SqlConnectionStringBuilder.cs" />
     <Compile Include="System\Data\SqlClient\SqlConnectionTimeoutErrorInternal.cs" />
+    <Compile Include="System\Data\SqlClient\SqlDataAdapter.cs" />
     <Compile Include="System\Data\SqlClient\SqlDataReader.cs" />
     <Compile Include="System\Data\SqlClient\SqlEnums.cs" />
     <Compile Include="System\Data\SqlClient\SqlError.cs" />
@@ -102,6 +103,10 @@
     <Compile Include="System\Data\SqlClient\SqlParameterCollectionHelper.cs" />
     <Compile Include="System\Data\SqlClient\SqlParameterHelper.cs" />
     <Compile Include="System\Data\SqlClient\SqlReferenceCollection.cs" />
+    <Compile Include="System\Data\SqlClient\SqlRowUpdatedEvent.cs" />
+    <Compile Include="System\Data\SqlClient\SqlRowUpdatedEventHandler.cs" />
+    <Compile Include="System\Data\SqlClient\SqlRowUpdatingEvent.cs" />
+    <Compile Include="System\Data\SqlClient\SqlRowUpdatingEventHandler.cs" />
     <Compile Include="System\Data\SqlClient\SqlSequentialStream.cs" />
     <Compile Include="System\Data\SqlClient\SqlSequentialTextReader.cs" />
     <Compile Include="System\Data\SqlClient\SqlStatistics.cs" />
@@ -326,6 +331,7 @@
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.ComponentModel.Primitives" />
+    <Reference Include="System.ComponentModel.TypeConverter" />
     <Reference Include="System.Data.Common" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.DiagnosticSource" />
