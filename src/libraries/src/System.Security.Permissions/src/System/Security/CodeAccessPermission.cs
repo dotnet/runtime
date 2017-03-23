@@ -19,6 +19,11 @@ namespace System.Security
         public abstract IPermission Intersect(IPermission target);
         public abstract bool IsSubsetOf(IPermission target);
         public void PermitOnly() { throw new PlatformNotSupportedException(); }
+        public static void RevertAll() { }
+        public static void RevertAssert() { }
+        [Obsolete]
+        public static void RevertDeny() { }
+        public static void RevertPermitOnly() { }
         public override string ToString() => base.ToString();
         public abstract SecurityElement ToXml();
         public virtual IPermission Union(IPermission other) { return default(IPermission); }
