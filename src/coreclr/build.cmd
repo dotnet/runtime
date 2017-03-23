@@ -118,7 +118,7 @@ if /i "%1" == "debug"               (set __BuildTypeDebug=1&set processedArgs=!p
 if /i "%1" == "checked"             (set __BuildTypeChecked=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "release"             (set __BuildTypeRelease=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
-if /i "%1" == "portable"             (set __IsPortableBuild=-portable&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-portable"             (set __IsPortableBuild=-portable&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 
 REM All arguments after this point will be passed through directly to build.cmd on nested invocations
 REM using the "all" argument, and must be added to the __PassThroughArgs variable.
