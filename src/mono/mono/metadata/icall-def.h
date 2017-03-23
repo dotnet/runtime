@@ -439,7 +439,7 @@ ICALL(MATH_18, "Tanh", ves_icall_System_Math_Tanh)
 ICALL_TYPE(MCATTR, "System.MonoCustomAttrs", MCATTR_1)
 ICALL(MCATTR_1, "GetCustomAttributesDataInternal", ves_icall_MonoCustomAttrs_GetCustomAttributesDataInternal)
 ICALL(MCATTR_2, "GetCustomAttributesInternal", custom_attrs_get_by_type)
-ICALL(MCATTR_3, "IsDefinedInternal", custom_attrs_defined_internal)
+HANDLES(ICALL(MCATTR_3, "IsDefinedInternal", ves_icall_MonoCustomAttrs_IsDefinedInternal))
 
 #ifndef DISABLE_SOCKETS
 ICALL_TYPE(NDNS, "System.Net.Dns", NDNS_1)

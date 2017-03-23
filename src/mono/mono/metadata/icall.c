@@ -7716,25 +7716,20 @@ property_info_get_default_value (MonoReflectionProperty *property)
 }
 
 ICALL_EXPORT MonoBoolean
-custom_attrs_defined_internal (MonoObject *obj, MonoReflectionType *attr_type)
+ves_icall_MonoCustomAttrs_IsDefinedInternal (MonoObjectHandle obj, MonoReflectionTypeHandle attr_type, MonoError *error)
 {
-	MonoError error;
-	MonoClass *attr_class = mono_class_from_mono_type (attr_type->type);
-	MonoCustomAttrInfo *cinfo;
-	gboolean found;
+	error_init (error);
+	MonoClass *attr_class = mono_class_from_mono_type (MONO_HANDLE_GETVAL (attr_type, type));
 
-	mono_class_init_checked (attr_class, &error);
-	if (mono_error_set_pending_exception (&error))
-		return FALSE;
+	mono_class_init_checked (attr_class, error);
+	return_val_if_nok (error, FALSE);
 
-	cinfo = mono_reflection_get_custom_attrs_info_checked (obj, &error);
-	if (!is_ok (&error)) {
-		mono_error_set_pending_exception (&error);
-		return FALSE;
-	}
+	MonoCustomAttrInfo *cinfo = mono_reflection_get_custom_attrs_info_checked (MONO_HANDLE_RAW (obj), error); /* FIXME use coop handles in mono_reflection_get_custom_attrs_info_checked */
+	return_val_if_nok (error, FALSE);
+
 	if (!cinfo)
 		return FALSE;
-	found = mono_custom_attrs_has_attr (cinfo, attr_class);
+	gboolean found = mono_custom_attrs_has_attr (cinfo, attr_class);
 	if (!cinfo->cached)
 		mono_custom_attrs_free (cinfo);
 	return found;
