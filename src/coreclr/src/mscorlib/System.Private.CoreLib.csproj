@@ -462,7 +462,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\InterfaceMapping.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\InvalidFilterCriteriaException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\INVOCATION_FLAGS.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Reflection\IReflect.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\LoaderAllocator.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\LocalVariableInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\ManifestResourceInfo.cs" />
