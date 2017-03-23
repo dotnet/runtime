@@ -216,9 +216,9 @@
     },
     {
       "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Delete files from $(PB_DockerCopyDest)",
+      "continueOnError": true,
+      "alwaysRun": true,
+      "displayName": "Remove old docker build logs",
       "timeoutInMinutes": 0,
       "task": {
         "id": "b7e8b412-0437-4065-9371-edc5881de25b",
@@ -250,26 +250,8 @@
     },
     {
       "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Run docker",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "filename": "docker",
-        "arguments": "stop $(PB_DockerContainerName)",
-        "workingFolder": "",
-        "failOnStandardError": "false"
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
+      "continueOnError": true,
+      "alwaysRun": true,
       "displayName": "Remove container",
       "timeoutInMinutes": 0,
       "task": {
@@ -279,7 +261,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "rm $(PB_DockerContainerName)",
+        "arguments": "rm -f $(PB_DockerContainerName)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -297,10 +279,46 @@
       },
       "inputs": {
         "CopyRoot": "$(PB_DockerCopyDest)/corefx",
-        "Contents": "**/*.log",
+        "Contents": "*.log",
         "ArtifactName": "BuildLogs",
         "ArtifactType": "Container",
         "TargetPath": "\\\\my\\share\\$(Build.DefinitionName)\\$(Build.BuildNumber)"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": true,
+      "alwaysRun": true,
+      "displayName": "Cleanup Docker",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "$(Build.SourcesDirectory)/corefx/Tools/scripts/docker/cleanup-docker.sh",
+        "arguments": "",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": true,
+      "alwaysRun": true,
+      "displayName": "Cleanup VSTS Agent",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "$(Build.SourcesDirectory)/corefx/Tools/msbuild.sh",
+        "arguments": "cleanupagent.proj /p:AgentDirectory=$(Agent.HomeDirectory) /p:DoClean=$(PB_CleanAgent)",
+        "workingFolder": "$(Build.SourcesDirectory)/corefx/Tools/scripts/vstsagent/",
+        "failOnStandardError": "false"
       }
     }
   ],
@@ -353,7 +371,7 @@
       "value": "/root/corefx"
     },
     "PB_DockerContainerName": {
-      "value": "$(Build.BuildId)"
+      "value": "corefx-cross-$(Build.BuildId)"
     },
     "PB_DockerImageName": {
       "value": "$(PB_DockerRepository):$(PB_DockerTag)"
@@ -400,6 +418,9 @@
     },
     "portableLinux": {
       "value": ""
+    },
+    "PB_CleanAgent": {
+      "value": "true"
     }
   },
   "demands": [
