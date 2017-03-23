@@ -463,8 +463,8 @@ namespace System.Data.SqlClient
         override public void Close()
         {
             ConnectionState previousState = State;
-            Guid operationId;
-            Guid clientConnectionId;
+            Guid operationId = default(Guid);
+            Guid clientConnectionId = default(Guid);
 
             // during the call to Dispose() there is a redundant call to 
             // Close(). because of this, the second time Close() is invoked the 

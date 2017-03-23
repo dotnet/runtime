@@ -1592,7 +1592,7 @@ namespace System.Data.SqlClient
 
         new public Task<SqlDataReader> ExecuteReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken)
         {
-            Guid operationId;
+            Guid operationId = default(Guid);
             if (!_parentOperationStarted)
                 operationId = _diagnosticListener.WriteCommandBefore(this);
 
