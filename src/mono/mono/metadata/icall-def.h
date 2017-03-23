@@ -437,8 +437,8 @@ ICALL(MATH_17, "Tan", ves_icall_System_Math_Tan)
 ICALL(MATH_18, "Tanh", ves_icall_System_Math_Tanh)
 
 ICALL_TYPE(MCATTR, "System.MonoCustomAttrs", MCATTR_1)
-ICALL(MCATTR_1, "GetCustomAttributesDataInternal", ves_icall_MonoCustomAttrs_GetCustomAttributesDataInternal)
-ICALL(MCATTR_2, "GetCustomAttributesInternal", custom_attrs_get_by_type)
+HANDLES(ICALL(MCATTR_1, "GetCustomAttributesDataInternal", ves_icall_MonoCustomAttrs_GetCustomAttributesDataInternal))
+HANDLES(ICALL(MCATTR_2, "GetCustomAttributesInternal", ves_icall_MonoCustomAttrs_GetCustomAttributesInternal))
 HANDLES(ICALL(MCATTR_3, "IsDefinedInternal", ves_icall_MonoCustomAttrs_IsDefinedInternal))
 
 #ifndef DISABLE_SOCKETS

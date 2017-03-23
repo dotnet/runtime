@@ -35,10 +35,13 @@ MonoObject*
 mono_custom_attrs_get_attr_checked (MonoCustomAttrInfo *ainfo, MonoClass *attr_klass, MonoError *error);
 
 MonoCustomAttrInfo*
-mono_reflection_get_custom_attrs_info_checked (MonoObject *obj, MonoError *error);
+mono_reflection_get_custom_attrs_info_checked (MonoObjectHandle obj, MonoError *error);
 
-MonoArray*
-mono_reflection_get_custom_attrs_data_checked (MonoObject *obj, MonoError *error);
+MonoArrayHandle
+mono_reflection_get_custom_attrs_data_checked (MonoObjectHandle obj, MonoError *error);
+
+MonoArrayHandle
+mono_reflection_get_custom_attrs_by_type_handle (MonoObjectHandle obj, MonoClass *attr_klass, MonoError *error);
 
 MonoArray*
 mono_reflection_get_custom_attrs_blob_checked (MonoReflectionAssembly *assembly, MonoObject *ctor, MonoArray *ctorArgs, MonoArray *properties, MonoArray *propValues, MonoArray *fields, MonoArray* fieldValues, MonoError *error);

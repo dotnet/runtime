@@ -7724,7 +7724,7 @@ ves_icall_MonoCustomAttrs_IsDefinedInternal (MonoObjectHandle obj, MonoReflectio
 	mono_class_init_checked (attr_class, error);
 	return_val_if_nok (error, FALSE);
 
-	MonoCustomAttrInfo *cinfo = mono_reflection_get_custom_attrs_info_checked (MONO_HANDLE_RAW (obj), error); /* FIXME use coop handles in mono_reflection_get_custom_attrs_info_checked */
+	MonoCustomAttrInfo *cinfo = mono_reflection_get_custom_attrs_info_checked (obj, error);
 	return_val_if_nok (error, FALSE);
 
 	if (!cinfo)
@@ -7735,36 +7735,29 @@ ves_icall_MonoCustomAttrs_IsDefinedInternal (MonoObjectHandle obj, MonoReflectio
 	return found;
 }
 
-ICALL_EXPORT MonoArray*
-custom_attrs_get_by_type (MonoObject *obj, MonoReflectionType *attr_type)
+ICALL_EXPORT MonoArrayHandle
+ves_icall_MonoCustomAttrs_GetCustomAttributesInternal (MonoObjectHandle obj, MonoReflectionTypeHandle attr_type, mono_bool pseudoattrs, MonoError *error)
 {
-	MonoClass *attr_class = attr_type ? mono_class_from_mono_type (attr_type->type) : NULL;
-	MonoArray *res;
-	MonoError error;
+	MonoClass *attr_class;
+	if (MONO_HANDLE_IS_NULL (attr_type))
+		attr_class = NULL;
+	else
+		attr_class = mono_class_from_mono_type (MONO_HANDLE_GETVAL (attr_type, type));
 
 	if (attr_class) {
-		mono_class_init_checked (attr_class, &error);
-		if (mono_error_set_pending_exception (&error))
-			return NULL;
+		mono_class_init_checked (attr_class, error);
+		if (!is_ok (error))
+			return MONO_HANDLE_CAST (MonoArray, NULL_HANDLE);
 	}
 
-	res = mono_reflection_get_custom_attrs_by_type (obj, attr_class, &error);
-	if (!mono_error_ok (&error)) {
-		mono_error_set_pending_exception (&error);
-		return NULL;
-	}
-
-	return res;
+	return mono_reflection_get_custom_attrs_by_type_handle (obj, attr_class, error);
 }
 
-ICALL_EXPORT MonoArray*
-ves_icall_MonoCustomAttrs_GetCustomAttributesDataInternal (MonoObject *obj)
+ICALL_EXPORT MonoArrayHandle
+ves_icall_MonoCustomAttrs_GetCustomAttributesDataInternal (MonoObjectHandle obj, MonoError *error)
 {
-	MonoError error;
-	MonoArray *result;
-	result = mono_reflection_get_custom_attrs_data_checked (obj, &error);
-	mono_error_set_pending_exception (&error);
-	return result;
+	error_init (error);
+	return mono_reflection_get_custom_attrs_data_checked (obj, error);
 }
 
 
