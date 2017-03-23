@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.ComponentModel;    //Component
-using System.Data;
 using System.Data.Common;       //DbDataAdapter
 
 namespace System.Data.Odbc
@@ -28,7 +25,7 @@ namespace System.Data.Odbc
         {
         }
 
-        new public OdbcCommand Command
+        public new OdbcCommand Command
         {
             get { return (base.Command as OdbcCommand); }
             set
@@ -37,7 +34,7 @@ namespace System.Data.Odbc
             }
         }
 
-        override protected IDbCommand BaseCommand
+        protected override IDbCommand BaseCommand
         {
             get { return base.BaseCommand; }
             set { base.BaseCommand = (value as OdbcCommand); }
@@ -55,7 +52,7 @@ namespace System.Data.Odbc
         {
         }
 
-        new public OdbcCommand Command
+        public new OdbcCommand Command
         {
             get { return (OdbcCommand)base.Command; }
         }

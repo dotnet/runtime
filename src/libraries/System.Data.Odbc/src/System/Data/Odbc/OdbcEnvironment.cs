@@ -2,27 +2,22 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Data;
-using System.Data.Common;
 using System.Threading;
 
 namespace System.Data.Odbc
 {
     internal sealed class OdbcEnvironment
     {
-        static private object s_globalEnvironmentHandle;
-        static private object s_globalEnvironmentHandleLock = new object();
+        private static object s_globalEnvironmentHandle;
+        private static object s_globalEnvironmentHandleLock = new object();
 
         private OdbcEnvironment() { }  // default const.
 
-        static internal OdbcEnvironmentHandle GetGlobalEnvironmentHandle()
+        internal static OdbcEnvironmentHandle GetGlobalEnvironmentHandle()
         {
             OdbcEnvironmentHandle globalEnvironmentHandle = s_globalEnvironmentHandle as OdbcEnvironmentHandle;
             if (null == globalEnvironmentHandle)
             {
-                ADP.CheckVersionMDAC(true);
-
                 lock (s_globalEnvironmentHandleLock)
                 {
                     globalEnvironmentHandle = s_globalEnvironmentHandle as OdbcEnvironmentHandle;
@@ -36,7 +31,7 @@ namespace System.Data.Odbc
             return globalEnvironmentHandle;
         }
 
-        static internal void ReleaseObjectPool()
+        internal static void ReleaseObjectPool()
         {
             object globalEnvironmentHandle = Interlocked.Exchange(ref s_globalEnvironmentHandle, null);
             if (null != globalEnvironmentHandle)
@@ -46,4 +41,3 @@ namespace System.Data.Odbc
         }
     }
 }
-

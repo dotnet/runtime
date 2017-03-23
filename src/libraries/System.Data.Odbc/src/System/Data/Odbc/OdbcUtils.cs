@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Data;
 using System.Data.Common;
 using System.Diagnostics;                   // Debug services
 using System.Runtime.InteropServices;
@@ -519,7 +517,7 @@ namespace System.Data.Odbc
             while (true)
             {
                 nextToken = NextToken();
-                if ((_idx == _len) || ADP.IsEmpty(nextToken))
+                if ((_idx == _len) || string.IsNullOrEmpty(nextToken))
                 { // fxcop
                     break;
                 }

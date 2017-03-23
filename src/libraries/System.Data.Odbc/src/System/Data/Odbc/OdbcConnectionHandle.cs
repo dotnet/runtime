@@ -2,20 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections;
-using System.ComponentModel;
-using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
-using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
-using System.Runtime.InteropServices;
-using System.Security;
-using System.Security.Permissions;
-using System.Text;
-using System.Threading;
 
 namespace System.Data.Odbc
 {
@@ -187,14 +177,12 @@ namespace System.Data.Odbc
                     {
                         _handleState = HandleState.Transacted;
                     }
-                    Bid.TraceSqlReturn("<odbc.SQLEndTran|API|ODBC|RET> %08X{SQLRETURN}\n", retcode);
                 }
 
                 if (HandleState.Transacted == _handleState)
                 { // AutoCommitOn
                     retcode = UnsafeNativeMethods.SQLSetConnectAttrW(handle, ODBC32.SQL_ATTR.AUTOCOMMIT, ODBC32.SQL_AUTOCOMMIT_ON, (Int32)ODBC32.SQL_IS.UINTEGER);
                     _handleState = HandleState.Connected;
-                    Bid.TraceSqlReturn("<odbc.SQLSetConnectAttr|API|ODBC|RET> %08X{SQLRETURN}\n", retcode);
                 }
             }
             //Overactive assert which fires if handle was allocated - but failed to connect to the server
@@ -227,7 +215,7 @@ namespace System.Data.Odbc
             return retcode;
         }
 
-        override protected bool ReleaseHandle()
+        protected override bool ReleaseHandle()
         {
             // NOTE: The SafeHandle class guarantees this will be called exactly once and is non-interrutible.
             ODBC32.RetCode retcode;
@@ -239,7 +227,6 @@ namespace System.Data.Odbc
             {
                 retcode = UnsafeNativeMethods.SQLDisconnect(handle);
                 _handleState = HandleState.Allocated;
-                Bid.TraceSqlReturn("<odbc.SQLDisconnect|API|ODBC|RET> %08X{SQLRETURN}\n", retcode);
             }
             Debug.Assert(HandleState.Allocated == _handleState, "not expected HandleState.Allocated");
             return base.ReleaseHandle();
@@ -248,7 +235,6 @@ namespace System.Data.Odbc
         internal ODBC32.RetCode GetConnectionAttribute(ODBC32.SQL_ATTR attribute, byte[] buffer, out int cbActual)
         {
             ODBC32.RetCode retcode = UnsafeNativeMethods.SQLGetConnectAttrW(this, attribute, buffer, buffer.Length, out cbActual);
-            Bid.Trace("<odbc.SQLGetConnectAttr|ODBC> SQLRETURN=%d, Attribute=%d, BufferLength=%d, StringLength=%d\n", (int)retcode, (int)attribute, buffer.Length, (int)cbActual);
             return retcode;
         }
 
@@ -262,14 +248,12 @@ namespace System.Data.Odbc
         internal ODBC32.RetCode GetInfo2(ODBC32.SQL_INFO info, byte[] buffer, out short cbActual)
         {
             ODBC32.RetCode retcode = UnsafeNativeMethods.SQLGetInfoW(this, info, buffer, checked((short)buffer.Length), out cbActual);
-            Bid.Trace("<odbc.SQLGetInfo|ODBC> SQLRETURN=%d, InfoType=%d, BufferLength=%d, StringLength=%d\n", (int)retcode, (int)info, buffer.Length, (int)cbActual);
             return retcode;
         }
 
         internal ODBC32.RetCode GetInfo1(ODBC32.SQL_INFO info, byte[] buffer)
         {
             ODBC32.RetCode retcode = UnsafeNativeMethods.SQLGetInfoW(this, info, buffer, checked((short)buffer.Length), ADP.PtrZero);
-            Bid.Trace("<odbc.SQLGetInfo|ODBC> SQLRETURN=%d, InfoType=%d, BufferLength=%d\n", (int)retcode, (int)info, buffer.Length);
             return retcode;
         }
 
@@ -283,7 +267,6 @@ namespace System.Data.Odbc
         internal ODBC32.RetCode SetConnectionAttribute3(ODBC32.SQL_ATTR attribute, string buffer, Int32 length)
         {
             ODBC32.RetCode retcode = UnsafeNativeMethods.SQLSetConnectAttrW(this, attribute, buffer, length);
-            Bid.Trace("<odbc.SQLSetConnectAttr|ODBC> SQLRETURN=%d, Attribute=%d, BufferLength=%d\n", (int)retcode, (int)attribute, buffer.Length);
             return retcode;
         }
 

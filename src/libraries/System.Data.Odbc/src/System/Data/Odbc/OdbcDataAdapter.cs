@@ -2,23 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.ComponentModel;
-using System.Data;
 using System.Data.Common;
-using System.Threading;
 
 namespace System.Data.Odbc
 {
-    [
-    DefaultEvent("RowUpdated"),
-    ToolboxItem("Microsoft.VSDesigner.Data.VS.OdbcDataAdapterToolboxItem, " + AssemblyRef.MicrosoftVSDesigner), // WebData 97832
-    Designer("Microsoft.VSDesigner.Data.VS.OdbcDataAdapterDesigner, " + AssemblyRef.MicrosoftVSDesigner)
-    ]
     public sealed class OdbcDataAdapter : DbDataAdapter, IDbDataAdapter, ICloneable
     {
-        static private readonly object s_eventRowUpdated = new object();
-        static private readonly object s_eventRowUpdating = new object();
+        private static readonly object s_eventRowUpdated = new object();
+        private static readonly object s_eventRowUpdating = new object();
 
         private OdbcCommand _deleteCommand, _insertCommand, _selectCommand, _updateCommand;
 
@@ -48,13 +39,7 @@ namespace System.Data.Odbc
             GC.SuppressFinalize(this);
         }
 
-        [
-        DefaultValue(null),
-        ResCategoryAttribute(Res.DataCategory_Update),
-        ResDescriptionAttribute(Res.DbDataAdapter_DeleteCommand),
-        Editor("Microsoft.VSDesigner.Data.Design.DBCommandEditor, " + AssemblyRef.MicrosoftVSDesigner, "System.Drawing.Design.UITypeEditor, " + AssemblyRef.SystemDrawing),
-        ]
-        new public OdbcCommand DeleteCommand
+        public new OdbcCommand DeleteCommand
         {
             get { return _deleteCommand; }
             set { _deleteCommand = value; }
@@ -66,13 +51,7 @@ namespace System.Data.Odbc
             set { _deleteCommand = (OdbcCommand)value; }
         }
 
-        [
-        DefaultValue(null),
-        ResCategoryAttribute(Res.DataCategory_Update),
-        ResDescriptionAttribute(Res.DbDataAdapter_InsertCommand),
-        Editor("Microsoft.VSDesigner.Data.Design.DBCommandEditor, " + AssemblyRef.MicrosoftVSDesigner, "System.Drawing.Design.UITypeEditor, " + AssemblyRef.SystemDrawing),
-        ]
-        new public OdbcCommand InsertCommand
+        public new OdbcCommand InsertCommand
         {
             get { return _insertCommand; }
             set { _insertCommand = value; }
@@ -84,13 +63,7 @@ namespace System.Data.Odbc
             set { _insertCommand = (OdbcCommand)value; }
         }
 
-        [
-        DefaultValue(null),
-        ResCategoryAttribute(Res.DataCategory_Fill),
-        ResDescriptionAttribute(Res.DbDataAdapter_SelectCommand),
-        Editor("Microsoft.VSDesigner.Data.Design.DBCommandEditor, " + AssemblyRef.MicrosoftVSDesigner, "System.Drawing.Design.UITypeEditor, " + AssemblyRef.SystemDrawing),
-        ]
-        new public OdbcCommand SelectCommand
+        public new OdbcCommand SelectCommand
         {
             get { return _selectCommand; }
             set { _selectCommand = value; }
@@ -102,13 +75,7 @@ namespace System.Data.Odbc
             set { _selectCommand = (OdbcCommand)value; }
         }
 
-        [
-        DefaultValue(null),
-        ResCategoryAttribute(Res.DataCategory_Update),
-        ResDescriptionAttribute(Res.DbDataAdapter_UpdateCommand),
-        Editor("Microsoft.VSDesigner.Data.Design.DBCommandEditor, " + AssemblyRef.MicrosoftVSDesigner, "System.Drawing.Design.UITypeEditor, " + AssemblyRef.SystemDrawing),
-        ]
-        new public OdbcCommand UpdateCommand
+        public new OdbcCommand UpdateCommand
         {
             get { return _updateCommand; }
             set { _updateCommand = value; }
@@ -120,10 +87,6 @@ namespace System.Data.Odbc
             set { _updateCommand = (OdbcCommand)value; }
         }
 
-        [
-        ResCategoryAttribute(Res.DataCategory_Update),
-        ResDescriptionAttribute(Res.DbDataAdapter_RowUpdated),
-        ]
         public event OdbcRowUpdatedEventHandler RowUpdated
         {
             add
@@ -136,10 +99,6 @@ namespace System.Data.Odbc
             }
         }
 
-        [
-        ResCategoryAttribute(Res.DataCategory_Update),
-        ResDescriptionAttribute(Res.DbDataAdapter_RowUpdating),
-        ]
         public event OdbcRowUpdatingEventHandler RowUpdating
         {
             add
@@ -171,17 +130,17 @@ namespace System.Data.Odbc
             return new OdbcDataAdapter(this);
         }
 
-        override protected RowUpdatedEventArgs CreateRowUpdatedEvent(DataRow dataRow, IDbCommand command, StatementType statementType, DataTableMapping tableMapping)
+        protected override RowUpdatedEventArgs CreateRowUpdatedEvent(DataRow dataRow, IDbCommand command, StatementType statementType, DataTableMapping tableMapping)
         {
             return new OdbcRowUpdatedEventArgs(dataRow, command, statementType, tableMapping);
         }
 
-        override protected RowUpdatingEventArgs CreateRowUpdatingEvent(DataRow dataRow, IDbCommand command, StatementType statementType, DataTableMapping tableMapping)
+        protected override RowUpdatingEventArgs CreateRowUpdatingEvent(DataRow dataRow, IDbCommand command, StatementType statementType, DataTableMapping tableMapping)
         {
             return new OdbcRowUpdatingEventArgs(dataRow, command, statementType, tableMapping);
         }
 
-        override protected void OnRowUpdated(RowUpdatedEventArgs value)
+        protected override void OnRowUpdated(RowUpdatedEventArgs value)
         {
             OdbcRowUpdatedEventHandler handler = (OdbcRowUpdatedEventHandler)Events[s_eventRowUpdated];
             if ((null != handler) && (value is OdbcRowUpdatedEventArgs))
@@ -191,7 +150,7 @@ namespace System.Data.Odbc
             base.OnRowUpdated(value);
         }
 
-        override protected void OnRowUpdating(RowUpdatingEventArgs value)
+        protected override void OnRowUpdating(RowUpdatingEventArgs value)
         {
             OdbcRowUpdatingEventHandler handler = (OdbcRowUpdatingEventHandler)Events[s_eventRowUpdating];
             if ((null != handler) && (value is OdbcRowUpdatingEventArgs))

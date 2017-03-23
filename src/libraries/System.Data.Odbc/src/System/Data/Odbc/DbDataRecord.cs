@@ -2,12 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.ComponentModel;            //Component
-using System.Data;
-using System.Reflection;                //Missing
-using System.Runtime.InteropServices;   //Marshal
-
 namespace System.Data.Odbc
 {
     internal sealed class DbSchemaInfo
@@ -20,16 +14,6 @@ namespace System.Data.Odbc
         internal string _typename;
         internal Type _type;
         internal ODBC32.SQL_TYPE? _dbtype;
-        internal object _scale;
-        internal object _precision;
-
-        // extension to allow BindCol
-        //
-        internal int _columnlength;          //
-        internal int _valueOffset;           // offset to the data in the row buffer
-        internal int _lengthOffset;          // offset to the length in the row buffer
-        internal ODBC32.SQL_C _sqlctype;         // need this to bind the value
-        internal ODBC32.SQL_TYPE _sql_type;      // need that to properly marshal the value
     }
 
     /////////////////////////////////////////////////////////////////////////////

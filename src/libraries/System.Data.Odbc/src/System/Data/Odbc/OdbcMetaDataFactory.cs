@@ -2,16 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections;
-using System.Data;
+using System.IO;
 using System.Data.Common;
 using System.Data.ProviderBase;
 using System.Diagnostics;
-using System.IO;
 using System.Text;
-using System.Xml;
-using System.Xml.Schema;
 
 namespace System.Data.Odbc
 {
@@ -34,7 +29,7 @@ namespace System.Data.Odbc
 
         private readonly SchemaFunctionName[] _schemaMapping;
 
-        static internal readonly char[] KeywordSeparatorChar = new char[1] { ',' };
+        internal static readonly char[] KeywordSeparatorChar = new char[1] { ',' };
 
 
         internal OdbcMetaDataFactory(Stream XMLStream,
@@ -601,7 +596,7 @@ namespace System.Data.Odbc
 
             // update the catalog separator
             stringValue = connection.GetInfoStringUnhandled(ODBC32.SQL_INFO.CATALOG_NAME_SEPARATOR);
-            if (!ADP.IsEmpty(stringValue))
+            if (!string.IsNullOrEmpty(stringValue))
             {
                 StringBuilder patternEscaped = new StringBuilder();
                 ADP.EscapeSpecialCharacters(stringValue, patternEscaped);
@@ -1173,7 +1168,3 @@ namespace System.Data.Odbc
         }
     }
 }
-
-
-
-
