@@ -10,9 +10,9 @@ using System.Threading.Tasks;
 
 namespace System.Security.Cryptography.Xml
 {
-    internal abstract class RSAPKCS1SignatureDescriptionBase : SignatureDescription
+    internal abstract class RSAPKCS1SignatureDescription : SignatureDescription
     {
-        public RSAPKCS1SignatureDescriptionBase(string hashAlgorithmName)
+        public RSAPKCS1SignatureDescription(string hashAlgorithmName)
         {
             KeyAlgorithm = typeof(System.Security.Cryptography.RSA).AssemblyQualifiedName;
             FormatterAlgorithm = typeof(System.Security.Cryptography.RSAPKCS1SignatureFormatter).AssemblyQualifiedName;
