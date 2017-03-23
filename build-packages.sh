@@ -3,16 +3,16 @@
 usage()
 {
     echo "Builds the NuGet packages from the binaries that were built in the Build product binaries step."
-    echo "Usage: build-packages -BuildArch -BuildType [portableLinux]"
+    echo "Usage: build-packages -BuildArch -BuildType [-portable]"
     echo "BuildArch can be x64, x86, arm, arm64 (default is x64)"
     echo "BuildType can be release, checked, debug (default is debug)"
-    echo "portableLinux - build for Portable Linux Distribution"
+    echo "-portable - build for Portable Distribution"
     echo
     exit 1
 }
 
 __ProjectRoot="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-__PortableLinux=0
+__PortableBuild=0
 
 # Use uname to determine what the OS is.
 OSName=$(uname -s)
@@ -71,13 +71,8 @@ while :; do
         __Arch=$(echo $1| cut -d'=' -f 2)
         ;;
 
-        portableLinux)
-            if [ "$__BuildOS" == "Linux" ]; then
-                __PortableLinux=1
-            else
-                echo "ERROR: portableLinux not supported for non-Linux platforms."
-                exit 1
-            fi
+        -portableBuild)
+            __PortableBuild=1
             ;;
         *)
         unprocessedBuildArgs="$unprocessedBuildArgs $1"
@@ -85,9 +80,13 @@ while :; do
     shift
 done
 
-# Portable builds target the base RID only for Linux based platforms
-if [ $__PortableLinux == 1 ]; then
-    export __DistroRid="linux-$__Arch"
+# Portable builds target the base RID
+if [ $__PortableBuild == 1 ]; then
+    if [ "$__BuildOS" == "Linux" ]; then
+        export __DistroRid="linux-$__Arch"
+    elif [ "$__BuildOS" == "OSX" ]; then
+        export __DistroRid="osx-$__Arch"
+    fi
 else
     export __DistroRid="\${OSRid}-$__Arch"
 fi
