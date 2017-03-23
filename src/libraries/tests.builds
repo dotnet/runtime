@@ -6,6 +6,11 @@
     <GenerateCodeCoverageReportForAll>true</GenerateCodeCoverageReportForAll>
   </PropertyGroup>
 
+  <!-- For UAP we are using an APPX that is registered with a unique ID. Because of that we need to run tests sequentially -->
+  <PropertyGroup Condition="'$(BuildingUAPVertical)'=='true' and '$(SkipTests)' != 'true' " >
+    <SerializeProjects>true</SerializeProjects>
+  </PropertyGroup>
+
   <Import Project="$(ToolsDir)CodeCoverage.targets" Condition="Exists('$(ToolsDir)CodeCoverage.targets')" />
   <Import Project="$(ToolsDir)PerfTesting.targets" Condition="Exists('$(ToolsDir)PerfTesting.targets') and '$(Performance)' == 'true'"/>
   <Import Project="$(ToolsDir)VersionTools.targets" Condition="Exists('$(ToolsDir)VersionTools.targets')" />
