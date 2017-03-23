@@ -138,8 +138,12 @@ namespace Mono.Linker.Steps {
 					markType = true;
 					break;
 
+				case RootVisibility.PublicAndFamilyAndAssembly:
+					markType = !type.IsNestedPrivate;
+					break;
+
 				case RootVisibility.PublicAndFamily:
-					markType = type.IsPublic || type.IsNestedFamily || type.IsNestedFamilyOrAssembly;
+					markType = type.IsPublic || type.IsNestedPublic || type.IsNestedFamily || type.IsNestedFamilyOrAssembly;
 					break;
 			}
 
