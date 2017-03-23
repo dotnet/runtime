@@ -13,6 +13,8 @@ namespace Microsoft.CSharp.RuntimeBinder
     /// </summary>
     internal sealed class CSharpConvertBinder : ConvertBinder, ICSharpBinder
     {
+        public bool IsBinderThatCanHaveRefReceiver => false;
+
         CSharpArgumentInfo ICSharpBinder.GetArgumentInfo(int index) => CSharpArgumentInfo.None;
 
         internal CSharpConversionKind ConversionKind { get; }

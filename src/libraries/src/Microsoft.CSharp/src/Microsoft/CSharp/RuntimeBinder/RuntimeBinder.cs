@@ -347,7 +347,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 // If we have a ref our an out parameter, make the byref type.
                 // If we have the receiver of a call or invoke that is ref, it must be because of 
                 // a struct caller. Don't persist the ref for that.
-                if (!(index == 0 && IsBinderThatCanHaveRefReceiver(p)))
+                if (!(index == 0 && p.IsBinderThatCanHaveRefReceiver))
                 {
                     t = t.MakeByRefType();
                 }
@@ -405,17 +405,6 @@ namespace Microsoft.CSharp.RuntimeBinder
             }
 
             return list.ToArray();
-        }
-
-        /////////////////////////////////////////////////////////////////////////////////
-
-        private bool IsBinderThatCanHaveRefReceiver(ICSharpBinder binder)
-        {
-            // This is true for any binder that is eligible to take value type receiver 
-            // objects as a ref (for mutable operations). Such as calls ("v.M(d)"),
-            // and indexers ("v[d] = v[d]"). Note that properties are not here because they
-            // are only dispatched dynamically when the receiver is dynamic, and hence boxed.
-            return binder is ICSharpInvokeOrInvokeMemberBinder || binder is CSharpSetIndexBinder || binder is CSharpGetIndexBinder;
         }
 
         /////////////////////////////////////////////////////////////////////////////////
@@ -641,7 +630,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 // will be marked as ref if we're calling off a struct, but we don't want 
                 // to persist that in our system.
                 bool isFirstParamOfCallOrInvoke = false;
-                if (i == 0 && IsBinderThatCanHaveRefReceiver(payload))
+                if (i == 0 && payload.IsBinderThatCanHaveRefReceiver)
                 {
                     isFirstParamOfCallOrInvoke = true;
                 }

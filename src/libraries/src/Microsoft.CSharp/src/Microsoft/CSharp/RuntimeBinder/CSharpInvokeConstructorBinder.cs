@@ -10,6 +10,8 @@ namespace Microsoft.CSharp.RuntimeBinder
 {
     internal sealed class CSharpInvokeConstructorBinder : DynamicMetaObjectBinder, ICSharpInvokeOrInvokeMemberBinder
     {
+        public bool IsBinderThatCanHaveRefReceiver => true;
+
         public CSharpCallFlags Flags { get; }
 
         public Type CallingContext { get; }
