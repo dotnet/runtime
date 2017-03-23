@@ -779,14 +779,7 @@ namespace System.Reflection
             if (m_reflectedTypeCache.IsGlobal)
                 throw new NotSupportedException(SR.NotSupported_GlobalMethodSerialization);
 
-            MemberInfoSerializationHolder.GetSerializationInfo(
-                info,
-                Name,
-                ReflectedTypeInternal,
-                ToString(),
-                SerializationToString(),
-                MemberTypes.Method,
-                IsGenericMethod & !IsGenericMethodDefinition ? GetGenericArguments() : null);
+            MemberInfoSerializationHolder.GetSerializationInfo(info, this);
         }
 
         internal string SerializationToString()

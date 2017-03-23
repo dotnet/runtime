@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 
-using System.Runtime.Remoting;
 using System.Runtime.Serialization;
 using System.Reflection;
 using System.Globalization;
@@ -15,15 +14,20 @@ namespace System
 {
     [Serializable]
     // Holds classes (Empty, Null, Missing) for which we guarantee that there is only ever one instance of.
-    internal class UnitySerializationHolder : ISerializable, IObjectReference
+#if CORECLR
+    internal
+#else
+    public  // On CoreRT, this must be public because of the Reflection.Core/CoreLib divide and the need to whitelist past the ReflectionBlock.
+#endif
+    class UnitySerializationHolder : ISerializable, IObjectReference
     {
-        #region Internal Constants
+#region Internal Constants
         internal const int EmptyUnity = 0x0001;
         internal const int NullUnity = 0x0002;
         internal const int MissingUnity = 0x0003;
         internal const int RuntimeTypeUnity = 0x0004;
-        internal const int ModuleUnity = 0x0005;
-        internal const int AssemblyUnity = 0x0006;
+        public const int ModuleUnity = 0x0005;
+        public const int AssemblyUnity = 0x0006;
         internal const int GenericParameterTypeUnity = 0x0007;
         internal const int PartialInstantiationTypeUnity = 0x0008;
 
@@ -31,16 +35,16 @@ namespace System
         internal const int Array = 0x0002;
         internal const int SzArray = 0x0003;
         internal const int ByRef = 0x0004;
-        #endregion
+#endregion
 
-        #region Internal Static Members
+#region Internal Static Members
         internal static void GetUnitySerializationInfo(SerializationInfo info, Missing missing)
         {
             info.SetType(typeof(UnitySerializationHolder));
             info.AddValue("UnityType", MissingUnity);
         }
 
-        internal static RuntimeType AddElementTypes(SerializationInfo info, RuntimeType type)
+        internal static Type AddElementTypes(SerializationInfo info, Type type)
         {
             List<int> elementTypes = new List<int>();
             while (type.HasElementType)
@@ -63,7 +67,7 @@ namespace System
                     elementTypes.Add(ByRef);
                 }
 
-                type = (RuntimeType)type.GetElementType();
+                type = type.GetElementType();
             }
 
             info.AddValue("ElementTypes", elementTypes.ToArray(), typeof(int[]));
@@ -73,21 +77,21 @@ namespace System
 
         internal Type MakeElementTypes(Type type)
         {
-            for (int i = m_elementTypes.Length - 1; i >= 0; i--)
+            for (int i = _elementTypes.Length - 1; i >= 0; i--)
             {
-                if (m_elementTypes[i] == SzArray)
+                if (_elementTypes[i] == SzArray)
                 {
                     type = type.MakeArrayType();
                 }
-                else if (m_elementTypes[i] == Array)
+                else if (_elementTypes[i] == Array)
                 {
-                    type = type.MakeArrayType(m_elementTypes[--i]);
+                    type = type.MakeArrayType(_elementTypes[--i]);
                 }
-                else if ((m_elementTypes[i] == Pointer))
+                else if ((_elementTypes[i] == Pointer))
                 {
                     type = type.MakePointerType();
                 }
-                else if ((m_elementTypes[i] == ByRef))
+                else if ((_elementTypes[i] == ByRef))
                 {
                     type = type.MakeByRefType();
                 }
@@ -96,9 +100,15 @@ namespace System
             return type;
         }
 
-        internal static void GetUnitySerializationInfo(SerializationInfo info, RuntimeType type)
+        public static void GetUnitySerializationInfo(SerializationInfo info, Type type)
         {
-            if (type.GetRootElementType().IsGenericParameter)
+            Type rootElementType = type;
+            while (rootElementType.HasElementType)
+            {
+                rootElementType = rootElementType.GetElementType();
+            }
+
+            if (rootElementType.IsGenericParameter)
             {
                 type = AddElementTypes(info, type);
                 info.SetType(typeof(UnitySerializationHolder));
@@ -118,14 +128,14 @@ namespace System
                 unityType = PartialInstantiationTypeUnity;
                 type = AddElementTypes(info, type);
                 info.AddValue("GenericArguments", type.GetGenericArguments(), typeof(Type[]));
-                type = (RuntimeType)type.GetGenericTypeDefinition();
+                type = type.GetGenericTypeDefinition();
             }
 
-            GetUnitySerializationInfo(info, unityType, type.FullName, type.GetRuntimeAssembly());
+            GetUnitySerializationInfo(info, unityType, type.FullName, type.Assembly);
         }
 
-        internal static void GetUnitySerializationInfo(
-            SerializationInfo info, int unityType, String data, RuntimeAssembly assembly)
+        public static void GetUnitySerializationInfo(
+            SerializationInfo info, int unityType, string data, Assembly assembly)
         {
             // A helper method that returns the SerializationInfo that a class utilizing 
             // UnitySerializationHelper should return from a call to GetObjectData.  It contains
@@ -133,14 +143,14 @@ namespace System
             // types.)
 
             info.SetType(typeof(UnitySerializationHolder));
-            info.AddValue("Data", data, typeof(String));
+            info.AddValue("Data", data, typeof(string));
             info.AddValue("UnityType", unityType);
 
-            String assemName;
+            string assemName;
 
             if (assembly == null)
             {
-                assemName = String.Empty;
+                assemName = string.Empty;
             }
             else
             {
@@ -149,78 +159,78 @@ namespace System
 
             info.AddValue("AssemblyName", assemName);
         }
-        #endregion
+#endregion
 
-        #region Private Data Members
-        private Type[] m_instantiation;
-        private int[] m_elementTypes;
-        private int m_genericParameterPosition;
-        private Type m_declaringType;
-        private MethodBase m_declaringMethod;
-        private String m_data;
-        private String m_assemblyName;
-        private int m_unityType;
-        #endregion  
+#region Private Data Members
+        private readonly Type[] _instantiation;
+        private readonly int[] _elementTypes;
+        private readonly int _genericParameterPosition;
+        private readonly Type _declaringType;
+        private readonly MethodBase _declaringMethod;
+        private readonly string _data;
+        private readonly string _assemblyName;
+        private int _unityType;
+#endregion
 
-        #region Constructor
-        internal UnitySerializationHolder(SerializationInfo info, StreamingContext context)
+#region Constructor
+        public UnitySerializationHolder(SerializationInfo info, StreamingContext context)
         {
             if (info == null)
                 throw new ArgumentNullException(nameof(info));
             Contract.EndContractBlock();
 
-            m_unityType = info.GetInt32("UnityType");
+            _unityType = info.GetInt32("UnityType");
 
-            if (m_unityType == MissingUnity)
+            if (_unityType == MissingUnity)
                 return;
 
-            if (m_unityType == GenericParameterTypeUnity)
+            if (_unityType == GenericParameterTypeUnity)
             {
-                m_declaringMethod = info.GetValue("DeclaringMethod", typeof(MethodBase)) as MethodBase;
-                m_declaringType = info.GetValue("DeclaringType", typeof(Type)) as Type;
-                m_genericParameterPosition = info.GetInt32("GenericParameterPosition");
-                m_elementTypes = info.GetValue("ElementTypes", typeof(int[])) as int[];
+                _declaringMethod = info.GetValue("DeclaringMethod", typeof(MethodBase)) as MethodBase;
+                _declaringType = info.GetValue("DeclaringType", typeof(Type)) as Type;
+                _genericParameterPosition = info.GetInt32("GenericParameterPosition");
+                _elementTypes = info.GetValue("ElementTypes", typeof(int[])) as int[];
 
                 return;
             }
 
-            if (m_unityType == PartialInstantiationTypeUnity)
+            if (_unityType == PartialInstantiationTypeUnity)
             {
-                m_instantiation = info.GetValue("GenericArguments", typeof(Type[])) as Type[];
-                m_elementTypes = info.GetValue("ElementTypes", typeof(int[])) as int[];
+                _instantiation = info.GetValue("GenericArguments", typeof(Type[])) as Type[];
+                _elementTypes = info.GetValue("ElementTypes", typeof(int[])) as int[];
             }
 
-            m_data = info.GetString("Data");
-            m_assemblyName = info.GetString("AssemblyName");
+            _data = info.GetString("Data");
+            _assemblyName = info.GetString("AssemblyName");
         }
-        #endregion
+#endregion
 
-        #region Private Methods
+#region Private Methods
         private void ThrowInsufficientInformation(string field)
         {
             throw new SerializationException(
                 SR.Format(SR.Serialization_InsufficientDeserializationState, field));
         }
-        #endregion
+#endregion
 
-        #region ISerializable
+#region ISerializable
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new NotSupportedException(SR.NotSupported_UnitySerHolder);
         }
-        #endregion
+#endregion
 
-        #region IObjectReference
-        public virtual Object GetRealObject(StreamingContext context)
+#region IObjectReference
+        public virtual object GetRealObject(StreamingContext context)
         {
-            // GetRealObject uses the data we have in m_data and m_unityType to do a lookup on the correct 
+            // GetRealObject uses the data we have in _data and _unityType to do a lookup on the correct 
             // object to return.  We have specific code here to handle the different types which we support.
             // The reflection types (Assembly, Module, and Type) have to be looked up through their static
             // accessors by name.
 
             Assembly assembly;
 
-            switch (m_unityType)
+            switch (_unityType)
             {
                 case EmptyUnity:
                     {
@@ -239,73 +249,73 @@ namespace System
 
                 case PartialInstantiationTypeUnity:
                     {
-                        m_unityType = RuntimeTypeUnity;
+                        _unityType = RuntimeTypeUnity;
                         Type definition = GetRealObject(context) as Type;
-                        m_unityType = PartialInstantiationTypeUnity;
+                        _unityType = PartialInstantiationTypeUnity;
 
-                        if (m_instantiation[0] == null)
+                        if (_instantiation[0] == null)
                             return null;
 
-                        return MakeElementTypes(definition.MakeGenericType(m_instantiation));
+                        return MakeElementTypes(definition.MakeGenericType(_instantiation));
                     }
 
                 case GenericParameterTypeUnity:
                     {
-                        if (m_declaringMethod == null && m_declaringType == null)
+                        if (_declaringMethod == null && _declaringType == null)
                             ThrowInsufficientInformation("DeclaringMember");
 
-                        if (m_declaringMethod != null)
-                            return m_declaringMethod.GetGenericArguments()[m_genericParameterPosition];
+                        if (_declaringMethod != null)
+                            return _declaringMethod.GetGenericArguments()[_genericParameterPosition];
 
-                        return MakeElementTypes(m_declaringType.GetGenericArguments()[m_genericParameterPosition]);
+                        return MakeElementTypes(_declaringType.GetGenericArguments()[_genericParameterPosition]);
                     }
 
                 case RuntimeTypeUnity:
                     {
-                        if (m_data == null || m_data.Length == 0)
+                        if (_data == null || _data.Length == 0)
                             ThrowInsufficientInformation("Data");
 
-                        if (m_assemblyName == null)
+                        if (_assemblyName == null)
                             ThrowInsufficientInformation("AssemblyName");
 
-                        if (m_assemblyName.Length == 0)
-                            return Type.GetType(m_data, true, false);
+                        if (_assemblyName.Length == 0)
+                            return Type.GetType(_data, true, false);
 
-                        assembly = Assembly.Load(m_assemblyName);
+                        assembly = Assembly.Load(_assemblyName);
 
-                        Type t = assembly.GetType(m_data, true, false);
+                        Type t = assembly.GetType(_data, true, false);
 
                         return t;
                     }
 
                 case ModuleUnity:
                     {
-                        if (m_data == null || m_data.Length == 0)
+                        if (_data == null || _data.Length == 0)
                             ThrowInsufficientInformation("Data");
 
-                        if (m_assemblyName == null)
+                        if (_assemblyName == null)
                             ThrowInsufficientInformation("AssemblyName");
 
-                        assembly = Assembly.Load(m_assemblyName);
+                        assembly = Assembly.Load(_assemblyName);
 
-                        Module namedModule = assembly.GetModule(m_data);
+                        Module namedModule = assembly.GetModule(_data);
 
                         if (namedModule == null)
                             throw new SerializationException(
-                                SR.Format(SR.Serialization_UnableToFindModule, m_data, m_assemblyName));
+                                SR.Format(SR.Serialization_UnableToFindModule, _data, _assemblyName));
 
                         return namedModule;
                     }
 
                 case AssemblyUnity:
                     {
-                        if (m_data == null || m_data.Length == 0)
+                        if (_data == null || _data.Length == 0)
                             ThrowInsufficientInformation("Data");
 
-                        if (m_assemblyName == null)
+                        if (_assemblyName == null)
                             ThrowInsufficientInformation("AssemblyName");
 
-                        assembly = Assembly.Load(m_assemblyName);
+                        assembly = Assembly.Load(_assemblyName);
 
                         return assembly;
                     }
@@ -314,43 +324,6 @@ namespace System
                     throw new ArgumentException(SR.Argument_InvalidUnity);
             }
         }
-        #endregion
+#endregion
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

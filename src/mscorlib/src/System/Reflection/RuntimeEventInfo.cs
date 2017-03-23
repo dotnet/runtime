@@ -162,12 +162,7 @@ namespace System.Reflection
                 throw new ArgumentNullException(nameof(info));
             Contract.EndContractBlock();
 
-            MemberInfoSerializationHolder.GetSerializationInfo(
-                info,
-                Name,
-                ReflectedTypeInternal,
-                null,
-                MemberTypes.Event);
+            MemberInfoSerializationHolder.GetSerializationInfo(info, this);
         }
         #endregion
 
