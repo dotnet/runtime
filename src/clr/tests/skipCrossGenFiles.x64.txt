@@ -1,0 +1,2 @@
+mscorlib.dll
+System.Runtime.WindowsRuntime.UI.Xaml.dll

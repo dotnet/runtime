@@ -43,6 +43,7 @@ function print_usage {
     echo '  -h|--help                        : Show usage information.'
     echo '  --useServerGC                    : Enable server GC for this test run'
     echo '  --test-env                       : Script to set environment variables for tests'
+    echo '  --crossgen                       : Precompiles the framework managed assemblies'
     echo '  --runcrossgentests               : Runs the ready to run tests' 
     echo '  --jitstress=<n>                  : Runs the tests with COMPlus_JitStress=n'
     echo '  --jitstressregs=<n>              : Runs the tests with COMPlus_JitStressRegs=n'
@@ -370,11 +371,17 @@ function create_core_overlay {
 }
 
 function precompile_overlay_assemblies {
+    declare -A skipCrossGenFiles
+
+    while read line
+    do
+      skipCrossGenFiles[$line]=1
+    done <  "$(dirname "$0")/skipCrossGenFiles.$ARCH.txt"
 
     if [ $doCrossgen == 1 ]; then
         local overlayDir=$CORE_ROOT
 
-        filesToPrecompile=$(ls -trh $overlayDir/*.dll)
+        filesToPrecompile=$(find -L $overlayDir -iname \*.dll -not -iname \*.ni.dll -not -iname \*-ms-win-\* -type f )
         for fileToPrecompile in ${filesToPrecompile}
         do
             local filename=${fileToPrecompile}
@@ -385,15 +392,23 @@ function precompile_overlay_assemblies {
                     echo Unable to generate dasm for $filename
                 fi
             else
+                if [[ ${skipCrossGenFiles[$(basename $filename)]:-0} == 0 ]]; then
+                    continue
+                fi
                 echo Precompiling $filename
-                $overlayDir/crossgen /Platform_Assemblies_Paths $overlayDir $filename 2>/dev/null
+                $overlayDir/crossgen /Platform_Assemblies_Paths $overlayDir $filename 1> $filename.stdout 2>$filename.stderr
                 local exitCode=$?
-                if [ $exitCode == -2146230517 ]; then
-                    echo $filename is not a managed assembly.
-                elif [ $exitCode != 0 ]; then
-                    echo Unable to precompile $filename.
+                if [[ $exitCode != 0 ]]; then
+                    if grep -q -e '(COR_E_ASSEMBLYEXPECTED)' $filename.stderr; then
+                        printf "\n\t$filename is not a managed assembly.\n\n"
+                    else
+                        echo Unable to precompile $filename.
+                        cat $filename.stdout
+                        cat $filename.stderr
+                        exit $exitCode
+                    fi
                 else
-                    echo Successfully precompiled $filename
+                    rm $filename.{stdout,stderr}
                 fi
             fi
         done
