@@ -297,15 +297,11 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData( float.NegativeInfinity,  float.NegativeInfinity,  float.NaN,    0.0f)]
-        [InlineData( float.NegativeInfinity,  float.NegativeInfinity, -2.35619449f,  CrossPlatformMachineEpsilon * 10, Skip = "https://github.com/dotnet/coreclr/issues/9806")]     // expected: -(3 * pi / 4)
         [InlineData( float.NegativeInfinity, -1.0f,                   -1.57079633f,  CrossPlatformMachineEpsilon * 10)]     // expected: -(pi / 2)
         [InlineData( float.NegativeInfinity, -0.0f,                   -1.57079633f,  CrossPlatformMachineEpsilon * 10)]     // expected: -(pi / 2)
         [InlineData( float.NegativeInfinity,  float.NaN,               float.NaN,    0.0f)]
         [InlineData( float.NegativeInfinity,  0.0f,                   -1.57079633f,  CrossPlatformMachineEpsilon * 10)]     // expected: -(pi / 2)
         [InlineData( float.NegativeInfinity,  1.0f,                   -1.57079633f,  CrossPlatformMachineEpsilon * 10)]     // expected: -(pi / 2)
-        [InlineData( float.NegativeInfinity,  float.PositiveInfinity,  float.NaN,    0.0f)]
-        [InlineData( float.NegativeInfinity,  float.PositiveInfinity, -0.785398163f, CrossPlatformMachineEpsilon, Skip = "https://github.com/dotnet/coreclr/issues/9806")]          // expected: -(pi / 4)
         [InlineData(-1.0f,                   -1.0f,                   -2.35619449f,  CrossPlatformMachineEpsilon * 10)]     // expected: -(3 * pi / 4)
         [InlineData(-1.0f,                   -0.0f,                   -1.57079633f,  CrossPlatformMachineEpsilon * 10)]     // expected: -(pi / 2)
         [InlineData(-1.0f,                    float.NaN,               float.NaN,    0.0f)]
@@ -387,16 +383,34 @@ namespace System.Tests
         [InlineData( 1.0f,                    0.0f,                    1.57079633f,  CrossPlatformMachineEpsilon * 10)]     // expected:  (pi / 2)
         [InlineData( 1.0f,                    1.0f,                    0.785398163f, CrossPlatformMachineEpsilon)]          // expected:  (pi / 4)
         [InlineData( 1.0f,                    float.PositiveInfinity,  0.0f,         0.0f)]
-        [InlineData( float.PositiveInfinity,  float.NegativeInfinity,  float.NaN,    0.0f)]
-        [InlineData( float.PositiveInfinity,  float.NegativeInfinity,  2.35619449f,  CrossPlatformMachineEpsilon * 10, Skip = "https://github.com/dotnet/coreclr/issues/9806")]     // expected:  (3 * pi / 4)
         [InlineData( float.PositiveInfinity, -1.0f,                    1.57079633f,  CrossPlatformMachineEpsilon * 10)]     // expected:  (pi / 2)
         [InlineData( float.PositiveInfinity, -0.0f,                    1.57079633f,  CrossPlatformMachineEpsilon * 10)]     // expected:  (pi / 2)
         [InlineData( float.PositiveInfinity,  float.NaN,               float.NaN,    0.0f)]
         [InlineData( float.PositiveInfinity,  0.0f,                    1.57079633f,  CrossPlatformMachineEpsilon * 10)]     // expected:  (pi / 2)
         [InlineData( float.PositiveInfinity,  1.0f,                    1.57079633f,  CrossPlatformMachineEpsilon * 10)]     // expected:  (pi / 2)
-        [InlineData( float.PositiveInfinity,  float.PositiveInfinity,  float.NaN,    0.0f)]
-        [InlineData( float.PositiveInfinity,  float.PositiveInfinity,  0.785398163f, CrossPlatformMachineEpsilon, Skip = "https://github.com/dotnet/coreclr/issues/9806")]          // expected:  (pi / 4)
         public static void Atan2(float y, float x, float expectedResult, float allowedVariance)
+        {
+            AssertEqual(expectedResult, MathF.Atan2(y, x), allowedVariance);
+        }
+
+        [Theory]
+        [InlineData( float.NegativeInfinity, float.NegativeInfinity, -2.35619449f,  CrossPlatformMachineEpsilon * 10)]     // expected: -(3 * pi / 4)
+        [InlineData( float.NegativeInfinity, float.PositiveInfinity, -0.785398163f, CrossPlatformMachineEpsilon)]          // expected: -(pi / 4)
+        [InlineData( float.PositiveInfinity, float.NegativeInfinity,  2.35619449f,  CrossPlatformMachineEpsilon * 10)]     // expected:  (3 * pi / 4
+        [InlineData( float.PositiveInfinity, float.PositiveInfinity,  0.785398163f, CrossPlatformMachineEpsilon)]          // expected:  (pi / 4)
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public static void Atan2_IEEE(float y, float x, float expectedResult, float allowedVariance)
+        {
+            AssertEqual(expectedResult, MathF.Atan2(y, x), allowedVariance);
+        }
+
+        [Theory]
+        [InlineData( float.NegativeInfinity, float.NegativeInfinity,  float.NaN, 0.0f)]
+        [InlineData( float.NegativeInfinity, float.PositiveInfinity,  float.NaN, 0.0f)]
+        [InlineData( float.PositiveInfinity, float.NegativeInfinity,  float.NaN, 0.0f)]
+        [InlineData( float.PositiveInfinity, float.PositiveInfinity,  float.NaN, 0.0f)]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
+        public static void Atan2_IEEE_Legacy(float y, float x, float expectedResult, float allowedVariance)
         {
             AssertEqual(expectedResult, MathF.Atan2(y, x), allowedVariance);
         }
@@ -753,15 +767,11 @@ namespace System.Tests
         [InlineData(-2.71828183f,             1.0f,                   -2.71828183f,            CrossPlatformMachineEpsilon * 10)]       // x: -(e)  expected: (e)
         [InlineData(-2.71828183f,             1.57079633f,             float.NaN,              0.0f)]                                   // x: -(e)  y:  (pi / 2)
         [InlineData(-2.71828183f,             float.PositiveInfinity,  float.PositiveInfinity, 0.0f)]
-        [InlineData(-1.0f,                    float.NegativeInfinity,  float.NaN,              0.0f)]
-        [InlineData(-1.0f,                    float.NegativeInfinity,  1.0f,                   CrossPlatformMachineEpsilon * 10, Skip = "https://github.com/dotnet/coreclr/issues/9807")]
         [InlineData(-1.0f,                   -1.0f,                   -1.0f,                   CrossPlatformMachineEpsilon * 10)]
         [InlineData(-1.0f,                   -0.0f,                    1.0f,                   CrossPlatformMachineEpsilon * 10)]
         [InlineData(-1.0f,                    float.NaN,               float.NaN,              0.0f)]
         [InlineData(-1.0f,                    0.0f,                    1.0f,                   CrossPlatformMachineEpsilon * 10)]
         [InlineData(-1.0f,                    1.0f,                   -1.0f,                   CrossPlatformMachineEpsilon * 10)]
-        [InlineData(-1.0f,                    float.PositiveInfinity,  float.NaN,              0.0f)]
-        [InlineData(-1.0f,                    float.PositiveInfinity,  1.0f,                   CrossPlatformMachineEpsilon * 10, Skip = "https://github.com/dotnet/coreclr/issues/9807")]
         [InlineData(-0.0f,                    float.NegativeInfinity,  float.PositiveInfinity, 0.0f)]
         [InlineData(-0.0f,                   -3.0f,                    float.NegativeInfinity, 0.0f)]
         [InlineData(-0.0f,                   -2.0f,                    float.PositiveInfinity, 0.0f)]
@@ -777,11 +787,7 @@ namespace System.Tests
         [InlineData(-0.0f,                    float.PositiveInfinity,  0.0f,                   0.0f)]
         [InlineData( float.NaN,               float.NegativeInfinity,  float.NaN,              0.0f)]
         [InlineData( float.NaN,              -1.0f,                    float.NaN,              0.0f)]
-        [InlineData( float.NaN,              -0.0f,                    float.NaN,              0.0f)]
-        [InlineData( float.NaN,              -0.0f,                    1.0f,                   CrossPlatformMachineEpsilon * 10, Skip = "https://github.com/dotnet/coreclr/issues/9807")]
         [InlineData( float.NaN,               float.NaN,               float.NaN,              0.0f)]
-        [InlineData( float.NaN,               0.0f,                    float.NaN,              0.0f)]
-        [InlineData( float.NaN,               0.0f,                    1.0f,                   CrossPlatformMachineEpsilon * 10, Skip = "https://github.com/dotnet/coreclr/issues/9807")]
         [InlineData( float.NaN,               1.0f,                    float.NaN,              0.0f)]
         [InlineData( float.NaN,               float.PositiveInfinity,  float.NaN,              0.0f)]
         [InlineData( 0.0f,                    float.NegativeInfinity,  float.PositiveInfinity, 0.0f)]
@@ -800,8 +806,6 @@ namespace System.Tests
         [InlineData( 1.0f,                    float.NegativeInfinity,  1.0f,                   CrossPlatformMachineEpsilon * 10)]
         [InlineData( 1.0f,                   -1.0f,                    1.0f,                   CrossPlatformMachineEpsilon * 10)]
         [InlineData( 1.0f,                   -0.0f,                    1.0f,                   CrossPlatformMachineEpsilon * 10)]
-        [InlineData( 1.0f,                    float.NaN,               float.NaN,              0.0f)]
-        [InlineData( 1.0f,                    float.NaN,               1.0f,                   CrossPlatformMachineEpsilon * 10, Skip = "https://github.com/dotnet/coreclr/issues/9807")]
         [InlineData( 1.0f,                    0.0f,                    1.0f,                   CrossPlatformMachineEpsilon * 10)]
         [InlineData( 1.0f,                    1.0f,                    1.0f,                   CrossPlatformMachineEpsilon * 10)]
         [InlineData( 1.0f,                    float.PositiveInfinity,  1.0f,                   CrossPlatformMachineEpsilon * 10)]
@@ -879,6 +883,30 @@ namespace System.Tests
         [InlineData( float.PositiveInfinity,  1.0f,                    float.PositiveInfinity, 0.0f)]
         [InlineData( float.PositiveInfinity,  float.PositiveInfinity,  float.PositiveInfinity, 0.0f)]
         public static void Pow(float x, float y, float expectedResult, float allowedVariance)
+        {
+            AssertEqual(expectedResult, MathF.Pow(x, y), allowedVariance);
+        }
+
+        [Theory]
+        [InlineData(-1.0f,       float.NegativeInfinity, 1.0f, CrossPlatformMachineEpsilon * 10)]
+        [InlineData(-1.0f,       float.PositiveInfinity, 1.0f, CrossPlatformMachineEpsilon * 10)]
+        [InlineData( float.NaN, -0.0f,                   1.0f, CrossPlatformMachineEpsilon * 10)]
+        [InlineData( float.NaN,  0.0f,                   1.0f, CrossPlatformMachineEpsilon * 10)]
+        [InlineData( 1.0f,       float.NaN,              1.0f, CrossPlatformMachineEpsilon * 10)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public static void Pow_IEEE(float x, float y, float expectedResult, float allowedVariance)
+        {
+            AssertEqual(expectedResult, MathF.Pow(x, y), allowedVariance);
+        }
+
+        [Theory]
+        [InlineData(-1.0f,      float.NegativeInfinity, float.NaN, 0.0f)]
+        [InlineData(-1.0f,      float.PositiveInfinity, float.NaN, 0.0f)]
+        [InlineData( float.NaN,-0.0f,                   float.NaN, 0.0f)]
+        [InlineData( float.NaN, 0.0f,                   float.NaN, 0.0f)]
+        [InlineData( 1.0f,      float.NaN,              float.NaN, 0.0f)]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
+        public static void Pow_IEEE_Legacy(float x, float y, float expectedResult, float allowedVariance)
         {
             AssertEqual(expectedResult, MathF.Pow(x, y), allowedVariance);
         }
@@ -1041,7 +1069,6 @@ namespace System.Tests
         [InlineData(-3.14159265f,            -0.0f,                   CrossPlatformMachineEpsilon)]         // value: -(pi)
         [InlineData(-2.71828183f,             0.450549534f,           CrossPlatformMachineEpsilon)]         // value: -(e)
         [InlineData(-2.30258509f,             1.11340715f,            CrossPlatformMachineEpsilon * 10)]    // value: -(ln(10))
-        [InlineData(-1.57079633f,             float.NegativeInfinity, 0.0f, Skip = "https://github.com/dotnet/coreclr/issues/10276")]                                // value: -(pi / 2)
         [InlineData(-1.57079633f,             22877332.0f,            0.0f)]                                // value: -(pi / 2)
         [InlineData(-1.44269504f,            -7.76357567f,            CrossPlatformMachineEpsilon * 10)]    // value: -(log2(e))
         [InlineData(-1.41421356f,            -6.33411917f,            CrossPlatformMachineEpsilon * 10)]    // value: -(sqrt(2))
@@ -1067,7 +1094,6 @@ namespace System.Tests
         [InlineData( 1.41421356f,             6.33411917f,            CrossPlatformMachineEpsilon * 10)]    // value:  (sqrt(2))
         [InlineData( 1.44269504f,             7.76357567f,            CrossPlatformMachineEpsilon * 10)]    // value:  (log2(e))
         [InlineData( 1.57079633f,            -22877332.0f,            0.0f)]                                // value:  (pi / 2)
-        [InlineData( 1.57079633f,             float.PositiveInfinity, 0.0f, Skip = "https://github.com/dotnet/coreclr/issues/10276")]                                // value:  (pi / 2)
         [InlineData( 2.30258509f,            -1.11340715f,            CrossPlatformMachineEpsilon * 10)]    // value:  (ln(10))
         [InlineData( 2.71828183f,            -0.450549534f,           CrossPlatformMachineEpsilon)]         // value:  (e)
         [InlineData( 3.14159265f,             0.0f,                   CrossPlatformMachineEpsilon)]         // value:  (pi)
