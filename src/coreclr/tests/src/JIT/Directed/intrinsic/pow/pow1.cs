@@ -129,7 +129,7 @@ internal class pow1
         x = 1;
         y = Double.NaN;
         z = Math.Pow(x, y);
-        if (!Double.IsNaN(z))
+        if (z != 1)
         {
             Console.WriteLine("x: {0}, y: {1}, Pow(x,y): {2}", x, y, z);
             pass = false;
