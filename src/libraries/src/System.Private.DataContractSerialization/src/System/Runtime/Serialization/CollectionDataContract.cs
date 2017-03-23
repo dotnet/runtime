@@ -109,7 +109,7 @@ namespace System.Runtime.Serialization
             get { return _key; }
             set { _key = (K)value; }
         }
-        
+
         object IKeyValue.Value
         {
             get { return _value; }
@@ -142,9 +142,9 @@ namespace System.Runtime.Serialization
 #endif
     {
         private XmlDictionaryString _collectionItemName;
-        
+
         private XmlDictionaryString _childElementNamespace;
-        
+
         private DataContract _itemContract;
 
         private CollectionDataContractCriticalHelper _helper;
@@ -773,13 +773,13 @@ namespace System.Runtime.Serialization
                         case CollectionKind.GenericCollection:
                         case CollectionKind.GenericList:
                             {
-                                var buildIncrementCollectionCountDelegate = s_buildIncrementCollectionCountDelegateMethod.MakeGenericMethod(ItemType);
+                                var buildIncrementCollectionCountDelegate = BuildIncrementCollectionCountDelegateMethod.MakeGenericMethod(ItemType);
                                 _incrementCollectionCountDelegate = (IncrementCollectionCountDelegate)buildIncrementCollectionCountDelegate.Invoke(null, Array.Empty<object>());
                             }
                             break;
                         case CollectionKind.GenericDictionary:
                             {
-                                var buildIncrementCollectionCountDelegate = s_buildIncrementCollectionCountDelegateMethod.MakeGenericMethod(Globals.TypeOfKeyValuePair.MakeGenericType(ItemType.GetGenericArguments()));
+                                var buildIncrementCollectionCountDelegate = BuildIncrementCollectionCountDelegateMethod.MakeGenericMethod(Globals.TypeOfKeyValuePair.MakeGenericType(ItemType.GetGenericArguments()));
                                 _incrementCollectionCountDelegate = (IncrementCollectionCountDelegate)buildIncrementCollectionCountDelegate.Invoke(null, Array.Empty<object>());
                             }
                             break;
@@ -793,14 +793,27 @@ namespace System.Runtime.Serialization
                 _incrementCollectionCountDelegate(xmlWriter, obj, context);
             }
 
-            private static MethodInfo s_buildIncrementCollectionCountDelegateMethod = typeof(CollectionDataContractCriticalHelper).GetMethod(nameof(BuildIncrementCollectionCountDelegate), Globals.ScanAllMembers);
+            private static MethodInfo s_buildIncrementCollectionCountDelegateMethod;
+
+            private static MethodInfo BuildIncrementCollectionCountDelegateMethod
+            {
+                get
+                {
+                    if (s_buildIncrementCollectionCountDelegateMethod == null)
+                    {
+                        s_buildIncrementCollectionCountDelegateMethod = typeof(CollectionDataContractCriticalHelper).GetMethod(nameof(BuildIncrementCollectionCountDelegate), Globals.ScanAllMembers);
+                    }
+
+                    return s_buildIncrementCollectionCountDelegateMethod;
+                }
+            }
 
             private static IncrementCollectionCountDelegate BuildIncrementCollectionCountDelegate<T>()
             {
                 return (xmlwriter, obj, context) =>
                 {
                     context.IncrementCollectionCountGeneric<T>(xmlwriter, (ICollection<T>)obj);
-    
+
                 };
             }
 
@@ -816,11 +829,11 @@ namespace System.Runtime.Serialization
                     if (_createGenericDictionaryEnumeratorDelegate == null)
                     {
                         var keyValueTypes = ItemType.GetGenericArguments();
-                        var buildCreateGenericDictionaryEnumerator = s_buildCreateGenericDictionaryEnumerator.MakeGenericMethod(keyValueTypes[0], keyValueTypes[1]);
+                        var buildCreateGenericDictionaryEnumerator = BuildCreateGenericDictionaryEnumerato.MakeGenericMethod(keyValueTypes[0], keyValueTypes[1]);
                         _createGenericDictionaryEnumeratorDelegate = (CreateGenericDictionaryEnumeratorDelegate)buildCreateGenericDictionaryEnumerator.Invoke(null, Array.Empty<object>());
                     }
 
-                    enumerator = _createGenericDictionaryEnumeratorDelegate(enumerator);                                       
+                    enumerator = _createGenericDictionaryEnumeratorDelegate(enumerator);
                 }
                 else if (Kind == CollectionKind.Dictionary)
                 {
@@ -878,7 +891,21 @@ namespace System.Runtime.Serialization
                 return enumeratorReturnType;
             }
 
-            private static MethodInfo s_buildCreateGenericDictionaryEnumerator = typeof(CollectionDataContractCriticalHelper).GetMethod(nameof(BuildCreateGenericDictionaryEnumerator), Globals.ScanAllMembers);
+            private static MethodInfo s_buildCreateGenericDictionaryEnumerator;
+
+            private static MethodInfo BuildCreateGenericDictionaryEnumerato
+            {
+                get
+                {
+                    if (s_buildCreateGenericDictionaryEnumerator == null)
+                    {
+                        s_buildCreateGenericDictionaryEnumerator = typeof(CollectionDataContractCriticalHelper).GetMethod(nameof(BuildCreateGenericDictionaryEnumerator), Globals.ScanAllMembers);
+                    }
+
+                    return s_buildCreateGenericDictionaryEnumerator;
+                }
+            }
+
             private static CreateGenericDictionaryEnumeratorDelegate BuildCreateGenericDictionaryEnumerator<K, V>()
             {
                 return (enumerator) =>
@@ -989,9 +1016,7 @@ namespace System.Runtime.Serialization
         internal static MethodInfo GetTargetMethodWithName(string name, Type type, Type interfaceType)
         {
             Type t = type.GetInterfaces().Where(it => it.Equals(interfaceType)).FirstOrDefault();
-            if (t == null)
-                return null;
-            return t.GetMethod(name);
+            return t?.GetMethod(name);
         }
 
         private static bool IsArraySegment(Type t)
