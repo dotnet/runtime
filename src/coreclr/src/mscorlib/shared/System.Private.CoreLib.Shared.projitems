@@ -222,7 +222,16 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\PropertyAttributes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\PropertyInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ReflectionContext.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ReflectionTypeLoadException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ResourceAttributes.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ResourceLocation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\StrongNameKeyPair.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\TargetException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\TargetInvocationException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\TargetParameterCountException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\TypeAttributes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\TypeDelegator.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\TypeFilter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\TypeInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CompilationRelaxations.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\CompilerGlobalScopeAttribute.cs"/>
