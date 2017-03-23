@@ -4,6 +4,11 @@
   <Import Project="dir.props" />
   <Import Project="..\dir.targets" />
 
+  <PropertyGroup>
+    <!-- The SignFiles target needs OutDir to be defined -->
+    <OutDir>$(BinDir)</OutDir>
+  </PropertyGroup>
+
   <UsingTask AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll" TaskName="ReadSigningRequired" />
 
   <ItemGroup>
@@ -22,7 +27,7 @@
     <!-- read all of the marker files and populate the FilesToSign item group -->
     <ItemGroup>
       <!-- Note: this also looks for things under bin\obj which require signing like the shims -->
-      <SignMarkerFile Include="$(BinDir)**\*.requires_signing" />
+      <SignMarkerFile Include="$(OutDir)**\*.requires_signing" />
     </ItemGroup>
     <ReadSigningRequired MarkerFiles="@(SignMarkerFile)">
       <Output TaskParameter="SigningMetadata" ItemName="FilesToSign" />
