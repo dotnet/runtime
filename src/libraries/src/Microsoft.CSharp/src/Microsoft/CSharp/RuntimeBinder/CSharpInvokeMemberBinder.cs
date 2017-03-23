@@ -16,19 +16,20 @@ namespace Microsoft.CSharp.RuntimeBinder
     {
         bool ICSharpInvokeOrInvokeMemberBinder.StaticCall { get { return _argumentInfo[0] != null && _argumentInfo[0].IsStaticType; } }
 
-        CSharpCallFlags ICSharpInvokeOrInvokeMemberBinder.Flags { get { return _flags; } }
+        public CSharpCallFlags Flags { get { return _flags; } }
         private readonly CSharpCallFlags _flags;
 
-        Type ICSharpInvokeOrInvokeMemberBinder.CallingContext { get { return _callingContext; } }
+        public Type CallingContext { get { return _callingContext; } }
         private readonly Type _callingContext;
 
-        IList<Type> ICSharpInvokeOrInvokeMemberBinder.TypeArguments { get { return _typeArguments.AsReadOnly(); } }
+        public IList<Type> TypeArguments { get { return _typeArguments.AsReadOnly(); } }
         private readonly List<Type> _typeArguments;
 
-        IList<CSharpArgumentInfo> ICSharpInvokeOrInvokeMemberBinder.ArgumentInfo { get { return _argumentInfo.AsReadOnly(); } }
         private readonly List<CSharpArgumentInfo> _argumentInfo;
 
-        CSharpArgumentInfo ICSharpBinder.GetArgumentInfo(int index) => _argumentInfo[index];
+        public CSharpArgumentInfo GetArgumentInfo(int index) => _argumentInfo[index];
+
+        public CSharpArgumentInfo[] ArgumentInfoArray() => _argumentInfo.ToArray();
 
         bool ICSharpInvokeOrInvokeMemberBinder.ResultDiscarded { get { return (_flags & CSharpCallFlags.ResultDiscarded) != 0; } }
 

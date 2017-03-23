@@ -259,7 +259,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
             if (payload is CSharpInvokeMemberBinder)
             {
-                ICSharpInvokeOrInvokeMemberBinder callPayload = payload as ICSharpInvokeOrInvokeMemberBinder;
+                CSharpInvokeMemberBinder callPayload = payload as CSharpInvokeMemberBinder;
                 int arity = callPayload.TypeArguments?.Count ?? 0;
                 MemberLookup mem = new MemberLookup();
                 EXPR callingObject = CreateCallingObjectForCall(callPayload, arguments, dictionary);
@@ -277,12 +277,11 @@ namespace Microsoft.CSharp.RuntimeBinder
                 if (swt != null && swt.Sym.getKind() != SYMKIND.SK_MethodSymbol)
                 {
                     // The GetMember only has one argument, and we need to just take the first arg info.
-                    CSharpGetMemberBinder getMember = new CSharpGetMemberBinder(callPayload.Name, false, callPayload.CallingContext, new CSharpArgumentInfo[] { callPayload.ArgumentInfo[0] });
+                    CSharpGetMemberBinder getMember = new CSharpGetMemberBinder(callPayload.Name, false, callPayload.CallingContext, new CSharpArgumentInfo[] { callPayload.GetArgumentInfo(0) });
 
                     // The Invoke has the remaining argument infos. However, we need to redo the first one
                     // to correspond to the GetMember result.
-                    CSharpArgumentInfo[] argInfos = new CSharpArgumentInfo[callPayload.ArgumentInfo.Count];
-                    callPayload.ArgumentInfo.CopyTo(argInfos, 0);
+                    CSharpArgumentInfo[] argInfos = callPayload.ArgumentInfoArray();
 
                     argInfos[0] = CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null);
                     CSharpInvokeBinder invoke = new CSharpInvokeBinder(callPayload.Flags, callPayload.CallingContext, argInfos);

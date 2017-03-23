@@ -23,7 +23,6 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         internal Type CallingContext { get; }
 
-        internal IList<CSharpArgumentInfo> ArgumentInfo { get { return _argumentInfo.AsReadOnly(); } }
         private readonly List<CSharpArgumentInfo> _argumentInfo;
 
         CSharpArgumentInfo ICSharpBinder.GetArgumentInfo(int index) => _argumentInfo[index];
