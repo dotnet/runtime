@@ -323,7 +323,7 @@
     <Compile Include="$(BclSourcesRoot)\System\String.Searching.cs" />
     <Compile Include="$(BclSourcesRoot)\System\StringComparer.cs" />
     <Compile Include="$(BclSourcesRoot)\System\StringComparison.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Text\StringBuilder.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Text\StringBuilder.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Text\StringBuilderCache.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Exception.cs" />
     <Compile Include="$(BclSourcesRoot)\System\DateTime.cs" />
