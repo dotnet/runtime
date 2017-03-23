@@ -1429,7 +1429,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
 
                     def illinkArch = (architecture == 'x86compatjit') ? 'x86' : architecture
                     if (scenario == 'illink') {
-                        buildCommands += "tests\\build_illink.cmd clone ${illinkArch}"
+                        buildCommands += "tests\\scripts\\build_illink.cmd clone ${illinkArch}"
                     }
 
                     if (Constants.jitStressModeScenarios.containsKey(scenario) ||

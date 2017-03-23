@@ -214,7 +214,7 @@ set Assemblies=-a System.Private.CoreLib
 
 IF defined DoLink ( 
     IF NOT EXIST !ILLINK! (
-      ECHO ILLink [%ILLINK%] Not Found
+      ECHO ILLink executable [%ILLINK%] Invalid
       Exit /b 1
     )
     
@@ -237,8 +237,10 @@ IF defined DoLink (
     ECHO %ILLINK% -out %LinkBin% -d %CORE_ROOT% -c link -l none -t !Assemblies! !ReflectionRoots!
     %ILLINK% -out %LinkBin% -d %CORE_ROOT% -c link -l none -t !Assemblies! !ReflectionRoots!
     IF NOT "!ERRORLEVEL!"=="0" (
-      ECHO EXECUTION OF %DOTNETLINK% - FAILED !ERRORLEVEL!
-      IF EXIST %LinkBin% rmdir /s /q %LinkBin%
+      ECHO ILLINK FAILED !ERRORLEVEL!
+      IF NOT defined KeepLinkedBinaries (
+          IF EXIST %LinkBin% rmdir /s /q %LinkBin%
+      )
       Exit /b 1
     )
 
