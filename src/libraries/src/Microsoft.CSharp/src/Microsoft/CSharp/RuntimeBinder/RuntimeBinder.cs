@@ -219,13 +219,14 @@ namespace Microsoft.CSharp.RuntimeBinder
             }
 
             // (2) - look the thing up and dispatch.
-            EXPR pResult = DispatchPayload(payload, arguments, dictionary);
+            EXPR pResult = payload.DispatchPayload(this, arguments, dictionary);
             Debug.Assert(pResult != null);
 
             deferredBinding = null;
             Expression e = CreateExpressionTreeFromResult(parameters, arguments, pScope, pResult);
             return e;
         }
+
         #region Helpers
 
         private bool DeferBinding(
@@ -445,76 +446,8 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private EXPR DispatchPayload(
-            ICSharpBinder payload,
-            ArgumentObject[] arguments,
-            Dictionary<int, LocalVariableSymbol> dictionary)
-        {
-            EXPR pResult = null;
-            if (payload is CSharpBinaryOperationBinder)
-            {
-                pResult = BindBinaryOperation(payload as CSharpBinaryOperationBinder, arguments, dictionary);
-            }
-            else if (payload is CSharpUnaryOperationBinder)
-            {
-                pResult = BindUnaryOperation(payload as CSharpUnaryOperationBinder, arguments, dictionary);
-            }
-            else if (payload is CSharpSetMemberBinder)
-            {
-                pResult = BindAssignment(payload as CSharpSetMemberBinder, arguments, dictionary);
-            }
-            else if (payload is CSharpConvertBinder)
-            {
-                Debug.Assert(arguments.Length == 1);
-                {
-                    CSharpConvertBinder conversion = payload as CSharpConvertBinder;
-                    switch (conversion.ConversionKind)
-                    {
-                        case CSharpConversionKind.ImplicitConversion:
-                            pResult = BindImplicitConversion(arguments, conversion.Type, dictionary, false);
-                            break;
-                        case CSharpConversionKind.ExplicitConversion:
-                            pResult = BindExplicitConversion(arguments, conversion.Type, dictionary);
-                            break;
-                        case CSharpConversionKind.ArrayCreationConversion:
-                            pResult = BindImplicitConversion(arguments, conversion.Type, dictionary, true);
-                            break;
-                        default:
-                            Debug.Assert(false, "Unknown conversion kind");
-                            throw Error.InternalCompilerError();
-                    }
-                }
-            }
-            else if (payload is ICSharpInvokeOrInvokeMemberBinder)
-            {
-                EXPR callingObject = CreateCallingObjectForCall(payload as ICSharpInvokeOrInvokeMemberBinder, arguments, dictionary);
-                pResult = BindCall(payload as ICSharpInvokeOrInvokeMemberBinder, callingObject, arguments, dictionary);
-            }
-            else if (payload is CSharpGetMemberBinder)
-            {
-                Debug.Assert(arguments.Length == 1);
-                pResult = BindProperty(payload, arguments[0], dictionary[0], null, false);
-            }
-            else if (payload is CSharpGetIndexBinder)
-            {
-                EXPR indexerArguments = CreateArgumentListEXPR(arguments, dictionary, 1, arguments.Length);
-                pResult = BindProperty(payload, arguments[0], dictionary[0], indexerArguments, false);
-            }
-            else if (payload is CSharpSetIndexBinder)
-            {
-                pResult = BindAssignment(payload as CSharpSetIndexBinder, arguments, dictionary);
-            }
-            else if (payload is CSharpIsEventBinder)
-            {
-                pResult = BindIsEvent(payload as CSharpIsEventBinder, arguments, dictionary);
-            }
-            else
-            {
-                Debug.Assert(false, "Unknown payload kind");
-                throw Error.InternalCompilerError();
-            }
-            return pResult;
-        }
+        internal EXPR DispatchPayload(ICSharpInvokeOrInvokeMemberBinder payload, ArgumentObject[] arguments, Dictionary<int, LocalVariableSymbol> dictionary) =>
+            BindCall(payload, CreateCallingObjectForCall(payload, arguments, dictionary), arguments, dictionary);
 
         /////////////////////////////////////////////////////////////////////////////////
         // We take the ArgumentObjects to verify - if the parameter expression tells us 
@@ -622,7 +555,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private EXPR CreateArgumentListEXPR(
+        internal EXPR CreateArgumentListEXPR(
             ArgumentObject[] arguments,
             Dictionary<int, LocalVariableSymbol> dictionary,
             int startIndex,
@@ -1292,7 +1225,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         #region UnaryOperators
         /////////////////////////////////////////////////////////////////////////////////
 
-        private EXPR BindUnaryOperation(
+        internal EXPR BindUnaryOperation(
             CSharpUnaryOperationBinder payload,
             ArgumentObject[] arguments,
             Dictionary<int, LocalVariableSymbol> dictionary)
@@ -1339,7 +1272,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private EXPR BindBinaryOperation(
+        internal EXPR BindBinaryOperation(
                 CSharpBinaryOperationBinder payload,
                 ArgumentObject[] arguments,
                 Dictionary<int, LocalVariableSymbol> dictionary)
@@ -1464,7 +1397,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         #region Properties
         /////////////////////////////////////////////////////////////////////////////////
 
-        private EXPR BindProperty(
+        internal EXPR BindProperty(
             ICSharpBinder payload,
             ArgumentObject argument,
             LocalVariableSymbol local,
@@ -1555,7 +1488,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         #region Casts
         /////////////////////////////////////////////////////////////////////////////////
 
-        private EXPR BindImplicitConversion(
+        internal EXPR BindImplicitConversion(
             ArgumentObject[] arguments,
             Type returnType,
             Dictionary<int, LocalVariableSymbol> dictionary,
@@ -1601,7 +1534,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private EXPR BindExplicitConversion(ArgumentObject[] arguments, Type returnType, Dictionary<int, LocalVariableSymbol> dictionary)
+        internal EXPR BindExplicitConversion(ArgumentObject[] arguments, Type returnType, Dictionary<int, LocalVariableSymbol> dictionary)
         {
             if (arguments.Length != 1)
             {
@@ -1623,7 +1556,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private EXPR BindAssignment(
+        internal EXPR BindAssignment(
             ICSharpBinder payload,
             ArgumentObject[] arguments,
             Dictionary<int, LocalVariableSymbol> dictionary)
@@ -1666,7 +1599,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         #region Events
         /////////////////////////////////////////////////////////////////////////////////
 
-        private EXPR BindIsEvent(
+        internal EXPR BindIsEvent(
             CSharpIsEventBinder binder,
             ArgumentObject[] arguments,
             Dictionary<int, LocalVariableSymbol> dictionary)

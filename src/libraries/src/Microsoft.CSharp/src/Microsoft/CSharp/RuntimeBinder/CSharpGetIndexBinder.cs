@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Dynamic;
+using Microsoft.CSharp.RuntimeBinder.Semantics;
 
 namespace Microsoft.CSharp.RuntimeBinder
 {
@@ -14,6 +15,12 @@ namespace Microsoft.CSharp.RuntimeBinder
     /// </summary>
     internal sealed class CSharpGetIndexBinder : GetIndexBinder, ICSharpBinder
     {
+        public EXPR DispatchPayload(RuntimeBinder runtimeBinder, ArgumentObject[] arguments, Dictionary<int, LocalVariableSymbol> dictionary)
+        {
+            EXPR indexerArguments = runtimeBinder.CreateArgumentListEXPR(arguments, dictionary, 1, arguments.Length);
+            return runtimeBinder.BindProperty(this, arguments[0], dictionary[0], indexerArguments, false);
+        }
+
         public void PopulateSymbolTableWithName(SymbolTable symbolTable, Type callingType, ArgumentObject[] arguments)
             => symbolTable.PopulateSymbolTableWithName(SpecialNames.Indexer, null, arguments[0].Type);
 
