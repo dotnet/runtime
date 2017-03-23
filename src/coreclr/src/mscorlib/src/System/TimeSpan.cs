@@ -292,6 +292,12 @@ namespace System
             return new TimeSpan(result);
         }
 
+        public TimeSpan Multiply(double factor) => this * factor;
+
+        public TimeSpan Divide(double divisor) => this / divisor;
+
+        public double Divide(TimeSpan ts) => this / ts;
+
         public static TimeSpan FromTicks(long value)
         {
             return new TimeSpan(value);
