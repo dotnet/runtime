@@ -2,15 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*============================================================
-**
-**
-**
-** Purpose: implementation of the StringBuilder
-** class.
-**
-===========================================================*/
-
 using System.Text;
 using System.Runtime;
 using System.Runtime.Serialization;
@@ -44,7 +35,7 @@ namespace System.Text
     // Console.WriteLine(sb2);
     // 
     [Serializable]
-    public sealed class StringBuilder : ISerializable
+    public sealed partial class StringBuilder : ISerializable
     {
         // A StringBuilder is internally represented as a linked list of blocks each of which holds
         // a chunk of the string.  It turns out string as a whole can also be represented as just a chunk, 
@@ -283,7 +274,7 @@ namespace System.Text
         [System.Diagnostics.Conditional("_DEBUG")]
         private void VerifyClassInvariant()
         {
-            BCLDebug.Correctness((uint)(m_ChunkOffset + m_ChunkChars.Length) >= m_ChunkOffset, "Integer Overflow");
+            Debug.Assert((uint)(m_ChunkOffset + m_ChunkChars.Length) >= m_ChunkOffset, "Integer Overflow");
             StringBuilder currentBlock = this;
             int maxCapacity = this.m_MaxCapacity;
             for (;;)
@@ -342,7 +333,6 @@ namespace System.Text
             get { return m_MaxCapacity; }
         }
 
-        // Read-Only Property 
         // Ensures that the capacity of this string builder is at least the specified value.  
         // If capacity is greater than the capacity of this string builder, then the capacity
         // is set to capacity; otherwise the capacity is unchanged.
@@ -733,12 +723,6 @@ namespace System.Text
             }
         }
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal unsafe extern void ReplaceBufferInternal(char* newBuffer, int newLength);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal unsafe extern void ReplaceBufferAnsiInternal(sbyte* newBuffer, int newLength);
-
         // Appends a copy of the characters in value from startIndex to startIndex +
         // count at the end of this string builder.
         public StringBuilder Append(String value, int startIndex, int count)
@@ -957,14 +941,6 @@ namespace System.Text
             return this;
         }
 
-        //
-        // PUBLIC INSTANCE FUNCTIONS
-        //
-        //
-
-        /*====================================Append====================================
-        **
-        ==============================================================================*/
         // Appends a boolean to the end of this string builder.
         // The capacity is adjusted as needed. 
         public StringBuilder Append(bool value)
@@ -979,7 +955,7 @@ namespace System.Text
         public StringBuilder Append(sbyte value)
         {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
-            return Append(value.ToString(CultureInfo.CurrentCulture));
+            return Append(value.ToString());
         }
 
         // Appends a ubyte to this string builder.
@@ -987,7 +963,7 @@ namespace System.Text
         public StringBuilder Append(byte value)
         {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
-            return Append(value.ToString(CultureInfo.CurrentCulture));
+            return Append(value.ToString());
         }
 
         // Appends a character at the end of this string builder. The capacity is adjusted as needed.
@@ -1007,7 +983,7 @@ namespace System.Text
         public StringBuilder Append(short value)
         {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
-            return Append(value.ToString(CultureInfo.CurrentCulture));
+            return Append(value.ToString());
         }
 
         // Appends an int to this string builder.
@@ -1015,7 +991,7 @@ namespace System.Text
         public StringBuilder Append(int value)
         {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
-            return Append(value.ToString(CultureInfo.CurrentCulture));
+            return Append(value.ToString());
         }
 
         // Appends a long to this string builder. 
@@ -1023,7 +999,7 @@ namespace System.Text
         public StringBuilder Append(long value)
         {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
-            return Append(value.ToString(CultureInfo.CurrentCulture));
+            return Append(value.ToString());
         }
 
         // Appends a float to this string builder. 
@@ -1031,7 +1007,7 @@ namespace System.Text
         public StringBuilder Append(float value)
         {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
-            return Append(value.ToString(CultureInfo.CurrentCulture));
+            return Append(value.ToString());
         }
 
         // Appends a double to this string builder. 
@@ -1039,13 +1015,13 @@ namespace System.Text
         public StringBuilder Append(double value)
         {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
-            return Append(value.ToString(CultureInfo.CurrentCulture));
+            return Append(value.ToString());
         }
 
         public StringBuilder Append(decimal value)
         {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
-            return Append(value.ToString(CultureInfo.CurrentCulture));
+            return Append(value.ToString());
         }
 
         // Appends an ushort to this string builder. 
@@ -1054,7 +1030,7 @@ namespace System.Text
         public StringBuilder Append(ushort value)
         {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
-            return Append(value.ToString(CultureInfo.CurrentCulture));
+            return Append(value.ToString());
         }
 
         // Appends an uint to this string builder. 
@@ -1063,7 +1039,7 @@ namespace System.Text
         public StringBuilder Append(uint value)
         {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
-            return Append(value.ToString(CultureInfo.CurrentCulture));
+            return Append(value.ToString());
         }
 
         // Appends an unsigned long to this string builder. 
@@ -1072,7 +1048,7 @@ namespace System.Text
         public StringBuilder Append(ulong value)
         {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
-            return Append(value.ToString(CultureInfo.CurrentCulture));
+            return Append(value.ToString());
         }
 
         // Appends an Object to this string builder. 
@@ -1236,7 +1212,7 @@ namespace System.Text
         public StringBuilder Insert(int index, sbyte value)
         {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
-            return Insert(index, value.ToString(CultureInfo.CurrentCulture), 1);
+            return Insert(index, value.ToString(), 1);
         }
 
         // Returns a reference to the StringBuilder with ; value inserted into 
@@ -1247,7 +1223,7 @@ namespace System.Text
         public StringBuilder Insert(int index, byte value)
         {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
-            return Insert(index, value.ToString(CultureInfo.CurrentCulture), 1);
+            return Insert(index, value.ToString(), 1);
         }
 
         // Returns a reference to the StringBuilder with ; value inserted into 
@@ -1258,7 +1234,7 @@ namespace System.Text
         public StringBuilder Insert(int index, short value)
         {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
-            return Insert(index, value.ToString(CultureInfo.CurrentCulture), 1);
+            return Insert(index, value.ToString(), 1);
         }
 
         // Returns a reference to the StringBuilder with ; value inserted into 
@@ -1354,7 +1330,7 @@ namespace System.Text
         public StringBuilder Insert(int index, int value)
         {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
-            return Insert(index, value.ToString(CultureInfo.CurrentCulture), 1);
+            return Insert(index, value.ToString(), 1);
         }
 
         // Returns a reference to the StringBuilder with ; value inserted into 
@@ -1365,7 +1341,7 @@ namespace System.Text
         public StringBuilder Insert(int index, long value)
         {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
-            return Insert(index, value.ToString(CultureInfo.CurrentCulture), 1);
+            return Insert(index, value.ToString(), 1);
         }
 
         // Returns a reference to the StringBuilder with ; value inserted into 
@@ -1376,7 +1352,7 @@ namespace System.Text
         public StringBuilder Insert(int index, float value)
         {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
-            return Insert(index, value.ToString(CultureInfo.CurrentCulture), 1);
+            return Insert(index, value.ToString(), 1);
         }
 
         // Returns a reference to the StringBuilder with ; value inserted into 
@@ -1387,13 +1363,13 @@ namespace System.Text
         public StringBuilder Insert(int index, double value)
         {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
-            return Insert(index, value.ToString(CultureInfo.CurrentCulture), 1);
+            return Insert(index, value.ToString(), 1);
         }
 
         public StringBuilder Insert(int index, decimal value)
         {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
-            return Insert(index, value.ToString(CultureInfo.CurrentCulture), 1);
+            return Insert(index, value.ToString(), 1);
         }
 
         // Returns a reference to the StringBuilder with value inserted into 
@@ -1404,7 +1380,7 @@ namespace System.Text
         public StringBuilder Insert(int index, ushort value)
         {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
-            return Insert(index, value.ToString(CultureInfo.CurrentCulture), 1);
+            return Insert(index, value.ToString(), 1);
         }
 
         // Returns a reference to the StringBuilder with value inserted into 
@@ -1415,7 +1391,7 @@ namespace System.Text
         public StringBuilder Insert(int index, uint value)
         {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
-            return Insert(index, value.ToString(CultureInfo.CurrentCulture), 1);
+            return Insert(index, value.ToString(), 1);
         }
 
         // Returns a reference to the StringBuilder with value inserted into 
@@ -1426,7 +1402,7 @@ namespace System.Text
         public StringBuilder Insert(int index, ulong value)
         {
             Contract.Ensures(Contract.Result<StringBuilder>() != null);
-            return Insert(index, value.ToString(CultureInfo.CurrentCulture), 1);
+            return Insert(index, value.ToString(), 1);
         }
 
         // Returns a reference to this string builder with value inserted into 
@@ -1855,9 +1831,7 @@ namespace System.Text
                         replacements = new int[5];
                     else if (replacementsCount >= replacements.Length)
                     {
-                        int[] newArray = new int[replacements.Length * 3 / 2 + 4];     // grow by 1.5X but more in the begining
-                        Array.Copy(replacements, newArray, replacements.Length);
-                        replacements = newArray;
+                        Array.Resize(ref replacements, replacements.Length * 3 / 2 + 4); // grow by 1.5X but more in the beginning
                     }
                     replacements[replacementsCount++] = indexInChunk;
                     indexInChunk += oldValue.Length;
@@ -1941,7 +1915,7 @@ namespace System.Text
         /// <summary>
         /// Appends 'value' of length 'count' to the stringBuilder. 
         /// </summary>
-        [System.CLSCompliantAttribute(false)]
+        [CLSCompliant(false)]
         public unsafe StringBuilder Append(char* value, int valueCount)
         {
             // We don't check null value as this case will throw null reference exception anyway
@@ -2132,7 +2106,7 @@ namespace System.Text
         /// The only way to do this is to copy all interesting variables out of the heap and then do the
         /// bounds check.  This is what we do here.   
         /// </summary>
-        unsafe private static void ThreadSafeCopy(char* sourcePtr, char[] destination, int destinationIndex, int count)
+        private static unsafe void ThreadSafeCopy(char* sourcePtr, char[] destination, int destinationIndex, int count)
         {
             if (count > 0)
             {
@@ -2147,6 +2121,7 @@ namespace System.Text
                 }
             }
         }
+
         private static void ThreadSafeCopy(char[] source, int sourceIndex, char[] destination, int destinationIndex, int count)
         {
             if (count > 0)
