@@ -21,8 +21,10 @@ namespace Microsoft.CSharp.RuntimeBinder
         CSharpCallFlags ICSharpInvokeOrInvokeMemberBinder.Flags { get { return _flags; } }
         private readonly CSharpCallFlags _flags;
 
-        Type ICSharpInvokeOrInvokeMemberBinder.CallingContext { get { return _callingContext; } }
+        public Type CallingContext { get { return _callingContext; } }
         private readonly Type _callingContext;
+
+        public bool IsChecked => false;
 
         private readonly List<CSharpArgumentInfo> _argumentInfo;
 

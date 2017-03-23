@@ -14,5 +14,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         Expression GetUpdateExpression(Type type);
         Type ReturnType { get; }
         CSharpArgumentInfo GetArgumentInfo(int index);
+        Type CallingContext { get; }
+        bool IsChecked { get; }
     }
 }

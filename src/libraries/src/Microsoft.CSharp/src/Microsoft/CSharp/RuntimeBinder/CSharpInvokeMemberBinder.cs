@@ -22,6 +22,8 @@ namespace Microsoft.CSharp.RuntimeBinder
         public Type CallingContext { get { return _callingContext; } }
         private readonly Type _callingContext;
 
+        public bool IsChecked => false;
+
         public IList<Type> TypeArguments { get { return _typeArguments.AsReadOnly(); } }
         private readonly List<Type> _typeArguments;
 

@@ -300,69 +300,22 @@ namespace Microsoft.CSharp.RuntimeBinder
         private void InitializeCallingContext(ICSharpBinder payload)
         {
             // Set the context if the payload specifies it. Currently we only use this for calls.
-            Type t = null;
-            bool bChecked = false;
-            if (payload is ICSharpInvokeOrInvokeMemberBinder)
-            {
-                t = (payload as ICSharpInvokeOrInvokeMemberBinder).CallingContext;
-            }
-            else if (payload is CSharpGetMemberBinder)
-            {
-                t = (payload as CSharpGetMemberBinder).CallingContext;
-            }
-            else if (payload is CSharpSetMemberBinder)
-            {
-                CSharpSetMemberBinder b = (CSharpSetMemberBinder)payload;
-                t = b.CallingContext;
-                bChecked = b.IsChecked;
-            }
-            else if (payload is CSharpGetIndexBinder)
-            {
-                t = (payload as CSharpGetIndexBinder).CallingContext;
-            }
-            else if (payload is CSharpSetIndexBinder)
-            {
-                CSharpSetIndexBinder b = (CSharpSetIndexBinder)payload;
-                t = b.CallingContext;
-                bChecked = b.IsChecked;
-            }
-            else if (payload is CSharpUnaryOperationBinder)
-            {
-                CSharpUnaryOperationBinder b = (CSharpUnaryOperationBinder)payload;
-                t = b.CallingContext;
-                bChecked = b.IsChecked;
-            }
-            else if (payload is CSharpBinaryOperationBinder)
-            {
-                CSharpBinaryOperationBinder b = (CSharpBinaryOperationBinder)payload;
-                t = b.CallingContext;
-                bChecked = b.IsChecked;
-            }
-            else if (payload is CSharpConvertBinder)
-            {
-                CSharpConvertBinder b = (CSharpConvertBinder)payload;
-                t = b.CallingContext;
-                bChecked = b.IsChecked;
-            }
-            else if (payload is CSharpIsEventBinder)
-            {
-                t = (payload as CSharpIsEventBinder).CallingContext;
-            }
+            Type t = payload.CallingContext;
+            BindingContext bindingContext = _bindingContext;
 
             if (t != null)
             {
                 AggregateSymbol agg = _symbolTable.GetCTypeFromType(t).AsAggregateType().GetOwningAggregate();
-                _bindingContext.m_pParentDecl = _semanticChecker.GetGlobalSymbolFactory().CreateAggregateDecl(agg, null);
+                bindingContext.m_pParentDecl = _semanticChecker.GetGlobalSymbolFactory().CreateAggregateDecl(agg, null);
             }
             else
             {
                 // The binding context lives across invocations! If we don't reset this, then later calls might
                 // bind in a previous call's context.
-                _bindingContext.m_pParentDecl = null;
+                bindingContext.m_pParentDecl = null;
             }
 
-            _bindingContext.CheckedConstant = bChecked;
-            _bindingContext.CheckedNormal = bChecked;
+            bindingContext.CheckedConstant = bindingContext.CheckedNormal = payload.IsChecked;
         }
 
         /////////////////////////////////////////////////////////////////////////////////
