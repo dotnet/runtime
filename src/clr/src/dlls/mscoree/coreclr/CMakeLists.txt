@@ -166,8 +166,9 @@ if(WIN32)
         COMMAND ${BuildToolsDir}/InjectResource.exe /bin:${CMAKE_CURRENT_BINARY_DIR}/wks.bin /dll:$<TARGET_FILE:coreclr>
         COMMAND ${BuildToolsDir}/GenClrDebugResource.exe /dac:$<TARGET_FILE:mscordaccore> /dbi:$<TARGET_FILE:mscordbi> /sku:onecoreclr /out:${CMAKE_CURRENT_BINARY_DIR}/clrDebugResource.bin
         COMMAND ${BuildToolsDir}/InjectResource.exe /bin:${CMAKE_CURRENT_BINARY_DIR}/clrDebugResource.bin /dll:$<TARGET_FILE:coreclr> /name:CLRDEBUGINFO
+        COMMAND ${BuildToolsDir}/InjectResource.exe /bin:${CMAKE_CURRENT_SOURCE_DIR}/dump_helper_resource.bin /dll:$<TARGET_FILE:coreclr> /name:MINIDUMP_AUXILIARY_PROVIDER
         COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/inject_debug_resources.timestamp
-        COMMENT Add dactable & debug resources to coreclr
+        COMMENT Add dactable, debug resources, and dump helper resources to coreclr
     )
 
     add_custom_target(inject_debug_resources ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/inject_debug_resources.timestamp)
