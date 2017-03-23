@@ -33,6 +33,9 @@
     </IsRestoreRequired>
 
     <Exec Condition="Exists('$(ProjectJson)') AND '$(RestoreRequired)' == 'true'" Command="$(DnuRestoreCommand) &quot;$(ProjectJson)&quot;" StandardOutputImportance="Low" CustomErrorRegularExpression="^Unable to locate .*" />
+    
+    <!-- if lock file exists be sure to update timestamp otherwise we could get in a state of aways calling restore but the lock file not being updated -->
+    <Touch Condition="Exists('$(ProjectLockJson)') AND '$(RestoreRequired)' == 'true'" Files="$(ProjectLockJson)" />
   </Target>
 
   <ItemGroup Condition="'$(ResolvePackages)'=='true' or '$(PrereleaseResolveNuGetPackages)'=='true'">
