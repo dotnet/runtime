@@ -171,6 +171,11 @@ namespace System.Dynamic.Utils
             return arguments;
         }
 
+        public static void RequiresCanRead(Expression expression, string paramName)
+        {
+            RequiresCanRead(expression, paramName, -1);
+        }
+
         public static void RequiresCanRead(Expression expression, string paramName, int idx)
         {
             ContractUtils.RequiresNotNull(expression, paramName, idx);

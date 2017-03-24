@@ -153,7 +153,7 @@ namespace System.Linq.Expressions
         /// <returns>The created <see cref="TryExpression"/>.</returns>
         public static TryExpression MakeTry(Type type, Expression body, Expression @finally, Expression fault, IEnumerable<CatchBlock> handlers)
         {
-            RequiresCanRead(body, nameof(body));
+            ExpressionUtils.RequiresCanRead(body, nameof(body));
 
             ReadOnlyCollection<CatchBlock> @catch = handlers.ToReadOnly();
             ContractUtils.RequiresNotNullItems(@catch, nameof(handlers));
@@ -165,11 +165,11 @@ namespace System.Linq.Expressions
                 {
                     throw Error.FaultCannotHaveCatchOrFinally(nameof(fault));
                 }
-                RequiresCanRead(fault, nameof(fault));
+                ExpressionUtils.RequiresCanRead(fault, nameof(fault));
             }
             else if (@finally != null)
             {
-                RequiresCanRead(@finally, nameof(@finally));
+                ExpressionUtils.RequiresCanRead(@finally, nameof(@finally));
             }
             else if (@catch.Count == 0)
             {

@@ -137,7 +137,7 @@ namespace System.Linq.Expressions
             else
             {
                 if (expression == null) throw Error.OnlyStaticFieldsHaveNullInstance(nameof(field));
-                RequiresCanRead(expression, nameof(expression));
+                ExpressionUtils.RequiresCanRead(expression, nameof(expression));
                 if (!TypeUtils.AreReferenceAssignable(field.DeclaringType, expression.Type))
                 {
                     throw Error.FieldInfoNotDefinedForType(field.DeclaringType, field.Name, expression.Type);
@@ -154,7 +154,7 @@ namespace System.Linq.Expressions
         /// <returns>The created <see cref="MemberExpression"/>.</returns>
         public static MemberExpression Field(Expression expression, string fieldName)
         {
-            RequiresCanRead(expression, nameof(expression));
+            ExpressionUtils.RequiresCanRead(expression, nameof(expression));
             ContractUtils.RequiresNotNull(fieldName, nameof(fieldName));
 
             // bind to public names first
@@ -203,7 +203,7 @@ namespace System.Linq.Expressions
         /// <returns>The created <see cref="MemberExpression"/>.</returns>
         public static MemberExpression Property(Expression expression, string propertyName)
         {
-            RequiresCanRead(expression, nameof(expression));
+            ExpressionUtils.RequiresCanRead(expression, nameof(expression));
             ContractUtils.RequiresNotNull(propertyName, nameof(propertyName));
             // bind to public names first
             PropertyInfo pi = expression.Type.GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy)
@@ -274,7 +274,7 @@ namespace System.Linq.Expressions
             else
             {
                 if (expression == null) throw Error.OnlyStaticPropertiesHaveNullInstance(nameof(property));
-                RequiresCanRead(expression, nameof(expression));
+                ExpressionUtils.RequiresCanRead(expression, nameof(expression));
                 if (!TypeUtils.IsValidInstanceType(property, expression.Type))
                 {
                     throw Error.PropertyNotDefinedForType(property, expression.Type, nameof(property));
@@ -350,7 +350,7 @@ namespace System.Linq.Expressions
         /// <returns>The created <see cref="MemberExpression"/>.</returns>
         public static MemberExpression PropertyOrField(Expression expression, string propertyOrFieldName)
         {
-            RequiresCanRead(expression, nameof(expression));
+            ExpressionUtils.RequiresCanRead(expression, nameof(expression));
             // bind to public names first
             PropertyInfo pi = expression.Type.GetProperty(propertyOrFieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy);
             if (pi != null)

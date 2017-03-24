@@ -83,7 +83,7 @@ namespace System.Linq.Expressions
         /// <returns>The created <see cref="Expressions.SwitchCase"/>.</returns>
         public static SwitchCase SwitchCase(Expression body, IEnumerable<Expression> testValues)
         {
-            RequiresCanRead(body, nameof(body));
+            ExpressionUtils.RequiresCanRead(body, nameof(body));
 
             ReadOnlyCollection<Expression> values = testValues.ToReadOnly();
             ContractUtils.RequiresNotEmpty(values, nameof(testValues));
