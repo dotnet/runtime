@@ -2,13 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-////////////////////////////////////////////////////////////////////////////////
-// Void
-//    This class represents a Missing Variant
-////////////////////////////////////////////////////////////////////////////////
-
-using System;
-using System.Runtime.Remoting;
 using System.Runtime.Serialization;
 
 namespace System
@@ -16,7 +9,6 @@ namespace System
     [Serializable]
     public sealed class DBNull : ISerializable, IConvertible
     {
-        //Package private constructor
         private DBNull()
         {
         }
@@ -33,14 +25,14 @@ namespace System
             UnitySerializationHolder.GetUnitySerializationInfo(info, UnitySerializationHolder.NullUnity, null, null);
         }
 
-        public override String ToString()
+        public override string ToString()
         {
-            return String.Empty;
+            return string.Empty;
         }
 
-        public String ToString(IFormatProvider provider)
+        public string ToString(IFormatProvider provider)
         {
-            return String.Empty;
+            return string.Empty;
         }
 
         public TypeCode GetTypeCode()
@@ -48,92 +40,77 @@ namespace System
             return TypeCode.DBNull;
         }
 
-        /// <internalonly/>
         bool IConvertible.ToBoolean(IFormatProvider provider)
         {
             throw new InvalidCastException(SR.InvalidCast_FromDBNull);
         }
 
-        /// <internalonly/>
         char IConvertible.ToChar(IFormatProvider provider)
         {
             throw new InvalidCastException(SR.InvalidCast_FromDBNull);
         }
 
-        /// <internalonly/>
         sbyte IConvertible.ToSByte(IFormatProvider provider)
         {
             throw new InvalidCastException(SR.InvalidCast_FromDBNull);
         }
 
-        /// <internalonly/>
         byte IConvertible.ToByte(IFormatProvider provider)
         {
             throw new InvalidCastException(SR.InvalidCast_FromDBNull);
         }
 
-        /// <internalonly/>
         short IConvertible.ToInt16(IFormatProvider provider)
         {
             throw new InvalidCastException(SR.InvalidCast_FromDBNull);
         }
 
-        /// <internalonly/>
         ushort IConvertible.ToUInt16(IFormatProvider provider)
         {
             throw new InvalidCastException(SR.InvalidCast_FromDBNull);
         }
 
-        /// <internalonly/>
         int IConvertible.ToInt32(IFormatProvider provider)
         {
             throw new InvalidCastException(SR.InvalidCast_FromDBNull);
         }
 
-        /// <internalonly/>
         uint IConvertible.ToUInt32(IFormatProvider provider)
         {
             throw new InvalidCastException(SR.InvalidCast_FromDBNull);
         }
 
-        /// <internalonly/>
         long IConvertible.ToInt64(IFormatProvider provider)
         {
             throw new InvalidCastException(SR.InvalidCast_FromDBNull);
         }
 
-        /// <internalonly/>
         ulong IConvertible.ToUInt64(IFormatProvider provider)
         {
             throw new InvalidCastException(SR.InvalidCast_FromDBNull);
         }
 
-        /// <internalonly/>
         float IConvertible.ToSingle(IFormatProvider provider)
         {
             throw new InvalidCastException(SR.InvalidCast_FromDBNull);
         }
 
-        /// <internalonly/>
         double IConvertible.ToDouble(IFormatProvider provider)
         {
             throw new InvalidCastException(SR.InvalidCast_FromDBNull);
         }
 
-        /// <internalonly/>
         decimal IConvertible.ToDecimal(IFormatProvider provider)
         {
             throw new InvalidCastException(SR.InvalidCast_FromDBNull);
         }
 
-        /// <internalonly/>
         DateTime IConvertible.ToDateTime(IFormatProvider provider)
         {
             throw new InvalidCastException(SR.InvalidCast_FromDBNull);
         }
 
-        /// <internalonly/>
-        Object IConvertible.ToType(Type type, IFormatProvider provider)
+        object IConvertible.ToType(Type type, IFormatProvider provider)
         {
             return Convert.DefaultToType((IConvertible)this, type, provider);
         }
