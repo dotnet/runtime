@@ -23,14 +23,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
         private Entry[] _entries;
         private int _count;
         private int _mask;
-        private readonly int _hashCodeRandomizer;
 
         internal NameTable()
         {
             _mask = 31;
             _entries = new Entry[_mask + 1];
-            //hashCodeRandomizer = Environment.TickCount;
-            _hashCodeRandomizer = 0;
         }
 
         public Name Add(string key)
@@ -82,7 +79,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
 
             unchecked
             {
-                hashCode = len + _hashCodeRandomizer;
+                hashCode = len;
                 // use key.Length to eliminate the range check
                 for (int i = 0; i < key.Length; i++)
                 {
