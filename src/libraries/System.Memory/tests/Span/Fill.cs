@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.SpanTests
@@ -58,12 +59,20 @@ namespace System.SpanTests
         [Fact]
         public static void FillValueTypeWithoutReferences()
         {
-            int[] actual = { 1, 2, 3 };
-            int[] expected = { 5, 5, 5 };
-
-            var span = new Span<int>(actual);
-            span.Fill(5);
-            Assert.Equal<int>(expected, actual);
+            const byte fill = 5;
+            for (int length = 0; length < 32; length++)
+            {
+                var expectedFull = new int[length];
+                var actualFull = new int[length];
+                for (int i = 0; i < length; i++)
+                {
+                    expectedFull[i] = fill;
+                    actualFull[i] = i;
+                }
+                var span = new Span<int>(actualFull);
+                span.Fill(fill);
+                Assert.Equal<int>(expectedFull, actualFull);
+            }
         }
 
         [Fact]
@@ -92,6 +101,51 @@ namespace System.SpanTests
             var span = new Span<TestValueTypeWithReference>(actual);
             span.Fill(new TestValueTypeWithReference() { I = 5, S = "d" });
             Assert.Equal<TestValueTypeWithReference>(expected, actual);
+        }
+
+        [Fact]
+        public static unsafe void FillNativeBytes()
+        {
+            // Arrange
+            int length = 50;
+
+            byte* ptr = null;
+            try
+            {
+                ptr = (byte*)Marshal.AllocHGlobal((IntPtr)50);
+            }
+            // Skipping test if Out-of-Memory, since this test can only be run, if there is enough memory
+            catch (OutOfMemoryException)
+            {
+                Console.WriteLine(
+                    $"Span.Fill test {nameof(FillNativeBytes)} skipped due to {nameof(OutOfMemoryException)}.");
+                return;
+            }
+
+            try
+            {
+                byte initial = 1;
+                for (int i = 0; i < length; i++)
+                {
+                    *(ptr + i) = initial;
+                }
+                const byte fill = 5;
+                var span = new Span<byte>(ptr, length);
+
+                // Act
+                span.Fill(fill);
+
+                // Assert using custom code for perf and to avoid allocating extra memory
+                for (int i = 0; i < length; i++)
+                {
+                    var actual = *(ptr + i);
+                    Assert.Equal(fill, actual);
+                }
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(new IntPtr(ptr));
+            }
         }
     }
 }

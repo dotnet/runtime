@@ -151,6 +151,21 @@ namespace System.SpanTests
         }
 
         [Fact]
+        public static void ClearValueTypeWithoutReferencesPointerSize()
+        {
+            long[] actual = new long[15];
+            for (int i = 0; i < actual.Length; i++)
+            {
+                actual[i] = i + 1;
+            }
+            long[] expected = new long[actual.Length];
+
+            var span = new Span<long>(actual);
+            span.Clear();
+            Assert.Equal<long>(expected, actual);
+        }
+
+        [Fact]
         public static void ClearReferenceType()
         {
             string[] actual = { "a", "b", "c" };
@@ -174,6 +189,17 @@ namespace System.SpanTests
             var span = new Span<string>(actual);
             span.Clear();
             Assert.Equal<string>(expected, actual);
+        }
+
+        [Fact]
+        public static void ClearEnumType()
+        {
+            TestEnum[] actual = {TestEnum.e0, TestEnum.e1, TestEnum.e2};
+            TestEnum[] expected = {default(TestEnum), default(TestEnum), default(TestEnum) };
+
+            var span = new Span<TestEnum>(actual);
+            span.Clear();
+            Assert.Equal<TestEnum>(expected, actual);
         }
 
         [Fact]
