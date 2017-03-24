@@ -279,13 +279,6 @@ STDMETHODIMP RegMeta::GetSaveSize(      // S_OK or error.
             IfFailGo(m_pFilterManager->Mark(TokenFromRid(iCount, mdtAssembly)));
         }
     }
-#ifdef FEATURE_METADATA_EMIT_ALL
-    else if (m_newMerger.m_pImportDataList)
-    {
-        // always pipe through another pass of merge to drop unnecessary ref for linker.
-        MarkAll();
-    }
-#endif //FEATURE_METADATA_EMIT_ALL
 
     IfFailGo(PreSave());
     
@@ -734,7 +727,6 @@ HRESULT RegMeta::PreSave()              // Return code.
     HRESULT     hr = S_OK;              // A result.
     CMiniMdRW   *pMiniMd;               // The MiniMd with the data.
     unsigned    bRemapOld = m_bRemap;
-    MergeTokenManager *ptkMgr = NULL;
     
     // For convenience.
     pMiniMd = &(m_pStgdb->m_MiniMd);
@@ -744,21 +736,6 @@ HRESULT RegMeta::PreSave()              // Return code.
     // If the code has already been optimized there is nothing to do.
     if (m_bSaveOptimized)
         goto ErrExit;
-    
-#ifdef FEATURE_METADATA_EMIT_ALL
-    if (m_newMerger.m_pImportDataList != NULL)
-    {
-        // This is the linker scenario. We we have IMap for each scope. We will create an instance of our own mapper
-        // who knows how to send notification back to host!
-        
-        // cache the host provided handler to the end our MergeTokenManager
-        
-        ptkMgr = new (nothrow) MergeTokenManager(m_newMerger.m_pImportDataList->m_pMDTokenMap, m_pHandler);
-        IfNullGo(ptkMgr);
-        hr = m_pStgdb->m_MiniMd.SetHandler(ptkMgr);
-        _ASSERTE(SUCCEEDED(hr));
-    }
-#endif //FEATURE_METADATA_EMIT_ALL
     
     IfFailGo(RefToDefOptimization());
     
@@ -808,19 +785,7 @@ HRESULT RegMeta::PreSave()              // Return code.
             }
         }
     }
-    
-#ifdef FEATURE_METADATA_EMIT_ALL
-    IfFailGo(ProcessFilter());
-    
-    if (m_newMerger.m_pImportDataList != NULL)
-    {
-        // Allocate a token mapper object that will be used for phase 1 if there is not Handler but 
-        // linker has provided the IMapToken
-        //
-        m_bRemap = true;
-    }
-#endif //FEATURE_METADATA_EMIT_ALL
-    
+
     // reget the minimd because it can be swapped in the call of ProcessFilter
     pMiniMd = &(m_pStgdb->m_MiniMd);
     
@@ -831,13 +796,6 @@ HRESULT RegMeta::PreSave()              // Return code.
     IfFailGo(m_pStgdb->m_MiniMd.PreSave(m_ReorderingOptions, m_pCorProfileData));
     
 ErrExit:
-    if (ptkMgr != NULL)
-    {
-        // recovery the initial state
-        hr = m_pStgdb->m_MiniMd.SetHandler(NULL);
-        ptkMgr->Release();
-    }
-    
     m_bRemap =  bRemapOld;
     
     return hr;
@@ -1007,37 +965,6 @@ ErrExit:
    
     return hr;
 } // RegMeta::RefToDefOptimization
-
-#ifdef FEATURE_METADATA_EMIT_ALL
-
-//*****************************************************************************
-// Process filter
-//*****************************************************************************
-HRESULT RegMeta::ProcessFilter()
-{
-    HRESULT         hr = S_OK;
-
-    CMiniMdRW       *pMiniMd;               // The MiniMd with the data.
-
-    START_MD_PERF();
-
-    // For convenience.
-    pMiniMd = &(m_pStgdb->m_MiniMd);
-    IfNullGo( pMiniMd->GetFilterTable() );
-    if ( pMiniMd->GetFilterTable()->Count() == 0 )
-    {
-        // there is no filter
-        goto ErrExit;
-    }
-    hr = ProcessFilterWorker();
-
-ErrExit:
-    STOP_MD_PERF(ProcessFilter);
-
-    return hr;
-} // RegMeta::ProcessFilter
-
-#endif //FEATURE_METADATA_EMIT_ALL
 
 //*****************************************************************************
 // Define a TypeRef given the fully qualified name.

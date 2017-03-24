@@ -66,8 +66,6 @@ protected:
     friend class CorMetaDataScope;
     friend class COR;
     friend class RegMeta;
-    friend class MERGER;
-    friend class NEWMERGER;
     friend class MDInternalRO;
     friend class MDInternalRW;
 };

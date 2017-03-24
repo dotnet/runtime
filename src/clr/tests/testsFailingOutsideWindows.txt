@@ -78,4 +78,3 @@ Loader/classloader/TypeGeneratorTests/TypeGeneratorTest614/Generated614/Generate
 Loader/classloader/TypeGeneratorTests/TypeGeneratorTest681/Generated681/Generated681.sh
 Loader/classloader/TypeGeneratorTests/TypeGeneratorTest682/Generated682/Generated682.sh
 Loader/classloader/TypeGeneratorTests/TypeGeneratorTest683/Generated683/Generated683.sh
-JIT/opt/perf/doublealign/Locals/Locals.sh
