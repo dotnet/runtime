@@ -885,7 +885,9 @@ void ProfScanRootsHelper(Object** ppObject, ScanContext *pSC, uint32_t dwFlags)
     Object *pObj = *ppObject;
     if (dwFlags & GC_CALL_INTERIOR)
     {
-        pObj = GCHeapUtilities::GetGCHeap()->GetContainingObject(pObj);
+        pObj = GCHeapUtilities::GetGCHeap()->GetContainingObject(pObj, true);
+        if (pObj == nullptr)
+            return;
     }
     ScanRootsHelper(pObj, ppObject, pSC, dwFlags);
 #endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)

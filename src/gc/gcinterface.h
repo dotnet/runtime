@@ -654,7 +654,9 @@ public:
 
     // Given an interior pointer, return a pointer to the object
     // containing that pointer. This is safe to call only when the EE is suspended.
-    virtual Object* GetContainingObject(void* pInteriorPtr) = 0;
+    // When fCollectedGenOnly is true, it only returns the object if it's found in 
+    // the generation(s) that are being collected.
+    virtual Object* GetContainingObject(void* pInteriorPtr, bool fCollectedGenOnly) = 0;
 
     /*
     ===========================================================================

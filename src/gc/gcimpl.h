@@ -108,7 +108,7 @@ public:
     void FixAllocContext (gc_alloc_context* acontext,
                                             BOOL lockp, void* arg, void *heap);
 
-    Object* GetContainingObject(void *pInteriorPtr);
+    Object* GetContainingObject(void *pInteriorPtr, bool fCollectedGenOnly);
 
 #ifdef MULTIPLE_HEAPS
     static void AssignHeap (alloc_context* acontext);
