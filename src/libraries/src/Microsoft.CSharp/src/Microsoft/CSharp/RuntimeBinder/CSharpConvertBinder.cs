@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using Microsoft.CSharp.RuntimeBinder.Semantics;
 
@@ -16,6 +17,16 @@ namespace Microsoft.CSharp.RuntimeBinder
     /// </summary>
     internal sealed class CSharpConvertBinder : ConvertBinder, ICSharpBinder
     {
+        [ExcludeFromCodeCoverage]
+        public string Name
+        {
+            get
+            {
+                Debug.Fail("Name should not be called for this binder");
+                return null;
+            }
+        }
+
         public BindingFlag BindingFlags => 0;
 
         public EXPR DispatchPayload(RuntimeBinder runtimeBinder, ArgumentObject[] arguments, Dictionary<int, LocalVariableSymbol> dictionary)

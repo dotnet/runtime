@@ -4,6 +4,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using Microsoft.CSharp.RuntimeBinder.Semantics;
 
@@ -15,6 +17,16 @@ namespace Microsoft.CSharp.RuntimeBinder
     /// </summary>
     internal sealed class CSharpInvokeBinder : InvokeBinder, ICSharpInvokeOrInvokeMemberBinder
     {
+        [ExcludeFromCodeCoverage]
+        public string Name
+        {
+            get
+            {
+                Debug.Fail("Name should not be called for this binder");
+                return null;
+            }
+        }
+
         public BindingFlag BindingFlags => 0;
 
         public EXPR DispatchPayload(RuntimeBinder runtimeBinder, ArgumentObject[] arguments, Dictionary<int, LocalVariableSymbol> dictionary)
@@ -26,7 +38,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         public bool IsBinderThatCanHaveRefReceiver => true;
 
         bool ICSharpInvokeOrInvokeMemberBinder.StaticCall { get { return _argumentInfo[0] != null && _argumentInfo[0].IsStaticType; } }
-        string ICSharpInvokeOrInvokeMemberBinder.Name { get { return "Invoke"; } }
+        string ICSharpBinder.Name { get { return "Invoke"; } }
         IList<Type> ICSharpInvokeOrInvokeMemberBinder.TypeArguments { get { return Array.Empty<Type>(); } }
 
         CSharpCallFlags ICSharpInvokeOrInvokeMemberBinder.Flags { get { return _flags; } }

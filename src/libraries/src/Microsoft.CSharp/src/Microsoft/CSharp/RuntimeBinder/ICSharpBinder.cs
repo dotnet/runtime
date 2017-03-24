@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Dynamic;
 using System.Linq.Expressions;
+using System.Security.Cryptography.X509Certificates;
 using Microsoft.CSharp.RuntimeBinder.Semantics;
 
 namespace Microsoft.CSharp.RuntimeBinder
@@ -29,5 +30,6 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         EXPR DispatchPayload(RuntimeBinder runtimeBinder, ArgumentObject[] arguments, Dictionary<int, LocalVariableSymbol> dictionary);
         BindingFlag BindingFlags { get; }
+        string Name { get; }
     }
 }

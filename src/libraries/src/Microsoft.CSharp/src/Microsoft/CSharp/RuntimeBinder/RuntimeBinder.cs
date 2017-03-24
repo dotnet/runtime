@@ -1420,7 +1420,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 // If we have a struct type, unbox it.
                 callingObject.flags |= EXPRFLAG.EXF_UNBOXRUNTIME;
             }
-            string name = GetName(payload);
+            string name = payload.Name;
             BindingFlag bindFlags = payload.BindingFlags;
 
             MemberLookup mem = new MemberLookup();
@@ -1559,7 +1559,8 @@ namespace Microsoft.CSharp.RuntimeBinder
             {
                 throw Error.BindBinaryAssignmentRequireTwoArguments();
             }
-            string name = GetName(payload);
+
+            string name = payload.Name;
 
             // Find the lhs and rhs.
             EXPR indexerArguments = null;
@@ -1639,25 +1640,5 @@ namespace Microsoft.CSharp.RuntimeBinder
             return _exprFactory.CreateConstant(boolType, ConstValFactory.GetBool(result));
         }
         #endregion
-
-        private string GetName(ICSharpBinder payload)
-        {
-            string result = null;
-            if (payload is CSharpGetMemberBinder)
-            {
-                result = ((CSharpGetMemberBinder)payload).Name;
-            }
-            else if (payload is CSharpSetMemberBinder)
-            {
-                result = ((CSharpSetMemberBinder)payload).Name;
-            }
-            else if (payload is CSharpGetIndexBinder || payload is CSharpSetIndexBinder)
-            {
-                result = SpecialNames.Indexer;
-            }
-
-            Debug.Assert(result != null);
-            return result;
-        }
     }
 }
