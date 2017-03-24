@@ -76,4 +76,13 @@
   <data name="Thread_GetSetCompressedStack_NotSupported" xml:space="preserve">
     <value>Use CompressedStack.(Capture/Run) instead.</value>
   </data>
+  <data name="PlatformNotSupported_COMInterop" xml:space="preserve">
+    <value>COM interop is not supported on this platform.</value>
+  </data>
+  <data name="PlatformNotSupported_ThreadAbort" xml:space="preserve">
+    <value>Thread abort is not supported on this platform.</value>
+  </data>
+  <data name="PlatformNotSupported_ThreadSuspend" xml:space="preserve">
+    <value>Thread suspend is not supported on this platform.</value>
+  </data>
 </root>
