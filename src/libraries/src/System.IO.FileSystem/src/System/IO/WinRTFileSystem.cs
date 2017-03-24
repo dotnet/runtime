@@ -429,7 +429,7 @@ namespace System.IO
 
         public override string GetCurrentDirectory()
         {
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(); // https://github.com/dotnet/corefx/issues/17470;
         }
 
         public override IFileSystemObject GetFileSystemInfo(string fullPath, bool asDirectory)
@@ -731,7 +731,7 @@ namespace System.IO
 
         public override void SetCurrentDirectory(string fullPath)
         {
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(); // https://github.com/dotnet/corefx/issues/17470
         }
 
         public override void SetLastAccessTime(string fullPath, DateTimeOffset time, bool asDirectory)

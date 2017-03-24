@@ -223,4 +223,7 @@
   <data name="ObjectDisposed_StreamClosed" xml:space="preserve">
     <value>Cannot access a closed Stream.</value>
   </data>
+  <data name="PlatformNotSupported_FileEncryption" xml:space="preserve">
+    <value>File encryption is not supported on this platform.</value>
+  </data>  
 </root>

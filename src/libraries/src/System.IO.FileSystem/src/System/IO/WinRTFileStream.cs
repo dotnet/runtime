@@ -64,12 +64,12 @@ namespace System.IO
 
         public override void Lock(long position, long length)
         {
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(); // https://github.com/dotnet/corefx/issues/17470
         }
 
         public override void Unlock(long position, long length)
         {
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(); // https://github.com/dotnet/corefx/issues/17470
         }
         #endregion
 
