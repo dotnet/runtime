@@ -1525,7 +1525,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             // If we got here, it means we couldn't find it in our initial lookup. Means we haven't loaded it from reflection yet.
             // Lets go and do that now.
             // Check if we have constructors or not.
-            if (methodName == _nameManager.GetPredefinedName(PredefinedName.PN_CTOR))
+            if (methodName == NameManager.GetPredefinedName(PredefinedName.PN_CTOR))
             {
                 var ctors = Enumerable.Where(t.GetConstructors(), m => m.Name == methodName.Text);
 

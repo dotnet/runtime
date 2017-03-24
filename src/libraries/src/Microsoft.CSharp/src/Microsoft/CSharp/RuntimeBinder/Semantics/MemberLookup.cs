@@ -554,7 +554,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     break;
 
                 case SYMKIND.SK_MethodSymbol:
-                    if (swt.Meth().name == GetSymbolLoader().GetNameManager().GetPredefinedName(PredefinedName.PN_INVOKE) && swt.Meth().getClass().IsDelegate())
+                    if (swt.Meth().name == NameManager.GetPredefinedName(PredefinedName.PN_INVOKE) && swt.Meth().getClass().IsDelegate())
                     {
                         swt.Set(swt.Meth().getClass(), swt.GetType());
                     }

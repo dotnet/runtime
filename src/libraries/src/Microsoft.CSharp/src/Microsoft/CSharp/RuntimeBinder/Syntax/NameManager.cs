@@ -28,7 +28,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
             return s_knownNames.Lookup(key) ?? _names.Lookup(key);
         }
 
-        internal Name GetPredefinedName(PredefinedName id)
+        internal static Name GetPredefinedName(PredefinedName id)
         {
             return s_predefinedNames[(int)id];
         }
