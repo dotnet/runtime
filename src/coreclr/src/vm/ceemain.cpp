@@ -229,6 +229,8 @@
 #include "perfmap.h"
 #endif
 
+#include "eventpipe.h"
+
 #ifndef FEATURE_PAL
 // Included for referencing __security_cookie
 #include "process.h"
@@ -1031,7 +1033,12 @@ void EEStartupHelper(COINITIEE fFlags)
              SystemDomain::System()->DefaultDomain()));
         SystemDomain::System()->PublishAppDomainAndInformDebugger(SystemDomain::System()->DefaultDomain());
 #endif
- 
+
+#ifdef FEATURE_PERFTRACING
+        // Initialize the event pipe and start it if requested.
+        EventPipe::Initialize();
+        EventPipe::EnableOnStartup();
+#endif // FEATURE_PERFTRACING
 
 #endif // CROSSGEN_COMPILE
 
@@ -1699,6 +1706,11 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
         // Flush and close the perf map file.
         PerfMap::Destroy();
 #endif
+
+#ifdef FEATURE_PERFTRACING
+        // Shutdown the event pipe.
+        EventPipe::Shutdown();
+#endif // FEATURE_PERFTRACING
 
 #ifdef FEATURE_PREJIT
         {

@@ -394,3 +394,35 @@ EXIT:
     return retval;
 }
 
+/*++
+Function:
+  PAL_nanosleep
+
+Sleeps for the time specified in timeInNs.
+Returns 0 on successful completion of the operation.
+--*/
+PALAPI
+INT
+PAL_nanosleep(
+    IN long timeInNs
+    )
+{
+    struct timespec req;
+    struct timespec rem;
+    int result;
+
+    req.tv_sec = 0;
+    req.tv_nsec = timeInNs;
+
+    do
+    {
+        // Sleep for the requested time.
+        result = nanosleep(&req, &rem);
+
+        // Save the remaining time (used if the loop runs another iteration).
+        req = rem;
+    }
+    while(result == -1 && errno == EINTR);
+
+    return result;
+}
