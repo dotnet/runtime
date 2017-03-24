@@ -410,5 +410,89 @@ namespace Microsoft.CSharp.RuntimeBinder
 
             return new CallInfo(argCount - discard, argNames);
         }
+
+        internal static string GetCLROperatorName(this ExpressionType p)
+        {
+            switch (p)
+            {
+                default:
+                    return null;
+
+                // Binary Operators
+                case ExpressionType.Add:
+                    return SpecialNames.CLR_Add;
+                case ExpressionType.Subtract:
+                    return SpecialNames.CLR_Subtract;
+                case ExpressionType.Multiply:
+                    return SpecialNames.CLR_Multiply;
+                case ExpressionType.Divide:
+                    return SpecialNames.CLR_Division;
+                case ExpressionType.Modulo:
+                    return SpecialNames.CLR_Modulus;
+                case ExpressionType.LeftShift:
+                    return SpecialNames.CLR_LShift;
+                case ExpressionType.RightShift:
+                    return SpecialNames.CLR_RShift;
+                case ExpressionType.LessThan:
+                    return SpecialNames.CLR_LT;
+                case ExpressionType.GreaterThan:
+                    return SpecialNames.CLR_GT;
+                case ExpressionType.LessThanOrEqual:
+                    return SpecialNames.CLR_LTE;
+                case ExpressionType.GreaterThanOrEqual:
+                    return SpecialNames.CLR_GTE;
+                case ExpressionType.Equal:
+                    return SpecialNames.CLR_Equality;
+                case ExpressionType.NotEqual:
+                    return SpecialNames.CLR_Inequality;
+                case ExpressionType.And:
+                    return SpecialNames.CLR_BitwiseAnd;
+                case ExpressionType.ExclusiveOr:
+                    return SpecialNames.CLR_ExclusiveOr;
+                case ExpressionType.Or:
+                    return SpecialNames.CLR_BitwiseOr;
+
+                // "op_LogicalNot";
+                case ExpressionType.AddAssign:
+                    return SpecialNames.CLR_InPlaceAdd;
+                case ExpressionType.SubtractAssign:
+                    return SpecialNames.CLR_InPlaceSubtract;
+                case ExpressionType.MultiplyAssign:
+                    return SpecialNames.CLR_InPlaceMultiply;
+                case ExpressionType.DivideAssign:
+                    return SpecialNames.CLR_InPlaceDivide;
+                case ExpressionType.ModuloAssign:
+                    return SpecialNames.CLR_InPlaceModulus;
+                case ExpressionType.AndAssign:
+                    return SpecialNames.CLR_InPlaceBitwiseAnd;
+                case ExpressionType.ExclusiveOrAssign:
+                    return SpecialNames.CLR_InPlaceExclusiveOr;
+                case ExpressionType.OrAssign:
+                    return SpecialNames.CLR_InPlaceBitwiseOr;
+                case ExpressionType.LeftShiftAssign:
+                    return SpecialNames.CLR_InPlaceLShift;
+                case ExpressionType.RightShiftAssign:
+                    return SpecialNames.CLR_InPlaceRShift;
+
+                // Unary Operators
+                case ExpressionType.Negate:
+                    return SpecialNames.CLR_UnaryNegation;
+                case ExpressionType.UnaryPlus:
+                    return SpecialNames.CLR_UnaryPlus;
+                case ExpressionType.Not:
+                    return SpecialNames.CLR_LogicalNot;
+                case ExpressionType.OnesComplement:
+                    return SpecialNames.CLR_OnesComplement;
+                case ExpressionType.IsTrue:
+                    return SpecialNames.CLR_True;
+                case ExpressionType.IsFalse:
+                    return SpecialNames.CLR_False;
+
+                case ExpressionType.Increment:
+                    return SpecialNames.CLR_PreIncrement;
+                case ExpressionType.Decrement:
+                    return SpecialNames.CLR_PreDecrement;
+            }
+        }
     }
 }
