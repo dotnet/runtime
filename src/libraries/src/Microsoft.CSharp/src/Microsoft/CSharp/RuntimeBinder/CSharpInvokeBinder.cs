@@ -4,8 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using Microsoft.CSharp.RuntimeBinder.Semantics;
 
@@ -17,16 +15,6 @@ namespace Microsoft.CSharp.RuntimeBinder
     /// </summary>
     internal sealed class CSharpInvokeBinder : InvokeBinder, ICSharpInvokeOrInvokeMemberBinder
     {
-        [ExcludeFromCodeCoverage]
-        public string Name
-        {
-            get
-            {
-                Debug.Fail("Name should not be called for this binder");
-                return null;
-            }
-        }
-
         public BindingFlag BindingFlags => 0;
 
         public EXPR DispatchPayload(RuntimeBinder runtimeBinder, ArgumentObject[] arguments, LocalVariableSymbol[] locals)
@@ -37,15 +25,17 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         public bool IsBinderThatCanHaveRefReceiver => true;
 
-        bool ICSharpInvokeOrInvokeMemberBinder.StaticCall { get { return _argumentInfo[0] != null && _argumentInfo[0].IsStaticType; } }
-        string ICSharpBinder.Name { get { return "Invoke"; } }
-        IList<Type> ICSharpInvokeOrInvokeMemberBinder.TypeArguments { get { return Array.Empty<Type>(); } }
+        bool ICSharpInvokeOrInvokeMemberBinder.StaticCall => _argumentInfo[0] != null && _argumentInfo[0].IsStaticType;
 
-        CSharpCallFlags ICSharpInvokeOrInvokeMemberBinder.Flags { get { return _flags; } }
+        string ICSharpBinder.Name => "Invoke";
+
+        IList<Type> ICSharpInvokeOrInvokeMemberBinder.TypeArguments => Array.Empty<Type>();
+
+        CSharpCallFlags ICSharpInvokeOrInvokeMemberBinder.Flags => _flags;
+
         private readonly CSharpCallFlags _flags;
 
-        public Type CallingContext { get { return _callingContext; } }
-        private readonly Type _callingContext;
+        public Type CallingContext { get; }
 
         public bool IsChecked => false;
 
@@ -53,7 +43,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         CSharpArgumentInfo ICSharpBinder.GetArgumentInfo(int index) => _argumentInfo[index];
 
-        bool ICSharpInvokeOrInvokeMemberBinder.ResultDiscarded { get { return (_flags & CSharpCallFlags.ResultDiscarded) != 0; } }
+        bool ICSharpInvokeOrInvokeMemberBinder.ResultDiscarded => (_flags & CSharpCallFlags.ResultDiscarded) != 0;
 
         private readonly RuntimeBinder _binder;
 
@@ -70,7 +60,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             base(BinderHelper.CreateCallInfo(argumentInfo, 1)) // discard 1 argument: the target object (even if static, arg is type)
         {
             _flags = flags;
-            _callingContext = callingContext;
+            CallingContext = callingContext;
             _argumentInfo = BinderHelper.ToList(argumentInfo);
             _binder = RuntimeBinder.GetInstance();
         }

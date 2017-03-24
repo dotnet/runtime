@@ -45,7 +45,8 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// </summary>
         /// <param name="name">The name of the member to get.</param>
         /// <param name="isCompoundAssignment">True if the assignment comes from a compound assignment in source.</param>
-        /// <param name="callingContext">The <see cref="System.Type"/> that indicates where this operation is defined.</param>
+        /// <param name="isChecked">True if the operation is defined in a checked context; otherwise, false.</param>
+        /// <param name="callingContext">The <see cref="Type"/> that indicates where this operation is defined.</param>
         /// <param name="argumentInfo">The sequence of <see cref="CSharpArgumentInfo"/> instances for the arguments to this operation.</param>
         public CSharpSetMemberBinder(
             string name,

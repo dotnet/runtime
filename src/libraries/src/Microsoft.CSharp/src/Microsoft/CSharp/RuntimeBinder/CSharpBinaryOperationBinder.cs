@@ -45,7 +45,8 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         public bool IsChecked { get; }
 
-        internal bool IsLogicalOperation { get { return (_binopFlags & CSharpBinaryOperationFlags.LogicalOperation) != 0; } }
+        internal bool IsLogicalOperation => (_binopFlags & CSharpBinaryOperationFlags.LogicalOperation) != 0;
+
         private readonly CSharpBinaryOperationFlags _binopFlags;
 
         public Type CallingContext { get; }
@@ -64,6 +65,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <param name="operation">The binary operation kind.</param>
         /// <param name="isChecked">True if the operation is defined in a checked context; otherwise false.</param>        
         /// <param name="binaryOperationFlags">The flags associated with this binary operation.</param>
+        /// <param name="callingContext">The <see cref="Type"/> that indicates where this operation is defined.</param>
         /// <param name="argumentInfo">The sequence of <see cref="CSharpArgumentInfo"/> instances for the arguments to this operation.</param>
         public CSharpBinaryOperationBinder(
             ExpressionType operation,
@@ -88,7 +90,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <param name="arg">The right hand side operand of the dynamic binary operation.</param>
         /// <param name="errorSuggestion">The binding result in case the binding fails, or null.</param>
         /// <returns>The <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
-        public sealed override DynamicMetaObject FallbackBinaryOperation(DynamicMetaObject target, DynamicMetaObject arg, DynamicMetaObject errorSuggestion)
+        public override DynamicMetaObject FallbackBinaryOperation(DynamicMetaObject target, DynamicMetaObject arg, DynamicMetaObject errorSuggestion)
         {
             return BinderHelper.Bind(this, _binder, new [] {target, arg}, _argumentInfo, errorSuggestion);
         }
