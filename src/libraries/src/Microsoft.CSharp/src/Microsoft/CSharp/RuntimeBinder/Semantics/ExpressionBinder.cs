@@ -617,7 +617,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return rval;
             }
 
-            Name pName = GetSymbolLoader().GetNameManager().GetPredefName(PredefinedName.PN_INDEXERINTERNAL);
+            Name pName = GetSymbolLoader().GetNameManager().GetPredefinedName(PredefinedName.PN_INDEXERINTERNAL);
 
             MemberLookup mem = new MemberLookup();
             if (!mem.Lookup(GetSemanticChecker(), type, pObject, ContextForMemberLookup(), pName, 0,
@@ -869,7 +869,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     // to ensure non-null
                     pResult.Type = GetTypes().GetParameterModifier(pResult.Type, false);
 
-                    Name getOrCreateMethodName = GetSymbolLoader().GetNameManager().GetPredefName(PredefinedName.PN_GETORCREATEEVENTREGISTRATIONTOKENTABLE);
+                    Name getOrCreateMethodName = GetSymbolLoader().GetNameManager().GetPredefinedName(PredefinedName.PN_GETORCREATEEVENTREGISTRATIONTOKENTABLE);
                     GetSymbolLoader().RuntimeBinderSymbolTable.PopulateSymbolTableWithName(getOrCreateMethodName.Text, null, fieldType.AssociatedSystemType);
                     MethodSymbol getOrCreateMethod = GetSymbolLoader().LookupAggMember(getOrCreateMethodName, fieldType.getAggregate(), symbmask_t.MASK_MethodSymbol).AsMethodSymbol();
 
@@ -882,7 +882,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                                                         (MemLookFlags)MemLookFlags.None);
 
                     AggregateSymbol fieldTypeSymbol = fieldType.AsAggregateType().GetOwningAggregate();
-                    Name invocationListName = GetSymbolLoader().GetNameManager().GetPredefName(PredefinedName.PN_INVOCATIONLIST);
+                    Name invocationListName = GetSymbolLoader().GetNameManager().GetPredefinedName(PredefinedName.PN_INVOCATIONLIST);
 
                     // InvocationList might not be populated in the symbol table as no one would have called it.
                     GetSymbolLoader().RuntimeBinderSymbolTable.PopulateSymbolTableWithName(invocationListName.Text, null, fieldType.AssociatedSystemType);
@@ -2489,7 +2489,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private Name ekName(ExpressionKind ek)
         {
             Debug.Assert(ek >= ExpressionKind.EK_FIRSTOP && (ek - ExpressionKind.EK_FIRSTOP) < (int)s_EK2NAME.Length);
-            return GetSymbolLoader().GetNameManager().GetPredefName(s_EK2NAME[ek - ExpressionKind.EK_FIRSTOP]);
+            return GetSymbolLoader().GetNameManager().GetPredefinedName(s_EK2NAME[ek - ExpressionKind.EK_FIRSTOP]);
         }
 
         private void checkUnsafe(CType type)

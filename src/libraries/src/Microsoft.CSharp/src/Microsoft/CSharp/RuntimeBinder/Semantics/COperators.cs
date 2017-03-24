@@ -131,7 +131,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private static Name GetMethodName(NameManager namemgr, OperatorKind op)
         {
             Debug.Assert(HasMethodName(op));
-            return namemgr.GetPredefName(GetMethodName(op));
+            return namemgr.GetPredefinedName(GetMethodName(op));
         }
 
         public static bool HasDisplayName(OperatorKind op)

@@ -136,8 +136,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             if (namemgr != null)
             {
-                m_pMissingNameNode = namemgr.GetPredefName(PredefinedName.PN_MISSING);
-                m_pMissingNameSym = namemgr.GetPredefName(PredefinedName.PN_MISSINGSYM);
+                m_pMissingNameNode = namemgr.GetPredefinedName(PredefinedName.PN_MISSING);
+                m_pMissingNameSym = namemgr.GetPredefinedName(PredefinedName.PN_MISSINGSYM);
             }
         }
     }

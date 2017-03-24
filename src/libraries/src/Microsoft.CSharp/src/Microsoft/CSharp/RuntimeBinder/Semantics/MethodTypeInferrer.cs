@@ -186,7 +186,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                     Name pErrorTypeName = _pFixedResults[iParam].AsErrorType().nameText;
                     if (pErrorTypeName != null &&
-                        pErrorTypeName != GetGlobalSymbols().GetNameManager().GetPredefName(PredefinedName.PN_MISSING))
+                        pErrorTypeName != GetGlobalSymbols().GetNameManager().GetPredefinedName(PredefinedName.PN_MISSING))
                     {
                         continue;
                     }
