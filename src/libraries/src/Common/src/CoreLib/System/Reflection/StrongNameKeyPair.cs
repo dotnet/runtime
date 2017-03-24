@@ -50,14 +50,14 @@ namespace System.Reflection
 
         public StrongNameKeyPair(string keyPairContainer)
         {
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_StrongNameSigning);
         }
 
         public byte[] PublicKey
         {
             get
             {
-                throw new PlatformNotSupportedException();
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_StrongNameSigning);
             }
         }
 
