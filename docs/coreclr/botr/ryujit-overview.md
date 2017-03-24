@@ -236,7 +236,7 @@ Utilizes value numbers to propagate and transform based on properties such as no
 
 Optimize array index range checks based on value numbers and assertions.
 
-## <a name=rationalization"/>Rationalization
+## <a name="rationalization"/>Rationalization
 
 As the JIT has evolved, changes have been made to improve the ability to reason over the tree in both “tree order” and “linear order”. These changes have been termed the “rationalization” of the IR. In the spirit of reuse and evolution, some of the changes have been made only in the later (“backend”) components of the JIT. The corresponding transformations are made to the IR by a “Rationalizer” component. It is expected that over time some of these changes will migrate to an earlier place in the JIT phase order:
 
