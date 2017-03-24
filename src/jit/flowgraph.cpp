@@ -7634,7 +7634,14 @@ void Compiler::fgAddSyncMethodEnterExit()
     assert(fgFirstBB->bbFallsThrough());
 
     BasicBlock* tryBegBB  = fgNewBBafter(BBJ_NONE, fgFirstBB, false);
+    BasicBlock* tryNextBB = tryBegBB->bbNext;
     BasicBlock* tryLastBB = fgLastBB;
+
+    // If we have profile data the new block will inherit the next block's weight
+    if (tryNextBB->hasProfileWeight())
+    {
+        tryBegBB->inheritWeight(tryNextBB);
+    }
 
     // Create a block for the fault.
 
@@ -12687,20 +12694,47 @@ void Compiler::fgComputeEdgeWeights()
     //
     if (fgIsUsingProfileWeights())
     {
-        // If the first block has one ref then it's weight is the fgCalledCount
-        // otherwise we have backedge's into the first block so instead
-        // we use the sum of the return block weights.
-        // If the profile data has a 0 for the returnWeoght
-        // then just use the first block weight rather than the 0
-        //
-        if ((fgFirstBB->countOfInEdges() == 1) || (returnWeight == 0))
+        BasicBlock* firstILBlock = fgFirstBB; // The first block for IL code (i.e. for the IL code at offset 0)
+
+        // Did we allocate a scratch block as the new first BB?
+        if (fgFirstBBisScratch())
         {
-            fgCalledCount = fgFirstBB->bbWeight;
+            firstILBlock = firstILBlock->bbNext;
+            // The second block is expected to have a profile-derived weight
+            assert(firstILBlock->hasProfileWeight());
+        }
+
+        // If the first block only has one ref then we use it's weight
+        // for fgCalledCount. Otherwise we have backedge's into the first block,
+        // so instead we use the sum of the return block weights for fgCalledCount.
+        //
+        // If the profile data has a 0 for the returnWeight
+        // (i.e. the function never returns because it always throws)
+        // then just use the first block weight rather than 0.
+        //
+        if ((firstILBlock->countOfInEdges() == 1) || (returnWeight == 0))
+        {
+            assert(firstILBlock->hasProfileWeight()); // This should always be a profile-derived weight
+            fgCalledCount = firstILBlock->bbWeight;
         }
         else
         {
             fgCalledCount = returnWeight;
         }
+
+        // If we allocated a scratch block as the first BB then we need
+        // to set its profile-derived weight to be fgCalledCount
+        if (fgFirstBBisScratch())
+        {
+            fgFirstBB->setBBProfileWeight(fgCalledCount);
+        }
+
+#if DEBUG
+        if (verbose)
+        {
+            printf("We are using the Profile Weights and fgCalledCount is %d.\n", fgCalledCount);
+        }
+#endif
     }
 
     // Now we will compute the initial flEdgeWeightMin and flEdgeWeightMax values
@@ -13832,10 +13866,9 @@ bool Compiler::fgOptimizeUncondBranchToSimpleCond(BasicBlock* block, BasicBlock*
     // add an unconditional block after this block to jump to the target block's fallthrough block
 
     BasicBlock* next = fgNewBBafter(BBJ_ALWAYS, block, true);
-    next->bbFlags    = block->bbFlags | BBF_INTERNAL;
-    next->bbFlags &= ~(BBF_TRY_BEG | BBF_LOOP_HEAD | BBF_LOOP_CALL0 | BBF_LOOP_CALL1 | BBF_HAS_LABEL | BBF_JMP_TARGET |
-                       BBF_FUNCLET_BEG | BBF_LOOP_PREHEADER | BBF_KEEP_BBJ_ALWAYS);
 
+    // The new block 'next' will inherit its weight from 'block'
+    next->inheritWeight(block);
     next->bbJumpDest = target->bbNext;
     target->bbNext->bbFlags |= BBF_JMP_TARGET;
     fgAddRefPred(next, block);
