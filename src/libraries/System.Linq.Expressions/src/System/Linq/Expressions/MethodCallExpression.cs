@@ -181,7 +181,7 @@ namespace System.Linq.Expressions
 
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
-            return ReturnReadOnly(ref _arguments);
+            return ExpressionUtils.ReturnReadOnly(ref _arguments);
         }
 
         internal override bool SameArguments(ICollection<Expression> arguments) =>
@@ -215,7 +215,7 @@ namespace System.Linq.Expressions
 
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
-            return ReturnReadOnly(ref _arguments);
+            return ExpressionUtils.ReturnReadOnly(ref _arguments);
         }
 
         internal override MethodCallExpression Rewrite(Expression instance, IReadOnlyList<Expression> args)
@@ -272,7 +272,7 @@ namespace System.Linq.Expressions
         {
             switch (index)
             {
-                case 0: return ReturnObject<Expression>(_arg0);
+                case 0: return ExpressionUtils.ReturnObject<Expression>(_arg0);
                 default: throw new ArgumentOutOfRangeException(nameof(index));
             }
         }
@@ -281,7 +281,7 @@ namespace System.Linq.Expressions
 
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
-            return ReturnReadOnly(this, ref _arg0);
+            return ExpressionUtils.ReturnReadOnly(this, ref _arg0);
         }
 
         internal override bool SameArguments(ICollection<Expression> arguments)
@@ -291,7 +291,7 @@ namespace System.Linq.Expressions
                 using (IEnumerator<Expression> en = arguments.GetEnumerator())
                 {
                     en.MoveNext();
-                    return en.Current == ReturnObject<Expression>(_arg0);
+                    return en.Current == ExpressionUtils.ReturnObject<Expression>(_arg0);
                 }
             }
 
@@ -308,7 +308,7 @@ namespace System.Linq.Expressions
                 return Expression.Call(Method, args[0]);
             }
 
-            return Expression.Call(Method, ReturnObject<Expression>(_arg0));
+            return Expression.Call(Method, ExpressionUtils.ReturnObject<Expression>(_arg0));
         }
     }
 
@@ -328,7 +328,7 @@ namespace System.Linq.Expressions
         {
             switch (index)
             {
-                case 0: return ReturnObject<Expression>(_arg0);
+                case 0: return ExpressionUtils.ReturnObject<Expression>(_arg0);
                 case 1: return _arg1;
                 default: throw new ArgumentOutOfRangeException(nameof(index));
             }
@@ -362,7 +362,7 @@ namespace System.Linq.Expressions
 
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
-            return ReturnReadOnly(this, ref _arg0);
+            return ExpressionUtils.ReturnReadOnly(this, ref _arg0);
         }
 
         internal override MethodCallExpression Rewrite(Expression instance, IReadOnlyList<Expression> args)
@@ -374,7 +374,7 @@ namespace System.Linq.Expressions
             {
                 return Expression.Call(Method, args[0], args[1]);
             }
-            return Expression.Call(Method, ReturnObject<Expression>(_arg0), _arg1);
+            return Expression.Call(Method, ExpressionUtils.ReturnObject<Expression>(_arg0), _arg1);
         }
     }
 
@@ -395,7 +395,7 @@ namespace System.Linq.Expressions
         {
             switch (index)
             {
-                case 0: return ReturnObject<Expression>(_arg0);
+                case 0: return ExpressionUtils.ReturnObject<Expression>(_arg0);
                 case 1: return _arg1;
                 case 2: return _arg2;
                 default: throw new ArgumentOutOfRangeException(nameof(index));
@@ -434,7 +434,7 @@ namespace System.Linq.Expressions
 
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
-            return ReturnReadOnly(this, ref _arg0);
+            return ExpressionUtils.ReturnReadOnly(this, ref _arg0);
         }
 
         internal override MethodCallExpression Rewrite(Expression instance, IReadOnlyList<Expression> args)
@@ -446,7 +446,7 @@ namespace System.Linq.Expressions
             {
                 return Expression.Call(Method, args[0], args[1], args[2]);
             }
-            return Expression.Call(Method, ReturnObject<Expression>(_arg0), _arg1, _arg2);
+            return Expression.Call(Method, ExpressionUtils.ReturnObject<Expression>(_arg0), _arg1, _arg2);
         }
     }
 
@@ -468,7 +468,7 @@ namespace System.Linq.Expressions
         {
             switch (index)
             {
-                case 0: return ReturnObject<Expression>(_arg0);
+                case 0: return ExpressionUtils.ReturnObject<Expression>(_arg0);
                 case 1: return _arg1;
                 case 2: return _arg2;
                 case 3: return _arg3;
@@ -512,7 +512,7 @@ namespace System.Linq.Expressions
 
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
-            return ReturnReadOnly(this, ref _arg0);
+            return ExpressionUtils.ReturnReadOnly(this, ref _arg0);
         }
 
         internal override MethodCallExpression Rewrite(Expression instance, IReadOnlyList<Expression> args)
@@ -524,7 +524,7 @@ namespace System.Linq.Expressions
             {
                 return Expression.Call(Method, args[0], args[1], args[2], args[3]);
             }
-            return Expression.Call(Method, ReturnObject<Expression>(_arg0), _arg1, _arg2, _arg3);
+            return Expression.Call(Method, ExpressionUtils.ReturnObject<Expression>(_arg0), _arg1, _arg2, _arg3);
         }
     }
 
@@ -547,7 +547,7 @@ namespace System.Linq.Expressions
         {
             switch (index)
             {
-                case 0: return ReturnObject<Expression>(_arg0);
+                case 0: return ExpressionUtils.ReturnObject<Expression>(_arg0);
                 case 1: return _arg1;
                 case 2: return _arg2;
                 case 3: return _arg3;
@@ -596,7 +596,7 @@ namespace System.Linq.Expressions
 
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
-            return ReturnReadOnly(this, ref _arg0);
+            return ExpressionUtils.ReturnReadOnly(this, ref _arg0);
         }
 
         internal override MethodCallExpression Rewrite(Expression instance, IReadOnlyList<Expression> args)
@@ -609,7 +609,7 @@ namespace System.Linq.Expressions
                 return Expression.Call(Method, args[0], args[1], args[2], args[3], args[4]);
             }
 
-            return Expression.Call(Method, ReturnObject<Expression>(_arg0), _arg1, _arg2, _arg3, _arg4);
+            return Expression.Call(Method, ExpressionUtils.ReturnObject<Expression>(_arg0), _arg1, _arg2, _arg3, _arg4);
         }
     }
 
@@ -658,7 +658,7 @@ namespace System.Linq.Expressions
         {
             switch (index)
             {
-                case 0: return ReturnObject<Expression>(_arg0);
+                case 0: return ExpressionUtils.ReturnObject<Expression>(_arg0);
                 default: throw new ArgumentOutOfRangeException(nameof(index));
             }
         }
@@ -672,7 +672,7 @@ namespace System.Linq.Expressions
                 using (IEnumerator<Expression> en = arguments.GetEnumerator())
                 {
                     en.MoveNext();
-                    return en.Current == ReturnObject<Expression>(_arg0);
+                    return en.Current == ExpressionUtils.ReturnObject<Expression>(_arg0);
                 }
             }
 
@@ -681,7 +681,7 @@ namespace System.Linq.Expressions
 
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
-            return ReturnReadOnly(this, ref _arg0);
+            return ExpressionUtils.ReturnReadOnly(this, ref _arg0);
         }
 
         internal override MethodCallExpression Rewrite(Expression instance, IReadOnlyList<Expression> args)
@@ -693,7 +693,7 @@ namespace System.Linq.Expressions
             {
                 return Expression.Call(instance, Method, args[0]);
             }
-            return Expression.Call(instance, Method, ReturnObject<Expression>(_arg0));
+            return Expression.Call(instance, Method, ExpressionUtils.ReturnObject<Expression>(_arg0));
         }
     }
 
@@ -713,7 +713,7 @@ namespace System.Linq.Expressions
         {
             switch (index)
             {
-                case 0: return ReturnObject<Expression>(_arg0);
+                case 0: return ExpressionUtils.ReturnObject<Expression>(_arg0);
                 case 1: return _arg1;
                 default: throw new ArgumentOutOfRangeException(nameof(index));
             }
@@ -747,7 +747,7 @@ namespace System.Linq.Expressions
 
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
-            return ReturnReadOnly(this, ref _arg0);
+            return ExpressionUtils.ReturnReadOnly(this, ref _arg0);
         }
 
         internal override MethodCallExpression Rewrite(Expression instance, IReadOnlyList<Expression> args)
@@ -759,7 +759,7 @@ namespace System.Linq.Expressions
             {
                 return Expression.Call(instance, Method, args[0], args[1]);
             }
-            return Expression.Call(instance, Method, ReturnObject<Expression>(_arg0), _arg1);
+            return Expression.Call(instance, Method, ExpressionUtils.ReturnObject<Expression>(_arg0), _arg1);
         }
     }
 
@@ -780,7 +780,7 @@ namespace System.Linq.Expressions
         {
             switch (index)
             {
-                case 0: return ReturnObject<Expression>(_arg0);
+                case 0: return ExpressionUtils.ReturnObject<Expression>(_arg0);
                 case 1: return _arg1;
                 case 2: return _arg2;
                 default: throw new ArgumentOutOfRangeException(nameof(index));
@@ -819,7 +819,7 @@ namespace System.Linq.Expressions
 
         internal override ReadOnlyCollection<Expression> GetOrMakeArguments()
         {
-            return ReturnReadOnly(this, ref _arg0);
+            return ExpressionUtils.ReturnReadOnly(this, ref _arg0);
         }
 
         internal override MethodCallExpression Rewrite(Expression instance, IReadOnlyList<Expression> args)
@@ -831,7 +831,7 @@ namespace System.Linq.Expressions
             {
                 return Expression.Call(instance, Method, args[0], args[1], args[2]);
             }
-            return Expression.Call(instance, Method, ReturnObject<Expression>(_arg0), _arg1, _arg2);
+            return Expression.Call(instance, Method, ExpressionUtils.ReturnObject<Expression>(_arg0), _arg1, _arg2);
         }
     }
 
@@ -1257,7 +1257,7 @@ namespace System.Linq.Expressions
             else
             {
                 if (instance == null) throw new ArgumentException(Strings.OnlyStaticMethodsHaveNullInstance, nameof(method));
-                RequiresCanRead(instance, nameof(instance));
+                ExpressionUtils.RequiresCanRead(instance, nameof(instance));
                 ValidateCallInstanceType(instance.Type, method);
             }
         }
@@ -1403,7 +1403,7 @@ namespace System.Linq.Expressions
         /// <paramref name="array"/>.Type does not represent an array type.-or-The rank of <paramref name="array"/>.Type does not match the number of elements in <paramref name="indexes"/>.-or-The <see cref="Expression.Type"/> property of one or more elements of <paramref name="indexes"/> does not represent the <see cref="Int32"/> type.</exception>
         public static MethodCallExpression ArrayIndex(Expression array, IEnumerable<Expression> indexes)
         {
-            RequiresCanRead(array, nameof(array));
+            ExpressionUtils.RequiresCanRead(array, nameof(array), -1);
             ContractUtils.RequiresNotNull(indexes, nameof(indexes));
 
             Type arrayType = array.Type;
@@ -1422,7 +1422,7 @@ namespace System.Linq.Expressions
             {
                 Expression e = indexList[i];
 
-                RequiresCanRead(e, nameof(indexes), i);
+                ExpressionUtils.RequiresCanRead(e, nameof(indexes), i);
                 if (e.Type != typeof(int))
                 {
                     throw Error.ArgumentMustBeArrayIndexType(nameof(indexes), i);

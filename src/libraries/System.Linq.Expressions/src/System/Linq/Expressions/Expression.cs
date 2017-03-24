@@ -229,79 +229,13 @@ comparand: null
             }
         }
 
-        /// <summary>
-        /// Helper used for ensuring we only return 1 instance of a ReadOnlyCollection of T.
-        ///
-        /// This is called from various methods where we internally hold onto an IList of T
-        /// or a read-only collection of T.  We check to see if we've already returned a
-        /// read-only collection of T and if so simply return the other one.  Otherwise we do
-        /// a thread-safe replacement of the list w/ a read-only collection which wraps it.
-        ///
-        /// Ultimately this saves us from having to allocate a ReadOnlyCollection for our
-        /// data types because the compiler is capable of going directly to the IList of T.
-        /// </summary>
-        internal static ReadOnlyCollection<T> ReturnReadOnly<T>(ref IReadOnlyList<T> collection)
-        {
-            return ExpressionUtils.ReturnReadOnly<T>(ref collection);
-        }
-
-        /// <summary>
-        /// Helper used for ensuring we only return 1 instance of a ReadOnlyCollection of T.
-        ///
-        /// This is similar to the ReturnReadOnly of T. This version supports nodes which hold
-        /// onto multiple Expressions where one is typed to object.  That object field holds either
-        /// an expression or a ReadOnlyCollection of Expressions.  When it holds a ReadOnlyCollection
-        /// the IList which backs it is a ListArgumentProvider which uses the Expression which
-        /// implements IArgumentProvider to get 2nd and additional values.  The ListArgumentProvider
-        /// continues to hold onto the 1st expression.
-        ///
-        /// This enables users to get the ReadOnlyCollection w/o it consuming more memory than if
-        /// it was just an array.  Meanwhile The DLR internally avoids accessing  which would force
-        /// the read-only collection to be created resulting in a typical memory savings.
-        /// </summary>
-        internal static ReadOnlyCollection<Expression> ReturnReadOnly(IArgumentProvider provider, ref object collection)
-        {
-            return ExpressionUtils.ReturnReadOnly(provider, ref collection);
-        }
-
-        /// <summary>
-        /// See overload with <see cref="IArgumentProvider"/> for more information. 
-        /// </summary>
-        internal static ReadOnlyCollection<ParameterExpression> ReturnReadOnly(IParameterProvider provider, ref object collection)
-        {
-            return ExpressionUtils.ReturnReadOnly(provider, ref collection);
-        }
-
-        /// <summary>
-        /// Helper which is used for specialized subtypes which use ReturnReadOnly(ref object, ...).
-        /// This is the reverse version of ReturnReadOnly which takes an IArgumentProvider.
-        ///
-        /// This is used to return the 1st argument.  The 1st argument is typed as object and either
-        /// contains a ReadOnlyCollection or the Expression.  We check for the Expression and if it's
-        /// present we return that, otherwise we return the 1st element of the ReadOnlyCollection.
-        /// </summary>
-        internal static T ReturnObject<T>(object collectionOrT) where T : class
-        {
-            return ExpressionUtils.ReturnObject<T>(collectionOrT);
-        }
-
-        private static void RequiresCanRead(Expression expression, string paramName)
-        {
-            ExpressionUtils.RequiresCanRead(expression, paramName, -1);
-        }
-
-        private static void RequiresCanRead(Expression expression, string paramName, int index)
-        {
-            ExpressionUtils.RequiresCanRead(expression, paramName, index);
-        }
-
         private static void RequiresCanRead(IReadOnlyList<Expression> items, string paramName)
         {
             Debug.Assert(items != null);
             // this is called a lot, avoid allocating an enumerator if we can...
             for (int i = 0, n = items.Count; i < n; i++)
             {
-                RequiresCanRead(items[i], paramName, i);
+                ExpressionUtils.RequiresCanRead(items[i], paramName, i);
             }
         }
 

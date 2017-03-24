@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Dynamic.Utils;
 
 namespace System.Linq.Expressions
 {
@@ -106,7 +107,7 @@ namespace System.Linq.Expressions
         /// <returns>The created <see cref="LoopExpression"/>.</returns>
         public static LoopExpression Loop(Expression body, LabelTarget @break, LabelTarget @continue)
         {
-            RequiresCanRead(body, nameof(body));
+            ExpressionUtils.RequiresCanRead(body, nameof(body));
             if (@continue != null && @continue.Type != typeof(void)) throw Error.LabelTypeMustBeVoid(nameof(@continue));
             return new LoopExpression(body, @break, @continue);
         }
