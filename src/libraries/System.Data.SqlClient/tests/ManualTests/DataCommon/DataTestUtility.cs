@@ -42,6 +42,20 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             return uniqueName;
         }
 
+        public static bool IsLocalDBInstalled()
+        {
+            string localDBInstallationFlag = Environment.GetEnvironmentVariable("TEST_LOCALDB_INSTALLED");
+            if (!string.IsNullOrWhiteSpace(localDBInstallationFlag))
+            {
+                int result;
+                if(int.TryParse(localDBInstallationFlag.Trim(), out result))
+                {
+                    return result == 1;
+                }
+            }
+            return false;
+        }
+
         private static bool CheckException<TException>(Exception ex, string exceptionMessage, bool innerExceptionMustBeNull) where TException : Exception
         {
             return ((ex != null) && (ex is TException) &&
