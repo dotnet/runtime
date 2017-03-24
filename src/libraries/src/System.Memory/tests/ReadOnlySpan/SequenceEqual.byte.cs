@@ -29,6 +29,27 @@ namespace System.SpanTests
         }
 
         [Fact]
+        public static void SequenceEqualArrayImplicit_Byte()
+        {
+            byte[] a = { 4, 5, 6 };
+            ReadOnlySpan<byte> first = new ReadOnlySpan<byte>(a, 0, 3);
+            bool b = first.SequenceEqual(a);
+            Assert.True(b);
+        }
+
+        [Fact]
+        public static void SequenceEqualArraySegmentImplicit_Byte()
+        {
+            byte[] src = { 1, 2, 3 };
+            byte[] dst = { 5, 1, 2, 3, 10 };
+            var segment = new ArraySegment<byte>(dst, 1, 3);
+
+            ReadOnlySpan<byte> first = new ReadOnlySpan<byte>(src, 0, 3);
+            bool b = first.SequenceEqual(segment);
+            Assert.True(b);
+        }
+
+        [Fact]
         public static void LengthMismatchSequenceEqual_Byte()
         {
             byte[] a = { 4, 5, 6 };

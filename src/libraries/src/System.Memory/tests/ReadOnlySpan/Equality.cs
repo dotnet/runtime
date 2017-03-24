@@ -89,5 +89,22 @@ namespace System.SpanTests
             Assert.False(left == right);
             Assert.False(!(left != right));
         }
+
+        [Fact]
+        public static void CannotCallEqualsOnSpan()
+        {
+            ReadOnlySpan<int> left = new ReadOnlySpan<int>(new int[0]);
+            try
+            {
+#pragma warning disable 0618
+                bool result = left.Equals(new object());
+#pragma warning restore 0618
+                Assert.True(false);
+            }
+            catch (Exception ex)
+            {
+                Assert.True(ex is NotSupportedException);
+            }
+        }
     }
 }

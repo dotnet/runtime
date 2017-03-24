@@ -81,6 +81,15 @@ namespace System.SpanTests
             public int I;
             public string S;
         }
+
+        private enum TestEnum
+        {
+            e0,
+            e1,
+            e2,
+            e3,
+            e4,
+        }
     }
 }
 

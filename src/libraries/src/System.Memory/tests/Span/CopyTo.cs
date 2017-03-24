@@ -21,6 +21,32 @@ namespace System.SpanTests
         }
 
         [Fact]
+        public static void TryCopyToArraySegmentImplicit()
+        {
+            int[] src = { 1, 2, 3 };
+            int[] dst = { 5, 99, 100, 101, 10 };
+            var segment = new ArraySegment<int>(dst, 1, 3);
+
+            Span<int> srcSpan = new Span<int>(src);
+            bool success = srcSpan.TryCopyTo(segment);
+            Assert.True(success);
+            Assert.Equal<int>(src, segment);
+        }
+
+        [Fact]
+        public static void TryCopyToEmpty()
+        {
+            int[] src = {};
+            int[] dst = { 99, 100, 101 };
+
+            Span<int> srcSpan = new Span<int>(src);
+            bool success = srcSpan.TryCopyTo(dst);
+            Assert.True(success);
+            int[] expected = { 99, 100, 101 };
+            Assert.Equal<int>(expected, dst);
+        }
+
+        [Fact]
         public static void TryCopyToLonger()
         {
             int[] src = { 1, 2, 3 };
