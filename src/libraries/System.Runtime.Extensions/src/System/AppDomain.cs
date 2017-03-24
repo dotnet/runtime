@@ -90,7 +90,7 @@ namespace System
         public static AppDomain CreateDomain(string friendlyName)
         {
             if (friendlyName == null) throw new ArgumentNullException(nameof(friendlyName));
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_AppDomains);
+            throw new PlatformNotSupportedException();
         }
 
         public int ExecuteAssembly(string assemblyFile) => ExecuteAssembly(assemblyFile, null);
@@ -108,7 +108,8 @@ namespace System
 
         public int ExecuteAssembly(string assemblyFile, string[] args, byte[] hashValue, Configuration.Assemblies.AssemblyHashAlgorithm hashAlgorithm)
         {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); // This api is only meaningful for very specific partial trust/CAS scenarios
+            // This api is only meaningful for very specific partial trust/CAS hence not supporting
+            throw new PlatformNotSupportedException();
         }
 
         private int ExecuteAssembly(Assembly assembly, string[] args)
@@ -197,7 +198,7 @@ namespace System
                 {
                     throw new ArgumentException(SR.Arg_MustBeTrue);
                 }
-                throw new PlatformNotSupportedException(SR.PlatformNotSupported_AppDomain_ResMon);
+                throw new PlatformNotSupportedException();
             }
         }
 
@@ -209,7 +210,7 @@ namespace System
 
         public TimeSpan MonitoringTotalProcessorTime { get { throw CreateResMonNotAvailException(); } }
 
-        private static Exception CreateResMonNotAvailException() => new InvalidOperationException(SR.PlatformNotSupported_AppDomain_ResMon);
+        private static Exception CreateResMonNotAvailException() => new InvalidOperationException(SR.AppDomain_ResMonNotAvail);
 
         [ObsoleteAttribute("AppDomain.GetCurrentThreadId has been deprecated because it does not provide a stable Id when managed threads are running on fibers (aka lightweight threads). To get a stable identifier for a managed thread, use the ManagedThreadId property on Thread.  http://go.microsoft.com/fwlink/?linkid=14202", false)]
         public static int GetCurrentThreadId() => Environment.CurrentManagedThreadId;
