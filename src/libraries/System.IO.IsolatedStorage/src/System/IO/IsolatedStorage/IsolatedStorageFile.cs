@@ -568,33 +568,25 @@ namespace System.IO.IsolatedStorage
         public static IsolatedStorageFile GetStore(IsolatedStorageScope scope, Type applicationEvidenceType)
         {
             // Scope MUST be Application
-
-            // https://github.com/dotnet/corefx/issues/10935
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); // https://github.com/dotnet/corefx/issues/10935
         }
 
         public static IsolatedStorageFile GetStore(IsolatedStorageScope scope, object applicationIdentity)
         {
             // Scope MUST be Application
-
-            // https://github.com/dotnet/corefx/issues/10935
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); // https://github.com/dotnet/corefx/issues/10935
         }
 
         public static IsolatedStorageFile GetStore(IsolatedStorageScope scope, Type domainEvidenceType, Type assemblyEvidenceType)
         {
             // Scope MUST NOT be Application (assembly is assumed otherwise)
-
-            // https://github.com/dotnet/corefx/issues/10935
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); // https://github.com/dotnet/corefx/issues/10935
         }
 
         public static IsolatedStorageFile GetStore(IsolatedStorageScope scope, object domainIdentity, object assemblyIdentity)
         {
             // Scope MUST NOT be Application (assembly is assumed otherwise)
-
-            // https://github.com/dotnet/corefx/issues/10935
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); // https://github.com/dotnet/corefx/issues/10935
         }
 
         // https://github.com/dotnet/corefx/issues/10935

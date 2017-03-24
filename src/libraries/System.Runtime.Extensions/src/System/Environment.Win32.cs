@@ -217,14 +217,7 @@ namespace System
             int hr = Interop.Shell32.SHGetKnownFolderPath(folderId, (uint)option, IntPtr.Zero, out path);
             if (hr != 0) // Not S_OK
             {
-                if (hr == Interop.Shell32.COR_E_PLATFORMNOTSUPPORTED)
-                {
-                    throw new PlatformNotSupportedException();
-                }
-                else
-                {
-                    return string.Empty;
-                }
+                return string.Empty;
             }
 
             return path;

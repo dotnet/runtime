@@ -124,6 +124,9 @@
   <data name="ObjectDisposed_RegKeyClosed" xml:space="preserve">
     <value>Cannot access a closed registry key.</value>
   </data>
+  <data name="PlatformNotSupported_Registry" xml:space="preserve">
+    <value>Registry is not supported on this platform.</value>
+  </data>
   <data name="Security_RegistryPermission" xml:space="preserve">
     <value>Requested registry access is not allowed.</value>
   </data>
