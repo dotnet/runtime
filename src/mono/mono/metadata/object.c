@@ -6578,7 +6578,7 @@ mono_object_handle_isinst_mbyref (MonoObjectHandle obj, MonoClass *klass, MonoEr
 
 		pa [0] = MONO_HANDLE_RAW (reftype);
 		pa [1] = MONO_HANDLE_RAW (obj);
-		MonoObject *res = mono_runtime_invoke_checked (im, rp, pa, error);
+		MonoObject *res = mono_runtime_invoke_checked (im, MONO_HANDLE_RAW (rp), pa, error);
 		if (!is_ok (error))
 			goto leave;
 
