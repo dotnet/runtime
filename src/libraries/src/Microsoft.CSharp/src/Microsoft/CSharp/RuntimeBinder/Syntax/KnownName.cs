@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 
 namespace Microsoft.CSharp.RuntimeBinder.Syntax
@@ -25,31 +26,27 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
             public PredefinedName PredefinedName { get; } = PredefinedName.PN_COUNT;
         }
 
-        private static NameTable s_knownNames;
+        private static readonly NameTable s_knownNames = GetKnownNames();
 
-        private void InitKnownNames()
+        private static NameTable GetKnownNames()
         {
-            if (s_knownNames == null)
+            NameTable table = new NameTable();
+
+            // add all predefined names
+            Debug.Assert(s_predefinedNames.Length == (int)PredefinedName.PN_COUNT);
+            Debug.Assert(s_predefinedNames.Select((n, i) => (int)n.PredefinedName == i).All(e => e));
+            foreach (KnownName name in s_predefinedNames)
             {
-                NameTable tmp = new NameTable();
-
-                // add all predefined names
-                Debug.Assert(s_predefinedNames.Length == (int)PredefinedName.PN_COUNT);
-                for (int i = 0, n = s_predefinedNames.Length; i < n; i++)
-                {
-                    Debug.Assert((int)s_predefinedNames[i].PredefinedName == i);
-                    Name name = s_predefinedNames[i];
-                    tmp.Add(name);
-                }
-
-                // add all other names
-                foreach (KnownName name in s_otherNames)
-                {
-                    tmp.Add(name);
-                }
-
-                Interlocked.CompareExchange<NameTable>(ref s_knownNames, tmp, null);
+                table.Add(name);
             }
+
+            // add all other names
+            foreach (KnownName name in s_otherNames)
+            {
+                table.Add(name);
+            }
+
+            return table;
         }
 
         private static readonly KnownName[] s_predefinedNames = new KnownName[(int)PredefinedName.PN_COUNT] {
