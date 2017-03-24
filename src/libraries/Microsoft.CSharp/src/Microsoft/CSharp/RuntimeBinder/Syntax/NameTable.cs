@@ -8,15 +8,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
     {
         private sealed class Entry
         {
-            internal readonly Name name;
-            internal readonly int hashCode;
-            internal Entry next;
+            public readonly Name Name;
+            public readonly int HashCode;
+            public Entry Next;
 
-            internal Entry(Name name, int hashCode, Entry next)
+            public Entry(Name name, int hashCode, Entry next)
             {
-                this.name = name;
-                this.hashCode = hashCode;
-                this.next = next;
+                Name = name;
+                HashCode = hashCode;
+                Next = next;
             }
         }
 
@@ -36,13 +36,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
         public Name Add(string key)
         {
             int hashCode = ComputeHashCode(key);
-            for (Entry e = _entries[hashCode & _mask]; e != null; e = e.next)
+            for (Entry e = _entries[hashCode & _mask]; e != null; e = e.Next)
             {
-                if (e.hashCode == hashCode && e.name.Text.Equals(key))
+                if (e.HashCode == hashCode && e.Name.Text.Equals(key))
                 {
-                    return e.name;
+                    return e.Name;
                 }
             }
+
             return AddEntry(new Name(key), hashCode);
         }
 
@@ -50,26 +51,28 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
         {
             int hashCode = ComputeHashCode(name.Text);
             // make sure it doesn't already exist
-            for (Entry e = _entries[hashCode & _mask]; e != null; e = e.next)
+            for (Entry e = _entries[hashCode & _mask]; e != null; e = e.Next)
             {
-                if (e.hashCode == hashCode && e.name.Text.Equals(name.Text))
+                if (e.HashCode == hashCode && e.Name.Text.Equals(name.Text))
                 {
                     throw Error.InternalCompilerError();
                 }
             }
+
             AddEntry(name, hashCode);
         }
 
         public Name Lookup(string key)
         {
             int hashCode = ComputeHashCode(key);
-            for (Entry e = _entries[hashCode & _mask]; e != null; e = e.next)
+            for (Entry e = _entries[hashCode & _mask]; e != null; e = e.Next)
             {
-                if (e.hashCode == hashCode && e.name.Text.Equals(key))
+                if (e.HashCode == hashCode && e.Name.Text.Equals(key))
                 {
-                    return e.name;
+                    return e.Name;
                 }
             }
+
             return null;
         }
 
@@ -103,7 +106,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
             {
                 Grow();
             }
-            return e.name;
+
+            return e.Name;
         }
 
         private void Grow()
@@ -118,9 +122,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
                 Entry e = oldEntries[i];
                 while (e != null)
                 {
-                    int newIndex = e.hashCode & newMask;
-                    Entry tmp = e.next;
-                    e.next = newEntries[newIndex];
+                    int newIndex = e.HashCode & newMask;
+                    Entry tmp = e.Next;
+                    e.Next = newEntries[newIndex];
                     newEntries[newIndex] = e;
                     e = tmp;
                 }
