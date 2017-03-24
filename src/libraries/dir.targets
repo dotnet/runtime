@@ -29,12 +29,83 @@
     </ItemGroup>
   </Target>
 
+  <!-- Corefx-specific binplacing properties -->
+  <PropertyGroup>
+    <IsRuntimeAssembly Condition="'$(IsRuntimeAssembly)'=='' AND '$(IsReferenceAssembly)' != 'true' AND '$(BinPlaceRef)' != 'true' AND '$(IsTestProject)' != 'true'">true</IsRuntimeAssembly>
+    <!-- Try to determine if this is a simple library without a ref project.
+         https://github.com/dotnet/corefx/issues/14291 is tracking cleaning this up -->
+    <IsRuntimeAndReferenceAssembly Condition="'$(IsRuntimeAndReferenceAssembly)' == '' and '$(IsRuntimeAssembly)' == 'true' and Exists('$(SourceDir)/$(MSBuildProjectName)') and !Exists('$(SourceDir)/$(MSBuildProjectName)/ref') and !$(MSBuildProjectName.StartsWith('System.Private'))">true</IsRuntimeAndReferenceAssembly>
+    <IsNETCoreAppRef Condition="'$(IsNETCoreAppRef)' == ''">$(IsNETCoreApp)</IsNETCoreAppRef>
+    <IsUAPRef Condition="'$(IsUAPRef)' == ''">$(IsUAP)</IsUAPRef>
+
+    <BuildingDesktopFacade Condition="'$(IsDesktopFacade)' == 'true' And ('$(TargetGroup)' == 'netfx' Or $(TargetGroup.StartsWith('net4')))" >true</BuildingDesktopFacade>
+
+    <!-- if building desktop facade, we don't bin place the refs -->
+    <BinPlaceRef Condition="'$(BinPlaceRef)' == '' And '$(BuildingDesktopFacade)' != 'true' And ('$(IsReferenceAssembly)' == 'true' OR '$(IsRuntimeAndReferenceAssembly)' == 'true')">true</BinPlaceRef>
+    <BinPlaceRuntime Condition="'$(BinPlaceRuntime)' == '' And ('$(IsRuntimeAssembly)' == 'true' OR '$(IsRuntimeAndReferenceAssembly)' == 'true')">true</BinPlaceRuntime>
+
+    <!-- if building desktop facade and bin placing the runtime, then we need to bin place the refs too -->
+    <BinPlaceRef Condition="'$(BuildingDesktopFacade)' == 'true' And '$(BinPlaceRuntime)' == 'true'">true</BinPlaceRef>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'@(BinPlaceConfiguration)' == ''">
+    <!-- binplace to directories for the target vertical -->
+    <BinPlaceConfiguration Include="$(BuildConfiguration)">
+      <RefPath>$(BuildConfigurationRefPath)</RefPath>
+      <RuntimePath>$(RuntimePath)</RuntimePath>
+    </BinPlaceConfiguration>
+
+    <!-- binplace to directories for packages -->
+    <BinPlaceConfiguration Condition="'$(IsNETCoreApp)' == 'true' AND '$(BuildingNETCoreAppVertical)' == 'true'" Include="netcoreapp-$(_bc_OSGroup)">
+      <PackageFileRefPath Condition="'$(IsNETCoreAppRef)' == 'true'">$(NETCoreAppPackageRefPath)</PackageFileRefPath>
+      <PackageFileRuntimePath>$(NETCoreAppPackageRuntimePath)</PackageFileRuntimePath>
+      <RuntimePath Condition="'$(BinPlaceNETCoreAppPackage)' == 'true'">$(NETCoreAppPackageRuntimePath)\..\runtime</RuntimePath>
+    </BinPlaceConfiguration>
+    <BinPlaceConfiguration Condition="'$(IsUAP)' == 'true' AND '$(BuildingUAPVertical)' == 'true'" Include="uap-$(_bc_OSGroup)">
+      <PackageFileRefPath Condition="'$(IsUAPRef)'=='true'">$(UAPPackageRefPath)</PackageFileRefPath>
+      <PackageFileRuntimePath>$(UAPPackageRuntimePath)</PackageFileRuntimePath>
+    </BinPlaceConfiguration>
+    <BinPlaceConfiguration Condition="'$(IsUAP)' == 'true' AND '$(BuildingUAPAOTVertical)' == 'true'" Include="uapaot-$(_bc_OSGroup)">
+      <PackageFileRefPath Condition="'$(IsUAPRef)'=='true'">$(UAPPackageRefPath)</PackageFileRefPath>
+      <PackageFileRuntimePath>$(UAPAOTPackageRuntimePath)</PackageFileRuntimePath>
+    </BinPlaceConfiguration>
+
+    <!-- Setup the shared framework directory for testing -->
+    <BinPlaceConfiguration Condition="'$(BinPlaceTestSharedFramework)' == 'true'" Include="netcoreapp-$(_bc_OSGroup)">
+      <RuntimePath>$(NETCoreAppTestSharedFrameworkPath)</RuntimePath>
+    </BinPlaceConfiguration>
+    <!-- Setup the ILCInputFolder directory for testing uapaot -->
+    <BinPlaceConfiguration Condition="'$(BinPlaceILCInputFolder)' == 'true'" Include="uapaot-$(_bc_OSGroup)">
+      <RuntimePath>$(ILCFXInputFolder)</RuntimePath>
+    </BinPlaceConfiguration>
+    <!-- And the UAP folder for the F5 (CoreCLR UAP-debugging) scenario -->
+    <BinPlaceConfiguration Condition="'$(BinPlaceUAPFramework)' == 'true'" Include="uap-$(_bc_OSGroup)">
+      <RuntimePath>$(UAPTestSharedFrameworkPath)</RuntimePath>
+    </BinPlaceConfiguration>
+
+    <!-- binplace targeting packs which may be different from BuildConfiguration -->
+    <BinPlaceConfiguration Include="netstandard">
+      <RefPath>$(RefRootPath)netstandard/</RefPath>
+    </BinPlaceConfiguration>
+    <BinPlaceConfiguration Condition="'$(BuildAllConfigurations)' == 'true'"
+                           Include="netcoreapp">
+      <RefPath>$(RefRootPath)netcoreapp/</RefPath>
+    </BinPlaceConfiguration>
+    <BinPlaceConfiguration Condition="'$(BuildAllConfigurations)' == 'true'"
+                           Include="uap">
+      <RefPath>$(RefRootPath)uap/</RefPath>
+    </BinPlaceConfiguration>
+    <BinPlaceConfiguration Condition="'$(BuildAllConfigurations)' == 'true'"
+                           Include="netfx">
+      <RefPath>$(RefRootPath)netfx/</RefPath>
+    </BinPlaceConfiguration>
+  </ItemGroup>
+
   <Import Project="$(ToolsDir)/Build.Common.targets" Condition="Exists('$(ToolsDir)/Build.Common.targets')" />
 
   <!-- permit a wrapping build system to contribute targets to this build -->
   <Import Condition="Exists('$(MSBuildThisFileDirectory)..\open.targets')" Project="$(MSBuildThisFileDirectory)..\open.targets" />
 
-  <Import Project="$(MSBuildThisFileDirectory)binplace.targets" />
   <Import Project="$(MSBuildThisFileDirectory)referenceFromRuntime.targets" />
 
   <PropertyGroup>

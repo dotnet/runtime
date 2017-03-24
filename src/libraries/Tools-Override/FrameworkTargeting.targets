@@ -215,4 +215,121 @@
     </ItemGroup>
   </Target>
 
+  <!-- Binplacing targets and properties -->
+  <PropertyGroup>
+    <BinPlaceUseHardlinksIfPossible Condition="'$(BinPlaceUseHardlinksIfPossible)' == ''">true</BinPlaceUseHardlinksIfPossible>
+    <EnableBinPlacing Condition="'$(EnableBinPlacing)' == '' AND ('$(BinPlaceRef)' == 'true' OR '$(BinPlaceRuntime)' == 'true')">true</EnableBinPlacing>
+  </PropertyGroup>
+
+  <Target Name="BinPlace"
+          DependsOnTargets="GetBinPlaceDirs;BinPlaceFiles;BinPlaceProps"
+          AfterTargets="CopyFilesToOutputDirectory"
+          Condition="'$(EnableBinPlacing)' == 'true'" />
+
+  <Target Name="BinPlaceFiles"
+          Condition="'@(BinPlaceDir)' != ''"
+          DependsOnTargets="GetBinPlaceItems" >
+
+    <Message Importance="low" Text="BinPlaceDir: @(BinPlaceDir)" />
+
+    <Copy SourceFiles="@(BinPlaceItem)"
+          DestinationFolder="%(BinPlaceDir.Identity)" 
+          SkipUnchangedFiles="true"
+          OverwriteReadOnlyFiles="true"
+          Retries="$(CopyRetryCount)"
+          RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)"
+          UseHardlinksIfPossible="$(BinPlaceUseHardlinksIfPossible)">
+      <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
+    </Copy>
+  </Target>
+
+  <UsingTask TaskName="SaveItems" AssemblyFile="$(CoreFxToolsTaskDir)CoreFx.Tools.dll"/>
+  <Target Name="BinPlaceProps"
+          Condition="'@(PackageFileDir)' != ''"
+          DependsOnTargets="GetBinPlaceItems" >
+    <PropertyGroup>
+      <_propsFilename>$(TargetName)</_propsFilename>
+      <_propsFilename Condition="'$(_propsFilename)' == ''">$(MSBuildProjectName)</_propsFilename>
+      <_projectDirLength>$(ProjectDir.Length)</_projectDirLength>
+    </PropertyGroup>
+    
+    <ItemGroup>
+      <_itemsToSave Include="@(BinPlaceItem)">
+        <!-- intentionally empty: to be set by pkgproj -->
+        <TargetPath></TargetPath>
+      </_itemsToSave>
+      
+      <!-- Include source files. -->
+      <_itemsToSave Condition="'@(Compile)' != ''" Include="@(Compile->'%(FullPath)')">
+        <TargetPath>src</TargetPath>
+        <TargetPath Condition="$([System.String]::Copy('%(FullPath)').StartsWith('$(ProjectDir)'))">src/$([System.String]::Copy('%(FullPath)').Substring($(_projectDirLength)).Replace('\', '/'))</TargetPath>
+        <IsSourceCodeFile>true</IsSourceCodeFile>
+      </_itemsToSave>
+    </ItemGroup>
+    
+    <Message Importance="low" Text="PackageFileDir: @(PackageFileDir)" />
+
+    <SaveItems ItemName="FileToPackage"
+               Items="@(_itemsToSave)"
+               Files="@(PackageFileDir->'%(Identity)\$(_propsFilename).props')" />
+  </Target>
+
+  <Target Name="GetBinPlaceItems" DependsOnTargets="GetCopyToOutputDirectoryItems">
+    <ItemGroup>
+      <BinPlaceItem Condition="Exists('$(TargetPath)')" Include="$(TargetPath)" />
+      <BinPlaceItem Condition="Exists('$(TargetDir)$(TargetName).pdb')" Include="$(TargetDir)$(TargetName).pdb" />
+      <BinPlaceItem Condition="'$(BinPlaceReferenceCopyLocalPaths)' != 'false'" Include="@(ReferenceCopyLocalPaths)" />
+      <BinPlaceItem Condition="'$(BinPlaceCopyToOutputDirectoryItems)' != 'false'" Include="@(AllItemsFullPathWithTargetPath)" />
+    </ItemGroup>
+  </Target>
+
+  <UsingTask TaskName="FindBestConfigurations" AssemblyFile="$(CoreFxToolsTaskDir)CoreFx.Tools.dll"/>
+  <Target Name="GetBinPlaceDirs" DependsOnTargets="GetBuildConfigurations">
+    <!-- find which, if any, build configuration of this project is best
+         for each binplace configuration -->
+    <FindBestConfigurations Properties="@(Property)"
+                            PropertyValues="@(PropertyValue)"
+                            SupportedConfigurations="$(_AllBuildConfigurations)"
+                            Configurations="@(BinPlaceConfiguration)">
+      <Output TaskParameter="BestConfigurations" ItemName="_bestBinlaceConfigurations" />
+    </FindBestConfigurations>
+
+    <ItemGroup>
+      <_currentBinPlaceConfigurations Include="@(_bestBinlaceConfigurations)" Condition="'%(Identity)' == '$(Configuration)' OR '%(Identity)-$(ConfigurationGroup)' == '$(Configuration)'" />
+
+      <BinPlaceDir Condition="'$(BinPlaceRuntime)' == 'true'" Include="%(_currentBinPlaceConfigurations.RuntimePath)" />
+      <BinPlaceDir Condition="'$(BinPlaceRef)' == 'true'" Include="%(_currentBinPlaceConfigurations.RefPath)" />
+
+      <PackageFileDir Condition="'$(BinPlaceRuntime)' == 'true'" Include="%(_currentBinPlaceConfigurations.PackageFileRuntimePath)" />
+      <PackageFileDir Condition="'$(BinPlaceRef)' == 'true'" Include="%(_currentBinPlaceConfigurations.PackageFileRefPath)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Incremental clean only cleans paths under Intermediate or OutDir, handle additional paths -->
+  <Target Name="_CleanGetCurrentAdditionalFileWrites" BeforeTargets="_CleanGetCurrentAndPriorFileWrites" Condition="'@(AdditionalCleanDirectories)' != ''">
+    <!-- find files under paths we care about and add them to _CleanCurrentFileWrites to ensure they are written to the file list -->
+    <FindUnderPath Path="%(AdditionalCleanDirectories.Identity)" Files="@(FileWrites)" UpdateToAbsolutePaths="true">
+      <Output TaskParameter="InPath" ItemName="_CleanCurrentFileWrites" />
+    </FindUnderPath>
+  </Target>
+
+  <ItemGroup>
+    <AdditionalCleanDirectories Include="%(BinPlaceConfiguration.RefPath)" />
+    <AdditionalCleanDirectories Include="%(BinPlaceConfiguration.RuntimePath)" />
+  </ItemGroup>
+
+  <Target Name="IncrementalCleanAdditionalDirectories" BeforeTargets="IncrementalClean" Condition="'@(AdditionalCleanDirectories)' != ''">
+    <ItemGroup>
+      <_CleanOrphanAdditionalFileWrites Include="@(_CleanPriorFileWrites)" Exclude="@(_CleanCurrentFileWrites)" />
+    </ItemGroup>
+    <FindUnderPath Path="%(AdditionalCleanDirectories.Identity)" Files="@(_CleanOrphanAdditionalFileWrites)">
+      <Output TaskParameter="InPath" ItemName="_CleanOrphanFileWritesInAdditionalDirectories" />
+    </FindUnderPath>
+
+    <!-- Delete the orphaned files.  IncrementalClean will remove these from the file list -->
+    <Delete Files="@(_CleanOrphanFileWritesInAdditionalDirectories)" TreatErrorsAsWarnings="true">
+      <Output TaskParameter="DeletedFiles" ItemName="_CleanOrphanFilesDeleted" />
+    </Delete>
+  </Target>
+
 </Project>
