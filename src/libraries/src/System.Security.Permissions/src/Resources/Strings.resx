@@ -73,4 +73,7 @@
   <data name="Security_PrincipalPermission" xml:space="preserve">
     <value>Request for principal permission failed.</value>
   </data>
+  <data name="PlatformNotSupported_CAS" xml:space="preserve">
+    <value>Code Access Security is not supported on this platform.</value>
+  </data>
 </root>
