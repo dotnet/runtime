@@ -135,16 +135,6 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// Returns the current operation (Activity) for the current thread.  This flows 
-        /// across async calls.
-        /// </summary>
-        public static Activity Current
-        {
-            get { return s_current.Value; }
-            private set { s_current.Value = value; }
-        }
-
-        /// <summary>
         /// Returns the value of the key-value pair added to the activity with <see cref="AddBaggage(string, string)"/>.
         /// Returns null if that key does not exist.  
         /// </summary>
@@ -442,7 +432,6 @@ namespace System.Diagnostics
         private KeyValueListNode _tags;
         private KeyValueListNode _baggage;
         private bool isFinished;
-        private static readonly AsyncLocal<Activity> s_current = new AsyncLocal<Activity>();
         #endregion // private
     }
 }
