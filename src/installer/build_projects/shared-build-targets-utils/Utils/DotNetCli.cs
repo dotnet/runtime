@@ -14,6 +14,7 @@ namespace Microsoft.DotNet.Cli.Build
 
         public string BinPath { get; }
         public string GreatestVersionSharedFxPath { get; private set; }
+        public string GreatestVersionHostFxrPath { get; private set; }
 
         public DotNetCli(string binPath)
         {
@@ -82,9 +83,22 @@ namespace Microsoft.DotNet.Cli.Build
                 return;
             }
 
+            var hostFxrBaseDirectory = Path.Combine(BinPath, "host", "fxr");
+            if (!Directory.Exists(hostFxrBaseDirectory))
+            {
+
+                GreatestVersionHostFxrPath = null;
+                return;
+            }
+
             var sharedFxVersionDirectories = Directory.EnumerateDirectories(sharedFxBaseDirectory);
 
             GreatestVersionSharedFxPath = sharedFxVersionDirectories
+                .OrderByDescending(p => p.ToLower())
+                .First();
+
+            var hostFxrVersionDirectories = Directory.EnumerateDirectories(hostFxrBaseDirectory);
+            GreatestVersionHostFxrPath = hostFxrVersionDirectories
                 .OrderByDescending(p => p.ToLower())
                 .First();
         }
