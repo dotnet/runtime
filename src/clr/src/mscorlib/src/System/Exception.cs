@@ -520,8 +520,8 @@ namespace System
 
         protected event EventHandler<SafeSerializationEventArgs> SerializeObjectState
         {
-            add { throw new PlatformNotSupportedException(); }
-            remove { throw new PlatformNotSupportedException(); }
+            add { throw new PlatformNotSupportedException(SR.PlatformNotSupported_SecureBinarySerialization); }
+            remove { throw new PlatformNotSupportedException(SR.PlatformNotSupported_SecureBinarySerialization); }
         }
 
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
