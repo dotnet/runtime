@@ -196,7 +196,6 @@
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\WithType.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\SpecialNames.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\SymbolTable.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Syntax\KnownName.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Syntax\NameManager.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Syntax\Names.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Syntax\NameTable.cs" />
