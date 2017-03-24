@@ -2,7 +2,7 @@
   "frameworks": {
     "{TFM}": {
       "dependencies": {
-        "NETStandard.Library": "2.0.0-beta-25123-01",
+        "NETStandard.Library": "2.0.0-beta-25124-01",
         "System.Diagnostics.Contracts": "4.3.0",
         "System.Diagnostics.Debug": "4.3.0",
         "System.Dynamic.Runtime": "4.3.0",
