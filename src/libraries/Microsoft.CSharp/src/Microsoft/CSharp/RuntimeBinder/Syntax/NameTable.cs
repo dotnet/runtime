@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Linq;
 
 namespace Microsoft.CSharp.RuntimeBinder.Syntax
 {
@@ -64,13 +65,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
         {
             int hashCode = ComputeHashCode(name.Text);
             // make sure it doesn't already exist
-            for (Entry e = _entries[hashCode & _mask]; e != null; e = e.Next)
-            {
-                if (e.HashCode == hashCode && e.Name.Text.Equals(name.Text))
-                {
-                    throw Error.InternalCompilerError();
-                }
-            }
+            Debug.Assert(Lookup(name.Text) == null);
+            Debug.Assert(_entries.All(e => e?.Name.Text != name.Text));
 
             AddEntry(name, hashCode);
         }
