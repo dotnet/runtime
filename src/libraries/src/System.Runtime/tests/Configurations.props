@@ -5,6 +5,7 @@
       netcoreapp;
       netstandard;
       uap;
+      uapaot;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

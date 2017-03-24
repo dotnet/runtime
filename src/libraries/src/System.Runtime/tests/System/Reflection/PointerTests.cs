@@ -115,6 +115,7 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(Pointers))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Issue https://github.com/dotnet/corefx/issues/17450")]
         public void PointerFieldGetValue(int value)
         {
             var obj = new PointerHolder();
