@@ -363,6 +363,63 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [ConditionalFact(nameof(SupportsFips186_3))]
+        public static void Fips186_3_L2048_N256_SHA1_1()
+        {
+            // http://csrc.nist.gov/groups/STM/cavp/documents/dss/186-3dsatestvectors.zip
+            // SigGen.txt
+            // [mod = L=2048, N=256, SHA-1, first case
+            const string p =
+                "c1a59d215573949e0b20a974c2edf2e3137ff2463062f75f1d13df12aba1076b" +
+                "b2d013402b60af6c187fb0fa362167c976c2617c726f9077f09e18c11b60f650" +
+                "08825bd6c02a1f57d3eb0ad41cd547de43d87f2525f971d42b306506e7ca03be" +
+                "63b35f4ada172d0a06924440a14250d7822ac2d5aeafed4619e79d4158a7d5eb" +
+                "2d9f023db181a8f094b2c6cb87cb8535416ac19813f07144660c557745f44a01" +
+                "c6b1029092c129b0d27183e82c5a21a80177ee7476eb95c466fb472bd3d2dc28" +
+                "6ce25847e93cbfa9ad39cc57035d0c7b64b926a9c7f5a7b2bc5abcbfbdc0b0e3" +
+                "fede3c1e02c44afc8aefc7957da07a0e5fd12339db8667616f62286df80d58ab";
+
+            const string q =
+                "8000000000000000000000001bd62c65e8b87c89797f8f0cbfa55e4a6810e2c7";
+
+            const string g =
+                "aea5878740f1424d3c6ea9c6b4799615d2749298a17e26207f76cef340ddd390" +
+                "e1b1ad6b6c0010ad015a103342ddd452cac024b36e42d9b8ed52fafae7a1d3ce" +
+                "9e4b21f910d1356eb163a3e5a8184c781bf14492afa2e4b0a56d8884fd01a628" +
+                "b9662739c42e5c5795ade2f5f27e6de1d963917ce8806fc40d021cd87aa3aa3a" +
+                "9e4f0c2c4c45d2959b2578b2fb1a2229c37e181059b9d5e7b7862fa82e2377a4" +
+                "9ed0f9dca820a5814079dd6610714efaf8b0cc683d8e72e4c884e6f9d4946b3e" +
+                "8d4cbb92adbbe7d4c47cc30be7f8c37ca81883a1aac6860059ff4640a29ccae7" +
+                "3de20b12e63b00a88b2ee9ba94b75eb40a656e15d9ec83731c85d0effcb9ef9f";
+
+            const string msg =
+                "de3605dbefde353cbe05e0d6098647b6d041460dfd4c000312be1afe7551fd3b" +
+                "93fed76a9763c34e004564b8f7dcacbd99e85030632c94e9b0a032046523b7aa" +
+                "cdf934a2dbbdcfceefe66b4e3d1cb29e994ff3a4648a8edd9d58ed71f12399d9" +
+                "0624789c4e0eebb0fbd5080f7d730f875a1f290749334cb405e9fd2ae1b4ed65";
+
+            const string x =
+                "5a42e77248358f06ae980a2c64f6a22bea2bf7b4fc0015745053c432b7132a67";
+
+            const string y =
+                "880e17c4ae8141750609d8251c0bbd7acf6d0b460ed3688e9a5f990e6c4b5b00" +
+                "875da750e0228a04102a35f57e74b8d2f9b6950f0d1db8d302c5c90a5b8786a8" +
+                "2c68ff5b17a57a758496c5f8053e4484a253d9942204d9a1109f4bd2a3ec311a" +
+                "60cf69c685b586d986f565d33dbf5aab7091e31aa4102c4f4b53fbf872d70015" +
+                "6465b6c075e7f778471a23502dc0fee41b271c837a1c26691699f3550d060a33" +
+                "1099f64837cddec69caebf51bf4ec9f36f2a220fe773cb4d3c02d0446ddd4613" +
+                "3532ef1c3c69d432e303502bd05a75279a7809a742ac4a7872b07f1908654049" +
+                "419350e37a95f2ef33361d8d8736d4083dc14c0bb972e14d4c7b97f3ddfccaef";
+
+            const string r =
+                "363e01c564f380a27d7d23b207af3f961d48fc0995487f60052775d724ab3d10";
+
+            const string s =
+                "4916d91b2927294e429d537c06dd2463d1845018cca2873e90a6c837b445fdde";
+
+            Validate(p, q, g, x, y, msg, r, s, HashAlgorithmName.SHA1);
+        }
+
+        [ConditionalFact(nameof(SupportsFips186_3))]
         public static void Fips186_3_L2048_N256_SHA384_3()
         {
             // http://csrc.nist.gov/groups/STM/cavp/documents/dss/186-3dsatestvectors.zip
