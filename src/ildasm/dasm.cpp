@@ -483,7 +483,7 @@ void Uninit()
     {
         SDELETE(g_szBuf_UnquotedProperName);
     }
-    if (g_szBuf_UnquotedProperName != NULL)
+    if (g_szBuf_ProperName != NULL)
     {
         SDELETE(g_szBuf_ProperName);
     }
