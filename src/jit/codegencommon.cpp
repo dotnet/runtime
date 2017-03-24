@@ -2981,7 +2981,8 @@ void CodeGen::genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode)
 
         if (compiler->fgHaveProfileData())
         {
-            printf("; with IBC profile data\n");
+            printf("; with IBC profile data, edge weights are %s, and fgCalledCount is %u\n",
+                   compiler->fgHaveValidEdgeWeights ? "valid" : "invalid", compiler->fgCalledCount);
         }
 
         if (compiler->fgProfileData_ILSizeMismatch)
