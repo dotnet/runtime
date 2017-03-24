@@ -150,6 +150,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
             new KnownName("typeof"),
             new KnownName("unchecked"),
             new KnownName("void"),
+            new KnownName("")
         };
 
         private static readonly NameTable s_knownNames = GetKnownNames();
