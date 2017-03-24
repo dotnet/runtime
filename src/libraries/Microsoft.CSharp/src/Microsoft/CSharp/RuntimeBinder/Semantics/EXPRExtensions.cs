@@ -119,12 +119,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
         public static bool isNull(this EXPR expr)
         {
-            return expr.isCONSTANT_OK() && (expr.type.fundType() == FUNDTYPE.FT_REF) && expr.asCONSTANT().Val.IsNullRef();
+            return expr.isCONSTANT_OK() && (expr.type.fundType() == FUNDTYPE.FT_REF) && expr.asCONSTANT().Val.IsNullRef;
         }
 
         public static bool isZero(this EXPR expr)
         {
-            return (expr.isCONSTANT_OK()) && (expr.asCONSTANT().isZero());
+            return (expr.isCONSTANT_OK()) && (expr.asCONSTANT().IsZero);
         }
 
         private static EXPR GetSeqVal(this EXPR expr)
@@ -176,7 +176,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public static EXPRCALL asCALL(this EXPR expr) { RETAILVERIFY(expr == null || expr.kind == ExpressionKind.EK_CALL); return (EXPRCALL)expr; }
         public static EXPREVENT asEVENT(this EXPR expr) { RETAILVERIFY(expr == null || expr.kind == ExpressionKind.EK_EVENT); return (EXPREVENT)expr; }
         public static EXPRFIELD asFIELD(this EXPR expr) { RETAILVERIFY(expr == null || expr.kind == ExpressionKind.EK_FIELD); return (EXPRFIELD)expr; }
-        public static EXPRCONSTANT asCONSTANT(this EXPR expr) { RETAILVERIFY(expr == null || expr.kind == ExpressionKind.EK_CONSTANT); return (EXPRCONSTANT)expr; }
+        public static ExprConstant asCONSTANT(this EXPR expr) { RETAILVERIFY(expr == null || expr.kind == ExpressionKind.EK_CONSTANT); return (ExprConstant)expr; }
         public static EXPRFUNCPTR asFUNCPTR(this EXPR expr) { RETAILVERIFY(expr == null || expr.kind == ExpressionKind.EK_FUNCPTR); return (EXPRFUNCPTR)expr; }
         public static EXPRPROP asPROP(this EXPR expr) { RETAILVERIFY(expr == null || expr.kind == ExpressionKind.EK_PROP); return (EXPRPROP)expr; }
         public static EXPRWRAP asWRAP(this EXPR expr) { RETAILVERIFY(expr == null || expr.kind == ExpressionKind.EK_WRAP); return (EXPRWRAP)expr; }

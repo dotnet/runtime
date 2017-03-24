@@ -398,7 +398,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         (ftSrc == FUNDTYPE.FT_I8 && ftDest == FUNDTYPE.FT_U8))
                     {
                         // Failed because value was out of range. Report nifty error message.
-                        string value = expr.asCONSTANT().I64Value.ToString(CultureInfo.InvariantCulture);
+                        string value = expr.asCONSTANT().Int64Value.ToString(CultureInfo.InvariantCulture);
                         ErrorContext.Error(ErrorCode.ERR_ConstOutOfRange, value, dest);
                         exprResult = ExprFactory.CreateCast(0, destExpr, expr);
                         exprResult.SetError();
@@ -517,7 +517,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         // We have a constant decimal that is out of range of the destination type.
                         // In both checked and unchecked contexts we issue an error. No need to recheck conversion in unchecked context.
                         // Decimal is a SimpleType represented in a FT_STRUCT
-                        ErrorContext.Error(ErrorCode.ERR_ConstOutOfRange, exprConst.asCONSTANT().Val.decVal.ToString(CultureInfo.InvariantCulture), dest);
+                        ErrorContext.Error(ErrorCode.ERR_ConstOutOfRange, exprConst.asCONSTANT().Val.DecimalVal.ToString(CultureInfo.InvariantCulture), dest);
                     }
                     else if (simpleConstToSimpleDestination && Context.CheckedConstant)
                     {
@@ -534,13 +534,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         if (expr_type <= FUNDTYPE.FT_LASTINTEGRAL)
                         {
                             if (expr.type.isUnsigned())
-                                value = ((ulong)(exprConst.asCONSTANT()).I64Value).ToString(CultureInfo.InvariantCulture);
+                                value = ((ulong)(exprConst.asCONSTANT()).Int64Value).ToString(CultureInfo.InvariantCulture);
                             else
-                                value = ((long)(exprConst.asCONSTANT()).I64Value).ToString(CultureInfo.InvariantCulture);
+                                value = ((long)(exprConst.asCONSTANT()).Int64Value).ToString(CultureInfo.InvariantCulture);
                         }
                         else if (expr_type <= FUNDTYPE.FT_LASTNUMERIC)
                         {
-                            value = (exprConst.asCONSTANT()).Val.doubleVal.ToString(CultureInfo.InvariantCulture);
+                            value = (exprConst.asCONSTANT()).Val.DoubleVal.ToString(CultureInfo.InvariantCulture);
                         }
                         else
                         {
@@ -1453,7 +1453,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             bool srcIntegral = (ftSrc <= FUNDTYPE.FT_LASTINTEGRAL);
             bool srcNumeric = (ftSrc <= FUNDTYPE.FT_LASTNUMERIC);
 
-            EXPRCONSTANT constSrc = exprSrc.GetConst().asCONSTANT();
+            ExprConstant constSrc = exprSrc.GetConst().asCONSTANT();
             Debug.Assert(constSrc != null);
             if (ftSrc == FUNDTYPE.FT_STRUCT || ftDest == FUNDTYPE.FT_STRUCT)
             {
@@ -1492,20 +1492,20 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     // If we're going from ulong to something, make sure we can fit.
                     if (ftDest == FUNDTYPE.FT_U8)
                     {
-                        CONSTVAL cv = GetExprConstants().Create(constSrc.getU64Value());
+                        ConstVal cv = ConstVal.Get(constSrc.UInt64Value);
                         pexprDest = ExprFactory.CreateConstant(typeDest, cv);
                         return ConstCastResult.Success;
                     }
-                    valueInt = (Int64)(constSrc.getU64Value() & 0xFFFFFFFFFFFFFFFF);
+                    valueInt = (Int64)(constSrc.UInt64Value& 0xFFFFFFFFFFFFFFFF);
                 }
                 else
                 {
-                    valueInt = constSrc.getI64Value();
+                    valueInt = constSrc.Int64Value;
                 }
             }
             else if (srcNumeric)
             {
-                valueFlt = constSrc.getVal().doubleVal;
+                valueFlt = constSrc.Val.DoubleVal;
             }
             else
             {
@@ -1609,24 +1609,24 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             // Create a new constant with the value in "valueInt" or "valueFlt".
             {
-                CONSTVAL cv = new CONSTVAL();
+                ConstVal cv;
                 if (ftDest == FUNDTYPE.FT_U4)
                 {
-                    cv.uiVal = (uint)valueInt;
+                    cv = ConstVal.Get((uint)valueInt);
                 }
                 else if (ftDest <= FUNDTYPE.FT_LASTNONLONG)
                 {
-                    cv.iVal = (int)valueInt;
+                    cv = ConstVal.Get((int)valueInt);
                 }
                 else if (ftDest <= FUNDTYPE.FT_LASTINTEGRAL)
                 {
-                    cv = GetExprConstants().Create(valueInt);
+                    cv = ConstVal.Get(valueInt);
                 }
                 else
                 {
-                    cv = GetExprConstants().Create(valueFlt);
+                    cv = ConstVal.Get(valueFlt);
                 }
-                EXPRCONSTANT expr = ExprFactory.CreateConstant(typeDest, cv);
+                ExprConstant expr = ExprFactory.CreateConstant(typeDest, cv);
                 pexprDest = expr;
             }
             return ConstCastResult.Success;
@@ -1700,11 +1700,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         /*
          * Bind a constant cast to or from decimal. Return null if cast can't be done.
          */
-        private EXPR bindDecimalConstCast(EXPRTYPEORNAMESPACE exprDestType, CType srcType, EXPRCONSTANT src)
+        private EXPR bindDecimalConstCast(EXPRTYPEORNAMESPACE exprDestType, CType srcType, ExprConstant src)
         {
             CType destType = exprDestType.TypeOrNamespace.AsType();
             CType typeDecimal = SymbolLoader.GetOptPredefType(PredefinedType.PT_DECIMAL);
-            CONSTVAL cv = new CONSTVAL();
+            ConstVal cv;
 
             if (typeDecimal == null)
                 return null;
@@ -1721,31 +1721,31 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     case FUNDTYPE.FT_I1:
                     case FUNDTYPE.FT_I2:
                     case FUNDTYPE.FT_I4:
-                        result = Convert.ToDecimal(src.getVal().iVal);
+                        result = Convert.ToDecimal(src.Val.Int32Val);
                         break;
                     case FUNDTYPE.FT_U1:
                     case FUNDTYPE.FT_U2:
                     case FUNDTYPE.FT_U4:
-                        result = Convert.ToDecimal(src.getVal().uiVal);
+                        result = Convert.ToDecimal(src.Val.UInt32Val);
                         break;
                     case FUNDTYPE.FT_R4:
-                        result = Convert.ToDecimal((float)src.getVal().doubleVal);
+                        result = Convert.ToDecimal((float)src.Val.DoubleVal);
                         break;
                     case FUNDTYPE.FT_R8:
-                        result = Convert.ToDecimal(src.getVal().doubleVal);
+                        result = Convert.ToDecimal(src.Val.DoubleVal);
                         break;
                     case FUNDTYPE.FT_U8:
-                        result = Convert.ToDecimal((ulong)src.getVal().longVal);
+                        result = Convert.ToDecimal((ulong)src.Val.Int64Val);
                         break;
                     case FUNDTYPE.FT_I8:
-                        result = Convert.ToDecimal(src.getVal().longVal);
+                        result = Convert.ToDecimal(src.Val.Int64Val);
                         break;
                     default:
                         return null;  // Not supported cast.
                 }
 
-                cv = GetExprConstants().Create(result);
-                EXPRCONSTANT exprConst = ExprFactory.CreateConstant(typeDecimal, cv);
+                cv = ConstVal.Get(result);
+                ExprConstant exprConst = ExprFactory.CreateConstant(typeDecimal, cv);
 
                 return exprConst;
             }
@@ -1760,39 +1760,39 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 {
                     if (ftDest != FUNDTYPE.FT_R4 && ftDest != FUNDTYPE.FT_R8)
                     {
-                        decTrunc = Decimal.Truncate(src.getVal().decVal);
+                        decTrunc = Decimal.Truncate(src.Val.DecimalVal);
                     }
                     switch (ftDest)
                     {
                         case FUNDTYPE.FT_I1:
-                            cv.iVal = Convert.ToSByte(decTrunc);
+                            cv = ConstVal.Get(Convert.ToSByte(decTrunc));
                             break;
                         case FUNDTYPE.FT_U1:
-                            cv.uiVal = Convert.ToByte(decTrunc);
+                            cv = ConstVal.Get((uint)Convert.ToByte(decTrunc));
                             break;
                         case FUNDTYPE.FT_I2:
-                            cv.iVal = Convert.ToInt16(decTrunc);
+                            cv = ConstVal.Get(Convert.ToInt16(decTrunc));
                             break;
                         case FUNDTYPE.FT_U2:
-                            cv.uiVal = Convert.ToUInt16(decTrunc);
+                            cv = ConstVal.Get((uint)Convert.ToUInt16(decTrunc));
                             break;
                         case FUNDTYPE.FT_I4:
-                            cv.iVal = Convert.ToInt32(decTrunc);
+                            cv = ConstVal.Get(Convert.ToInt32(decTrunc));
                             break;
                         case FUNDTYPE.FT_U4:
-                            cv.uiVal = Convert.ToUInt32(decTrunc);
+                            cv = ConstVal.Get(Convert.ToUInt32(decTrunc));
                             break;
                         case FUNDTYPE.FT_I8:
-                            cv = GetExprConstants().Create(Convert.ToInt64(decTrunc));
+                            cv = ConstVal.Get(Convert.ToInt64(decTrunc));
                             break;
                         case FUNDTYPE.FT_U8:
-                            cv = GetExprConstants().Create(Convert.ToUInt64(decTrunc));
+                            cv = ConstVal.Get(Convert.ToUInt64(decTrunc));
                             break;
                         case FUNDTYPE.FT_R4:
-                            cv = GetExprConstants().Create(Convert.ToSingle(src.getVal().decVal));
+                            cv = ConstVal.Get(Convert.ToSingle(src.Val.DecimalVal));
                             break;
                         case FUNDTYPE.FT_R8:
-                            cv = GetExprConstants().Create(Convert.ToDouble(src.getVal().decVal));
+                            cv = ConstVal.Get(Convert.ToDouble(src.Val.DecimalVal));
                             break;
                         default:
                             return null; // Not supported cast.
@@ -1802,7 +1802,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 {
                     return null;
                 }
-                EXPRCONSTANT exprConst = ExprFactory.CreateConstant(destType, cv);
+                ExprConstant exprConst = ExprFactory.CreateConstant(destType, cv);
                 // Create the cast that was the original tree for this thing.
                 return exprConst;
             }

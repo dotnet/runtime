@@ -67,7 +67,6 @@
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\BinOpSig.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\CandidateFunctionMember.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\ConstVal.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\ConstValFactory.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Conversion.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Conversions.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\COperators.cs" />

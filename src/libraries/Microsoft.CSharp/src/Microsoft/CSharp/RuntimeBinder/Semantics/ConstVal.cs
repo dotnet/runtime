@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Globalization;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
@@ -20,149 +21,77 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         Decimal,
         IntPtr,
         Float,
-        Boolean,
-        Lim
-    };
+        Boolean
+    }
 
-
-    internal sealed class CONSTVAL
+    internal struct ConstVal
     {
-        private object _value;
+        // Pre-boxed common values.
+        private static readonly object s_false = false;
+        private static readonly object s_true = true;
+        private static readonly object s_zeroInt32 = 0;
 
-        internal CONSTVAL()
-            : this(null)
+        private ConstVal(object value)
         {
+            ObjectVal = value;
         }
 
-        internal CONSTVAL(object value)
-        {
-            _value = value;
-        }
+        public object ObjectVal { get; }
 
-        public object objectVal
-        {
-            get { return _value; }
-            set { _value = value; }
-        }
+        public bool BooleanVal => SpecialUnbox<bool>(ObjectVal);
 
-        public bool boolVal
-        {
-            get { return SpecialUnbox<bool>(_value); }
-            set { _value = SpecialBox(value); }
-        }
+        public sbyte SByteVal => SpecialUnbox<sbyte>(ObjectVal);
 
-        public sbyte sbyteVal
-        {
-            get { return SpecialUnbox<sbyte>(_value); }
-            //set { this.value = SpecialBox(value); }
-        }
+        public byte ByteVal => SpecialUnbox<byte>(ObjectVal);
 
-        public byte byteVal
-        {
-            get { return SpecialUnbox<byte>(_value); }
-            //set { this.value = SpecialBox(value); }
-        }
+        public short Int16Val => SpecialUnbox<short>(ObjectVal);
 
-        public short shortVal
-        {
-            get { return SpecialUnbox<short>(_value); }
-            //set { this.value = SpecialBox(value); }
-        }
+        public ushort UInt16Val => SpecialUnbox<ushort>(ObjectVal);
 
-        public ushort ushortVal
-        {
-            get { return SpecialUnbox<ushort>(_value); }
-            //set { this.value = SpecialBox(value); }
-        }
+        public int Int32Val => SpecialUnbox<int>(ObjectVal);
 
-        public int iVal
-        {
-            get { return SpecialUnbox<int>(_value); }
-            set { _value = SpecialBox(value); }
-        }
+        public uint UInt32Val => SpecialUnbox<uint>(ObjectVal);
 
-        public uint uiVal
-        {
-            get { return SpecialUnbox<uint>(_value); }
-            set { _value = SpecialBox(value); }
-        }
+        public long Int64Val => SpecialUnbox<long>(ObjectVal);
 
-        public long longVal
-        {
-            get { return SpecialUnbox<long>(_value); }
-            set { _value = SpecialBox(value); }
-        }
+        public ulong UInt64Val => SpecialUnbox<ulong>(ObjectVal);
 
-        public ulong ulongVal
-        {
-            get { return SpecialUnbox<ulong>(_value); }
-            set { _value = SpecialBox(value); }
-        }
+        public float SingleVal => SpecialUnbox<float>(ObjectVal);
 
-        public float floatVal
-        {
-            get { return SpecialUnbox<float>(_value); }
-            set { _value = SpecialBox(value); }
-        }
+        public double DoubleVal => SpecialUnbox<double>(ObjectVal);
 
-        public double doubleVal
-        {
-            get { return SpecialUnbox<double>(_value); }
-            set { _value = SpecialBox(value); }
-        }
+        public decimal DecimalVal => SpecialUnbox<decimal>(ObjectVal);
 
-        public decimal decVal
-        {
-            get { return SpecialUnbox<decimal>(_value); }
-            set { _value = SpecialBox(value); }
-        }
+        public char CharVal => SpecialUnbox<char>(ObjectVal);
 
-        public char cVal
-        {
-            get { return SpecialUnbox<char>(_value); }
-            //set { this.value = SpecialBox(value); }
-        }
+        public string StringVal => SpecialUnbox<string>(ObjectVal);
 
-        public string strVal
-        {
-            get { return SpecialUnbox<string>(_value); }
-            set { _value = SpecialBox(value); }
-        }
-
-        public bool IsNullRef()
-        {
-            return _value == null;
-        }
+        public bool IsNullRef => ObjectVal == null;
 
         public bool IsZero(ConstValKind kind)
         {
             switch (kind)
             {
                 case ConstValKind.Decimal:
-                    return decVal == 0;
+                    return DecimalVal == 0;
                 case ConstValKind.String:
                     return false;
                 default:
-                    return IsDefault(_value);
+                    return IsDefault(ObjectVal);
             }
         }
 
-        private T SpecialUnbox<T>(object o)
+        private static T SpecialUnbox<T>(object o)
         {
             if (IsDefault(o))
             {
                 return default(T);
             }
 
-            return (T)Convert.ChangeType(o, typeof(T), System.Globalization.CultureInfo.InvariantCulture);
+            return (T)Convert.ChangeType(o, typeof(T), CultureInfo.InvariantCulture);
         }
 
-        private object SpecialBox<T>(T x)
-        {
-            return x;
-        }
-
-        private bool IsDefault(object o)
+        private static bool IsDefault(object o)
         {
             if (o == null)
                 return true;
@@ -199,5 +128,51 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             return false;
         }
+
+        public static ConstVal GetDefaultValue(ConstValKind kind)
+        {
+            switch (kind)
+            {
+                case ConstValKind.Int:
+                    return new ConstVal(s_zeroInt32);
+
+                case ConstValKind.Double:
+                    return new ConstVal(0.0);
+
+                case ConstValKind.Long:
+                    return new ConstVal(0L);
+
+                case ConstValKind.Decimal:
+                    return new ConstVal(0M);
+
+                case ConstValKind.Float:
+                    return new ConstVal(0F);
+
+                case ConstValKind.Boolean:
+                    return new ConstVal(s_false);
+            }
+
+            return default(ConstVal);
+        }
+
+        public static ConstVal Get(bool value) => new ConstVal(value ? s_true : s_false);
+
+        public static ConstVal Get(int value) => new ConstVal(value == 0 ? s_zeroInt32 : value);
+
+        public static ConstVal Get(uint value) => new ConstVal(value);
+
+        public static ConstVal Get(decimal value) => new ConstVal(value);
+
+        public static ConstVal Get(string value) => new ConstVal(value);
+
+        public static ConstVal Get(float value) => new ConstVal(value);
+
+        public static ConstVal Get(double value) => new ConstVal(value);
+
+        public static ConstVal Get(long value) => new ConstVal(value);
+
+        public static ConstVal Get(ulong value) => new ConstVal(value);
+
+        public static ConstVal Get(object p) => new ConstVal(p);
     }
 }

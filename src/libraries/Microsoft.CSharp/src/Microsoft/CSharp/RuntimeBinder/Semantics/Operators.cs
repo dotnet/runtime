@@ -1743,7 +1743,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private EXPR BindIncOpCore(ExpressionKind ek, EXPRFLAG flags, EXPR exprVal, CType type)
         {
             Debug.Assert(ek == ExpressionKind.EK_ADD || ek == ExpressionKind.EK_SUB);
-            CONSTVAL cv = new CONSTVAL();
+            ConstVal cv;
             EXPR pExprResult = null;
 
             if (type.isEnumType() && type.fundType() > FUNDTYPE.FT_LASTINTEGRAL)
@@ -1766,7 +1766,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     }
                     break;
                 case FUNDTYPE.FT_PTR:
-                    cv.iVal = 1;
+                    cv = ConstVal.Get(1);
                     pExprResult = BindPtrBinOp(ek, flags, exprVal, GetExprFactory().CreateConstant(GetReqPDT(PredefinedType.PT_INT), cv));
                     break;
                 case FUNDTYPE.FT_I1:
@@ -1774,22 +1774,22 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 case FUNDTYPE.FT_U1:
                 case FUNDTYPE.FT_U2:
                     typeTmp = GetReqPDT(PredefinedType.PT_INT);
-                    cv.iVal = 1;
+                    cv = ConstVal.Get(1);
                     pExprResult = LScalar(ek, flags, exprVal, type, cv, pExprResult, typeTmp);
                     break;
                 case FUNDTYPE.FT_I4:
                 case FUNDTYPE.FT_U4:
-                    cv.iVal = 1;
+                    cv = ConstVal.Get(1);
                     pExprResult = LScalar(ek, flags, exprVal, type, cv, pExprResult, typeTmp);
                     break;
                 case FUNDTYPE.FT_I8:
                 case FUNDTYPE.FT_U8:
-                    cv = GetExprConstants().Create((long)1);
+                    cv = ConstVal.Get((long)1);
                     pExprResult = LScalar(ek, flags, exprVal, type, cv, pExprResult, typeTmp);
                     break;
                 case FUNDTYPE.FT_R4:
                 case FUNDTYPE.FT_R8:
-                    cv = GetExprConstants().Create(1.0);
+                    cv = ConstVal.Get(1.0);
                     pExprResult = LScalar(ek, flags, exprVal, type, cv, pExprResult, typeTmp);
                     break;
             }
@@ -1798,7 +1798,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return pExprResult;
         }
 
-        private EXPR LScalar(ExpressionKind ek, EXPRFLAG flags, EXPR exprVal, CType type, CONSTVAL cv, EXPR pExprResult, CType typeTmp)
+        private EXPR LScalar(ExpressionKind ek, EXPRFLAG flags, EXPR exprVal, CType type, ConstVal cv, EXPR pExprResult, CType typeTmp)
         {
             CType typeOne = type;
             if (typeOne.isEnumType())
@@ -2058,8 +2058,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             if (argConst == null)
                 return GetExprFactory().CreateUnaryOp(ExpressionKind.EK_LOGNOT, typeBool, arg);
 
-            bool fRes = argConst.asCONSTANT().getVal().iVal != 0;
-            EXPR rval = GetExprFactory().CreateConstant(typeBool, ConstValFactory.GetBool(!fRes));
+            bool fRes = argConst.asCONSTANT().Val.Int32Val != 0;
+            EXPR rval = GetExprFactory().CreateConstant(typeBool, ConstVal.Get(!fRes));
 
             return rval;
         }

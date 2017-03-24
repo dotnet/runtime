@@ -136,7 +136,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
             return expr;
         }
-        protected override EXPR VisitCONSTANT(EXPRCONSTANT expr)
+        protected override EXPR VisitCONSTANT(ExprConstant expr)
         {
             Debug.Assert(expr != null);
             Debug.Assert(alwaysRewrite || currentAnonMeth != null);
@@ -913,7 +913,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private EXPR GenerateParameter(string name, CType CType)
         {
             GetSymbolLoader().GetReqPredefType(PredefinedType.PT_STRING);  // force an ensure state
-            EXPRCONSTANT nameString = GetExprFactory().CreateStringConstant(name);
+            ExprConstant nameString = GetExprFactory().CreateStringConstant(name);
             EXPRTYPEOF pTypeOf = CreateTypeOf(CType);
             return GenerateCall(PREDEFMETH.PM_EXPRESSION_PARAMETER, pTypeOf, nameString);
         }
@@ -1169,7 +1169,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             int parameterCount = ExpressionIterator.Count(args);
             AggregateType paramsArrayElementType = GetSymbolLoader().GetOptPredefTypeErr(pt, true);
             ArrayType paramsArrayType = GetSymbolLoader().GetTypeManager().GetArray(paramsArrayElementType, 1);
-            EXPRCONSTANT paramsArrayArg = GetExprFactory().CreateIntegerConstant(parameterCount);
+            ExprConstant paramsArrayArg = GetExprFactory().CreateIntegerConstant(parameterCount);
             EXPRARRINIT arrayInit = GetExprFactory().CreateArrayInit(EXPRFLAG.EXF_CANTBENULL, paramsArrayType, args, paramsArrayArg, null);
             arrayInit.dimSize = parameterCount;
             arrayInit.dimSizes = new int[] { arrayInit.dimSize }; // CLEANUP: Why isn't this done by the factory?
@@ -1199,7 +1199,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             AggregateType paramsArrayElementType = GetSymbolLoader().GetOptPredefTypeErr(pt, true);
             ArrayType paramsArrayType = GetSymbolLoader().GetTypeManager().GetArray(paramsArrayElementType, 1);
-            EXPRCONSTANT paramsArrayArg = GetExprFactory().CreateIntegerConstant(methodCount);
+            ExprConstant paramsArrayArg = GetExprFactory().CreateIntegerConstant(methodCount);
             EXPRARRINIT arrayInit = GetExprFactory().CreateArrayInit(EXPRFLAG.EXF_CANTBENULL, paramsArrayType, newArgs, paramsArrayArg, null);
             arrayInit.dimSize = methodCount;
             arrayInit.dimSizes = new int[] { arrayInit.dimSize }; // CLEANUP: Why isn't this done by the factory?

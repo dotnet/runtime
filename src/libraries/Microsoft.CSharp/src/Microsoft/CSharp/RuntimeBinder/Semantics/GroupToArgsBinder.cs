@@ -581,7 +581,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 if (methprop.HasDefaultParameterValue(index))
                 {
                     CType pConstValType = methprop.GetDefaultParameterValueConstValType(index);
-                    CONSTVAL cv = methprop.GetDefaultParameterValue(index);
+                    ConstVal cv = methprop.GetDefaultParameterValue(index);
 
                     if (pConstValType.isPredefType(PredefinedType.PT_DATETIME) &&
                         (pRawParamType.isPredefType(PredefinedType.PT_DATETIME) || pRawParamType.isPredefType(PredefinedType.PT_OBJECT) || pRawParamType.isPredefType(PredefinedType.PT_VALUE)))
@@ -590,7 +590,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         // but the constval that stores it is a long.
 
                         AggregateType dateTimeType = symbolLoader.GetReqPredefType(PredefinedType.PT_DATETIME);
-                        optionalArgument = exprFactory.CreateConstant(dateTimeType, new CONSTVAL(DateTime.FromBinary(cv.longVal)));
+                        optionalArgument = exprFactory.CreateConstant(dateTimeType, ConstVal.Get(DateTime.FromBinary(cv.Int64Val)));
                     }
                     else if (pConstValType.isSimpleOrEnumOrString())
                     {
@@ -610,7 +610,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             optionalArgument = exprFactory.CreateConstant(pConstValType, cv);
                         }
                     }
-                    else if ((pParamType.IsRefType() || pParamType.IsNullableType()) && cv.IsNullRef())
+                    else if ((pParamType.IsRefType() || pParamType.IsNullableType()) && cv.IsNullRef)
                     {
                         // We have an "= null" default value with a reference type or a nullable type.
 
