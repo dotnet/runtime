@@ -40,7 +40,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [ActiveIssue(17235)]
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)] // Not supported via OpenSSL
         [Fact]
         public static void Constructor_StoreHandle()
@@ -48,20 +47,29 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (X509Store store1 = new X509Store(StoreName.My, StoreLocation.CurrentUser))
             {
                 store1.Open(OpenFlags.ReadOnly);
-                int certCount1;
+                bool hadCerts;
 
                 using (var coll = new ImportedCollection(store1.Certificates))
                 {
-                    certCount1 = coll.Collection.Count;
-                    Assert.True(certCount1 >= 0);
+                    // Use >1 instead of >0 in case the one is an ephemeral accident.
+                    hadCerts = coll.Collection.Count > 1;
+                    Assert.True(coll.Collection.Count >= 0);
                 }
 
                 using (X509Store store2 = new X509Store(store1.StoreHandle))
                 {
                     using (var coll = new ImportedCollection(store2.Certificates))
                     {
-                        int certCount2 = coll.Collection.Count;
-                        Assert.Equal(certCount1, certCount2);
+                        if (hadCerts)
+                        {
+                            // Use InRange here instead of True >= 0 so that the error message
+                            // is different, and we can diagnose a bit of what state we might have been in.
+                            Assert.InRange(coll.Collection.Count, 1, int.MaxValue);
+                        }
+                        else
+                        {
+                            Assert.True(coll.Collection.Count >= 0);
+                        }
                     }
                 }
             }
