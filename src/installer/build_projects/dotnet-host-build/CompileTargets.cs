@@ -459,12 +459,14 @@ namespace Microsoft.DotNet.Host.Build
         {
             var hostVersion = c.BuildContext.Get<HostVersion>("HostVersion");
             var lockedHostFxrVersion = hostVersion.LockedHostFxrVersion.ToString();
+            var lockedHostVersion = hostVersion.LockedHostVersion.ToString();
             string currentRid = HostPackageSupportedRids[c.BuildContext.Get<string>("TargetRID")];
             string framework = c.BuildContext.Get<string>("TargetFramework");
 
             string projectJson = $@"{{
   ""dependencies"": {{
-      ""Microsoft.NETCore.DotNetHostResolver"" : ""{lockedHostFxrVersion}""
+      ""Microsoft.NETCore.DotNetHostResolver"" : ""{lockedHostFxrVersion}"",
+      ""Microsoft.NETCore.DotNetHost"" : ""{lockedHostVersion}"",
   }},
   ""frameworks"": {{
       ""{framework}"": {{}}
