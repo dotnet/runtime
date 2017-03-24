@@ -101,7 +101,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         public Expression Bind(
             DynamicMetaObjectBinder payload,
-            IEnumerable<Expression> parameters,
+            Expression[] parameters,
             DynamicMetaObject[] args,
             out DynamicMetaObject deferredBinding)
         {
@@ -167,7 +167,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private Expression BindCore(
             ICSharpBinder payload,
-            IEnumerable<Expression> parameters,
+            Expression[] parameters,
             DynamicMetaObject[] args,
             out DynamicMetaObject deferredBinding)
         {
@@ -308,7 +308,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
 
         private Expression CreateExpressionTreeFromResult(
-            IEnumerable<Expression> parameters,
+            Expression[] parameters,
             ArgumentObject[] arguments,
             Scope pScope,
             EXPR pResult)
@@ -369,29 +369,27 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private ArgumentObject[] CreateArgumentArray(
                 ICSharpBinder payload,
-                IEnumerable<Expression> parameters,
+                Expression[] parameters,
                 DynamicMetaObject[] args)
         {
             // Check the payloads to see whether or not we need to get the runtime types for
             // these arguments.
 
-            List<ArgumentObject> list = new List<ArgumentObject>();
-
-            int i = 0;
-            foreach (var curParam in parameters)
+            ArgumentObject[] array = new ArgumentObject[parameters.Length];
+            for (int i = 0; i < parameters.Length; i++)
             {
-                ArgumentObject a = new ArgumentObject();
-                a.Value = args[i].Value;
-                a.Info = payload.GetArgumentInfo(i);
-                a.Type = GetArgumentType(payload, a.Info, curParam, args[i], i);
+                CSharpArgumentInfo info = payload.GetArgumentInfo(i);
+                array[i] = new ArgumentObject
+                {
+                    Value = args[i].Value,
+                    Info = info,
+                    Type = GetArgumentType(payload, info, parameters[i], args[i], i)
+                };
 
-                Debug.Assert(a.Type != null);
-                list.Add(a);
-
-                ++i;
+                Debug.Assert(array[i].Type != null);
             }
 
-            return list.ToArray();
+            return array;
         }
 
         /////////////////////////////////////////////////////////////////////////////////
@@ -459,15 +457,15 @@ namespace Microsoft.CSharp.RuntimeBinder
             ICSharpBinder payload,
             Scope pScope,
             ArgumentObject[] arguments,
-            IEnumerable<Expression> parameterExpressions,
+            Expression[] parameterExpressions,
             Dictionary<int, LocalVariableSymbol> dictionary)
         {
             // We use the compile time types for the local variables, and then 
             // cast them to the runtime types for the expression tree.
 
-            int i = 0;
-            foreach (Expression parameter in parameterExpressions)
+            for (int i = 0; i < parameterExpressions.Length; i++)
             {
+                Expression parameter = parameterExpressions[i];
                 CType type = _symbolTable.GetCTypeFromType(parameter.Type);
 
                 // Make sure we're not setting ref for the receiver of a call - the argument
@@ -488,10 +486,12 @@ namespace Microsoft.CSharp.RuntimeBinder
                         }
                     }
                 }
-                LocalVariableSymbol local = _semanticChecker.GetGlobalSymbolFactory().CreateLocalVar(_semanticChecker.GetNameManager().Add("p" + i), pScope, type);
+                LocalVariableSymbol local =
+                    _semanticChecker.GetGlobalSymbolFactory()
+                        .CreateLocalVar(_semanticChecker.GetNameManager().Add("p" + i), pScope, type);
                 local.fUsedInAnonMeth = true;
 
-                dictionary.Add(i++, local);
+                dictionary.Add(i, local);
             }
         }
 
