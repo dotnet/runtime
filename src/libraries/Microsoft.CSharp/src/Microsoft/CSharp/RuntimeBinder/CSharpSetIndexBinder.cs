@@ -15,6 +15,8 @@ namespace Microsoft.CSharp.RuntimeBinder
     /// </summary>
     internal sealed class CSharpSetIndexBinder : SetIndexBinder, ICSharpBinder
     {
+        public string Name => SpecialNames.Indexer;
+
         public BindingFlag BindingFlags => 0;
 
         public EXPR DispatchPayload(RuntimeBinder runtimeBinder, ArgumentObject[] arguments, Dictionary<int, LocalVariableSymbol> dictionary)
