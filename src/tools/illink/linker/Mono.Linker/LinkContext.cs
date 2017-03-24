@@ -44,6 +44,7 @@ namespace Mono.Linker {
 		Hashtable _parameters;
 		bool _linkSymbols;
 		bool _keepTypeForwarderOnlyAssemblies;
+		bool _keepMembersForDebuggerAttributes;
 
 		AssemblyResolver _resolver;
 
@@ -80,6 +81,12 @@ namespace Mono.Linker {
 		{
 			get { return _keepTypeForwarderOnlyAssemblies; }
 			set { _keepTypeForwarderOnlyAssemblies = value; }
+		}
+
+		public bool KeepMembersForDebuggerAttributes
+		{
+			get { return _keepMembersForDebuggerAttributes; }
+			set { _keepMembersForDebuggerAttributes = value; }
 		}
 
 		public IDictionary Actions {
