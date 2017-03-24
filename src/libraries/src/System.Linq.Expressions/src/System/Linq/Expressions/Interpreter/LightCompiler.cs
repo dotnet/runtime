@@ -31,34 +31,26 @@ namespace System.Linq.Expressions.Interpreter
 
     internal sealed class ExceptionHandler
     {
-        public readonly Type ExceptionType;
+        private readonly Type _exceptionType;
         public readonly int LabelIndex;
         public readonly int HandlerStartIndex;
         public readonly int HandlerEndIndex;
         public readonly ExceptionFilter Filter;
 
-        internal TryCatchFinallyHandler Parent = null;
-
         internal ExceptionHandler(int labelIndex, int handlerStartIndex, int handlerEndIndex, Type exceptionType, ExceptionFilter filter)
         {
             Debug.Assert(exceptionType != null);
             LabelIndex = labelIndex;
-            ExceptionType = exceptionType;
+            _exceptionType = exceptionType;
             HandlerStartIndex = handlerStartIndex;
             HandlerEndIndex = handlerEndIndex;
             Filter = filter;
         }
 
-        internal void SetParent(TryCatchFinallyHandler tryHandler)
-        {
-            Debug.Assert(Parent == null);
-            Parent = tryHandler;
-        }
-
-        public bool Matches(Type exceptionType) => ExceptionType.IsAssignableFrom(exceptionType);
+        public bool Matches(Type exceptionType) => _exceptionType.IsAssignableFrom(exceptionType);
 
         public override string ToString() =>
-            string.Format(CultureInfo.InvariantCulture, "catch({0}) [{1}->{2}]", ExceptionType.Name, HandlerStartIndex, HandlerEndIndex);
+            string.Format(CultureInfo.InvariantCulture, "catch({0}) [{1}->{2}]", _exceptionType.Name, HandlerStartIndex, HandlerEndIndex);
     }
 
     internal sealed class TryCatchFinallyHandler
@@ -103,16 +95,7 @@ namespace System.Linq.Expressions.Interpreter
             FinallyStartIndex = finallyStart;
             FinallyEndIndex = finallyEnd;
             GotoEndTargetIndex = gotoEndLabelIndex;
-
             _handlers = handlers;
-
-            if (_handlers != null)
-            {
-                foreach (ExceptionHandler handler in _handlers)
-                {
-                    handler.SetParent(this);
-                }
-            }
         }
 
         internal bool HasHandler(InterpretedFrame frame, Exception exception, out ExceptionHandler handler, out object unwrappedException)
@@ -135,9 +118,8 @@ namespace System.Linq.Expressions.Interpreter
                 RuntimeWrappedException rwe = exception as RuntimeWrappedException;
                 unwrappedException = rwe != null ? rwe.WrappedException : exception;
                 Type exceptionType = unwrappedException.GetType();
-                for (int i = 0; i != _handlers.Length; ++i)
+                foreach (ExceptionHandler candidate in _handlers)
                 {
-                    ExceptionHandler candidate = _handlers[i];
                     if (candidate.Matches(exceptionType) && (candidate.Filter == null || FilterPasses(frame, ref unwrappedException, candidate.Filter)))
                     {
                         handler = candidate;
@@ -154,35 +136,42 @@ namespace System.Linq.Expressions.Interpreter
             return false;
         }
 
-        internal bool FilterPasses(InterpretedFrame frame, ref object exception, ExceptionFilter filter)
+        private static bool FilterPasses(InterpretedFrame frame, ref object exception, ExceptionFilter filter)
         {
             Interpreter interpreter = frame.Interpreter;
             Instruction[] instructions = interpreter.Instructions.Instructions;
             int stackIndex = frame.StackIndex;
+            int frameIndex = frame.InstructionIndex;
             try
             {
                 int index = interpreter._labels[filter.LabelIndex].Index;
+                frame.InstructionIndex = index;
                 frame.Push(exception);
                 while (index >= filter.StartIndex && index < filter.EndIndex)
                 {
                     index += instructions[index].Run(frame);
+                    frame.InstructionIndex = index;
                 }
 
+                // Exception is stored in a local at start of the filter, and loaded from it at the end, so it is now
+                // on the top of the stack. It may have been assigned to in the course of the filter running.
+                // If this is the handler that will be executed, then if the filter has assigned to the exception variable
+                // that change should be visible to the handler. Otherwise, it should not, so we write it back only on true.
+                object exceptionLocal = frame.Pop();
                 if ((bool)frame.Pop())
                 {
-                    // If this is the handler that will be executed, then if the filter has assigned to the exception variable
-                    // that change should be visible to the handler. Otherwise, it should not.
-                    exception = (Exception)frame.Peek();
+                    exception = exceptionLocal;
+                    // Stack and instruction indices will be overwritten in the catch block anyway, so no need to restore.
                     return true;
                 }
             }
             catch
             {
                 // Silently eating exceptions and returning false matches the CLR behavior.
-                // Restore stack depth first.
-                frame.StackIndex = stackIndex;
             }
 
+            frame.StackIndex = stackIndex;
+            frame.InstructionIndex = frameIndex;
             return false;
         }
     }
@@ -2011,6 +2000,7 @@ namespace System.Linq.Expressions.Interpreter
 
                             CompileSetVariable(parameter, isVoid: true);
                             Compile(handler.Filter);
+                            CompileGetVariable(parameter);
 
                             filter = new ExceptionFilter(filterLabel, filterStart, _instructions.Count);
 

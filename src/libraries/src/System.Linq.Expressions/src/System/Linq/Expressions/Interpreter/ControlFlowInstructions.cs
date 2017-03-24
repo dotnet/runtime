@@ -664,8 +664,8 @@ namespace System.Linq.Expressions.Interpreter
 
         public override string InstructionName => "LeaveExceptionFilter";
 
-        // The boolean result is popped from the stack in the filter runner.
-        public override int ConsumedStack => 1;
+        // The exception and the boolean result are popped from the stack in the filter runner.
+        public override int ConsumedStack => 2;
 
         public override int ProducedStack => 0;
 
