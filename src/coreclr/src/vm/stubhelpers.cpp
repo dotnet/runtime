@@ -158,7 +158,7 @@ void StubHelpers::ProcessByrefValidationList()
         {
             entry = s_ByrefValidationEntries[i];
 
-            Object *pObjUNSAFE = GCHeapUtilities::GetGCHeap()->GetContainingObject(entry.pByref);
+            Object *pObjUNSAFE = GCHeapUtilities::GetGCHeap()->GetContainingObject(entry.pByref, false);
             ValidateObjectInternal(pObjUNSAFE, TRUE);
         }
     }
