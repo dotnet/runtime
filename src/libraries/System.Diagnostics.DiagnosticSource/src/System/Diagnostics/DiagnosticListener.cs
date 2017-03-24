@@ -57,7 +57,9 @@ namespace System.Diagnostics
         /// </summary>
         public virtual IDisposable Subscribe(IObserver<KeyValuePair<string, object>> observer, Predicate<string> isEnabled)
         {
-            return SubscribeInternal(observer, isEnabled, (name, arg1, arg2) => isEnabled(name));
+            return isEnabled == null ?
+                SubscribeInternal(observer, null, null) :
+                SubscribeInternal(observer, isEnabled, (name, arg1, arg2) => isEnabled(name));
         }
 
         /// <summary>
@@ -72,7 +74,9 @@ namespace System.Diagnostics
         /// Use Subscribe overload with name-based filtering if producer does NOT support context-based filtering</param>
         public virtual IDisposable Subscribe(IObserver<KeyValuePair<string, object>> observer, Func<string, object, object, bool> isEnabled)
         {
-            return SubscribeInternal(observer, name => IsEnabled(name, null, null), isEnabled);
+            return isEnabled == null ?
+                SubscribeInternal(observer, null, null) :
+                SubscribeInternal(observer, name => IsEnabled(name, null, null), isEnabled);
         }
 
         /// <summary>
