@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+
 namespace Microsoft.CSharp.RuntimeBinder.Syntax
 {
     internal sealed class NameTable
@@ -44,6 +46,20 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
             return AddEntry(new Name(key), hashCode);
         }
 
+        public Name Add(string key, int length)
+        {
+            int hashCode = ComputeHashCode(key, length);
+            for (Entry e = _entries[hashCode & _mask]; e != null; e = e.Next)
+            {
+                if (e.HashCode == hashCode && Equals(e.Name.Text, key, length))
+                {
+                    return e.Name;
+                }
+            }
+
+            return AddEntry(new Name(key.Substring(0, length)), hashCode);
+        }
+
         internal void Add(Name name)
         {
             int hashCode = ComputeHashCode(name.Text);
@@ -73,25 +89,80 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
             return null;
         }
 
+        public Name Lookup(string key, int length)
+        {
+            int hashCode = ComputeHashCode(key, length);
+            for (Entry e = _entries[hashCode & _mask]; e != null; e = e.Next)
+            {
+                if (e.HashCode == hashCode && Equals(e.Name.Text, key, length))
+                {
+                    return e.Name;
+                }
+            }
+
+            return null;
+        }
+
         private int ComputeHashCode(string key)
         {
-            int hashCode, len = key.Length;
-
             unchecked
             {
-                hashCode = len;
+                int hashCode = key.Length;
                 // use key.Length to eliminate the range check
                 for (int i = 0; i < key.Length; i++)
                 {
                     hashCode += (hashCode << 7) ^ key[i];
                 }
+
                 // mix it a bit more
                 hashCode -= hashCode >> 17;
                 hashCode -= hashCode >> 11;
                 hashCode -= hashCode >> 5;
+
+                return hashCode;
+            }
+        }
+
+        private int ComputeHashCode(string key, int length)
+        {
+            Debug.Assert(key != null);
+            Debug.Assert(length <= key.Length);
+            unchecked
+            {
+                int hashCode = length;
+                for (int i = 0; i < length; i++)
+                {
+                    hashCode += (hashCode << 7) ^ key[i];
+                }
+
+                // mix it a bit more
+                hashCode -= hashCode >> 17;
+                hashCode -= hashCode >> 11;
+                hashCode -= hashCode >> 5;
+
+                return hashCode;
+            }
+        }
+
+        private bool Equals(string candidate, string key, int length)
+        {
+            Debug.Assert(candidate != null);
+            Debug.Assert(key != null);
+            Debug.Assert(length <= key.Length);
+            if (candidate.Length != length)
+            {
+                return false;
             }
 
-            return hashCode;
+            for (int i = 0; i < candidate.Length; i++)
+            {
+                if (candidate[i] != key[i])
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private Name AddEntry(Name name, int hashCode)

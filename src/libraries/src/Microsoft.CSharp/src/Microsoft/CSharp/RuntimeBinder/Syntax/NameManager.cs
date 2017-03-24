@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+
 namespace Microsoft.CSharp.RuntimeBinder.Syntax
 {
     internal partial class NameManager
@@ -16,6 +18,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
             }
 
             return s_knownNames.Lookup(key) ?? _names.Add(key);
+        }
+
+        internal Name Add(string key, int length)
+        {
+            Debug.Assert(key != null);
+            Debug.Assert(key.Length >= length);
+            return s_knownNames.Lookup(key, length) ?? _names.Add(key, length);
         }
 
         internal Name Lookup(string key)

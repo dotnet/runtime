@@ -354,13 +354,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         private Name GetName(Type type)
         {
             string name = type.Name;
-            if (type.IsGenericType)
-            {
-                // Trim the name to remove the ` at the end.
-                name = name.Split('`')[0];
-            }
-
-            return _nameManager.Add(name);
+            return type.IsGenericType ? _nameManager.Add(name, name.IndexOf('`')) : _nameManager.Add(name);
         }
 
         #endregion
