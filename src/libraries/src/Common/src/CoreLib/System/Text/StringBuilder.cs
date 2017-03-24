@@ -322,7 +322,7 @@ namespace System.Text
                 {
                     int newLen = value - m_ChunkOffset;
                     char[] newArray = new char[newLen];
-                    Array.Copy(m_ChunkChars, newArray, m_ChunkLength);
+                    Array.Copy(m_ChunkChars, 0, newArray, 0, m_ChunkLength);
                     m_ChunkChars = newArray;
                 }
             }
@@ -532,7 +532,7 @@ namespace System.Text
                         char[] newArray = new char[newLen];
 
                         Debug.Assert(newLen > chunk.m_ChunkChars.Length, "the new chunk should be larger than the one it is replacing");
-                        Array.Copy(chunk.m_ChunkChars, newArray, chunk.m_ChunkLength);
+                        Array.Copy(chunk.m_ChunkChars, 0, newArray, 0, chunk.m_ChunkLength);
 
                         m_ChunkChars = newArray;
                         m_ChunkPrevious = chunk.m_ChunkPrevious;
@@ -2139,37 +2139,6 @@ namespace System.Text
                     throw new ArgumentOutOfRangeException(nameof(sourceIndex), SR.ArgumentOutOfRange_Index);
                 }
             }
-        }
-
-        // Copies the source StringBuilder to the destination IntPtr memory allocated with len bytes.
-        internal unsafe void InternalCopy(IntPtr dest, int len)
-        {
-            if (len == 0)
-                return;
-
-            bool isLastChunk = true;
-            byte* dstPtr = (byte*)dest.ToPointer();
-            StringBuilder currentSrc = FindChunkForByte(len);
-
-            do
-            {
-                int chunkOffsetInBytes = currentSrc.m_ChunkOffset * sizeof(char);
-                int chunkLengthInBytes = currentSrc.m_ChunkLength * sizeof(char);
-                fixed (char* charPtr = &currentSrc.m_ChunkChars[0])
-                {
-                    byte* srcPtr = (byte*)charPtr;
-                    if (isLastChunk)
-                    {
-                        isLastChunk = false;
-                        Buffer.Memcpy(dstPtr + chunkOffsetInBytes, srcPtr, len - chunkOffsetInBytes);
-                    }
-                    else
-                    {
-                        Buffer.Memcpy(dstPtr + chunkOffsetInBytes, srcPtr, chunkLengthInBytes);
-                    }
-                }
-                currentSrc = currentSrc.m_ChunkPrevious;
-            } while (currentSrc != null);
         }
 
         /// <summary>
