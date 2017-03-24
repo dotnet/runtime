@@ -28,6 +28,7 @@ namespace System.Reflection.Tests
 
         string sourceTestAssemblyPath = Path.Combine(Environment.CurrentDirectory, "TestAssembly.dll");
         string destTestAssemblyPath = Path.Combine(Environment.CurrentDirectory, "TestAssembly", "TestAssembly.dll");
+        string loadFromTestPath;
 
         public AssemblyTests()
         {
@@ -37,6 +38,9 @@ namespace System.Reflection.Tests
                 Directory.CreateDirectory(Path.GetDirectoryName(destTestAssemblyPath));
                 File.Move(sourceTestAssemblyPath, destTestAssemblyPath);
             }
+            string currAssemblyPath = typeof(AssemblyTests).Assembly.Location;
+            loadFromTestPath = Path.Combine(Path.GetDirectoryName(currAssemblyPath), "TestAssembly", Path.GetFileName(currAssemblyPath));
+            File.Copy(currAssemblyPath, loadFromTestPath, true);
         }
 
         public void Dispose()
@@ -323,6 +327,13 @@ namespace System.Reflection.Tests
             var assem = Assembly.LoadFrom(destTestAssemblyPath);
             Assert.Throws<ArgumentNullException>("assemblyFile", () => Assembly.LoadFrom(null));
             var assem1 = Assembly.LoadFrom(destTestAssemblyPath);
+            Assert.Equal(assem, assem1);
+
+            assem = Assembly.LoadFrom(typeof(AssemblyTests).Assembly.Location);
+            Assert.Equal(assem, typeof(AssemblyTests).Assembly);
+
+            // Test that loading assembly of same identity as TPA returns TPA assembly even if paths differ
+            assem1 = Assembly.LoadFrom(loadFromTestPath);
             Assert.Equal(assem, assem1);
         }        
 
