@@ -6,6 +6,7 @@
       netstandard;
       uap-Windows_NT;
       netcoreapp;
+      net45-Windows_NT;      
       net46-Windows_NT;
       netfx-Windows_NT;      
     </BuildConfigurations>
