@@ -19,11 +19,15 @@ namespace System.Reflection
         {
         }
 
-        public TargetException(string message, Exception inner) : base(message, inner)
+        public TargetException(string message, Exception inner)
+            : base(message, inner)
         {
             HResult = __HResults.COR_E_TARGET;
         }
 
-        protected TargetException(SerializationInfo info, StreamingContext context) : base(info, context) { }
+        protected TargetException(SerializationInfo info, StreamingContext context)
+            : base(info, context)
+        {
+        }
     }
 }

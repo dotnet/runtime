@@ -4,7 +4,7 @@
 
 namespace System.Reflection
 {
-    [Flags()]
+    [Flags]
     public enum ExceptionHandlingClauseOptions : int
     {
         Clause = 0x0,
