@@ -125,11 +125,16 @@ public:
     virtual void DumpDebugInfo(char* ptr, int& offset) = 0;
 };
 
-class LocalsInfo 
+class LocalsInfo
 {
 public:
+    struct Scope {
+        int ilStartOffset;
+        int ilEndOffset;
+    };
     int size;
-    char** localsName;
+    NewArrayHolder< NewArrayHolder<char> > localsName;
+    NewArrayHolder<Scope> localsScope;
     ULONG32 countVars;
     ICorDebugInfo::NativeVarInfo *pVars;
 };
@@ -246,10 +251,12 @@ public:
     void DumpDebugInfo(char* ptr, int& offset) override;
 };
 
+class FunctionMemberPtrArrayHolder;
+
 class ClassTypeInfo: public TypeInfoBase
 {
 public:
-    ClassTypeInfo(TypeHandle typeHandle, int num_members);
+    ClassTypeInfo(TypeHandle typeHandle, int num_members, FunctionMemberPtrArrayHolder &method);
     ~ClassTypeInfo();
 
     void DumpStrings(char* ptr, int& offset) override;
@@ -258,6 +265,7 @@ public:
     int m_num_members;
     TypeMember* members;
     TypeInfoBase* m_parent;
+    FunctionMemberPtrArrayHolder &m_method;
 };
 
 class TypeMember: public DwarfDumpable
@@ -324,7 +332,9 @@ public:
           m_var_name_offset(0),
           m_il_index(0),
           m_native_offset(0),
-          m_var_type(nullptr)
+          m_var_type(nullptr),
+          m_low_pc(0),
+          m_high_pc(0)
     {
     }
 
@@ -334,7 +344,9 @@ public:
           m_var_name_offset(0),
           m_il_index(0),
           m_native_offset(0),
-          m_var_type(nullptr)
+          m_var_type(nullptr),
+          m_low_pc(0),
+          m_high_pc(0)
     {
     }
 
@@ -352,7 +364,11 @@ public:
     int m_il_index;
     int m_native_offset;
     TypeInfoBase *m_var_type;
+    uintptr_t m_low_pc;
+    uintptr_t m_high_pc;
 };
+
+struct Elf_Symbol;
 
 class NotifyGdb
 {
@@ -436,12 +452,14 @@ private:
 
     static int GetSectionIndex(const char *sectName);
     static bool BuildELFHeader(MemBuf& buf);
-    static bool BuildSectionTables(MemBuf& sectBuf, MemBuf& strBuf);
-    static bool BuildSymbolTableSection(MemBuf& buf, PCODE addr, TADDR codeSize);
-    static bool BuildStringTableSection(MemBuf& strTab);
-    static bool BuildDebugStrings(MemBuf& buf, PTK_TypeInfoMap pTypeMap);
+    static bool BuildSectionTables(MemBuf& sectBuf, MemBuf& strBuf, FunctionMemberPtrArrayHolder &method,
+                                   int symbolCount);
+    static bool BuildSymbolTableSection(MemBuf& buf, PCODE addr, TADDR codeSize, FunctionMemberPtrArrayHolder &method,
+                                        NewArrayHolder<Elf_Symbol> &symbolNames, int symbolCount);
+    static bool BuildStringTableSection(MemBuf& strTab, NewArrayHolder<Elf_Symbol> &symbolNames, int symbolCount);
+    static bool BuildDebugStrings(MemBuf& buf, PTK_TypeInfoMap pTypeMap, FunctionMemberPtrArrayHolder &method);
     static bool BuildDebugAbbrev(MemBuf& buf);
-    static bool BuildDebugInfo(MemBuf& buf, PTK_TypeInfoMap pTypeMap, SymbolsInfo* lines, unsigned nlines);
+    static bool BuildDebugInfo(MemBuf& buf, PTK_TypeInfoMap pTypeMap, FunctionMemberPtrArrayHolder &method);
     static bool BuildDebugPub(MemBuf& buf, const char* name, uint32_t size, uint32_t dieOffset);
     static bool BuildLineTable(MemBuf& buf, PCODE startAddr, TADDR codeSize, SymbolsInfo* lines, unsigned nlines);
     static bool BuildFileTable(MemBuf& buf, SymbolsInfo* lines, unsigned nlines);
@@ -451,7 +469,8 @@ private:
     static void IssueSimpleCommand(char*& ptr, uint8_t command);
     static void IssueParamCommand(char*& ptr, uint8_t command, char* param, int param_len);
     static void SplitPathname(const char* path, const char*& pathName, const char*& fileName);
-    static bool CollectCalledMethods(CalledMethod* pCM, TADDR nativeCode);
+    static bool CollectCalledMethods(CalledMethod* pCM, TADDR nativeCode, FunctionMemberPtrArrayHolder &method,
+                                     NewArrayHolder<Elf_Symbol> &symbolNames, int &symbolCount);
 #ifdef _DEBUG
     static void DumpElf(const char* methodName, const MemBuf& buf);
 #endif
@@ -502,7 +521,8 @@ public:
     void DumpTryCatchDebugInfo(char* ptr, int& offset);
     HRESULT GetLocalsDebugInfo(NotifyGdb::PTK_TypeInfoMap pTypeMap,
                            LocalsInfo& locals,
-                           int startNativeOffset);
+                           int startNativeOffset,
+                           FunctionMemberPtrArrayHolder &method);
     BOOL IsDumped()
     {
         return dumped;
@@ -527,6 +547,7 @@ private:
     void DumpLinkageName(char* ptr, int& offset);
     bool GetBlockInNativeCode(int blockILOffset, int blockILLen, TADDR *startOffset, TADDR *endOffset);
     void DumpTryCatchBlock(char* ptr, int& offset, int ilOffset, int ilLen, int abbrev);
+    void DumpVarsWithScopes(char* ptr, int& offset);
     BOOL dumped;
 };
 #endif // #ifndef __GDBJIT_H__
