@@ -1076,7 +1076,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             return expr;
         }
 
-        private void CheckForConditionalMethodError(EXPR pExpr)
+        private static void CheckForConditionalMethodError(EXPR pExpr)
         {
             Debug.Assert(pExpr.isCALL());
             if (pExpr.isCALL())
@@ -1421,7 +1421,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 callingObject.flags |= EXPRFLAG.EXF_UNBOXRUNTIME;
             }
             string name = GetName(payload);
-            BindingFlag bindFlags = GetBindingFlags(payload);
+            BindingFlag bindFlags = payload.BindingFlags;
 
             MemberLookup mem = new MemberLookup();
             SymWithType swt = _symbolTable.LookupMember(name, callingObject, _bindingContext.ContextForMemberLookup(), 0, mem, false, false);
@@ -1453,15 +1453,9 @@ namespace Microsoft.CSharp.RuntimeBinder
                     }
                     else
                     {
-                        BindingFlag flags = 0;
-                        if (payload is CSharpGetMemberBinder || payload is CSharpGetIndexBinder)
-                        {
-                            flags = BindingFlag.BIND_RVALUEREQUIRED;
-                        }
-
                         // Properties can be LValues.
                         callingObject.flags |= EXPRFLAG.EXF_LVALUE;
-                        return CreateProperty(swt, callingObject, flags);
+                        return CreateProperty(swt, callingObject, payload.BindingFlags);
                     }
 
                 case SYMKIND.SK_FieldSymbol:
@@ -1664,18 +1658,6 @@ namespace Microsoft.CSharp.RuntimeBinder
 
             Debug.Assert(result != null);
             return result;
-        }
-
-        /////////////////////////////////////////////////////////////////////////////////
-
-        private BindingFlag GetBindingFlags(ICSharpBinder payload)
-        {
-            if ((payload is CSharpGetMemberBinder) ||
-                (payload is CSharpGetIndexBinder))
-            {
-                return BindingFlag.BIND_RVALUEREQUIRED;
-            }
-            return 0;
         }
     }
 }
