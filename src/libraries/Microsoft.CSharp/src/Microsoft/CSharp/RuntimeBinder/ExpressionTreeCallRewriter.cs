@@ -27,7 +27,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         }
 
         private readonly Dictionary<EXPRCALL, Expression> _DictionaryOfParameters;
-        private readonly IEnumerable<Expression> _ListOfParameters;
+        private readonly Expression[] _ListOfParameters;
         private readonly TypeManager _typeManager;
         // Counts how many EXPRSAVEs we've encountered so we know which index into the 
         // parameter list we should be taking.
@@ -35,7 +35,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private ExpressionTreeCallRewriter(TypeManager typeManager, IEnumerable<Expression> listOfParameters)
+        private ExpressionTreeCallRewriter(TypeManager typeManager, Expression[] listOfParameters)
         {
             _typeManager = typeManager;
             _DictionaryOfParameters = new Dictionary<EXPRCALL, Expression>();
@@ -44,7 +44,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        public static Expression Rewrite(TypeManager typeManager, EXPR pExpr, IEnumerable<Expression> listOfParameters)
+        public static Expression Rewrite(TypeManager typeManager, EXPR pExpr, Expression[] listOfParameters)
         {
             ExpressionTreeCallRewriter rewriter = new ExpressionTreeCallRewriter(typeManager, listOfParameters);
 
@@ -83,7 +83,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
             EXPRCALL call = pExpr.GetOptionalLeftChild().asCALL();
             EXPRTYPEOF TypeOf = call.GetOptionalArguments().asLIST().GetOptionalElement().asTYPEOF();
-            Expression parameter = _ListOfParameters.ElementAt(_currentParameterIndex++);
+            Expression parameter = _ListOfParameters[_currentParameterIndex++];
             _DictionaryOfParameters.Add(call, parameter);
 
             return null;
