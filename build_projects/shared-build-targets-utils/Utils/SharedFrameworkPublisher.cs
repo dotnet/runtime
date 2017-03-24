@@ -139,9 +139,9 @@ namespace Microsoft.DotNet.Cli.Build
             PublishMutationUtilties.CleanPublishOutput(
                 sharedFrameworkNameAndVersionRoot,
                 "framework",
+                new List<string> {"apphost", "hostfxr", "dotnet" },
                 deleteRuntimeConfigJson: true,
-                deleteDepsJson: false,
-                deleteAppHost: true);
+                deleteDepsJson: false);
 
             // Rename the .deps file
             var destinationDeps = Path.Combine(sharedFrameworkNameAndVersionRoot, $"{s_sharedFrameworkName}.deps.json");
@@ -149,9 +149,8 @@ namespace Microsoft.DotNet.Cli.Build
             PublishMutationUtilties.ChangeEntryPointLibraryName(destinationDeps, null);
 
             // Generate RID fallback graph
-            GenerateRuntimeGraph(dotnetCli, destinationDeps);
-
-            CopyHostArtifactsToSharedFramework(sharedFrameworkNameAndVersionRoot, hostFxrVersion);
+            CopyHostArtifactsToSharedFramework(sharedFrameworkNameAndVersionRoot);
+            ProcessGeneratedDeps(dotnetCli, destinationDeps, new List<string> { $"runtime.{_sharedFrameworkRid}.microsoft.netcore.dotnetapphost", $"runtime.{_sharedFrameworkRid}.microsoft.netcore.dotnethostresolver", "microsoft.netcore.dotnetapphost", "microsoft.netcore.dotnethostresolver" });
 
             _crossgenUtil.CrossgenDirectory(sharedFrameworkNameAndVersionRoot, sharedFrameworkNameAndVersionRoot);
 
@@ -198,7 +197,7 @@ namespace Microsoft.DotNet.Cli.Build
             return;
         }
 
-        private void GenerateRuntimeGraph(DotNetCli dotnetCli, string destinationDeps)
+        private void ProcessGeneratedDeps(DotNetCli dotnetCli, string destinationDeps, IReadOnlyList<string> packagesToBeRemoved)
         {
             string runtimeGraphGeneratorRuntime = null;
             switch (RuntimeEnvironment.OperatingSystemPlatform)
@@ -215,16 +214,24 @@ namespace Microsoft.DotNet.Cli.Build
             }
             if (!string.IsNullOrEmpty(runtimeGraphGeneratorRuntime))
             {
-                var runtimeGraphGeneratorName = "RuntimeGraphGenerator";
-                var runtimeGraphGeneratorProject = Path.Combine(Dirs.RepoRoot, "setuptools", "independent", runtimeGraphGeneratorName);
-                var runtimeGraphGeneratorOutput = Path.Combine(Dirs.Output, "setuptools", "independent", runtimeGraphGeneratorName);
+                var depsProcessorName = "DepsProcessor";
+                var depsProcessorProject = Path.Combine(Dirs.RepoRoot, "setuptools", "independent", depsProcessorName);
+                var depsProcessorOutput = Path.Combine(Dirs.Output, "setuptools", "independent", depsProcessorName);
 
                 dotnetCli.Publish(
-                    "--output", runtimeGraphGeneratorOutput,
-                    runtimeGraphGeneratorProject).Execute().EnsureSuccessful();
-                var runtimeGraphGeneratorExe = Path.Combine(runtimeGraphGeneratorOutput, $"{runtimeGraphGeneratorName}{Constants.ExeSuffix}");
+                    "--output", depsProcessorOutput,
+                    depsProcessorProject).Execute().EnsureSuccessful();
+                var depsProcessorExe = Path.Combine(depsProcessorOutput, $"{depsProcessorName}{Constants.ExeSuffix}");
 
-                Cmd(runtimeGraphGeneratorExe, "--project", _sharedFrameworkSourceRoot, "--deps", destinationDeps, runtimeGraphGeneratorRuntime)
+                var args = new List<string>() { "--project", _sharedFrameworkSourceRoot, "--deps", destinationDeps, runtimeGraphGeneratorRuntime};
+
+                foreach (var pkg in packagesToBeRemoved)
+                {
+                    args.Add("--remove");
+                    args.Add(pkg);
+                }
+
+                Cmd(depsProcessorExe, args.ToArray())
                     .Execute()
                     .EnsureSuccessful();
             }
@@ -234,15 +241,8 @@ namespace Microsoft.DotNet.Cli.Build
             }
         }
 
-        private void CopyHostArtifactsToSharedFramework(string sharedFrameworkNameAndVersionRoot, string hostFxrVersion)
+        private void CopyHostArtifactsToSharedFramework(string sharedFrameworkNameAndVersionRoot)
         {
-            File.Copy(
-                Path.Combine(_corehostLockedDirectory, HostArtifactNames.DotnetHostBaseName),
-                Path.Combine(sharedFrameworkNameAndVersionRoot, HostArtifactNames.DotnetHostBaseName), true);
-            File.Copy(
-               Path.Combine(_corehostLockedDirectory, HostArtifactNames.DotnetHostFxrBaseName),
-               Path.Combine(sharedFrameworkNameAndVersionRoot, HostArtifactNames.DotnetHostFxrBaseName), true);
-
             // Hostpolicy should be the latest and not the locked version as it is supposed to evolve for
             // the framework and has a tight coupling with coreclr's API in the framework.
             File.Copy(
