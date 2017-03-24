@@ -448,7 +448,7 @@ namespace System.Threading
                                         WaitHandle toWaitOn)
         {
 #if PLATFORM_UNIX
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(SR.Arg_PlatformNotSupported); // https://github.com/dotnet/coreclr/issues/10441
 #else
             return SignalAndWait(toSignal, toWaitOn, -1, false);
 #endif
@@ -461,7 +461,7 @@ namespace System.Threading
                                         bool exitContext)
         {
 #if PLATFORM_UNIX
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(SR.Arg_PlatformNotSupported); // https://github.com/dotnet/coreclr/issues/10441
 #else
             long tm = (long)timeout.TotalMilliseconds;
             if (-1 > tm || (long)Int32.MaxValue < tm)
@@ -480,7 +480,7 @@ namespace System.Threading
                                         bool exitContext)
         {
 #if PLATFORM_UNIX
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(SR.Arg_PlatformNotSupported); // https://github.com/dotnet/coreclr/issues/10441
 #else
             if (null == toSignal)
             {

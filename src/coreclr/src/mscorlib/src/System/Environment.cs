@@ -180,13 +180,6 @@ namespace System
                 return name;
             }
 
-            if (AppDomain.IsAppXModel() && !AppDomain.IsAppXDesignMode())
-            {
-                // Environment variable accessors are not approved modern API.
-                // Behave as if no variables are defined in this case.
-                return name;
-            }
-
             int currentSize = 100;
             StringBuilder blob = new StringBuilder(currentSize); // A somewhat reasonable default size
 
@@ -231,27 +224,6 @@ namespace System
 #endif // PLATFORM_UNIX
 
             return blob.ToString();
-        }
-
-        public static String MachineName
-        {
-            get
-            {
-                // UWP Debug scenarios
-                if (AppDomain.IsAppXModel() && !AppDomain.IsAppXDesignMode())
-                {
-                    // Getting Computer Name is not a supported scenario on Store apps.
-                    throw new PlatformNotSupportedException();
-                }
-
-                // In future release of operating systems, you might be able to rename a machine without
-                // rebooting.  Therefore, don't cache this machine name.
-                StringBuilder buf = new StringBuilder(MaxMachineNameLength);
-                int len = MaxMachineNameLength;
-                if (Win32Native.GetComputerName(buf, ref len) == 0)
-                    throw new InvalidOperationException(SR.InvalidOperation_ComputerName);
-                return buf.ToString();
-            }
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
@@ -701,13 +673,6 @@ namespace System
 
         private static string GetEnvironmentVariableCore(string variable)
         {
-            if (AppDomain.IsAppXModel() && !AppDomain.IsAppXDesignMode())
-            {
-                // Environment variable accessors are not approved modern API.
-                // Behave as if the variable was not found in this case.
-                return null;
-            }
-
             StringBuilder sb = StringBuilderCache.Acquire(128); // A somewhat reasonable default size
             int requiredSize = Win32Native.GetEnvironmentVariable(variable, sb, sb.Capacity);
 
@@ -763,13 +728,6 @@ namespace System
 
         private static IDictionary GetEnvironmentVariablesCore()
         {
-            if (AppDomain.IsAppXModel() && !AppDomain.IsAppXDesignMode())
-            {
-                // Environment variable accessors are not approved modern API.
-                // Behave as if no environment variables are defined in this case.
-                return new Dictionary<string, string>(0);
-            }
-
             return GetRawEnvironmentVariables();
         }
 
@@ -820,13 +778,6 @@ namespace System
             // explicitly null out value if is the empty string.
             if (string.IsNullOrEmpty(value) || value[0] == '\0')
                 value = null;
-
-            if (AppDomain.IsAppXModel() && !AppDomain.IsAppXDesignMode())
-            {
-                // Environment variable accessors are not approved modern API.
-                // so we throw PlatformNotSupportedException.
-                throw new PlatformNotSupportedException();
-            }
 
             if (!Win32Native.SetEnvironmentVariable(variable, value))
             {

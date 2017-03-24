@@ -136,50 +136,50 @@ namespace System
 #else
         public ArgIterator(RuntimeArgumentHandle arglist)
         {
-            throw new PlatformNotSupportedException(); //The JIT requires work to enable ArgIterator see: https://github.com/dotnet/coreclr/issues/9204.
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ArgIterator); // https://github.com/dotnet/coreclr/issues/9204
         }
 
         [CLSCompliant(false)]
         public unsafe ArgIterator(RuntimeArgumentHandle arglist, void* ptr)
         {
-            throw new PlatformNotSupportedException(); //The JIT requires work to enable ArgIterator see: https://github.com/dotnet/coreclr/issues/9204.
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ArgIterator); // https://github.com/dotnet/coreclr/issues/9204
         }
 
         public void End()
         {
-            throw new PlatformNotSupportedException(); //The JIT requires work to enable ArgIterator see: https://github.com/dotnet/coreclr/issues/9204.
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ArgIterator); // https://github.com/dotnet/coreclr/issues/9204
         }
 
         public override bool Equals(Object o)
         {
-            throw new PlatformNotSupportedException(); //The JIT requires work to enable ArgIterator see: https://github.com/dotnet/coreclr/issues/9204.
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ArgIterator); // https://github.com/dotnet/coreclr/issues/9204
         }
 
         public override int GetHashCode()
         {
-            throw new PlatformNotSupportedException(); //The JIT requires work to enable ArgIterator see: https://github.com/dotnet/coreclr/issues/9204.
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ArgIterator); // https://github.com/dotnet/coreclr/issues/9204
         }
 
         [System.CLSCompliantAttribute(false)]
         public System.TypedReference GetNextArg()
         {
-            throw new PlatformNotSupportedException(); //The JIT requires work to enable ArgIterator see: https://github.com/dotnet/coreclr/issues/9204.
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ArgIterator); // https://github.com/dotnet/coreclr/issues/9204
         }
 
         [System.CLSCompliantAttribute(false)]
         public System.TypedReference GetNextArg(System.RuntimeTypeHandle rth)
         {
-            throw new PlatformNotSupportedException(); //The JIT requires work to enable ArgIterator see: https://github.com/dotnet/coreclr/issues/9204.
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ArgIterator); // https://github.com/dotnet/coreclr/issues/9204
         }
 
         public unsafe System.RuntimeTypeHandle GetNextArgType()
         {
-            throw new PlatformNotSupportedException(); //The JIT requires work to enable ArgIterator see: https://github.com/dotnet/coreclr/issues/9204.
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ArgIterator); // https://github.com/dotnet/coreclr/issues/9204
         }
 
         public int GetRemainingCount()
         {
-            throw new PlatformNotSupportedException(); //The JIT requires work to enable ArgIterator see: https://github.com/dotnet/coreclr/issues/9204.
+            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ArgIterator); // https://github.com/dotnet/coreclr/issues/9204
         }
 #endif //VARARGS_ENABLED
     }

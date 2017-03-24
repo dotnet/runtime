@@ -408,7 +408,7 @@ namespace System.Runtime.InteropServices
         //====================================================================
         public static byte ReadByte([MarshalAs(UnmanagedType.AsAny), In] Object ptr, int ofs)
         {
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(); // https://github.com/dotnet/coreclr/issues/10442
         }
 
         public static unsafe byte ReadByte(IntPtr ptr, int ofs)
@@ -432,7 +432,7 @@ namespace System.Runtime.InteropServices
 
         public static short ReadInt16([MarshalAs(UnmanagedType.AsAny), In] Object ptr, int ofs)
         {
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(); // https://github.com/dotnet/coreclr/issues/10442
         }
 
         public static unsafe short ReadInt16(IntPtr ptr, int ofs)
@@ -469,7 +469,7 @@ namespace System.Runtime.InteropServices
 
         public static int ReadInt32([MarshalAs(UnmanagedType.AsAny), In] Object ptr, int ofs)
         {
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(); // https://github.com/dotnet/coreclr/issues/10442
         }
 
         public static unsafe int ReadInt32(IntPtr ptr, int ofs)
@@ -535,7 +535,7 @@ namespace System.Runtime.InteropServices
 
         public static long ReadInt64([MarshalAs(UnmanagedType.AsAny), In] Object ptr, int ofs)
         {
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(); // https://github.com/dotnet/coreclr/issues/10442
         }
 
         public static unsafe long ReadInt64(IntPtr ptr, int ofs)
@@ -596,7 +596,7 @@ namespace System.Runtime.InteropServices
 
         public static void WriteByte([MarshalAs(UnmanagedType.AsAny), In, Out] Object ptr, int ofs, byte val)
         {
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(); // https://github.com/dotnet/coreclr/issues/10442
         }
 
         public static void WriteByte(IntPtr ptr, byte val)
@@ -631,7 +631,7 @@ namespace System.Runtime.InteropServices
 
         public static void WriteInt16([MarshalAs(UnmanagedType.AsAny), In, Out] Object ptr, int ofs, short val)
         {
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(); // https://github.com/dotnet/coreclr/issues/10442
         }
 
         public static void WriteInt16(IntPtr ptr, short val)
@@ -683,7 +683,7 @@ namespace System.Runtime.InteropServices
 
         public static void WriteInt32([MarshalAs(UnmanagedType.AsAny), In, Out] Object ptr, int ofs, int val)
         {
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(); // https://github.com/dotnet/coreclr/issues/10442
         }
 
         public static void WriteInt32(IntPtr ptr, int val)
@@ -751,7 +751,7 @@ namespace System.Runtime.InteropServices
 
         public static void WriteInt64([MarshalAs(UnmanagedType.AsAny), In, Out] Object ptr, int ofs, long val)
         {
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(); // https://github.com/dotnet/coreclr/issues/10442
         }
 
         public static void WriteInt64(IntPtr ptr, long val)
@@ -1470,7 +1470,7 @@ namespace System.Runtime.InteropServices
         //====================================================================
         public static Object GetComObjectData(Object obj, Object key)
         {
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(SR.Arg_PlatformNotSupported);
         }
 
         //====================================================================
@@ -1481,7 +1481,7 @@ namespace System.Runtime.InteropServices
         //====================================================================
         public static bool SetComObjectData(Object obj, Object key, Object data)
         {
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(SR.Arg_PlatformNotSupported);
         }
 
 #if FEATURE_COMINTEROP
@@ -1772,7 +1772,7 @@ namespace System.Runtime.InteropServices
 #if FEATURE_COMINTEROP
             return s.MarshalToBSTR();
 #else
-            throw new PlatformNotSupportedException();
+            throw new PlatformNotSupportedException(); // https://github.com/dotnet/coreclr/issues/10443
 #endif
         }
 
