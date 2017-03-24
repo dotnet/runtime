@@ -714,7 +714,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     // into a constant here - we should move this to a later pass.
                     if (_needsExprDest)
                     {
-                        _exprDest = GetExprFactory().CreateConstant(_typeDest, ConstValFactory.GetDefaultValue(_typeDest.constValKind()));
+                        _exprDest = GetExprFactory().CreateConstant(_typeDest, ConstVal.GetDefaultValue(_typeDest.constValKind()));
                     }
                     return true;
                 }

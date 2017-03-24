@@ -128,7 +128,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 case ExpressionKind.EK_THISPOINTER:
                     return VisitTHISPOINTER(pExpr as EXPRTHISPOINTER);
                 case ExpressionKind.EK_CONSTANT:
-                    return VisitCONSTANT(pExpr as EXPRCONSTANT);
+                    return VisitCONSTANT(pExpr as ExprConstant);
                 case ExpressionKind.EK_TYPEARGUMENTS:
                     return VisitTYPEARGUMENTS(pExpr as EXPRTYPEARGUMENTS);
                 case ExpressionKind.EK_TYPEORNAMESPACE:
@@ -540,8 +540,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     goto VISIT_EXPR;
                 VISIT_EXPRCONSTANT:
                     // Used for when we zeroinit 0 parameter constructors for structs/enums.
-                    exprRet = Visit((pExpr as EXPRCONSTANT).GetOptionalConstructorCall());
-                    (pExpr as EXPRCONSTANT).SetOptionalConstructorCall(exprRet as EXPR);
+                    exprRet = Visit((pExpr as ExprConstant).OptionalConstructorCall);
+                    (pExpr as ExprConstant).OptionalConstructorCall = exprRet as EXPR;
                     goto VISIT_BASE_EXPRCONSTANT;
 
                 /*************************************************************************************************
@@ -795,7 +795,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             return VisitEXPR(pExpr);
         }
-        protected virtual EXPR VisitCONSTANT(EXPRCONSTANT pExpr)
+        protected virtual EXPR VisitCONSTANT(ExprConstant pExpr)
         {
             return VisitEXPR(pExpr);
         }
