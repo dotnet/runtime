@@ -3169,11 +3169,9 @@ array_constructed:
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_STOBJ) {
-			int size;
 			c = rtm->data_items[* (guint16 *)(ip + 1)];
 			ip += 2;
-			size = mono_class_value_size (c, NULL);
-			memcpy(sp [-2].data.p, &sp [-1].data, size);
+			stackval_from_data (&c->byval_arg, sp [-2].data.p, &sp [-1].data, FALSE);
 			sp -= 2;
 			MINT_IN_BREAK;
 		}
