@@ -29,12 +29,12 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         public BindingFlag BindingFlags => 0;
 
-        public EXPR DispatchPayload(RuntimeBinder runtimeBinder, ArgumentObject[] arguments, Dictionary<int, LocalVariableSymbol> dictionary)
+        public EXPR DispatchPayload(RuntimeBinder runtimeBinder, ArgumentObject[] arguments, LocalVariableSymbol[] locals)
         {
             Debug.Assert(arguments.Length == 1);
             return Explicit
-                ? runtimeBinder.BindExplicitConversion(arguments, Type, dictionary)
-                : runtimeBinder.BindImplicitConversion(arguments, Type, dictionary, ConversionKind == CSharpConversionKind.ArrayCreationConversion);
+                ? runtimeBinder.BindExplicitConversion(arguments, Type, locals)
+                : runtimeBinder.BindImplicitConversion(arguments, Type, locals, ConversionKind == CSharpConversionKind.ArrayCreationConversion);
         }
 
         public void PopulateSymbolTableWithName(SymbolTable symbolTable, Type callingType, ArgumentObject[] arguments)
