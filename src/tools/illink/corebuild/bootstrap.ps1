@@ -65,7 +65,7 @@ if ($LastExitCode -ne 0)
 $runtimesPath = Join-Path $CliLocalPath "shared\Microsoft.NETCore.App"
 if ($SharedFrameworkVersion -eq "<auto>")
 {
-    $SharedFrameworkVersion = Get-ChildItem $runtimesPath -Directory | % { New-Object System.Version($_) } | Sort-Object -Descending | Select-Object -First 1
+    $SharedFrameworkVersion = Get-ChildItem $runtimesPath -Directory | Sort-Object | Select-Object -First 1 | % { New-Object System.Version($_) }
 }
 $junctionTarget = Join-Path $runtimesPath $SharedFrameworkVersion
 $junctionParent = Split-Path $SharedFrameworkSymlinkPath -Parent
@@ -76,35 +76,6 @@ if (-Not (Test-Path $junctionParent))
 if (-Not (Test-Path $SharedFrameworkSymlinkPath))
 {
     cmd.exe /c mklink /j $SharedFrameworkSymlinkPath $junctionTarget | Out-Null
-}
-
-# create a project.csproj for the packages to restore
-$projectCsproj = Join-Path $ToolsLocalPath "project.csproj"
-$pcContent = "<Project Sdk=`"Microsoft.NET.Sdk`"> <PropertyGroup> <TargetFramework>netcoreapp1.0</TargetFramework> </PropertyGroup> <ItemGroup>"
-
-$tools = Get-Content $rootToolVersions
-foreach ($tool in $tools)
-{
-    $name, $version = $tool.split("=")
-    $pcContent = $pcContent + "<PackageReference Include=`"$name`" Version=`"$version`" />"
-}
-$pcContent = $pcContent + "</ItemGroup> </Project>"
-$pcContent | Out-File $projectCsproj
-
-# now restore the packages
-$buildToolsSource = "https://dotnet.myget.org/F/dotnet-buildtools/api/v3/index.json"
-$nugetOrgSource = "https://api.nuget.org/v3/index.json"
-if ($env:buildtools_source -ne $null)
-{
-    $buildToolsSource = $env:buildtools_source
-}
-$packagesPath = Join-Path $RepositoryRoot "packages"
-$dotNetExe = Join-Path $cliLocalPath "dotnet.exe"
-$restoreArgs = "restore $projectCsproj --packages $packagesPath --source $buildToolsSource --source $nugetOrgSource"
-$process = Start-Process -Wait -NoNewWindow -FilePath $dotNetExe -ArgumentList $restoreArgs -PassThru
-if ($process.ExitCode -ne 0)
-{
-    exit $process.ExitCode
 }
 
 # now stage the contents to tools directory and run any init scripts
