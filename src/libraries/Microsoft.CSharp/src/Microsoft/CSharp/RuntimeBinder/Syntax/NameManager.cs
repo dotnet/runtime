@@ -6,17 +6,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
 {
     internal partial class NameManager
     {
-        private readonly NameTable _names;
-
-        internal NameManager()
-            : this(new NameTable())
-        {
-        }
-
-        private NameManager(NameTable nameTable)
-        {
-            _names = nameTable;
-        }
+        private readonly NameTable _names = new NameTable();
 
         internal Name Add(string key)
         {
@@ -24,12 +14,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
             {
                 throw Error.InternalCompilerError();
             }
-            Name name = s_knownNames.Lookup(key);
-            if (name == null)
-            {
-                name = _names.Add(key);
-            }
-            return name;
+
+            return s_knownNames.Lookup(key) ?? _names.Add(key);
         }
 
         internal Name Lookup(string key)
@@ -38,12 +24,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
             {
                 throw Error.InternalCompilerError();
             }
-            Name name = s_knownNames.Lookup(key);
-            if (name == null)
-            {
-                name = _names.Lookup(key);
-            }
-            return name;
+
+            return s_knownNames.Lookup(key) ?? _names.Lookup(key);
         }
 
         internal Name GetPredefinedName(PredefinedName id)
