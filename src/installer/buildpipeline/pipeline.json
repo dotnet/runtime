@@ -16,7 +16,10 @@
       },
       "Definitions": [
         {
-          "Name": "Core-Setup-CentOS-x64",
+          "Name": "Core-Setup-Linux",
+          "Parameters": {
+            "PB_DockerOS": "centos.7"
+          },
           "ReportingParameters": {
             "OperatingSystem": "CentOS 7.1",
             "Type": "build/product/",
@@ -24,7 +27,13 @@
           }
         },
         {
-          "Name": "Core-Setup-Debian8-x64",
+          "Name": "Core-Setup-Linux",
+          "Parameters": {
+            "PB_DockerOS": "debian.8",
+            "REPO_ID": "579f8fb0fedca9aeeb399132",
+            "REPO_USER": "dotnet",
+            "REPO_SERVER": "azure-apt-cat.cloudapp.net"
+          },
           "ReportingParameters": {
             "OperatingSystem": "Debian 8.2",
             "Type": "build/product/",
@@ -32,7 +41,10 @@
           }
         },
         {
-          "Name": "Core-Setup-Fedora23-x64",
+          "Name": "Core-Setup-Linux",
+          "Parameters": {
+            "PB_DockerOS": "fedora.23"
+          },
           "ReportingParameters": {
             "OperatingSystem": "Fedora 23",
             "Type": "build/product/",
@@ -40,7 +52,10 @@
           }
         },
         {
-          "Name": "Core-Setup-Fedora24-x64",
+          "Name": "Core-Setup-Linux",
+          "Parameters": {
+            "PB_DockerOS": "fedora.24"
+          },
           "ReportingParameters": {
             "OperatingSystem": "Fedora 24",
             "Type": "build/product/",
@@ -48,9 +63,55 @@
           }
         },
         {
-          "Name": "Core-Setup-OpenSuse42.1-x64",
+          "Name": "Core-Setup-Linux",
+          "Parameters": {
+            "PB_DockerOS": "opensuse.42.1"
+          },
           "ReportingParameters": {
             "OperatingSystem": "OpenSuse 42.1",
+            "Type": "build/product/",
+            "Platform": "x64"
+          }
+        },
+        {
+          "Name": "Core-Setup-Linux",
+          "Parameters": {
+            "PB_DockerOS": "ubuntu.14.04",
+            "REPO_ID": "562fbfe0b2d7d0e0a43780c4",
+            "REPO_USER": "dotnet",
+            "REPO_SERVER": "azure-apt-cat.cloudapp.net",
+            "CLI_NUGET_FEED_URL": "https://dotnet.myget.org/F/cli-deps",
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Ubuntu 14.04",
+            "Type": "build/product/",
+            "Platform": "x64"
+          }
+        },
+        {
+          "Name": "Core-Setup-Linux",
+          "Parameters": {
+            "PB_DockerOS": "ubuntu.16.04",
+            "REPO_ID": "575f40f3797ef7280505232f",
+            "REPO_USER": "dotnet",
+            "REPO_SERVER": "azure-apt-cat.cloudapp.net"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Ubuntu 16.04",
+            "Type": "build/product/",
+            "Platform": "x64"
+          }
+        },
+        {
+          "Name": "Core-Setup-Linux",
+          "Parameters": {
+            "PB_DockerOS": "ubuntu.16.10",
+            "REPO_ID": "575f40f3797ef7280505232f",
+            "REPO_USER": "dotnet",
+            "REPO_SERVER": "azure-apt-cat.cloudapp.net"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Ubuntu 16.10",
             "Type": "build/product/",
             "Platform": "x64"
           }
@@ -98,30 +159,6 @@
           }
         },
         {
-          "Name": "Core-Setup-Ubuntu14.04-x64",
-          "ReportingParameters": {
-            "OperatingSystem": "Ubuntu 14.04",
-            "Type": "build/product/",
-            "Platform": "x64"
-          }
-        },
-        {
-          "Name": "Core-Setup-Ubuntu16.04-x64",
-          "ReportingParameters": {
-            "OperatingSystem": "Ubuntu 16.04",
-            "Type": "build/product/",
-            "Platform": "x64"
-          }
-        },
-        {
-          "Name": "Core-Setup-Ubuntu16.10-x64",
-          "ReportingParameters": {
-            "OperatingSystem": "Ubuntu 16.10",
-            "Type": "build/product/",
-            "Platform": "x64"
-          }
-        },
-        {
           "Name": "Core-Setup-CrossBuild",
           "Parameters": {
             "PB_DockerTag": "ubuntu1404_cross_prereqs_v2",
@@ -130,7 +167,7 @@
           },
           "ReportingParameters": {
             "OperatingSystem": "Ubuntu 14.04",
-            "Type": "build/product/",
+            "Type": "build/product/"
           }
         },
         {
@@ -142,7 +179,7 @@
           },
           "ReportingParameters": {
             "OperatingSystem": "Ubuntu 16.04",
-            "Type": "build/product/",
+            "Type": "build/product/"
           }
         },
         {
