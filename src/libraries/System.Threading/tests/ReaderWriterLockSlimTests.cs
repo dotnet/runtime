@@ -383,6 +383,7 @@ namespace System.Threading.Tests
 
         [Fact]
         [OuterLoop]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #3364 and #5839")] // Hangs in desktop
         public static void ReleaseReadersWhenWaitingWriterTimesOut()
         {
             using (var rwls = new ReaderWriterLockSlim())
