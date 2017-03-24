@@ -7,26 +7,30 @@ namespace System.Reflection
     [Serializable]
     public struct ParameterModifier
     {
+        private readonly bool[] _byRef;
+
         public ParameterModifier(int parameterCount)
         {
             if (parameterCount <= 0)
                 throw new ArgumentException(SR.Arg_ParmArraySize);
 
-            IsByRefArray = new bool[parameterCount];
+            _byRef = new bool[parameterCount];
         }
 
         public bool this[int index]
         {
             get
             {
-                return IsByRefArray[index];
+                return _byRef[index];
             }
             set
             {
-                IsByRefArray[index] = value;
+                _byRef[index] = value;
             }
         }
 
-        internal bool[] IsByRefArray { get; }
+#if CORECLR
+        internal bool[] IsByRefArray => _byRef;
+#endif
     }
 }
