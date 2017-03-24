@@ -485,9 +485,13 @@ stackval_to_data (MonoType *type, stackval *val, char *data, gboolean pinvoke)
 	case MONO_TYPE_SZARRAY:
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_OBJECT:
-	case MONO_TYPE_ARRAY:
+	case MONO_TYPE_ARRAY: {
+		gpointer *p = (gpointer *) data;
+		mono_gc_wbarrier_generic_store (p, val->data.p);
+		return;
+	}
 	case MONO_TYPE_PTR: {
-		gpointer *p = (gpointer*)data;
+		gpointer *p = (gpointer *) data;
 		*p = val->data.p;
 		return;
 	}
@@ -919,8 +923,10 @@ ves_pinvoke_method (MonoInvocation *frame, MonoMethodSignature *sig, MonoFuncV a
 void
 mono_interp_init_delegate (MonoDelegate *del)
 {
-	if (!del->method)
-		del->method = ((RuntimeMethod *) del->method_ptr)->method;
+	if (del->method)
+		return;
+	/* shouldn't need a write barrier because we don't write a MonoObject into the field */
+	del->method = ((RuntimeMethod *) del->method_ptr)->method;
 }
 
 /*
@@ -2461,7 +2467,7 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 		MINT_IN_CASE(MINT_STIND_REF) 
 			++ip;
 			sp -= 2;
-			* (gpointer *) sp->data.p = sp[1].data.p;
+			mono_gc_wbarrier_generic_store (sp->data.p, sp [1].data.p);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STIND_I1)
 			++ip;
@@ -2777,6 +2783,8 @@ ves_exec_method_with_context (MonoInvocation *frame, ThreadContext *context)
 		MINT_IN_CASE(MINT_CPOBJ) {
 			c = rtm->data_items[* (guint16 *)(ip + 1)];
 			g_assert (c->byval_arg.type == MONO_TYPE_VALUETYPE);
+			/* if this assertion fails, we need to add a write barrier */
+			g_assert (!MONO_TYPE_IS_REFERENCE (&c->byval_arg));
 			stackval_from_data (&c->byval_arg, &sp [-2], sp [-1].data.p, FALSE);
 			ip += 2;
 			sp -= 2;
@@ -3057,8 +3065,15 @@ array_constructed:
 		MINT_IN_CASE(MINT_STFLD_I8) STFLD(l, gint64); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STFLD_R4) STFLD(f, float); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STFLD_R8) STFLD(f, double); MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_STFLD_O) STFLD(p, gpointer); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STFLD_P) STFLD(p, gpointer); MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_STFLD_O)
+			o = sp [-2].data.p;
+			if (!o)
+				THROW_EX (mono_get_exception_null_reference (), ip);
+			sp -= 2;
+			mono_gc_wbarrier_set_field (o, (char *) o + * (guint16 *)(ip + 1), sp [1].data.p);
+			ip += 2;
+			MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_STFLD_VT)
 			o = sp [-2].data.p;
@@ -3171,7 +3186,12 @@ array_constructed:
 		MINT_IN_CASE(MINT_STOBJ) {
 			c = rtm->data_items[* (guint16 *)(ip + 1)];
 			ip += 2;
-			stackval_from_data (&c->byval_arg, sp [-2].data.p, &sp [-1].data, FALSE);
+
+			g_assert (!c->byval_arg.byref);
+			if (MONO_TYPE_IS_REFERENCE (&c->byval_arg))
+				mono_gc_wbarrier_generic_store (sp [-2].data.p, sp [-1].data.p);
+			else
+				stackval_from_data (&c->byval_arg, sp [-2].data.p, (char *) &sp [-1].data.p, FALSE);
 			sp -= 2;
 			MINT_IN_BREAK;
 		}
@@ -3428,7 +3448,7 @@ array_constructed:
 				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 				if (sp [2].data.p && !isinst_obj)
 					THROW_EX (mono_get_exception_array_type_mismatch (), ip);
-				mono_array_set ((MonoArray *)o, gpointer, aindex, sp [2].data.p);
+				mono_array_setref ((MonoArray *) o, aindex, sp [2].data.p);
 				break;
 			}
 			case MINT_STELEM_VT: {
