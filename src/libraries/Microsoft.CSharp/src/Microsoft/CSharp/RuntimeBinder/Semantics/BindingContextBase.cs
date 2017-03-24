@@ -33,7 +33,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 CSemanticChecker pSemanticChecker,
                 ExprFactory exprFactory,
                 OutputContext outputContext,
-                NameGenerator nameGenerator,
                 bool bflushLocalVariableTypesForEachStatement,
                 bool bAllowUnsafeBlocks,
                 bool bIsOptimizingSwitchAndArrayInit,
@@ -47,7 +46,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 pSemanticChecker,
                 exprFactory,
                 outputContext,
-                nameGenerator,
                 bflushLocalVariableTypesForEachStatement,
                 bAllowUnsafeBlocks,
                 bIsOptimizingSwitchAndArrayInit,
@@ -61,7 +59,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             CSemanticChecker pSemanticChecker,
             ExprFactory exprFactory,
             OutputContext outputContext,
-            NameGenerator nameGenerator,
             bool bflushLocalVariableTypesForEachStatement,
             bool bAllowUnsafeBlocks,
             bool bIsOptimizingSwitchAndArrayInit,
@@ -73,7 +70,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             m_ExprFactory = exprFactory;
             m_outputContext = outputContext;
-            m_pNameGenerator = nameGenerator;
             m_pInputFile = null;
             m_pParentDecl = null;
             m_pContainingAgg = null;
@@ -120,7 +116,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             m_ExprFactory = parent.m_ExprFactory;
             m_outputContext = parent.m_outputContext;
-            m_pNameGenerator = parent.m_pNameGenerator;
             m_pInputFile = parent.m_pInputFile;
             m_pParentDecl = parent.m_pParentDecl;
             m_pContainingAgg = parent.m_pContainingAgg;
@@ -246,7 +241,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private ExprFactory m_ExprFactory;
         private OutputContext m_outputContext;
-        private NameGenerator m_pNameGenerator;
 
         // Methods.
 
