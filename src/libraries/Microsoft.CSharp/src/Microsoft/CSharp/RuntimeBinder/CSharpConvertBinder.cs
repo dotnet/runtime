@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
@@ -48,7 +47,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         CSharpArgumentInfo ICSharpBinder.GetArgumentInfo(int index) => CSharpArgumentInfo.None;
 
-        internal CSharpConversionKind ConversionKind { get; }
+        private CSharpConversionKind ConversionKind { get; }
 
         public bool IsChecked { get; }
 
@@ -61,7 +60,8 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// </summary>
         /// <param name="type">The type to convert to.</param>
         /// <param name="conversionKind">The kind of conversion for this operation.</param>
-        /// <param name="isChecked">True if the operation is defined in a checked context; otherwise false.</param>        
+        /// <param name="isChecked">True if the operation is defined in a checked context; otherwise, false.</param>
+        /// <param name="callingContext">The <see cref="Type"/> that indicates where this operation is defined.</param>
         public CSharpConvertBinder(
             Type type,
             CSharpConversionKind conversionKind,

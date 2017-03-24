@@ -31,11 +31,13 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         CSharpArgumentInfo ICSharpBinder.GetArgumentInfo(int index) => _argumentInfo[index];
 
-        public bool StaticCall { get { return true; } }
-        public IList<Type> TypeArguments { get { return Array.Empty<Type>(); } }
-        public string Name { get { return ".ctor"; } }
+        public bool StaticCall => true;
 
-        bool ICSharpInvokeOrInvokeMemberBinder.ResultDiscarded { get { return false; } }
+        public IList<Type> TypeArguments => Array.Empty<Type>();
+
+        public string Name => ".ctor";
+
+        bool ICSharpInvokeOrInvokeMemberBinder.ResultDiscarded => false;
 
         private readonly RuntimeBinder _binder;
 
@@ -50,7 +52,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             _binder = RuntimeBinder.GetInstance();
         }
 
-        public sealed override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args)
+        public override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args)
         {
             return BinderHelper.Bind(this, _binder, BinderHelper.Cons(target, args), _argumentInfo, null);
         }

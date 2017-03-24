@@ -10,7 +10,6 @@ using System.Linq;
 using System.Linq.Expressions;
 using Microsoft.CSharp.RuntimeBinder.Semantics;
 using Microsoft.CSharp.RuntimeBinder.Syntax;
-using System.Reflection;
 
 namespace Microsoft.CSharp.RuntimeBinder
 {

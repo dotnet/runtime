@@ -3,9 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using Microsoft.CSharp.RuntimeBinder.Semantics;
 
@@ -53,10 +50,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <summary>
         /// The result type of the operation.
         /// </summary>
-        public override sealed Type ReturnType
-        {
-            get { return typeof(bool); }
-        }
+        public override Type ReturnType => typeof(bool);
 
         /// <summary>
         /// Performs the binding of the binary dynamic operation if the target dynamic object cannot bind.
@@ -64,7 +58,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <param name="target">The target of the dynamic binary operation.</param>
         /// <param name="args">The arguments to the dynamic event test.</param>
         /// <returns>The <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
-        public sealed override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args)
+        public override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args)
         {
             return BinderHelper.Bind(this, _binder, new DynamicMetaObject[] { target }, null, null);
         }

@@ -37,10 +37,9 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         CSharpArgumentInfo ICSharpBinder.GetArgumentInfo(int index) => _argumentInfo[index];
 
-        bool IInvokeOnGetBinder.InvokeOnGet { get { return !_bResultIndexed; } }
+        bool IInvokeOnGetBinder.InvokeOnGet => !ResultIndexed;
 
-        internal bool ResultIndexed { get { return _bResultIndexed; } }
-        private readonly bool _bResultIndexed;
+        private bool ResultIndexed { get; }
 
         private readonly RuntimeBinder _binder;
 
@@ -58,7 +57,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 IEnumerable<CSharpArgumentInfo> argumentInfo) :
             base(name, false /*caseInsensitive*/)
         {
-            _bResultIndexed = resultIndexed;
+            ResultIndexed = resultIndexed;
             CallingContext = callingContext;
             _argumentInfo = BinderHelper.ToList(argumentInfo);
             _binder = RuntimeBinder.GetInstance();

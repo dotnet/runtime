@@ -9,7 +9,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using System.Linq.Expressions;
 using Microsoft.CSharp.RuntimeBinder.Semantics;
-using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder
 {
@@ -55,6 +54,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// </summary>
         /// <param name="operation">The unary operation kind.</param>
         /// <param name="isChecked">True if the operation is defined in a checked context; otherwise, false.</param>
+        /// <param name="callingContext">The <see cref="Type"/> that indicates where this operation is defined.</param>
         /// <param name="argumentInfo">The sequence of <see cref="CSharpArgumentInfo"/> instances for the arguments to this operation.</param>
         public CSharpUnaryOperationBinder(
             ExpressionType operation,
@@ -76,7 +76,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <param name="target">The target of the dynamic unary operation.</param>
         /// <param name="errorSuggestion">The binding result in case the binding fails, or null.</param>
         /// <returns>The <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
-        public sealed override DynamicMetaObject FallbackUnaryOperation(DynamicMetaObject target, DynamicMetaObject errorSuggestion)
+        public override DynamicMetaObject FallbackUnaryOperation(DynamicMetaObject target, DynamicMetaObject errorSuggestion)
         {
             return BinderHelper.Bind(this, _binder, new[] {target}, _argumentInfo, errorSuggestion);
         }
