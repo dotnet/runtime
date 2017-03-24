@@ -196,9 +196,6 @@
   <data name="NotSupported" xml:space="preserve">
     <value>Not supported on this platform.</value>
   </data>
-  <data name="AppDomain_ResMonNotAvail" xml:space="preserve">
-    <value>This API is not available when AppDomain Resource Monitoring is not turned on.</value>
-  </data>
   <data name="Arg_ContextMarshalException" xml:space="preserve">
     <value>Attempted to marshal an object across a context boundary.</value>
   </data>
@@ -363,5 +360,14 @@
   </data>
   <data name="Arg_SurrogatesNotAllowedAsSingleChar" xml:space="preserve">
     <value>Unicode surrogate characters must be written out as pairs together in the same call, not individually. Consider passing in a character array instead.</value>
+  </data>
+  <data name="PlatformNotSupported_AppDomains" xml:space="preserve">
+    <value>Secondary AppDomains are not supported on this platform.</value>
+  </data>
+  <data name="PlatformNotSupported_CAS" xml:space="preserve">
+    <value>Code Access Security is not supported on this platform.</value>
+  </data>
+  <data name="PlatformNotSupported_AppDomain_ResMon" xml:space="preserve">
+    <value>AppDomain resource monitoring is not supported on this platform.</value>
   </data>
 </root>

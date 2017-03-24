@@ -11,14 +11,14 @@ namespace System.Security
         public void Assert() { }
         public abstract IPermission Copy();
         public void Demand() { }
-        [Obsolete("Deny is obsolete and will be removed in a future release of the .NET Framework. See http://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
+        [Obsolete]
         public void Deny() { throw new NotSupportedException(); }
         public override bool Equals(object obj) => base.Equals(obj);
         public abstract void FromXml(SecurityElement elem);
         public override int GetHashCode() => base.GetHashCode();
         public abstract IPermission Intersect(IPermission target);
         public abstract bool IsSubsetOf(IPermission target);
-        public void PermitOnly() { throw new PlatformNotSupportedException(); }
+        public void PermitOnly() { throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); }
         public static void RevertAll() { }
         public static void RevertAssert() { }
         [Obsolete]

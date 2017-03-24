@@ -139,4 +139,7 @@
   <data name="IsolatedStorage_Scope_U_R_M" xml:space="preserve">
     <value>Invalid scope, expected User, User|Roaming or Machine.</value>
   </data>
+  <data name="PlatformNotSupported_CAS" xml:space="preserve">
+    <value>Code Access Security is not supported on this platform.</value>
+  </data>  
 </root>

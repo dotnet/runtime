@@ -39,7 +39,7 @@ namespace System.Security
         public bool IsEmpty() { return false; }
         public bool IsSubsetOf(PermissionSet target) { return false; }
         public bool IsUnrestricted() { return false; }
-        public void PermitOnly() { throw new PlatformNotSupportedException(); }
+        public void PermitOnly() { throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); }
         public IPermission RemovePermission(Type permClass) { return RemovePermissionImpl(permClass); }
         protected virtual IPermission RemovePermissionImpl(Type permClass) { return default(IPermission); }
         public static void RevertAssert() { }
