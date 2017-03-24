@@ -35,7 +35,6 @@ namespace Microsoft.CSharp.RuntimeBinder
         private SymbolLoader SymbolLoader { get { return _semanticChecker.GetSymbolLoader(); } }
         private ExprFactory _exprFactory;
         private OutputContext _outputContext;
-        private NameGenerator _nameGenerator;
         private BindingContext _bindingContext;
         private ExpressionBinder _binder;
         private RuntimeBinderController _controller;
@@ -91,12 +90,10 @@ namespace Microsoft.CSharp.RuntimeBinder
 
             _exprFactory = new ExprFactory(_semanticChecker.GetSymbolLoader().GetGlobalSymbolContext());
             _outputContext = new OutputContext();
-            _nameGenerator = new NameGenerator();
             _bindingContext = BindingContext.CreateInstance(
                 _semanticChecker,
                 _exprFactory,
                 _outputContext,
-                _nameGenerator,
                 false,
                 true,
                 false,
