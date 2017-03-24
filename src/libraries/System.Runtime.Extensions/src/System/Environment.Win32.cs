@@ -219,7 +219,7 @@ namespace System
             {
                 if (hr == Interop.Shell32.COR_E_PLATFORMNOTSUPPORTED)
                 {
-                    throw new PlatformNotSupportedException();
+                    throw new PlatformNotSupportedException(SR.NotSupported);
                 }
                 else
                 {
