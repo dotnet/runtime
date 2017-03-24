@@ -2,7 +2,7 @@
   <!-- Source of truth for dependency tooling: the commit hash of the dotnet/versions master branch as of the last auto-upgrade. -->
   <PropertyGroup>
     <CoreFxCurrentRef>a1e7cc9a438ce45265664c235b22120a5a601f41</CoreFxCurrentRef>
-    <CoreClrCurrentRef>511f00e5ec0ce46799550a8e76d810a54806501d</CoreClrCurrentRef>
+    <CoreClrCurrentRef>27c68c5c81c044fbedd9c49d3dbd2dfd613b1e42</CoreClrCurrentRef>
   </PropertyGroup>
 
   <!-- Auto-upgraded properties for each build info dependency. -->
@@ -12,7 +12,7 @@
 
   <!-- Full package version strings that are used in other parts of the build. -->
   <PropertyGroup>
-    <CoreClrPackageVersion>2.0.0-beta-25123-07</CoreClrPackageVersion>
+    <CoreClrPackageVersion>2.0.0-beta-25123-08</CoreClrPackageVersion>
     <XunitPackageVersion>2.2.0-beta2-build3300</XunitPackageVersion>
   </PropertyGroup>
 
