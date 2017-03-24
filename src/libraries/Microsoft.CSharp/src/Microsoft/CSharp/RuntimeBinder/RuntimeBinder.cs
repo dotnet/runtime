@@ -211,8 +211,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             PopulateLocalScope(payload, pScope, arguments, parameters, dictionary);
 
             // (1.5) - Check to see if we need to defer.
-            DynamicMetaObject o = null;
-            if (DeferBinding(payload, arguments, args, dictionary, out o))
+            if (DeferBinding(payload, arguments, args, dictionary, out DynamicMetaObject o))
             {
                 deferredBinding = o;
                 return null;
@@ -245,9 +244,9 @@ namespace Microsoft.CSharp.RuntimeBinder
             // field or property, and not a method group that is invocable. We defer to
             // the standard GetMember/Invoke pattern.
 
-            if (payload is CSharpInvokeMemberBinder)
+            CSharpInvokeMemberBinder callPayload = payload as CSharpInvokeMemberBinder;
+            if (callPayload != null)
             {
-                CSharpInvokeMemberBinder callPayload = payload as CSharpInvokeMemberBinder;
                 int arity = callPayload.TypeArguments?.Count ?? 0;
                 MemberLookup mem = new MemberLookup();
                 EXPR callingObject = CreateCallingObjectForCall(callPayload, arguments, dictionary);
@@ -474,28 +473,25 @@ namespace Microsoft.CSharp.RuntimeBinder
                 // Make sure we're not setting ref for the receiver of a call - the argument
                 // will be marked as ref if we're calling off a struct, but we don't want 
                 // to persist that in our system.
-                bool isFirstParamOfCallOrInvoke = false;
-                if (i == 0 && payload.IsBinderThatCanHaveRefReceiver)
+                // If we're the first param of a call or invoke, and we're ref, it must be
+                // because of structs. Don't persist the parameter modifier type.
+                if (i != 0 || !payload.IsBinderThatCanHaveRefReceiver)
                 {
-                    isFirstParamOfCallOrInvoke = true;
-                }
-
-                // If we have a ref or out, get the parameter modifier type.
-                if ((parameter is ParameterExpression && (parameter as ParameterExpression).IsByRef) &&
-                    (arguments[i].Info.IsByRef || arguments[i].Info.IsOut))
-                {
-                    // If we're the first param of a call or invoke, and we're ref, it must be
-                    // because of structs. Don't persist the parameter modifier type.
-                    if (!isFirstParamOfCallOrInvoke)
+                    // If we have a ref or out, get the parameter modifier type.
+                    ParameterExpression paramExp = parameter as ParameterExpression;
+                    if (paramExp != null && paramExp.IsByRef)
                     {
-                        type = _semanticChecker.GetTypeManager().GetParameterModifier(type, arguments[i].Info.IsOut);
+                        CSharpArgumentInfo info = arguments[i].Info;
+                        if (info.IsByRef || info.IsOut)
+                        {
+                            type = _semanticChecker.GetTypeManager().GetParameterModifier(type, info.IsOut);
+                        }
                     }
                 }
                 LocalVariableSymbol local = _semanticChecker.GetGlobalSymbolFactory().CreateLocalVar(_semanticChecker.GetNameManager().Add("p" + i), pScope, type);
                 local.fUsedInAnonMeth = true;
 
                 dictionary.Add(i++, local);
-                isFirstParamOfCallOrInvoke = false;
             }
         }
 
@@ -910,7 +906,6 @@ namespace Microsoft.CSharp.RuntimeBinder
                 throw Error.BindInvokeFailedNonDelegate();
             }
 
-            EXPR pResult = null;
             int arity = payload.TypeArguments?.Count ?? 0;
             MemberLookup mem = new MemberLookup();
 
@@ -1010,7 +1005,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 memGroup.flags &= ~EXPRFLAG.EXF_USERCALLABLE;
             }
 
-            pResult = _binder.BindMethodGroupToArguments(// Tree
+            EXPR pResult = _binder.BindMethodGroupToArguments(// Tree
                 BindingFlag.BIND_RVALUEREQUIRED | BindingFlag.BIND_STMTEXPRONLY, memGroup, CreateArgumentListEXPR(arguments, dictionary, 1, arguments.Length));
 
             // If overload resolution failed, throw an error.
@@ -1563,17 +1558,19 @@ namespace Microsoft.CSharp.RuntimeBinder
             string name = payload.Name;
 
             // Find the lhs and rhs.
-            EXPR indexerArguments = null;
-            bool bIsCompound = false;
+            EXPR indexerArguments;
+            bool bIsCompound;
 
-            if (payload is CSharpSetIndexBinder)
+            CSharpSetIndexBinder setIndexBinder = payload as CSharpSetIndexBinder;
+            if (setIndexBinder != null)
             {
                 // Get the list of indexer arguments - this is the list of arguments minus the last one.
                 indexerArguments = CreateArgumentListEXPR(arguments, dictionary, 1, arguments.Length - 1);
-                bIsCompound = (payload as CSharpSetIndexBinder).IsCompoundAssignment;
+                bIsCompound = setIndexBinder.IsCompoundAssignment;
             }
             else
             {
+                indexerArguments = null;
                 bIsCompound = (payload as CSharpSetMemberBinder).IsCompoundAssignment;
             }
             _symbolTable.PopulateSymbolTableWithName(name, null, arguments[0].Type);
