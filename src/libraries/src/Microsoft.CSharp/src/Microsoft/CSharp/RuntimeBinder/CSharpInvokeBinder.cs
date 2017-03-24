@@ -29,8 +29,8 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         public BindingFlag BindingFlags => 0;
 
-        public EXPR DispatchPayload(RuntimeBinder runtimeBinder, ArgumentObject[] arguments, Dictionary<int, LocalVariableSymbol> dictionary)
-            => runtimeBinder.DispatchPayload(this, arguments, dictionary);
+        public EXPR DispatchPayload(RuntimeBinder runtimeBinder, ArgumentObject[] arguments, LocalVariableSymbol[] locals)
+            => runtimeBinder.DispatchPayload(this, arguments, locals);
 
         public void PopulateSymbolTableWithName(SymbolTable symbolTable, Type callingType, ArgumentObject[] arguments)
             => RuntimeBinder.PopulateSymbolTableWithPayloadInformation(symbolTable, this, callingType, arguments);

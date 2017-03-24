@@ -18,10 +18,10 @@ namespace Microsoft.CSharp.RuntimeBinder
     {
         public BindingFlag BindingFlags => BindingFlag.BIND_RVALUEREQUIRED;
 
-        public EXPR DispatchPayload(RuntimeBinder runtimeBinder, ArgumentObject[] arguments, Dictionary<int, LocalVariableSymbol> dictionary)
+        public EXPR DispatchPayload(RuntimeBinder runtimeBinder, ArgumentObject[] arguments, LocalVariableSymbol[] locals)
         {
             Debug.Assert(arguments.Length == 1);
-            return runtimeBinder.BindProperty(this, arguments[0], dictionary[0], null, false);
+            return runtimeBinder.BindProperty(this, arguments[0], locals[0], null, false);
         }
 
         public void PopulateSymbolTableWithName(SymbolTable symbolTable, Type callingType, ArgumentObject[] arguments)
