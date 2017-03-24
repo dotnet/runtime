@@ -346,11 +346,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private Name GetName(string p)
         {
-            if (p == null)
-            {
-                p = string.Empty;
-            }
-            return GetName(p, _nameManager);
+            return _nameManager.Add(p ?? "");
         }
 
         /////////////////////////////////////////////////////////////////////////////////
@@ -363,20 +359,10 @@ namespace Microsoft.CSharp.RuntimeBinder
                 // Trim the name to remove the ` at the end.
                 name = name.Split('`')[0];
             }
-            return GetName(name, _nameManager);
+
+            return _nameManager.Add(name);
         }
 
-        /////////////////////////////////////////////////////////////////////////////////
-
-        internal static Name GetName(string p, NameManager nameManager)
-        {
-            Name name = nameManager.Lookup(p);
-            if (name == null)
-            {
-                return nameManager.Add(p);
-            }
-            return name;
-        }
         #endregion
 
         #region TypeParameters
