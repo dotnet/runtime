@@ -4,7 +4,7 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Syntax
 {
-    internal class Name
+    internal sealed class Name
     {
         public Name(string text)
         {
