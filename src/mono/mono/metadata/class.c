@@ -300,7 +300,7 @@ done:
 	if (!res && mono_error_ok (error)) {
 		char *name = mono_class_name_from_token (image, type_token);
 		char *assembly = mono_assembly_name_from_token (image, type_token);
-		mono_error_set_type_load_name (error, name, assembly, "Could not resolve type with token %08x", type_token);
+		mono_error_set_type_load_name (error, name, assembly, "Could not resolve type with token %08x (from typeref, class/assembly %s, %s)", type_token, name, assembly);
 	}
 	return res;
 }
@@ -7272,7 +7272,7 @@ done:
 	if (!klass && mono_error_ok (error)) {
 		char *name = mono_class_name_from_token (image, type_token);
 		char *assembly = mono_assembly_name_from_token (image, type_token);
-		mono_error_set_type_load_name (error, name, assembly, "Could not resolve type with token %08x", type_token);
+		mono_error_set_type_load_name (error, name, assembly, "Could not resolve type with token %08x (class/assembly %s, %s)", type_token, name, assembly);
 	}
 
 	return klass;
