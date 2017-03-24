@@ -386,10 +386,10 @@ public:
 #endif
     }
 
-    void lvSetIsHfaRegArg()
+    void lvSetIsHfaRegArg(bool value = true)
     {
 #ifdef FEATURE_HFA
-        _lvIsHfaRegArg = true;
+        _lvIsHfaRegArg = value;
 #endif
     }
 
