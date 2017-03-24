@@ -15,6 +15,8 @@ namespace Microsoft.CSharp.RuntimeBinder
     /// </summary>
     internal sealed class CSharpSetMemberBinder : SetMemberBinder, ICSharpBinder
     {
+        public BindingFlag BindingFlags => 0;
+
         public EXPR DispatchPayload(RuntimeBinder runtimeBinder, ArgumentObject[] arguments, Dictionary<int, LocalVariableSymbol> dictionary)
             => runtimeBinder.BindAssignment(this, arguments, dictionary);
 

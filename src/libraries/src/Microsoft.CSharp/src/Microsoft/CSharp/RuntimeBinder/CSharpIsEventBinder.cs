@@ -14,6 +14,8 @@ namespace Microsoft.CSharp.RuntimeBinder
     /// </summary>
     internal sealed class CSharpIsEventBinder : DynamicMetaObjectBinder, ICSharpBinder
     {
+        public BindingFlag BindingFlags => 0;
+
         public EXPR DispatchPayload(RuntimeBinder runtimeBinder, ArgumentObject[] arguments, Dictionary<int, LocalVariableSymbol> dictionary)
             => runtimeBinder.BindIsEvent(this, arguments, dictionary);
 

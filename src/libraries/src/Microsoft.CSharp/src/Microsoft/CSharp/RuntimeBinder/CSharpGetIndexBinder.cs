@@ -15,6 +15,8 @@ namespace Microsoft.CSharp.RuntimeBinder
     /// </summary>
     internal sealed class CSharpGetIndexBinder : GetIndexBinder, ICSharpBinder
     {
+        public BindingFlag BindingFlags => BindingFlag.BIND_RVALUEREQUIRED;
+
         public EXPR DispatchPayload(RuntimeBinder runtimeBinder, ArgumentObject[] arguments, Dictionary<int, LocalVariableSymbol> dictionary)
         {
             EXPR indexerArguments = runtimeBinder.CreateArgumentListEXPR(arguments, dictionary, 1, arguments.Length);

@@ -18,6 +18,8 @@ namespace Microsoft.CSharp.RuntimeBinder
     /// </summary>
     internal sealed class CSharpUnaryOperationBinder : UnaryOperationBinder, ICSharpBinder
     {
+        public BindingFlag BindingFlags => 0;
+
         public EXPR DispatchPayload(RuntimeBinder runtimeBinder, ArgumentObject[] arguments, Dictionary<int, LocalVariableSymbol> dictionary)
             => runtimeBinder.BindUnaryOperation(this, arguments, dictionary);
         public void PopulateSymbolTableWithName(SymbolTable symbolTable, Type callingType, ArgumentObject[] arguments)

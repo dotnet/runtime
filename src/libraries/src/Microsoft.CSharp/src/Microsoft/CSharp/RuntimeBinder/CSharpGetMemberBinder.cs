@@ -16,6 +16,8 @@ namespace Microsoft.CSharp.RuntimeBinder
     /// </summary>
     internal sealed class CSharpGetMemberBinder : GetMemberBinder, IInvokeOnGetBinder, ICSharpBinder
     {
+        public BindingFlag BindingFlags => BindingFlag.BIND_RVALUEREQUIRED;
+
         public EXPR DispatchPayload(RuntimeBinder runtimeBinder, ArgumentObject[] arguments, Dictionary<int, LocalVariableSymbol> dictionary)
         {
             Debug.Assert(arguments.Length == 1);
