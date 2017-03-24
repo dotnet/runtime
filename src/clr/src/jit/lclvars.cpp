@@ -2760,7 +2760,7 @@ int __cdecl Compiler::RefCntCmp(const void* op1, const void* op2)
         }
         if (varTypeIsGC(dsc2->TypeGet()))
         {
-            weight1 += BB_UNITY_WEIGHT / 2;
+            weight2 += BB_UNITY_WEIGHT / 2;
         }
 
         if (dsc2->lvRegister)
