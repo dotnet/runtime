@@ -615,7 +615,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             if (argument.Info.NamedArgument)
             {
                 Debug.Assert(argument.Info.Name != null);
-                arg = _exprFactory.CreateNamedArgumentSpecification(SymbolTable.GetName(argument.Info.Name, _semanticChecker.GetNameManager()), arg);
+                arg = _exprFactory.CreateNamedArgumentSpecification(_semanticChecker.GetNameManager().Add(argument.Info.Name), arg);
             }
 
             // If we have an object that was "dynamic" at compile time, we need
@@ -650,7 +650,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             Expr callingObject,
             SYMKIND kind)
         {
-            Name name = SymbolTable.GetName(Name, _semanticChecker.GetNameManager());
+            Name name = _semanticChecker.GetNameManager().Add(Name);
             AggregateType callingType;
 
             if (callingObject.Type.IsArrayType())
