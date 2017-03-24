@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -96,7 +96,6 @@
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\MethodIterator.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\MethodKind.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\MethodTypeInferrer.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\NameGenerator.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Nullable.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\NullableLift.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Operators.cs" />
