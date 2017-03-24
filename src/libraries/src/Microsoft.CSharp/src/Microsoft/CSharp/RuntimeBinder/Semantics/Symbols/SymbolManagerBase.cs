@@ -66,7 +66,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             this.bsetGlobalAssemblies = new HashSet<KAID>();
             this.bsetGlobalAssemblies.Add(KAID.kaidThisAssembly);
             this.tableTypeArrays = new Dictionary<TypeArrayKey, TypeArray>();
-            _rootNS = _symFactory.CreateNamespace(m_nameTable.Add(""), null);
+            _rootNS = _symFactory.CreateNamespace(m_nameTable.Lookup(""), null);
             GetNsAid(_rootNS, KAID.kaidGlobal);
         }
 
