@@ -58,17 +58,29 @@ namespace System.Security.Cryptography
 
                 int qLength = ComputeQLength();
 
-                // Note to review (from steve harter) -- code commented out because SHA1 encodes in 20 bytes
-                //  but default for v2 struct is 32 (SHA256) bytes so qLength (32) can be > hash.Length (20) 
-                //  so v2 would not support SHA1. Also remove this code in .net desktop?
-                // Sample code that will fail in .net desktop:
-                //  new DSACng(2048).SignData(new ASCIIEncoding().GetBytes("Hello"), new HashAlgorithmName("SHA1"));
+                // Windows CNG requires that the hash output and q match sizes, but we can better
+                // interoperate with other FIPS 186-3 implementations if we perform truncation
+                // here, before sending it to CNG. Since this is a scenario presented in the
+                // CAVP reference test suite, we can confirm our implementation.
+                //
+                // If, on the other hand, Q is too big, we need to left-pad the hash with zeroes
+                // (since it gets treated as a big-endian number). Since this is also a scenario
+                // presented in the CAVP reference test suite, we can confirm our implementation.
 
-                //if (qLength > hash.Length)
-                //    throw new PlatformNotSupportedException("todo:SR.Cryptography_DSA_HashTooShort");
+                if (qLength == hash.Length)
+                {
+                    return hash;
+                }
 
-                Array.Resize(ref hash, qLength);
-                return hash;
+                if (qLength < hash.Length)
+                {
+                    Array.Resize(ref hash, qLength);
+                    return hash;
+                }
+
+                byte[] paddedHash = new byte[qLength];
+                Buffer.BlockCopy(hash, 0, paddedHash, qLength - hash.Length, hash.Length);
+                return paddedHash;
             }
 
             private int ComputeQLength()
