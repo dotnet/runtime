@@ -47,8 +47,9 @@
   </Target>
 
   <Target Name="OverrideRuntime"
-          Condition="'$(CoreCLROverridePath)' != '' and Exists('$(CoreCLROverridePath)')"
+          Condition="'$(CoreCLROverridePath)' != ''"
           AfterTargets="ResolveNuGetPackages;FilterNugetPackages">
+    <Warning Condition="!Exists('$(CoreCLROverridePath)')" Text="The path provided to CoreCLROverridePath ($(CoreCLROverridePath)) does not exist." />
     <PropertyGroup>
       <CoreCLRPDBOverridePath Condition="'$(CoreCLRPDBOverridePath)' == '' and Exists('$(CoreCLROverridePath)/PDB')">$(CoreCLROverridePath)/PDB</CoreCLRPDBOverridePath>
       <ExcludeNativeImages Condition="'$(ExcludeNativeImages)' == '' and '$(Coverage)' == 'true'">true</ExcludeNativeImages>
@@ -61,6 +62,8 @@
       <ReferenceCopyLocalPaths Remove="@(_ReferenceCopyLocalPathsToRemove)" />
       <ReferenceCopyLocalPaths Include="@(CoreCLRFiles);@(CoreCLRPDBFiles)" />
     </ItemGroup>
+
+    <Warning Condition="Exists('$(CoreCLROverridePath)') And '@(CoreCLRFiles)' == ''" Text="The path provided to CoreCLROverridePath ($(CoreCLROverridePath)) does not contain any files." />
 
     <ItemGroup Condition="'$(ExcludeNativeImages)' == 'true'">
       <ReferenceCopyLocalPathsNativeImages Remove="@(ReferenceCopyLocalPaths)" Condition="$([System.String]::Copy('%(Filename)%(Extension)').Contains('.ni.'))" />
