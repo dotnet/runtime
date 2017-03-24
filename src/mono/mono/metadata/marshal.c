@@ -4427,7 +4427,7 @@ mono_marshal_get_runtime_invoke_dynamic (void)
 	MonoMethodSignature *csig;
 	MonoExceptionClause *clause;
 	MonoMethodBuilder *mb;
-	int pos, posna;
+	int pos;
 	char *name;
 	WrapperInfo *info;
 
@@ -4497,15 +4497,6 @@ mono_marshal_get_runtime_invoke_dynamic (void)
 	mono_mb_emit_byte (mb, CEE_LDNULL);
 	mono_mb_emit_stloc (mb, 0);
 
-	/* Check for the abort exception */
-	mono_mb_emit_ldloc (mb, 1);
-	mono_mb_emit_op (mb, CEE_ISINST, mono_defaults.threadabortexception_class);
-	posna = mono_mb_emit_short_branch (mb, CEE_BRFALSE_S);
-
-	/* Delay the abort exception */
-	mono_mb_emit_icall (mb, ves_icall_System_Threading_Thread_ResetAbort);
-
-	mono_mb_patch_short_branch (mb, posna);
 	mono_mb_emit_branch (mb, CEE_LEAVE);
 
 	clause->handler_len = mono_mb_get_pos (mb) - clause->handler_offset;

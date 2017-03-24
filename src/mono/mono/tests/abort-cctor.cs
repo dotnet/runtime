@@ -185,6 +185,7 @@ class Driver
 	static void Test3 ()
 	{
 		Console.WriteLine ("Test 3:");
+		bool catched_abort = false;
 
 		Driver.mre1.Reset ();
 		Driver.mre2.Reset ();
@@ -197,6 +198,7 @@ class Driver
 				Environment.Exit (7);
 			} catch (ThreadAbortException e) {
 				Console.WriteLine ("TEST 3: aborted {0}", e);
+				catched_abort = true;
 			}
 		});
 
@@ -210,12 +212,16 @@ class Driver
 
 		thread.Join ();
 
+		// Did we catch the abort
+		if (!catched_abort)
+			Environment.Exit (8);
+
 		//is StaticConstructor2 viable?
 		try {
 			IsStaticConstructor3Viable ();
 			Console.WriteLine ("StaticConstructor3 is viable");
 			/* A regular exception escaping the .cctor makes the type not usable */
-			Environment.Exit (8);
+			Environment.Exit (9);
 		} catch (TypeInitializationException e) {
 			Console.WriteLine ("StaticConstructor3 not viable");
 		}
@@ -262,9 +268,9 @@ class Driver
 		new StaticConstructor4 ();
 		Console.WriteLine ("IsStaticConstructor4Viable: Did it get to the end? {0} Did it catch an exception {1} and end of the finally block {2}", StaticConstructor4.gotToEnd, StaticConstructor4.caughtException, got_to_the_end_of_the_finally);
 		if (!StaticConstructor4.gotToEnd) /* the TAE must not land during a .cctor */
-			Environment.Exit (9);
-		if (StaticConstructor4.caughtException)
 			Environment.Exit (10);
+		if (StaticConstructor4.caughtException)
+			Environment.Exit (11);
 	}
 
 	static void Test4 ()
@@ -305,7 +311,7 @@ class Driver
 
 		if (!got_to_the_end_of_the_finally) { 
 			Console.WriteLine ("Did not get to the end of test 4 cctor");
-			Environment.Exit (11);
+			Environment.Exit (12);
 		}
 
 		//is StaticConstructor4viable?
@@ -314,11 +320,52 @@ class Driver
 			Console.WriteLine ("StaticConstructor4 is viable"); /* a TAE doesn't make a type unusable */
 		} catch (TypeInitializationException  e) {
 			Console.WriteLine ("StaticConstructor4 not viable");
-			Environment.Exit (12);
+			Environment.Exit (13);
 		}
 	}
 
 
+	class StaticConstructor5 {
+		public static bool catched_exception = false;
+		static StaticConstructor5 ()
+		{
+			Driver.mre1.Set ();
+			Driver.mre2.WaitOne ();
+			try {
+				throw new Exception ();
+			} catch (Exception) {
+				Console.WriteLine ("Catched exception in cctor");
+				catched_exception = true;
+			}
+		}
+	}
+
+	static void Test5 ()
+	{
+		bool catched_abort = false;
+		Driver.mre1.Reset ();
+		Driver.mre2.Reset ();
+		Thread thread = new Thread (() => {
+					try {
+						new StaticConstructor5 ();
+					} catch (ThreadAbortException) {
+						Console.WriteLine ("Catched thread abort");
+						catched_abort = true;
+					}
+				});
+		thread.Start ();
+
+		Driver.mre1.WaitOne ();
+		thread.Abort ();
+		Driver.mre2.Set ();
+
+		thread.Join ();
+
+		if (!StaticConstructor5.catched_exception)
+			Environment.Exit (14);
+		if (!catched_abort)
+			Environment.Exit (15);
+	}
 
 	public static int Main ()
 	{
@@ -326,6 +373,7 @@ class Driver
 		Test2 ();
 		Test3 ();
 		Test4 ();
+		Test5 ();
 		Console.WriteLine ("done, all things good");
 		return 0;
 	}

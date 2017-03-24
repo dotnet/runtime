@@ -355,7 +355,7 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 	MonoNativeThreadId tid;
 	int do_initialization = 0;
 	MonoDomain *last_domain = NULL;
-	MonoException * pending_tae = NULL;
+	gboolean pending_tae = FALSE;
 
 	error_init (error);
 
@@ -471,7 +471,7 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 
 		mono_threads_begin_abort_protected_block ();
 		mono_runtime_try_invoke (method, NULL, NULL, (MonoObject**) &exc, error);
-		gboolean got_pending_interrupt = mono_threads_end_abort_protected_block ();
+		mono_threads_end_abort_protected_block ();
 
 		//exception extracted, error will be set to the right value later
 		if (exc == NULL && !mono_error_ok (error))//invoking failed but exc was not set
@@ -519,13 +519,15 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 		mono_coop_cond_broadcast (&lock->cond);
 		mono_type_init_unlock (lock);
 
-		//This can happen if the cctor self-aborts
-		if (exc && mono_object_class (exc) == mono_defaults.threadabortexception_class)
-			pending_tae = exc;
-
-		//TAEs are blocked around .cctors, they must escape as soon as no cctor is left to run.
-		if (!pending_tae && got_pending_interrupt)
-			pending_tae = mono_thread_try_resume_interruption ();
+		/*
+		 * This can happen if the cctor self-aborts. We need to reactivate tae
+		 * (next interruption checkpoint will throw it) and make sure we won't
+		 * throw tie for the type.
+		 */
+		if (exc && mono_object_class (exc) == mono_defaults.threadabortexception_class) {
+			pending_tae = TRUE;
+			mono_thread_resume_interruption (FALSE);
+		}
 	} else {
 		/* this just blocks until the initializing thread is done */
 		mono_type_init_lock (lock);
@@ -546,10 +548,8 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 		vtable->initialized = 1;
 	mono_type_initialization_unlock ();
 
-	//TAE wins over TIE
-	if (pending_tae)
-		mono_error_set_exception_instance (error, pending_tae);
-	else if (vtable->init_failed) {
+	/* If vtable init fails because of TAE, we don't throw TIE, only the TAE */
+	if (vtable->init_failed && !pending_tae) {
 		/* Either we were the initializing thread or we waited for the initialization */
 		mono_error_set_exception_instance (error, get_type_init_exception_for_vtable (vtable));
 		return FALSE;

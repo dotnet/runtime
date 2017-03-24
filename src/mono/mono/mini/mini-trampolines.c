@@ -1292,7 +1292,7 @@ mono_handler_block_guard_trampoline (mgreg_t *regs, guint8 *code, gpointer *tram
 	if (!resume_ip) /*this should not happen, but we should avoid crashing */
 		exc = mono_get_exception_execution_engine ("Invalid internal state, resuming abort after handler block but no resume ip found");
 	else
-		exc = mono_thread_resume_interruption ();
+		exc = mono_thread_resume_interruption (TRUE);
 
 	if (exc) {
 		mono_handle_exception (&ctx, (MonoObject *)exc);

@@ -227,7 +227,7 @@ uint32_t mono_alloc_special_static_data (uint32_t static_type, uint32_t size, ui
 void*    mono_get_special_static_data   (uint32_t offset);
 gpointer mono_get_special_static_data_for_thread (MonoInternalThread *thread, guint32 offset);
 
-MonoException* mono_thread_resume_interruption (void);
+MonoException* mono_thread_resume_interruption (gboolean exec);
 void mono_threads_perform_thread_dump (void);
 
 gboolean
@@ -253,7 +253,6 @@ mono_threads_detach_coop (gpointer cookie, gpointer *dummy);
 
 void mono_threads_begin_abort_protected_block (void);
 gboolean mono_threads_end_abort_protected_block (void);
-MonoException* mono_thread_try_resume_interruption (void);
 
 gboolean
 mono_thread_internal_current_is_attached (void);

@@ -1987,7 +1987,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 						if (is_outside) {
 							jit_tls->handler_block_return_address = NULL;
 							jit_tls->handler_block = NULL;
-							mono_thread_resume_interruption (); /*We ignore the exception here, it will be raised later*/
+							mono_thread_resume_interruption (TRUE); /*We ignore the exception here, it will be raised later*/
 						}
 					}
 

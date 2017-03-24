@@ -219,9 +219,18 @@ get_next_managed_thread_id (void)
 	return InterlockedIncrement (&managed_thread_id_counter);
 }
 
+/*
+ * We separate interruptions/exceptions into either sync (they can be processed anytime,
+ * normally as soon as they are set, and are set by the same thread) and async (they can't
+ * be processed inside abort protected blocks and are normally set by other threads). We
+ * can have both a pending sync and async interruption. In this case, the sync exception is
+ * processed first. Since we clean sync flag first, mono_thread_execute_interruption must
+ * also handle all sync type exceptions before the async type exceptions.
+ */
 enum {
-	INTERRUPT_REQUESTED_BIT = 0x1,
-	INTERRUPT_REQUEST_DEFERRED_BIT = 0x2,
+	INTERRUPT_SYNC_REQUESTED_BIT = 0x1,
+	INTERRUPT_ASYNC_REQUESTED_BIT = 0x2,
+	INTERRUPT_REQUESTED_MASK = 0x3,
 	ABORT_PROT_BLOCK_SHIFT = 2,
 	ABORT_PROT_BLOCK_BITS = 8,
 	ABORT_PROT_BLOCK_MASK = (((1 << ABORT_PROT_BLOCK_BITS) - 1) << ABORT_PROT_BLOCK_SHIFT)
@@ -234,40 +243,46 @@ mono_thread_get_abort_prot_block_count (MonoInternalThread *thread)
 	return (state & ABORT_PROT_BLOCK_MASK) >> ABORT_PROT_BLOCK_SHIFT;
 }
 
-static void
-verify_thread_state (gsize state)
-{
-	//can't have both INTERRUPT_REQUESTED_BIT and INTERRUPT_REQUEST_DEFERRED_BIT set at the same time
-	g_assert ((state & (INTERRUPT_REQUESTED_BIT | INTERRUPT_REQUEST_DEFERRED_BIT)) != (INTERRUPT_REQUESTED_BIT | INTERRUPT_REQUEST_DEFERRED_BIT));
-
-	//XXX This would be nice to be true, but can happen due to self-aborts (and possibly set-pending-exception)
-	//if prot_count > 0, INTERRUPT_REQUESTED_BIT must never be set
-	// int prot_count = (state & ABORT_PROT_BLOCK_MASK) >> ABORT_PROT_BLOCK_SHIFT;
-	// g_assert (!(prot_count > 0 && (state & INTERRUPT_REQUESTED_BIT)));
-}
-
 void
 mono_threads_begin_abort_protected_block (void)
 {
 	MonoInternalThread *thread = mono_thread_internal_current ();
 	gsize old_state, new_state;
+	int new_val;
 	do {
 		old_state = thread->thread_state;
-		verify_thread_state (old_state);
 
-		int new_val = ((old_state & ABORT_PROT_BLOCK_MASK) >> ABORT_PROT_BLOCK_SHIFT) + 1;
-
-		new_state = 0;
-		if (old_state & (INTERRUPT_REQUESTED_BIT | INTERRUPT_REQUEST_DEFERRED_BIT)) {
-			new_state |= INTERRUPT_REQUEST_DEFERRED_BIT;
-		}
-
+		new_val = ((old_state & ABORT_PROT_BLOCK_MASK) >> ABORT_PROT_BLOCK_SHIFT) + 1;
 		//bounds check abort_prot_count
 		g_assert (new_val > 0);
 		g_assert (new_val < (1 << ABORT_PROT_BLOCK_BITS));
-		new_state |= new_val << ABORT_PROT_BLOCK_SHIFT;
 
+		new_state = old_state + (1 << ABORT_PROT_BLOCK_SHIFT);
 	} while (InterlockedCompareExchangePointer ((volatile gpointer)&thread->thread_state, (gpointer)new_state, (gpointer)old_state) != (gpointer)old_state);
+
+	/* Defer async request since we won't be able to process until exiting the block */
+	if (new_val == 1 && (new_state & INTERRUPT_ASYNC_REQUESTED_BIT)) {
+		InterlockedDecrement (&thread_interruption_requested);
+		THREADS_INTERRUPT_DEBUG ("[%d] begin abort protected block old_state %ld new_state %ld, defer tir %d\n", thread->small_id, old_state, new_state, thread_interruption_requested);
+		if (thread_interruption_requested < 0)
+			g_warning ("bad thread_interruption_requested state");
+	} else {
+		THREADS_INTERRUPT_DEBUG ("[%d] begin abort protected block old_state %ld new_state %ld, tir %d\n", thread->small_id, old_state, new_state, thread_interruption_requested);
+	}
+}
+
+static gboolean
+mono_thread_state_has_interruption (gsize state)
+{
+	/* pending exception, self abort */
+	if (state & INTERRUPT_SYNC_REQUESTED_BIT)
+		return TRUE;
+
+	/* abort, interruption, suspend */
+	if ((state & INTERRUPT_ASYNC_REQUESTED_BIT) && !(state & ABORT_PROT_BLOCK_MASK))
+		return TRUE;
+
+	return FALSE;
 }
 
 gboolean
@@ -275,105 +290,94 @@ mono_threads_end_abort_protected_block (void)
 {
 	MonoInternalThread *thread = mono_thread_internal_current ();
 	gsize old_state, new_state;
+	int new_val;
 	do {
 		old_state = thread->thread_state;
-		verify_thread_state (old_state);
-
-		int new_val = ((old_state & ABORT_PROT_BLOCK_MASK) >> ABORT_PROT_BLOCK_SHIFT) - 1;
-		new_state = 0;
-
-		if ((old_state & INTERRUPT_REQUEST_DEFERRED_BIT) && new_val == 0) {
-			new_state |= INTERRUPT_REQUESTED_BIT;
-		}
 
 		//bounds check abort_prot_count
+		new_val = ((old_state & ABORT_PROT_BLOCK_MASK) >> ABORT_PROT_BLOCK_SHIFT) - 1;
 		g_assert (new_val >= 0);
 		g_assert (new_val < (1 << ABORT_PROT_BLOCK_BITS));
-		new_state |= new_val << ABORT_PROT_BLOCK_SHIFT;
 
+		new_state = old_state - (1 << ABORT_PROT_BLOCK_SHIFT);
 	} while (InterlockedCompareExchangePointer ((volatile gpointer)&thread->thread_state, (gpointer)new_state, (gpointer)old_state) != (gpointer)old_state);
-	return (new_state & INTERRUPT_REQUESTED_BIT) == INTERRUPT_REQUESTED_BIT;
-}
 
+	if (new_val == 0 && (new_state & INTERRUPT_ASYNC_REQUESTED_BIT)) {
+		InterlockedIncrement (&thread_interruption_requested);
+		THREADS_INTERRUPT_DEBUG ("[%d] end abort protected block old_state %ld new_state %ld, restore tir %d\n", thread->small_id, old_state, new_state, thread_interruption_requested);
+	} else {
+		THREADS_INTERRUPT_DEBUG ("[%d] end abort protected block old_state %ld new_state %ld, tir %d\n", thread->small_id, old_state, new_state, thread_interruption_requested);
+	}
 
-//Don't use this function, use inc/dec below
-static void
-mono_thread_abort_prot_block_count_add (MonoInternalThread *thread, int val)
-{
-	gsize old_state, new_state;
-	do {
-		old_state = thread->thread_state;
-		verify_thread_state (old_state);
-
-		int new_val = val + ((old_state & ABORT_PROT_BLOCK_MASK) >> ABORT_PROT_BLOCK_SHIFT);
-		//bounds check abort_prot_count
-		g_assert (new_val >= 0);
-		g_assert (new_val < (1 << ABORT_PROT_BLOCK_BITS));
-		new_state = (old_state & ~ABORT_PROT_BLOCK_MASK) | (new_val << ABORT_PROT_BLOCK_SHIFT);
-
-	} while (InterlockedCompareExchangePointer ((volatile gpointer)&thread->thread_state, (gpointer)new_state, (gpointer)old_state) != (gpointer)old_state);
-}
-
-static void
-mono_thread_inc_abort_prot_block_count (MonoInternalThread *thread)
-{
-	mono_thread_abort_prot_block_count_add (thread, 1);
-}
-
-static void
-mono_thread_dec_abort_prot_block_count (MonoInternalThread *thread)
-{
-	mono_thread_abort_prot_block_count_add (thread, -1);
+	return mono_thread_state_has_interruption (new_state);
 }
 
 static gboolean
 mono_thread_get_interruption_requested (MonoInternalThread *thread)
 {
 	gsize state = thread->thread_state;
-	return (state & INTERRUPT_REQUESTED_BIT) == INTERRUPT_REQUESTED_BIT;
+
+	return mono_thread_state_has_interruption (state);
 }
 
-/* Returns TRUE is there was a state change */
+/*
+ * Returns TRUE is there was a state change
+ * We clear a single interruption request, sync has priority.
+ */
 static gboolean
 mono_thread_clear_interruption_requested (MonoInternalThread *thread)
 {
 	gsize old_state, new_state;
 	do {
 		old_state = thread->thread_state;
-		verify_thread_state (old_state);
 
-		//Already cleared
-		if (!(old_state & (INTERRUPT_REQUESTED_BIT | INTERRUPT_REQUEST_DEFERRED_BIT)))
+		// no interruption to process
+		if (!(old_state & INTERRUPT_SYNC_REQUESTED_BIT) &&
+				(!(old_state & INTERRUPT_ASYNC_REQUESTED_BIT) || (old_state & ABORT_PROT_BLOCK_MASK)))
 			return FALSE;
-		new_state = old_state & ~(INTERRUPT_REQUESTED_BIT | INTERRUPT_REQUEST_DEFERRED_BIT);
+
+		if (old_state & INTERRUPT_SYNC_REQUESTED_BIT)
+			new_state = old_state & ~INTERRUPT_SYNC_REQUESTED_BIT;
+		else
+			new_state = old_state & ~INTERRUPT_ASYNC_REQUESTED_BIT;
 	} while (InterlockedCompareExchangePointer ((volatile gpointer)&thread->thread_state, (gpointer)new_state, (gpointer)old_state) != (gpointer)old_state);
+
+	InterlockedDecrement (&thread_interruption_requested);
+	THREADS_INTERRUPT_DEBUG ("[%d] clear interruption old_state %ld new_state %ld, tir %d\n", thread->small_id, old_state, new_state, thread_interruption_requested);
+	if (thread_interruption_requested < 0)
+		g_warning ("bad thread_interruption_requested state");
 	return TRUE;
 }
 
-/* Returns TRUE is there was a state change */
+/* Returns TRUE is there was a state change and the interruption can be processed */
 static gboolean
 mono_thread_set_interruption_requested (MonoInternalThread *thread)
 {
 	//always force when the current thread is doing it to itself.
-	gboolean force_interrupt = thread == mono_thread_internal_current ();
+	gboolean sync = thread == mono_thread_internal_current ();
 	gsize old_state, new_state;
 	do {
 		old_state = thread->thread_state;
-		verify_thread_state (old_state);
 
-		int prot_count = ((old_state & ABORT_PROT_BLOCK_MASK) >> ABORT_PROT_BLOCK_SHIFT);
 		//Already set
-		if (old_state & (INTERRUPT_REQUESTED_BIT | INTERRUPT_REQUEST_DEFERRED_BIT))
+		if ((sync && (old_state & INTERRUPT_SYNC_REQUESTED_BIT)) ||
+				(!sync && (old_state & INTERRUPT_ASYNC_REQUESTED_BIT)))
 			return FALSE;
 
-		//If there's an outstanding prot block, we queue it
-		if (prot_count && !force_interrupt) {
-			new_state = old_state | INTERRUPT_REQUEST_DEFERRED_BIT;
-		} else
-			new_state = old_state | INTERRUPT_REQUESTED_BIT;
+		if (sync)
+			new_state = old_state | INTERRUPT_SYNC_REQUESTED_BIT;
+		else
+			new_state = old_state | INTERRUPT_ASYNC_REQUESTED_BIT;
 	} while (InterlockedCompareExchangePointer ((volatile gpointer)&thread->thread_state, (gpointer)new_state, (gpointer)old_state) != (gpointer)old_state);
 
-	return (new_state & INTERRUPT_REQUESTED_BIT) == INTERRUPT_REQUESTED_BIT;
+	if (sync || !(new_state & ABORT_PROT_BLOCK_MASK)) {
+		InterlockedIncrement (&thread_interruption_requested);
+		THREADS_INTERRUPT_DEBUG ("[%d] set interruption on [%d] old_state %ld new_state %ld, tir %d\n", mono_thread_internal_current ()->small_id, thread->small_id, old_state, new_state, thread_interruption_requested);
+	} else {
+		THREADS_INTERRUPT_DEBUG ("[%d] set interruption on [%d] old_state %ld new_state %ld, tir deferred %d\n", mono_thread_internal_current ()->small_id, thread->small_id, old_state, new_state, thread_interruption_requested);
+	}
+
+	return sync || !(new_state & ABORT_PROT_BLOCK_MASK);
 }
 
 static inline MonoNativeThreadId
@@ -1164,8 +1168,7 @@ mono_thread_detach_internal (MonoInternalThread *thread)
 	Leaving the counter unbalanced will cause a performance degradation since all threads
 	will now keep checking their local flags all the time.
 	*/
-	if (mono_thread_clear_interruption_requested (thread))
-		InterlockedDecrement (&thread_interruption_requested);
+	mono_thread_clear_interruption_requested (thread);
 
 	mono_threads_lock ();
 
@@ -4383,8 +4386,6 @@ mono_thread_execute_interruption (void)
 #ifdef HOST_WIN32
 		WaitForSingleObjectEx (GetCurrentThread(), 0, TRUE);
 #endif
-		InterlockedDecrement (&thread_interruption_requested);
-
 		/* Clear the interrupted flag of the thread so it can wait again */
 		mono_thread_info_clear_self_interrupt ();
 	}
@@ -4445,7 +4446,6 @@ mono_thread_request_interruption (gboolean running_managed)
 
 	if (!mono_thread_set_interruption_requested (thread))
 		return NULL;
-	InterlockedIncrement (&thread_interruption_requested);
 
 	if (!running_managed || is_running_protected_wrapper ()) {
 		/* Can't stop while in unmanaged code. Increase the global interruption
@@ -4470,7 +4470,7 @@ mono_thread_request_interruption (gboolean running_managed)
 /*This function should be called by a thread after it has exited all of
  * its handle blocks at interruption time.*/
 MonoException*
-mono_thread_resume_interruption (void)
+mono_thread_resume_interruption (gboolean exec)
 {
 	MonoInternalThread *thread = mono_thread_internal_current ();
 	gboolean still_aborting;
@@ -4485,15 +4485,17 @@ mono_thread_resume_interruption (void)
 
 	/*This can happen if the protected block called Thread::ResetAbort*/
 	if (!still_aborting)
-		return FALSE;
+		return NULL;
 
 	if (!mono_thread_set_interruption_requested (thread))
 		return NULL;
-	InterlockedIncrement (&thread_interruption_requested);
 
 	mono_thread_info_self_interrupt ();
 
-	return mono_thread_execute_interruption ();
+	if (exec)
+		return mono_thread_execute_interruption ();
+	else
+		return NULL;
 }
 
 gboolean mono_thread_interruption_requested ()
@@ -4746,8 +4748,6 @@ async_abort_critical (MonoThreadInfo *info, gpointer ud)
 	if (!mono_thread_set_interruption_requested (thread))
 		return MonoResumeThread;
 
-	InterlockedIncrement (&thread_interruption_requested);
-
 	ji = mono_thread_info_get_last_managed (info);
 	protected_wrapper = ji && !ji->is_trampoline && !ji->async && mono_threads_is_critical_method (mono_jit_info_get_method (ji));
 	running_managed = mono_jit_info_match (ji, MONO_CONTEXT_GET_IP (&mono_thread_info_get_suspend_state (info)->ctx));
@@ -4838,8 +4838,7 @@ async_suspend_critical (MonoThreadInfo *info, gpointer ud)
 			return KeepSuspended;
 		}
 	} else {
-		if (mono_thread_set_interruption_requested (thread))
-			InterlockedIncrement (&thread_interruption_requested);
+		mono_thread_set_interruption_requested (thread);
 		if (data->interrupt)
 			data->interrupt_token = mono_thread_info_prepare_interrupt ((MonoThreadInfo *)thread->thread_info);
 
@@ -5161,20 +5160,6 @@ mono_threads_detach_coop (gpointer cookie, gpointer *dummy)
 				mono_domain_set (orig, TRUE);
 		}
 	}
-}
-
-MonoException*
-mono_thread_try_resume_interruption (void)
-{
-	MonoInternalThread *thread;
-
-	thread = mono_thread_internal_current ();
-	if (!mono_get_eh_callbacks ()->mono_above_abort_threshold ())
-		return NULL;
-	if (mono_thread_get_abort_prot_block_count (thread) > 0 || mono_get_eh_callbacks ()->mono_current_thread_has_handle_block_guard ())
-		return NULL;
-
-	return mono_thread_resume_interruption ();
 }
 
 #if 0
