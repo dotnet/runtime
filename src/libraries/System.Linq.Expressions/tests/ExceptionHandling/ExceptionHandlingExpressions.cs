@@ -512,7 +512,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(3, Expression.Lambda<Func<int>>(finally2).Compile(useInterpreter)());
         }
 
-        [Theory, InlineData(true)]
+        [Theory, ClassData(typeof(CompilationTypes))]
         public void FaultNotTriggeredOnNoThrow(bool useInterpreter)
         {
             ParameterExpression variable = Expression.Parameter(typeof(int));
@@ -563,7 +563,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(2, Expression.Lambda<Func<int>>(block).Compile(useInterpreter)());
         }
 
-        [Theory, InlineData(true)]
+        [Theory, ClassData(typeof(CompilationTypes))]
         public void FinallyAndFaultAfterManyLabels(bool useInterpreter)
         {
             // There is a caching optimisation used below a certain number of faults or
@@ -952,6 +952,96 @@ namespace System.Linq.Expressions.Tests
                 );
             Func<int> func = Expression.Lambda<Func<int>>(tryExp).Compile(useInterpreter);
             Assert.Equal(9, func());
+        }
+
+        [Theory, InlineData(true)]
+        public void TryFinallyWithinFilter(bool useInterpreter)
+        {
+            TryExpression tryExp = Expression.TryCatch(
+                Expression.Throw(Expression.Constant(new TestException()), typeof(int)),
+                Expression.Catch(
+                    typeof(TestException),
+                    Expression.Constant(1),
+                    Expression.TryFinally(Expression.Constant(false), Expression.Empty())
+                    ),
+                Expression.Catch(
+                    typeof(TestException),
+                    Expression.Constant(2),
+                    Expression.TryFinally(Expression.Constant(true), Expression.Empty())
+                    ),
+                Expression.Catch(
+                    typeof(TestException),
+                    Expression.Constant(3)
+                    )
+                );
+            Func<int> func = Expression.Lambda<Func<int>>(tryExp).Compile(useInterpreter);
+            Assert.Equal(2, func());
+        }
+
+        [Fact, ActiveIssue(15719)]
+        public void TryFinallyWithinFilterCompiled()
+        {
+            TryFinallyWithinFilter(false);
+        }
+
+        [Theory, InlineData(true)]
+        public void TryCatchWithinFilter(bool useInterpreter)
+        {
+            TryExpression tryExp = Expression.TryCatch(
+                Expression.Throw(Expression.Constant(new TestException()), typeof(int)),
+                Expression.Catch(
+                    typeof(TestException),
+                    Expression.Constant(1),
+                    Expression.TryCatch(Expression.Constant(false), Expression.Catch(typeof(Expression), Expression.Constant(false)))
+                    ),
+                Expression.Catch(
+                    typeof(TestException),
+                    Expression.Constant(2),
+                    Expression.TryCatch(Expression.Constant(true), Expression.Catch(typeof(Expression), Expression.Constant(true)))
+                    ),
+                Expression.Catch(
+                    typeof(TestException),
+                    Expression.Constant(3)
+                    )
+                );
+            Func<int> func = Expression.Lambda<Func<int>>(tryExp).Compile(useInterpreter);
+            Assert.Equal(2, func());
+        }
+
+        [Fact, ActiveIssue(15719)]
+        public void TryCatchWithinFilterCompiled()
+        {
+            TryCatchWithinFilter(false);
+        }
+
+        [Theory, InlineData(true)]
+        public void TryCatchThrowingWithinFilter(bool useInterpreter)
+        {
+            TryExpression tryExp = Expression.TryCatch(
+                Expression.Throw(Expression.Constant(new TestException()), typeof(int)),
+                Expression.Catch(
+                    typeof(TestException),
+                    Expression.Constant(1),
+                    Expression.TryCatch(Expression.Throw(Expression.Constant(new TestException()), typeof(bool)), Expression.Catch(typeof(Exception), Expression.Constant(false)))
+                    ),
+                Expression.Catch(
+                    typeof(TestException),
+                    Expression.Constant(2),
+                    Expression.TryCatch(Expression.Throw(Expression.Constant(new TestException()), typeof(bool)), Expression.Catch(typeof(Exception), Expression.Constant(true)))
+                    ),
+                Expression.Catch(
+                    typeof(TestException),
+                    Expression.Constant(3)
+                    )
+                );
+            Func<int> func = Expression.Lambda<Func<int>>(tryExp).Compile(useInterpreter);
+            Assert.Equal(2, func());
+        }
+
+        [Fact, ActiveIssue(15719)]
+        public void TryCatchThrowingWithinFilterCompiled()
+        {
+            TryCatchThrowingWithinFilter(false);
         }
 
         private bool MethodWithManyArguments(
