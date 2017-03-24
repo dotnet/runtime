@@ -33,8 +33,6 @@ endif
 
 TEST_RUNNER_ARGS += $(if $(V), --verbose,)
 
-CLASS=$(mcs_topdir)/class/lib/$(DEFAULT_PROFILE)
-
 if FULL_AOT_TESTS
 TEST_RUNNER += --aot-run-flags "$(AOT_RUN_FLAGS)" --aot-build-flags "$(AOT_BUILD_FLAGS)"
 endif
