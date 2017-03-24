@@ -407,7 +407,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private Name GetPredefName(PredefinedName pn)
         {
-            return GetNameManager().GetPredefName(pn);
+            return GetNameManager().GetPredefinedName(pn);
         }
         private AggregateSymbol GetOptPredefAgg(PredefinedType pt)
         {

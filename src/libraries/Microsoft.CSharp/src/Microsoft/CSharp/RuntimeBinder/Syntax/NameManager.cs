@@ -51,10 +51,5 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
         {
             return s_predefinedNames[(int)id];
         }
-
-        internal Name GetPredefName(PredefinedName id)
-        {
-            return GetPredefinedName(id);
-        }
     }
 }

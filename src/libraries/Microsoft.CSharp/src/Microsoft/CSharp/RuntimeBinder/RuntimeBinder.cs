@@ -1041,12 +1041,12 @@ namespace Microsoft.CSharp.RuntimeBinder
                 Expr addMethArg = _binder.mustConvert(addMethGrp, _symbolTable.GetCTypeFromType(funcType));
 
                 args = _exprFactory.CreateList(addMethArg, removeMethArg, delegateVal);
-                methodName = SymbolLoader.GetNameManager().GetPredefName(PredefinedName.PN_ADDEVENTHANDLER).Text;
+                methodName = SymbolLoader.GetNameManager().GetPredefinedName(PredefinedName.PN_ADDEVENTHANDLER).Text;
             }
             else
             {
                 args = _exprFactory.CreateList(removeMethArg, delegateVal);
-                methodName = SymbolLoader.GetNameManager().GetPredefName(PredefinedName.PN_REMOVEEVENTHANDLER).Text;
+                methodName = SymbolLoader.GetNameManager().GetPredefinedName(PredefinedName.PN_REMOVEEVENTHANDLER).Text;
             }
 
             // WindowsRuntimeMarshal.Add\RemoveEventHandler(...)
