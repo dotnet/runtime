@@ -886,7 +886,7 @@ namespace System.Collections.Concurrent
                 // allows dequeuers to know whether they can dequeue and enqueuers to know whether they can
                 // enqueue.  An enqueuer at position N can enqueue when the sequence number is N, and a dequeuer
                 // for position N can dequeue when the sequence number is N + 1.  When an enqueuer is done writing
-                // at position N, it sets the sequence number to N so that a dequeuer will be able to dequeue,
+                // at position N, it sets the sequence number to N + 1 so that a dequeuer will be able to dequeue,
                 // and when a dequeuer is done dequeueing at position N, it sets the sequence number to N + _slots.Length,
                 // so that when an enqueuer loops around the slots, it'll find that the sequence number at
                 // position N is N.  This also means that when an enqueuer finds that at position N the sequence
