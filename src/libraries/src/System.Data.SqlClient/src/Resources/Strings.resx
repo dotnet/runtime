@@ -1039,4 +1039,7 @@
   <data name="SSPIInvalidHandleType" xml:space="preserve">
     <value>'{0}' is not a supported handle type.</value>
   </data>
+  <data name="LocalDBNotSupported" xml:space="preserve">
+    <value>LocalDB is not supported on this Platform.</value>
+  </data>
 </root>

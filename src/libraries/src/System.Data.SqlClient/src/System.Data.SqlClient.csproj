@@ -144,7 +144,6 @@
     <Compile Include="System\Data\SqlClient\SNI\SspiClientContextStatus.cs" />
     <Compile Include="System\Data\SqlClient\TdsParserStateObjectManaged.cs" />
   </ItemGroup>
-  
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(IsPartialFacadeAssembly)' != 'true' ">
     <Compile Include="System\Data\ProviderBase\DbConnectionPoolIdentity.Windows.cs" />
     <Compile Include="Interop\SNINativeMethodWrapper.Windows.cs" />
@@ -153,8 +152,20 @@
     <Compile Include="System\Data\SqlClient\TdsParserStateObjectFactory.Windows.cs" />
     <Compile Include="System\Data\SqlClient\TdsParser.Windows.cs" />
     <Compile Include="System\Data\SqlClient\LocalDBAPI.Windows.cs" />
+    <Compile Include="System\Data\SqlClient\SNI\LocalDB.Windows.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.LoadLibraryEx.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.LoadLibraryEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.FreeLibrary.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.FreeLibrary.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetProcAddress.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.GetProcAddress.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs</Link>
+    </Compile>
   </ItemGroup>
-  
   <!-- Windows dependencies for Integrated Authentication for MANAGED_SNI build -->
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(IsPartialFacadeAssembly)' != 'true' ">
     <Compile Include="$(CommonPath)\System\Net\Security\NegotiateStreamPal.Windows.cs">
@@ -281,7 +292,6 @@
       <Link>Common\System\Net\NegotiationInfoClass.cs</Link>
     </Compile>
   </ItemGroup>
-  
   <ItemGroup Condition=" '$(TargetsWindows)' != 'true' And '$(IsPartialFacadeAssembly)' != 'true' ">
     <Compile Include="System\Data\ProviderBase\DbConnectionPoolIdentity.Unix.cs" />
     <Compile Include="Interop\SNINativeMethodWrapper.Unix.cs" />
@@ -321,10 +331,14 @@
     <Compile Include="System\Data\SqlClient\TdsParserStateObjectFactory.Unix.cs" />
     <Compile Include="System\Data\SqlClient\TdsParser.Unix.cs" />
     <Compile Include="System\Data\SqlClient\LocalDBAPI.Unix.cs" />
+    <Compile Include="System\Data\SqlClient\SNI\LocalDB.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
     <Reference Include="mscorlib" />
     <Reference Include="System.Data" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' And '$(IsPartialFacadeAssembly)' != 'true' ">
+    <Reference Include="Microsoft.Win32.Registry" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Win32.Primitives" />
