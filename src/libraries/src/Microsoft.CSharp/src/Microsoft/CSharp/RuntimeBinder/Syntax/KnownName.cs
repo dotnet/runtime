@@ -26,29 +26,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
             public PredefinedName PredefinedName { get; } = PredefinedName.PN_COUNT;
         }
 
-        private static readonly NameTable s_knownNames = GetKnownNames();
-
-        private static NameTable GetKnownNames()
-        {
-            NameTable table = new NameTable();
-
-            // add all predefined names
-            Debug.Assert(s_predefinedNames.Length == (int)PredefinedName.PN_COUNT);
-            Debug.Assert(s_predefinedNames.Select((n, i) => (int)n.PredefinedName == i).All(e => e));
-            foreach (KnownName name in s_predefinedNames)
-            {
-                table.Add(name);
-            }
-
-            // add all other names
-            foreach (KnownName name in s_otherNames)
-            {
-                table.Add(name);
-            }
-
-            return table;
-        }
-
         private static readonly KnownName[] s_predefinedNames = new KnownName[(int)PredefinedName.PN_COUNT] {
             new KnownName(".ctor", PredefinedName.PN_CTOR),
             new KnownName("Finalize", PredefinedName.PN_DTOR),
@@ -174,5 +151,28 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
             new KnownName("unchecked"),
             new KnownName("void"),
         };
+
+        private static readonly NameTable s_knownNames = GetKnownNames();
+
+        private static NameTable GetKnownNames()
+        {
+            NameTable table = new NameTable();
+
+            // add all predefined names
+            Debug.Assert(s_predefinedNames.Length == (int)PredefinedName.PN_COUNT);
+            Debug.Assert(s_predefinedNames.Select((n, i) => (int)n.PredefinedName == i).All(e => e));
+            foreach (KnownName name in s_predefinedNames)
+            {
+                table.Add(name);
+            }
+
+            // add all other names
+            foreach (KnownName name in s_otherNames)
+            {
+                table.Add(name);
+            }
+
+            return table;
+        }
     }
 }
