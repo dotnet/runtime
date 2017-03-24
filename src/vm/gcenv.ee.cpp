@@ -1340,3 +1340,7 @@ void GCToEEInterface::EnableFinalization(bool foundFinalizers)
     }
 }
 
+void GCToEEInterface::HandleFatalError(unsigned int exitCode)
+{
+    EEPOLICY_HANDLE_FATAL_ERROR(exitCode);
+}
