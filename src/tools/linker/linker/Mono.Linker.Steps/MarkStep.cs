@@ -30,6 +30,7 @@
 using System;
 using System.Collections;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 using Mono.Cecil;
 using Mono.Cecil.Cil;
@@ -365,6 +366,19 @@ namespace Mono.Linker.Steps {
 			return null;
 		}
 
+		MethodDefinition GetMethodWithNoParameters (TypeDefinition type, string methodname)
+		{
+			while (type != null) {
+				MethodDefinition method = type.Methods.FirstOrDefault (m => m.Name == methodname && !m.HasParameters);
+				if (method != null)
+					return method;
+
+				type = type.BaseType != null ? ResolveTypeDefinition (type.BaseType) : null;
+			}
+
+			return null;
+		}
+
 		void MarkCustomAttributeArguments (CustomAttribute ca)
 		{
 			if (!ca.HasConstructorArguments)
@@ -596,6 +610,12 @@ namespace Mono.Linker.Steps {
 				case "System.Xml.Serialization.XmlSchemaProviderAttribute":
 					MarkXmlSchemaProvider (type, attribute);
 					break;
+				case "System.Diagnostics.DebuggerDisplayAttribute":
+					MarkTypeWithDebuggerDisplayAttribute (type, attribute);
+					break;
+				case "System.Diagnostics.DebuggerTypeProxyAttribute":
+					MarkTypeWithDebuggerTypeProxyAttribute (type, attribute);
+					break;
 				}
 			}
 		}
@@ -621,6 +641,73 @@ namespace Mono.Linker.Steps {
 				return;
 
 			MarkNamedMethod (type, method_name);
+		}
+
+		void MarkTypeWithDebuggerDisplayAttribute (TypeDefinition type, CustomAttribute attribute)
+		{
+			if (_context.KeepMembersForDebuggerAttributes) {
+
+				string displayString = (string) attribute.ConstructorArguments[0].Value;
+
+				Regex regex = new Regex ("{[^{}]+}", RegexOptions.Compiled);
+
+				foreach (Match match in regex.Matches (displayString)) {
+					// Remove '{' and '}'
+					string realMatch = match.Value.Substring (1, match.Value.Length - 2);
+
+					// Remove ",nq" suffix if present
+					// (it asks the expression evaluator to remove the quotes when displaying the final value)
+					if (Regex.IsMatch(realMatch, @".+,\s*nq")) {
+						realMatch = realMatch.Substring (0, realMatch.LastIndexOf (','));
+					}
+
+					if (realMatch.EndsWith ("()")) {
+						string methodName = realMatch.Substring (0, realMatch.Length - 2);
+						MethodDefinition method = GetMethodWithNoParameters (type, methodName);
+						if (method != null) {
+							MarkMethod (method);
+							continue;
+						}
+					} else {
+						FieldDefinition field = GetField (type, realMatch);
+						if (field != null) {
+							MarkField (field);
+							continue;
+						}
+
+						PropertyDefinition property = GetProperty (type, realMatch);
+						if (property != null) {
+							if (property.GetMethod != null) {
+								MarkMethod (property.GetMethod);
+							}
+							if (property.SetMethod != null) {
+								MarkMethod (property.SetMethod);
+							}
+							continue;
+						}
+					}
+
+					while (type != null) {
+						MarkMethods (type);
+						MarkFields (type, includeStatic: true);
+						type = type.BaseType != null ? ResolveTypeDefinition (type.BaseType) : null;
+					}
+					return;
+				}
+			}
+		}
+
+		void MarkTypeWithDebuggerTypeProxyAttribute (TypeDefinition type, CustomAttribute attribute)
+		{
+			if (_context.KeepMembersForDebuggerAttributes) {
+				TypeReference proxyTypeReference = (TypeReference) attribute.ConstructorArguments [0].Value;
+
+				MarkType (proxyTypeReference);
+
+				TypeDefinition proxyType = ResolveTypeDefinition (proxyTypeReference);
+				MarkMethods (proxyType);
+				MarkFields (proxyType, includeStatic: true);
+			}
 		}
 
 		static bool TryGetStringArgument (CustomAttribute attribute, out string argument)
