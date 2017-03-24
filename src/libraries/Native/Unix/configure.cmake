@@ -339,6 +339,21 @@ check_cxx_source_runs(
     "
     HAVE_CLOCK_MONOTONIC)
 
+check_cxx_source_runs(
+    "
+    #include <stdlib.h>
+    #include <time.h>
+    #include <sys/time.h>
+    int main()
+    {
+        int ret;
+        struct timespec ts;
+        ret = clock_gettime(CLOCK_REALTIME, &ts);
+        exit(ret);
+    }
+    "
+    HAVE_CLOCK_REALTIME)
+
 check_function_exists(
     mach_absolute_time
     HAVE_MACH_ABSOLUTE_TIME)
