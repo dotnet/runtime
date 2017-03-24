@@ -12699,14 +12699,21 @@ void Compiler::fgComputeEdgeWeights()
         // Did we allocate a scratch block as the new first BB?
         if (fgFirstBBisScratch())
         {
-            firstILBlock = firstILBlock->bbNext;
-            // The second block is expected to have a profile-derived weight
+            // Skip past any/all BBF_INTERNAL blocks that may have been added before the first real IL block.
+            // These internal blocks all should be BBJ_NONE blocks.
+            //
+            while (firstILBlock->bbFlags & BBF_INTERNAL)
+            {
+                assert(firstILBlock->bbJumpKind == BBJ_NONE);
+                firstILBlock = firstILBlock->bbNext;
+            }
+            // The 'firstILBlock' is now expected to have a profile-derived weight
             assert(firstILBlock->hasProfileWeight());
         }
 
-        // If the first block only has one ref then we use it's weight
-        // for fgCalledCount. Otherwise we have backedge's into the first block,
-        // so instead we use the sum of the return block weights for fgCalledCount.
+        // If the first block only has one ref then we use it's weight for fgCalledCount.
+        // Otherwise we have backedge's into the first block, so instead we use the sum
+        // of the return block weights for fgCalledCount.
         //
         // If the profile data has a 0 for the returnWeight
         // (i.e. the function never returns because it always throws)
