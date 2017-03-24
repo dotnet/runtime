@@ -708,7 +708,7 @@ namespace System.IO
             // available, we can put this into the FileSystem abstraction and implement it
             // properly for Win32.
 
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_FileEncryption);
+            throw new PlatformNotSupportedException();
         }
 
         public static void Decrypt(String path)
@@ -721,7 +721,7 @@ namespace System.IO
             // available, we can put this into the FileSystem abstraction and implement it
             // properly for Win32.
 
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_FileEncryption);
+            throw new PlatformNotSupportedException();
         }
 
         // UTF-8 without BOM and with error detection. Same as the default encoding for StreamWriter.

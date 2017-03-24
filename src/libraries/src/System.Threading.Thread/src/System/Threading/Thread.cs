@@ -174,29 +174,29 @@ namespace System.Threading
 
         public void Abort()
         {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ThreadAbort);
+            throw new PlatformNotSupportedException();
         }
 
         public void Abort(object stateInfo)
         {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ThreadAbort);
+            throw new PlatformNotSupportedException();
         }
 
         public static void ResetAbort()
         {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ThreadAbort);
+            throw new PlatformNotSupportedException();
         }
 
         [ObsoleteAttribute("Thread.Suspend has been deprecated.  Please use other classes in System.Threading, such as Monitor, Mutex, Event, and Semaphore, to synchronize Threads or protect resources.  http://go.microsoft.com/fwlink/?linkid=14202", false)]
         public void Suspend()
         {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ThreadSuspend);
+            throw new PlatformNotSupportedException();
         }
 
         [ObsoleteAttribute("Thread.Resume has been deprecated.  Please use other classes in System.Threading, such as Monitor, Mutex, Event, and Semaphore, to synchronize Threads or protect resources.  http://go.microsoft.com/fwlink/?linkid=14202", false)]
         public void Resume()
         {
-            throw new PlatformNotSupportedException(SR.PlatformNotSupported_ThreadSuspend);
+            throw new PlatformNotSupportedException();
         }
 
         // Currently, no special handling is done for critical regions, and no special handling is necessary to ensure thread
