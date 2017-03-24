@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
+using System.Runtime.CompilerServices;
 
 namespace System.SpanTests
 {
@@ -192,57 +193,9 @@ namespace System.SpanTests
             Assert.Equal<TestValueTypeWithReference>(expected, actual);
         }
 
-        [ActiveIssue(16492)]
-        [OuterLoop]
         [Fact]
-        public unsafe static void ClearLongerThanUintMaxValueBytes()
-        {
-            if (sizeof(IntPtr) == sizeof(long))
-            {
-                // Arrange
-                int[] a = null;
-                try
-                {
-                    // The maximum index in any single dimension is 2,147,483,591 (0x7FFFFFC7) 
-                    // for byte arrays and arrays of single-byte structures, 
-                    // and 2,146,435,071 (0X7FEFFFFF) for other types.
-                    const int maxArraySizeForLargerThanByteTypes = 0X7FEFFFFF;
-                    a = new int[maxArraySizeForLargerThanByteTypes];
-                }
-                // Skipping test if Out-of-Memory, since this test can only be run, if there is enough memory
-                catch (OutOfMemoryException)
-                {
-                    Console.WriteLine($"Span.Clear test {nameof(ClearLongerThanUintMaxValueBytes)} skipped due to {nameof(OutOfMemoryException)}.");
-                    return;
-                }
-
-                int initial = 5;
-                for (int i = 0; i < a.Length; i++)
-                {
-                    a[i] = initial;
-                }
-
-                var span = new Span<int>(a);
-
-                // Act
-                span.Clear();
-
-                // Assert using custom code for perf and to avoid allocating extra memory
-                for (int i = 0; i < a.Length; i++)
-                {
-                    var actual = a[i];
-                    if (actual != 0)
-                    {
-                        Assert.Equal(0, actual);
-                    }
-                }
-            }
-        }
-
-        [ActiveIssue(16492)]
         [OuterLoop]
-        [Fact]
-        public unsafe static void ClearNativeLongerThanUintMaxValueBytes()
+        unsafe static void ClearLongerThanUintMaxValueBytes()
         {
             if (sizeof(IntPtr) == sizeof(long))
             {
@@ -250,27 +203,23 @@ namespace System.SpanTests
                 IntPtr bytes = (IntPtr)(((long)int.MaxValue) * sizeof(int));
                 int length = (int)(((long)bytes) / sizeof(int));
 
-                int* ptr = null;
-                try
+                if (!AllocationHelper.TryAllocNative(bytes, out IntPtr memory))
                 {
-                    ptr = (int*)Runtime.InteropServices.Marshal.AllocHGlobal(bytes);
-                }
-                // Skipping test if Out-of-Memory, since this test can only be run, if there is enough memory
-                catch (OutOfMemoryException)
-                {
-                    Console.WriteLine($"Span.Clear test {nameof(ClearNativeLongerThanUintMaxValueBytes)} skipped due to {nameof(OutOfMemoryException)}.");
+                    Console.WriteLine($"Span.Clear test {nameof(ClearLongerThanUintMaxValueBytes)} skipped (could not alloc memory).");
                     return;
                 }
 
                 try
                 {
+                    ref int data = ref Unsafe.AsRef<int>(memory.ToPointer());
+
                     int initial = 5;
                     for (int i = 0; i < length; i++)
                     {
-                        *(ptr + i) = initial;
+                        Unsafe.Add(ref data, i) = initial;
                     }
 
-                    var span = new Span<int>(ptr, length);
+                    Span<int> span = new Span<int>(memory.ToPointer(), length);
 
                     // Act
                     span.Clear();
@@ -278,7 +227,7 @@ namespace System.SpanTests
                     // Assert using custom code for perf and to avoid allocating extra memory
                     for (int i = 0; i < length; i++)
                     {
-                        var actual = *(ptr + i);
+                        var actual = Unsafe.Add(ref data, i);
                         if (actual != 0)
                         {
                             Assert.Equal(0, actual);
@@ -287,7 +236,7 @@ namespace System.SpanTests
                 }
                 finally
                 {
-                    Runtime.InteropServices.Marshal.FreeHGlobal(new IntPtr(ptr));
+                    AllocationHelper.ReleaseNative(ref memory);
                 }
             }
         }
