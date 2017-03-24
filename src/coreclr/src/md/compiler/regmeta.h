@@ -20,8 +20,6 @@
 #include "../inc/mdlog.h"
 #include "utsem.h"
 
-#include "newmerger.h"
-
 #include "rwutil.h"
 #include "mdperf.h"
 #include <ivehandler.h>
@@ -183,7 +181,6 @@ class RegMeta :
 #endif
     , public IMDCommon
 {
-    friend class NEWMERGER;
     friend class CImportTlb;
     friend class MDInternalRW;
     friend class MDInternalRO;
@@ -1626,8 +1623,6 @@ protected:
     }
 
     HRESULT PreSave();
-    HRESULT ProcessFilter();
-    HRESULT ProcessFilterWorker();
 
     // Initialize the EE
     HRESULT StartupEE();
@@ -2025,9 +2020,6 @@ private:
     ULONG       m_OpenFlags;                // Open time flags.
 
     LONG        m_cRef;                     // Ref count.
-#ifdef FEATURE_METADATA_EMIT_ALL
-    NEWMERGER   m_newMerger;                // class for handling merge 
-#endif //FEATURE_METADATA_EMIT_ALL
     IUnknown    *m_pFreeThreadedMarshaler;   // FreeThreadedMarshaler
     
 #ifdef FEATURE_METADATA_PERF_STATS
