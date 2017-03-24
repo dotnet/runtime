@@ -815,9 +815,6 @@ namespace Microsoft.Win32
         [DllImport(KERNEL32, CharSet = CharSet.Auto, SetLastError = true)]
         internal static extern uint GetCurrentProcessId();
 
-        [DllImport(KERNEL32, CharSet = CharSet.Auto, BestFitMapping = false)]
-        internal extern static int GetComputerName([Out]StringBuilder nameBuffer, ref int bufferSize);
-
         [DllImport(OLE32)]
         internal extern static int CoCreateGuid(out Guid guid);
 
