@@ -148,7 +148,8 @@ if [ $symlinkPath = "<auto>" ]; then
     symlinkPath="$toolsLocalPath/dotnetcli/shared/Microsoft.NETCore.App/version"
 fi
 
-rootToolVersions="$repoRoot/.toolversions"
+
+rootCliVersion="$repoRoot/.cliversion"
 bootstrapComplete="$toolsLocalPath/bootstrap.complete"
 
 # if the force switch is specified delete the semaphore file if it exists
@@ -157,7 +158,7 @@ if [[ $force && -f $bootstrapComplete ]]; then
 fi
 
 # if the semaphore file exists and is identical to the specified version then exit
-if [[ -f $bootstrapComplete && ! `cmp $bootstrapComplete $rootToolVersions` ]]; then
+if [[ -f $bootstrapComplete && ! `cmp $bootstrapComplete $rootCliVersion` ]]; then
     say "$bootstrapComplete appears to show that bootstrapping is complete.  Use --force if you want to re-bootstrap."
     exit 0
 fi
@@ -181,7 +182,6 @@ if [ $forcedCliLocalPath = "<none>" ]; then
     chmod u+x "$dotnetInstallPath"
 
     # load the version of the CLI
-    rootCliVersion="$repoRoot/.cliversion"
     dotNetCliVersion=`cat $rootCliVersion`
 
     if [ ! -e $cliLocalPath ]; then
@@ -216,64 +216,8 @@ if [ ! -e $symlinkPath ]; then
     ln -s $junctionTarget $symlinkPath
 fi
 
-# create a project.csproj for the packages to restore
-projectCsproj="$toolsLocalPath/project.csproj"
-pcContent="<Project Sdk=\"Microsoft.NET.Sdk\"> <PropertyGroup> <TargetFramework>netcoreapp1.0</TargetFramework> </PropertyGroup> <ItemGroup>"
-while read v; do
-    IFS='=' read -r -a line <<< "$v"
-    pcContent="$pcContent <PackageReference Include=\"${line[0]}\" Version=\"${line[1]}\" />"
-done <$rootToolVersions
-pcContent="$pcContent </ItemGroup> </Project>"
-echo $pcContent > $projectCsproj
 
-# now restore the packages
-buildToolsSource="${BUILDTOOLS_SOURCE:-https://dotnet.myget.org/F/dotnet-buildtools/api/v3/index.json}"
-nugetOrgSource="https://api.nuget.org/v3/index.json"
-
-packagesPath="$repoRoot/packages"
-dotNetExe="$cliLocalPath/dotnet"
-restoreArgs="restore $projectCsproj --packages $packagesPath --source $buildToolsSource --source $nugetOrgSource"
-say_verbose "Running $dotNetExe $restoreArgs"
-$dotNetExe $restoreArgs
-if [ $? != 0 ]; then
-    say_err "project.csproj restore failed with exit code $?"
-    exit $?
-fi
-# now stage the contents to tools directory and run any init scripts
-while read v; do
-    echo hi $v
-    IFS='=' read -r -a line <<< "$v"
-    # verify that the version we expect is what was restored
-    pkgVerPath="$packagesPath/${line[0]}/${line[1]}"
-    if [ ! -d $pkgVerPath ]; then
-        say_err "Directory $pkgVerPath doesn't exist, ensure that the version restore matches the version specified."
-        exit 1
-    fi
-    # at present we have the following conventions when staging package content:
-    #   1.  if a package contains a "tools" directory then recursively copy its contents
-    #       to a directory named the package ID that's under $ToolsLocalPath.
-    #   2.  if a package contains a "libs" directory then recursively copy its contents
-    #       under the $ToolsLocalPath directory.
-    #   3.  if a package contains a file "lib\init-tools.cmd" execute it.
-    if [ -d "$pkgVerPath/tools" ]; then
-        destination="$toolsLocalPath/${line[0]}"
-        mkdir -p $destination
-        cp -r $pkgVerPath/tools/* $destination
-    fi
-    if [ -d "$pkgVerPath/lib" ]; then
-        cp -r $pkgVerPath/lib/* $toolsLocalPath
-    fi
-    if [ -f "$pkgVerPath/lib/init-tools.sh" ]; then
-        echo "$pkgVerPath/lib/init-tools.sh" "$repoRoot" "$dotNetExe" "$toolsLocalPath" > "init-${line[0]}.log"
-        "$pkgVerPath/lib/init-tools.sh" "$repoRoot" "$dotNetExe" "$toolsLocalPath" > "init-${line[0]}.log"
-        exitCode=$?
-        if [ $exitCode != 0 ]; then
-            echo ERROR: "$pkgVerPath/lib/init-tools.sh" "$repoRoot" "$dotNetExe" "$toolsLocalPath" returned $exitCode
-        fi
-    fi
-done <$rootToolVersions
-
-cp $rootToolVersions $bootstrapComplete
+cp $rootCliVersion $bootstrapComplete
 
 say "Bootstrap finished successfully."
 

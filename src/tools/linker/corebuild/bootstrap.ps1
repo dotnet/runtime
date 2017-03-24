@@ -10,7 +10,7 @@ param
     [switch]$Force = $false
 )
 
-$rootToolVersions = Join-Path $RepositoryRoot ".toolversions"
+$rootCliVersion = Join-Path $RepositoryRoot ".cliversion"
 $bootstrapComplete = Join-Path $ToolsLocalPath "bootstrap.complete"
 
 # if the force switch is specified delete the semaphore file if it exists
@@ -20,7 +20,7 @@ if ($Force -and (Test-Path $bootstrapComplete))
 }
 
 # if the semaphore file exists and is identical to the specified version then exit
-if ((Test-Path $bootstrapComplete) -and !(Compare-Object (Get-Content $rootToolVersions) (Get-Content $bootstrapComplete)))
+if ((Test-Path $bootstrapComplete) -and !(Compare-Object (Get-Content $rootCliVersion) (Get-Content $bootstrapComplete)))
 {
     exit 0
 }
@@ -43,7 +43,6 @@ else
 Invoke-WebRequest "https://raw.githubusercontent.com/dotnet/cli/$DotNetInstallBranch/scripts/obtain/dotnet-install.ps1" -OutFile $dotnetInstallPath
 
 # load the version of the CLI
-$rootCliVersion = Join-Path $RepositoryRoot ".cliversion"
 $dotNetCliVersion = Get-Content $rootCliVersion
 
 if (-Not (Test-Path $CliLocalPath))
@@ -78,43 +77,6 @@ if (-Not (Test-Path $SharedFrameworkSymlinkPath))
     cmd.exe /c mklink /j $SharedFrameworkSymlinkPath $junctionTarget | Out-Null
 }
 
-# now stage the contents to tools directory and run any init scripts
-foreach ($tool in $tools)
-{
-    $name, $version = $tool.split("=")
-
-    # verify that the version we expect is what was restored
-    $pkgVerPath = Join-Path $packagesPath "$name\$version"
-    if ((Test-Path $pkgVerPath) -eq 0)
-    {
-        Write-Output "Directory '$pkgVerPath' doesn't exist, ensure that the version restored matches the version specified."
-        exit 1
-    }
-
-    # at present we have the following conventions when staging package content:
-    #   1.  if a package contains a "tools" directory then recursively copy its contents
-    #       to a directory named the package ID that's under $ToolsLocalPath.
-    #   2.  if a package contains a "libs" directory then recursively copy its contents
-    #       under the $ToolsLocalPath directory.
-    #   3.  if a package contains a file "lib\init-tools.cmd" execute it.
-
-    if (Test-Path (Join-Path $pkgVerPath "tools"))
-    {
-        $destination = Join-Path $ToolsLocalPath $name
-        mkdir $destination | Out-Null
-        copy (Join-Path $pkgVerPath "tools\*") $destination -recurse
-    }
-    elseif (Test-Path (Join-Path $pkgVerPath "lib"))
-    {
-        copy (Join-Path $pkgVerPath "lib\*") $ToolsLocalPath -recurse
-    }
-
-    if (Test-Path (Join-Path $pkgVerPath "lib\init-tools.cmd"))
-    {
-        cmd.exe /c (Join-Path $pkgVerPath "lib\init-tools.cmd") $RepositoryRoot $dotNetExe $ToolsLocalPath | Out-File (Join-Path $RepositoryRoot "Init-$name.log")
-    }
-}
-
 # write semaphore file
-copy $rootToolVersions $bootstrapComplete
+copy $rootCliVersion $bootstrapComplete
 exit 0
