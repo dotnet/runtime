@@ -20,6 +20,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
             ("a232cec7be26319e53db0d48470232d37793b06b99e8ed82fac1996b3d1596449087769927d64af657cce62d853c4cf7ff4c"
            + "d069eda230d1c524d225756ffbaf").HexToByteArray();
 
+#if netcoreapp
         internal static ECCurve GetNistP256ExplicitCurve()
         {
             // SEC2-Ver-1.0, 2.7.2
@@ -146,5 +147,6 @@ namespace System.Security.Cryptography.EcDsa.Tests
 
             return p;
         }
+#endif // netcoreapp
     }
 }

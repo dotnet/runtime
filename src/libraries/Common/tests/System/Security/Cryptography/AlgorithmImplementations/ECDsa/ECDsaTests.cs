@@ -12,6 +12,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
 {
     public partial class ECDsaTests : ECDsaTestsBase
     {
+#if netcoreapp
         [Fact]
         public void KeySizeProp()
         {
@@ -221,6 +222,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
                 Verify256(ecdsa, false); // will not match because of randomness
             }
         }
+#endif // netcoreapp
 
         [Theory, MemberData(nameof(AllImplementations))]
         public void SignDataByteArray_NullData_ThrowsArgumentNullException(ECDsa ecdsa)

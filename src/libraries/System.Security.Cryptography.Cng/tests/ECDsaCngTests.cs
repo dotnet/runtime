@@ -12,14 +12,6 @@ namespace System.Security.Cryptography.Cng.Tests
     public class ECDsaCngTests : ECDsaTestsBase
     {
         [Fact]
-        public static void TestPositive256WithBlob()
-        {
-            CngKey key = TestData.s_ECDsa256Key;
-            ECDsaCng e = new ECDsaCng(key);
-            Verify256(e, true);
-        }
-
-        [Fact]
         public static void TestNegativeVerify256()
         {
             CngKey key = TestData.s_ECDsa256Key;
@@ -123,18 +115,6 @@ namespace System.Security.Cryptography.Cng.Tests
             }
         }
 
-        [Theory, MemberData(nameof(TestCurves))]
-        public static void TestKeyPropertyFromNamedCurve(CurveDef curveDef)
-        {
-            ECDsaCng e = new ECDsaCng(curveDef.Curve);
-            CngKey key1 = e.Key;
-            VerifyKey(key1);
-            e.Exercise();
-
-            CngKey key2 = e.Key;
-            Assert.Same(key1, key2);
-        }
-
         [Fact]
         public static void TestCreateKeyFromCngAlgorithmNistP256()
         {
@@ -167,6 +147,27 @@ namespace System.Security.Cryptography.Cng.Tests
                 Assert.Equal(256, key1.KeySize);
                 VerifyKey(key1);
             }
+        }
+
+#if netcoreapp
+        [Fact]
+        public static void TestPositive256WithBlob()
+        {
+            CngKey key = TestData.s_ECDsa256Key;
+            ECDsaCng e = new ECDsaCng(key);
+            Verify256(e, true);
+        }
+
+        [Theory, MemberData(nameof(TestCurves))]
+        public static void TestKeyPropertyFromNamedCurve(CurveDef curveDef)
+        {
+            ECDsaCng e = new ECDsaCng(curveDef.Curve);
+            CngKey key1 = e.Key;
+            VerifyKey(key1);
+            e.Exercise();
+
+            CngKey key2 = e.Key;
+            Assert.Same(key1, key2);
         }
 
         [Fact]
@@ -203,6 +204,7 @@ namespace System.Security.Cryptography.Cng.Tests
                 Assert.Equal(algorithm, cng.Key.Algorithm);
             }
         }
+#endif // netcoreapp
 
         public static IEnumerable<object[]> SpecialNistKeys
         {
