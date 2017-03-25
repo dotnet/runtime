@@ -5,13 +5,14 @@ using System;
 using System.Collections.Generic;
 using System.CommandLine;
 using System.IO;
+using System.Linq;
 using Microsoft.DotNet.Cli.Utils;
 using Microsoft.DotNet.ProjectModel;
 using Microsoft.DotNet.ProjectModel.Graph;
 using Microsoft.Extensions.DependencyModel;
 using NuGet.Frameworks;
 
-namespace RuntimeGraphGenerator
+namespace DepsProcessor
 {
     public class Program
     {
@@ -22,6 +23,7 @@ namespace RuntimeGraphGenerator
             string projectDirectory = null;
             string depsFile = null;
             IReadOnlyList<string> runtimes = null;
+            IReadOnlyList<string> runtimepackagesToBeRemoved = null;
             try
             {
                 ArgumentSyntax.Parse(args, syntax =>
@@ -33,6 +35,7 @@ namespace RuntimeGraphGenerator
 
                     syntax.DefineOption("p|project", ref projectDirectory, "Project location");
                     syntax.DefineOption("d|deps", ref depsFile, "Deps file path");
+                    syntax.DefineOptionList("r|remove", ref runtimepackagesToBeRemoved, "Runtime packages to be removed");
 
                     syntax.DefineParameterList("runtimes", ref runtimes, "Runtimes");
                 });
@@ -75,11 +78,18 @@ namespace RuntimeGraphGenerator
                 var graph = manager.Collect(exporter.GetDependencies(LibraryType.Package));
                 var expandedGraph = manager.Expand(graph, runtimes);
 
+                var trimmedRuntimeLibraries = context.RuntimeLibraries;
+
+                if (runtimepackagesToBeRemoved != null && runtimepackagesToBeRemoved.Count > 0)
+                {
+                    trimmedRuntimeLibraries = RuntimeReference.RemoveReferences(context.RuntimeLibraries, runtimepackagesToBeRemoved);
+                }
+
                 context = new DependencyContext(
                     context.Target,
                     context.CompilationOptions,
                     context.CompileLibraries,
-                    context.RuntimeLibraries,
+                    trimmedRuntimeLibraries,
                     expandedGraph
                     );
 
