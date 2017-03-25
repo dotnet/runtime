@@ -4333,6 +4333,10 @@ void AppDomain::Init()
     }
 #endif //FEATURE_COMINTEROP
 
+#ifdef FEATURE_TIERED_COMPILATION
+    m_callCounter.SetTieredCompilationManager(GetTieredCompilationManager());
+    m_tieredCompilationManager.Init(GetId());
+#endif
 #endif // CROSSGEN_COMPILE
 } // AppDomain::Init
 
@@ -8253,6 +8257,18 @@ void AppDomain::Exit(BOOL fRunFinalizers, BOOL fAsyncExit)
             }
         }
     }
+
+    // Tell the tiered compilation manager to stop initiating any new work for background
+    // jit optimization. Its possible the standard thread unwind mechanisms would pre-emptively
+    // evacuate the jit threadpool worker threads from the domain on their own, but I see no reason 
+    // to take the risk of relying on them when we can easily augment with a cooperative 
+    // shutdown check. This notification only initiates the process of evacuating the threads
+    // and then the UnwindThreads() call below is where blocking will occur to ensure the threads 
+    // have exited the domain.
+    //
+#ifdef FEATURE_TIERED_COMPILATION
+    m_tieredCompilationManager.OnAppDomainShutdown();
+#endif
 
     //
     // Set up blocks so no threads can enter except for the finalizer and the thread

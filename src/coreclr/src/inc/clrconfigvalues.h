@@ -969,6 +969,15 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_SampleIntervalLow,               
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_SampleIntervalHigh,                  W("HillClimbing_SampleIntervalHigh"),                 200, "");
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_GainExponent,                        W("HillClimbing_GainExponent"),                       200, "The exponent to apply to the gain, times 100.  100 means to use linear gain, higher values will enhance large moves and damp small ones.");
 
+
+//
+// Tiered Compilation
+//
+#ifdef FEATURE_TIERED_COMPILATION
+RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TieredCompilation, W("EXPERIMENTAL_TieredCompilation"), 0, "Enables tiered compilation")
+#endif
+
+
 // 
 // TypeLoader
 // 
