@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
@@ -103,7 +104,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             public bool Equals(Key other) => other != null && _name.Equals(other._name) && _parent.Equals(other._parent);
 
-            public override bool Equals(object obj) => Equals(obj as Key);
+#if  DEBUG 
+            [ExcludeFromCodeCoverage] // Typed overload should always be the method called.
+#endif
+            public override bool Equals(object obj)
+            {
+                Debug.Fail("Sub-optimal overload called. Check if this can be avoided.");
+                return Equals(obj as Key);
+            }
 
             public override int GetHashCode()
             {

@@ -67,9 +67,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         // 13.1.2 Implicit numeric conversions
-        // 
+        //
         // The implicit numeric conversions are:
-        // 
+        //
         // *   From sbyte to short, int, long, float, double, or decimal.
         // *   From byte to short, ushort, int, uint, long, ulong, float, double, or decimal.
         // *   From short to int, long, float, double, or decimal.
@@ -80,12 +80,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // *   From ulong to float, double, or decimal.
         // *   From char to ushort, int, uint, long, ulong, float, double, or decimal.
         // *   From float to double.
-        // 
+        //
         // Conversions from int, uint, long or ulong to float and from long or ulong to double can cause a
-        // loss of precision, but will never cause a loss of magnitude. The other implicit numeric 
+        // loss of precision, but will never cause a loss of magnitude. The other implicit numeric
         // conversions never lose any information.
-        // 
-        // There are no implicit conversions to the char type, so values of the other integral types do not 
+        //
+        // There are no implicit conversions to the char type, so values of the other integral types do not
         // automatically convert to the char type.
         //
         // 13.2.1 Explicit numeric conversions
@@ -258,7 +258,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
 
         /***************************************************************************************************
-            Determined which conversion to a predefined type is better relative to a given type. It is 
+            Determined which conversion to a predefined type is better relative to a given type. It is
             assumed that the given type is implicitly convertible to both of the predefined types
             (possibly via a user defined conversion, method group conversion, etc).
         ***************************************************************************************************/
@@ -604,12 +604,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         /***************************************************************************************************
             Convert a method group to a delegate type.
- 
+
             NOTE: Currently it is not well defined when there is an implicit conversion from a method
             group to a delegate type. There are several possibilities. On the two extremes are:
- 
+
             (1) (Most permissive) When there is at least one applicable method in the method group.
- 
+
             (2) (Most restrictive) When all of the following are satisfied:
                 * Overload resolution does not produce an error
                 * The method's parameter types don't require any conversions other than implicit reference
@@ -617,16 +617,16 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 * The method's return type is compatible.
                 * The method's constraints are satisfied.
                 * The method is not conditional.
- 
+
             For (1), it may be the case that an error is produced whenever the conversion is actually used.
             For example, if the result of overload resolution is ambiguous or if the result of overload
             resolution is a method with the wrong return result or with unsatisfied constraints.
- 
+
             For (2), the intent is that if the answer is yes, then an error is never produced.
- 
+
             Note that (2) is not monotone: adding a method to the method group may cause the answer
             to go from yes to no. This has a very odd effect in certain situations:
- 
+
             Suppose:
                 * I1 and J1 are interfaces with I1 : J1.
                 * I2, J2 and K2 are interfaces with I2 : J2, K2.
@@ -636,20 +636,20 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     void M(J1)
                     void M(J2)
                     void M(K2)
- 
+
             Under any of the definitions we're considering:
- 
+
                 * If M is { M(J1), M(J2) } then F(M) is an error (ambiguous between F(D1) and F(D2)).
                 * If M is { M(J1), M(K2) } then F(M) is an error (ambiguous between F(D1) and F(D2)).
                 * If M is { M(J2), M(K2) } then F(M) is an error (M -> D2 is ambiguous).
- 
+
             If M is { M(J1), M(J2), M(K2) } what should F(M) be? It seems logical for F(M) to be ambiguous
             in this case as well. However, under definition (2), there is no implicit conversion from M
             to D2 (since overload resolution is ambiguous). Thus F(M) is unambiguously taken to mean
             F(D1) applied to M(J1). Note that the user has just made the situation more ambiguous by having
             all three methods in the method group, but we ignore this additional ambiguity and pick a
             winner (rather arbitrarily).
- 
+
             We currently implement (1). The spec needs to be tightened up.
         ***************************************************************************************************/
         private bool BindGrpConversion(EXPRMEMGRP grp, CType typeDst, bool fReportErrors)
@@ -695,10 +695,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 isExtensionMethod = true;
                 TypeArray extParams = GetTypes().SubstTypeArray(mwiWrap.Meth().Params, mwiWrap.GetType());
-                // The this parameter must be a reference type. 
+                // The this parameter must be a reference type.
                 if (extParams[0].IsTypeParameterType() ? !@params[0].IsRefType() : !extParams[0].IsRefType())
                 {
-                    // We should issue a better message here. 
+                    // We should issue a better message here.
                     // We were only disallowing value types, hence the error message specific to value types.
                     // Now we are issuing the same error message for not-known to be reference types, not just value types.
                     ErrorContext.Error(ErrorCode.ERR_ValueTypeExtDelegate, mwiWrap, extParams[0].IsTypeParameterType() ? @params[0] : extParams[0]);
@@ -815,7 +815,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
          * bindInstanceParamForExtension
          *
          * This method is called by canConvert for the case of the instance parameter on the extension method
-         * 
+         *
          */
         private bool canConvertInstanceParamForExtension(EXPR exprSrc, CType typeDest)
         {
@@ -827,8 +827,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             // 26.2.3 Extension method invocations
             //
-            // The following conversions are defined of instance params on Extension methods 
-            // 
+            // The following conversions are defined of instance params on Extension methods
+            //
             // *   Identity conversions
             // *   Implicit reference conversions
             // *   Boxing conversions
@@ -885,27 +885,27 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         /***************************************************************************************************
             Binds a user-defined conversion. The parameters to this procedure are the same as
             BindImplicitConversion, except the last: implicitOnly - only consider implicit conversions.
-         
+
             This is a helper routine for BindImplicitConversion and BindExplicitConversion.
-         
+
             It's non trivial to get this right in the presence of generics. e.g.
-         
+
                 class D<B,C> {
                     static implicit operator B (D<B,C> x) { ... }
                 }
-         
+
                 class E<A> : D<List<A>, A> { }
-         
+
                 E<int> x;
                 List<int> y = x;
-         
+
             The locals below would have the following values:
-         
+
                 typeList->sym: D<List<A>, A>
                 typeCur: E<int>
                 typeConv = subst(typeList->sym, typeCur)
                          = subst(D<List<!0>, !0>, <int>) = D<List<int>, int>
-         
+
                 retType: B
                 typeTo = subst(retType, typeConv)
                        = subst(!0, <List<int>, int>) = List<int>
@@ -913,7 +913,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 typeFrom = subst(params->Item(0), typeConv)
                          = subst(D<!0,!1>, <List<int>, int>)
                          = D<List<int>, int> = typeConv
-         
+
             For lifting over nullable:
             * Look in the most base types for the conversions (not in System.Nullable).
             * We only lift if both the source type and destination type are nullable and the input
@@ -1034,7 +1034,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     {
                         if (convCur.Params.Count != 1)
                         {
-                            // If we have a user-defined conversion that 
+                            // If we have a user-defined conversion that
                             // does not specify the correct number of parameters, we may
                             // still get here. At this point, we don't want to consider
                             // the broken conversion, so we simply skip it and move on.
@@ -1115,8 +1115,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             //    class C { void M () { B b = new A<C>(); } }
                             //
                             // Note that, this UD implicit conversion is legal. C#20.1.11:
-                            //    "If a pre-defined explicit conversion (Section 6.2) exists from type S to type T, 
-                            //     any user-defined explicit conversions from S to T are ignored. However, 
+                            //    "If a pre-defined explicit conversion (Section 6.2) exists from type S to type T,
+                            //     any user-defined explicit conversions from S to T are ignored. However,
                             //     user-defined implicit conversions from S to T are still considered."
                             // Also notice that this check is O(n2) in found UD conversions.
                             continue;
@@ -1337,7 +1337,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 if (fLiftSrc)
                 {
-                    // If lifting of the source is required, we need to figure out the intermediate conversion 
+                    // If lifting of the source is required, we need to figure out the intermediate conversion
                     // from the type of the source to the type of the UD conversion parameter. Note that typeFrom
                     // is not a nullable type.
                     EXPR pConversionArgument = null;
@@ -1445,7 +1445,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private ConstCastResult bindConstantCast(EXPR exprSrc, EXPRTYPEORNAMESPACE exprTypeDest, bool needExprDest, out EXPR pexprDest, bool explicitConversion)
         {
             pexprDest = null;
-            Int64 valueInt = 0;
+            long valueInt = 0;
             double valueFlt = 0;
             CType typeDest = exprTypeDest.TypeOrNamespace.AsType();
             FUNDTYPE ftSrc = exprSrc.type.fundType();
@@ -1496,7 +1496,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         pexprDest = ExprFactory.CreateConstant(typeDest, cv);
                         return ConstCastResult.Success;
                     }
-                    valueInt = (Int64)(constSrc.UInt64Value& 0xFFFFFFFFFFFFFFFF);
+                    valueInt = (long)(constSrc.UInt64Value& 0xFFFFFFFFFFFFFFFF);
                 }
                 else
                 {
@@ -1519,48 +1519,48 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 case FUNDTYPE.FT_I1:
                     if (!srcIntegral)
                     {
-                        valueInt = (Int64)valueFlt;
+                        valueInt = (long)valueFlt;
                     }
                     valueInt = unchecked((sbyte)(valueInt & 0xFF));
                     break;
                 case FUNDTYPE.FT_I2:
                     if (!srcIntegral)
                     {
-                        valueInt = (Int64)valueFlt;
+                        valueInt = (long)valueFlt;
                     }
                     valueInt = unchecked((short)(valueInt & 0xFFFF));
                     break;
                 case FUNDTYPE.FT_I4:
                     if (!srcIntegral)
                     {
-                        valueInt = (Int64)valueFlt;
+                        valueInt = (long)valueFlt;
                     }
                     valueInt = unchecked((int)(valueInt & 0xFFFFFFFF));
                     break;
                 case FUNDTYPE.FT_I8:
                     if (!srcIntegral)
                     {
-                        valueInt = (Int64)valueFlt;
+                        valueInt = (long)valueFlt;
                     }
                     break;
                 case FUNDTYPE.FT_U1:
                     if (!srcIntegral)
                     {
-                        valueInt = (Int64)valueFlt;
+                        valueInt = (long)valueFlt;
                     }
                     valueInt = (byte)(valueInt & 0xFF);
                     break;
                 case FUNDTYPE.FT_U2:
                     if (!srcIntegral)
                     {
-                        valueInt = (Int64)valueFlt;
+                        valueInt = (long)valueFlt;
                     }
                     valueInt = (ushort)(valueInt & 0xFFFF);
                     break;
                 case FUNDTYPE.FT_U4:
                     if (!srcIntegral)
                     {
-                        valueInt = (Int64)valueFlt;
+                        valueInt = (long)valueFlt;
                     }
                     valueInt = (uint)(valueInt & 0xFFFFFFFF);
                     break;
@@ -1571,11 +1571,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         const double two63 = 2147483648.0 * 4294967296.0;
                         if (valueFlt < two63)
                         {
-                            valueInt = (Int64)valueFlt;
+                            valueInt = (long)valueFlt;
                         }
                         else
                         {
-                            valueInt = ((Int64)(valueFlt - two63)) + I64(0x8000000000000000);
+                            valueInt = ((long)(valueFlt - two63)) + I64(0x8000000000000000);
                         }
                     }
                     break;
@@ -1638,7 +1638,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             standard implicit conversion from base to type(1|2). If fImplicit(1|2) is false there should
             be a standard explicit conversion from base to type(1|2). The partial ordering used is as
             follows:
-         
+
             * If exactly one of fImplicit(1|2) is true then the corresponding type is closer.
             * Otherwise if there is a standard implicit conversion in neither direction or both directions
               then neither is closer.
@@ -1650,7 +1650,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 * If there is a standard implicit conversion from type(1|2) to type(2|1) then type(2|1)
                   is closer.
                 * Otherwise neither is closer.
-         
+
             The return value is -1 if type1 is closer, +1 if type2 is closer and 0 if neither is closer.
         ***************************************************************************************************/
         private int CompareSrcTypesBased(CType type1, bool fImplicit1, CType type2, bool fImplicit2)
@@ -1671,7 +1671,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             standard implicit conversion from type(1|2) to base. If fImplicit(1|2) is false there should
             be a standard explicit conversion from type(1|2) to base. The partial ordering used is as
             follows:
-         
+
             * If exactly one of fImplicit(1|2) is true then the corresponding type is closer.
             * Otherwise if there is a standard implicit conversion in neither direction or both directions
               then neither is closer.
@@ -1683,7 +1683,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 * If there is a standard implicit conversion from type(1|2) to type(2|1) then type(1|2)
                   is closer.
                 * Otherwise neither is closer.
-         
+
             The return value is -1 if type1 is closer, +1 if type2 is closer and 0 if neither is closer.
         ***************************************************************************************************/
         private int CompareDstTypesBased(CType type1, bool fImplicit1, CType type2, bool fImplicit2)
@@ -1714,7 +1714,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // Casting to decimal.
 
                 FUNDTYPE ftSrc = srcType.fundType();
-                Decimal result;
+                decimal result;
 
                 switch (ftSrc)
                 {
@@ -1753,14 +1753,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             if (srcType == typeDecimal)
             {
                 // Casting from decimal
-                Decimal decTrunc = 0;
+                decimal decTrunc = 0;
 
                 FUNDTYPE ftDest = destType.fundType();
                 try
                 {
                     if (ftDest != FUNDTYPE.FT_R4 && ftDest != FUNDTYPE.FT_R8)
                     {
-                        decTrunc = Decimal.Truncate(src.Val.DecimalVal);
+                        decTrunc = decimal.Truncate(src.Val.DecimalVal);
                     }
                     switch (ftDest)
                     {

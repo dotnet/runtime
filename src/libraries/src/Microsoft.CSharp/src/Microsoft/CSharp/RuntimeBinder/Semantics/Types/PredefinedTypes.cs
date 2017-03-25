@@ -10,31 +10,6 @@ using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal enum CorElementType
-    {
-        ELEMENT_TYPE_U1,
-        ELEMENT_TYPE_I2,
-        ELEMENT_TYPE_I4,
-        ELEMENT_TYPE_I8,
-        ELEMENT_TYPE_R4,
-        ELEMENT_TYPE_R8,
-        ELEMENT_TYPE_CHAR,
-        ELEMENT_TYPE_BOOLEAN,
-        ELEMENT_TYPE_I1,
-        ELEMENT_TYPE_U2,
-        ELEMENT_TYPE_U4,
-        ELEMENT_TYPE_U8,
-        ELEMENT_TYPE_I,
-        ELEMENT_TYPE_U,
-        ELEMENT_TYPE_OBJECT,
-        ELEMENT_TYPE_STRING,
-        ELEMENT_TYPE_TYPEDBYREF,
-        ELEMENT_TYPE_CLASS,
-        ELEMENT_TYPE_VALUETYPE,
-        ELEMENT_TYPE_END
-    }
-
-
     internal sealed class PredefinedTypes
     {
         private SymbolTable _runtimeBinderSymbolTable;
@@ -428,23 +403,23 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         private static readonly PredefinedTypeInfo[] s_pdTypes = new PredefinedTypeInfo[] {
-            new PredefinedTypeInfo(PredefinedType.PT_BYTE,   typeof(Byte), "System.Byte", true, 0, AggKindEnum.Struct, FUNDTYPE.FT_U1, true),
-            new PredefinedTypeInfo(PredefinedType.PT_SHORT,  typeof(Int16), "System.Int16", true, 0, AggKindEnum.Struct, FUNDTYPE.FT_I2, true),
-            new PredefinedTypeInfo(PredefinedType.PT_INT,    typeof(Int32), "System.Int32", true, 0, AggKindEnum.Struct, FUNDTYPE.FT_I4, true),
-            new PredefinedTypeInfo(PredefinedType.PT_LONG,   typeof(Int64), "System.Int64", true, 0, AggKindEnum.Struct, FUNDTYPE.FT_I8, true),
-            new PredefinedTypeInfo(PredefinedType.PT_FLOAT,  typeof(Single), "System.Single", true, 0, AggKindEnum.Struct, FUNDTYPE.FT_R4, true),
-            new PredefinedTypeInfo(PredefinedType.PT_DOUBLE, typeof(Double), "System.Double", true, 0, AggKindEnum.Struct, FUNDTYPE.FT_R8, true),
-            new PredefinedTypeInfo(PredefinedType.PT_DECIMAL, typeof(Decimal), "System.Decimal", false, 0, AggKindEnum.Struct, FUNDTYPE.FT_STRUCT, true),
-            new PredefinedTypeInfo(PredefinedType.PT_CHAR,   typeof(Char), "System.Char", true, 0, AggKindEnum.Struct, FUNDTYPE.FT_U2, true),
-            new PredefinedTypeInfo(PredefinedType.PT_BOOL,   typeof(Boolean), "System.Boolean", true, 0, AggKindEnum.Struct, FUNDTYPE.FT_I1, true),
-            new PredefinedTypeInfo(PredefinedType.PT_SBYTE,  typeof(SByte), "System.SByte", true, 0, AggKindEnum.Struct, FUNDTYPE.FT_I1, true),
-            new PredefinedTypeInfo(PredefinedType.PT_USHORT, typeof(UInt16), "System.UInt16", true, 0, AggKindEnum.Struct, FUNDTYPE.FT_U2, true),
-            new PredefinedTypeInfo(PredefinedType.PT_UINT,   typeof(UInt32), "System.UInt32", true, 0, AggKindEnum.Struct, FUNDTYPE.FT_U4, true),
-            new PredefinedTypeInfo(PredefinedType.PT_ULONG,  typeof(UInt64), "System.UInt64", true, 0, AggKindEnum.Struct, FUNDTYPE.FT_U8, true),
+            new PredefinedTypeInfo(PredefinedType.PT_BYTE,   typeof(byte), "System.Byte", true, 0, AggKindEnum.Struct, FUNDTYPE.FT_U1, true),
+            new PredefinedTypeInfo(PredefinedType.PT_SHORT,  typeof(short), "System.Int16", true, 0, AggKindEnum.Struct, FUNDTYPE.FT_I2, true),
+            new PredefinedTypeInfo(PredefinedType.PT_INT,    typeof(int), "System.Int32", true, 0, AggKindEnum.Struct, FUNDTYPE.FT_I4, true),
+            new PredefinedTypeInfo(PredefinedType.PT_LONG,   typeof(long), "System.Int64", true, 0, AggKindEnum.Struct, FUNDTYPE.FT_I8, true),
+            new PredefinedTypeInfo(PredefinedType.PT_FLOAT,  typeof(float), "System.Single", true, 0, AggKindEnum.Struct, FUNDTYPE.FT_R4, true),
+            new PredefinedTypeInfo(PredefinedType.PT_DOUBLE, typeof(double), "System.Double", true, 0, AggKindEnum.Struct, FUNDTYPE.FT_R8, true),
+            new PredefinedTypeInfo(PredefinedType.PT_DECIMAL, typeof(decimal), "System.Decimal", false, 0, AggKindEnum.Struct, FUNDTYPE.FT_STRUCT, true),
+            new PredefinedTypeInfo(PredefinedType.PT_CHAR,   typeof(char), "System.Char", true, 0, AggKindEnum.Struct, FUNDTYPE.FT_U2, true),
+            new PredefinedTypeInfo(PredefinedType.PT_BOOL,   typeof(bool), "System.Boolean", true, 0, AggKindEnum.Struct, FUNDTYPE.FT_I1, true),
+            new PredefinedTypeInfo(PredefinedType.PT_SBYTE,  typeof(sbyte), "System.SByte", true, 0, AggKindEnum.Struct, FUNDTYPE.FT_I1, true),
+            new PredefinedTypeInfo(PredefinedType.PT_USHORT, typeof(ushort), "System.UInt16", true, 0, AggKindEnum.Struct, FUNDTYPE.FT_U2, true),
+            new PredefinedTypeInfo(PredefinedType.PT_UINT,   typeof(uint), "System.UInt32", true, 0, AggKindEnum.Struct, FUNDTYPE.FT_U4, true),
+            new PredefinedTypeInfo(PredefinedType.PT_ULONG,  typeof(ulong), "System.UInt64", true, 0, AggKindEnum.Struct, FUNDTYPE.FT_U8, true),
             new PredefinedTypeInfo(PredefinedType.PT_INTPTR,  typeof(IntPtr), "System.IntPtr", true, 0, AggKindEnum.Struct, FUNDTYPE.FT_STRUCT, true),
             new PredefinedTypeInfo(PredefinedType.PT_UINTPTR, typeof(UIntPtr), "System.UIntPtr", true, 0, AggKindEnum.Struct, FUNDTYPE.FT_STRUCT, true),
-            new PredefinedTypeInfo(PredefinedType.PT_OBJECT, typeof(Object), "System.Object", true, 0, true),
-            new PredefinedTypeInfo(PredefinedType.PT_STRING, typeof(String), "System.String", true, 0, true),
+            new PredefinedTypeInfo(PredefinedType.PT_OBJECT, typeof(object), "System.Object", true, 0, true),
+            new PredefinedTypeInfo(PredefinedType.PT_STRING, typeof(string), "System.String", true, 0, true),
             new PredefinedTypeInfo(PredefinedType.PT_DELEGATE, typeof(Delegate), "System.Delegate", true, 0, true),
             new PredefinedTypeInfo(PredefinedType.PT_MULTIDEL, typeof(MulticastDelegate), "System.MulticastDelegate", true, 0, true),
             new PredefinedTypeInfo(PredefinedType.PT_ARRAY,   typeof(Array), "System.Array", true, 0, true),

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Globalization;
 
 namespace Microsoft.CSharp.RuntimeBinder.Errors
@@ -19,7 +18,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
 
         private static string ComputeString(ErrorCode code, string[] args)
         {
-            return String.Format(CultureInfo.InvariantCulture, ErrorFacts.GetMessage(code), args);
+            return string.Format(CultureInfo.InvariantCulture, ErrorFacts.GetMessage(code), args);
         }
 
         public void Initialize(ErrorCode code, string[] args)

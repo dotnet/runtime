@@ -54,19 +54,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         Lim
     }
 
-    // The pseudo-methods uses for accessing arrays (except in
-    // the optimized 1-d case.
-    internal enum ARRAYMETHOD
-    {
-        ARRAYMETH_LOAD,
-        ARRAYMETH_LOADADDR,
-        ARRAYMETH_STORE,
-        ARRAYMETH_CTOR,
-        ARRAYMETH_GETAT,   // Keep these in this order!!!
-
-        ARRAYMETH_COUNT
-    };
-
     /////////////////////////////////////////////////////////////////////////////////
 
     // Special constraints.

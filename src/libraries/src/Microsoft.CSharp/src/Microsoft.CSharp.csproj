@@ -17,7 +17,6 @@
     <Folder Include="Microsoft\CSharp\RuntimeBinder\Tokens\" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Microsoft\CSharp\ExtentFlags.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\ArgumentObject.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Binder.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\BinderHelper.cs" />
@@ -93,15 +92,12 @@
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\LangCompiler.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\MemberLookup.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\MemberLookupResults.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\MetadataToken.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\MethodIterator.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\MethodKind.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\MethodTypeInferrer.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Nullable.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\NullableLift.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Operators.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\OriginalExpressions.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\PredefinedAttributes.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\PredefinedMembers.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\SemanticChecker.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\SubstitutionContext.cs" />

@@ -307,7 +307,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
             sk = sym.getKind();
             if (sk == SYMKIND.SK_AssemblyQualifiedNamespaceSymbol)
             {
-                if (!String.IsNullOrEmpty(sym.AsAssemblyQualifiedNamespaceSymbol().GetNS().name.Text))
+                if (!string.IsNullOrEmpty(sym.AsAssemblyQualifiedNamespaceSymbol().GetNS().name.Text))
                 {
                     // Non-empty namespace name means it's not the root
                     // so treat it like a namespace instead of an alias
