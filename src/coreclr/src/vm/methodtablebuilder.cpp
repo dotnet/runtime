@@ -1942,7 +1942,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
     }
 
     // Check for the RemotingProxy Attribute
-    // structs with GC poitners MUST be pointer sized aligned because the GC assumes it
+    // structs with GC pointers MUST be pointer sized aligned because the GC assumes it
     if (IsValueClass() && pMT->ContainsPointers() && (bmtFP->NumInstanceFieldBytes % sizeof(void*) != 0))
     {
         BuildMethodTableThrowException(IDS_CLASSLOAD_BADFORMAT);
@@ -9856,7 +9856,7 @@ void MethodTableBuilder::CheckForSystemTypes()
         }
         else if (strcmp(name, g_ArgIteratorName) == 0)
         {
-            // Mark the special types that have embeded stack poitners in them
+            // Mark the special types that have embeded stack pointers in them
             pMT->SetIsByRefLike();
         }
         else if (strcmp(name, g_RuntimeArgumentHandleName) == 0)

@@ -245,7 +245,7 @@ MethodDesc* IP2MD(ULONG_PTR IP)
 }
 
 /*******************************************************************/
-/* if addr is a valid method table, return a poitner to it */
+/* if addr is a valid method table, return a pointer to it */
 MethodTable* AsMethodTable(size_t addr)
 {
     CONTRACTL
