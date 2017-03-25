@@ -9,6 +9,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.Versioning;
 using System.Runtime;
+using System.Runtime.InteropServices;
+using System.Security;
 
 namespace System.Threading
 {
@@ -188,10 +190,16 @@ namespace System.Threading
             return Interlocked.CompareExchange(ref location, 0, 0);
         }
 
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        public static extern void MemoryBarrier();
 
-        public static void MemoryBarrier()
+        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [SuppressUnmanagedCodeSecurity]
+        private static extern void _MemoryBarrierProcessWide();
+
+        public static void MemoryBarrierProcessWide()
         {
-            Thread.MemoryBarrier();
+            _MemoryBarrierProcessWide();
         }
     }
 }
