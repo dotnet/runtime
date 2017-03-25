@@ -230,9 +230,7 @@ namespace System
         [EditorBrowsable(EditorBrowsableState.Never)]
         public override bool Equals(object obj)
         {
-            ThrowHelper.ThrowNotSupportedException_CannotCallEqualsOnSpan();
-            // Prevent compiler error CS0161: 'Span<T>.Equals(object)': not all code paths return a value
-            return default(bool);
+            throw new NotSupportedException(SR.NotSupported_CannotCallEqualsOnSpan);
         }
 
         /// <summary>
@@ -245,9 +243,7 @@ namespace System
         [EditorBrowsable(EditorBrowsableState.Never)]
         public override int GetHashCode()
         {
-            ThrowHelper.ThrowNotSupportedException_CannotCallGetHashCodeOnSpan();
-            // Prevent compiler error CS0161: 'Span<T>.GetHashCode()': not all code paths return a value
-            return default(int);
+            throw new NotSupportedException(SR.NotSupported_CannotCallGetHashCodeOnSpan);
         }
 
         /// <summary>
