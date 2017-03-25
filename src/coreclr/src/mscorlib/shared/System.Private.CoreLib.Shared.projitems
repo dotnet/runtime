@@ -108,6 +108,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\ComponentModel\EditorBrowsableAttribute.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Convert.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\DataMisalignedException.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\DateTime.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\DateTimeKind.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\DayOfWeek.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\DBNull.cs"/>
