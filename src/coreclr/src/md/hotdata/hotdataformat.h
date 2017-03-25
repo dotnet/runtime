@@ -35,7 +35,7 @@ namespace MetaData
 // #HotMetaData 
 // To help with startup time, we create a section of metadata that is only that meta-data that was touched
 // durring IBC profiling.  Given an offset into a pool this checks if we have any hot data associated with
-// it.  If we do we return a poitner to it, otherwse we return NULL.
+// it.  If we do we return a pointer to it, otherwse we return NULL.
 
 #include <pshpack1.h>
 
