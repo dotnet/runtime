@@ -38,6 +38,7 @@ private:
     static BitSetShortLongRep MakeCopyLong(Env env, BitSetShortLongRep bs);
     static bool IsEmptyLong(Env env, BitSetShortLongRep bs);
     static unsigned CountLong(Env env, BitSetShortLongRep bs);
+    static bool IsEmptyUnionLong(Env env, BitSetShortLongRep bs1, BitSetShortLongRep bs2);
     static void UnionDLong(Env env, BitSetShortLongRep& bs1, BitSetShortLongRep bs2);
     static void DiffDLong(Env env, BitSetShortLongRep& bs1, BitSetShortLongRep bs2);
     static void AddElemDLong(Env env, BitSetShortLongRep& bs, unsigned i);
@@ -51,6 +52,15 @@ private:
     static bool IsSubsetLong(Env env, BitSetShortLongRep bs1, BitSetShortLongRep bs2);
     static bool IsEmptyIntersectionLong(Env env, BitSetShortLongRep bs1, BitSetShortLongRep bs2);
     static void IntersectionDLong(Env env, BitSetShortLongRep& bs1, BitSetShortLongRep bs2);
+    static void DataFlowDLong(Env                      env,
+                              BitSetShortLongRep&      out,
+                              const BitSetShortLongRep gen,
+                              const BitSetShortLongRep in);
+    static void LivenessDLong(Env                      env,
+                              BitSetShortLongRep&      in,
+                              const BitSetShortLongRep def,
+                              const BitSetShortLongRep use,
+                              const BitSetShortLongRep out);
 #ifdef DEBUG
     static const char* ToStringLong(Env env, BitSetShortLongRep bs);
 #endif
@@ -173,6 +183,18 @@ public:
         {
             assert(bs != UninitVal());
             return CountLong(env, bs);
+        }
+    }
+
+    static bool IsEmptyUnion(Env env, BitSetShortLongRep bs1, BitSetShortLongRep bs2)
+    {
+        if (IsShort(env))
+        {
+            return (((size_t)bs1) | ((size_t)bs2)) == 0;
+        }
+        else
+        {
+            return IsEmptyUnionLong(env, bs1, bs2);
         }
     }
 
@@ -299,6 +321,34 @@ public:
         }
     }
 
+    static void DataFlowD(Env env, BitSetShortLongRep& out, const BitSetShortLongRep gen, const BitSetShortLongRep in)
+    {
+        if (IsShort(env))
+        {
+            (size_t&)out = (size_t)out & ((size_t)gen | (size_t)in);
+        }
+        else
+        {
+            DataFlowDLong(env, out, gen, in);
+        }
+    }
+
+    static void LivenessD(Env                      env,
+                          BitSetShortLongRep&      in,
+                          const BitSetShortLongRep def,
+                          const BitSetShortLongRep use,
+                          const BitSetShortLongRep out)
+    {
+        if (IsShort(env))
+        {
+            (size_t&)in = (size_t)use | ((size_t)out & ~(size_t)def);
+        }
+        else
+        {
+            LivenessDLong(env, in, def, use, out);
+        }
+    }
+
     static bool IsSubset(Env env, BitSetShortLongRep bs1, BitSetShortLongRep bs2)
     {
         if (IsShort(env))
@@ -332,14 +382,13 @@ public:
         if (IsShort(env))
         {
             assert(sizeof(BitSetShortLongRep) == sizeof(size_t));
-            IAllocator* alloc          = BitSetTraits::GetDebugOnlyAllocator(env);
-            const int   CharsForSizeT  = sizeof(size_t) * 2;
-            char*       res            = nullptr;
-            const int   ShortAllocSize = CharsForSizeT + 4;
-            res                        = (char*)alloc->Alloc(ShortAllocSize);
-            size_t   bits              = (size_t)bs;
-            unsigned remaining         = ShortAllocSize;
-            char*    ptr               = res;
+            const int CharsForSizeT  = sizeof(size_t) * 2;
+            char*     res            = nullptr;
+            const int ShortAllocSize = CharsForSizeT + 4;
+            res                      = (char*)BitSetTraits::DebugAlloc(env, ShortAllocSize);
+            size_t   bits            = (size_t)bs;
+            unsigned remaining       = ShortAllocSize;
+            char*    ptr             = res;
             if (sizeof(size_t) == sizeof(int64_t))
             {
                 sprintf_s(ptr, remaining, "%016llX", bits);
@@ -629,7 +678,7 @@ BitSetShortLongRep BitSetOps</*BitSetType*/ BitSetShortLongRep,
     assert(!IsShort(env));
     unsigned len = BitSetTraits::GetArrSize(env, sizeof(size_t));
     assert(len > 1); // Or else would not require an array.
-    return (BitSetShortLongRep)(BitSetTraits::GetAllocator(env)->Alloc(len * sizeof(size_t)));
+    return (BitSetShortLongRep)(BitSetTraits::Alloc(env, len * sizeof(size_t)));
 }
 
 template <typename Env, typename BitSetTraits>
@@ -641,7 +690,7 @@ BitSetShortLongRep BitSetOps</*BitSetType*/ BitSetShortLongRep,
     assert(!IsShort(env));
     unsigned len = BitSetTraits::GetArrSize(env, sizeof(size_t));
     assert(len > 1); // Or else would not require an array.
-    BitSetShortLongRep res = (BitSetShortLongRep)(BitSetTraits::GetAllocator(env)->Alloc(len * sizeof(size_t)));
+    BitSetShortLongRep res = (BitSetShortLongRep)(BitSetTraits::Alloc(env, len * sizeof(size_t)));
     for (unsigned i = 0; i < len; i++)
     {
         res[i] = 0;
@@ -658,7 +707,7 @@ BitSetShortLongRep BitSetOps</*BitSetType*/ BitSetShortLongRep,
     assert(!IsShort(env));
     unsigned len = BitSetTraits::GetArrSize(env, sizeof(size_t));
     assert(len > 1); // Or else would not require an array.
-    BitSetShortLongRep res = (BitSetShortLongRep)(BitSetTraits::GetAllocator(env)->Alloc(len * sizeof(size_t)));
+    BitSetShortLongRep res = (BitSetShortLongRep)(BitSetTraits::Alloc(env, len * sizeof(size_t)));
     for (unsigned i = 0; i < len - 1; i++)
     {
         res[i] = size_t(-1);
@@ -722,6 +771,59 @@ template <typename Env, typename BitSetTraits>
 bool BitSetOps</*BitSetType*/ BitSetShortLongRep,
                /*Brand*/ BSShortLong,
                /*Env*/ Env,
+               /*BitSetTraits*/ BitSetTraits>::IsEmptyUnionLong(Env env, BitSetShortLongRep bs1, BitSetShortLongRep bs2)
+{
+    assert(!IsShort(env));
+    unsigned len = BitSetTraits::GetArrSize(env, sizeof(size_t));
+    for (unsigned i = 0; i < len; i++)
+    {
+        if ((bs1[i] | bs2[i]) != 0)
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+template <typename Env, typename BitSetTraits>
+void BitSetOps</*BitSetType*/ BitSetShortLongRep,
+               /*Brand*/ BSShortLong,
+               /*Env*/ Env,
+               /*BitSetTraits*/ BitSetTraits>::DataFlowDLong(Env                      env,
+                                                             BitSetShortLongRep&      out,
+                                                             const BitSetShortLongRep gen,
+                                                             const BitSetShortLongRep in)
+{
+    assert(!IsShort(env));
+    unsigned len = BitSetTraits::GetArrSize(env, sizeof(size_t));
+    for (unsigned i = 0; i < len; i++)
+    {
+        out[i] = out[i] & (gen[i] | in[i]);
+    }
+}
+
+template <typename Env, typename BitSetTraits>
+void BitSetOps</*BitSetType*/ BitSetShortLongRep,
+               /*Brand*/ BSShortLong,
+               /*Env*/ Env,
+               /*BitSetTraits*/ BitSetTraits>::LivenessDLong(Env                      env,
+                                                             BitSetShortLongRep&      in,
+                                                             const BitSetShortLongRep def,
+                                                             const BitSetShortLongRep use,
+                                                             const BitSetShortLongRep out)
+{
+    assert(!IsShort(env));
+    unsigned len = BitSetTraits::GetArrSize(env, sizeof(size_t));
+    for (unsigned i = 0; i < len; i++)
+    {
+        in[i] = use[i] | (out[i] & ~def[i]);
+    }
+}
+
+template <typename Env, typename BitSetTraits>
+bool BitSetOps</*BitSetType*/ BitSetShortLongRep,
+               /*Brand*/ BSShortLong,
+               /*Env*/ Env,
                /*BitSetTraits*/ BitSetTraits>::EqualLong(Env env, BitSetShortLongRep bs1, BitSetShortLongRep bs2)
 {
     assert(!IsShort(env));
@@ -762,13 +864,12 @@ const char* BitSetOps</*BitSetType*/ BitSetShortLongRep,
                       /*BitSetTraits*/ BitSetTraits>::ToStringLong(Env env, BitSetShortLongRep bs)
 {
     assert(!IsShort(env));
-    unsigned    len           = BitSetTraits::GetArrSize(env, sizeof(size_t));
-    const int   CharsForSizeT = sizeof(size_t) * 2;
-    unsigned    allocSz       = len * CharsForSizeT + 4;
-    unsigned    remaining     = allocSz;
-    IAllocator* alloc         = BitSetTraits::GetDebugOnlyAllocator(env);
-    char*       res           = (char*)alloc->Alloc(allocSz);
-    char*       temp          = res;
+    unsigned  len           = BitSetTraits::GetArrSize(env, sizeof(size_t));
+    const int CharsForSizeT = sizeof(size_t) * 2;
+    unsigned  allocSz       = len * CharsForSizeT + 4;
+    unsigned  remaining     = allocSz;
+    char*     res           = (char*)BitSetTraits::DebugAlloc(env, allocSz);
+    char*     temp          = res;
     for (unsigned i = len; 0 < i; i--)
     {
         size_t bits = bs[i - 1];

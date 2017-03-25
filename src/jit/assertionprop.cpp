@@ -511,7 +511,7 @@ ASSERT_TP& Compiler::GetAssertionDep(unsigned lclNum)
     ExpandArray<ASSERT_TP>& dep = *optAssertionDep;
     if (dep[lclNum] == nullptr)
     {
-        dep[lclNum] = optNewEmptyAssertSet();
+        dep[lclNum] = BitVecOps::MakeEmpty(apTraits);
     }
     return dep[lclNum];
 }
@@ -524,10 +524,7 @@ ASSERT_TP& Compiler::GetAssertionDep(unsigned lclNum)
 void Compiler::optAssertionTraitsInit(AssertionIndex assertionCount)
 {
     apTraits = new (getAllocator()) BitVecTraits(assertionCount, this);
-    apFull   = BitVecOps::UninitVal();
-    apEmpty  = BitVecOps::UninitVal();
-    BitVecOps::AssignNoCopy(apTraits, apFull, BitVecOps::MakeFull(apTraits));
-    BitVecOps::AssignNoCopy(apTraits, apEmpty, BitVecOps::MakeEmpty(apTraits));
+    apFull   = BitVecOps::MakeFull(apTraits);
 }
 
 /*****************************************************************************
@@ -792,12 +789,7 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
     if (assertionIndex > 0)
     {
         printf(" index=#%02u, mask=", assertionIndex);
-
-        // This is an hack to reuse a known empty set in order to display
-        // a single bit mask.
-        BitVecOps::AddElemD(apTraits, apEmpty, assertionIndex - 1);
-        printf("%s", BitVecOps::ToString(apTraits, apEmpty));
-        BitVecOps::RemoveElemD(apTraits, apEmpty, assertionIndex - 1);
+        printf("%s", BitVecOps::ToString(apTraits, BitVecOps::MakeSingleton(apTraits, assertionIndex - 1)));
     }
     printf("\n");
 }
@@ -1494,7 +1486,7 @@ void Compiler::optAddVnAssertionMapping(ValueNum vn, AssertionIndex index)
     ASSERT_TP cur;
     if (!optValueNumToAsserts->Lookup(vn, &cur))
     {
-        cur = optNewEmptyAssertSet();
+        cur = BitVecOps::MakeEmpty(apTraits);
         optValueNumToAsserts->Set(vn, cur);
     }
     BitVecOps::AddElemD(apTraits, cur, index - 1);
@@ -4397,15 +4389,8 @@ public:
         JITDUMP("AssertionPropCallback::EndMerge  : BB%02d in -> %s\n\n", block->bbNum,
                 BitVecOps::ToString(apTraits, block->bbAssertionIn));
 
-        // PERF: eliminate this tmp by passing in a OperationTree (AST) to the bitset,
-        // so the expr tree is operated on a single bit level. See "expression templates."
-        ASSERT_TP tmp = BitVecOps::MakeCopy(apTraits, block->bbAssertionIn);
-        BitVecOps::UnionD(apTraits, tmp, block->bbAssertionGen);
-        BitVecOps::IntersectionD(apTraits, block->bbAssertionOut, tmp);
-
-        BitVecOps::Assign(apTraits, tmp, block->bbAssertionIn);
-        BitVecOps::UnionD(apTraits, tmp, mJumpDestGen[block->bbNum]);
-        BitVecOps::IntersectionD(apTraits, mJumpDestOut[block->bbNum], tmp);
+        BitVecOps::DataFlowD(apTraits, block->bbAssertionOut, block->bbAssertionGen, block->bbAssertionIn);
+        BitVecOps::DataFlowD(apTraits, mJumpDestOut[block->bbNum], mJumpDestGen[block->bbNum], block->bbAssertionIn);
 
         bool changed = (!BitVecOps::Equal(apTraits, preMergeOut, block->bbAssertionOut) ||
                         !BitVecOps::Equal(apTraits, preMergeJumpDestOut, mJumpDestOut[block->bbNum]));
@@ -4429,16 +4414,6 @@ public:
         return changed;
     }
 };
-
-ASSERT_VALRET_TP Compiler::optNewFullAssertSet()
-{
-    return BitVecOps::MakeCopy(apTraits, apFull);
-}
-
-ASSERT_VALRET_TP Compiler::optNewEmptyAssertSet()
-{
-    return BitVecOps::MakeCopy(apTraits, apEmpty);
-}
 
 /*****************************************************************************
  *
@@ -4553,7 +4528,7 @@ ASSERT_TP* Compiler::optInitAssertionDataflowFlags()
     // apFull (i.e. all possible bits set), we need to set the bits only for valid
     // assertions (note that at this point we are not creating any new assertions).
     // Also note that assertion indices start from 1.
-    ASSERT_TP apValidFull = optNewEmptyAssertSet();
+    ASSERT_TP apValidFull = BitVecOps::MakeEmpty(apTraits);
     for (int i = 1; i <= optAssertionCount; i++)
     {
         BitVecOps::AddElemD(apTraits, apValidFull, i - 1);
@@ -4567,20 +4542,21 @@ ASSERT_TP* Compiler::optInitAssertionDataflowFlags()
     // edges.
     for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
     {
-        block->bbAssertionIn = optNewEmptyAssertSet();
-        if (!bbIsHandlerBeg(block))
+        if (bbIsHandlerBeg(block))
         {
-            BitVecOps::Assign(apTraits, block->bbAssertionIn, apValidFull);
+            block->bbAssertionIn = BitVecOps::MakeEmpty(apTraits);
         }
-        block->bbAssertionGen = optNewEmptyAssertSet();
-        block->bbAssertionOut = optNewEmptyAssertSet();
-        BitVecOps::Assign(apTraits, block->bbAssertionOut, apValidFull);
-        jumpDestOut[block->bbNum] = optNewEmptyAssertSet();
-        BitVecOps::Assign(apTraits, jumpDestOut[block->bbNum], apValidFull);
+        else
+        {
+            block->bbAssertionIn = BitVecOps::MakeCopy(apTraits, apValidFull);
+        }
+        block->bbAssertionGen     = BitVecOps::MakeEmpty(apTraits);
+        block->bbAssertionOut     = BitVecOps::MakeCopy(apTraits, apValidFull);
+        jumpDestOut[block->bbNum] = BitVecOps::MakeCopy(apTraits, apValidFull);
     }
     // Compute the data flow values for all tracked expressions
     // IN and OUT never change for the initial basic block B1
-    BitVecOps::Assign(apTraits, fgFirstBB->bbAssertionIn, apEmpty);
+    BitVecOps::ClearD(apTraits, fgFirstBB->bbAssertionIn);
     return jumpDestOut;
 }
 
@@ -5076,10 +5052,12 @@ void Compiler::optAssertionPropMain()
     }
 #endif // DEBUG
 
+    ASSERT_TP assertions = BitVecOps::MakeEmpty(apTraits);
+
     // Perform assertion propagation (and constant folding)
     for (BasicBlock* block = fgFirstBB; block; block = block->bbNext)
     {
-        ASSERT_TP assertions = BitVecOps::MakeCopy(apTraits, block->bbAssertionIn);
+        BitVecOps::Assign(apTraits, assertions, block->bbAssertionIn);
 
         // TODO-Review: EH successor/predecessor iteration seems broken.
         // SELF_HOST_TESTS_ARM\jit\Directed\ExcepFilters\fault\fault.exe

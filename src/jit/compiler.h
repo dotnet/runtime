@@ -5418,7 +5418,6 @@ protected:
     // Keeps tracked cse indices
     BitVecTraits* cseTraits;
     EXPSET_TP     cseFull;
-    EXPSET_TP     cseEmpty;
 
     /* Generic list of nodes - used by the CSE logic */
 
@@ -5691,7 +5690,6 @@ public:
     // Data structures for assertion prop
     BitVecTraits* apTraits;
     ASSERT_TP     apFull;
-    ASSERT_TP     apEmpty;
 
     enum optAssertionKind
     {
@@ -6059,9 +6057,6 @@ public:
     void optImpliedByTypeOfAssertions(ASSERT_TP& activeAssertions);
     void optImpliedByCopyAssertion(AssertionDsc* copyAssertion, AssertionDsc* depAssertion, ASSERT_TP& result);
     void optImpliedByConstAssertion(AssertionDsc* curAssertion, ASSERT_TP& result);
-
-    ASSERT_VALRET_TP optNewFullAssertSet();
-    ASSERT_VALRET_TP optNewEmptyAssertSet();
 
 #ifdef DEBUG
     void optPrintAssertion(AssertionDsc* newAssertion, AssertionIndex assertionIndex = 0);

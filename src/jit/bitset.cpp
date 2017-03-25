@@ -98,9 +98,9 @@ void BitSetSupport::RunTests(Env env)
 class TestBitSetTraits
 {
 public:
-    static IAllocator* GetAllocator(IAllocator* alloc)
+    static void* Alloc(IAllocator* alloc, size_t byteSize)
     {
-        return alloc;
+        return alloc->Alloc(byteSize);
     }
     static unsigned GetSize(IAllocator* alloc)
     {
