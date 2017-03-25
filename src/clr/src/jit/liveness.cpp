@@ -1189,9 +1189,7 @@ class LiveVarAnalysis
         }
 
         /* Compute the 'm_liveIn'  set */
-        VarSetOps::Assign(m_compiler, m_liveIn, m_liveOut);
-        VarSetOps::DiffD(m_compiler, m_liveIn, block->bbVarDef);
-        VarSetOps::UnionD(m_compiler, m_liveIn, block->bbVarUse);
+        VarSetOps::LivenessD(m_compiler, m_liveIn, block->bbVarDef, block->bbVarUse, m_liveOut);
 
         // Even if block->bbMemoryDef is set, we must assume that it doesn't kill memory liveness from m_memoryLiveOut,
         // since (without proof otherwise) the use and def may touch different memory at run-time.
@@ -1218,12 +1216,8 @@ class LiveVarAnalysis
 
                 noway_assert(block->bbFlags & BBF_INTERNAL);
 
-                liveInChanged =
-                    !VarSetOps::Equal(m_compiler, VarSetOps::Intersection(m_compiler, block->bbLiveIn, m_liveIn),
-                                      m_liveIn);
-                if (liveInChanged ||
-                    !VarSetOps::Equal(m_compiler, VarSetOps::Intersection(m_compiler, block->bbLiveOut, m_liveOut),
-                                      m_liveOut))
+                liveInChanged = !VarSetOps::IsSubset(m_compiler, m_liveIn, block->bbLiveIn);
+                if (liveInChanged || !VarSetOps::IsSubset(m_compiler, m_liveOut, block->bbLiveOut))
                 {
 #ifdef DEBUG
                     if (m_compiler->verbose)
@@ -1834,7 +1828,7 @@ VARSET_VALRET_TP Compiler::fgComputeLife(VARSET_VALARG_TP lifeArg,
     VARSET_TP VARSET_INIT(this, keepAliveVars, volatileVars);
     VarSetOps::UnionD(this, keepAliveVars, compCurBB->bbScope); // Don't kill vars in scope
 
-    noway_assert(VarSetOps::Equal(this, VarSetOps::Intersection(this, keepAliveVars, life), keepAliveVars));
+    noway_assert(VarSetOps::IsSubset(this, keepAliveVars, life));
     noway_assert(compCurStmt->gtOper == GT_STMT);
     noway_assert(endNode || (startNode == compCurStmt->gtStmt.gtStmtExpr));
 
@@ -1882,7 +1876,7 @@ VARSET_VALRET_TP Compiler::fgComputeLifeLIR(VARSET_VALARG_TP lifeArg, BasicBlock
     VARSET_TP VARSET_INIT(this, keepAliveVars, volatileVars);
     VarSetOps::UnionD(this, keepAliveVars, block->bbScope); // Don't kill vars in scope
 
-    noway_assert(VarSetOps::Equal(this, VarSetOps::Intersection(this, keepAliveVars, life), keepAliveVars));
+    noway_assert(VarSetOps::IsSubset(this, keepAliveVars, life));
 
     LIR::Range& blockRange      = LIR::AsRange(block);
     GenTree*    firstNonPhiNode = blockRange.FirstNonPhiNode();
@@ -2997,7 +2991,7 @@ void Compiler::fgInterBlockLocalVarLiveness()
             // which may expose more dead stores.
             fgLocalVarLivenessChanged = true;
 
-            noway_assert(VarSetOps::Equal(this, VarSetOps::Intersection(this, life, block->bbLiveIn), life));
+            noway_assert(VarSetOps::IsSubset(this, life, block->bbLiveIn));
 
             /* set the new bbLiveIn */
 
