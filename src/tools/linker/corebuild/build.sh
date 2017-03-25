@@ -5,5 +5,5 @@
 # set to netcore_Debug (see config.json).
 
 working_tree_root="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-$working_tree_root/run.sh build -Project=../linker/Mono.Linker.csproj $@
+$working_tree_root/dotnet.sh build ../linker/Mono.Linker.csproj -c netcore_Debug $@
 exit $?
