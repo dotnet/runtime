@@ -1064,6 +1064,7 @@ namespace System.Tests
             AssertEqual(expectedResult, MathF.Sqrt(value), allowedVariance);
         }
 
+        [ActiveIssue(17518, TestPlatforms.Linux)]
         [Theory]
         [InlineData( float.NegativeInfinity,  float.NaN,              0.0f)]
         [InlineData(-3.14159265f,            -0.0f,                   CrossPlatformMachineEpsilon)]         // value: -(pi)
