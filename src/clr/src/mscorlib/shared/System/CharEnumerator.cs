@@ -54,7 +54,6 @@ namespace System
             _str = null;
         }
 
-        /// <internalonly/>
         Object IEnumerator.Current
         {
             get { return Current; }
