@@ -9,6 +9,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
 {
     public class ECDsaImportExportTests : ECDsaTestsBase
     {
+#if netcoreapp
         [Theory]
         [MemberData(nameof(TestCurvesFull))]
         public static void TestNamedCurves(CurveDef curveDef)
@@ -288,5 +289,6 @@ namespace System.Security.Cryptography.EcDsa.Tests
             ECParameters paramSecondExport = ec.ExportExplicitParameters(curveDef.IncludePrivate);
             AssertEqual(parameters, paramSecondExport);
         }
+#endif
     }
 }

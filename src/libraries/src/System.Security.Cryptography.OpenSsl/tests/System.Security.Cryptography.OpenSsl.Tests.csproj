@@ -4,6 +4,7 @@
   <PropertyGroup>
     <ProjectGuid>{E1DAF7B9-BECB-4D25-AABB-C9E0BC73C690}</ProjectGuid>
     <UnsupportedPlatforms>Windows_NT</UnsupportedPlatforms>
+    <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp'">$(DefineConstants);netcoreapp</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />

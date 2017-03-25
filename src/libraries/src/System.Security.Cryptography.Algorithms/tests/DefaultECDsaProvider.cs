@@ -20,10 +20,12 @@ namespace System.Security.Cryptography.EcDsa.Tests
             return ec;
         }
 
+#if netcoreapp
         public ECDsa Create(ECCurve curve)
         {
             return ECDsa.Create(curve);
         }
+#endif
 
         public bool IsCurveValid(Oid oid)
         {
