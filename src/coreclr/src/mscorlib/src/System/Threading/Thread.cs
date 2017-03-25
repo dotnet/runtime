@@ -550,8 +550,6 @@ namespace System.Threading
         [SuppressUnmanagedCodeSecurity]
         private static extern void InformThreadNameChange(ThreadHandle t, String name, int len);
 
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern void MemoryBarrier();
     } // End of class Thread
 
     // declaring a local var of this enum type and passing it by ref into a function that needs to do a

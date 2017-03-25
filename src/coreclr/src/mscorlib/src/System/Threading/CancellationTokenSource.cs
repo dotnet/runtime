@@ -820,7 +820,7 @@ namespace System.Threading
             {
                 m_state = NOTIFYINGCOMPLETE;
                 m_executingCallback = null;
-                Thread.MemoryBarrier(); // for safety, prevent reorderings crossing this point and seeing inconsistent state.
+                Interlocked.MemoryBarrier(); // for safety, prevent reorderings crossing this point and seeing inconsistent state.
             }
 
             if (exceptionList != null)
