@@ -123,20 +123,9 @@ namespace System
         /// <param name="obj">The managed object that contains the data to span over.</param>
         /// <param name="objectData">A reference to data within that object.</param>
         /// <param name="length">The number of <typeparamref name="T"/> elements the memory contains.</param>
-        /// <exception cref="System.ArgumentNullException">
-        /// Thrown when the specified object is null.
-        /// </exception>
-        /// <exception cref="System.ArgumentOutOfRangeException">
-        /// Thrown when the specified <paramref name="length"/> is negative.
-        /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ReadOnlySpan<T> DangerousCreate(object obj, ref T objectData, int length)
         {
-            if (obj == null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.obj);
-            if (length < 0)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
-
             Pinnable<T> pinnable = Unsafe.As<Pinnable<T>>(obj);
             IntPtr byteOffset = Unsafe.ByteOffset<T>(ref pinnable.Data, ref objectData);
             return new ReadOnlySpan<T>(pinnable, byteOffset, length);
