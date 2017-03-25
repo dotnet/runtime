@@ -191,6 +191,10 @@ namespace System.Net.WebSockets.Client.Tests
                                 (errCode == WebSocketError.InvalidState) || (errCode == WebSocketError.Success),
                                 "WebSocketErrorCode");
                         }
+                        else if (ex is OperationCanceledException)
+                        {
+                            Assert.Equal(WebSocketState.Aborted, cws.State);
+                        }
                         else
                         {
                             Assert.True(false, "Unexpected exception: " + ex.Message);

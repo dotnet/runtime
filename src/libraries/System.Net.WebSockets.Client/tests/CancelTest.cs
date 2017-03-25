@@ -117,23 +117,52 @@ namespace System.Net.WebSockets.Client.Tests
                 await cws.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "CancelShutdown", cts.Token);
             }, server);
         }
-
+        
         [OuterLoop] // TODO: Issue #11345
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        public async Task ReceiveAsync_CancelAndReceive_ThrowsWebSocketExceptionWithMessage(Uri server)
+        public async Task ReceiveAsync_CancelThenReceive_ThrowsOperationCanceledException(Uri server)
         {
             using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
             {
                 var recvBuffer = new byte[100];
                 var segment = new ArraySegment<byte>(recvBuffer);
-
                 var cts = new CancellationTokenSource();
-                // OperationCancelledException is thrown only if the token is canceled before calling ReceiveAsync
-                // Once it returns (with a Task<>), any cancellation that occurs is treated as a WebSocketException
+
+                cts.Cancel();
+                Task receive = cws.ReceiveAsync(segment, cts.Token);
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => receive);
+            }
+        }
+        
+        [OuterLoop] // TODO: Issue #11345
+        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
+        public async Task ReceiveAsync_ReceiveThenCancel_ThrowsOperationCanceledException(Uri server)
+        {
+            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            {
+                var recvBuffer = new byte[100];
+                var segment = new ArraySegment<byte>(recvBuffer);
+                var cts = new CancellationTokenSource();
+
+                Task receive = cws.ReceiveAsync(segment, cts.Token);
+                cts.Cancel();
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => receive);
+            }
+        }
+        
+        [OuterLoop] // TODO: Issue #11345
+        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
+        public async Task ReceiveAsync_AfterCancellationDoReceiveAsync_ThrowsWebSocketException(Uri server)
+        {
+            using (ClientWebSocket cws = await WebSocketHelper.GetConnectedWebSocket(server, TimeOutMilliseconds, _output))
+            {
+                var recvBuffer = new byte[100];
+                var segment = new ArraySegment<byte>(recvBuffer);
+                var cts = new CancellationTokenSource();
+                
                 Task recieve = cws.ReceiveAsync(segment, cts.Token);
                 cts.Cancel();
-                WebSocketException wse = await Assert.ThrowsAnyAsync<WebSocketException>(() => recieve);
-
+                
                 WebSocketException ex = await Assert.ThrowsAsync<WebSocketException>(() =>
                     cws.ReceiveAsync(segment, CancellationToken.None));
                 Assert.Equal(
