@@ -107,5 +107,18 @@ namespace System.Tests
             reference = __makeref(boolValue);
             Assert.Equal(boolValue.GetType(), TypedReference.GetTargetType(reference));
         }
+
+        [Fact]
+        public static unsafe void PointerTypeTests()
+        {
+            void* pointerValue = (void*)0x123456;
+            TypedReference reference = __makeref(pointerValue);
+            Assert.Equal(typeof(void*), TypedReference.GetTargetType(reference));
+
+            // Pointer types get boxed as UIntPtr
+            object obj = TypedReference.ToObject(reference);
+            Assert.Equal(typeof(UIntPtr), obj.GetType());
+            Assert.Equal((UIntPtr)pointerValue, (UIntPtr)obj);
+        }
     }
 }
