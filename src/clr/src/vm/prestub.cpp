@@ -891,7 +891,7 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
 }
 #endif
 
-/* Make a stub that for a value class method that expects a BOXed this poitner */
+/* Make a stub that for a value class method that expects a BOXed this pointer */
 Stub * MakeUnboxingStubWorker(MethodDesc *pMD)
 {
     CONTRACT(Stub*)

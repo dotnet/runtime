@@ -36744,7 +36744,7 @@ inline void testGCShadow(Object** ptr)
     if (*ptr != 0 && (uint8_t*) shadow < g_GCShadowEnd && *ptr != *shadow)
     {
 
-        // If you get this assertion, someone updated a GC poitner in the heap without
+        // If you get this assertion, someone updated a GC pointer in the heap without
         // using the write barrier.  To find out who, check the value of 
         // dd_collection_count (dynamic_data_of (0)). Also
         // note the value of 'ptr'.  Rerun the App that the previous GC just occurred.

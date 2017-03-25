@@ -77,7 +77,7 @@ namespace System.Diagnostics.Tracing
 
         /// <summary>
         /// Writes a Start event with the specified name and data.   If the start event is not active (because the provider 
-        /// is not on or keyword-level indiates the event is off, then the returned activity is simply the 'this' poitner 
+        /// is not on or keyword-level indiates the event is off, then the returned activity is simply the 'this' pointer 
         /// and it is effectively like the Start d
         /// 
         /// A new activityID GUID is generated and the returned

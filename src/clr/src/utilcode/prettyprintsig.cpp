@@ -167,7 +167,7 @@ LPCWSTR PrettyPrintSigWorker(
 
 //*****************************************************************************
 //*****************************************************************************
-// pretty prints 'type' to the buffer 'out' returns a poitner to the next type, 
+// pretty prints 'type' to the buffer 'out' returns a pointer to the next type, 
 // or 0 on a format failure 
 
 static PCCOR_SIGNATURE PrettyPrintType(
@@ -562,7 +562,7 @@ HRESULT PrettyPrintSigWorkerInternal(
 #endif
 //*****************************************************************************
 //*****************************************************************************
-// pretty prints 'type' to the buffer 'out' returns a poitner to the next type, 
+// pretty prints 'type' to the buffer 'out' returns a pointer to the next type, 
 // or 0 on a format failure 
 
 __checkReturn 
