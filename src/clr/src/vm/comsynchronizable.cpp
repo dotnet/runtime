@@ -1669,16 +1669,6 @@ BOOL QCALLTYPE ThreadNative::YieldThread()
     return ret;
 }
 
-
-FCIMPL0(void, ThreadNative::FCMemoryBarrier)
-{
-    FCALL_CONTRACT;
-
-    MemoryBarrier();
-    FC_GC_POLL();
-}
-FCIMPLEND
-
 FCIMPL2(void, ThreadNative::SetAbortReason, ThreadBaseObject* pThisUNSAFE, Object* pObject)
 {
     FCALL_CONTRACT;
