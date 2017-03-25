@@ -876,7 +876,7 @@ namespace System.IO
 
         private async Task<string> ReadLineAsyncInternal()
         {
-            if (CharPos_Prop == CharLen_Prop && (await ReadBufferAsync().ConfigureAwait(false)) == 0)
+            if (_charPos == _charLen && (await ReadBufferAsync().ConfigureAwait(false)) == 0)
             {
                 return null;
             }
@@ -885,9 +885,9 @@ namespace System.IO
 
             do
             {
-                char[] tmpCharBuffer = CharBuffer_Prop;
-                int tmpCharLen = CharLen_Prop;
-                int tmpCharPos = CharPos_Prop;
+                char[] tmpCharBuffer = _charBuffer;
+                int tmpCharLen = _charLen;
+                int tmpCharPos = _charPos;
                 int i = tmpCharPos;
 
                 do
@@ -910,14 +910,14 @@ namespace System.IO
                             s = new string(tmpCharBuffer, tmpCharPos, i - tmpCharPos);
                         }
 
-                        CharPos_Prop = tmpCharPos = i + 1;
+                        _charPos = tmpCharPos = i + 1;
 
                         if (ch == '\r' && (tmpCharPos < tmpCharLen || (await ReadBufferAsync().ConfigureAwait(false)) > 0))
                         {
-                            tmpCharPos = CharPos_Prop;
-                            if (CharBuffer_Prop[tmpCharPos] == '\n')
+                            tmpCharPos = _charPos;
+                            if (_charBuffer[tmpCharPos] == '\n')
                             {
-                                CharPos_Prop = ++tmpCharPos;
+                                _charPos = ++tmpCharPos;
                             }
                         }
 
@@ -965,14 +965,14 @@ namespace System.IO
         private async Task<string> ReadToEndAsyncInternal()
         {
             // Call ReadBuffer, then pull data out of charBuffer.
-            StringBuilder sb = new StringBuilder(CharLen_Prop - CharPos_Prop);
+            StringBuilder sb = new StringBuilder(_charLen - _charPos);
             do
             {
-                int tmpCharPos = CharPos_Prop;
-                sb.Append(CharBuffer_Prop, tmpCharPos, CharLen_Prop - tmpCharPos);
-                CharPos_Prop = CharLen_Prop;  // We consumed these characters
+                int tmpCharPos = _charPos;
+                sb.Append(_charBuffer, tmpCharPos, _charLen - tmpCharPos);
+                _charPos = _charLen;  // We consumed these characters
                 await ReadBufferAsync().ConfigureAwait(false);
-            } while (CharLen_Prop > 0);
+            } while (_charLen > 0);
 
             return sb.ToString();
         }
@@ -1016,7 +1016,7 @@ namespace System.IO
 
         internal override async Task<int> ReadAsyncInternal(char[] buffer, int index, int count)
         {
-            if (CharPos_Prop == CharLen_Prop && (await ReadBufferAsync().ConfigureAwait(false)) == 0)
+            if (_charPos == _charLen && (await ReadBufferAsync().ConfigureAwait(false)) == 0)
             {
                 return 0;
             }
@@ -1027,26 +1027,26 @@ namespace System.IO
             // data read in, let's try writing directly to the user's buffer.
             bool readToUserBuffer = false;
 
-            Byte[] tmpByteBuffer = ByteBuffer_Prop;
-            Stream tmpStream = Stream_Prop;
+            Byte[] tmpByteBuffer = _byteBuffer;
+            Stream tmpStream = _stream;
 
             while (count > 0)
             {
                 // n is the characters available in _charBuffer
-                int n = CharLen_Prop - CharPos_Prop;
+                int n = _charLen - _charPos;
 
                 // charBuffer is empty, let's read from the stream
                 if (n == 0)
                 {
-                    CharLen_Prop = 0;
-                    CharPos_Prop = 0;
+                    _charLen = 0;
+                    _charPos = 0;
 
-                    if (!CheckPreamble_Prop)
+                    if (!_checkPreamble)
                     {
-                        ByteLen_Prop = 0;
+                        _byteLen = 0;
                     }
 
-                    readToUserBuffer = count >= MaxCharsPerBuffer_Prop;
+                    readToUserBuffer = count >= _maxCharsPerBuffer;
 
                     // We loop here so that we read in enough bytes to yield at least 1 char.
                     // We break out of the loop if the stream is blocked (EOF is reached).
@@ -1054,10 +1054,10 @@ namespace System.IO
                     {
                         Debug.Assert(n == 0);
 
-                        if (CheckPreamble_Prop)
+                        if (_checkPreamble)
                         {
-                            Debug.Assert(BytePos_Prop <= Preamble_Prop.Length, "possible bug in _compressPreamble.  Are two threads using this StreamReader at the same time?");
-                            int tmpBytePos = BytePos_Prop;
+                            Debug.Assert(_bytePos <= _preamble.Length, "possible bug in _compressPreamble.  Are two threads using this StreamReader at the same time?");
+                            int tmpBytePos = _bytePos;
                             int len = await tmpStream.ReadAsync(tmpByteBuffer, tmpBytePos, tmpByteBuffer.Length - tmpBytePos).ConfigureAwait(false);
                             Debug.Assert(len >= 0, "Stream.Read returned a negative number!  This is a bug in your stream class.");
 
@@ -1065,42 +1065,42 @@ namespace System.IO
                             {
                                 // EOF but we might have buffered bytes from previous 
                                 // attempts to detect preamble that needs to be decoded now
-                                if (ByteLen_Prop > 0)
+                                if (_byteLen > 0)
                                 {
                                     if (readToUserBuffer)
                                     {
-                                        n = Decoder_Prop.GetChars(tmpByteBuffer, 0, ByteLen_Prop, buffer, index + charsRead);
-                                        CharLen_Prop = 0;  // StreamReader's buffer is empty.
+                                        n = _decoder.GetChars(tmpByteBuffer, 0, _byteLen, buffer, index + charsRead);
+                                        _charLen = 0;  // StreamReader's buffer is empty.
                                     }
                                     else
                                     {
-                                        n = Decoder_Prop.GetChars(tmpByteBuffer, 0, ByteLen_Prop, CharBuffer_Prop, 0);
-                                        CharLen_Prop += n;  // Number of chars in StreamReader's buffer.
+                                        n = _decoder.GetChars(tmpByteBuffer, 0, _byteLen, _charBuffer, 0);
+                                        _charLen += n;  // Number of chars in StreamReader's buffer.
                                     }
                                 }
 
                                 // How can part of the preamble yield any chars?
                                 Debug.Assert(n == 0);
 
-                                IsBlocked_Prop = true;
+                                _isBlocked = true;
                                 break;
                             }
                             else
                             {
-                                ByteLen_Prop += len;
+                                _byteLen += len;
                             }
                         }
                         else
                         {
-                            Debug.Assert(BytePos_Prop == 0, "_bytePos can be non zero only when we are trying to _checkPreamble.  Are two threads using this StreamReader at the same time?");
+                            Debug.Assert(_bytePos == 0, "_bytePos can be non zero only when we are trying to _checkPreamble.  Are two threads using this StreamReader at the same time?");
 
-                            ByteLen_Prop = await tmpStream.ReadAsync(tmpByteBuffer, 0, tmpByteBuffer.Length).ConfigureAwait(false);
+                            _byteLen = await tmpStream.ReadAsync(tmpByteBuffer, 0, tmpByteBuffer.Length).ConfigureAwait(false);
 
-                            Debug.Assert(ByteLen_Prop >= 0, "Stream.Read returned a negative number!  This is a bug in your stream class.");
+                            Debug.Assert(_byteLen >= 0, "Stream.Read returned a negative number!  This is a bug in your stream class.");
 
-                            if (ByteLen_Prop == 0)  // EOF
+                            if (_byteLen == 0)  // EOF
                             {
-                                IsBlocked_Prop = true;
+                                _isBlocked = true;
                                 break;
                             }
                         }
@@ -1108,7 +1108,7 @@ namespace System.IO
                         // _isBlocked == whether we read fewer bytes than we asked for.
                         // Note we must check it here because CompressBuffer or 
                         // DetectEncoding will change _byteLen.
-                        IsBlocked_Prop = (ByteLen_Prop < tmpByteBuffer.Length);
+                        _isBlocked = (_byteLen < tmpByteBuffer.Length);
 
                         // Check for preamble before detect encoding. This is not to override the
                         // user supplied Encoding for the one we implicitly detect. The user could
@@ -1121,33 +1121,33 @@ namespace System.IO
                         }
 
                         // On the first call to ReadBuffer, if we're supposed to detect the encoding, do it.
-                        if (DetectEncoding_Prop && ByteLen_Prop >= 2)
+                        if (_detectEncoding && _byteLen >= 2)
                         {
                             DetectEncoding();
                             // DetectEncoding changes some buffer state.  Recompute this.
-                            readToUserBuffer = count >= MaxCharsPerBuffer_Prop;
+                            readToUserBuffer = count >= _maxCharsPerBuffer;
                         }
 
                         Debug.Assert(n == 0);
 
-                        CharPos_Prop = 0;
+                        _charPos = 0;
                         if (readToUserBuffer)
                         {
-                            n += Decoder_Prop.GetChars(tmpByteBuffer, 0, ByteLen_Prop, buffer, index + charsRead);
+                            n += _decoder.GetChars(tmpByteBuffer, 0, _byteLen, buffer, index + charsRead);
 
                             // Why did the bytes yield no chars?
                             Debug.Assert(n > 0);
 
-                            CharLen_Prop = 0;  // StreamReader's buffer is empty.
+                            _charLen = 0;  // StreamReader's buffer is empty.
                         }
                         else
                         {
-                            n = Decoder_Prop.GetChars(tmpByteBuffer, 0, ByteLen_Prop, CharBuffer_Prop, 0);
+                            n = _decoder.GetChars(tmpByteBuffer, 0, _byteLen, _charBuffer, 0);
 
                             // Why did the bytes yield no chars?
                             Debug.Assert(n > 0);
 
-                            CharLen_Prop += n;  // Number of chars in StreamReader's buffer.
+                            _charLen += n;  // Number of chars in StreamReader's buffer.
                         }
                     } while (n == 0);
 
@@ -1165,8 +1165,8 @@ namespace System.IO
 
                 if (!readToUserBuffer)
                 {
-                    Buffer.BlockCopy(CharBuffer_Prop, CharPos_Prop * 2, buffer, (index + charsRead) * 2, n * 2);
-                    CharPos_Prop += n;
+                    Buffer.BlockCopy(_charBuffer, _charPos * 2, buffer, (index + charsRead) * 2, n * 2);
+                    _charPos += n;
                 }
 
                 charsRead += n;
@@ -1175,7 +1175,7 @@ namespace System.IO
                 // This function shouldn't block for an indefinite amount of time,
                 // or reading from a network stream won't work right.  If we got
                 // fewer bytes than we requested, then we want to break right here.
-                if (IsBlocked_Prop)
+                if (_isBlocked)
                 {
                     break;
                 }
@@ -1221,101 +1221,23 @@ namespace System.IO
             return task;
         }
 
-#region Private properties for async method performance
-        // Access to instance fields of MarshalByRefObject-derived types requires special JIT helpers that check
-        // if the instance operated on is remote. This is optimised for fields on 'this' but if a method is Async
-        // and is thus lifted to a state machine type, access will be slow.
-        // As a workaround, we either cache instance fields in locals or use properties to access such fields.
-
-        // See Dev11 bug #370300 for more info.
-
-        private int CharLen_Prop
-        {
-            get { return _charLen; }
-            set { _charLen = value; }
-        }
-
-        private int CharPos_Prop
-        {
-            get { return _charPos; }
-            set { _charPos = value; }
-        }
-
-        private int ByteLen_Prop
-        {
-            get { return _byteLen; }
-            set { _byteLen = value; }
-        }
-
-        private int BytePos_Prop
-        {
-            get { return _bytePos; }
-            set { _bytePos = value; }
-        }
-
-        private Byte[] Preamble_Prop
-        {
-            get { return _preamble; }
-        }
-
-        private bool CheckPreamble_Prop
-        {
-            get { return _checkPreamble; }
-        }
-
-        private Decoder Decoder_Prop
-        {
-            get { return _decoder; }
-        }
-
-        private bool DetectEncoding_Prop
-        {
-            get { return _detectEncoding; }
-        }
-
-        private char[] CharBuffer_Prop
-        {
-            get { return _charBuffer; }
-        }
-
-        private Byte[] ByteBuffer_Prop
-        {
-            get { return _byteBuffer; }
-        }
-
-        private bool IsBlocked_Prop
-        {
-            get { return _isBlocked; }
-            set { _isBlocked = value; }
-        }
-
-        private Stream Stream_Prop
-        {
-            get { return _stream; }
-        }
-
-        private int MaxCharsPerBuffer_Prop
-        {
-            get { return _maxCharsPerBuffer; }
-        }
-#endregion Private properties for async method performance
         private async Task<int> ReadBufferAsync()
         {
-            CharLen_Prop = 0;
-            CharPos_Prop = 0;
-            Byte[] tmpByteBuffer = ByteBuffer_Prop;
-            Stream tmpStream = Stream_Prop;
+            _charLen = 0;
+            _charPos = 0;
+            Byte[] tmpByteBuffer = _byteBuffer;
+            Stream tmpStream = _stream;
 
-            if (!CheckPreamble_Prop)
+            if (!_checkPreamble)
             {
-                ByteLen_Prop = 0;
+                _byteLen = 0;
             }
             do
             {
-                if (CheckPreamble_Prop)
+                if (_checkPreamble)
                 {
-                    Debug.Assert(BytePos_Prop <= Preamble_Prop.Length, "possible bug in _compressPreamble. Are two threads using this StreamReader at the same time?");
-                    int tmpBytePos = BytePos_Prop;
+                    Debug.Assert(_bytePos <= _preamble.Length, "possible bug in _compressPreamble. Are two threads using this StreamReader at the same time?");
+                    int tmpBytePos = _bytePos;
                     int len = await tmpStream.ReadAsync(tmpByteBuffer, tmpBytePos, tmpByteBuffer.Length - tmpBytePos).ConfigureAwait(false);
                     Debug.Assert(len >= 0, "Stream.Read returned a negative number!  This is a bug in your stream class.");
 
@@ -1323,34 +1245,34 @@ namespace System.IO
                     {
                         // EOF but we might have buffered bytes from previous 
                         // attempt to detect preamble that needs to be decoded now
-                        if (ByteLen_Prop > 0)
+                        if (_byteLen > 0)
                         {
-                            CharLen_Prop += Decoder_Prop.GetChars(tmpByteBuffer, 0, ByteLen_Prop, CharBuffer_Prop, CharLen_Prop);
+                            _charLen += _decoder.GetChars(tmpByteBuffer, 0, _byteLen, _charBuffer, _charLen);
                             // Need to zero out the _byteLen after we consume these bytes so that we don't keep infinitely hitting this code path
-                            BytePos_Prop = 0; ByteLen_Prop = 0;
+                            _bytePos = 0; _byteLen = 0;
                         }
 
-                        return CharLen_Prop;
+                        return _charLen;
                     }
 
-                    ByteLen_Prop += len;
+                    _byteLen += len;
                 }
                 else
                 {
-                    Debug.Assert(BytePos_Prop == 0, "_bytePos can be non zero only when we are trying to _checkPreamble. Are two threads using this StreamReader at the same time?");
-                    ByteLen_Prop = await tmpStream.ReadAsync(tmpByteBuffer, 0, tmpByteBuffer.Length).ConfigureAwait(false);
-                    Debug.Assert(ByteLen_Prop >= 0, "Stream.Read returned a negative number!  Bug in stream class.");
+                    Debug.Assert(_bytePos == 0, "_bytePos can be non zero only when we are trying to _checkPreamble. Are two threads using this StreamReader at the same time?");
+                    _byteLen = await tmpStream.ReadAsync(tmpByteBuffer, 0, tmpByteBuffer.Length).ConfigureAwait(false);
+                    Debug.Assert(_byteLen >= 0, "Stream.Read returned a negative number!  Bug in stream class.");
 
-                    if (ByteLen_Prop == 0)  // We're at EOF
+                    if (_byteLen == 0)  // We're at EOF
                     {
-                        return CharLen_Prop;
+                        return _charLen;
                     }
                 }
 
                 // _isBlocked == whether we read fewer bytes than we asked for.
                 // Note we must check it here because CompressBuffer or 
                 // DetectEncoding will change _byteLen.
-                IsBlocked_Prop = (ByteLen_Prop < tmpByteBuffer.Length);
+                _isBlocked = (_byteLen < tmpByteBuffer.Length);
 
                 // Check for preamble before detect encoding. This is not to override the
                 // user supplied Encoding for the one we implicitly detect. The user could
@@ -1362,15 +1284,15 @@ namespace System.IO
 
                 // If we're supposed to detect the encoding and haven't done so yet,
                 // do it.  Note this may need to be called more than once.
-                if (DetectEncoding_Prop && ByteLen_Prop >= 2)
+                if (_detectEncoding && _byteLen >= 2)
                 {
                     DetectEncoding();
                 }
 
-                CharLen_Prop += Decoder_Prop.GetChars(tmpByteBuffer, 0, ByteLen_Prop, CharBuffer_Prop, CharLen_Prop);
-            } while (CharLen_Prop == 0);
+                _charLen += _decoder.GetChars(tmpByteBuffer, 0, _byteLen, _charBuffer, _charLen);
+            } while (_charLen == 0);
 
-            return CharLen_Prop;
+            return _charLen;
         }
 #endregion
 
