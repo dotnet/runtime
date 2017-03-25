@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
@@ -143,7 +142,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
 
         private void ErrAppendPrintf(string format, params object[] args)
         {
-            ErrAppendString(String.Format(CultureInfo.InvariantCulture, format, args));
+            ErrAppendString(string.Format(CultureInfo.InvariantCulture, format, args));
         }
         private void ErrAppendName(Name name)
         {

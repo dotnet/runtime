@@ -83,8 +83,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private bool _isSkipUDOps; // Never check for user defined operators on this type (eg, decimal, string, delegate).
 
-        private bool _isComImport;     // Does it have [ComImport]
-
         private bool _isAnonymousType;    // true if the class is an anonymous type
         // When this is unset we don't know if we have conversions.  When this 
         // is set it indicates if this type or any base type has user defined 
@@ -397,11 +395,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public void SetSkipUDOps(bool skipUDOps)
         {
             _isSkipUDOps = skipUDOps;
-        }
-
-        public void SetComImport(bool comImport)
-        {
-            _isComImport = comImport;
         }
 
         public bool IsSource()

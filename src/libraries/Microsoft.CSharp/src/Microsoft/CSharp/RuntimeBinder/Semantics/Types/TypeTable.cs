@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
@@ -26,8 +27,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 && Equals(_pKey2, other._pKey2);
         }
 
+#if  DEBUG 
+        [ExcludeFromCodeCoverage] // Typed overload should always be the method called.
+#endif
         public override bool Equals(object obj)
         {
+            Debug.Fail("Sub-optimal overload called. Check if this can be avoided.");
             if (!(obj is KeyPair<Key1, Key2>)) return false;
             return Equals((KeyPair<Key1, Key2>)obj);
         }

@@ -57,7 +57,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             BSYMMGR bsymmgr = _semanticChecker.getBSymmgr();
             NameManager nameManager = _semanticChecker.GetNameManager();
 
-            InputFile infile = bsymmgr.GetMiscSymFactory().CreateMDInfile(nameManager.Lookup(""), (mdToken)0);
+            InputFile infile = bsymmgr.GetMiscSymFactory().CreateMDInfile(nameManager.Lookup(""));
             infile.SetAssemblyID(bsymmgr.AidAlloc(infile));
             infile.AddToAlias(KAID.kaidThisAssembly);
             infile.AddToAlias(KAID.kaidGlobal);
