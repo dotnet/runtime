@@ -4,17 +4,14 @@
 //
 
 // Enable calling ICU functions through shims to enable support for 
-// multiple versions of ICU if the FEATURE_FIXED_ICU_VERSION is
-// not defined.
+// multiple versions of ICU.
 
 #ifndef __ICUSHIM_H__
 #define __ICUSHIM_H__
 
 #include "config.h"
 
-#ifndef FEATURE_FIXED_ICU_VERSION
 #define U_DISABLE_RENAMING 1
-#endif
 
 // All ICU headers need to be included here so that all function prototypes are
 // available before the function pointers are declared below.
@@ -35,8 +32,6 @@
 #include <unicode/usearch.h>
 #include <unicode/utf16.h>
 #include <unicode/utypes.h>
-
-#ifndef FEATURE_FIXED_ICU_VERSION
 
 // List of all functions from the ICU libraries that are used in the System.Globalization.Native.so
 #define FOR_ALL_UNCONDITIONAL_ICU_FUNCTIONS \
@@ -237,7 +232,5 @@ FOR_ALL_ICU_FUNCTIONS
 #define usearch_getMatchedLength(...) usearch_getMatchedLength_ptr(__VA_ARGS__)
 #define usearch_last(...) usearch_last_ptr(__VA_ARGS__)
 #define usearch_openFromCollator(...) usearch_openFromCollator_ptr(__VA_ARGS__)
-
-#endif // !FEATURE_ICU_VERSION_RESILIENT
 
 #endif // __ICUSHIM_H__

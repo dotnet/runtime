@@ -19,6 +19,33 @@ FOR_ALL_ICU_FUNCTIONS
 static void* libicuuc = nullptr;
 static void* libicui18n = nullptr;
 
+// .x.x.x, considering the max number of decimal digits for each component
+static const int MaxICUVersionStringLength = 33;
+
+#ifdef __APPLE__
+
+bool FindICULibs(char* symbolName, char* symbolVersion)
+{
+#ifndef OSX_ICU_LIBRARY_PATH
+    static_assert(false, "The ICU Library path is not defined");
+#endif // OSX_ICU_LIBRARY_PATH
+
+    // Usually OSX_ICU_LIBRARY_PATH is "/usr/lib/libicucore.dylib"
+    libicuuc = dlopen(OSX_ICU_LIBRARY_PATH, RTLD_LAZY);
+    
+    if (libicuuc == nullptr)
+    {
+        return false;
+    }
+
+    // in OSX all ICU APIs exist in the same library libicucore.A.dylib 
+    libicui18n = libicuuc;
+
+    return true;
+}
+
+#else // __APPLE__
+
 // Version ranges to search for each of the three version components
 // The rationale for major version range is that we support versions higher or
 // equal to the version we are built against and less or equal to that version
@@ -30,9 +57,6 @@ static const int MinMinorICUVersion = 1;
 static const int MaxMinorICUVersion = 5;
 static const int MinSubICUVersion = 1;
 static const int MaxSubICUVersion = 5;
-
-// .x.x.x, considering the max number of decimal digits for each component
-static const int MaxICUVersionStringLength = 33;
 
 // Get filename of an ICU library with the requested version in the name
 // There are three possible cases of the version components values:
@@ -170,11 +194,7 @@ bool FindLibWithMajorMinorSubVersion(int* majorVer, int* minorVer, int* subVer)
     return false;
 }
 
-// GlobalizationNative_LoadICU
-// This method get called from the managed side during the globalization initialization. 
-// This method shouldn't get called at all if we are running in globalization invariant mode
-// return 0 if failed to load ICU and 1 otherwise
-extern "C" int32_t GlobalizationNative_LoadICU()
+bool FindICULibs(char* symbolName, char* symbolVersion)
 {
     int majorVer = -1;
     int minorVer = -1;
@@ -187,12 +207,8 @@ extern "C" int32_t GlobalizationNative_LoadICU()
         !FindLibWithMajorVersion(&majorVer))
     {
         // No usable ICU version found
-        return 0;
+        return false;
     }
-
-    char symbolName[128];
-    char symbolVersion[MaxICUVersionStringLength + 1] = "";
-
     // Find out the format of the version string added to each symbol
     // First try just the unversioned symbol
     if (dlsym(libicuuc, "u_strlen") == nullptr)
@@ -212,11 +228,29 @@ extern "C" int32_t GlobalizationNative_LoadICU()
                 sprintf(symbolName, "u_strlen%s", symbolVersion);
                 if (dlsym(libicuuc, symbolName) == nullptr)
                 {
-                    return 0;
+                    return false;
                 }
             }
         }
     }
+
+    return true;
+
+}
+
+#endif // __APPLE__
+
+// GlobalizationNative_LoadICU
+// This method get called from the managed side during the globalization initialization. 
+// This method shouldn't get called at all if we are running in globalization invariant mode
+// return 0 if failed to load ICU and 1 otherwise
+extern "C" int32_t GlobalizationNative_LoadICU()
+{
+    char symbolName[128];
+    char symbolVersion[MaxICUVersionStringLength + 1] = "";
+
+    if (!FindICULibs(symbolName, symbolVersion))
+        return 0;
 
     // Get pointers to all the ICU functions that are needed
 #define PER_FUNCTION_BLOCK(fn, lib) \
@@ -227,6 +261,11 @@ extern "C" int32_t GlobalizationNative_LoadICU()
 
     FOR_ALL_ICU_FUNCTIONS
 #undef PER_FUNCTION_BLOCK
+
+#ifdef __APPLE__
+    // libicui18n initialized with libicuuc so we null it to avoid double closing same handle   
+    libicui18n = nullptr;
+#endif // __APPLE__
 
     return 1;
 }
