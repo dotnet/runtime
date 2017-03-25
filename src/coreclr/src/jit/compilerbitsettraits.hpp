@@ -15,16 +15,16 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 // static
-IAllocator* CompAllocBitSetTraits::GetAllocator(Compiler* comp)
+void* CompAllocBitSetTraits::Alloc(Compiler* comp, size_t byteSize)
 {
-    return comp->getAllocatorBitset();
+    return comp->compGetMem(byteSize, CMK_bitset);
 }
 
 #ifdef DEBUG
 // static
-IAllocator* CompAllocBitSetTraits::GetDebugOnlyAllocator(Compiler* comp)
+void* CompAllocBitSetTraits::DebugAlloc(Compiler* comp, size_t byteSize)
 {
-    return comp->getAllocatorDebugOnly();
+    return comp->compGetMem(byteSize, CMK_DebugOnly);
 }
 #endif // DEBUG
 
@@ -139,16 +139,16 @@ BitSetSupport::BitSetOpCounter* BasicBlockBitSetTraits::GetOpCounter(Compiler* c
 ///////////////////////////////////////////////////////////////////////////////
 
 // static
-IAllocator* BitVecTraits::GetAllocator(BitVecTraits* b)
+void* BitVecTraits::Alloc(BitVecTraits* b, size_t byteSize)
 {
-    return b->comp->getAllocatorBitset();
+    return b->comp->compGetMem(byteSize, CMK_bitset);
 }
 
 #ifdef DEBUG
 // static
-IAllocator* BitVecTraits::GetDebugOnlyAllocator(BitVecTraits* b)
+void* BitVecTraits::DebugAlloc(BitVecTraits* b, size_t byteSize)
 {
-    return b->comp->getAllocatorDebugOnly();
+    return b->comp->compGetMem(byteSize, CMK_DebugOnly);
 }
 #endif // DEBUG
 
