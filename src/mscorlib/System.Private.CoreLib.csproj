@@ -533,8 +533,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Globalization\DateTimeStyles.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\DigitShapes.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\EastAsianLunisolarCalendar.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.cs"  Condition="'$(BuildOS)' != 'OSX'"/>
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.OSX.cs"  Condition="'$(BuildOS)' == 'OSX'"/>
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\GregorianCalendar.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\GregorianCalendarHelper.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\GregorianCalendarTypes.cs" />
@@ -576,7 +575,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Globalization\CompareInfo.Unix.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\CultureData.Unix.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\CultureInfo.Unix.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.Unix.cs" Condition="'$(BuildOS)' != 'OSX'"/>
+    <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.Unix.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\TextInfo.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' != 'true'">
