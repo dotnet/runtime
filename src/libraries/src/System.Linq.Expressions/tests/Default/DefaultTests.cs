@@ -83,5 +83,29 @@ namespace System.Linq.Expressions.Tests
             Func<DBNull> func = lambda.Compile(useInterpreter);
             Assert.Null(func());
         }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void StructType(bool useInterpreter)
+        {
+            Expression<Func<Sp>> lambda = Expression.Lambda<Func<Sp>>(Expression.Default(typeof(Sp)));
+            Func<Sp> func = lambda.Compile(useInterpreter);
+            Sp defaultValue = func();
+            Assert.Equal(0, defaultValue.I);
+            Assert.Equal(0.0, defaultValue.D);
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public void PrivateStructType(bool useInterpreter)
+        {
+            Expression<Func<StPri>> lambda = Expression.Lambda<Func<StPri>>(Expression.Default(typeof(StPri)));
+            Func<StPri> func = lambda.Compile(useInterpreter);
+            StPri defaultValue = func();
+            Assert.Equal(0, defaultValue.IntProperty);
+        }
+
+        private struct StPri
+        {
+            public int IntProperty { get; set; }
+        }
     }
 }
