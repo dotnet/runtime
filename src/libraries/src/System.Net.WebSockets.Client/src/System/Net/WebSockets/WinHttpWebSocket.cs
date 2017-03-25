@@ -795,14 +795,7 @@ namespace System.Net.WebSockets
 
             if (_operation.TcsReceive != null)
             {
-                var exception = new WebSocketException(
-                    WebSocketError.InvalidState,
-                    SR.Format(
-                        SR.net_WebSockets_InvalidState_ClosedOrAborted,
-                        "System.Net.WebSockets.InternalClientWebSocket",
-                        "Aborted"));
-
-                _operation.TcsReceive.TrySetException(exception);
+                _operation.TcsReceive.TrySetCanceled();
             }
 
             if (_operation.TcsSend != null)
