@@ -976,7 +976,5 @@
     <!-- Use a different nativeresource file to avoid conflicts with mscorlib-->
     <Win32Resource Condition="'$(GenerateNativeVersionInfo)'=='true'">$(IntermediateOutputPath)\System.Private.CoreLib.res</Win32Resource>
   </PropertyGroup>
-  <!-- Import resources tools -->
-  <Import Condition="Exists('$(ToolsDir)\resources.targets')" Project="$(ToolsDir)\resources.targets" />
   <Import Project="GenerateCompilerResponseFile.targets" />
 </Project>
