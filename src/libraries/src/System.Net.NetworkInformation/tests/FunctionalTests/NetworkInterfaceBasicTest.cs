@@ -43,7 +43,8 @@ namespace System.Net.NetworkInformation.Tests
 
                 // Validate NIC speed overflow.
                 // We've found that certain WiFi adapters will return speed of -1 when not connected.
-                Assert.InRange(nic.Speed, nic.OperationalStatus != OperationalStatus.Down ? 0 : -1, long.MaxValue);
+                // We've found that Wi-Fi Direct Virutal Adapters return speed of -1 even when up.
+                Assert.InRange(nic.Speed, -1, long.MaxValue);
 
                 _log.WriteLine("SupportsMulticast: " + nic.SupportsMulticast);
                 _log.WriteLine("GetPhysicalAddress(): " + nic.GetPhysicalAddress());
