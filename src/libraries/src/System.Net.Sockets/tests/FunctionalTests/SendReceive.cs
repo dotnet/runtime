@@ -681,7 +681,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.OSX)] // SendBufferSize = 0 not supported on OSX.
+        [PlatformSpecific(~TestPlatforms.OSX)] // SendBufferSize, ReceiveBufferSize = 0 not supported on OSX.
         public async Task SendRecv_NoBuffering_Success()
         {
             if (!SupportsNonBlocking) return;
