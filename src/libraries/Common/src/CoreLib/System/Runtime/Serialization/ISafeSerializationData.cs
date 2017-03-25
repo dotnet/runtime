@@ -69,7 +69,7 @@ namespace System.Runtime.Serialization
     //       ...
     //     realSerializedDataN
     //     safeSerializationData     -> this is the serialization data member of the parent type
-    //       m_serializedState       -> list of saved serialized states from subclasses responding to the safe
+    //       _serializedState        -> list of saved serialized states from subclasses responding to the safe
     //                                  serialization event
     //     RealTypeSerializationName -> type which is using safe serialization
     //   Type:
@@ -135,21 +135,21 @@ namespace System.Runtime.Serialization
     //  
     //    1. Include a data member of type SafeSerializationManager:
     //  
-    //       private SafeSerializationManager m_safeSerializationManager;
+    //       private SafeSerializationManager _safeSerializationManager;
     //     
     //    2. Add a protected SerializeObjectState event, which passes through to the SafeSerializationManager:
     //  
     //       protected event EventHandler<SafeSerializationEventArgs> SerializeObjectState
     //       {
-    //           add { m_safeSerializationManager.SerializeObjectState += value; }
-    //           remove { m_safeSerializationManager.SerializeObjectState -= value; }
+    //           add { _safeSerializationManager.SerializeObjectState += value; }
+    //           remove { _safeSerializationManager.SerializeObjectState -= value; }
     //       }
     //
     //    3. Serialize the safe serialization object in GetObjectData, and call its CompleteSerialization method:
     //  
     //       {
-    //           info.AddValue("m_safeSerializationManager", m_safeSerializationManager, typeof(SafeSerializationManager));
-    //           m_safeSerializationManager.CompleteSerialization(this, info, context);
+    //           info.AddValue("_safeSerializationManager", _safeSerializationManager, typeof(SafeSerializationManager));
+    //           _safeSerializationManager.CompleteSerialization(this, info, context);
     //       }
     //
     //    4. Add an OnDeserialized handler if one doesn't already exist, and call CompleteDeserialization in it:
@@ -157,7 +157,7 @@ namespace System.Runtime.Serialization
     //       [OnDeserialized]
     //       private void OnDeserialized(StreamingContext context)
     //       {
-    //           m_safeSerializationManager.CompleteDeserialization(this);
+    //           _safeSerializationManager.CompleteDeserialization(this);
     //       }
     //
     // On the client side, using safe serialization is also pretty easy.  For example:
@@ -168,30 +168,30 @@ namespace System.Runtime.Serialization
     //       [Serializable]
     //       private struct TransparentExceptionState : ISafeSerializationData
     //       {
-    //           public string m_extraData;
+    //           public string _extraData;
     //
     //           void ISafeSerializationData.CompleteDeserialization(object obj)
     //           {
     //               TransparentException exception = obj as TransparentException;
-    //               exception.m_state = this;
+    //               exception._state = this;
     //           }
     //       }
     //
     //       [NonSerialized]
-    //       private TransparentExceptionState m_state = new TransparentExceptionState();
+    //       private TransparentExceptionState _state = new TransparentExceptionState();
     //
     //       public TransparentException()
     //       {
     //           SerializeObjectState += delegate(object exception, SafeSerializationEventArgs eventArgs)
     //           {
-    //               eventArgs.AddSerializedState(m_state);
+    //               eventArgs.AddSerializedState(_state);
     //           };
     //       }
     //
     //       public string ExtraData
     //       {
-    //           get { return m_state.m_extraData; }
-    //           set { m_state.m_extraData = value; }
+    //           get { return _state._extraData; }
+    //           set { _state._extraData = value; }
     //       }
     //   }
     // 
