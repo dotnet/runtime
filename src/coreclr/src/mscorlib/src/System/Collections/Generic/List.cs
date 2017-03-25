@@ -675,7 +675,6 @@ namespace System.Collections.Generic
             return new Enumerator(this);
         }
 
-        /// <internalonly/>
         IEnumerator<T> IEnumerable<T>.GetEnumerator()
         {
             return new Enumerator(this);
