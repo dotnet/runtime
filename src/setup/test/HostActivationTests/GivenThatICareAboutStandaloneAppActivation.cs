@@ -107,6 +107,35 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
         }
 
         [Fact]
+        public void Running_Publish_Output_Standalone_EXE_By_Renaming_dotnet_exe_Fails()
+        {
+            var fixture = PreviouslyPublishedAndRestoredStandaloneTestProjectFixture
+                .Copy();
+
+            var appExe = fixture.TestProject.AppExe;
+
+            string hostExeName = $"dotnet{Constants.ExeSuffix}";
+            string builtHost = Path.Combine(RepoDirectories.HostArtifacts, hostExeName);
+            File.Copy(builtHost, appExe, true);
+
+            int exitCode = Command.Create(appExe)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute(fExpectedToFail:true)
+                .ExitCode;
+
+            if (CurrentPlatform.IsWindows)
+            {
+                exitCode.Should().Be(-2147450749);
+            }
+            else
+            {
+                // Some Unix flavors filter exit code to ubyte.
+                (exitCode & 0xFF).Should().Be(0x83);
+            }
+        }
+
+        [Fact]
         public void Running_Publish_Output_Standalone_EXE_with_Bound_AppHost_Succeeds()
         {
             var fixture = PreviouslyPublishedAndRestoredStandaloneTestProjectFixture
@@ -154,20 +183,17 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
         {
             var dotnet = testProjectFixture.BuiltDotnet;
 
-            var testProjectHost = testProjectFixture.TestProject.AppExe;
             var testProjectHostPolicy = testProjectFixture.TestProject.HostPolicyDll;
             var testProjectHostFxr = testProjectFixture.TestProject.HostFxrDll;
 
-            if (!File.Exists(testProjectHost) || !File.Exists(testProjectHostPolicy))
+            if (!File.Exists(testProjectHostPolicy))
             {
                 throw new Exception("host or hostpolicy does not exist in test project output. Is this a standalone app?");
             }
 
-            var dotnetHost = Path.Combine(dotnet.GreatestVersionSharedFxPath, $"dotnet{testProjectFixture.ExeExtension}");
             var dotnetHostPolicy = Path.Combine(dotnet.GreatestVersionSharedFxPath, $"{testProjectFixture.SharedLibraryPrefix}hostpolicy{testProjectFixture.SharedLibraryExtension}");
-            var dotnetHostFxr = Path.Combine(dotnet.GreatestVersionSharedFxPath, $"{testProjectFixture.SharedLibraryPrefix}hostfxr{testProjectFixture.SharedLibraryExtension}");
+            var dotnetHostFxr = Path.Combine(dotnet.GreatestVersionHostFxrPath, $"{testProjectFixture.SharedLibraryPrefix}hostfxr{testProjectFixture.SharedLibraryExtension}");
 
-            File.Copy(dotnetHost, testProjectHost, true);
             File.Copy(dotnetHostPolicy, testProjectHostPolicy, true);
 
             if (File.Exists(testProjectHostFxr))

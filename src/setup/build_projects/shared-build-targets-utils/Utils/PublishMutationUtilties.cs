@@ -12,15 +12,19 @@ namespace Microsoft.DotNet.Cli.Build
     public class PublishMutationUtilties
     {
         public static void CleanPublishOutput(
-            string path, 
+            string path,
             string name, 
+            List<string> binariesToBeDeleted, 
             bool deleteRuntimeConfigJson=false, 
-            bool deleteDepsJson=false,
-            bool deleteAppHost=false)
+            bool deleteDepsJson=false)
         {
-            File.Delete(Path.Combine(path, $"{name}{Constants.ExeSuffix}"));
-            File.Delete(Path.Combine(path, $"{name}.dll"));
-            File.Delete(Path.Combine(path, $"{name}.pdb"));
+            binariesToBeDeleted.Add(name);
+            foreach (var binaryName in binariesToBeDeleted)
+            {
+                File.Delete(Path.Combine(path, $"{binaryName}{Constants.ExeSuffix}"));
+                File.Delete(Path.Combine(path, $"{binaryName}.dll"));
+                File.Delete(Path.Combine(path, $"{binaryName}.pdb"));
+            }
 
             if (deleteRuntimeConfigJson)
             {
@@ -32,10 +36,6 @@ namespace Microsoft.DotNet.Cli.Build
                 File.Delete(Path.Combine(path, $"{name}.deps.json"));
             }
 
-            if (deleteAppHost)
-            {
-                File.Delete(Path.Combine(path, $"apphost{Constants.ExeSuffix}"));
-            }
         }
 
         public static void ChangeEntryPointLibraryName(string depsFile, string newName)

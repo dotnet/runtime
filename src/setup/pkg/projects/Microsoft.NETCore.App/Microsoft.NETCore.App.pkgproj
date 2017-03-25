@@ -34,9 +34,9 @@
       <TargetFramework>.NETCoreApp1.1</TargetFramework>
     </Dependency>
     <!-- references the host packages -->
-    <Dependency Include="Microsoft.NETCore.DotNetAppHost">
-       <Version>$(AppHostFullVersion)</Version>
-      <TargetFramework>.NETCoreApp2.0</TargetFramework>
+    <Dependency Include="Microsoft.NETCore.DotNetHostPolicy">
+       <Version>$(HostPolicyFullVersion)</Version>
+       <TargetFramework>.NETCoreApp2.0</TargetFramework>
     </Dependency>
 
     <!-- Add a placeholder to make sure NuGet understands we still support older versions,
@@ -60,28 +60,6 @@
     </ProjectReference>
   </ItemGroup>
   
-  <ItemGroup Condition="'$(PackageTargetRuntime)' != ''">
-    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/dotnet$(ApplicationFileExtension)" />
-    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/dotnet$(SymbolFileExtension)"
-                                    Condition="Exists('$(DotNetHostBinDir)/dotnet$(SymbolFileExtension)')">
-      <IsSymbolFile>true</IsSymbolFile>
-    </ArchitectureSpecificNativeFile>
-    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)hostfxr$(LibraryFileExtension)"/>
-    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)hostfxr$(SymbolFileExtension)"
-                                    Condition="Exists('$(DotNetHostBinDir)/$(LibraryFilePrefix)hostfxr$(SymbolFileExtension)')">
-      <IsSymbolFile>true</IsSymbolFile>
-    </ArchitectureSpecificNativeFile>
-    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)hostpolicy$(LibraryFileExtension)"/>
-    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/$(LibraryFilePrefix)hostpolicy$(SymbolFileExtension)"
-                                    Condition="Exists('$(DotNetHostBinDir)/$(LibraryFilePrefix)hostpolicy$(SymbolFileExtension)')">
-      <IsSymbolFile>true</IsSymbolFile>
-    </ArchitectureSpecificNativeFile>
-
-    <File Include="@(ArchitectureSpecificNativeFile)">
-      <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
-    </File>
-  </ItemGroup>
-
   <UsingTask TaskName="GenerateFileVersionProps" AssemblyFile="$(BuildToolsTaskDir)core-setup.tasks.dll"/>
   <Target Name="GenerateFileVersionProps" BeforeTargets="GenerateNuSpec" Condition="'$(PackageTargetRuntime)' == ''">
     <MSBuild Projects="@(ProjectReference)"
