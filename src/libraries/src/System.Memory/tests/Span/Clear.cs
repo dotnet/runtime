@@ -17,6 +17,13 @@ namespace System.SpanTests
         }
 
         [Fact]
+        public static void ClearEmptyWithReference()
+        {
+            var span = Span<string>.Empty;
+            span.Clear();
+        }
+
+        [Fact]
         public static void ClearByteLonger()
         {
             const byte initial = 5;

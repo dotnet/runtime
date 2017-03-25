@@ -21,6 +21,18 @@ namespace System.SpanTests
         }
 
         [Fact]
+        public static void TryCopyToSingle()
+        {
+            int[] src = { 1 };
+            int[] dst = { 99 };
+
+            ReadOnlySpan<int> srcSpan = new ReadOnlySpan<int>(src);
+            bool success = srcSpan.TryCopyTo(dst);
+            Assert.True(success);
+            Assert.Equal<int>(src, dst);
+        }
+
+        [Fact]
         public static void TryCopyToArraySegmentImplicit()
         {
             int[] src = { 1, 2, 3 };
