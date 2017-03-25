@@ -24,6 +24,5 @@ if ($LastExitCode -ne 0)
 
 # execute the tool using the dotnet.exe host
 $dotNetExe = Join-Path $toolsLocalPath "dotnetcli\dotnet.exe"
-$runExe = Join-Path $toolsLocalPath "Microsoft.DotNet.BuildTools.Run\netcoreapp1.0\run.exe"
-& $dotNetExe $runExe $args
+& $dotNetExe $args
 exit $LastExitCode

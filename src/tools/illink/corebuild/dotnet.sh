@@ -20,7 +20,6 @@ if [ $lastExitCode -ne 0 ]; then
 fi
 
 dotNetExe=$toolsLocalPath/dotnetcli/dotnet
-runExe=$toolsLocalPath/microsoft.dotnet.buildtools.run/netcoreapp1.0/run.exe
-echo $dotNetExe $runExe $@
+echo $dotNetExe $@
 $dotNetExe $runExe $@
 exit $?
