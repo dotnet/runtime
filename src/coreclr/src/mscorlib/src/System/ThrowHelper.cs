@@ -70,16 +70,6 @@ namespace System
             throw new ArgumentException(SR.Argument_DestinationTooShort);
         }
 
-        internal static void ThrowNotSupportedException_CannotCallEqualsOnSpan()
-        {
-            throw new NotSupportedException(SR.NotSupported_CannotCallEqualsOnSpan);
-        }
-
-        internal static void ThrowNotSupportedException_CannotCallGetHashCodeOnSpan()
-        {
-            throw new NotSupportedException(SR.NotSupported_CannotCallGetHashCodeOnSpan);
-        }
-
         internal static void ThrowArgumentOutOfRange_IndexException()
         {
             throw GetArgumentOutOfRangeException(ExceptionArgument.index,
