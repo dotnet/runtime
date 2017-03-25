@@ -201,7 +201,7 @@ namespace System
         [NonSerialized]
         private Func<T> _factory;
 
-        // m_value eventually stores the lazily created value. It is valid when _state = null.
+        // _value eventually stores the lazily created value. It is valid when _state = null.
         private T _value;
 
         /// <summary>
