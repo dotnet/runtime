@@ -109,7 +109,6 @@ namespace System.Runtime.Serialization
             return m_current;
         }
 
-        /// <internalonly/>
         Object IEnumerator.Current
         { //Actually returns a SerializationEntry
             get

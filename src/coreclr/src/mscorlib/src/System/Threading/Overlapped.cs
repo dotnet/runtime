@@ -241,7 +241,6 @@ namespace System.Threading
 
     #region class Overlapped
 
-    /// <internalonly/>
     public class Overlapped
     {
         private OverlappedData m_overlappedData;
