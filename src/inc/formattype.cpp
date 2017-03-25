@@ -412,7 +412,7 @@ const PCCOR_SIGNATURE PrettyPrintSignature(
 
 
 /******************************************************************************/
-// pretty prints 'type' or its 'typedef' to the buffer 'out' returns a poitner to the next type, 
+// pretty prints 'type' or its 'typedef' to the buffer 'out' returns a pointer to the next type, 
 // or 0 on a format failure; outside ILDASM -- simple wrapper for PrettyPrintType 
 
 PCCOR_SIGNATURE PrettyPrintTypeOrDef(

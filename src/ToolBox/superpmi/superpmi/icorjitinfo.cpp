@@ -622,7 +622,7 @@ unsigned MyICJI::getClassAlignmentRequirement (
 // in representing of 'cls' from a GC perspective.  The class is
 // assumed to be an array of machine words
 // (of length // getClassSize(cls) / sizeof(void*)),
-// 'gcPtrs' is a poitner to an array of BYTEs of this length.
+// 'gcPtrs' is a pointer to an array of BYTEs of this length.
 // getClassGClayout fills in this array so that gcPtrs[i] is set
 // to one of the CorInfoGCType values which is the GC type of
 // the i-th machine word of an object of type 'cls'
@@ -739,7 +739,7 @@ CorInfoHelpFunc MyICJI::getBoxHelper(
 // value into a particular location and thus has the signature
 //     void unboxHelper(void* dest, CORINFO_CLASS_HANDLE cls, Object* obj)
 // Otherwise (it is null or points at a FALSE value) it is requesting
-// a helper that returns a poitner to the unboxed data
+// a helper that returns a pointer to the unboxed data
 //     void* unboxHelper(CORINFO_CLASS_HANDLE cls, Object* obj)
 // The EE has the option of NOT returning the copy style helper
 // (But must be able to always honor the non-copy style helper)

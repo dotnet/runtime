@@ -149,7 +149,7 @@ The first 4 options are mutially exclusive
 This last field can modify any of the cases above except CORINFO_FLG_HELPER
 
 CORINFO_FLG_STATIC_IN_HEAP This is currently only used for static fields of value classes. If the field has
-this set then after computing what would normally be the field, what you actually get is a object poitner
+this set then after computing what would normally be the field, what you actually get is a object pointer
 (that must be reported to the GC) to a boxed version of the value. Thus the actual field address is computed
 by addr = (*addr+sizeof(OBJECTREF))
 
@@ -2301,7 +2301,7 @@ public:
     // in representing of 'cls' from a GC perspective.  The class is
     // assumed to be an array of machine words
     // (of length // getClassSize(cls) / sizeof(void*)),
-    // 'gcPtrs' is a poitner to an array of BYTEs of this length.
+    // 'gcPtrs' is a pointer to an array of BYTEs of this length.
     // getClassGClayout fills in this array so that gcPtrs[i] is set
     // to one of the CorInfoGCType values which is the GC type of
     // the i-th machine word of an object of type 'cls'
@@ -2373,7 +2373,7 @@ public:
     // value into a particular location and thus has the signature
     //     void unboxHelper(void* dest, CORINFO_CLASS_HANDLE cls, Object* obj)
     // Otherwise (it is null or points at a FALSE value) it is requesting 
-    // a helper that returns a poitner to the unboxed data 
+    // a helper that returns a pointer to the unboxed data 
     //     void* unboxHelper(CORINFO_CLASS_HANDLE cls, Object* obj)
     // The EE has the option of NOT returning the copy style helper
     // (But must be able to always honor the non-copy style helper)

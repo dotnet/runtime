@@ -203,7 +203,7 @@ inline void CheckObjectSize(size_t alloc_size)
 //     * Call code:AllocLHeap - Used very rarely to force allocation to be on the large object heap.
 //
 // While this is a choke point into allocating an object, it is primitive (it does not want to know about
-// MethodTable and thus does not initialize that poitner. It also does not know if the object is finalizable
+// MethodTable and thus does not initialize that pointer. It also does not know if the object is finalizable
 // or contains pointers. Thus we quickly wrap this function in more user-friendly ones that know about
 // MethodTables etc. (see code:FastAllocatePrimitiveArray code:AllocateArrayEx code:AllocateObject)
 //
