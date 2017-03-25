@@ -294,6 +294,11 @@ public:
     bool          AddRejitNops(void)                const {LIMITED_METHOD_DAC_CONTRACT;  return fAddRejitNops; }
     bool          JitMinOpts(void)                  const {LIMITED_METHOD_CONTRACT;  return fJitMinOpts; }
     
+    // Tiered Compilation config
+#if defined(FEATURE_TIERED_COMPILATION)
+    bool          TieredCompilation(void)           const {LIMITED_METHOD_CONTRACT;  return fTieredCompilation; }
+#endif
+
     BOOL PInvokeRestoreEsp(BOOL fDefault) const
     {
         LIMITED_METHOD_CONTRACT;
@@ -1180,6 +1185,10 @@ private: //----------------------------------------------------------------
     DWORD fShouldInjectFault;
     DWORD testADUnload;
     DWORD testThreadAbort;
+#endif
+
+#if defined(FEATURE_TIERED_COMPILATION)
+    bool fTieredCompilation;
 #endif
 
 public:
