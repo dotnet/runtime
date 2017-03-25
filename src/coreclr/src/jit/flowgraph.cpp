@@ -12696,15 +12696,13 @@ void Compiler::fgComputeEdgeWeights()
     {
         BasicBlock* firstILBlock = fgFirstBB; // The first block for IL code (i.e. for the IL code at offset 0)
 
-        // Did we allocate a scratch block as the new first BB?
-        if (fgFirstBBisScratch())
+        // Do we have an internal block as our first Block?
+        if (firstILBlock->bbFlags & BBF_INTERNAL)
         {
             // Skip past any/all BBF_INTERNAL blocks that may have been added before the first real IL block.
-            // These internal blocks all should be BBJ_NONE blocks.
             //
             while (firstILBlock->bbFlags & BBF_INTERNAL)
             {
-                assert(firstILBlock->bbJumpKind == BBJ_NONE);
                 firstILBlock = firstILBlock->bbNext;
             }
             // The 'firstILBlock' is now expected to have a profile-derived weight
