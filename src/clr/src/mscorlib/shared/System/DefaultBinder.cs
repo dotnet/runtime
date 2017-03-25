@@ -731,11 +731,11 @@ namespace System
         public sealed override void ReorderArgumentArray(ref object[] args, object state)
         {
             BinderState binderState = (BinderState)state;
-            ReorderParams(binderState.m_argsMap, args);
-            if (binderState.m_isParamArray)
+            ReorderParams(binderState._argsMap, args);
+            if (binderState._isParamArray)
             {
                 int paramArrayPos = args.Length - 1;
-                if (args.Length == binderState.m_originalSize)
+                if (args.Length == binderState._originalSize)
                     args[paramArrayPos] = ((object[])args[paramArrayPos])[0];
                 else
                 {
@@ -751,10 +751,10 @@ namespace System
             }
             else
             {
-                if (args.Length > binderState.m_originalSize)
+                if (args.Length > binderState._originalSize)
                 {
-                    object[] newArgs = new object[binderState.m_originalSize];
-                    Array.Copy(args, 0, newArgs, 0, binderState.m_originalSize);
+                    object[] newArgs = new object[binderState._originalSize];
+                    Array.Copy(args, 0, newArgs, 0, binderState._originalSize);
                     args = newArgs;
                 }
             }
@@ -1186,15 +1186,15 @@ namespace System
 
         internal class BinderState
         {
-            internal int[] m_argsMap;
-            internal int m_originalSize;
-            internal bool m_isParamArray;
+            internal readonly int[] _argsMap;
+            internal readonly int _originalSize;
+            internal readonly bool _isParamArray;
 
             internal BinderState(int[] argsMap, int originalSize, bool isParamArray)
             {
-                m_argsMap = argsMap;
-                m_originalSize = originalSize;
-                m_isParamArray = isParamArray;
+                _argsMap = argsMap;
+                _originalSize = originalSize;
+                _isParamArray = isParamArray;
             }
         }
     }
