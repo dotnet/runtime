@@ -61,7 +61,7 @@ namespace System
                 unchecked
                 {
                     int unaligned = (int)(byte*)Unsafe.AsPointer(ref searchSpace) & (Vector<byte>.Count - 1);
-                    nLength = (IntPtr)(uint)unaligned;
+                    nLength = (IntPtr)(uint)((Vector<byte>.Count - unaligned) & (Vector<byte>.Count - 1));
                 }
             }
         SequentialScan:
@@ -122,7 +122,7 @@ namespace System
                 {
                     goto NotFound;
                 }
-                nLength = (IntPtr)(uint)(length - Vector<byte>.Count);
+                nLength = (IntPtr)(uint)((length - (uint)index) & ~(Vector<byte>.Count - 1));
                 // Get comparision Vector
                 Vector<byte> vComparision = GetVector(value);
                 while ((byte*)nLength > (byte*)index)
@@ -139,7 +139,7 @@ namespace System
                     goto VectorFound;
                 }
 
-                if ((int)(byte*)index > length)
+                if ((int)(byte*)index >= length)
                 {
                     goto NotFound;
                 }
