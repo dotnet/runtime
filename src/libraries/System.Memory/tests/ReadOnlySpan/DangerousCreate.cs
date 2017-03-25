@@ -11,28 +11,6 @@ namespace System.SpanTests
     public static partial class ReadOnlySpanTests
     {
         [Fact]
-        public static void DangerousCreateNullObject()
-        {
-            Assert.Throws<ArgumentNullException>(
-                delegate ()
-                {
-                    int dummy = 4;
-                    ReadOnlySpan<int>.DangerousCreate(null, ref dummy, 0);
-                });
-        }
-
-        [Fact]
-        public static void DangerousCreateBadLength()
-        {
-            Assert.Throws<ArgumentOutOfRangeException>(
-                delegate ()
-                {
-                    TestClass testClass = new TestClass();
-                    ReadOnlySpan<char> span = ReadOnlySpan<char>.DangerousCreate(testClass, ref testClass.C1, -1);
-                });
-        }
-
-        [Fact]
         public static void DangerousCreate1()
         {
             TestClass testClass = new TestClass();
