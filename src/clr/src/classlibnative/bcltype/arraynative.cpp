@@ -1143,7 +1143,7 @@ void ArrayNative::CheckElementType(TypeHandle elementType)
 
         // Check for byref-like types.
         if (pMT->IsByRefLike())
-            COMPlusThrow(kNotSupportedException, W("NotSupported_ByRefLike[]"));
+            COMPlusThrow(kNotSupportedException, W("NotSupported_ByRefLikeArray"));
 
         // Check for open generic types.
         if (pMT->IsGenericTypeDefinition() || pMT->ContainsGenericVariables())
@@ -1151,7 +1151,7 @@ void ArrayNative::CheckElementType(TypeHandle elementType)
 
         // Check for Void.
         if (elementType.GetSignatureCorElementType() == ELEMENT_TYPE_VOID)
-            COMPlusThrow(kNotSupportedException, W("NotSupported_Void[]"));
+            COMPlusThrow(kNotSupportedException, W("NotSupported_VoidArray"));
 
         // That's all the dangerous simple types we know, it must be OK.
         return;
