@@ -2584,9 +2584,23 @@ FCIMPL2_IV(INT64,COMInterlocked::ExchangeAdd64, INT64 *location, INT64 value)
 }
 FCIMPLEND
 
+FCIMPL0(void, COMInterlocked::FCMemoryBarrier)
+{
+    FCALL_CONTRACT;
+
+    MemoryBarrier();
+    FC_GC_POLL();
+}
+FCIMPLEND
+
 #include <optdefault.h>
 
+void QCALLTYPE COMInterlocked::MemoryBarrierProcessWide()
+{
+    QCALL_CONTRACT;
 
+    FlushProcessWriteBuffers();
+}
 
 FCIMPL6(INT32, ManagedLoggingHelper::GetRegistryLoggingValues, CLR_BOOL* bLoggingEnabled, CLR_BOOL* bLogToConsole, INT32 *iLogLevel, CLR_BOOL* bPerfWarnings, CLR_BOOL* bCorrectnessWarnings, CLR_BOOL* bSafeHandleStackTraces)
 {

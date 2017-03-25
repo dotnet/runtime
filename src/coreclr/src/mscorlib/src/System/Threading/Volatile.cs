@@ -34,7 +34,7 @@ namespace System.Threading
             // The VM will replace this with a more efficient implementation.
             //
             var value = location;
-            Thread.MemoryBarrier();
+            Interlocked.MemoryBarrier();
             return value;
         }
 
@@ -46,7 +46,7 @@ namespace System.Threading
             // The VM will replace this with a more efficient implementation.
             //
             var value = location;
-            Thread.MemoryBarrier();
+            Interlocked.MemoryBarrier();
             return value;
         }
 
@@ -57,7 +57,7 @@ namespace System.Threading
             // The VM will replace this with a more efficient implementation.
             //
             var value = location;
-            Thread.MemoryBarrier();
+            Interlocked.MemoryBarrier();
             return value;
         }
 
@@ -68,7 +68,7 @@ namespace System.Threading
             // The VM will replace this with a more efficient implementation.
             //
             var value = location;
-            Thread.MemoryBarrier();
+            Interlocked.MemoryBarrier();
             return value;
         }
 
@@ -80,7 +80,7 @@ namespace System.Threading
             // The VM will replace this with a more efficient implementation.
             //
             var value = location;
-            Thread.MemoryBarrier();
+            Interlocked.MemoryBarrier();
             return value;
         }
 
@@ -91,7 +91,7 @@ namespace System.Threading
             // The VM will replace this with a more efficient implementation.
             //
             var value = location;
-            Thread.MemoryBarrier();
+            Interlocked.MemoryBarrier();
             return value;
         }
 
@@ -103,7 +103,7 @@ namespace System.Threading
             // The VM will replace this with a more efficient implementation.
             //
             var value = location;
-            Thread.MemoryBarrier();
+            Interlocked.MemoryBarrier();
             return value;
         }
 
@@ -115,7 +115,7 @@ namespace System.Threading
             // The VM will replace this with a more efficient implementation.
             //
             var value = location;
-            Thread.MemoryBarrier();
+            Interlocked.MemoryBarrier();
             return value;
         }
 
@@ -127,7 +127,7 @@ namespace System.Threading
             // The VM will replace this with a more efficient implementation.
             //
             var value = location;
-            Thread.MemoryBarrier();
+            Interlocked.MemoryBarrier();
             return value;
         }
 #else
@@ -166,7 +166,7 @@ namespace System.Threading
             // The VM will replace this with a more efficient implementation.
             //
             var value = location;
-            Thread.MemoryBarrier();
+            Interlocked.MemoryBarrier();
             return value;
         }
 
@@ -178,7 +178,7 @@ namespace System.Threading
             // The VM will replace this with a more efficient implementation.
             //
             var value = location;
-            Thread.MemoryBarrier();
+            Interlocked.MemoryBarrier();
             return value;
         }
 
@@ -189,7 +189,7 @@ namespace System.Threading
             // The VM will replace this with a more efficient implementation.
             //
             var value = location;
-            Thread.MemoryBarrier();
+            Interlocked.MemoryBarrier();
             return value;
         }
 
@@ -212,7 +212,7 @@ namespace System.Threading
             // The VM will replace this with a more efficient implementation.
             //
             var value = location;
-            Thread.MemoryBarrier();
+            Interlocked.MemoryBarrier();
             return value;
         }
 
@@ -225,7 +225,7 @@ namespace System.Threading
             // 
             // The VM will replace this with a more efficient implementation.
             //
-            Thread.MemoryBarrier();
+            Interlocked.MemoryBarrier();
             location = value;
         }
 
@@ -236,7 +236,7 @@ namespace System.Threading
             // 
             // The VM will replace this with a more efficient implementation.
             //
-            Thread.MemoryBarrier();
+            Interlocked.MemoryBarrier();
             location = value;
         }
 
@@ -246,7 +246,7 @@ namespace System.Threading
             // 
             // The VM will replace this with a more efficient implementation.
             //
-            Thread.MemoryBarrier();
+            Interlocked.MemoryBarrier();
             location = value;
         }
 
@@ -256,7 +256,7 @@ namespace System.Threading
             // 
             // The VM will replace this with a more efficient implementation.
             //
-            Thread.MemoryBarrier();
+            Interlocked.MemoryBarrier();
             location = value;
         }
 
@@ -267,7 +267,7 @@ namespace System.Threading
             // 
             // The VM will replace this with a more efficient implementation.
             //
-            Thread.MemoryBarrier();
+            Interlocked.MemoryBarrier();
             location = value;
         }
 
@@ -277,7 +277,7 @@ namespace System.Threading
             // 
             // The VM will replace this with a more efficient implementation.
             //
-            Thread.MemoryBarrier();
+            Interlocked.MemoryBarrier();
             location = value;
         }
 
@@ -288,7 +288,7 @@ namespace System.Threading
             // 
             // The VM will replace this with a more efficient implementation.
             //
-            Thread.MemoryBarrier();
+            Interlocked.MemoryBarrier();
             location = value;
         }
 
@@ -299,7 +299,7 @@ namespace System.Threading
             // 
             // The VM will replace this with a more efficient implementation.
             //
-            Thread.MemoryBarrier();
+            Interlocked.MemoryBarrier();
             location = value;
         }
 
@@ -310,7 +310,7 @@ namespace System.Threading
             // 
             // The VM will replace this with a more efficient implementation.
             //
-            Thread.MemoryBarrier();
+            Interlocked.MemoryBarrier();
             location = value;
         }
 #else
@@ -354,7 +354,7 @@ namespace System.Threading
             // 
             // The VM will replace this with a more efficient implementation.
             //
-            Thread.MemoryBarrier();
+            Interlocked.MemoryBarrier();
             location = value;
         }
 
@@ -365,7 +365,7 @@ namespace System.Threading
             // 
             // The VM will replace this with a more efficient implementation.
             //
-            Thread.MemoryBarrier();
+            Interlocked.MemoryBarrier();
             location = value;
         }
 
@@ -375,7 +375,7 @@ namespace System.Threading
             // 
             // The VM will replace this with a more efficient implementation.
             //
-            Thread.MemoryBarrier();
+            Interlocked.MemoryBarrier();
             location = value;
         }
 
@@ -397,7 +397,7 @@ namespace System.Threading
             // 
             // The VM will replace this with a more efficient implementation.
             //
-            Thread.MemoryBarrier();
+            Interlocked.MemoryBarrier();
             location = value;
         }
     }
