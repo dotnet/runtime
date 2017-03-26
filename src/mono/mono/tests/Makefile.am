@@ -1021,7 +1021,6 @@ INTERP_DISABLED_TESTS = \
 	pinvoke-utf8.exe \
 	pinvoke.exe \
 	pinvoke11.exe \
-	pinvoke17.exe \
 	pinvoke2.exe \
 	pinvoke3.exe \
 	pinvoke_ppcc.exe \

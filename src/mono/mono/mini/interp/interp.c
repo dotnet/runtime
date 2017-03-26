@@ -763,7 +763,7 @@ static MethodArguments* build_args_from_sig (MonoMethodSignature *sig, MonoInvoc
 	if (margs->flen > 0)
 		margs->fargs = g_malloc0 (sizeof (double) * margs->flen);
 
-	if (margs->ilen > 8)
+	if (margs->ilen > 12)
 		g_error ("build_args_from_sig: TODO, allocate gregs: %d\n", margs->ilen);
 
 	if (margs->flen > 3)

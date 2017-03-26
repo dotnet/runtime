@@ -1009,7 +1009,7 @@ gpointer
 mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
 {
 #ifdef ENABLE_INTERPRETER
-	const int gregs_num = 8;
+	const int gregs_num = 12;
 	const int fregs_num = 3;
 	guint8 *start = NULL, *code, *label_gexits [gregs_num], *label_fexits [fregs_num], *label_leave_tramp [3], *label_is_float_ret;
 	MonoJumpInfo *ji = NULL;
