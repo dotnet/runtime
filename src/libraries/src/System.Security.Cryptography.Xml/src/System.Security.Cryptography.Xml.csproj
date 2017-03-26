@@ -83,7 +83,11 @@
     <Compile Include="System\Security\Cryptography\Xml\XmlDsigXsltTransform.cs" />
     <Compile Include="System\Security\Cryptography\Xml\XmlLicenseTransform.cs" />
     <Compile Include="System\Security\Cryptography\Xml\CryptoHelpers.cs" />
+    <Compile Include="System\Security\Cryptography\Xml\RSAPKCS1SignatureDescription.cs" />
     <Compile Include="System\Security\Cryptography\Xml\RSAPKCS1SHA1SignatureDescription.cs" />
+    <Compile Include="System\Security\Cryptography\Xml\RSAPKCS1SHA256SignatureDescription.cs" />
+    <Compile Include="System\Security\Cryptography\Xml\RSAPKCS1SHA512SignatureDescription.cs" />
+    <Compile Include="System\Security\Cryptography\Xml\RSAPKCS1SHA384SignatureDescription.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />

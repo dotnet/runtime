@@ -60,17 +60,13 @@ namespace System.Security.Cryptography.Xml
                 case "http://www.w3.org/2000/09/xmldsig#rsa-sha1":
                     return new RSAPKCS1SHA1SignatureDescription();
                 case "System.Security.Cryptography.RSASignatureDescription":
-                    throw new NotImplementedException(name);
-                    //return new RSAPKCS1SHA1SignatureDescription();
+                    return new RSAPKCS1SHA1SignatureDescription();
                 case "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256":
-                    throw new NotImplementedException(name);
-                    //return new RSAPKCS1SHA256SignatureDescription();
+                    return new RSAPKCS1SHA256SignatureDescription();
                 case "http://www.w3.org/2001/04/xmldsig-more#rsa-sha384":
-                    throw new NotImplementedException(name);
-                    //return new RSAPKCS1SHA384SignatureDescription();
+                    return new RSAPKCS1SHA384SignatureDescription();
                 case "http://www.w3.org/2001/04/xmldsig-more#rsa-sha512":
-                    throw new NotImplementedException(name);
-                    //return new RSAPKCS1SHA512SignatureDescription();
+                    return new RSAPKCS1SHA512SignatureDescription();
 
                 // workarounds for issue https://github.com/dotnet/corefx/issues/16563
                 // remove attribute from this method when removing them
