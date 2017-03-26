@@ -37,7 +37,7 @@
 // Aliases for Win32 types
 //
 
-typedef uint32_t BOOL;
+typedef int BOOL;
 typedef uint32_t DWORD;
 
 // -----------------------------------------------------------------------------------------------------------
