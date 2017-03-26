@@ -10,16 +10,15 @@ using System.Threading.Tasks;
 
 namespace System.Security.Cryptography.Xml
 {
-    internal class RSAPKCS1SHA1SignatureDescription : RSAPKCS1SignatureDescription
+    internal class RSAPKCS1SHA512SignatureDescription : RSAPKCS1SignatureDescription
     {
-        public RSAPKCS1SHA1SignatureDescription() : base("SHA1")
+        public RSAPKCS1SHA512SignatureDescription() : base("SHA512")
         {
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "SHA1 needed for compat.")]
         public sealed override HashAlgorithm CreateDigest()
         {
-            return SHA1.Create();
+            return SHA512.Create();
         }
     }
 }
