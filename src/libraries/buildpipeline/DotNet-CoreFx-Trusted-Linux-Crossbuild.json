@@ -279,7 +279,7 @@
       },
       "inputs": {
         "CopyRoot": "$(PB_DockerCopyDest)/corefx",
-        "Contents": "*.log",
+        "Contents": "*.log\n**\\*.log",
         "ArtifactName": "BuildLogs",
         "ArtifactType": "Container",
         "TargetPath": "\\\\my\\share\\$(Build.DefinitionName)\\$(Build.BuildNumber)"
@@ -323,6 +323,15 @@
     }
   ],
   "options": [
+    {
+      "enabled": false,
+      "definition": {
+        "id": "5bc3cfb7-6b54-4a4b-b5d2-a3905949f8a6"
+      },
+      "inputs": {
+        "additionalFields": "{}"
+      }
+    },
     {
       "enabled": false,
       "definition": {
@@ -476,13 +485,12 @@
   "type": "build",
   "id": 5247,
   "name": "DotNet-CoreFx-Trusted-Linux-Crossbuild",
-  "url": "https://devdiv.visualstudio.com/DefaultCollection/0bdbc590-a062-4c3f-b0f6-9383f67865ee/_apis/build/Definitions/5247",
   "project": {
     "id": "0bdbc590-a062-4c3f-b0f6-9383f67865ee",
     "name": "DevDiv",
     "description": "Visual Studio and DevDiv team project for git source code repositories.  Work items will be added for Adams, Dev14 work items are tracked in vstfdevdiv.  ",
     "url": "https://devdiv.visualstudio.com/DefaultCollection/_apis/projects/0bdbc590-a062-4c3f-b0f6-9383f67865ee",
     "state": "wellFormed",
-    "revision": 418097503
+    "revision": 418097620
   }
 }
