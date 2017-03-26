@@ -3290,7 +3290,10 @@ array_constructed:
 		}
 		MINT_IN_CASE(MINT_STRLEN)
 			++ip;
-			sp [-1].data.i = mono_string_length ((MonoString*)sp [-1].data.p);
+			o = sp [-1].data.p;
+			if (!o)
+				THROW_EX (mono_get_exception_null_reference (), ip);
+			sp [-1].data.i = mono_string_length ((MonoString*) o);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_ARRAY_RANK)
 			o = sp [-1].data.p;

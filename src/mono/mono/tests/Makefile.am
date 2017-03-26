@@ -952,7 +952,6 @@ INTERP_DISABLED_TESTS = \
 	bug-544446.exe \
 	bug-685908.exe \
 	bug-70561.exe \
-	bug-78549.exe \
 	bug-80307.exe \
 	bug-80392.2.exe \
 	bug-81673.exe \
