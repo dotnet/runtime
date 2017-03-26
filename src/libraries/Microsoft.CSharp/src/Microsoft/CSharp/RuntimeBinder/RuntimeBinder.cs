@@ -374,12 +374,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             for (int i = 0; i < parameters.Length; i++)
             {
                 CSharpArgumentInfo info = payload.GetArgumentInfo(i);
-                array[i] = new ArgumentObject
-                {
-                    Value = args[i].Value,
-                    Info = info,
-                    Type = GetArgumentType(payload, info, parameters[i], args[i], i)
-                };
+                array[i] = new ArgumentObject(args[i].Value, info, GetArgumentType(payload, info, parameters[i], args[i], i));
 
                 Debug.Assert(array[i].Type != null);
             }
@@ -1575,7 +1570,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             int indexOfLast = arguments.Length - 1;
             EXPR rhs = CreateArgumentEXPR(arguments[indexOfLast], locals[indexOfLast]);
 
-            if (arguments[0] == null)
+            if (arguments[0].Type == null)
             {
                 throw Error.BindBinaryAssignmentFailedNullReference();
             }
