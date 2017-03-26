@@ -934,36 +934,27 @@ INTERP_DISABLED_TESTS = \
 	async-exc-compilation.exe \
 	async-with-cb-throws.exe \
 	async_read.exe \
-	bug-10127.exe \
 	bug-18026.exe \
-	bug-27147.exe \
 	bug-2907.exe \
 	bug-323114.exe \
 	bug-327438.2.exe \
 	bug-335131.2.exe \
-	bug-349190.2.exe \
 	bug-415577.exe \
 	bug-461867.exe \
 	bug-461941.exe \
 	bug-46661.exe \
 	bug-47295.exe \
 	bug-48015.exe \
-	bug-508538.exe \
 	bug-544446.exe \
 	bug-685908.exe \
-	bug-70561.exe \
 	bug-80307.exe \
 	bug-80392.2.exe \
 	bug-81673.exe \
-	bug-81691.exe \
 	bug-82022.exe \
 	bug445361.exe \
-	bug469742.2.exe \
 	call_missing_class.exe \
 	call_missing_method.exe \
 	calliGenericTest.exe \
-	cattr-field.exe \
-	classinit3.exe \
 	cominterop.exe \
 	constant-division.exe \
 	context-static.exe \
@@ -975,7 +966,6 @@ INTERP_DISABLED_TESTS = \
 	delegate1.exe \
 	delegate3.exe \
 	delegate5.exe \
-	delegate7.exe \
 	delegate8.exe \
 	delegate9.exe \
 	dynamic-method-access.2.exe \
@@ -986,8 +976,6 @@ INTERP_DISABLED_TESTS = \
 	exception18.exe \
 	field-access.exe \
 	finally_block_ending_in_dead_bb.exe \
-	gc-altstack.exe \
-	gchandles.exe \
 	generic-marshalbyref.2.exe \
 	generic-mkrefany.2.exe \
 	generic-refanyval.2.exe \
@@ -999,23 +987,18 @@ INTERP_DISABLED_TESTS = \
 	handleref.exe \
 	invalid-token.exe \
 	invalid_generic_instantiation.exe \
-	invoke-string-ctors.exe \
 	ldfld_missing_class.exe \
 	ldfld_missing_field.exe \
 	ldftn-access.exe \
+	main-returns-background-change.exe \
 	marshal-valuetypes.exe \
 	marshal.exe \
 	marshal2.exe \
 	marshal8.exe \
 	marshal9.exe \
 	marshalbool.exe \
-	main-returns-background-change.exe \
 	method-access.exe \
-	modules.exe \
-	monitor-abort.exe \
-	monitor-wait-abort.exe \
 	monitor.exe \
-	namedmutex-destroy-race.exe \
 	nullable_boxing.2.exe \
 	pinvoke-2.2.exe \
 	pinvoke-utf8.exe \
@@ -1028,9 +1011,7 @@ INTERP_DISABLED_TESTS = \
 	pinvoke_ppcf.exe \
 	pinvoke_ppci.exe \
 	pinvoke_ppcs.exe \
-	priority.exe \
 	process-unref-race.exe \
-	reference-loader.exe \
 	reload-at-bb-end.exe \
 	remoting1.exe \
 	remoting2.exe \
@@ -1038,13 +1019,10 @@ INTERP_DISABLED_TESTS = \
 	remoting4.exe \
 	remoting5.exe \
 	safehandle.2.exe \
-	shared-generic-synchronized.2.exe \
 	stackframes-async.2.exe \
 	static-constructor.exe \
 	test-inline-call-stack.exe \
-	test-tls.exe \
 	test-type-ctor.exe \
-	thread-exit.exe \
 	thread6.exe \
 	threadpool-exceptions1.exe \
 	threadpool-exceptions2.exe \
@@ -1059,7 +1037,6 @@ INTERP_DISABLED_TESTS = \
 	transparentproxy.exe \
 	typeload-unaligned.exe \
 	unload-appdomain-on-shutdown.exe \
-	vararg.exe \
 	vararg.exe \
 	vararg2.exe \
 	vt-sync-method.exe \
