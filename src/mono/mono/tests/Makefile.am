@@ -1037,7 +1037,6 @@ INTERP_DISABLED_TESTS = \
 	remoting3.exe \
 	remoting4.exe \
 	remoting5.exe \
-	runtime-invoke.gen.exe \
 	safehandle.2.exe \
 	shared-generic-synchronized.2.exe \
 	stackframes-async.2.exe \

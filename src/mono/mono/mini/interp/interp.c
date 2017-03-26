@@ -1355,6 +1355,12 @@ handle_enum:
 		case MONO_TYPE_I8:
 			args [a_index].data.l = *(gint64*)params [i];
 			break;
+		case MONO_TYPE_R4:
+			args [a_index].data.f = *(gfloat *) params [i];
+			break;
+		case MONO_TYPE_R8:
+			args [a_index].data.f = *(gdouble *) params [i];
+			break;
 		case MONO_TYPE_VALUETYPE:
 			if (sig->params [i]->data.klass->enumtype) {
 				type = mono_class_enum_basetype (sig->params [i]->data.klass)->type;
