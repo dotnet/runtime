@@ -235,55 +235,41 @@ namespace System.Linq.Expressions.Compiler
         private void EmitLiftedAndAlso(BinaryExpression b)
         {
             Type type = typeof(bool?);
-            Label labComputeRight = _ilg.DefineLabel();
-            Label labReturnFalse = _ilg.DefineLabel();
-            Label labReturnNull = _ilg.DefineLabel();
-            Label labReturnValue = _ilg.DefineLabel();
-            Label labExit = _ilg.DefineLabel();
-            LocalBuilder locLeft = GetLocal(type);
-            LocalBuilder locRight = GetLocal(type);
+            Label returnLeft = _ilg.DefineLabel();
+            Label returnRight = _ilg.DefineLabel();
+            Label exit = _ilg.DefineLabel();
+            // Compute left
             EmitExpression(b.Left);
+            LocalBuilder locLeft = GetLocal(type);
             _ilg.Emit(OpCodes.Stloc, locLeft);
             _ilg.Emit(OpCodes.Ldloca, locLeft);
             _ilg.EmitHasValue(type);
-            _ilg.Emit(OpCodes.Brfalse, labComputeRight);
             _ilg.Emit(OpCodes.Ldloca, locLeft);
             _ilg.EmitGetValueOrDefault(type);
-            _ilg.Emit(OpCodes.Brfalse, labReturnFalse);
-            // compute right
-            _ilg.MarkLabel(labComputeRight);
+            _ilg.Emit(OpCodes.Not);
+            _ilg.Emit(OpCodes.And);
+            // if left == false
+            _ilg.Emit(OpCodes.Brtrue, returnLeft);
+            // Compute right
             EmitExpression(b.Right);
+            LocalBuilder locRight = GetLocal(type);
             _ilg.Emit(OpCodes.Stloc, locRight);
-            _ilg.Emit(OpCodes.Ldloca, locRight);
-            _ilg.EmitHasValue(type);
-            _ilg.Emit(OpCodes.Brfalse_S, labReturnNull);
+            _ilg.Emit(OpCodes.Ldloca, locLeft);
+            _ilg.EmitGetValueOrDefault(type);
+            // if left == true
+            _ilg.Emit(OpCodes.Brtrue_S, returnRight);
             _ilg.Emit(OpCodes.Ldloca, locRight);
             _ilg.EmitGetValueOrDefault(type);
-            _ilg.Emit(OpCodes.Brfalse_S, labReturnFalse);
-            // check left for null again
-            _ilg.Emit(OpCodes.Ldloca, locLeft);
-            _ilg.EmitHasValue(type);
-            _ilg.Emit(OpCodes.Brfalse, labReturnNull);
-            // return true
-            _ilg.Emit(OpCodes.Ldc_I4_1);
-            _ilg.Emit(OpCodes.Br_S, labReturnValue);
-            // return false
-            _ilg.MarkLabel(labReturnFalse);
-            _ilg.Emit(OpCodes.Ldc_I4_0);
-            _ilg.Emit(OpCodes.Br_S, labReturnValue);
-            _ilg.MarkLabel(labReturnValue);
-            ConstructorInfo ci = type.GetConstructor(ArrayOfType_Bool);
-            _ilg.Emit(OpCodes.Newobj, ci);
-            _ilg.Emit(OpCodes.Stloc, locLeft);
-            _ilg.Emit(OpCodes.Br, labExit);
-            // return null
-            _ilg.MarkLabel(labReturnNull);
-            _ilg.Emit(OpCodes.Ldloca, locLeft);
-            _ilg.Emit(OpCodes.Initobj, type);
-            _ilg.MarkLabel(labExit);
+            // if right == true
+            _ilg.Emit(OpCodes.Brtrue_S, returnLeft);
+            _ilg.MarkLabel(returnRight);
+            _ilg.Emit(OpCodes.Ldloc, locRight);
+            FreeLocal(locRight);
+            _ilg.Emit(OpCodes.Br_S, exit);
+            _ilg.MarkLabel(returnLeft);
             _ilg.Emit(OpCodes.Ldloc, locLeft);
             FreeLocal(locLeft);
-            FreeLocal(locRight);
+            _ilg.MarkLabel(exit);
         }
 
         private void EmitMethodAndAlso(BinaryExpression b, CompilationFlags flags)
@@ -359,55 +345,32 @@ namespace System.Linq.Expressions.Compiler
         private void EmitLiftedOrElse(BinaryExpression b)
         {
             Type type = typeof(bool?);
-            Label labComputeRight = _ilg.DefineLabel();
-            Label labReturnTrue = _ilg.DefineLabel();
-            Label labReturnNull = _ilg.DefineLabel();
-            Label labReturnValue = _ilg.DefineLabel();
-            Label labExit = _ilg.DefineLabel();
+            Label returnLeft = _ilg.DefineLabel();
+            Label exit = _ilg.DefineLabel();
             LocalBuilder locLeft = GetLocal(type);
-            LocalBuilder locRight = GetLocal(type);
             EmitExpression(b.Left);
             _ilg.Emit(OpCodes.Stloc, locLeft);
             _ilg.Emit(OpCodes.Ldloca, locLeft);
-            _ilg.EmitHasValue(type);
-            _ilg.Emit(OpCodes.Brfalse, labComputeRight);
-            _ilg.Emit(OpCodes.Ldloca, locLeft);
             _ilg.EmitGetValueOrDefault(type);
-            _ilg.Emit(OpCodes.Brtrue, labReturnTrue);
-            // compute right
-            _ilg.MarkLabel(labComputeRight);
+            // if left == true
+            _ilg.Emit(OpCodes.Brtrue, returnLeft);
             EmitExpression(b.Right);
+            LocalBuilder locRight = GetLocal(type);
             _ilg.Emit(OpCodes.Stloc, locRight);
             _ilg.Emit(OpCodes.Ldloca, locRight);
-            _ilg.EmitHasValue(type);
-            _ilg.Emit(OpCodes.Brfalse_S, labReturnNull);
-            _ilg.Emit(OpCodes.Ldloca, locRight);
             _ilg.EmitGetValueOrDefault(type);
-            _ilg.Emit(OpCodes.Brtrue_S, labReturnTrue);
-            // check left for null again
             _ilg.Emit(OpCodes.Ldloca, locLeft);
             _ilg.EmitHasValue(type);
-            _ilg.Emit(OpCodes.Brfalse, labReturnNull);
-            // return false
-            _ilg.Emit(OpCodes.Ldc_I4_0);
-            _ilg.Emit(OpCodes.Br_S, labReturnValue);
-            // return true
-            _ilg.MarkLabel(labReturnTrue);
-            _ilg.Emit(OpCodes.Ldc_I4_1);
-            _ilg.Emit(OpCodes.Br_S, labReturnValue);
-            _ilg.MarkLabel(labReturnValue);
-            ConstructorInfo ci = type.GetConstructor(ArrayOfType_Bool);
-            _ilg.Emit(OpCodes.Newobj, ci);
-            _ilg.Emit(OpCodes.Stloc, locLeft);
-            _ilg.Emit(OpCodes.Br, labExit);
-            // return null
-            _ilg.MarkLabel(labReturnNull);
-            _ilg.Emit(OpCodes.Ldloca, locLeft);
-            _ilg.Emit(OpCodes.Initobj, type);
-            _ilg.MarkLabel(labExit);
+            _ilg.Emit(OpCodes.Or);
+            // if !(right == true | left != null)
+            _ilg.Emit(OpCodes.Brfalse_S, returnLeft);
+            _ilg.Emit(OpCodes.Ldloc, locRight);
+            FreeLocal(locRight);
+            _ilg.Emit(OpCodes.Br_S, exit);
+            _ilg.MarkLabel(returnLeft);
             _ilg.Emit(OpCodes.Ldloc, locLeft);
             FreeLocal(locLeft);
-            FreeLocal(locRight);
+            _ilg.MarkLabel(exit);
         }
 
         private void EmitUnliftedOrElse(BinaryExpression b)
