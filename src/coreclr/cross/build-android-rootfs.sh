@@ -94,6 +94,7 @@ echo Generating the $__BuildArch toolchain
 $__NDK_Dir/build/tools/make_standalone_toolchain.py --arch $__BuildArch --api $__ApiLevel --install-dir $__ToolchainDir
 
 # Install the required packages into the toolchain
+# TODO: Add logic to get latest pkg version instead of specific version number
 rm -rf $__Android_Cross_Dir/deb/
 rm -rf $__Android_Cross_Dir/tmp
 
@@ -112,10 +113,12 @@ fi
 
 wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libandroid-glob-dev_0.3_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/libandroid-glob-dev_0.3_$__AndroidArch.deb
 wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libandroid-glob_0.3_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/libandroid-glob_0.3_$__AndroidArch.deb
-wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libandroid-support-dev_13.10_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/libandroid-support-dev_13.10_$__AndroidArch.deb
-wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libandroid-support_13.10_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/libandroid-support_13.10_$__AndroidArch.deb
+wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libandroid-support-dev_14_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/libandroid-support-dev_14_$__AndroidArch.deb
+wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libandroid-support_14_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/libandroid-support_14_$__AndroidArch.deb
 wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/liblzma-dev_5.2.3_$__AndroidArch.deb  -O $__Android_Cross_Dir/deb/liblzma-dev_5.2.3_$__AndroidArch.deb
 wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/liblzma_5.2.3_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/liblzma_5.2.3_$__AndroidArch.deb
+wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libunwind-dev_1.2.20170304_$__AndroidArch.deb  -O $__Android_Cross_Dir/deb/libunwind-dev_1.2.20170304_$__AndroidArch.deb
+wget -nv -nc http://termux.net/dists/stable/main/binary-$__AndroidArch/libunwind_1.2.20170304_$__AndroidArch.deb -O $__Android_Cross_Dir/deb/libunwind_1.2.20170304_$__AndroidArch.deb
 
 echo Unpacking Termux packages
 dpkg -x $__Android_Cross_Dir/deb/libicu_58.2_$__AndroidArch.deb $__Android_Cross_Dir/tmp/$__AndroidArch/
@@ -124,38 +127,15 @@ dpkg -x $__Android_Cross_Dir/deb/libuuid-dev_1.0.3_$__AndroidArch.deb $__Android
 dpkg -x $__Android_Cross_Dir/deb/libuuid_1.0.3_$__AndroidArch.deb $__Android_Cross_Dir/tmp/$__AndroidArch/
 dpkg -x $__Android_Cross_Dir/deb/libandroid-glob-dev_0.3_$__AndroidArch.deb $__Android_Cross_Dir/tmp/$__AndroidArch/
 dpkg -x $__Android_Cross_Dir/deb/libandroid-glob_0.3_$__AndroidArch.deb $__Android_Cross_Dir/tmp/$__AndroidArch/
-dpkg -x $__Android_Cross_Dir/deb/libandroid-support-dev_13.10_$__AndroidArch.deb $__Android_Cross_Dir/tmp/$__AndroidArch/
-dpkg -x $__Android_Cross_Dir/deb/libandroid-support_13.10_$__AndroidArch.deb $__Android_Cross_Dir/tmp/$__AndroidArch/
+dpkg -x $__Android_Cross_Dir/deb/libandroid-support-dev_14_$__AndroidArch.deb $__Android_Cross_Dir/tmp/$__AndroidArch/
+dpkg -x $__Android_Cross_Dir/deb/libandroid-support_14_$__AndroidArch.deb $__Android_Cross_Dir/tmp/$__AndroidArch/
 dpkg -x $__Android_Cross_Dir/deb/liblzma-dev_5.2.3_$__AndroidArch.deb $__Android_Cross_Dir/tmp/$__AndroidArch/
 dpkg -x $__Android_Cross_Dir/deb/liblzma_5.2.3_$__AndroidArch.deb $__Android_Cross_Dir/tmp/$__AndroidArch/
+dpkg -x $__Android_Cross_Dir/deb/libunwind-dev_1.2.20170304_$__AndroidArch.deb $__Android_Cross_Dir/tmp/$__AndroidArch/
+dpkg -x $__Android_Cross_Dir/deb/libunwind_1.2.20170304_$__AndroidArch.deb $__Android_Cross_Dir/tmp/$__AndroidArch/
 
 cp -R $__Android_Cross_Dir/tmp/$__AndroidArch/data/data/com.termux/files/usr/* $__ToolchainDir/sysroot/usr/
 
-# Prepare libunwind
-if [ ! -d $__libunwind_Dir ]; then
-# Currently, we clone a fork of libunwind which adds support for Android; once this fork has been
-# merged back in, this script can be updated to use the official libunwind repository.
-# There's also an Android fork of libunwind which is currently not used.
-#   git clone https://android.googlesource.com/platform/external/libunwind/ $__libunwind_Dir
-#   git clone https://github.com/libunwind/libunwind/ $__libunwind_Dir
-   git clone https://github.com/qmfrederik/libunwind/ $__libunwind_Dir
-fi
-
-cd $__libunwind_Dir
-git checkout features/android
-git checkout -- .
-git clean -xfd
-
-# libunwind is available on Android, but not included in the NDK.
-echo Building libunwind
-autoreconf --force -v --install 2> /dev/null
-echo ./configure CC=$__ToolchainDir/bin/$__AndroidToolchain-clang --with-sysroot=$__ToolchainDir/sysroot --host=$__AndroidArch-eabi --target=$__AndroidArch-eabi --disable-tests --disable-coredump --prefix=$__ToolchainDir/sysroot/usr 2> /dev/null
-./configure CC=$__ToolchainDir/bin/$__AndroidToolchain-clang --with-sysroot=$__ToolchainDir/sysroot --host=$__AndroidArch-eabi --target=$__AndroidArch-eabi --disable-tests --disable-coredump --prefix=$__ToolchainDir/sysroot/usr 2> /dev/null
-make > /dev/null
-make install > /dev/null
-
-# This header file is missing
-cp include/libunwind.h $__ToolchainDir/sysroot/usr/include/
 
 echo Now run:
 echo CONFIG_DIR=\`realpath cross/android/$__BuildArch\` ROOTFS_DIR=\`realpath $__ToolchainDir/sysroot\` ./build.sh cross $__BuildArch skipgenerateversion skipnuget cmakeargs -DENABLE_LLDBPLUGIN=0
