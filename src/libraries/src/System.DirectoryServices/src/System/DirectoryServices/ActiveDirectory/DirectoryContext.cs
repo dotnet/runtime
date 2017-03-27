@@ -11,7 +11,8 @@ namespace System.DirectoryServices.ActiveDirectory
     using System.Runtime.InteropServices;
     using System.ComponentModel;
     using System.Security.Permissions;
-
+    using System.IO;
+    
     public enum DirectoryContextType
     {
         Domain = 0,
