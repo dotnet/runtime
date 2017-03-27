@@ -107,28 +107,9 @@ namespace System.DirectoryServices.ActiveDirectory
                     throw ExceptionHelper.GetExceptionFromErrorCode(errorCode);
                 }
             }
-
-            if (DirectoryContext.DnsgetdcSupported)
-            {
-                // this will get both the non site specific and the site specific records
-                allDCs = DnsGetDcWrapper(domainName, siteName, dcFlags);
-            }
-            else
-            {
-                // first get all the non site specific
-                allDCs = DnsQueryWrapper(domainName, null, dcFlags);
-                // now get all the site specific records
-                if (siteName != null)
-                {
-                    foreach (string dc in DnsQueryWrapper(domainName, siteName, dcFlags).Keys)
-                    {
-                        if (!allDCs.Contains(dc))
-                        {
-                            allDCs.Add(dc, null);
-                        }
-                    }
-                }
-            }
+        
+            // this will get both the non site specific and the site specific records
+            allDCs = DnsGetDcWrapper(domainName, siteName, dcFlags);
 
             foreach (string dcName in allDCs.Keys)
             {

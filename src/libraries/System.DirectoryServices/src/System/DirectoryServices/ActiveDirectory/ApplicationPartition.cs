@@ -969,10 +969,8 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     AuthenticationTypes authType = Utils.DefaultAuthType | AuthenticationTypes.FastBind | AuthenticationTypes.Delegation;
 
-                    if (DirectoryContext.ServerBindSupported)
-                    {
-                        authType |= AuthenticationTypes.ServerBind;
-                    }
+
+                    authType |= AuthenticationTypes.ServerBind;
 
                     tempEntry = new DirectoryEntry("LDAP://" + context.GetServerName() + "/" + distinguishedName, context.UserName, context.Password, authType);
                     parent = tempEntry.Parent;
@@ -1020,10 +1018,9 @@ namespace System.DirectoryServices.ActiveDirectory
                     {
                         AuthenticationTypes authType = Utils.DefaultAuthType | AuthenticationTypes.FastBind;
 
-                        if (DirectoryContext.ServerBindSupported)
-                        {
-                            authType |= AuthenticationTypes.ServerBind;
-                        }
+
+                        authType |= AuthenticationTypes.ServerBind;
+                        
                         tempEntry = new DirectoryEntry("LDAP://" + context.Name + "/" + distinguishedName, context.UserName, context.Password, authType);
                         parent = tempEntry.Parent;
                         _domainDNSEntry = parent.Children.Add(Utils.GetRdnFromDN(distinguishedName), objectClass);

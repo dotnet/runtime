@@ -396,10 +396,8 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (isServer)
             {
-                if (DirectoryContext.ServerBindSupported)
-                {
-                    authType |= AuthenticationTypes.ServerBind;
-                }
+                authType |= AuthenticationTypes.ServerBind;
+                
                 if (isGC)
                 {
                     rootEntry = new DirectoryEntry("GC://" + forestContext.GetServerName(), forestContext.UserName, forestContext.Password, authType);
