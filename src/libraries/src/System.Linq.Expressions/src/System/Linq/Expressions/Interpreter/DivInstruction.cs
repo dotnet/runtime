@@ -184,7 +184,7 @@ namespace System.Linq.Expressions.Interpreter
                 case TypeCode.Single: return s_Single ?? (s_Single = new DivSingle());
                 case TypeCode.Double: return s_Double ?? (s_Double = new DivDouble());
                 default:
-                    throw Error.ExpressionNotSupportedForType("Div", type);
+                    throw ContractUtils.Unreachable;
             }
         }
     }

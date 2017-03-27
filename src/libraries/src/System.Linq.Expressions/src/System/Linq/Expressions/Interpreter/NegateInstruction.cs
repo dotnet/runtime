@@ -114,7 +114,7 @@ namespace System.Linq.Expressions.Interpreter
                 case TypeCode.Single: return s_Single ?? (s_Single = new NegateSingle());
                 case TypeCode.Double: return s_Double ?? (s_Double = new NegateDouble());
                 default:
-                    throw Error.ExpressionNotSupportedForType("Negate", type);
+                    throw ContractUtils.Unreachable;
             }
         }
     }
@@ -225,7 +225,7 @@ namespace System.Linq.Expressions.Interpreter
                 case TypeCode.Single: return s_Single ?? (s_Single = new NegateCheckedSingle());
                 case TypeCode.Double: return s_Double ?? (s_Double = new NegateCheckedDouble());
                 default:
-                    throw Error.ExpressionNotSupportedForType("NegateChecked", type);
+                    throw ContractUtils.Unreachable;
             }
         }
     }
