@@ -595,11 +595,6 @@ namespace System.Linq.Expressions
         internal static string UnhandledBindingType(object p0) => SR.Format(SR.UnhandledBindingType, p0);
 
         /// <summary>
-        /// A string like "Unhandled convert: {0}"
-        /// </summary>
-        internal static string UnhandledConvert(object p0) => SR.Format(SR.UnhandledConvert, p0);
-
-        /// <summary>
         /// A string like "Unhandled unary: {0}"
         /// </summary>
         internal static string UnhandledUnary(object p0) => SR.Format(SR.UnhandledUnary, p0);

@@ -959,13 +959,7 @@ namespace System.Linq.Expressions
         {
             return new ArgumentException(Strings.UnhandledBindingType(p0));
         }
-        /// <summary>
-        /// ArgumentException with message like "Unhandled convert: {0}"
-        /// </summary>
-        internal static Exception UnhandledConvert(object p0)
-        {
-            return new ArgumentException(Strings.UnhandledConvert(p0));
-        }
+
         /// <summary>
         /// ArgumentException with message like "Unhandled unary: {0}"
         /// </summary>
