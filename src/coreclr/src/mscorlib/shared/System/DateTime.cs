@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
 using System.Threading;
 using System.Globalization;
 using System.Runtime;
@@ -11,7 +13,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Runtime.Versioning;
 using System.Security;
-using System.Diagnostics.Contracts;
 using CultureInfo = System.Globalization.CultureInfo;
 using Calendar = System.Globalization.Calendar;
 
@@ -106,9 +107,9 @@ namespace System
         private const int DatePartMonth = 2;
         private const int DatePartDay = 3;
 
-        private static readonly int[] DaysToMonth365 = {
+        private static readonly int[] s_daysToMonth365 = {
             0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365};
-        private static readonly int[] DaysToMonth366 = {
+        private static readonly int[] s_daysToMonth366 = {
             0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366};
 
         public static readonly DateTime MinValue = new DateTime(MinTicks, DateTimeKind.Unspecified);
@@ -559,7 +560,7 @@ namespace System
         {
             if (year >= 1 && year <= 9999 && month >= 1 && month <= 12)
             {
-                int[] days = IsLeapYear(year) ? DaysToMonth366 : DaysToMonth365;
+                int[] days = IsLeapYear(year) ? s_daysToMonth366 : s_daysToMonth365;
                 if (day >= 1 && day <= days[month] - days[month - 1])
                 {
                     int y = year - 1;
@@ -591,7 +592,7 @@ namespace System
             if (month < 1 || month > 12) throw new ArgumentOutOfRangeException(nameof(month), SR.ArgumentOutOfRange_Month);
             Contract.EndContractBlock();
             // IsLeapYear checks the year argument
-            int[] days = IsLeapYear(year) ? DaysToMonth366 : DaysToMonth365;
+            int[] days = IsLeapYear(year) ? s_daysToMonth366 : s_daysToMonth365;
             return days[month] - days[month - 1];
         }
 
@@ -845,7 +846,7 @@ namespace System
             // Leap year calculation looks different from IsLeapYear since y1, y4,
             // and y100 are relative to year 1, not year 0
             bool leapYear = y1 == 3 && (y4 != 24 || y100 == 3);
-            int[] days = leapYear ? DaysToMonth366 : DaysToMonth365;
+            int[] days = leapYear ? s_daysToMonth366 : s_daysToMonth365;
             // All months have less than 32 days, so n >> 5 is a good conservative
             // estimate for the month
             int m = (n >> 5) + 1;
@@ -1488,7 +1489,7 @@ namespace System
             {
                 return false;
             }
-            int[] days = IsLeapYear(year) ? DaysToMonth366 : DaysToMonth365;
+            int[] days = IsLeapYear(year) ? s_daysToMonth366 : s_daysToMonth365;
             if (day < 1 || day > days[month] - days[month - 1])
             {
                 return false;
