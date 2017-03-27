@@ -17,6 +17,7 @@
     <Compile Include="EtwTests.cs" />
     <Compile Include="EventWaitHandleTests.cs" />
     <Compile Include="InterlockedTests.cs" />
+    <Compile Include="InterlockedTests.netcoreapp.cs" Condition="'$(TargetGroup)'=='netcoreapp'" />
     <Compile Include="HostExecutionContextTests.cs" />
     <Compile Include="HostExecutionContextManagerTests.cs" />
     <Compile Include="ManualResetEventTests.cs" />

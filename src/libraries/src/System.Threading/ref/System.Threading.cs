@@ -171,6 +171,7 @@ namespace System.Threading
         public static int Increment(ref int location) { throw null; }
         public static long Increment(ref long location) { throw null; }
         public static void MemoryBarrier() { }
+        public static void MemoryBarrierProcessWide() { }
         public static long Read(ref long location) { throw null; }
     }
     public static partial class LazyInitializer
