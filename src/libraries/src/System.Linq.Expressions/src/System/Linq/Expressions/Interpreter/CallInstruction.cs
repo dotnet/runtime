@@ -259,8 +259,6 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int ConsumedStack => ArgumentCount;
 
-        public override string ToString() => "Call()";
-
         #endregion
 
         /// <summary>

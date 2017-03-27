@@ -468,8 +468,8 @@ namespace System.Linq.Expressions.Interpreter
             _hoistedVariables = hoistedVariables;
         }
 
-        public override int ConsumedStack => 0;
         public override int ProducedStack => 1;
+
         public override string InstructionName => "Quote";
 
         public override int Run(InterpretedFrame frame)

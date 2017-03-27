@@ -186,7 +186,6 @@ namespace System.Linq.Expressions.Interpreter
         }
 
         public override int ConsumedStack => 1;
-        public override int ProducedStack => 0;
         public override string InstructionName => "StoreLocalBox";
 
         public override int Run(InterpretedFrame frame)
@@ -464,8 +463,6 @@ namespace System.Linq.Expressions.Interpreter
             frame.Push(RuntimeVariables.Create(ret));
             return 1;
         }
-
-        public override string ToString() => "GetRuntimeVariables()";
     }
 
     #endregion
