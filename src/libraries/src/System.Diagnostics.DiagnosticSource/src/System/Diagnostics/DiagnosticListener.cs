@@ -57,9 +57,18 @@ namespace System.Diagnostics
         /// </summary>
         public virtual IDisposable Subscribe(IObserver<KeyValuePair<string, object>> observer, Predicate<string> isEnabled)
         {
-            return isEnabled == null ?
-                SubscribeInternal(observer, null, null) :
-                SubscribeInternal(observer, isEnabled, (name, arg1, arg2) => isEnabled(name));
+            IDisposable subscription;
+            if (isEnabled == null)
+            {
+                subscription = SubscribeInternal(observer, null, null);
+            }
+            else
+            {
+                Predicate<string> localIsEnabled = isEnabled;
+                subscription = SubscribeInternal(observer, isEnabled, (name, arg1, arg2) => localIsEnabled(name));
+            }
+
+            return subscription;
         }
 
         /// <summary>
@@ -74,9 +83,18 @@ namespace System.Diagnostics
         /// Use Subscribe overload with name-based filtering if producer does NOT support context-based filtering</param>
         public virtual IDisposable Subscribe(IObserver<KeyValuePair<string, object>> observer, Func<string, object, object, bool> isEnabled)
         {
-            return isEnabled == null ?
-                SubscribeInternal(observer, null, null) :
-                SubscribeInternal(observer, name => IsEnabled(name, null, null), isEnabled);
+            IDisposable subscription;
+            if (isEnabled == null)
+            {
+                subscription = SubscribeInternal(observer, null, null);
+            }
+            else
+            {
+                Func<string, object, object, bool> localIsEnabled = isEnabled;
+                subscription = SubscribeInternal(observer, name => IsEnabled(name, null, null), localIsEnabled);
+            }
+
+            return subscription;
         }
 
         /// <summary>
