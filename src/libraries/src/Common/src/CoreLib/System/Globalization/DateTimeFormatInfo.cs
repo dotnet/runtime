@@ -311,7 +311,7 @@ namespace System.Globalization
         // Invariant DateTimeFormatInfo doesn't have user-overriden values
         // Default calendar is gregorian
         public DateTimeFormatInfo()
-            : this(CultureInfo.InvariantCulture.m_cultureData, GregorianCalendar.GetDefaultInstance())
+            : this(CultureInfo.InvariantCulture._cultureData, GregorianCalendar.GetDefaultInstance())
         {
         }
 
@@ -452,7 +452,7 @@ namespace System.Globalization
             {
                 Contract.Ensures(Contract.Result<DateTimeFormatInfo>() != null);
                 System.Globalization.CultureInfo culture = System.Globalization.CultureInfo.CurrentCulture;
-                if (!culture.m_isInherited)
+                if (!culture._isInherited)
                 {
                     DateTimeFormatInfo info = culture.dateTimeInfo;
                     if (info != null)
@@ -470,7 +470,7 @@ namespace System.Globalization
             // Fast case for a regular CultureInfo
             DateTimeFormatInfo info;
             CultureInfo cultureProvider = provider as CultureInfo;
-            if (cultureProvider != null && !cultureProvider.m_isInherited)
+            if (cultureProvider != null && !cultureProvider._isInherited)
             {
                 return cultureProvider.DateTimeFormat;
             }
