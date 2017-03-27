@@ -189,13 +189,13 @@ function cross_build_corefx_with_docker {
         # TODO: For arm, we are going to embed RootFS inside Docker image.
         case $__linuxCodeName in
         trusty)
-            __dockerImage=" microsoft/dotnet-buildtools-prereqs:ubuntu1404_cross_prereqs_v2"
+            __dockerImage=" microsoft/dotnet-buildtools-prereqs:ubuntu1404_cross_prereqs_v3"
             __skipRootFS=1
             __dockerEnvironmentVariables="-e ROOTFS_DIR=/crossrootfs/arm"
             __runtimeOS="ubuntu.14.04"
         ;;
         xenial)
-            __dockerImage=" microsoft/dotnet-buildtools-prereqs:ubuntu1604_cross_prereqs_v2"
+            __dockerImage=" microsoft/dotnet-buildtools-prereqs:ubuntu1604_cross_prereqs_v3"
             __skipRootFS=1
             __dockerEnvironmentVariables="-e ROOTFS_DIR=/crossrootfs/arm"
             __runtimeOS="ubuntu.16.04"
