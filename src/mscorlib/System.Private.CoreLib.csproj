@@ -525,10 +525,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Globalization\CultureNotFoundException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\CultureTypes.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\DaylightTime.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\DateTimeFormat.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\DateTimeFormatInfo.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\DateTimeFormatInfoScanner.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\DateTimeParse.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\DateTimeStyles.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\DigitShapes.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\EastAsianLunisolarCalendar.cs" />
