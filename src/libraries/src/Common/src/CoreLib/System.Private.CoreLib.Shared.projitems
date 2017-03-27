@@ -123,6 +123,10 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\FlagsAttribute.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\FormatException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\FormattableString.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\DateTimeFormat.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\DateTimeFormatInfo.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\DateTimeFormatInfoScanner.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\DateTimeParse.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\IAsyncResult.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\IComparable.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\IConvertible.cs"/>
