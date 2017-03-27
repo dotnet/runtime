@@ -575,11 +575,6 @@ namespace System.Linq.Expressions
         internal static string TypeNotIEnumerable(object p0) => SR.Format(SR.TypeNotIEnumerable, p0);
 
         /// <summary>
-        /// A string like "Unexpected coalesce operator."
-        /// </summary>
-        internal static string UnexpectedCoalesceOperator => SR.UnexpectedCoalesceOperator;
-
-        /// <summary>
         /// A string like "Cannot cast from type '{0}' to type '{1}"
         /// </summary>
         internal static string InvalidCast(object p0, object p1) => SR.Format(SR.InvalidCast, p0, p1);
