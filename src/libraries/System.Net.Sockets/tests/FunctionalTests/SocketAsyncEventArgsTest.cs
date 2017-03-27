@@ -286,13 +286,15 @@ namespace System.Net.Sockets.Tests
                 listen.Bind(new IPEndPoint(IPAddress.Loopback, 0));
                 using (var connectSaea = new SocketAsyncEventArgs())
                 {
-                    var tcs = new TaskCompletionSource<bool>();
-                    connectSaea.Completed += delegate { tcs.SetResult(true); };
+                    var tcs = new TaskCompletionSource<SocketError>();
+                    connectSaea.Completed += (s, e) => tcs.SetResult(e.SocketError);
                     connectSaea.RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, ((IPEndPoint)listen.LocalEndPoint).Port);
 
-                    Assert.True(client.ConnectAsync(connectSaea),
-                        $"Expected ConnectAsync to pend, completed synchronously with SocketError == {connectSaea.SocketError}");
-                    Assert.False(tcs.Task.IsCompleted, "Expected Task to not be completed");
+                    Assert.True(client.ConnectAsync(connectSaea), $"ConnectAsync completed synchronously with SocketError == {connectSaea.SocketError}");
+                    if (tcs.Task.IsCompleted)
+                    {
+                        Assert.NotEqual(SocketError.Success, tcs.Task.Result);
+                    }
 
                     Socket.CancelConnectAsync(connectSaea);
                     Assert.False(client.Connected, "Expected Connected to be false");
@@ -308,13 +310,15 @@ namespace System.Net.Sockets.Tests
                 listen.Bind(new IPEndPoint(IPAddress.Loopback, 0));
                 using (var connectSaea = new SocketAsyncEventArgs())
                 {
-                    var tcs = new TaskCompletionSource<bool>();
-                    connectSaea.Completed += delegate { tcs.SetResult(true); };
+                    var tcs = new TaskCompletionSource<SocketError>();
+                    connectSaea.Completed += (s, e) => tcs.SetResult(e.SocketError);
                     connectSaea.RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, ((IPEndPoint)listen.LocalEndPoint).Port);
 
-                    Assert.True(Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, connectSaea),
-                        $"Expected ConnectAsync to pend, completed synchronously with SocketError == {connectSaea.SocketError}");
-                    Assert.False(tcs.Task.IsCompleted, "Expected Task to not be completed");
+                    Assert.True(Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, connectSaea), $"ConnectAsync completed synchronously with SocketError == {connectSaea.SocketError}");
+                    if (tcs.Task.IsCompleted)
+                    {
+                        Assert.NotEqual(SocketError.Success, tcs.Task.Result);
+                    }
 
                     Socket.CancelConnectAsync(connectSaea);
                 }
