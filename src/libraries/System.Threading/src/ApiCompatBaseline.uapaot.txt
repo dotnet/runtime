@@ -1,14 +1,6 @@
 Compat issues with assembly System.Threading:
-TypesMustExist : Type 'System.Threading.AsyncFlowControl' does not exist in the implementation but it does exist in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.Threading.ExecutionContext' does not implement interface 'System.IDisposable' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.Threading.ExecutionContext.CreateCopy()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Threading.ExecutionContext.Dispose()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Threading.ExecutionContext.GetObjectData(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Threading.ExecutionContext.IsFlowSuppressed()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Threading.ExecutionContext.RestoreFlow()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Threading.ExecutionContext.SuppressFlow()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.SynchronizationContext.IsWaitNotificationRequired()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.SynchronizationContext.SetWaitNotificationRequired()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.SynchronizationContext.Wait(System.IntPtr[], System.Boolean, System.Int32)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.SynchronizationContext.WaitHelper(System.IntPtr[], System.Boolean, System.Int32)' does not exist in the implementation but it does exist in the contract.
-Total Issues: 12
+Total Issues: 4
