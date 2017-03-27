@@ -138,21 +138,12 @@ namespace System.Linq.Expressions.Compiler
         private void EmitBinaryOperator(ExpressionType op, Type leftType, Type rightType, Type resultType, bool liftedToNull)
         {
             Debug.Assert(op != ExpressionType.Coalesce);
-
-            bool leftIsNullable = leftType.IsNullableType();
-            bool rightIsNullable = rightType.IsNullableType();
-            switch (op)
+            if (op == ExpressionType.ArrayIndex)
             {
-                case ExpressionType.ArrayIndex:
-                    if (rightType != typeof(int))
-                    {
-                        throw ContractUtils.Unreachable;
-                    }
-                    EmitGetArrayElement(leftType);
-                    return;
+                Debug.Assert(rightType == typeof(int));
+                EmitGetArrayElement(leftType);
             }
-
-            if (leftIsNullable || rightIsNullable)
+            else if (leftType.IsNullableType() || rightType.IsNullableType())
             {
                 EmitLiftedBinaryOp(op, leftType, rightType, resultType, liftedToNull);
             }
