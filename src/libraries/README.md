@@ -34,7 +34,7 @@ Some of the best ways to contribute are to try things out, file bugs, and join i
 Want to get more familiar with what's going on in the code?
 * [Pull requests](https://github.com/dotnet/corefx/pulls): [Open](https://github.com/dotnet/corefx/pulls?q=is%3Aopen+is%3Apr)/[Closed](https://github.com/dotnet/corefx/pulls?q=is%3Apr+is%3Aclosed)
 
-Looking for something to work on? The list of [up-for-grabs issues](https://github.com/dotnet/corefx/labels/up%20for%20grabs) is a great place to start. See some of our guides for more details:
+Looking for something to work on? The list of [up-for-grabs issues](https://github.com/dotnet/corefx/labels/up-for-grabs) is a great place to start. See some of our guides for more details:
 
 * [Contributing Guide](Documentation/project-docs/contributing.md)
 * [Developer Guide](Documentation/project-docs/developer-guide.md)
