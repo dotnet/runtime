@@ -732,14 +732,6 @@ ves_icall_System_Array_ClearInternal (MonoArray *arr, int idx, int length)
 	mono_gc_bzero_atomic (mono_array_addr_with_size_fast (arr, sz, idx), length * sz);
 }
 
-ICALL_EXPORT MonoArray*
-ves_icall_System_Array_Clone (MonoArray *arr)
-{
-	MonoError error;
-	MonoArray *result = mono_array_clone_checked (arr, &error);
-	mono_error_set_pending_exception (&error);
-	return result;
-}
 
 ICALL_EXPORT gboolean
 ves_icall_System_Array_FastCopy (MonoArray *source, int source_idx, MonoArray* dest, int dest_idx, int length)

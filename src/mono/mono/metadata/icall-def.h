@@ -147,7 +147,6 @@ ICALL(ARGI_4, "Setup",                            mono_ArgIterator_Setup)
 
 ICALL_TYPE(ARRAY, "System.Array", ARRAY_1)
 ICALL(ARRAY_1, "ClearInternal",    ves_icall_System_Array_ClearInternal)
-ICALL(ARRAY_2, "Clone",            ves_icall_System_Array_Clone)
 ICALL(ARRAY_3, "CreateInstanceImpl",   ves_icall_System_Array_CreateInstanceImpl)
 ICALL(ARRAY_14, "CreateInstanceImpl64",   ves_icall_System_Array_CreateInstanceImpl64)
 ICALL(ARRAY_4, "FastCopy",         ves_icall_System_Array_FastCopy)
