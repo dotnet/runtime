@@ -76,6 +76,7 @@ namespace System.Data.SqlClient.Tests
             }
         }
 
+        [ActiveIssue(17373)]
         [Theory]
         [InlineData(@"np:\\.\pipe\sqlbad\query")]
         [InlineData(@"np:\\.\pipe\MSSQL$NonExistentInstance\sql\query")]
