@@ -839,6 +839,44 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
+        [ActiveIssue(17174, TestPlatforms.AnyUnix)] // https://github.com/curl/curl/issues/1354
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task GetAsync_TrailingHeaders_Ignored(bool includeTrailerHeader)
+        {
+            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            {
+                using (var handler = new HttpClientHandler())
+                using (var client = new HttpClient(handler))
+                {
+                    Task<HttpResponseMessage> getResponse = client.GetAsync(url);
+
+                    await LoopbackServer.ReadRequestAndSendResponseAsync(server,
+                            "HTTP/1.1 200 OK\r\n" +
+                            "Transfer-Encoding: chunked\r\n" +
+                            (includeTrailerHeader ? "Trailer: MyCoolTrailerHeader\r\n" : "") +
+                            "\r\n" +
+                            "4\r\n" +
+                            "data\r\n" +
+                            "0\r\n" +
+                            "MyCoolTrailerHeader: amazingtrailer\r\n" +
+                            "\r\n");
+
+                    using (HttpResponseMessage response = await getResponse)
+                    {
+                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                        if (includeTrailerHeader)
+                        {
+                            Assert.Contains("MyCoolTrailerHeader", response.Headers.GetValues("Trailer"));
+                        }
+                        Assert.False(response.Headers.Contains("MyCoolTrailerHeader"), "Trailer should have been ignored");
+                    }
+                }
+            });
+        }
+
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async Task GetAsync_ResponseHeadersRead_ReadFromEachIterativelyDoesntDeadlock()
         {
