@@ -165,10 +165,8 @@ namespace System.Linq.Expressions.Compiler
                 EmitUnliftedEquality(op, leftType);
                 return;
             }
-            if (!leftType.IsPrimitive)
-            {
-                throw Error.OperatorNotImplementedForType(op, leftType);
-            }
+
+            Debug.Assert(leftType.IsPrimitive);
 
             switch (op)
             {
