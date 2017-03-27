@@ -1483,13 +1483,15 @@ void Compiler::optPrintVnAssertionMapping()
  */
 void Compiler::optAddVnAssertionMapping(ValueNum vn, AssertionIndex index)
 {
-    ASSERT_TP cur;
-    if (!optValueNumToAsserts->Lookup(vn, &cur))
+    ASSERT_TP* cur = optValueNumToAsserts->LookupPointer(vn);
+    if (cur == nullptr)
     {
-        cur = BitVecOps::MakeEmpty(apTraits);
-        optValueNumToAsserts->Set(vn, cur);
+        optValueNumToAsserts->Set(vn, BitVecOps::MakeSingleton(apTraits, index - 1));
     }
-    BitVecOps::AddElemD(apTraits, cur, index - 1);
+    else
+    {
+        BitVecOps::AddElemD(apTraits, *cur, index - 1);
+    }
 }
 
 /*****************************************************************************
