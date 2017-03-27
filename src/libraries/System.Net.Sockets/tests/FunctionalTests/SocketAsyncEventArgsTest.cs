@@ -277,7 +277,6 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ActiveIssue(16765)]
         [Fact]
         public void CancelConnectAsync_InstanceConnect_CancelsInProgressConnect()
         {
@@ -291,16 +290,16 @@ namespace System.Net.Sockets.Tests
                     connectSaea.Completed += delegate { tcs.SetResult(true); };
                     connectSaea.RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, ((IPEndPoint)listen.LocalEndPoint).Port);
 
-                    Assert.True(client.ConnectAsync(connectSaea));
-                    Assert.False(tcs.Task.IsCompleted);
+                    Assert.True(client.ConnectAsync(connectSaea),
+                        $"Expected ConnectAsync to pend, completed synchronously with SocketError == {connectSaea.SocketError}");
+                    Assert.False(tcs.Task.IsCompleted, "Expected Task to not be completed");
 
                     Socket.CancelConnectAsync(connectSaea);
-                    Assert.False(client.Connected);
+                    Assert.False(client.Connected, "Expected Connected to be false");
                 }
             }
         }
 
-        [ActiveIssue(16765)]
         [Fact]
         public void CancelConnectAsync_StaticConnect_CancelsInProgressConnect()
         {
@@ -313,8 +312,9 @@ namespace System.Net.Sockets.Tests
                     connectSaea.Completed += delegate { tcs.SetResult(true); };
                     connectSaea.RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, ((IPEndPoint)listen.LocalEndPoint).Port);
 
-                    Assert.True(Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, connectSaea));
-                    Assert.False(tcs.Task.IsCompleted);
+                    Assert.True(Socket.ConnectAsync(SocketType.Stream, ProtocolType.Tcp, connectSaea),
+                        $"Expected ConnectAsync to pend, completed synchronously with SocketError == {connectSaea.SocketError}");
+                    Assert.False(tcs.Task.IsCompleted, "Expected Task to not be completed");
 
                     Socket.CancelConnectAsync(connectSaea);
                 }
