@@ -367,9 +367,6 @@
   <data name="UnhandledBindingType" xml:space="preserve">
     <value>Unhandled Binding Type: {0}</value>
   </data>
-  <data name="UnhandledConvert" xml:space="preserve">
-    <value>Unhandled convert: {0}</value>
-  </data>
   <data name="UnhandledUnary" xml:space="preserve">
     <value>Unhandled unary: {0}</value>
   </data>
