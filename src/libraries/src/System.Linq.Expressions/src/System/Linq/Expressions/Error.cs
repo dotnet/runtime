@@ -1270,16 +1270,6 @@ namespace System.Linq.Expressions
             return new NotSupportedException();
         }
 
-#if FEATURE_COMPILE
-        /// <summary>
-        /// NotImplementedException with message like "The operator '{0}' is not implemented for type '{1}'"
-        /// </summary>
-        internal static Exception OperatorNotImplementedForType(object p0, object p1)
-        {
-            return NotImplemented.ByDesignWithMessage(Strings.OperatorNotImplementedForType(p0, p1));
-        }
-#endif
-
         /// <summary>
         /// ArgumentException with message like "The constructor should not be static"
         /// </summary>

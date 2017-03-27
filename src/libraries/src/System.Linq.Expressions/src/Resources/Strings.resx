@@ -526,9 +526,6 @@
   <data name="IncorrectNumberOfConstructorArguments" xml:space="preserve">
     <value>Incorrect number of arguments for constructor</value>
   </data>
-  <data name="OperatorNotImplementedForType" xml:space="preserve">
-    <value>The operator '{0}' is not implemented for type '{1}'</value>
-  </data>
   <data name="NonStaticConstructorRequired" xml:space="preserve">
     <value>The constructor should not be static</value>
   </data>

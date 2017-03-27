@@ -803,13 +803,6 @@ namespace System.Linq.Expressions
         internal static string PdbGeneratorNeedsExpressionCompiler => SR.PdbGeneratorNeedsExpressionCompiler;
 #endif
 
-#if FEATURE_COMPILE
-        /// <summary>
-        /// A string like "The operator '{0}' is not implemented for type '{1}'"
-        /// </summary>
-        internal static string OperatorNotImplementedForType(object p0, object p1) => SR.Format(SR.OperatorNotImplementedForType, p0, p1);
-#endif
-
         /// <summary>
         /// A string like "The constructor should not be static"
         /// </summary>
