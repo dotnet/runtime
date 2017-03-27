@@ -102,7 +102,7 @@ namespace System.Net.Sockets.Tests
         [Fact]
         public void Ctor_IPEndPoint_CanSend()
         {
-            using (var udpClient = new UdpClient(new IPEndPoint(IPAddress.IPv6Loopback, UnusedPort)))
+            using (var udpClient = new UdpClient(new IPEndPoint(IPAddress.IPv6Any, UnusedPort)))
             {
                 Assert.Equal(1, udpClient.Send(new byte[1], 1, new IPEndPoint(IPAddress.IPv6Loopback, UnusedPort)));
             }
