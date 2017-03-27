@@ -64,7 +64,8 @@ namespace System.Security.Cryptography.Xml.Tests
             }
 
             EncryptedXml encxml = new EncryptedXml(doc);
-            using (RSA rsa = TestHelpers.GetSampleX509Certificate().GetRSAPrivateKey())
+            using (X509Certificate2 certificate = TestHelpers.GetSampleX509Certificate())
+            using (RSA rsa = certificate.GetRSAPrivateKey())
             {
                 Assert.NotNull(rsa);
 
