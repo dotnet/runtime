@@ -724,7 +724,7 @@ namespace System.Numerics.Tests
 
                 for (int j = 0; j < bigShiftLoopLimit; j++)
                 {
-                    temp = temp << (int.MaxValue / 2);
+                    temp = temp << (int.MaxValue / 10);
                     VerifyDoubleExplicitCastFromBigInteger(Double.PositiveInfinity, temp);
                     VerifyDoubleExplicitCastFromBigInteger(Double.NegativeInfinity, -temp);
                 }
