@@ -5326,7 +5326,10 @@ namespace System.Data.SqlClient
             int i;
 
             if (null == bits)
+            {
                 bits = new int[4];
+                stateObj._decimalBits = bits;
+            }
             else
             {
                 for (i = 0; i < bits.Length; i++)
