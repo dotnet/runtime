@@ -276,7 +276,7 @@ namespace System.Linq.Expressions.Compiler
                     // Guaranteed to fit within result type: no conversion
                     return;
                 default:
-                    throw Error.UnhandledBinary(op, nameof(op));
+                    throw ContractUtils.Unreachable;
             }
 
             EmitConvertArithmeticResult(op, leftType);
