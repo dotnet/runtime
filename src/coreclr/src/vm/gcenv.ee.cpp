@@ -626,6 +626,11 @@ void GCToEEInterface::GcStartWork (int condemned, int max_gen)
     // 
     RCWWalker::OnGCStarted(condemned);
 #endif // FEATURE_COMINTEROP
+
+    if (condemned == max_gen)
+    {
+        ThreadStore::s_pThreadStore->OnMaxGenerationGCStarted();
+    }
 }
 
 void GCToEEInterface::GcDone(int condemned)
