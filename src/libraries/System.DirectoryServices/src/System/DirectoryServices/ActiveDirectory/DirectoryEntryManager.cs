@@ -281,7 +281,7 @@ namespace System.DirectoryServices.ActiveDirectory
             // use ServerBind flag is the target is a server and the ServerBind option is supported
             //
 
-            if (DirectoryContext.ServerBindSupported && useServerBind)
+            if (useServerBind)
             {
                 authType |= AuthenticationTypes.ServerBind;
             }
