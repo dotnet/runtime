@@ -43,7 +43,7 @@ For Visual Studio 2017:
 * To build for Arm32, Make sure that you have the Windows 10 SDK installed (or selected to be installed as part of VS installation). To explicitly install Windows SDK, download it from here: [Windows SDK for Windows 10](https://developer.microsoft.com/en-us/windows/downloads)
 * **Important:** You must have the `msdia120.dll` COM Library registered in order to build the repository.
   * This binary is registered by default when installing the "VC++ Tools" with Visual Studio 2015
-  * You can also manually register the binary by launching the "Developer Command Prompt for VS2017" with Administrative privileges and running `regsvr32.exe %VSINSTALLDIR%\Common7\IDE\msdia120.dll`
+  * You can also manually register the binary by launching the "Developer Command Prompt for VS2017" with Administrative privileges and running `regsvr32.exe "%VSINSTALLDIR%\Common7\IDE\msdia120.dll"`
 * **Important:** By default, the build will attempt to use VS2015 as the toolset for the build. To build using VS2017 as your toolset, you must use the "Developer Command Prompt for VS2017".
 
 Visual Studio Express is not supported.
