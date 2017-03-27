@@ -25,34 +25,18 @@ MembersMustExist : Member 'System.AppDomain.remove_TypeResolve(System.ResolveEve
 MembersMustExist : Member 'System.AppDomain.remove_UnhandledException(System.UnhandledExceptionEventHandler)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.AppDomain.SetData(System.String, System.Object)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.ArgIterator' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Array.CreateInstance(System.Type, System.Int64[])' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Array.IsReadOnly.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Array.SetValue(System.Object, System.Int64)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Array.SetValue(System.Object, System.Int64, System.Int64)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Array.SetValue(System.Object, System.Int64, System.Int64, System.Int64)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Array.SetValue(System.Object, System.Int64[])' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.AssemblyLoadEventArgs' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.AssemblyLoadEventHandler' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Boolean.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Boolean.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Boolean.ToString(System.IFormatProvider)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Byte.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Byte.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Char.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Char.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Char.GetUnicodeCategory(System.Char)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Char.GetUnicodeCategory(System.String, System.Int32)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Char.ToLower(System.Char, System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Char.ToString(System.IFormatProvider)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Char.ToUpper(System.Char, System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.DateTime' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.DateTime..ctor(System.Int32, System.Int32, System.Int32, System.Globalization.Calendar)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.DateTime..ctor(System.Int32, System.Int32, System.Int32, System.Int32, System.Int32, System.Int32, System.Globalization.Calendar)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.DateTime..ctor(System.Int32, System.Int32, System.Int32, System.Int32, System.Int32, System.Int32, System.Int32, System.Globalization.Calendar)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.DateTime..ctor(System.Int32, System.Int32, System.Int32, System.Int32, System.Int32, System.Int32, System.Int32, System.Globalization.Calendar, System.DateTimeKind)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.DateTime.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.DateTime.FromOADate(System.Double)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.DateTime.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.DateTime.ToLongDateString()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.DateTime.ToLongTimeString()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.DateTime.ToOADate()' does not exist in the implementation but it does exist in the contract.
@@ -60,45 +44,22 @@ MembersMustExist : Member 'System.DateTime.ToShortDateString()' does not exist i
 MembersMustExist : Member 'System.DateTime.ToShortTimeString()' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.DateTimeOffset' does not implement interface 'System.Runtime.Serialization.IDeserializationCallback' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.DateTimeOffset..ctor(System.Int32, System.Int32, System.Int32, System.Int32, System.Int32, System.Int32, System.Int32, System.Globalization.Calendar, System.TimeSpan)' does not exist in the implementation but it does exist in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.DBNull' does not implement interface 'System.IConvertible' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.DBNull.GetObjectData(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.DBNull.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.DBNull.ToString(System.IFormatProvider)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Decimal' does not implement interface 'System.Runtime.Serialization.IDeserializationCallback' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.Decimal.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Decimal.FromOACurrency(System.Int64)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Decimal.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Decimal.Round(System.Decimal)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Decimal.Round(System.Decimal, System.Int32)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Decimal.Round(System.Decimal, System.Int32, System.MidpointRounding)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Decimal.Round(System.Decimal, System.MidpointRounding)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Decimal.ToOACurrency(System.Decimal)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Double.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Double.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Enum.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Enum.ToString(System.IFormatProvider)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Enum.ToString(System.String, System.IFormatProvider)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Exception.add_SerializeObjectState(System.EventHandler<System.Runtime.Serialization.SafeSerializationEventArgs>)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Exception.remove_SerializeObjectState(System.EventHandler<System.Runtime.Serialization.SafeSerializationEventArgs>)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Exception.TargetSite.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Guid.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Guid.ToString(System.String, System.IFormatProvider)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Int16.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Int16.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Int32.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Int32.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Int64.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Int64.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.IntPtr' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Math.BigMul(System.Int32, System.Int32)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Math.DivRem(System.Int32, System.Int32, System.Int32)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Math.DivRem(System.Int64, System.Int64, System.Int64)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.ResolveEventHandler' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.RuntimeArgumentHandle' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.SByte.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.SByte.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Single.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Single.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String..ctor(System.SByte*)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String..ctor(System.SByte*, System.Int32, System.Int32)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String..ctor(System.SByte*, System.Int32, System.Int32, System.Text.Encoding)' does not exist in the implementation but it does exist in the contract.
@@ -106,17 +67,14 @@ MembersMustExist : Member 'System.String.Compare(System.String, System.Int32, Sy
 MembersMustExist : Member 'System.String.Compare(System.String, System.Int32, System.String, System.Int32, System.Int32, System.Globalization.CultureInfo, System.Globalization.CompareOptions)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.Compare(System.String, System.String, System.Boolean, System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.Compare(System.String, System.String, System.Globalization.CultureInfo, System.Globalization.CompareOptions)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.String.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.Concat(System.Object, System.Object, System.Object, System.Object, __arglist)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.Copy(System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.EndsWith(System.String, System.Boolean, System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.GetEnumerator()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.String.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.Intern(System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.IsInterned(System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.StartsWith(System.String, System.Boolean, System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.ToLower(System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.String.ToString(System.IFormatProvider)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.ToUpper(System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.StringComparer.Compare(System.Object, System.Object)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.StringComparer.Create(System.Globalization.CultureInfo, System.Boolean)' does not exist in the implementation but it does exist in the contract.
@@ -125,19 +83,10 @@ MembersMustExist : Member 'System.StringComparer.InvariantCulture.get()' does no
 MembersMustExist : Member 'System.StringComparer.InvariantCultureIgnoreCase.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.StringComparison System.StringComparison.InvariantCulture' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.StringComparison System.StringComparison.InvariantCultureIgnoreCase' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.TimeSpan.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.TimeZone' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.TypedReference' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.TypeUnloadedException' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.UInt16.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.UInt16.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.UInt32.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.UInt32.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.UInt64.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.UInt64.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.UIntPtr' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.Version..ctor()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Version.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String System.Diagnostics.Debugger.DefaultCategory' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Diagnostics.Debugger.IsLogging()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Diagnostics.Debugger.Log(System.Int32, System.String, System.String)' does not exist in the implementation but it does exist in the contract.
@@ -178,11 +127,7 @@ CannotRemoveBaseTypeOrInterface : Type 'System.IO.IsolatedStorage.IsolatedStorag
 MembersMustExist : Member 'System.Reflection.FieldInfo.GetValueDirect(System.TypedReference)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.FieldInfo.SetValueDirect(System.TypedReference, System.Object)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.MemoryFailPoint' does not exist in the implementation but it does exist in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.InteropServices.InvalidComObjectException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.Runtime.InteropServices.InvalidComObjectException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.InteropServices.InvalidOleVariantTypeException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.BindToMoniker(System.String)' does not exist in the implementation but it does exist in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.InteropServices.SafeBuffer' does not inherit from base type 'Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Security.Cryptography.CryptoStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Text.Decoder.Convert(System.Byte*, System.Int32, System.Char*, System.Int32, System.Boolean, System.Int32, System.Int32, System.Boolean)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Text.Decoder.GetCharCount(System.Byte*, System.Int32, System.Boolean)' does not exist in the implementation but it does exist in the contract.
@@ -201,15 +146,6 @@ MembersMustExist : Member 'System.Text.Encoding.IsMailNewsDisplay.get()' does no
 MembersMustExist : Member 'System.Text.Encoding.IsMailNewsSave.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Text.Encoding.WindowsCodePage.get()' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Text.EncodingInfo' does not exist in the implementation but it does exist in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.Text.StringBuilder' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
-TypesMustExist : Type 'System.Threading.AsyncFlowControl' does not exist in the implementation but it does exist in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.Threading.ExecutionContext' does not implement interface 'System.IDisposable' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.Threading.ExecutionContext.CreateCopy()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Threading.ExecutionContext.Dispose()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Threading.ExecutionContext.GetObjectData(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Threading.ExecutionContext.IsFlowSuppressed()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Threading.ExecutionContext.RestoreFlow()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Threading.ExecutionContext.SuppressFlow()' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Threading.Overlapped' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Threading.RegisteredWaitHandle' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.SynchronizationContext.IsWaitNotificationRequired()' does not exist in the implementation but it does exist in the contract.
@@ -227,7 +163,6 @@ MembersMustExist : Member 'System.Threading.Timer.Dispose(System.Threading.WaitH
 TypesMustExist : Type 'System.Threading.WaitCallback' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Threading.WaitOrTimerCallback' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly netstandard:
-CannotRemoveBaseTypeOrInterface : Type 'Microsoft.Win32.SafeHandles.SafeMemoryMappedViewHandle' does not inherit from base type 'Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid' in the implementation but it does in the contract.
 TypesMustExist : Type 'System.AppContext' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.AppDomain.add_AssemblyLoad(System.AssemblyLoadEventHandler)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.AppDomain.add_AssemblyResolve(System.ResolveEventHandler)' does not exist in the implementation but it does exist in the contract.
@@ -252,34 +187,18 @@ MembersMustExist : Member 'System.AppDomain.remove_TypeResolve(System.ResolveEve
 MembersMustExist : Member 'System.AppDomain.remove_UnhandledException(System.UnhandledExceptionEventHandler)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.AppDomain.SetData(System.String, System.Object)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.ArgIterator' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Array.CreateInstance(System.Type, System.Int64[])' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Array.IsReadOnly.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Array.SetValue(System.Object, System.Int64)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Array.SetValue(System.Object, System.Int64, System.Int64)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Array.SetValue(System.Object, System.Int64, System.Int64, System.Int64)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Array.SetValue(System.Object, System.Int64[])' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.AssemblyLoadEventArgs' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.AssemblyLoadEventHandler' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Boolean.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Boolean.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Boolean.ToString(System.IFormatProvider)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Byte.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Byte.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Char.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Char.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Char.GetUnicodeCategory(System.Char)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Char.GetUnicodeCategory(System.String, System.Int32)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Char.ToLower(System.Char, System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Char.ToString(System.IFormatProvider)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Char.ToUpper(System.Char, System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.DateTime' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.DateTime..ctor(System.Int32, System.Int32, System.Int32, System.Globalization.Calendar)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.DateTime..ctor(System.Int32, System.Int32, System.Int32, System.Int32, System.Int32, System.Int32, System.Globalization.Calendar)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.DateTime..ctor(System.Int32, System.Int32, System.Int32, System.Int32, System.Int32, System.Int32, System.Int32, System.Globalization.Calendar)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.DateTime..ctor(System.Int32, System.Int32, System.Int32, System.Int32, System.Int32, System.Int32, System.Int32, System.Globalization.Calendar, System.DateTimeKind)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.DateTime.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.DateTime.FromOADate(System.Double)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.DateTime.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.DateTime.ToLongDateString()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.DateTime.ToLongTimeString()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.DateTime.ToOADate()' does not exist in the implementation but it does exist in the contract.
@@ -287,45 +206,22 @@ MembersMustExist : Member 'System.DateTime.ToShortDateString()' does not exist i
 MembersMustExist : Member 'System.DateTime.ToShortTimeString()' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.DateTimeOffset' does not implement interface 'System.Runtime.Serialization.IDeserializationCallback' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.DateTimeOffset..ctor(System.Int32, System.Int32, System.Int32, System.Int32, System.Int32, System.Int32, System.Int32, System.Globalization.Calendar, System.TimeSpan)' does not exist in the implementation but it does exist in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.DBNull' does not implement interface 'System.IConvertible' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.DBNull.GetObjectData(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.DBNull.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.DBNull.ToString(System.IFormatProvider)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Decimal' does not implement interface 'System.Runtime.Serialization.IDeserializationCallback' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.Decimal.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Decimal.FromOACurrency(System.Int64)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Decimal.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Decimal.Round(System.Decimal)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Decimal.Round(System.Decimal, System.Int32)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Decimal.Round(System.Decimal, System.Int32, System.MidpointRounding)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Decimal.Round(System.Decimal, System.MidpointRounding)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Decimal.ToOACurrency(System.Decimal)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Double.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Double.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Enum.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Enum.ToString(System.IFormatProvider)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Enum.ToString(System.String, System.IFormatProvider)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Exception.add_SerializeObjectState(System.EventHandler<System.Runtime.Serialization.SafeSerializationEventArgs>)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Exception.remove_SerializeObjectState(System.EventHandler<System.Runtime.Serialization.SafeSerializationEventArgs>)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Exception.TargetSite.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Guid.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Guid.ToString(System.String, System.IFormatProvider)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Int16.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Int16.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Int32.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Int32.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Int64.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Int64.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.IntPtr' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Math.BigMul(System.Int32, System.Int32)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Math.DivRem(System.Int32, System.Int32, System.Int32)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Math.DivRem(System.Int64, System.Int64, System.Int64)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.ResolveEventHandler' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.RuntimeArgumentHandle' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.SByte.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.SByte.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Single.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Single.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String..ctor(System.SByte*)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String..ctor(System.SByte*, System.Int32, System.Int32)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String..ctor(System.SByte*, System.Int32, System.Int32, System.Text.Encoding)' does not exist in the implementation but it does exist in the contract.
@@ -333,17 +229,14 @@ MembersMustExist : Member 'System.String.Compare(System.String, System.Int32, Sy
 MembersMustExist : Member 'System.String.Compare(System.String, System.Int32, System.String, System.Int32, System.Int32, System.Globalization.CultureInfo, System.Globalization.CompareOptions)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.Compare(System.String, System.String, System.Boolean, System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.Compare(System.String, System.String, System.Globalization.CultureInfo, System.Globalization.CompareOptions)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.String.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.Concat(System.Object, System.Object, System.Object, System.Object, __arglist)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.Copy(System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.EndsWith(System.String, System.Boolean, System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.GetEnumerator()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.String.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.Intern(System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.IsInterned(System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.StartsWith(System.String, System.Boolean, System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.ToLower(System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.String.ToString(System.IFormatProvider)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.ToUpper(System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.StringComparer.Compare(System.Object, System.Object)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.StringComparer.Create(System.Globalization.CultureInfo, System.Boolean)' does not exist in the implementation but it does exist in the contract.
@@ -352,19 +245,10 @@ MembersMustExist : Member 'System.StringComparer.InvariantCulture.get()' does no
 MembersMustExist : Member 'System.StringComparer.InvariantCultureIgnoreCase.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.StringComparison System.StringComparison.InvariantCulture' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.StringComparison System.StringComparison.InvariantCultureIgnoreCase' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.TimeSpan.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.TimeZone' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.TypedReference' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.TypeUnloadedException' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.UInt16.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.UInt16.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.UInt32.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.UInt32.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.UInt64.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.UInt64.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.UIntPtr' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.Version..ctor()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Version.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Diagnostics.Debug.AutoFlush.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Diagnostics.Debug.AutoFlush.set(System.Boolean)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Diagnostics.Debug.Close()' does not exist in the implementation but it does exist in the contract.
@@ -438,11 +322,7 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Net.Sockets.NetworkStream' does n
 MembersMustExist : Member 'System.Reflection.FieldInfo.GetValueDirect(System.TypedReference)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.FieldInfo.SetValueDirect(System.TypedReference, System.Object)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.MemoryFailPoint' does not exist in the implementation but it does exist in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.InteropServices.InvalidComObjectException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.Runtime.InteropServices.InvalidComObjectException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.InteropServices.InvalidOleVariantTypeException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.BindToMoniker(System.String)' does not exist in the implementation but it does exist in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.InteropServices.SafeBuffer' does not inherit from base type 'Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Security.Cryptography.CryptoStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.ECDsa.Create(System.Security.Cryptography.ECCurve)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.ECDsaCng..ctor(System.Security.Cryptography.ECCurve)' does not exist in the implementation but it does exist in the contract.
@@ -463,15 +343,6 @@ MembersMustExist : Member 'System.Text.Encoding.IsMailNewsDisplay.get()' does no
 MembersMustExist : Member 'System.Text.Encoding.IsMailNewsSave.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Text.Encoding.WindowsCodePage.get()' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Text.EncodingInfo' does not exist in the implementation but it does exist in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.Text.StringBuilder' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
-TypesMustExist : Type 'System.Threading.AsyncFlowControl' does not exist in the implementation but it does exist in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.Threading.ExecutionContext' does not implement interface 'System.IDisposable' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.Threading.ExecutionContext.CreateCopy()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Threading.ExecutionContext.Dispose()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Threading.ExecutionContext.GetObjectData(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Threading.ExecutionContext.IsFlowSuppressed()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Threading.ExecutionContext.RestoreFlow()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Threading.ExecutionContext.SuppressFlow()' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Threading.Overlapped' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Threading.RegisteredWaitHandle' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.SynchronizationContext.IsWaitNotificationRequired()' does not exist in the implementation but it does exist in the contract.
@@ -518,7 +389,6 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Net.Sockets.NetworkStream' does n
 Compat issues with assembly System.AppContext:
 TypesMustExist : Type 'System.AppContext' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Core:
-CannotRemoveBaseTypeOrInterface : Type 'Microsoft.Win32.SafeHandles.SafeMemoryMappedViewHandle' does not inherit from base type 'Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.IO.MemoryMappedFiles.MemoryMappedViewStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.IO.Pipes.AnonymousPipeClientStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.IO.Pipes.AnonymousPipeServerStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
@@ -527,11 +397,6 @@ CannotRemoveBaseTypeOrInterface : Type 'System.IO.Pipes.NamedPipeServerStream' d
 CannotRemoveBaseTypeOrInterface : Type 'System.IO.Pipes.PipeStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.ECDsa.Create(System.Security.Cryptography.ECCurve)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.ECDsaCng..ctor(System.Security.Cryptography.ECCurve)' does not exist in the implementation but it does exist in the contract.
-Compat issues with assembly System.Data.Common:
-CannotRemoveBaseTypeOrInterface : Type 'System.DBNull' does not implement interface 'System.IConvertible' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.DBNull.GetObjectData(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.DBNull.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.DBNull.ToString(System.IFormatProvider)' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Diagnostics.Debug:
 MembersMustExist : Member 'System.Diagnostics.Debug.AutoFlush.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Diagnostics.Debug.AutoFlush.set(System.Boolean)' does not exist in the implementation but it does exist in the contract.
@@ -600,7 +465,6 @@ TypesMustExist : Type 'System.Security.AccessControl.FileSystemSecurity' does no
 Compat issues with assembly System.IO.IsolatedStorage:
 CannotRemoveBaseTypeOrInterface : Type 'System.IO.IsolatedStorage.IsolatedStorageFileStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
 Compat issues with assembly System.IO.MemoryMappedFiles:
-CannotRemoveBaseTypeOrInterface : Type 'Microsoft.Win32.SafeHandles.SafeMemoryMappedViewHandle' does not inherit from base type 'Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.IO.MemoryMappedFiles.MemoryMappedViewStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
 Compat issues with assembly System.IO.Pipes:
 CannotRemoveBaseTypeOrInterface : Type 'System.IO.Pipes.AnonymousPipeClientStream' does not inherit from base type 'System.MarshalByRefObject' in the implementation but it does in the contract.
@@ -633,32 +497,16 @@ Compat issues with assembly System.Reflection:
 MembersMustExist : Member 'System.Reflection.FieldInfo.GetValueDirect(System.TypedReference)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.FieldInfo.SetValueDirect(System.TypedReference, System.Object)' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Runtime:
-MembersMustExist : Member 'System.Array.CreateInstance(System.Type, System.Int64[])' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Array.IsReadOnly.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Array.SetValue(System.Object, System.Int64)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Array.SetValue(System.Object, System.Int64, System.Int64)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Array.SetValue(System.Object, System.Int64, System.Int64, System.Int64)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Array.SetValue(System.Object, System.Int64[])' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Boolean.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Boolean.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Boolean.ToString(System.IFormatProvider)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Byte.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Byte.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Char.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Char.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Char.GetUnicodeCategory(System.Char)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Char.GetUnicodeCategory(System.String, System.Int32)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Char.ToLower(System.Char, System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Char.ToString(System.IFormatProvider)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Char.ToUpper(System.Char, System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.DateTime' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.DateTime..ctor(System.Int32, System.Int32, System.Int32, System.Globalization.Calendar)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.DateTime..ctor(System.Int32, System.Int32, System.Int32, System.Int32, System.Int32, System.Int32, System.Globalization.Calendar)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.DateTime..ctor(System.Int32, System.Int32, System.Int32, System.Int32, System.Int32, System.Int32, System.Int32, System.Globalization.Calendar)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.DateTime..ctor(System.Int32, System.Int32, System.Int32, System.Int32, System.Int32, System.Int32, System.Int32, System.Globalization.Calendar, System.DateTimeKind)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.DateTime.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.DateTime.FromOADate(System.Double)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.DateTime.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.DateTime.ToLongDateString()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.DateTime.ToLongTimeString()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.DateTime.ToOADate()' does not exist in the implementation but it does exist in the contract.
@@ -667,35 +515,16 @@ MembersMustExist : Member 'System.DateTime.ToShortTimeString()' does not exist i
 CannotRemoveBaseTypeOrInterface : Type 'System.DateTimeOffset' does not implement interface 'System.Runtime.Serialization.IDeserializationCallback' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.DateTimeOffset..ctor(System.Int32, System.Int32, System.Int32, System.Int32, System.Int32, System.Int32, System.Int32, System.Globalization.Calendar, System.TimeSpan)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Decimal' does not implement interface 'System.Runtime.Serialization.IDeserializationCallback' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.Decimal.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Decimal.FromOACurrency(System.Int64)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Decimal.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Decimal.Round(System.Decimal)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Decimal.Round(System.Decimal, System.Int32)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Decimal.Round(System.Decimal, System.Int32, System.MidpointRounding)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Decimal.Round(System.Decimal, System.MidpointRounding)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Decimal.ToOACurrency(System.Decimal)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Double.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Double.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Enum.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Enum.ToString(System.IFormatProvider)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Enum.ToString(System.String, System.IFormatProvider)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Exception.add_SerializeObjectState(System.EventHandler<System.Runtime.Serialization.SafeSerializationEventArgs>)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Exception.remove_SerializeObjectState(System.EventHandler<System.Runtime.Serialization.SafeSerializationEventArgs>)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Exception.TargetSite.get()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Guid.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Guid.ToString(System.String, System.IFormatProvider)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Int16.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Int16.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Int32.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Int32.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Int64.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Int64.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.IntPtr' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.SByte.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.SByte.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Single.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Single.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String..ctor(System.SByte*)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String..ctor(System.SByte*, System.Int32, System.Int32)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String..ctor(System.SByte*, System.Int32, System.Int32, System.Text.Encoding)' does not exist in the implementation but it does exist in the contract.
@@ -703,31 +532,18 @@ MembersMustExist : Member 'System.String.Compare(System.String, System.Int32, Sy
 MembersMustExist : Member 'System.String.Compare(System.String, System.Int32, System.String, System.Int32, System.Int32, System.Globalization.CultureInfo, System.Globalization.CompareOptions)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.Compare(System.String, System.String, System.Boolean, System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.Compare(System.String, System.String, System.Globalization.CultureInfo, System.Globalization.CompareOptions)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.String.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.Concat(System.Object, System.Object, System.Object, System.Object, __arglist)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.Copy(System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.EndsWith(System.String, System.Boolean, System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.GetEnumerator()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.String.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.Intern(System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.IsInterned(System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.StartsWith(System.String, System.Boolean, System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.ToLower(System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.String.ToString(System.IFormatProvider)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.String.ToUpper(System.Globalization.CultureInfo)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.StringComparison System.StringComparison.InvariantCulture' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.StringComparison System.StringComparison.InvariantCultureIgnoreCase' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.TimeSpan.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.UInt16.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.UInt16.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.UInt32.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.UInt32.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.UInt64.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.UInt64.GetTypeCode()' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.UIntPtr' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.Version..ctor()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Version.CompareTo(System.Object)' does not exist in the implementation but it does exist in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.Text.StringBuilder' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
 Compat issues with assembly System.Runtime.Extensions:
 MembersMustExist : Member 'System.Math.BigMul(System.Int32, System.Int32)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Math.DivRem(System.Int32, System.Int32, System.Int32)' does not exist in the implementation but it does exist in the contract.
@@ -738,11 +554,7 @@ MembersMustExist : Member 'System.StringComparer.GetHashCode(System.Object)' doe
 MembersMustExist : Member 'System.StringComparer.InvariantCulture.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.StringComparer.InvariantCultureIgnoreCase.get()' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Runtime.InteropServices:
-CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.InteropServices.InvalidComObjectException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.Runtime.InteropServices.InvalidComObjectException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.InteropServices.InvalidOleVariantTypeException' does not inherit from base type 'System.SystemException' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Runtime.InteropServices.Marshal.BindToMoniker(System.String)' does not exist in the implementation but it does exist in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.InteropServices.SafeBuffer' does not inherit from base type 'Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid' in the implementation but it does in the contract.
 Compat issues with assembly System.Security.Cryptography.Algorithms:
 MembersMustExist : Member 'System.Security.Cryptography.ECDsa.Create(System.Security.Cryptography.ECCurve)' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Security.Cryptography.Cng:
@@ -767,13 +579,6 @@ MembersMustExist : Member 'System.Text.Encoding.IsMailNewsDisplay.get()' does no
 MembersMustExist : Member 'System.Text.Encoding.IsMailNewsSave.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Text.Encoding.WindowsCodePage.get()' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Threading:
-CannotRemoveBaseTypeOrInterface : Type 'System.Threading.ExecutionContext' does not implement interface 'System.IDisposable' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.Threading.ExecutionContext.CreateCopy()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Threading.ExecutionContext.Dispose()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Threading.ExecutionContext.GetObjectData(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Threading.ExecutionContext.IsFlowSuppressed()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Threading.ExecutionContext.RestoreFlow()' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Threading.ExecutionContext.SuppressFlow()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.SynchronizationContext.IsWaitNotificationRequired()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.SynchronizationContext.SetWaitNotificationRequired()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.SynchronizationContext.Wait(System.IntPtr[], System.Boolean, System.Int32)' does not exist in the implementation but it does exist in the contract.
@@ -791,4 +596,4 @@ MembersMustExist : Member 'System.Threading.Timer..ctor(System.Threading.TimerCa
 MembersMustExist : Member 'System.Threading.Timer.Change(System.Int64, System.Int64)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.Timer.Change(System.UInt32, System.UInt32)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.Timer.Dispose(System.Threading.WaitHandle)' does not exist in the implementation but it does exist in the contract.
-Total Issues: 759
+Total Issues: 565
