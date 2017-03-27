@@ -328,10 +328,7 @@ namespace System.Linq.Expressions.Compiler
         private void EmitUnliftedEquality(ExpressionType op, Type type)
         {
             Debug.Assert(op == ExpressionType.Equal || op == ExpressionType.NotEqual);
-            if (!type.IsPrimitive && type.IsValueType && !type.IsEnum)
-            {
-                throw Error.OperatorNotImplementedForType(op, type);
-            }
+            Debug.Assert(type.IsPrimitive || !type.IsValueType || type.IsEnum);
             _ilg.Emit(OpCodes.Ceq);
             if (op == ExpressionType.NotEqual)
             {
