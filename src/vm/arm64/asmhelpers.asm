@@ -1005,9 +1005,7 @@ UM2MThunk_WrapperHelper_RegArgumentsSetup
         ; sp in fp. If sp is saved in fp in prolog then it is not expected that fp can change in the body
         ; of method. However, this method needs to be able to change fp before calling funclet.
         ; This is required to access locals in funclet.
-        PROLOG_SAVE_REG_PAIR   x19,x20, #-96!
-        PROLOG_SAVE_REG        fp, #0
-        PROLOG_SAVE_REG        lr, #8
+        PROLOG_SAVE_REG_PAIR_NO_FP fp,lr, #-96!
 
         ; Spill callee saved registers
         PROLOG_SAVE_REG_PAIR   x19, x20, 16
