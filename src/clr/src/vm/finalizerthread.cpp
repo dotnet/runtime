@@ -1345,6 +1345,8 @@ BOOL FinalizerThread::FinalizerThreadWatchDogHelper()
         }
         ULONGLONG dwCurTickCount = CLRGetTickCount64();
         if (pThread && pThread->m_State & (Thread::TS_UserSuspendPending | Thread::TS_DebugSuspendPending)) {
+            // CoreCLR does not support user-requested thread suspension
+            _ASSERTE(!(pThread->m_State & Thread::TS_UserSuspendPending));
             dwBeginTickCount = dwCurTickCount;
         }
         if (dwCurTickCount - dwBeginTickCount >= maxTotalWait)

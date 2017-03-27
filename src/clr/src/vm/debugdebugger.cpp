@@ -937,62 +937,8 @@ void DebugStackTrace::GetStackFramesHelper(Frame *pStartFrame,
             goto LSafeToTrace;
         }
 
-        if (state & Thread::TS_UserSuspendPending)
-        {
-            if (state & Thread::TS_SyncSuspended)
-            {
-                goto LSafeToTrace;
-            }
-
-#ifndef DISABLE_THREADSUSPEND
-            // On Mac don't perform the optimization below, but rather wait for 
-            // the suspendee to set the TS_SyncSuspended flag
-
-            // The target thread is not actually suspended yet, but if it is
-            // in preemptive mode, then it is still safe to trace.  Before we
-            // can look at another thread's GC mode, we have to suspend it:
-            // The target thread updates its GC mode flag with non-interlocked
-            // operations, and Thread::SuspendThread drains the CPU's store
-            // buffer (by virtue of calling GetThreadContext).
-            switch (pThread->SuspendThread())
-            {
-            case Thread::STR_Success:
-                if (!pThread->PreemptiveGCDisabledOther())
-                {
-                    pThread->ResumeThread();
-                    goto LSafeToTrace;
-                }
-
-                // Refuse to trace the stack.
-                //
-                // Note that there is a pretty large window in-between when the
-                // target thread sets the GC mode to cooperative, and when it
-                // actually sets the TS_SyncSuspended bit.  In this window, we
-                // will refuse to take a stack trace even though it would be
-                // safe to do so.
-                pThread->ResumeThread();
-                break;
-            case Thread::STR_Failure:
-            case Thread::STR_NoStressLog:
-                break;
-            case Thread::STR_UnstartedOrDead:
-                // We know the thread is not unstarted, because we checked for
-                // TS_Unstarted above.
-                _ASSERTE(!(state & Thread::TS_Unstarted));
-
-                // Since the thread is dead, it is safe to trace.
-                goto LSafeToTrace;
-            case Thread::STR_SwitchedOut:
-                if (!pThread->PreemptiveGCDisabledOther())
-                {
-                    goto LSafeToTrace;
-                }
-                break;
-            default:
-                UNREACHABLE();
-            }
-#endif  // DISABLE_THREADSUSPEND
-        }
+        // CoreCLR does not support user-requested thread suspension
+        _ASSERTE(!(state & Thread::TS_UserSuspendPending));
 
         COMPlusThrow(kThreadStateException, IDS_EE_THREAD_BAD_STATE);
 
