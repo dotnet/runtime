@@ -930,13 +930,7 @@ namespace System.Linq.Expressions
         {
             return new ArgumentException(Strings.TypeNotIEnumerable(p0), paramName);
         }
-        /// <summary>
-        /// InvalidOperationException with message like "Unexpected coalesce operator."
-        /// </summary>
-        internal static Exception UnexpectedCoalesceOperator()
-        {
-            return new InvalidOperationException(Strings.UnexpectedCoalesceOperator);
-        }
+
         /// <summary>
         /// InvalidOperationException with message like "Cannot cast from type '{0}' to type '{1}"
         /// </summary>

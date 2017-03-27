@@ -137,9 +137,10 @@ namespace System.Linq.Expressions.Compiler
 
         private void EmitBinaryOperator(ExpressionType op, Type leftType, Type rightType, Type resultType, bool liftedToNull)
         {
+            Debug.Assert(op != ExpressionType.Coalesce);
+
             bool leftIsNullable = leftType.IsNullableType();
             bool rightIsNullable = rightType.IsNullableType();
-
             switch (op)
             {
                 case ExpressionType.ArrayIndex:
@@ -149,8 +150,6 @@ namespace System.Linq.Expressions.Compiler
                     }
                     EmitGetArrayElement(leftType);
                     return;
-                case ExpressionType.Coalesce:
-                    throw Error.UnexpectedCoalesceOperator();
             }
 
             if (leftIsNullable || rightIsNullable)
