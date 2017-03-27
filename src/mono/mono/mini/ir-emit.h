@@ -812,10 +812,12 @@ static int ccount = 0;
             ins->inst_false_bb = NULL; \
             mono_link_bblock ((cfg), (cfg)->cbb, (truebb)); \
             MONO_ADD_INS ((cfg)->cbb, ins); \
-            if (g_getenv ("COUNT2") && ccount == atoi (g_getenv ("COUNT2")) - 1) { printf ("HIT: %d\n", cfg->cbb->block_num); } \
-            if (g_getenv ("COUNT2") && ccount < atoi (g_getenv ("COUNT2"))) { \
+            char *count2 = g_getenv ("COUNT2"); \
+            if (count2 && ccount == atoi (count2) - 1) { printf ("HIT: %d\n", cfg->cbb->block_num); } \
+            if (count2 && ccount < atoi (count2)) { \
                  cfg->cbb->extended = TRUE; \
             } else { NEW_BBLOCK ((cfg), falsebb); ins->inst_false_bb = (falsebb); mono_link_bblock ((cfg), (cfg)->cbb, (falsebb)); MONO_START_BB ((cfg), falsebb); } \
+            if (count2) g_free (count2); \
         } \
 	} while (0)
 #else

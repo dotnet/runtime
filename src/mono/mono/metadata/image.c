@@ -255,7 +255,7 @@ mono_images_init (void)
 	for(hash_idx = 0; hash_idx < IMAGES_HASH_COUNT; hash_idx++)
 		loaded_images_hashes [hash_idx] = g_hash_table_new (g_str_hash, g_str_equal);
 
-	debug_assembly_unload = g_getenv ("MONO_DEBUG_ASSEMBLY_UNLOAD") != NULL;
+	debug_assembly_unload = g_hasenv ("MONO_DEBUG_ASSEMBLY_UNLOAD");
 
 	install_pe_loader ();
 

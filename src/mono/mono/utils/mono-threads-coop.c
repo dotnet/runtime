@@ -429,7 +429,7 @@ mono_threads_is_coop_enabled (void)
 #else
 	static int is_coop_enabled = -1;
 	if (G_UNLIKELY (is_coop_enabled == -1))
-		is_coop_enabled = g_getenv ("MONO_ENABLE_COOP") != NULL ? 1 : 0;
+		is_coop_enabled = g_hasenv ("MONO_ENABLE_COOP") ? 1 : 0;
 	return is_coop_enabled == 1;
 #endif
 }

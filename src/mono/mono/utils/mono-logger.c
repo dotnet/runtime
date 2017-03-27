@@ -43,10 +43,20 @@ mono_trace_init (void)
 		mono_internal_current_level = G_LOG_LEVEL_ERROR;
 		level_stack = g_queue_new();
 
-		mono_trace_set_mask_string(g_getenv("MONO_LOG_MASK"));
-		mono_trace_set_level_string(g_getenv("MONO_LOG_LEVEL"));
-		mono_trace_set_logheader_string(g_getenv("MONO_LOG_HEADER"));
-		mono_trace_set_logdest_string(g_getenv("MONO_LOG_DEST"));
+		char *mask = g_getenv ("MONO_LOG_MASK");
+		char *level = g_getenv ("MONO_LOG_LEVEL");
+		char *header = g_getenv ("MONO_LOG_HEADER");
+		char *dest = g_getenv ("MONO_LOG_DEST");
+
+		mono_trace_set_mask_string(mask);
+		mono_trace_set_level_string(level);
+		mono_trace_set_logheader_string(header);
+		mono_trace_set_logdest_string(dest);
+
+		g_free (mask);
+		g_free (level);
+		g_free (header);
+		g_free (dest);
 	}
 }
 

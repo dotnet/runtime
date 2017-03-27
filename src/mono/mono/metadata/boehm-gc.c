@@ -198,6 +198,7 @@ mono_gc_base_init (void)
 					log_finalizers = 1;
 				}
 			}
+			g_free (env);
 		}
 	}
 
@@ -241,6 +242,7 @@ mono_gc_base_init (void)
 				*/
 			}
 		}
+		g_free (env);
 		g_strfreev (opts);
 	}
 
@@ -1319,7 +1321,7 @@ mono_gc_is_moving (void)
 gboolean
 mono_gc_is_disabled (void)
 {
-	if (GC_dont_gc || g_getenv ("GC_DONT_GC"))
+	if (GC_dont_gc || g_hasenv ("GC_DONT_GC"))
 		return TRUE;
 	else
 		return FALSE;

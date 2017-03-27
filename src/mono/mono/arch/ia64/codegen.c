@@ -52,11 +52,12 @@ mono_disassemble_code (guint8 *code, int size, char *id)
 	system (cmd); 
 	g_free (cmd);
 	if (!objdump_args)
-		objdump_args = "";
+		objdump_args = strdup("");
 	
 	cmd = g_strdup_printf (DIS_CMD " %s %s", objdump_args, o_file);
 	system (cmd);
 	g_free (cmd);
+	g_free (objdump_args);
 	
 	g_free (o_file);
 	g_free (as_file);

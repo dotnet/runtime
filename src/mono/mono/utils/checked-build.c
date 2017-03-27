@@ -58,6 +58,7 @@ mono_check_mode_enabled (MonoCheckMode query)
 #endif
 			}
 			g_strfreev (env_split);
+			g_free (env_string);
 		}
 
 		check_mode = env_check_mode;
@@ -71,10 +72,12 @@ mono_check_transition_limit (void)
 	static int transition_limit = -1;
 	if (transition_limit < 0) {
 		const gchar *env_string = g_getenv ("MONO_CHECK_THREAD_TRANSITION_HISTORY");
-		if (env_string)
+		if (env_string) {
 			transition_limit = atoi (env_string);
-		else
+			g_free (env_string);
+		} else {
 			transition_limit = 3;
+		}
 	}
 	return transition_limit;
 }

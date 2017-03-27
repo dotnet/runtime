@@ -559,7 +559,7 @@ mono_debug_count (void)
 {
 	static int count = 0;
 	static gboolean inited;
-	static const char *value;
+	static char *value;
 
 	count ++;
 
@@ -571,10 +571,13 @@ mono_debug_count (void)
 	if (!value)
 		return TRUE;
 
-	if (count == atoi (value))
+	int int_val = atoi (value);
+	g_free (value);
+
+	if (count == int_val)
 		break_count ();
 
-	if (count > atoi (value))
+	if (count > int_val)
 		return FALSE;
 
 	return TRUE;
@@ -3204,13 +3207,14 @@ mini_parse_debug_option (const char *option)
 static void
 mini_parse_debug_options (void)
 {
-	const char *options = g_getenv ("MONO_DEBUG");
+	char *options = g_getenv ("MONO_DEBUG");
 	gchar **args, **ptr;
 
 	if (!options)
 		return;
 
 	args = g_strsplit (options, ",", -1);
+	g_free (options);
 
 	for (ptr = args; ptr && *ptr; ptr++) {
 		const char *arg = *ptr;
@@ -3599,8 +3603,9 @@ mini_init (const char *filename, const char *runtime_version)
 
 	mono_threads_runtime_init (&ticallbacks);
 
-	if (g_getenv ("MONO_DEBUG") != NULL)
+	if (g_hasenv ("MONO_DEBUG")) {
 		mini_parse_debug_options ();
+	}
 
 	mono_code_manager_init ();
 
@@ -3619,15 +3624,16 @@ mini_init (const char *filename, const char *runtime_version)
 
 	mono_unwind_init ();
 
-	if (mini_get_debug_options ()->lldb || g_getenv ("MONO_LLDB")) {
+	if (mini_get_debug_options ()->lldb || g_hasenv ("MONO_LLDB")) {
 		mono_lldb_init ("");
 		mono_dont_free_domains = TRUE;
 	}
 
 #ifdef XDEBUG_ENABLED
-	if (g_getenv ("MONO_XDEBUG")) {
-		const char *xdebug_opts = g_getenv ("MONO_XDEBUG");
-		mono_xdebug_init (xdebug_opts);
+	char *mono_xdebug = g_getenv ("MONO_XDEBUG");
+	if (mono_xdebug) {
+		mono_xdebug_init (mono_xdebug);
+		g_free (mono_xdebug);
 		/* So methods for multiple domains don't have the same address */
 		mono_dont_free_domains = TRUE;
 		mono_using_xdebug = TRUE;

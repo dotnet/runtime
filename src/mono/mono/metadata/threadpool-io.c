@@ -542,7 +542,7 @@ initialize (void)
 	threadpool_io->updates_size = 0;
 
 	threadpool_io->backend = backend_poll;
-	if (g_getenv ("MONO_ENABLE_AIO") != NULL) {
+	if (g_hasenv ("MONO_ENABLE_AIO")) {
 #if defined(HAVE_EPOLL)
 		threadpool_io->backend = backend_epoll;
 #elif defined(HAVE_KQUEUE)

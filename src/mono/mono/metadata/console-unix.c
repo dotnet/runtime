@@ -456,12 +456,16 @@ ves_icall_System_ConsoleDriver_TtySetup (MonoString *keypad, MonoString *teardow
 	if (dims == -1){
 		int cols = 0, rows = 0;
 				      
-		const char *str = g_getenv ("COLUMNS");
-		if (str != NULL)
+		char *str = g_getenv ("COLUMNS");
+		if (str != NULL) {
 			cols = atoi (str);
+			g_free (str);
+		}
 		str = g_getenv ("LINES");
-		if (str != NULL)
+		if (str != NULL) {
 			rows = atoi (str);
+			g_free (str);
+		}
 
 		if (cols != 0 && rows != 0)
 			cols_and_lines = (cols << 16) | rows;

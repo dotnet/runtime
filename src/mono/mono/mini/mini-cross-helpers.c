@@ -52,7 +52,7 @@ mono_cross_helpers_run (void)
 #endif
 
 #ifndef USED_CROSS_COMPILER_OFFSETS
-	if (g_getenv ("DUMP_CROSS_OFFSETS"))
+	if (g_hasenv ("DUMP_CROSS_OFFSETS"))
 		mono_dump_jit_offsets ();
 #endif
 	

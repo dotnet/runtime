@@ -294,7 +294,7 @@ mono_set_assemblies_path (const char* path)
 	}
 	*dest = *splitted;
 
-	if (g_getenv ("MONO_DEBUG") == NULL)
+	if (g_hasenv ("MONO_DEBUG"))
 		return;
 
 	splitted = assemblies_path;
@@ -315,21 +315,25 @@ char* nacl_mono_path = NULL;
 static void
 check_path_env (void)
 {
-	const char* path;
-	path = g_getenv ("MONO_PATH");
+	if (assemblies_path != NULL)
+		return;
+
+	char* path = g_getenv ("MONO_PATH");
 #ifdef __native_client__
 	if (!path)
-		path = nacl_mono_path;
+		path = strdup (nacl_mono_path);
 #endif
-	if (!path || assemblies_path != NULL)
+	if (!path)
 		return;
 
 	mono_set_assemblies_path(path);
+	g_free (path);
 }
 
 static void
-check_extra_gac_path_env (void) {
-	const char *path;
+check_extra_gac_path_env (void) 
+{
+	char *path;
 	char **splitted, **dest;
 	
 	path = g_getenv ("MONO_GAC_PREFIX");
@@ -337,6 +341,8 @@ check_extra_gac_path_env (void) {
 		return;
 
 	splitted = g_strsplit (path, G_SEARCHPATH_SEPARATOR_S, 1000);
+	g_free (path);
+
 	if (extra_gac_paths)
 		g_strfreev (extra_gac_paths);
 	extra_gac_paths = dest = splitted;
@@ -347,7 +353,7 @@ check_extra_gac_path_env (void) {
 	}
 	*dest = *splitted;
 	
-	if (g_getenv ("MONO_DEBUG") == NULL)
+	if (!g_hasenv ("MONO_DEBUG"))
 		return;
 
 	while (*splitted) {

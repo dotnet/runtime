@@ -856,7 +856,7 @@ mono_analyze_liveness2 (MonoCompile *cfg)
 	static guint32 disabled = -1;
 
 	if (disabled == -1)
-		disabled = g_getenv ("DISABLED") != NULL;
+		disabled = g_hasenv ("DISABLED");
 
 	if (disabled)
 		return;

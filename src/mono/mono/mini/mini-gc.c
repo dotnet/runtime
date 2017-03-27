@@ -924,8 +924,11 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 		 * Debugging aid to control the number of frames scanned precisely
 		 */
 		if (!precise_frame_limit_inited) {
-			if (g_getenv ("MONO_PRECISE_COUNT"))
-				precise_frame_limit = atoi (g_getenv ("MONO_PRECISE_COUNT"));
+			char *mono_precise_count = g_getenv ("MONO_PRECISE_COUNT");
+			if (mono_precise_count) {
+				precise_frame_limit = atoi (mono_precise_count);
+				g_free (mono_precise_count);
+			}
 			precise_frame_limit_inited = TRUE;
 		}
 				
@@ -1280,10 +1283,13 @@ mini_gc_init_gc_map (MonoCompile *cfg)
 		static int precise_count;
 
 		precise_count ++;
-		if (g_getenv ("MONO_GCMAP_COUNT")) {
-			if (precise_count == atoi (g_getenv ("MONO_GCMAP_COUNT")))
+		char *mono_gcmap_count = g_getenv ("MONO_GCMAP_COUNT");
+		if (mono_gcmap_count) {
+			int count = atoi (mono_gcmap_count);
+			g_free (mono_gcmap_count);
+			if (precise_count == count)
 				printf ("LAST: %s\n", mono_method_full_name (cfg->method, TRUE));
-			if (precise_count > atoi (g_getenv ("MONO_GCMAP_COUNT")))
+			if (precise_count > count)
 				return;
 		}
 	}
@@ -2503,6 +2509,7 @@ parse_debug_options (void)
 		exit (1);
 	}
 	g_strfreev (opts);
+	g_free (env);
 }
 
 void

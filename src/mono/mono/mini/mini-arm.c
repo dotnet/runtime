@@ -811,6 +811,7 @@ mono_arch_init (void)
 
 	if (soft && !strncmp (soft, "1", 1))
 		arm_fpu = MONO_ARM_FPU_NONE;
+	g_free (soft);
 #endif
 #endif
 
@@ -858,6 +859,7 @@ mono_arch_init (void)
 
 		thumb_supported = strstr (cpu_arch, "thumb") != NULL;
 		thumb2_supported = strstr (cpu_arch, "thumb2") != NULL;
+		g_free (cpu_arch);
 	}
 }
 

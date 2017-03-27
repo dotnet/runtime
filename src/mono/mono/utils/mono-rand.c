@@ -136,7 +136,7 @@ mono_rand_open (void)
 		file = open (NAME_DEV_RANDOM, O_RDONLY);
 #endif
 	if (file < 0)
-		use_egd = g_getenv("MONO_EGD_SOCKET") != NULL;
+		use_egd = g_hasenv ("MONO_EGD_SOCKET");
 
 	status = 2;
 
@@ -158,13 +158,14 @@ mono_rand_try_get_bytes (gpointer *handle, guchar *buffer, gint buffer_size, Mon
 	error_init (error);
 
 	if (use_egd) {
-		const char *socket_path = g_getenv ("MONO_EGD_SOCKET");
+		char *socket_path = g_getenv ("MONO_EGD_SOCKET");
 		/* exception will be thrown in managed code */
 		if (socket_path == NULL) {
 			*handle = NULL;
 			return FALSE;
 		}
 		get_entropy_from_egd (socket_path, buffer, buffer_size, error);
+		g_free (socket_path);
 	} else {
 		/* Read until the buffer is filled. This may block if using NAME_DEV_RANDOM. */
 		gint count = 0;

@@ -5075,7 +5075,7 @@ mono_w32file_init (void)
 /* 	mono_w32handle_register_capabilities (MONO_W32HANDLE_CONSOLE, */
 /* 					    MONO_W32HANDLE_CAP_WAIT); */
 
-	if (g_getenv ("MONO_STRICT_IO_EMULATION"))
+	if (g_hasenv ("MONO_STRICT_IO_EMULATION"))
 		lock_while_writing = TRUE;
 }
 

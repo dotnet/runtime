@@ -6937,13 +6937,16 @@ emit_method_inner (EmitContext *ctx)
 		static int count = 0;
 		count ++;
 
-		if (g_getenv ("LLVM_COUNT")) {
-			if (count == atoi (g_getenv ("LLVM_COUNT"))) {
+		char *llvm_count_str = g_getenv ("LLVM_COUNT");
+		if (llvm_count_str) {
+			int lcount = atoi (llvm_count_str);
+			g_free (llvm_count_str);
+			if (count == lcount) {
 				printf ("LAST: %s\n", mono_method_full_name (cfg->method, TRUE));
 				fflush (stdout);
 				last = TRUE;
 			}
-			if (count > atoi (g_getenv ("LLVM_COUNT"))) {
+			if (count > lcount) {
 				set_failure (ctx, "count");
 				return;
 			}
