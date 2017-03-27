@@ -1186,7 +1186,7 @@ namespace System.Security.Cryptography.Xml.Tests
             0xfa, 0x75, 0x89, 0x67, 0x33, 0x01, 0xd0, 0xb0, 0x13, 0xfa, 0x11,
             0x94, 0xac, 0x02, 0x02, 0x07, 0xd0 };
 
-        public SignedXml SignHMAC(string uri, KeyedHashAlgorithm mac, bool ok)
+        public SignedXml SignHMAC(string uri, KeyedHashAlgorithm mac, bool expectedToVerify)
         {
             string input = "<foo/>";
 
@@ -1204,11 +1204,12 @@ namespace System.Security.Cryptography.Xml.Tests
             // doc.Save (System.Console.Out);
 
             sig.LoadXml(doc.DocumentElement["Signature"]);
-            Assert.Equal(ok, sig.CheckSignature(mac));
+            Assert.Equal(expectedToVerify, sig.CheckSignature(mac));
             return sig;
         }
 
-        static byte[] hmackey = new byte[0];
+        static byte[] hmackey = new byte[0]; 
+        private const string moreHmacMD5 = "http://www.w3.org/2001/04/xmldsig-more#hmac-md5";
         private const string more256 = "http://www.w3.org/2001/04/xmldsig-more#hmac-sha256";
         private const string more384 = "http://www.w3.org/2001/04/xmldsig-more#hmac-sha384";
         private const string more512 = "http://www.w3.org/2001/04/xmldsig-more#hmac-sha512";
@@ -1299,6 +1300,37 @@ namespace System.Security.Cryptography.Xml.Tests
 
             // verify MS-generated signature
             Assert.True(sign.CheckSignature(new HMACSHA384(hmackey)));
+        }
+
+        [Fact]
+        public void SignHMAC_MD5()
+        {
+            // works as long as the string can be used by CryptoConfig to create 
+            // an instance of the required hash algorithm
+            SignedXml sign = SignHMAC("MD5", new HMACMD5(hmackey), true);
+            Assert.Equal(moreHmacMD5, sign.SignatureMethod);
+        }
+
+        [Fact]
+        public void SignHMAC_MD5_Bad()
+        {
+            // we can't verity the signature if the URI is used
+            SignedXml sign = SignHMAC(moreHmacMD5, new HMACMD5(hmackey), false);
+            Assert.Equal(moreHmacMD5, sign.SignatureMethod);
+        }
+
+        [Fact]
+        public void VerifyHMAC_MD5()
+        {
+            string xml = @"<?xml version=""1.0"" encoding=""Windows-1252""?><foo><Signature xmlns=""http://www.w3.org/2000/09/xmldsig#""><SignedInfo><CanonicalizationMethod Algorithm=""http://www.w3.org/TR/2001/REC-xml-c14n-20010315"" /><SignatureMethod Algorithm=""http://www.w3.org/2001/04/xmldsig-more#hmac-md5"" /><Reference URI=""""><Transforms><Transform Algorithm=""http://www.w3.org/2000/09/xmldsig#enveloped-signature"" /></Transforms><DigestMethod Algorithm=""MD5"" /><DigestValue>TH7ysbozJWVIWh/1K5bP1w==</DigestValue></Reference></SignedInfo><SignatureValue>tJ6m5YVu1jN1WgKWv3AXFQ==</SignatureValue></Signature></foo>";
+            XmlDocument doc = new XmlDocument();
+            doc.LoadXml(xml);
+
+            SignedXml sign = new SignedXml(doc);
+            sign.LoadXml(doc.DocumentElement["Signature"]);
+
+            // verify MS-generated signature
+            Assert.True(sign.CheckSignature(new HMACMD5(hmackey)));
         }
 
         // CVE-2009-0217
