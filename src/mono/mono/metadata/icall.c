@@ -6404,6 +6404,8 @@ ICALL_EXPORT MonoReflectionType *
 ves_icall_Remoting_RealProxy_InternalGetProxyType (MonoTransparentProxy *tp)
 {
 	MonoError error;
+	g_assert (tp != NULL && mono_object_class (tp) == mono_defaults.transparent_proxy_class);
+	g_assert (tp->remote_class != NULL && tp->remote_class->proxy_class != NULL);
 	MonoReflectionType *ret = mono_type_get_object_checked (mono_object_domain (tp), &tp->remote_class->proxy_class->byval_arg, &error);
 	mono_error_set_pending_exception (&error);
 
