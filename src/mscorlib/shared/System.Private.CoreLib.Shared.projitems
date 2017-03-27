@@ -219,6 +219,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ParameterAttributes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ParameterInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ParameterModifier.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Pointer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\PortableExecutableKinds.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ProcessorArchitecture.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\PropertyAttributes.cs" />
