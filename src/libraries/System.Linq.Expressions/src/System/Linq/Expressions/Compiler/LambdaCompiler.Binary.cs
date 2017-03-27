@@ -265,18 +265,12 @@ namespace System.Linq.Expressions.Compiler
                     // Not an arithmetic operation: no conversion
                     return;
                 case ExpressionType.LeftShift:
-                    if (rightType != typeof(int))
-                    {
-                        throw ContractUtils.Unreachable;
-                    }
+                    Debug.Assert(rightType == typeof(int));
                     EmitShiftMask(leftType);
                     _ilg.Emit(OpCodes.Shl);
                     break;
                 case ExpressionType.RightShift:
-                    if (rightType != typeof(int))
-                    {
-                        throw ContractUtils.Unreachable;
-                    }
+                    Debug.Assert(rightType == typeof(int));
                     EmitShiftMask(leftType);
                     _ilg.Emit(leftType.IsUnsigned() ? OpCodes.Shr_Un : OpCodes.Shr);
                     // Guaranteed to fit within result type: no conversion
