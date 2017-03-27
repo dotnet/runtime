@@ -458,14 +458,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             DirectoryEntry de = new DirectoryEntry("GC://" + Name);
 
-            if (DirectoryContext.ServerBindSupported)
-            {
-                de.AuthenticationType = Utils.DefaultAuthType | AuthenticationTypes.ServerBind;
-            }
-            else
-            {
-                de.AuthenticationType = Utils.DefaultAuthType;
-            }
+            de.AuthenticationType = Utils.DefaultAuthType | AuthenticationTypes.ServerBind;
 
             de.Username = context.UserName;
             de.Password = context.Password;
