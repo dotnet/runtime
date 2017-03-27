@@ -636,10 +636,7 @@ namespace System.Linq.Expressions.Compiler
                 return;
             }
 
-            if (typeFrom == typeof(void) || typeTo == typeof(void))
-            {
-                throw ContractUtils.Unreachable;
-            }
+            Debug.Assert(typeFrom != typeof(void) && typeTo != typeof(void));
 
             bool isTypeFromNullable = typeFrom.IsNullableType();
             bool isTypeToNullable = typeTo.IsNullableType();
