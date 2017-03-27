@@ -20,9 +20,29 @@
     },
     {
       "enabled": true,
-      "continueOnError": true,
-      "alwaysRun": true,
-      "displayName": "Initialize tools",
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Create host machine tools sandbox",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "5bfb729a-a7c8-4a78-a7c3-8d717bb7c13c",
+        "versionSpec": "2.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "SourceFolder": "pkg",
+        "Contents": "**",
+        "TargetFolder": "$(DockerHost_Sandbox)",
+        "CleanTargetFolder": "false",
+        "OverWrite": "false",
+        "flattenFolders": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Initialize tools for host machine",
       "timeoutInMinutes": 0,
       "task": {
         "id": "6c731c3c-3c68-459a-a5c9-bde6e6595b5b",
@@ -30,7 +50,7 @@
         "definitionType": "task"
       },
       "inputs": {
-        "scriptPath": "pkg/init-tools.sh",
+        "scriptPath": "$(DockerHost_Sandbox)/init-tools.sh",
         "args": "",
         "disableAutoCwd": "false",
         "cwd": "",
@@ -49,7 +69,7 @@
         "definitionType": "task"
       },
       "inputs": {
-        "scriptPath": "pkg/Tools/scripts/docker/init-docker.sh",
+        "scriptPath": "$(DockerHost_ToolsDirectory)/scripts/docker/init-docker.sh",
         "args": "$(DockerImageName)",
         "disableAutoCwd": "false",
         "cwd": "",
@@ -79,7 +99,7 @@
       "enabled": true,
       "continueOnError": true,
       "alwaysRun": true,
-      "displayName": "Clean up Docker images and containers",
+      "displayName": "Cleanup Docker",
       "timeoutInMinutes": 0,
       "task": {
         "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
@@ -88,8 +108,26 @@
       },
       "inputs": {
         "filename": "perl",
-        "arguments": "pkg/Tools/scripts/docker/cleanup-docker.sh",
+        "arguments": "$(DockerHost_ToolsDirectory)/scripts/docker/cleanup-docker.sh",
         "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": true,
+      "alwaysRun": true,
+      "displayName": "Cleanup VSTS Agent",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "$(DockerHost_ToolsDirectory)/msbuild.sh",
+        "arguments": "cleanupagent.proj /p:AgentDirectory=$(Agent.HomeDirectory) /p:DoClean=$(PB_CleanAgent)",
+        "workingFolder": "$(DockerHost_ToolsDirectory)/scripts/vstsagent/",
         "failOnStandardError": "false"
       }
     }
@@ -146,8 +184,11 @@
       "value": "--skip-prereqs --configuration $(BuildConfiguration) --targets Default",
       "allowOverride": true
     },
+    "DockerImageName": {
+      "value": "microsoft/dotnet-buildtools-prereqs:rhel7_prereqs_2"
+    },
     "DockerContainerName": {
-      "value": "dotnetcore-setup-build-container-rhel",
+      "value": "core-setup-rhel-$(Build.BuildId)",
       "allowOverride": true
     },
     "CONNECTION_STRING": {
@@ -166,8 +207,14 @@
     "GITHUB_PASSWORD": {
       "value": "PassedViaPipeBuild"
     },
-    "DockerImageName": {
-      "value": "microsoft/dotnet-buildtools-prereqs:rhel7_prereqs_2"
+    "PB_CleanAgent": {
+      "value": "true"
+    },
+    "DockerHost_Sandbox": {
+      "value": "$(Build.StagingDirectory)/HostSandbox"
+    },
+    "DockerHost_ToolsDirectory": {
+      "value": "$(DockerHost_Sandbox)/Tools"
     }
   },
   "demands": [
