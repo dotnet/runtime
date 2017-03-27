@@ -5,6 +5,8 @@
     <ProjectGuid>{5F9C3C9F-652E-461E-B2D6-85D264F5A733}</ProjectGuid>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn Condition="'$(TargetGroup)' == 'netfx'">$(NoWarn);0436</NoWarn>
+    <DefineConstants Condition="'$(TargetGroup)' == 'netfx'">$(DefineConstants);NET46</DefineConstants>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
