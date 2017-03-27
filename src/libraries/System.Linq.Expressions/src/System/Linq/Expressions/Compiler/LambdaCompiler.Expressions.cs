@@ -751,7 +751,7 @@ namespace System.Linq.Expressions.Compiler
                     EmitVariableAssignment(node, emitAs);
                     return;
                 default:
-                    throw Error.InvalidLvalue(node.Left.NodeType);
+                    throw ContractUtils.Unreachable;
             }
         }
 
