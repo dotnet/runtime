@@ -11,7 +11,6 @@ namespace System.DirectoryServices.ActiveDirectory
     using System.Runtime.InteropServices;
     using System.ComponentModel;
     using System.Security.Permissions;
-    using System.IO;
 
     public enum DirectoryContextType
     {
@@ -33,9 +32,6 @@ namespace System.DirectoryServices.ActiveDirectory
         private bool _validated = false;
         private bool _contextIsValid = false;
 
-        private static bool s_serverBindSupported;
-        private static bool s_dnsgetdcSupported;
-
         internal static LoadLibrarySafeHandle ADHandle;
         internal static LoadLibrarySafeHandle ADAMHandle;
 
@@ -44,47 +40,8 @@ namespace System.DirectoryServices.ActiveDirectory
         [EnvironmentPermission(SecurityAction.Assert, Unrestricted = true)]
         static DirectoryContext()
         {
-            //
-            // Everything supported until proven otherwise
-            //
-            s_serverBindSupported = true;
-            s_dnsgetdcSupported = true;
-
-            //
-            // S.DS.AD only supported on W2K above
-            //    
-            OperatingSystem os = Environment.OSVersion;
-
-            if (os.Platform == PlatformID.Win32NT &&
-                os.Version.Major >= 6)
-            {
-                // load ntdsapi.dll for AD and ADAM
-                GetLibraryHandle();
-            }
-            else
-            {
-                //
-                // S.DS.AD does not support this platform (< 5.0)
-                //
-                s_serverBindSupported = false;
-                s_dnsgetdcSupported = false;
-            }
-        }
-
-        internal static bool ServerBindSupported
-        {
-            get
-            {
-                return s_serverBindSupported;
-            }
-        }
-
-        internal static bool DnsgetdcSupported
-        {
-            get
-            {
-                return s_dnsgetdcSupported;
-            }
+            // load ntdsapi.dll for AD and ADAM
+            GetLibraryHandle();
         }
 
         // Internal Constructors
