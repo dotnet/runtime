@@ -1062,13 +1062,28 @@ namespace System
                 (dateTime + BaseUtcOffset).Date :
                 dateTime.Date;
 
-            for (int i = 0; i < _adjustmentRules.Length; i++)
+            int low = 0;
+            int high = _adjustmentRules.Length - 1;
+
+            while (low <= high)
             {
-                AdjustmentRule rule = _adjustmentRules[i];
-                AdjustmentRule previousRule = i > 0 ? _adjustmentRules[i - 1] : rule;
-                if (IsAdjustmentRuleValid(rule, previousRule, dateTime, date, dateTimeisUtc))
+                int median = low + ((high - low) >> 1);
+
+                AdjustmentRule rule = _adjustmentRules[median];
+                AdjustmentRule previousRule = median > 0 ? _adjustmentRules[median - 1] : rule;
+
+                int compareResult = CompareAdjustmentRuleToDateTime(rule, previousRule, dateTime, date, dateTimeisUtc);
+                if (compareResult == 0)
                 {
                     return rule;
+                }
+                else if (compareResult < 0)
+                {
+                    low = median + 1;
+                }
+                else
+                {
+                    high = median - 1;
                 }
             }
 
@@ -1078,7 +1093,12 @@ namespace System
         /// <summary>
         /// Determines if 'rule' is the correct AdjustmentRule for the given dateTime.
         /// </summary>
-        private bool IsAdjustmentRuleValid(AdjustmentRule rule, AdjustmentRule previousRule,
+        /// <returns>
+        /// A value less than zero if rule is for times before dateTime.
+        /// Zero if rule is correct for dateTime.
+        /// A value greater than zero if rule is for times after dateTime.
+        /// </returns>
+        private int CompareAdjustmentRuleToDateTime(AdjustmentRule rule, AdjustmentRule previousRule,
             DateTime dateTime, DateTime dateOnly, bool dateTimeisUtc)
         {
             bool isAfterStart;
@@ -1100,7 +1120,7 @@ namespace System
 
             if (!isAfterStart)
             {
-                return false;
+                return 1;
             }
 
             bool isBeforeEnd;
@@ -1118,7 +1138,7 @@ namespace System
                 isBeforeEnd = dateOnly <= rule.DateEnd;
             }
 
-            return isBeforeEnd;
+            return isBeforeEnd ? 0 : -1;
         }
 
         /// <summary>
