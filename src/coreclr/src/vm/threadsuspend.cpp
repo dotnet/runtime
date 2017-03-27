@@ -1978,6 +1978,9 @@ LRetry:
             m_dwAbortPoint = 7;
 #endif
 
+            // CoreCLR does not support user-requested thread suspension
+            _ASSERTE(!(m_State & TS_UserSuspendPending));
+
             //
             // If it's stopped by the debugger, we don't want to throw an exception.
             // Debugger suspension is to have no effect of the runtime behaviour.
@@ -3090,6 +3093,9 @@ void Thread::RareDisablePreemptiveGC()
         goto Exit;
     }
 
+    // CoreCLR does not support user-requested thread suspension
+    _ASSERTE(!(m_State & TS_UserSuspendPending));
+
     // Note IsGCInProgress is also true for say Pause (anywhere SuspendEE happens) and GCThread is the 
     // thread that did the Pause. While in Pause if another thread attempts Rev/Pinvoke it should get inside the following and 
     // block until resume
@@ -3105,6 +3111,9 @@ void Thread::RareDisablePreemptiveGC()
 
             do
             {
+                // CoreCLR does not support user-requested thread suspension
+                _ASSERTE(!(m_State & TS_UserSuspendPending));
+
                 EnablePreemptiveGC();
 
                 // Cannot use GCX_PREEMP_NO_DTOR here because we're inside of the thread
@@ -3558,7 +3567,6 @@ void Thread::RareEnablePreemptiveGC()
 #endif // FEATURE_HIJACK
 
         // wake up any threads waiting to suspend us, like the GC thread.
-        SetSafeEvent();
         ThreadSuspend::g_pGCSuspendEvent->Set();
 
         // for GC, the fact that we are leaving the EE means that it no longer needs to
@@ -3566,6 +3574,9 @@ void Thread::RareEnablePreemptiveGC()
         // Give the debugger precedence over user suspensions:
         while (m_State & (TS_DebugSuspendPending | TS_UserSuspendPending))
         {
+            // CoreCLR does not support user-requested thread suspension
+            _ASSERTE(!(m_State & TS_UserSuspendPending));
+
 #ifdef DEBUGGING_SUPPORTED
             // We don't notify the debugger that this thread is now suspended. We'll just
             // let the debugger's helper thread sweep and pick it up.
@@ -3902,13 +3913,6 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
         {
             // Enable PGC before calling out to the client to allow runtime suspend to finish
             GCX_PREEMP_NO_DTOR();
-
-            // <REVISIT_TODO>@TODO: Is this necessary?  Does debugger wait on the events, or does it just
-            //        poll every so often?</REVISIT_TODO>
-            // Notify the thread that is performing the suspension that this thread
-            // is now in PGC mode and that it can remove this thread from the list of
-            // threads it needs to wait for.
-            pThread->SetSafeEvent();
 
             // Notify the interface of the pending suspension
             switch (reason) {
@@ -6016,20 +6020,6 @@ void Thread::SysResumeFromDebug(AppDomain *pAppDomain)
     LOG((LF_CORDB, LL_INFO1000, "RESUME: resume complete. Trap count: %d\n", g_TrapReturningThreads.Load()));
 }
 
-
-
-void Thread::SetSafeEvent()
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    m_SafeEvent.Set();
-}
-
-
 /*
  *
  * WaitSuspendEventsHelper
@@ -6056,28 +6046,10 @@ BOOL Thread::WaitSuspendEventsHelper(void)
 
     EX_TRY {
 
-        if (m_State & TS_UserSuspendPending) {
+        // CoreCLR does not support user-requested thread suspension
+        _ASSERTE(!(m_State & TS_UserSuspendPending));
 
-            ThreadState oldState = m_State;
-
-            while (oldState & TS_UserSuspendPending) {
-
-                ThreadState newState = (ThreadState)(oldState | TS_SyncSuspended);
-                if (FastInterlockCompareExchange((LONG *)&m_State, newState, oldState) == (LONG)oldState)
-                {
-                    result = m_UserSuspendEvent.Wait(INFINITE,FALSE);
-#if _DEBUG
-                    newState = m_State;
-                    _ASSERTE(!(newState & TS_SyncSuspended) || (newState & TS_DebugSuspendPending));
-#endif
-                    break;
-                }
-
-                oldState = m_State;
-            }
-
-
-        } else if (m_State & TS_DebugSuspendPending) {
+        if (m_State & TS_DebugSuspendPending) {
 
             ThreadState oldState = m_State;
 
@@ -6126,6 +6098,9 @@ void Thread::WaitSuspendEvents(BOOL fDoWait)
             WaitSuspendEventsHelper();
 
             ThreadState oldState = m_State;
+
+            // CoreCLR does not support user-requested thread suspension
+            _ASSERTE(!(oldState & TS_UserSuspendPending));
 
             //
             // If all reasons to suspend are off, we think we can exit
@@ -7106,9 +7081,9 @@ void Thread::MarkForSuspension(ULONG bit)
     }
     CONTRACTL_END;
 
+    // CoreCLR does not support user-requested thread suspension
     _ASSERTE(bit == TS_DebugSuspendPending ||
-             bit == (TS_DebugSuspendPending | TS_DebugWillSync) ||
-             bit == TS_UserSuspendPending);
+             bit == (TS_DebugSuspendPending | TS_DebugWillSync));
 
     _ASSERTE(IsAtProcessExit() || ThreadStore::HoldingThreadStore());
 
@@ -7126,8 +7101,8 @@ void Thread::UnmarkForSuspension(ULONG mask)
     }
     CONTRACTL_END;
 
-    _ASSERTE(mask == ~TS_DebugSuspendPending ||
-             mask == ~TS_UserSuspendPending);
+    // CoreCLR does not support user-requested thread suspension
+    _ASSERTE(mask == ~TS_DebugSuspendPending);
 
     _ASSERTE(IsAtProcessExit() || ThreadStore::HoldingThreadStore());
 
