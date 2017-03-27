@@ -27,14 +27,16 @@ namespace System.Security.Cryptography.Xml.Tests
                 SigningKey = key
             };
 
+            // Note: Adding KeyInfo (KeyInfoX509Data) does not provide more security
+            //       Signing with private key is enough
+
             var reference = new Reference();
             reference.Uri = "";
-
             reference.AddTransform(new XmlDsigEnvelopedSignatureTransform());
-
             signedXml.AddReference(reference);
 
             signedXml.ComputeSignature();
+
             XmlElement xmlDigitalSignature = signedXml.GetXml();
             doc.DocumentElement.AppendChild(doc.ImportNode(xmlDigitalSignature, true));
         }
@@ -48,7 +50,13 @@ namespace System.Security.Cryptography.Xml.Tests
             SignedXml signedXml = new SignedXml(xmlDoc);
             var signatureNode = (XmlElement)xmlDoc.GetElementsByTagName("Signature")[0];
             signedXml.LoadXml(signatureNode);
-            return signedXml.CheckSignature(certificate, true);
+
+            // Note: `verifySignatureOnly: true` should not be used in the production
+            //       without providing application logic to verify the certificate.
+            // This test bypasses certificate verification because:
+            // - certificates expire - test should not be based on time
+            // - we cannot guarantee that the certificate is trusted on the machine
+            return signedXml.CheckSignature(certificate, verifySignatureOnly: true);
         }
 
         [Fact]
@@ -59,6 +67,7 @@ namespace System.Security.Cryptography.Xml.Tests
                 var xmlDoc = new XmlDocument();
                 xmlDoc.PreserveWhitespace = true;
                 xmlDoc.LoadXml(ExampleXml);
+
                 using (RSA key = x509cert.GetRSAPrivateKey())
                 {
                     SignXml(xmlDoc, key);
