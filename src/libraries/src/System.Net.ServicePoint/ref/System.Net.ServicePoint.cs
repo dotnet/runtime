@@ -56,6 +56,7 @@ namespace System.Net
     {
         SystemDefault = 0,
 #pragma warning disable CS0618
+        [Obsolete("This value has been deprecated.  It is no longer supported. http://go.microsoft.com/fwlink/?linkid=14202")]
         Ssl3 = System.Security.Authentication.SslProtocols.Ssl3,
 #pragma warning restore CS0618
         Tls = System.Security.Authentication.SslProtocols.Tls,

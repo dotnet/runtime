@@ -157,8 +157,10 @@ namespace System.Net.Tests
             const int ssl2Server = 0x00000004;
 
             SecurityProtocolType ssl2 = (SecurityProtocolType)(ssl2Client | ssl2Server);
+#pragma warning disable 0618 // Ssl2, Ssl3 are deprecated.
             Assert.Throws<NotSupportedException>(() => ServicePointManager.SecurityProtocol = SecurityProtocolType.Ssl3);
             Assert.Throws<NotSupportedException>(() => ServicePointManager.SecurityProtocol = SecurityProtocolType.Ssl3 | ssl2);
+#pragma warning restore
             Assert.Throws<NotSupportedException>(() => ServicePointManager.SecurityProtocol = ssl2);
             Assert.Throws<ArgumentNullException>("uriString", () => ServicePointManager.FindServicePoint((string)null, null));
             Assert.Throws<ArgumentOutOfRangeException>("value", () => ServicePointManager.MaxServicePoints = -1);
