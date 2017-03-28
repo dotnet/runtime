@@ -13,21 +13,25 @@
         <PackageRID Condition="'$(ArchGroup)' == 'x86' OR '$(ArchGroup)' == 'x64'">win7-$(ArchGroup)</PackageRID>
         <PackageRID Condition="'$(ArchGroup)' == 'arm'">win8-$(ArchGroup)</PackageRID>
         <PackageRID Condition="'$(ArchGroup)' == 'arm64'">win10-$(ArchGroup)</PackageRID>
+        <PackageRID Condition="'$(PortableBuild)' == 'true'">win-$(ArchGroup)</PackageRID>
       </PropertyGroup>
     </When>
     <When Condition="'$(_runtimeOSFamily)' == 'osx'">
       <PropertyGroup>
         <PackageRID>osx.10.12-$(ArchGroup)</PackageRID>
+        <PackageRID Condition="'$(PortableBuild)' == 'true'">osx-$(ArchGroup)</PackageRID>
       </PropertyGroup>
     </When>
     <When Condition="'$(_runtimeOSFamily)' == 'rhel'">
       <PropertyGroup>
         <PackageRID>rhel.7-$(ArchGroup)</PackageRID>
+        <PackageRID Condition="'$(PortableBuild)' == 'true'">linux-$(ArchGroup)</PackageRID>
       </PropertyGroup>
     </When>
     <Otherwise>
       <PropertyGroup>
         <PackageRID>$(RuntimeOS)-$(ArchGroup)</PackageRID>
+        <PackageRID Condition="'$(PortableBuild)' == 'true'">linux-$(ArchGroup)</PackageRID>
       </PropertyGroup>
     </Otherwise>
   </Choose>
