@@ -170,9 +170,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         public static ExprList asLIST(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_LIST); return (ExprList)expr; }
-        public static ExprArrayIndex asARRAYINDEX(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_ARRAYINDEX); return (ExprArrayIndex)expr; }
         public static ExprCall asCALL(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_CALL); return (ExprCall)expr; }
-        public static ExprEvent asEVENT(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_EVENT); return (ExprEvent)expr; }
         public static ExprField asFIELD(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_FIELD); return (ExprField)expr; }
         public static ExprConstant asCONSTANT(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_CONSTANT); return (ExprConstant)expr; }
         public static ExprFuncPtr asFUNCPTR(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_FUNCPTR); return (ExprFuncPtr)expr; }
@@ -191,7 +189,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public static bool isCONSTANT_OK(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_CONSTANT && expr.IsOK); }
         public static bool isLIST(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_LIST); }
-        public static bool isARRAYINDEX(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_ARRAYINDEX); }
         public static bool isCALL(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_CALL); }
         public static bool isFIELD(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_FIELD); }
         public static bool isCONSTANT(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_CONSTANT); }
