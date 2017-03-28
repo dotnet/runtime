@@ -955,7 +955,7 @@ void GcScanRootsForProfilerAndETW(promote_func* fn, int condemned, int max_gen, 
     }
 }
 
-void ScanHandleForProfilerAndETW(Object** pRef, Object* pSec, uint32_t flags, ScanContext* context, BOOL isDependent)
+void ScanHandleForProfilerAndETW(Object** pRef, Object* pSec, uint32_t flags, ScanContext* context, bool isDependent)
 {
     ProfilingScanContext* pSC = (ProfilingScanContext*)context;
 
@@ -1068,7 +1068,7 @@ void GCProfileWalkHeapWorker(BOOL fProfilerPinned, BOOL fShouldWalkHeapRootsForE
         // **** Walk objects on heap: only if profiling API wants them or ETW wants them.
         if (fProfilerPinned || fShouldWalkHeapObjectsForEtw)
         {
-            GCHeapUtilities::GetGCHeap()->DiagWalkHeap(&HeapWalkHelper, &profilerWalkHeapContext, max_generation, TRUE /* walk the large object heap */);
+            GCHeapUtilities::GetGCHeap()->DiagWalkHeap(&HeapWalkHelper, &profilerWalkHeapContext, max_generation, true /* walk the large object heap */);
         }
 
 #ifdef FEATURE_EVENT_TRACE
@@ -1118,7 +1118,7 @@ void GCProfileWalkHeap()
 #endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
 }
 
-void WalkFReachableObjects(BOOL isCritical, void* objectID)
+void WalkFReachableObjects(bool isCritical, void* objectID)
 {
 	g_profControlBlock.pProfInterface->FinalizeableObjectQueued(isCritical, (ObjectID)objectID);
 }
@@ -1136,7 +1136,7 @@ void GCToEEInterface::DiagGCStart(int gen, bool isInduced)
 
         // When we're walking objects allocated by class, then we don't want to walk the large
         // object heap because then it would count things that may have been around for a while.
-        GCHeapUtilities::GetGCHeap()->DiagWalkHeap(&AllocByClassHelper, (void *)&context, 0, FALSE);
+        GCHeapUtilities::GetGCHeap()->DiagWalkHeap(&AllocByClassHelper, (void *)&context, 0, false);
 
         // Notify that we've reached the end of the Gen 0 scan
         g_profControlBlock.pProfInterface->EndAllocByClass(&context);
@@ -1183,13 +1183,13 @@ void GCToEEInterface::DiagWalkFReachableObjects(void* gcContext)
 // don't get confused.
 void WalkMovedReferences(uint8_t* begin, uint8_t* end, 
                          ptrdiff_t reloc,
-                         size_t context, 
-                         BOOL fCompacting,
-                         BOOL fBGC)
+                         void* context, 
+                         bool fCompacting,
+                         bool fBGC)
 {
     ETW::GCLog::MovedReference(begin, end,
                                (fCompacting ? reloc : 0),
-                               context,
+                               (size_t)context,
                                fCompacting,
                                !fBGC);
 }
@@ -1201,7 +1201,7 @@ void GCToEEInterface::DiagWalkSurvivors(void* gcContext)
     {
         size_t context = 0;
         ETW::GCLog::BeginMovedReferences(&context);
-        GCHeapUtilities::GetGCHeap()->DiagWalkSurvivorsWithType(gcContext, &WalkMovedReferences, context, walk_for_gc);
+        GCHeapUtilities::GetGCHeap()->DiagWalkSurvivorsWithType(gcContext, &WalkMovedReferences, (void*)context, walk_for_gc);
         ETW::GCLog::EndMovedReferences(context);
     }
 #endif //GC_PROFILING || FEATURE_EVENT_TRACE
@@ -1214,7 +1214,7 @@ void GCToEEInterface::DiagWalkLOHSurvivors(void* gcContext)
     {
         size_t context = 0;
         ETW::GCLog::BeginMovedReferences(&context);
-        GCHeapUtilities::GetGCHeap()->DiagWalkSurvivorsWithType(gcContext, &WalkMovedReferences, context, walk_for_loh);
+        GCHeapUtilities::GetGCHeap()->DiagWalkSurvivorsWithType(gcContext, &WalkMovedReferences, (void*)context, walk_for_loh);
         ETW::GCLog::EndMovedReferences(context);
     }
 #endif //GC_PROFILING || FEATURE_EVENT_TRACE
@@ -1227,7 +1227,7 @@ void GCToEEInterface::DiagWalkBGCSurvivors(void* gcContext)
     {
         size_t context = 0;
         ETW::GCLog::BeginMovedReferences(&context);
-        GCHeapUtilities::GetGCHeap()->DiagWalkSurvivorsWithType(gcContext, &WalkMovedReferences, context, walk_for_bgc);
+        GCHeapUtilities::GetGCHeap()->DiagWalkSurvivorsWithType(gcContext, &WalkMovedReferences, (void*)context, walk_for_bgc);
         ETW::GCLog::EndMovedReferences(context);
     }
 #endif //GC_PROFILING || FEATURE_EVENT_TRACE

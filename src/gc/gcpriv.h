@@ -1298,19 +1298,19 @@ protected:
         uint8_t* last_plug;
         BOOL is_shortened;
         mark* pinned_plug_entry;
-        size_t profiling_context;
+        void* profiling_context;
         record_surv_fn fn;
     };
 
     PER_HEAP
-    void walk_survivors (record_surv_fn fn, size_t context, walk_surv_type type);
+    void walk_survivors (record_surv_fn fn, void* context, walk_surv_type type);
 
     PER_HEAP
     void walk_plug (uint8_t* plug, size_t size, BOOL check_last_object_p,
                     walk_relocate_args* args);
 
     PER_HEAP
-    void walk_relocation (size_t profiling_context, record_surv_fn fn);
+    void walk_relocation (void* profiling_context, record_surv_fn fn);
 
     PER_HEAP
     void walk_relocation_in_brick (uint8_t* tree, walk_relocate_args* args);
@@ -1320,14 +1320,14 @@ protected:
 
 #if defined(BACKGROUND_GC) && defined(FEATURE_EVENT_TRACE)
     PER_HEAP
-    void walk_survivors_for_bgc (size_t profiling_context, record_surv_fn fn);
+    void walk_survivors_for_bgc (void* profiling_context, record_surv_fn fn);
 #endif // defined(BACKGROUND_GC) && defined(FEATURE_EVENT_TRACE)
 
     // used in blocking GCs after plan phase so this walks the plugs.
     PER_HEAP
-    void walk_survivors_relocation (size_t profiling_context, record_surv_fn fn);
+    void walk_survivors_relocation (void* profiling_context, record_surv_fn fn);
     PER_HEAP
-    void walk_survivors_for_loh (size_t profiling_context, record_surv_fn fn);
+    void walk_survivors_for_loh (void* profiling_context, record_surv_fn fn);
 
     PER_HEAP
     int generation_to_condemn (int n, 
@@ -2168,7 +2168,7 @@ protected:
     void relocate_in_loh_compact();
 
     PER_HEAP
-    void walk_relocation_for_loh (size_t profiling_context, record_surv_fn fn);
+    void walk_relocation_for_loh (void* profiling_context, record_surv_fn fn);
 
     PER_HEAP
     BOOL loh_enque_pinned_plug (uint8_t* plug, size_t len);
@@ -3767,7 +3767,7 @@ public:
     void DiscardNonCriticalObjects();
 
     //Methods used by the app domain unloading call to finalize objects in an app domain
-    BOOL FinalizeAppDomain (AppDomain *pDomain, BOOL fRunFinalizers);
+    bool FinalizeAppDomain (AppDomain *pDomain, bool fRunFinalizers);
 
     void CheckFinalizerObjects();
 

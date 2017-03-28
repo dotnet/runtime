@@ -129,7 +129,7 @@ STDMETHODIMP CLRServicesImpl::GarbageCollect(DWORD dwFlags)
     {
         GCX_COOP_THREAD_EXISTS(GET_THREAD());
         if (dwFlags & GC_FOR_APPX_SUSPEND) {
-            GCHeapUtilities::GetGCHeap()->GarbageCollect(2, TRUE, collection_blocking | collection_optimized);
+            GCHeapUtilities::GetGCHeap()->GarbageCollect(2, true, collection_blocking | collection_optimized);
         }
         else
             GCHeapUtilities::GetGCHeap()->GarbageCollect();

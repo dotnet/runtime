@@ -148,9 +148,9 @@ GVAL_DECL(ProfControlBlock, g_profControlBlock);
 #endif // defined(PROFILING_SUPPORTED_DATA) || defined(PROFILING_SUPPORTED)
 
 // This is the helper callback that the gc uses when walking the heap.
-BOOL HeapWalkHelper(Object* pBO, void* pv);
+bool HeapWalkHelper(Object* pBO, void* pv);
 void ScanRootsHelper(Object* pObj, Object** ppRoot, ScanContext *pSC, uint32_t dwUnused);
-BOOL AllocByClassHelper(Object* pBO, void* pv);
+bool AllocByClassHelper(Object* pBO, void* pv);
 
 #endif  // _ProfilePriv_h_
 

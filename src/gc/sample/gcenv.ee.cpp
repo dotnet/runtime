@@ -137,7 +137,7 @@ void ThreadStore::AttachCurrentThread()
 
 void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
 {
-    g_theGCHeap->SetGCInProgress(TRUE);
+    g_theGCHeap->SetGCInProgress(true);
 
     // TODO: Implement
 }
@@ -146,7 +146,7 @@ void GCToEEInterface::RestartEE(bool bFinishedGC)
 {
     // TODO: Implement
 
-    g_theGCHeap->SetGCInProgress(FALSE);
+    g_theGCHeap->SetGCInProgress(false);
 }
 
 void GCToEEInterface::GcScanRoots(promote_func* fn,  int condemned, int max_gen, ScanContext* sc)
