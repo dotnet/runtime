@@ -837,14 +837,6 @@ namespace System.Linq.Expressions
         }
 
         /// <summary>
-        /// PlatformNotSupportedException with message like "The instruction '{0}' is not supported for type '{1}'"
-        /// </summary>
-        internal static Exception ExpressionNotSupportedForType(object p0, object p1)
-        {
-            return new PlatformNotSupportedException(Strings.ExpressionNotSupportedForType(p0, p1));
-        }
-
-        /// <summary>
         /// ArgumentException with message like "ParameterExpression of type '{0}' cannot be used for delegate parameter of type '{1}'"
         /// </summary>
         internal static Exception ParameterExpressionNotValidAsDelegate(object p0, object p1)
