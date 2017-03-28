@@ -169,7 +169,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 Debug.Assert(false, "Panic!");
         }
 
-        public static ExprBinOp asBINOP(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_BINOP); return (ExprBinOp)expr; }
         public static ExprList asLIST(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_LIST); return (ExprList)expr; }
         public static ExprArrayIndex asARRAYINDEX(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_ARRAYINDEX); return (ExprArrayIndex)expr; }
         public static ExprCall asCALL(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_CALL); return (ExprCall)expr; }
