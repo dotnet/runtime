@@ -24,7 +24,7 @@ namespace System.Security.Cryptography.Xml.Tests
             return doc;
         }
 
-        private static void Encrypt(XmlDocument doc, string elementName, string encryptionElementID, RSA rsaKey, string keyName)
+        private static void Encrypt(XmlDocument doc, string elementName, string encryptionElementID, RSA rsaKey, string keyName, bool useOAEP)
         {
             var elementToEncrypt = (XmlElement)doc.GetElementsByTagName(elementName)[0];
 
@@ -35,8 +35,8 @@ namespace System.Security.Cryptography.Xml.Tests
                 // Encrypt the session key and add it to an EncryptedKey element.
                 var encryptedKey = new EncryptedKey()
                 {
-                    CipherData = new CipherData(EncryptedXml.EncryptKey(sessionKey.Key, rsaKey, false)),
-                    EncryptionMethod = new EncryptionMethod(EncryptedXml.XmlEncRSA15Url)
+                    CipherData = new CipherData(EncryptedXml.EncryptKey(sessionKey.Key, rsaKey, useOAEP)),
+                    EncryptionMethod = new EncryptionMethod(useOAEP ? EncryptedXml.XmlEncRSAOAEPUrl : EncryptedXml.XmlEncRSA15Url)
                 };
 
                 // Specify which EncryptedData
@@ -78,8 +78,10 @@ namespace System.Security.Cryptography.Xml.Tests
             encrypted.DecryptDocument();
         }
 
-        [Fact]
-        public void AsymmetricEncryptionRoundtrip()
+        [Theory]
+        [InlineData(true)] // OAEP is recommended
+        [InlineData(false)]
+        public void AsymmetricEncryptionRoundtrip(bool useOAEP)
         {
             const string testString = "some text node";
             const string exampleXmlRootElement = "example";
@@ -92,7 +94,7 @@ namespace System.Security.Cryptography.Xml.Tests
             {
                 XmlDocument xmlDocToEncrypt = LoadXmlFromString(exampleXml);
                 Assert.Contains(testString, xmlDocToEncrypt.OuterXml);
-                Encrypt(xmlDocToEncrypt, exampleXmlRootElement, "EncryptedElement1", key, "rsaKey");
+                Encrypt(xmlDocToEncrypt, exampleXmlRootElement, "EncryptedElement1", key, "rsaKey", useOAEP);
 
                 Assert.DoesNotContain(testString, xmlDocToEncrypt.OuterXml);
                 XmlDocument xmlDocToDecrypt = LoadXmlFromString(xmlDocToEncrypt.OuterXml);
