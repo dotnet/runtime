@@ -338,9 +338,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // can handle in the general case all implicit boxing conversions. Right now it 
                 // requires that all arguments to a call that need to be boxed be explicitly boxed.
 
-                if (pObject != null && pObject.isCAST() && pObject.asCAST().IsBoxingCast)
+                if (pObject != null && pObject is ExprCast cast && cast.IsBoxingCast)
                 {
-                    pObject = pObject.asCAST().Argument;
+                    pObject = cast.Argument;
                 }
                 pObject = Visit(pObject);
             }
@@ -411,9 +411,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(pExpr != null);
             // We must not optimize away compiler-generated reference casts because
             // the expression tree API insists that the CType of both sides be identical.
-            if (pExpr.isCAST())
+            if (pExpr is ExprCast cast)
             {
-                return GenerateConversion(pExpr.asCAST().Argument, pExpr.Type, pExpr.isChecked());
+                return GenerateConversion(cast.Argument, pExpr.Type, pExpr.isChecked());
             }
             return Visit(pExpr);
         }

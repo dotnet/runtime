@@ -875,7 +875,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                     CreateArgumentEXPR(arguments[0], locals[0]),
                     _symbolTable.GetCTypeFromType(arguments[0].Type));
 
-                if (arguments[0].Type.IsValueType && callingObject.isCAST())
+                if (arguments[0].Type.IsValueType && callingObject is ExprCast)
                 {
                     // If we have a struct type, unbox it.
                     callingObject.Flags |= EXPRFLAG.EXF_UNBOXRUNTIME;
@@ -1401,7 +1401,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             }
 
             // If our argument is a struct type, unbox it.
-            if (argument.Type.IsValueType && callingObject.isCAST())
+            if (argument.Type.IsValueType && callingObject is ExprCast)
             {
                 // If we have a struct type, unbox it.
                 callingObject.Flags |= EXPRFLAG.EXF_UNBOXRUNTIME;
