@@ -761,10 +761,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             ExprBlock body = anonmeth.OptionalBody;
 
             // The most likely case:
-            if (body.OptionalStatements.isRETURN())
+            if (body.OptionalStatements is ExprReturn ret)
             {
-                Debug.Assert(body.OptionalStatements.asRETURN().OptionalObject != null);
-                return Visit(body.OptionalStatements.asRETURN().OptionalObject);
+                Debug.Assert(ret.OptionalObject != null);
+                return Visit(ret.OptionalObject);
             }
             // This can only if it is a void delegate and this is a void expression, such as a call to a void method
             // or something like Expression<Action<Foo>> e = (Foo f) => f.MyEvent += MyDelegate;
