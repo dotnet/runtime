@@ -27,6 +27,7 @@
     <Compile Include="RSAKeyValueTest.cs" />
     <Compile Include="Samples\EncryptingDecryptingAsymmetric.cs" />
     <Compile Include="Samples\SigningVerifyingWithCustomSignatureMethod.cs" />
+    <Compile Include="Samples\SigningVerifyingX509Cert.cs" />
     <Compile Include="Samples\SigningVerifying.cs" />
     <Compile Include="Samples\EncryptingDecryptingSymmetric.cs" />
     <Compile Include="SignatureTest.cs" />
