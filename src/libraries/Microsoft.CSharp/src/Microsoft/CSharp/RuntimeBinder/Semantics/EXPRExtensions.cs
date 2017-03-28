@@ -178,7 +178,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public static ExprArrayInit asARRINIT(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_ARRINIT); return (ExprArrayInit)expr; }
         public static ExprUserDefinedConversion asUSERDEFINEDCONVERSION(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_USERDEFINEDCONVERSION); return (ExprUserDefinedConversion)expr; }
         public static ExprMemberGroup asMEMGRP(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_MEMGRP); return (ExprMemberGroup)expr; }
-        public static ExprFieldInfo asFIELDINFO(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_FIELDINFO); return (ExprFieldInfo)expr; }
         public static ExprNamedArgumentSpecification asNamedArgumentSpecification(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_NamedArgumentSpecification); return (ExprNamedArgumentSpecification)expr; }
 
         public static bool isCONSTANT_OK(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_CONSTANT && expr.IsOK); }

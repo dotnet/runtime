@@ -414,8 +414,10 @@ namespace Microsoft.CSharp.RuntimeBinder
         private Expression GenerateField(ExprCall pExpr)
         {
             ExprList list = pExpr.asCALL().OptionalArguments.asLIST();
-            Type t = list.OptionalNextListNode.asFIELDINFO().FieldType.AssociatedSystemType;
-            FieldInfo f = list.OptionalNextListNode.asFIELDINFO().Field.AssociatedFieldInfo;
+            ExprFieldInfo fieldInfo = list.OptionalNextListNode as ExprFieldInfo;
+            Debug.Assert(fieldInfo != null);
+            Type t = fieldInfo.FieldType.AssociatedSystemType;
+            FieldInfo f = fieldInfo.Field.AssociatedFieldInfo;
 
             // This is to ensure that for embedded nopia types, we have the
             // appropriate local type from the member itself; this is possible
