@@ -61,6 +61,8 @@ enum {
 	STATE_WORK_ENQUEUED
 };
 
+#define SGEN_WORKER_MIN_SECTIONS_SIGNAL 4
+
 typedef gint32 State;
 
 static SgenObjectOperations * volatile idle_func_object_ops;
@@ -330,7 +332,8 @@ marker_idle_func (void *data_untyped)
 
 		sgen_drain_gray_stack (ctx);
 
-		if (data->private_gray_queue.num_sections > 16 && workers_finished && worker_awakenings < active_workers_num) {
+		if (data->private_gray_queue.num_sections >= SGEN_WORKER_MIN_SECTIONS_SIGNAL
+				&& workers_finished && worker_awakenings < active_workers_num) {
 			/* We bound the number of worker awakenings just to be sure */
 			worker_awakenings++;
 			mono_os_mutex_lock (&finished_lock);
