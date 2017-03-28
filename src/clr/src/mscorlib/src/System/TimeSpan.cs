@@ -252,10 +252,10 @@ namespace System
                 throw new ArgumentException(SR.Arg_CannotBeNaN);
             Contract.EndContractBlock();
             double tmp = value * scale;
-            double millis = tmp + (value >= 0 ? 0.5 : -0.5);
-            if ((millis > Int64.MaxValue / TicksPerMillisecond) || (millis < Int64.MinValue / TicksPerMillisecond))
+            double ticks = Math.Round(tmp * TicksPerMillisecond, 0);
+            if ((ticks > Int64.MaxValue) || (ticks < Int64.MinValue))
                 throw new OverflowException(SR.Overflow_TimeSpanTooLong);
-            return new TimeSpan((long)millis * TicksPerMillisecond);
+            return new TimeSpan((long)ticks);
         }
 
         public static TimeSpan FromMilliseconds(double value)
