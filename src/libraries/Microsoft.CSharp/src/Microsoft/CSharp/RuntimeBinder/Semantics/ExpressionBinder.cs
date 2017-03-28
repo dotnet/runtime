@@ -1305,10 +1305,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             while (list != null)
             {
                 Expr arg;
-                if (list.isLIST())
+                if (list is ExprList next)
                 {
-                    arg = list.asLIST().OptionalElement;
-                    list = list.asLIST().OptionalNextListNode;
+                    arg = next.OptionalElement;
+                    list = next.OptionalNextListNode;
                 }
                 else
                 {
@@ -2202,10 +2202,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             for (Expr list = args; list != null; iarg++)
             {
                 Expr arg;
-                if (list.isLIST())
+                if (list is ExprList next)
                 {
-                    arg = list.asLIST().OptionalElement;
-                    list = list.asLIST().OptionalNextListNode;
+                    arg = next.OptionalElement;
+                    list = next.OptionalNextListNode;
                 }
                 else
                 {
@@ -2217,7 +2217,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 if (arg.Type != null)
                 {
-                    prgtype[iarg] = (CType)arg.Type;
+                    prgtype[iarg] = arg.Type;
                 }
                 else
                 {
@@ -2225,6 +2225,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
                 argInfo.prgexpr.Add(arg);
             }
+
             Debug.Assert(iarg <= argInfo.carg);
             argInfo.types = GetGlobalSymbols().AllocParams(iarg, prgtype);
         }
@@ -2605,10 +2606,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 Expr arg;
 
-                if (list.isLIST())
+                if (list is ExprList next)
                 {
-                    arg = list.asLIST().OptionalElement;
-                    list = list.asLIST().OptionalNextListNode;
+                    arg = next.OptionalElement;
+                    list = next.OptionalNextListNode;
                 }
                 else
                 {

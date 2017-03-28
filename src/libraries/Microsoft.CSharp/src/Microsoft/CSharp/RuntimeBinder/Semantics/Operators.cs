@@ -2550,11 +2550,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return GetExprFactory().CreateUserLogOpError(typeRet, pCallTF, pCall);
             }
 
-            Debug.Assert(pCall.OptionalArguments.isLIST());
+            var list = pCall.OptionalArguments as ExprList;
+            Debug.Assert(list != null);
 
-            Expr pExpr = pCall.OptionalArguments.asLIST().OptionalElement;
+            Expr pExpr = list.OptionalElement;
             Expr pExprWrap = WrapShortLivedExpression(pExpr);
-            pCall.OptionalArguments.asLIST().OptionalElement = pExprWrap;
+            list.OptionalElement = pExprWrap;
 
             // Reflection load the true and false methods.
             SymbolLoader.RuntimeBinderSymbolTable.PopulateSymbolTableWithName(SpecialNames.CLR_True, null, pExprWrap.Type.AssociatedSystemType);

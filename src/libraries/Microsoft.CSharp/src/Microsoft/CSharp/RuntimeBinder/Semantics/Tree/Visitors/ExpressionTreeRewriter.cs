@@ -267,7 +267,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(alwaysRewrite || currentAnonMeth != null);
             Expr arr = Visit(pExpr.Array);
             Expr args = GenerateIndexList(pExpr.Index);
-            if (args.isLIST())
+            if (args is ExprList)
             {
                 Expr Params = GenerateParamsArray(args, PredefinedType.PT_EXPRESSION);
                 return GenerateCall(PREDEFMETH.PM_EXPRESSION_ARRAYINDEX2, arr, Params);
@@ -631,7 +631,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 Debug.Assert(udcall.Kind == ExpressionKind.EK_CALL || udcall.Kind == ExpressionKind.EK_USERLOGOP);
                 if (udcall.Kind == ExpressionKind.EK_CALL)
                 {
-                    ExprList args = udcall.asCALL().OptionalArguments.asLIST();
+                    ExprList args = udcall.asCALL().OptionalArguments as ExprList;
                     Debug.Assert(args.OptionalNextListNode.Kind != ExpressionKind.EK_LIST);
                     p1 = args.OptionalElement;
                     p2 = args.OptionalNextListNode;
@@ -640,7 +640,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 {
                     ExprUserLogicalOp userLogOp = udcall as ExprUserLogicalOp;
                     Debug.Assert(userLogOp != null);
-                    ExprList args = userLogOp.OperatorCall.OptionalArguments.asLIST();
+                    ExprList args = userLogOp.OperatorCall.OptionalArguments as ExprList;
                     Debug.Assert(args.OptionalNextListNode.Kind != ExpressionKind.EK_LIST);
                     p1 = args.OptionalElement.asWRAP().OptionalExpression;
                     p2 = args.OptionalNextListNode;
@@ -738,7 +738,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             if (expr.OptionalUserDefinedCall != null)
             {
                 ExprCall udcall = expr.OptionalUserDefinedCall.asCALL();
-                ExprList args = udcall.OptionalArguments.asLIST();
+                ExprList args = udcall.OptionalArguments as ExprList;
                 Debug.Assert(args.OptionalNextListNode.Kind != ExpressionKind.EK_LIST);
 
                 p1 = args.OptionalElement;
@@ -1030,9 +1030,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(expr != null);
             Debug.Assert(expr.MethWithInst.Meth().IsConstructor());
             Debug.Assert(expr.Type.isDelegateType());
-            Debug.Assert(expr.OptionalArguments != null);
-            Debug.Assert(expr.OptionalArguments.isLIST());
-            ExprList origArgs = expr.OptionalArguments.asLIST();
+
+            ExprList origArgs = expr.OptionalArguments as ExprList;
+            Debug.Assert(origArgs != null);
             Expr target = origArgs.OptionalElement;
             Debug.Assert(origArgs.OptionalNextListNode.Kind == ExpressionKind.EK_FUNCPTR);
             ExprFuncPtr funcptr = origArgs.OptionalNextListNode.asFUNCPTR();
@@ -1280,8 +1280,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 pCall.MethWithInst.Meth().IsConstructor() &&
                 pCall.Type.isDelegateType() &&
                 pCall.OptionalArguments != null &&
-                pCall.OptionalArguments.isLIST() &&
-                pCall.OptionalArguments.asLIST().OptionalNextListNode.Kind == ExpressionKind.EK_FUNCPTR;
+                pCall.OptionalArguments is ExprList list &&
+                list.OptionalNextListNode.Kind == ExpressionKind.EK_FUNCPTR;
         }
         private static bool isEnumToDecimalConversion(CType argtype, CType desttype)
         {

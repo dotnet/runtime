@@ -1185,16 +1185,15 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private Expr StripNamedArguments(Expr pArg)
         {
-            if (pArg.isLIST())
+            if (pArg is ExprList list)
             {
-                ExprList list = pArg.asLIST();
-                while (list != null)
+                for(;;)
                 {
                     list.OptionalElement = StripNamedArgument(list.OptionalElement);
 
-                    if (list.OptionalNextListNode.isLIST())
+                    if (list.OptionalNextListNode is ExprList next)
                     {
-                        list = list.OptionalNextListNode.asLIST();
+                        list = next;
                     }
                     else
                     {
@@ -1203,6 +1202,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                     }
                 }
             }
+
             return StripNamedArgument(pArg);
         }
         #endregion

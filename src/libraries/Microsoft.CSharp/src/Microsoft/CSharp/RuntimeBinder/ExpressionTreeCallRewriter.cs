@@ -220,7 +220,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         {
             // We always call Lambda(body, arrayinit) where the arrayinit 
             // is the initialization of the parameters.
-            return Visit(pExpr.OptionalArguments.asLIST().OptionalElement);
+            return Visit((pExpr.OptionalArguments as ExprList).OptionalElement);
 
             /*
              * // Do we need to do this?
@@ -246,11 +246,11 @@ namespace Microsoft.CSharp.RuntimeBinder
             ExprMethodInfo methinfo;
             ExprArrayInit arrinit;
 
-            ExprList list = pExpr.OptionalArguments.asLIST();
-            if (list.OptionalNextListNode.isLIST())
+            ExprList list = pExpr.OptionalArguments as ExprList;
+            if (list.OptionalNextListNode is ExprList next)
             {
-                methinfo = (ExprMethodInfo)list.OptionalNextListNode.asLIST().OptionalElement;
-                arrinit = list.OptionalNextListNode.asLIST().OptionalNextListNode.asARRINIT();
+                methinfo = (ExprMethodInfo)next.OptionalElement;
+                arrinit = next.OptionalNextListNode.asARRINIT();
             }
             else
             {
@@ -272,7 +272,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             // an instance method, fetch the object.
             if (!m.IsStatic)
             {
-                obj = GetExpression(pExpr.OptionalArguments.asLIST().OptionalElement);
+                obj = GetExpression((pExpr.OptionalArguments as ExprList).OptionalElement);
             }
 
             return Expression.Call(obj, m, arguments);
@@ -287,7 +287,8 @@ namespace Microsoft.CSharp.RuntimeBinder
             // in which case we are PM_EXPRESSION_ARRAYINDEX2. 
             //
             // Our arguments then, are: object, index or object, indices.
-            ExprList list = pExpr.OptionalArguments.asLIST();
+            ExprList list = pExpr.OptionalArguments as ExprList;
+            Debug.Assert(list != null);
             Expression obj = GetExpression(list.OptionalElement);
             Expression[] indices;
 
@@ -319,8 +320,8 @@ namespace Microsoft.CSharp.RuntimeBinder
                 // contains a TYPEOF as the first element, and the METHODINFO for the call
                 // as the second.
 
-                ExprList list = pExpr.asCALL().OptionalArguments.asLIST();
-                ExprList list2 = list.OptionalNextListNode.asLIST();
+                ExprList list = pExpr.asCALL().OptionalArguments as ExprList;
+                ExprList list2 = list.OptionalNextListNode as ExprList;
                 e = GetExpression(list.OptionalElement);
                 t = ((ExprTypeOf)list2.OptionalElement).SourceType.Type.AssociatedSystemType;
 
@@ -347,7 +348,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 // If we have a standard conversion, then we'll have some object as
                 // the first list element (ie a WRAP or a CALL), and then a TYPEOF
                 // as the second list element.
-                ExprList list = pExpr.asCALL().OptionalArguments.asLIST();
+                ExprList list = pExpr.asCALL().OptionalArguments as ExprList;
 
                 e = GetExpression(list.OptionalElement);
                 t = ((ExprTypeOf)list.OptionalNextListNode).SourceType.Type.AssociatedSystemType;
@@ -376,7 +377,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private Expression GenerateProperty(ExprCall pExpr)
         {
-            ExprList list = pExpr.asCALL().OptionalArguments.asLIST();
+            ExprList list = pExpr.asCALL().OptionalArguments as ExprList;
 
             Expr instance = list.OptionalElement;
             Expr nextNode = list.OptionalNextListNode;
@@ -413,7 +414,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private Expression GenerateField(ExprCall pExpr)
         {
-            ExprList list = pExpr.asCALL().OptionalArguments.asLIST();
+            ExprList list = pExpr.asCALL().OptionalArguments as ExprList;
             ExprFieldInfo fieldInfo = list.OptionalNextListNode as ExprFieldInfo;
             Debug.Assert(fieldInfo != null);
             Type t = fieldInfo.FieldType.AssociatedSystemType;
@@ -440,7 +441,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private Expression GenerateInvoke(ExprCall pExpr)
         {
-            ExprList list = pExpr.asCALL().OptionalArguments.asLIST();
+            ExprList list = pExpr.asCALL().OptionalArguments as ExprList;
 
             return Expression.Invoke(
                 GetExpression(list.OptionalElement),
@@ -451,7 +452,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private Expression GenerateNew(ExprCall pExpr)
         {
-            ExprList list = pExpr.asCALL().OptionalArguments.asLIST();
+            ExprList list = pExpr.asCALL().OptionalArguments as ExprList;
 
             var constructor = GetConstructorInfoFromExpr((ExprMethodInfo)list.OptionalElement);
             var arguments = GetArgumentsFromArrayInit(list.OptionalNextListNode.asARRINIT());
@@ -462,7 +463,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private Expression GenerateConstantType(ExprCall pExpr)
         {
-            ExprList list = pExpr.OptionalArguments.asLIST();
+            ExprList list = pExpr.OptionalArguments as ExprList;
 
             return Expression.Constant(
                 GetObject(list.OptionalElement),
@@ -473,7 +474,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private Expression GenerateAssignment(ExprCall pExpr)
         {
-            ExprList list = pExpr.OptionalArguments.asLIST();
+            ExprList list = pExpr.OptionalArguments as ExprList;
 
             return Expression.Assign(
                 GetExpression(list.OptionalElement),
@@ -484,8 +485,10 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private Expression GenerateBinaryOperator(ExprCall pExpr)
         {
-            Expression arg1 = GetExpression(pExpr.OptionalArguments.asLIST().OptionalElement);
-            Expression arg2 = GetExpression(pExpr.OptionalArguments.asLIST().OptionalNextListNode);
+            ExprList list = pExpr.OptionalArguments as ExprList;
+            Debug.Assert(list != null);
+            Expression arg1 = GetExpression(list.OptionalElement);
+            Expression arg2 = GetExpression(list.OptionalNextListNode);
 
             switch (pExpr.PredefinedMethod)
             {
@@ -544,18 +547,18 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private Expression GenerateUserDefinedBinaryOperator(ExprCall pExpr)
         {
-            ExprList list = pExpr.OptionalArguments.asLIST();
+            ExprList list = pExpr.OptionalArguments as ExprList;
             Expression arg1 = GetExpression(list.OptionalElement);
-            Expression arg2 = GetExpression(list.OptionalNextListNode.asLIST().OptionalElement);
+            Expression arg2 = GetExpression((list.OptionalNextListNode as ExprList).OptionalElement);
 
-            list = list.OptionalNextListNode.asLIST();
+            list = list.OptionalNextListNode as ExprList;
             MethodInfo methodInfo;
             bool bIsLifted = false;
-            if (list.OptionalNextListNode.isLIST())
+            if (list.OptionalNextListNode is ExprList next)
             {
-                ExprConstant isLifted = list.OptionalNextListNode.asLIST().OptionalElement.asCONSTANT();
+                ExprConstant isLifted = next.OptionalElement.asCONSTANT();
                 bIsLifted = isLifted.Val.Int32Val == 1;
-                methodInfo = GetMethodInfoFromExpr((ExprMethodInfo)list.OptionalNextListNode.asLIST().OptionalNextListNode);
+                methodInfo = GetMethodInfoFromExpr((ExprMethodInfo)next.OptionalNextListNode);
             }
             else
             {
@@ -644,7 +647,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         private Expression GenerateUserDefinedUnaryOperator(ExprCall pExpr)
         {
             PREDEFMETH pm = pExpr.PredefinedMethod;
-            ExprList list = pExpr.OptionalArguments.asLIST();
+            ExprList list = pExpr.OptionalArguments as ExprList;
             Expression arg = GetExpression(list.OptionalElement);
             MethodInfo methodInfo = GetMethodInfoFromExpr((ExprMethodInfo)list.OptionalNextListNode);
 
@@ -773,12 +776,13 @@ namespace Microsoft.CSharp.RuntimeBinder
                         return GenerateConvert(call);
 
                     case PREDEFMETH.PM_EXPRESSION_NEWARRAYINIT:
-                        {
-                            ExprList list = call.OptionalArguments.asLIST();
-                            return Expression.NewArrayInit(
+                    {
+                        ExprList list = call.OptionalArguments as ExprList;
+                        return
+                            Expression.NewArrayInit(
                                 ((ExprTypeOf)list.OptionalElement).SourceType.Type.AssociatedSystemType,
                                 GetArgumentsFromArrayInit(list.OptionalNextListNode.asARRINIT()));
-                        }
+                    }
 
                     case PREDEFMETH.PM_EXPRESSION_ARRAYINDEX:
                     case PREDEFMETH.PM_EXPRESSION_ARRAYINDEX2:
@@ -981,10 +985,10 @@ namespace Microsoft.CSharp.RuntimeBinder
                 Expr p = list;
                 while (list != null)
                 {
-                    if (list.isLIST())
+                    if (list is ExprList pList)
                     {
-                        p = list.asLIST().OptionalElement;
-                        list = list.asLIST().OptionalNextListNode;
+                        p = pList.OptionalElement;
+                        list = pList.OptionalNextListNode;
                     }
                     else
                     {
@@ -996,6 +1000,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
                 Debug.Assert(expressions.Count == arrinit.DimensionSizes[0]);
             }
+
             return expressions.ToArray();
         }
 

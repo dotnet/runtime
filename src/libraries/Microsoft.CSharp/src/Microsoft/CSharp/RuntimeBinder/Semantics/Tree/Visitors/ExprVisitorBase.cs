@@ -273,22 +273,24 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             // Lists are a special case.  We treat a list not as a
             // binary node but rather as a node with n children.
-            if (pExpr.isLIST())
+            if (pExpr is ExprList list)
             {
-                ExprList list = pExpr.asLIST();
                 while (true)
                 {
                     list.OptionalElement = Visit(list.OptionalElement);
-                    if (list.OptionalNextListNode== null)
+                    Expr nextNode = list.OptionalNextListNode;
+                    if (nextNode == null)
                     {
                         return;
                     }
-                    if (!list.OptionalNextListNode.isLIST())
+
+                    if (!(nextNode is ExprList next))
                     {
-                        list.OptionalNextListNode = Visit(list.OptionalNextListNode);
+                        list.OptionalNextListNode = Visit(nextNode);
                         return;
                     }
-                    list = list.OptionalNextListNode.asLIST();
+
+                    list = next;
                 }
             }
 
