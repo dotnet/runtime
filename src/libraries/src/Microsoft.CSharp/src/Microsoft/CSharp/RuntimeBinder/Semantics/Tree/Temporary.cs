@@ -4,10 +4,8 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal sealed class EXPRWRAP : EXPR
+    internal sealed class ExprWrap : Expr
     {
-        private EXPR OptionalExpression;
-        public EXPR GetOptionalExpression() { return OptionalExpression; }
-        public void SetOptionalExpression(EXPR value) { OptionalExpression = value; }
+        public Expr OptionalExpression { get; set; }
     }
 }

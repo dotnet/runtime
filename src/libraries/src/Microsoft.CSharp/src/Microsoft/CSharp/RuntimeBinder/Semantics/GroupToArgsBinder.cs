@@ -29,7 +29,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             private readonly ExpressionBinder _pExprBinder;
             private bool _fCandidatesUnsupported;
             private readonly BindingFlag _fBindFlags;
-            private readonly EXPRMEMGRP _pGroup;
+            private readonly ExprMemberGroup _pGroup;
             private readonly ArgInfos _pArguments;
             private readonly ArgInfos _pOriginalArguments;
             private readonly bool _bHasNamedArguments;
@@ -62,7 +62,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             private readonly List<CType> _HiddenTypes;
             private bool _bArgumentsChangedForNamedOrOptionalArguments;
 
-            public GroupToArgsBinder(ExpressionBinder exprBinder, BindingFlag bindFlags, EXPRMEMGRP grp, ArgInfos args, ArgInfos originalArgs, bool bHasNamedArguments, AggregateType atsDelegate)
+            public GroupToArgsBinder(ExpressionBinder exprBinder, BindingFlag bindFlags, ExprMemberGroup grp, ArgInfos args, ArgInfos originalArgs, bool bHasNamedArguments, AggregateType atsDelegate)
             {
                 Debug.Assert(grp != null);
                 Debug.Assert(exprBinder != null);
@@ -100,9 +100,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             public bool Bind(bool bReportErrors)
             {
-                Debug.Assert(_pGroup.sk == SYMKIND.SK_MethodSymbol || _pGroup.sk == SYMKIND.SK_PropertySymbol && 0 != (_pGroup.flags & EXPRFLAG.EXF_INDEXER));
+                Debug.Assert(_pGroup.sk == SYMKIND.SK_MethodSymbol || _pGroup.sk == SYMKIND.SK_PropertySymbol && 0 != (_pGroup.Flags & EXPRFLAG.EXF_INDEXER));
 
-                // We need the EXPRs for error reporting for non-delegates
+                // We need the Exprs for error reporting for non-delegates
                 Debug.Assert(_pDelegate != null || _pArguments.fHasExprs);
 
                 LookForCandidates();
@@ -139,23 +139,23 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 return _pExprBinder.GetErrorContext();
             }
-            private static CType GetTypeQualifier(EXPRMEMGRP pGroup)
+            private static CType GetTypeQualifier(ExprMemberGroup pGroup)
             {
                 Debug.Assert(pGroup != null);
 
                 CType rval = null;
 
-                if (0 != (pGroup.flags & EXPRFLAG.EXF_BASECALL))
+                if (0 != (pGroup.Flags & EXPRFLAG.EXF_BASECALL))
                 {
                     rval = null;
                 }
-                else if (0 != (pGroup.flags & EXPRFLAG.EXF_CTOR))
+                else if (0 != (pGroup.Flags & EXPRFLAG.EXF_CTOR))
                 {
-                    rval = pGroup.GetParentType();
+                    rval = pGroup.ParentType;
                 }
-                else if (pGroup.GetOptionalObject() != null)
+                else if (pGroup.OptionalObject != null)
                 {
-                    rval = pGroup.GetOptionalObject().type;
+                    rval = pGroup.OptionalObject.Type;
                 }
                 else
                 {
@@ -177,9 +177,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // iterator will only return propsyms (or methsyms, or whatever)
                 symbmask_t mask = (symbmask_t)(1 << (int)_pGroup.sk);
 
-                CType pTypeThrough = _pGroup.GetOptionalObject() != null ? _pGroup.GetOptionalObject().type : null;
-                CMemberLookupResults.CMethodIterator iterator = _pGroup.GetMemberLookupResults().GetMethodIterator(GetSemanticChecker(), GetSymbolLoader(), pTypeThrough, GetTypeQualifier(_pGroup), _pExprBinder.ContextForMemberLookup(), true, // AllowBogusAndInaccessible
-                    false, _pGroup.typeArgs.Count, _pGroup.flags, mask);
+                CType pTypeThrough = _pGroup.OptionalObject?.Type;
+                CMemberLookupResults.CMethodIterator iterator = _pGroup.MemberLookupResults.GetMethodIterator(GetSemanticChecker(), GetSymbolLoader(), pTypeThrough, GetTypeQualifier(_pGroup), _pExprBinder.ContextForMemberLookup(), true, // AllowBogusAndInaccessible
+                    false, _pGroup.typeArgs.Count, _pGroup.Flags, mask);
                 while (true)
                 {
                     bool bFoundExpanded;
@@ -215,7 +215,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     // If we have named arguments, reorder them for this method.
                     if (_pArguments.fHasExprs)
                     {
-                        // If we don't have EXPRs, its because we're doing a method group conversion.
+                        // If we don't have Exprs, its because we're doing a method group conversion.
                         // In those scenarios, we never want to add named arguments or optional arguments.
                         if (_bHasNamedArguments)
                         {
@@ -382,7 +382,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         CandidateFunctionMember pAmbig1 = null;
                         CandidateFunctionMember pAmbig2 = null;
 
-                        CType pTypeThrough = _pGroup.GetOptionalObject() != null ? _pGroup.GetOptionalObject().type : null;
+                        CType pTypeThrough = _pGroup.OptionalObject?.Type;
                         pmethBest = _pExprBinder.FindBestMethod(_methList, pTypeThrough, _pArguments, out pAmbig1, out pAmbig2);
 
                         if (null == pmethBest)
@@ -439,7 +439,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             private bool ReOrderArgsForNamedArguments()
             {
                 // First we need to find the method that we're actually trying to call. 
-                MethodOrPropertySymbol methprop = FindMostDerivedMethod(_pCurrentSym, _pGroup.GetOptionalObject());
+                MethodOrPropertySymbol methprop = FindMostDerivedMethod(_pCurrentSym, _pGroup.OptionalObject);
                 if (methprop == null)
                 {
                     return false;
@@ -475,7 +475,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     MethodOrPropertySymbol methprop,
                     TypeArray pCurrentParameters,
                     AggregateType pCurrentType,
-                    EXPRMEMGRP pGroup,
+                    ExprMemberGroup pGroup,
                     ArgInfos pArguments,
                     TypeManager typeManager,
                     ExprFactory exprFactory,
@@ -485,12 +485,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // for param arrays.
                 int numParameters = pCurrentParameters.Count;
 
-                EXPR[] pExprArguments = new EXPR[numParameters];
+                Expr[] pExprArguments = new Expr[numParameters];
 
                 // Now go through the parameters. First set all positional arguments in the new argument
                 // set, then for the remainder, look for a named argument with a matching name.
                 int index = 0;
-                EXPR paramArrayArgument = null;
+                Expr paramArrayArgument = null;
                 TypeArray @params = typeManager.SubstTypeArray(
                     pCurrentParameters,
                     pCurrentType,
@@ -525,7 +525,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     }
 
                     // Look for names.
-                    EXPR pNewArg = FindArgumentWithName(pArguments, name);
+                    Expr pNewArg = FindArgumentWithName(pArguments, name);
                     if (pNewArg == null)
                     {
                         if (methprop.IsParameterOptional(index))
@@ -558,7 +558,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     {
                         pArguments.prgexpr.Add(pExprArguments[i]);
                     }
-                    prgTypes[i] = pArguments.prgexpr[i].type;
+                    prgTypes[i] = pArguments.prgexpr[i].Type;
                 }
                 pArguments.carg = pCurrentParameters.Count;
                 pArguments.types = symbolLoader.getBSymmgr().AllocParams(pCurrentParameters.Count, prgTypes);
@@ -567,7 +567,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             /////////////////////////////////////////////////////////////////////////////////
 
-            private static EXPR GenerateOptionalArgument(
+            private static Expr GenerateOptionalArgument(
                     SymbolLoader symbolLoader,
                     ExprFactory exprFactory,
                     MethodOrPropertySymbol methprop,
@@ -577,7 +577,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 CType pParamType = type;
                 CType pRawParamType = type.IsNullableType() ? type.AsNullableType().GetUnderlyingType() : type;
 
-                EXPR optionalArgument = null;
+                Expr optionalArgument = null;
                 if (methprop.HasDefaultParameterValue(index))
                 {
                     CType pConstValType = methprop.GetDefaultParameterValueConstValType(index);
@@ -647,7 +647,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             Name name = symbolLoader.GetNameManager().GetPredefinedName(PredefinedName.PN_CAP_VALUE);
                             FieldSymbol field = symbolLoader.LookupAggMember(name, agg, symbmask_t.MASK_FieldSymbol).AsFieldSymbol();
                             FieldWithType fwt = new FieldWithType(field, agg.getThisType());
-                            EXPRFIELD exprField = exprFactory.CreateField(0, agg.getThisType(), null, 0, fwt, null);
+                            ExprField exprField = exprFactory.CreateField(0, agg.getThisType(), null, 0, fwt, null);
 
                             if (agg.getThisType() != type)
                             {
@@ -677,9 +677,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             private MethodOrPropertySymbol FindMostDerivedMethod(
                     MethodOrPropertySymbol pMethProp,
-                    EXPR pObject)
+                    Expr pObject)
             {
-                return FindMostDerivedMethod(GetSymbolLoader(), pMethProp, pObject?.type);
+                return FindMostDerivedMethod(GetSymbolLoader(), pMethProp, pObject?.Type);
             }
 
             /////////////////////////////////////////////////////////////////////////////////
@@ -772,7 +772,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             private bool HasOptionalParameters()
             {
-                MethodOrPropertySymbol methprop = FindMostDerivedMethod(_pCurrentSym, _pGroup.GetOptionalObject());
+                MethodOrPropertySymbol methprop = FindMostDerivedMethod(_pCurrentSym, _pGroup.OptionalObject);
                 return methprop != null && methprop.HasOptionalParameters();
             }
 
@@ -789,7 +789,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
 
                 // First we need to find the method that we're actually trying to call. 
-                MethodOrPropertySymbol methprop = FindMostDerivedMethod(_pCurrentSym, _pGroup.GetOptionalObject());
+                MethodOrPropertySymbol methprop = FindMostDerivedMethod(_pCurrentSym, _pGroup.OptionalObject);
                 if (methprop == null)
                 {
                     return false;
@@ -803,7 +803,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     _pCurrentParameters,
                     _pCurrentType,
                     _pGroup.typeArgs);
-                EXPR[] pArguments = new EXPR[_pCurrentParameters.Count - i];
+                Expr[] pArguments = new Expr[_pCurrentParameters.Count - i];
                 for (; i < @params.Count; i++, index++)
                 {
                     if (!methprop.IsParameterOptional(i))
@@ -823,7 +823,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 CType[] prgTypes = new CType[@params.Count];
                 for (int n = 0; n < @params.Count; n++)
                 {
-                    prgTypes[n] = _pArguments.prgexpr[n].type;
+                    prgTypes[n] = _pArguments.prgexpr[n].Type;
                 }
                 _pArguments.types = GetSymbolLoader().getBSymmgr().AllocParams(@params.Count, prgTypes);
                 _pArguments.carg = @params.Count;
@@ -833,7 +833,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             /////////////////////////////////////////////////////////////////////////////////
 
-            private static EXPR FindArgumentWithName(ArgInfos pArguments, Name pName)
+            private static Expr FindArgumentWithName(ArgInfos pArguments, Name pName)
             {
                 for (int i = 0; i < pArguments.carg; i++)
                 {
@@ -930,7 +930,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         _methList.Head().mpwi.Meth().IsExtension())
                 {
                     // we have found a applicable method that is an extension now we must move to the end of the NS list before quiting
-                    if (_pGroup.GetOptionalObject() != null)
+                    if (_pGroup.OptionalObject != null)
                     {
                         // if we find this while looking for static methods we should ignore it
                         _bIterateToEndOfNsList = true;
@@ -1075,7 +1075,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                         if (_pArguments.fHasExprs)
                         {
-                            EXPR pArgument = _pArguments.prgexpr[ivar];
+                            Expr pArgument = _pArguments.prgexpr[ivar];
 
                             // If we have a named argument, strip it to do the conversion.
                             if (pArgument.isNamedArgumentSpecification())
@@ -1209,14 +1209,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 MethodOrPropertySymbol pMethod = null;
                 for (int iParam = 0; iParam < _pCurrentParameters.Count; ++iParam)
                 {
-                    EXPR pArgument = _pArguments.prgexpr[iParam];
+                    Expr pArgument = _pArguments.prgexpr[iParam];
                     if (!pArgument.IsOptionalArgument)
                     {
                         continue;
                     }
                     CType pType = _pCurrentParameters[iParam];
 
-                    if (pType == pArgument.type)
+                    if (pType == pArgument.Type)
                     {
                         continue;
                     }
@@ -1224,11 +1224,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     // Argument has changed its type because of method type inference. Recompute it.
                     if (pMethod == null)
                     {
-                        pMethod = FindMostDerivedMethod(_pCurrentSym, _pGroup.GetOptionalObject());
+                        pMethod = FindMostDerivedMethod(_pCurrentSym, _pGroup.OptionalObject);
                         Debug.Assert(pMethod != null);
                     }
                     Debug.Assert(pMethod.IsParameterOptional(iParam));
-                    EXPR pArgumentNew = GenerateOptionalArgument(GetSymbolLoader(), _pExprBinder.GetExprFactory(), pMethod, _pCurrentParameters[iParam], iParam);
+                    Expr pArgumentNew = GenerateOptionalArgument(GetSymbolLoader(), _pExprBinder.GetExprFactory(), pMethod, _pCurrentParameters[iParam], iParam);
                     _pArguments.prgexpr[iParam] = pArgumentNew;
                 }
             }
@@ -1265,14 +1265,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             private void ReportErrorsOnSuccess()
             {
                 // used for Methods and Indexers
-                Debug.Assert(_pGroup.sk == SYMKIND.SK_MethodSymbol || _pGroup.sk == SYMKIND.SK_PropertySymbol && 0 != (_pGroup.flags & EXPRFLAG.EXF_INDEXER));
+                Debug.Assert(_pGroup.sk == SYMKIND.SK_MethodSymbol || _pGroup.sk == SYMKIND.SK_PropertySymbol && 0 != (_pGroup.Flags & EXPRFLAG.EXF_INDEXER));
                 Debug.Assert(_pGroup.typeArgs.Count == 0 || _pGroup.sk == SYMKIND.SK_MethodSymbol);
 
                 // if this is a binding to finalize on object, then complain:
                 if (_results.GetBestResult().MethProp().name == GetSymbolLoader().GetNameManager().GetPredefName(PredefinedName.PN_DTOR) &&
                     _results.GetBestResult().MethProp().getClass().isPredefAgg(PredefinedType.PT_OBJECT))
                 {
-                    if (0 != (_pGroup.flags & EXPRFLAG.EXF_BASECALL))
+                    if (0 != (_pGroup.Flags & EXPRFLAG.EXF_BASECALL))
                     {
                         GetErrorContext().Error(ErrorCode.ERR_CallingBaseFinalizeDeprecated);
                     }
@@ -1282,7 +1282,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     }
                 }
 
-                Debug.Assert(0 == (_pGroup.flags & EXPRFLAG.EXF_USERCALLABLE) || _results.GetBestResult().MethProp().isUserCallable());
+                Debug.Assert(0 == (_pGroup.Flags & EXPRFLAG.EXF_USERCALLABLE) || _results.GetBestResult().MethProp().isUserCallable());
 
                 if (_pGroup.sk == SYMKIND.SK_MethodSymbol)
                 {
@@ -1326,15 +1326,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 Name nameErr = _pGroup.name;
 
                 // Check for an invoke.
-                if (_pGroup.GetOptionalObject() != null &&
-                        _pGroup.GetOptionalObject().type != null &&
-                        _pGroup.GetOptionalObject().type.isDelegateType() &&
+                if (_pGroup.OptionalObject != null &&
+                        _pGroup.OptionalObject.Type != null &&
+                        _pGroup.OptionalObject.Type.isDelegateType() &&
                         _pGroup.name == GetSymbolLoader().GetNameManager().GetPredefName(PredefinedName.PN_INVOKE))
                 {
                     Debug.Assert(!_results.GetBestResult() || _results.GetBestResult().MethProp().getClass().IsDelegate());
                     Debug.Assert(!_results.GetBestResult() || _results.GetBestResult().GetType().getAggregate().IsDelegate());
                     bUseDelegateErrors = true;
-                    nameErr = _pGroup.GetOptionalObject().type.getAggregate().name;
+                    nameErr = _pGroup.OptionalObject.Type.getAggregate().name;
                 }
 
                 if (_results.GetBestResult())
@@ -1356,13 +1356,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     // if we tried to bind to an extensionmethod and the instance argument Type Inference failed then the method does not exist
                     // on the type at all. this is treated as a lookup error
                     CType type = null;
-                    if (_pGroup.GetOptionalObject() != null)
+                    if (_pGroup.OptionalObject != null)
                     {
-                        type = _pGroup.GetOptionalObject().type;
+                        type = _pGroup.OptionalObject.Type;
                     }
-                    else if (_pGroup.GetOptionalLHS() != null)
+                    else if (_pGroup.OptionalLHS != null)
                     {
-                        type = _pGroup.GetOptionalLHS().type;
+                        type = _pGroup.OptionalLHS.Type;
                     }
 
                     MethWithType mwtCantInfer = new MethWithType();
@@ -1382,11 +1382,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 else if (_pInvalidSpecifiedName != null)
                 {
                     // Give a better message for delegate invoke.
-                    if (_pGroup.GetOptionalObject() != null &&
-                            _pGroup.GetOptionalObject().type.IsAggregateType() &&
-                            _pGroup.GetOptionalObject().type.AsAggregateType().GetOwningAggregate().IsDelegate())
+                    if (_pGroup.OptionalObject != null &&
+                            _pGroup.OptionalObject.Type.IsAggregateType() &&
+                            _pGroup.OptionalObject.Type.AsAggregateType().GetOwningAggregate().IsDelegate())
                     {
-                        GetErrorContext().Error(ErrorCode.ERR_BadNamedArgumentForDelegateInvoke, _pGroup.GetOptionalObject().type.AsAggregateType().GetOwningAggregate().name, _pInvalidSpecifiedName);
+                        GetErrorContext().Error(ErrorCode.ERR_BadNamedArgumentForDelegateInvoke, _pGroup.OptionalObject.Type.AsAggregateType().GetOwningAggregate().name, _pInvalidSpecifiedName);
                     }
                     else
                     {
@@ -1416,15 +1416,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         }
                         else if (bUseDelegateErrors)
                         {
-                            Debug.Assert(0 == (_pGroup.flags & EXPRFLAG.EXF_CTOR));
+                            Debug.Assert(0 == (_pGroup.Flags & EXPRFLAG.EXF_CTOR));
                             GetErrorContext().MakeError(out error, ErrorCode.ERR_BadDelArgCount, nameErr, _pArguments.carg);
                         }
                         else
                         {
-                            if (0 != (_pGroup.flags & EXPRFLAG.EXF_CTOR))
+                            if (0 != (_pGroup.Flags & EXPRFLAG.EXF_CTOR))
                             {
-                                Debug.Assert(!_pGroup.GetParentType().IsTypeParameterType());
-                                GetErrorContext().MakeError(out error, ErrorCode.ERR_BadCtorArgCount, _pGroup.GetParentType(), _pArguments.carg);
+                                Debug.Assert(!_pGroup.ParentType.IsTypeParameterType());
+                                GetErrorContext().MakeError(out error, ErrorCode.ERR_BadCtorArgCount, _pGroup.ParentType, _pArguments.carg);
                             }
                             else
                             {
@@ -1472,9 +1472,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
                 else
                 {
-                    if (_results.GetBestResult().Sym.IsMethodSymbol() && _results.GetBestResult().Sym.AsMethodSymbol().IsExtension() && _pGroup.GetOptionalObject() != null)
+                    if (_results.GetBestResult().Sym.IsMethodSymbol() && _results.GetBestResult().Sym.AsMethodSymbol().IsExtension() && _pGroup.OptionalObject != null)
                     {
-                        GetErrorContext().Error(ErrorCode.ERR_BadExtensionArgTypes, _pGroup.GetOptionalObject().type, _pGroup.name, _results.GetBestResult().Sym);
+                        GetErrorContext().Error(ErrorCode.ERR_BadExtensionArgTypes, _pGroup.OptionalObject.Type, _pGroup.name, _results.GetBestResult().Sym);
                     }
                     else if (_bBindingCollectionAddArgs)
                     {
@@ -1517,12 +1517,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             // if we tried to bind to an extensionmethod and the instance argument conversion failed then the method does not exist
                             // on the type at all. 
                             Symbol sym = _results.GetBestResult().Sym;
-                            if (ivar == 0 && sym.IsMethodSymbol() && sym.AsMethodSymbol().IsExtension() && _pGroup.GetOptionalObject() != null &&
-                                !_pExprBinder.canConvertInstanceParamForExtension(_pGroup.GetOptionalObject(), sym.AsMethodSymbol().Params[0]))
+                            if (ivar == 0 && sym.IsMethodSymbol() && sym.AsMethodSymbol().IsExtension() && _pGroup.OptionalObject != null &&
+                                !_pExprBinder.canConvertInstanceParamForExtension(_pGroup.OptionalObject, sym.AsMethodSymbol().Params[0]))
                             {
-                                if (!_pGroup.GetOptionalObject().type.getBogus())
+                                if (!_pGroup.OptionalObject.Type.getBogus())
                                 {
-                                    GetErrorContext().Error(ErrorCode.ERR_BadInstanceArgType, _pGroup.GetOptionalObject().type, var);
+                                    GetErrorContext().Error(ErrorCode.ERR_BadInstanceArgType, _pGroup.OptionalObject.Type, var);
                                 }
                             }
                             else

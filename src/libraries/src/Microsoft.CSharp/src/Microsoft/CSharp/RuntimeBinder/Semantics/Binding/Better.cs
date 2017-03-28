@@ -156,7 +156,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // We then go over the specified arguments and put the type for any named argument in the right position in the array.
             for (int iParam = 0; iParam < args.carg; iParam++)
             {
-                EXPR arg = args.prgexpr[iParam];
+                Expr arg = args.prgexpr[iParam];
                 if (arg.isNamedArgumentSpecification())
                 {
                     // We find the index of the type of the argument in the method parameter list and store that in a temp
@@ -244,7 +244,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             for (int i = 0; i < args.carg; i++)
             {
-                EXPR arg = args.fHasExprs ? args.prgexpr[i] : null;
+                Expr arg = args.fHasExprs ? args.prgexpr[i] : null;
                 CType argType = args.types[i];
                 CType p1 = pta1[i];
                 CType p2 = pta2[i];
@@ -318,7 +318,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return betterMethod;
         }
 
-        private BetterType WhichConversionIsBetter(EXPR arg, CType argType,
+        private BetterType WhichConversionIsBetter(Expr arg, CType argType,
             CType p1, CType p2)
         {
             Debug.Assert(argType != null);

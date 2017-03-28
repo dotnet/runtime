@@ -4,8 +4,8 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal class EXPRLOCAL : EXPR
+    internal class ExprLocal : Expr
     {
-        public LocalVariableSymbol local;
+        public LocalVariableSymbol Local { get; set; }
     }
 }

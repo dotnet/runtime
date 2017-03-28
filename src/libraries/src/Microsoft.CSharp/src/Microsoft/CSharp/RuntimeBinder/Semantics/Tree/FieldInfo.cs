@@ -4,22 +4,16 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal sealed class EXPRFIELDINFO : EXPR
+    internal sealed class ExprFieldInfo : Expr
     {
-        public FieldSymbol Field()
+        public ExprFieldInfo(FieldSymbol f, AggregateType ft)
         {
-            return _field;
+            Field = f;
+            FieldType = ft;
         }
-        public AggregateType FieldType()
-        {
-            return _fieldType;
-        }
-        public void Init(FieldSymbol f, AggregateType ft)
-        {
-            _field = f;
-            _fieldType = ft;
-        }
-        private FieldSymbol _field;
-        private AggregateType _fieldType;
+
+        public FieldSymbol Field { get; }
+
+        public AggregateType FieldType { get; }
     }
 }

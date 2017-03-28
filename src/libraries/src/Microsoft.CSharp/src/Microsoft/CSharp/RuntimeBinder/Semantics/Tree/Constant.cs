@@ -6,11 +6,11 @@ using System.Diagnostics;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal sealed class ExprConstant : EXPR
+    internal sealed class ExprConstant : Expr
     {
-        public EXPR OptionalConstructorCall { get; set; }
+        public Expr OptionalConstructorCall { get; set; }
 
-        public bool IsZero => Val.IsZero(type.constValKind());
+        public bool IsZero => Val.IsZero(Type.constValKind());
 
         public ConstVal Val { get; set; }
 
@@ -20,7 +20,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             get
             {
-                switch (type.fundType())
+                switch (Type.fundType())
                 {
                     case FUNDTYPE.FT_I8:
                     case FUNDTYPE.FT_U8:

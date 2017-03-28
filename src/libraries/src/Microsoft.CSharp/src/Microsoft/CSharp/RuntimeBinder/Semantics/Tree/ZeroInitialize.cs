@@ -4,10 +4,12 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal sealed class EXPRZEROINIT : EXPR
+    internal sealed class ExprZeroInit : Expr
     {
-        public EXPR OptionalArgument;
-        public EXPR OptionalConstructorCall;
-        public bool IsConstructor;
+        public Expr OptionalArgument { get; set; }
+
+        public Expr OptionalConstructorCall { get; set; }
+
+        public bool IsConstructor { get; set; }
     }
 }

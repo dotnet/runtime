@@ -192,7 +192,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             //    for each of the parameters, and the instance argument.
             // 2) If we have operators, then we don't need to do lookup. Otherwise, 
             //    look for the name and switch on the result - dispatch according to 
-            //    the symbol kind. This results in an EXPR being bound that is the expression.
+            //    the symbol kind. This results in an Expr being bound that is the expression.
             // 3) Create the EXPRRETURN which returns the call and wrap it in
             //    an EXPRBOUNDLAMBDA which uses the local variable scope
             //    created in step (1) as its local scope.
@@ -213,7 +213,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             }
 
             // (2) - look the thing up and dispatch.
-            EXPR pResult = payload.DispatchPayload(this, arguments, locals);
+            Expr pResult = payload.DispatchPayload(this, arguments, locals);
             Debug.Assert(pResult != null);
 
             deferredBinding = null;
@@ -244,7 +244,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             {
                 int arity = callPayload.TypeArguments?.Count ?? 0;
                 MemberLookup mem = new MemberLookup();
-                EXPR callingObject = CreateCallingObjectForCall(callPayload, arguments, locals);
+                Expr callingObject = CreateCallingObjectForCall(callPayload, arguments, locals);
 
                 Debug.Assert(_bindingContext.ContextForMemberLookup() != null);
                 SymWithType swt = _symbolTable.LookupMember(
@@ -306,13 +306,13 @@ namespace Microsoft.CSharp.RuntimeBinder
             Expression[] parameters,
             ArgumentObject[] arguments,
             Scope pScope,
-            EXPR pResult)
+            Expr pResult)
         {
             // (3) - Place the result in a return statement and create the EXPRBOUNDLAMBDA.
-            EXPRBOUNDLAMBDA boundLambda = GenerateBoundLambda(arguments, pScope, pResult);
+            ExprBoundLambda boundLambda = GenerateBoundLambda(arguments, pScope, pResult);
 
             // (4) - Rewrite the EXPRBOUNDLAMBDA into an expression tree.
-            EXPR exprTree = ExpressionTreeRewriter.Rewrite(boundLambda, _exprFactory, SymbolLoader);
+            Expr exprTree = ExpressionTreeRewriter.Rewrite(boundLambda, _exprFactory, SymbolLoader);
 
             // (5) - Create the actual Expression Tree
             Expression e = ExpressionTreeCallRewriter.Rewrite(SymbolLoader.GetTypeManager(), exprTree, parameters);
@@ -438,7 +438,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        internal EXPR DispatchPayload(ICSharpInvokeOrInvokeMemberBinder payload, ArgumentObject[] arguments, LocalVariableSymbol[] locals) =>
+        internal Expr DispatchPayload(ICSharpInvokeOrInvokeMemberBinder payload, ArgumentObject[] arguments, LocalVariableSymbol[] locals) =>
             BindCall(payload, CreateCallingObjectForCall(payload, arguments, locals), arguments, locals);
 
         /////////////////////////////////////////////////////////////////////////////////
@@ -493,28 +493,28 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private EXPRBOUNDLAMBDA GenerateBoundLambda(
+        private ExprBoundLambda GenerateBoundLambda(
             ArgumentObject[] arguments,
             Scope pScope,
-            EXPR call)
+            Expr call)
         {
             // We don't actually need the real delegate type here - we just need SOME delegate type.
             // This is because we never attempt any conversions on the lambda itself.
             AggregateType delegateType = _symbolTable.GetCTypeFromType(typeof(Func<>)).AsAggregateType();
             LocalVariableSymbol thisLocal = _semanticChecker.GetGlobalSymbolFactory().CreateLocalVar(_semanticChecker.GetNameManager().Add("this"), pScope, _symbolTable.GetCTypeFromType(typeof(object)));
             thisLocal.isThis = true;
-            EXPRBOUNDLAMBDA boundLambda = _exprFactory.CreateAnonymousMethod(delegateType);
-            EXPRUNBOUNDLAMBDA unboundLambda = _exprFactory.CreateLambda();
+            ExprBoundLambda boundLambda = _exprFactory.CreateAnonymousMethod(delegateType);
+            ExprUnboundLambda unboundLambda = _exprFactory.CreateLambda();
 
             List<Type> paramTypes = new List<Type>();
             foreach (ArgumentObject o in arguments)
             {
                 paramTypes.Add(o.Type);
             }
-            boundLambda.Initialize(pScope);
+            boundLambda.ArgumentScope = pScope;
 
-            EXPRRETURN returnStatement = _exprFactory.CreateReturn(0, pScope, call);
-            EXPRBLOCK block = _exprFactory.CreateBlock(null, returnStatement, pScope);
+            ExprReturn returnStatement = _exprFactory.CreateReturn(0, pScope, call);
+            ExprBlock block = _exprFactory.CreateBlock(null, returnStatement, pScope);
             boundLambda.OptionalBody = block;
             return boundLambda;
         }
@@ -523,7 +523,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private EXPR CreateLocal(Type type, bool bIsOut, LocalVariableSymbol local)
+        private Expr CreateLocal(Type type, bool bIsOut, LocalVariableSymbol local)
         {
             CType ctype = _symbolTable.GetCTypeFromType(type);
             if (bIsOut)
@@ -535,33 +535,33 @@ namespace Microsoft.CSharp.RuntimeBinder
             }
 
             // If we can convert, do that. If not, cast it.
-            EXPRLOCAL exprLocal = _exprFactory.CreateLocal(EXPRFLAG.EXF_LVALUE, local);
-            EXPR result = _binder.tryConvert(exprLocal, ctype);
+            ExprLocal exprLocal = _exprFactory.CreateLocal(EXPRFLAG.EXF_LVALUE, local);
+            Expr result = _binder.tryConvert(exprLocal, ctype);
             if (result == null)
             {
                 result = _binder.mustCast(exprLocal, ctype);
             }
-            result.flags |= EXPRFLAG.EXF_LVALUE;
+            result.Flags |= EXPRFLAG.EXF_LVALUE;
             return result;
         }
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        internal EXPR CreateArgumentListEXPR(
+        internal Expr CreateArgumentListEXPR(
             ArgumentObject[] arguments,
             LocalVariableSymbol[] locals,
             int startIndex,
             int endIndex)
         {
-            EXPR args = null;
-            EXPR last = null;
+            Expr args = null;
+            Expr last = null;
 
             if (arguments != null)
             {
                 for (int i = startIndex; i < endIndex; i++)
                 {
                     ArgumentObject argument = arguments[i];
-                    EXPR arg = CreateArgumentEXPR(argument, locals[i]);
+                    Expr arg = CreateArgumentEXPR(argument, locals[i]);
 
                     if (args == null)
                     {
@@ -580,9 +580,9 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private EXPR CreateArgumentEXPR(ArgumentObject argument, LocalVariableSymbol local)
+        private Expr CreateArgumentEXPR(ArgumentObject argument, LocalVariableSymbol local)
         {
-            EXPR arg;
+            Expr arg;
             if (argument.Info.LiteralConstant)
             {
                 if (argument.Value == null)
@@ -626,7 +626,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             // If we have an object that was "dynamic" at compile time, we need
             // to be able to convert it to every interface that the actual value
             // implements. This allows conversion binders and overload resolution
-            // to behave as though type information is available for these EXPRs,
+            // to behave as though type information is available for these Exprs,
             // even though it may be the case that the actual runtime type is
             // inaccessible and therefore unused.
 
@@ -649,26 +649,26 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private EXPRMEMGRP CreateMemberGroupEXPR(
+        private ExprMemberGroup CreateMemberGroupEXPR(
             string Name,
             IList<Type> typeArguments,
-            EXPR callingObject,
+            Expr callingObject,
             SYMKIND kind)
         {
             Name name = SymbolTable.GetName(Name, _semanticChecker.GetNameManager());
             AggregateType callingType;
 
-            if (callingObject.type.IsArrayType())
+            if (callingObject.Type.IsArrayType())
             {
                 callingType = _semanticChecker.GetSymbolLoader().GetReqPredefType(PredefinedType.PT_ARRAY);
             }
-            else if (callingObject.type.IsNullableType())
+            else if (callingObject.Type.IsNullableType())
             {
-                callingType = callingObject.type.AsNullableType().GetAts(_semanticChecker.GetSymbolLoader().GetErrorContext());
+                callingType = callingObject.Type.AsNullableType().GetAts(_semanticChecker.GetSymbolLoader().GetErrorContext());
             }
-            else if (callingObject.type.IsAggregateType())
+            else if (callingObject.Type.IsAggregateType())
             {
-                callingType = callingObject.type.AsAggregateType();
+                callingType = callingObject.Type.AsAggregateType();
             }
             else
             {
@@ -738,7 +738,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
             EXPRFLAG flags = EXPRFLAG.EXF_USERCALLABLE;
             // If its a delegate, mark that on the memgroup.
-            if (Name == SpecialNames.Invoke && callingObject.type.isDelegateType())
+            if (Name == SpecialNames.Invoke && callingObject.Type.isDelegateType())
             {
                 flags |= EXPRFLAG.EXF_DELEGATE;
             }
@@ -761,26 +761,26 @@ namespace Microsoft.CSharp.RuntimeBinder
                 typeArgumentsAsTypeArray = _semanticChecker.getBSymmgr().AllocParams(
                     _symbolTable.GetCTypeArrayFromTypes(typeArguments));
             }
-            EXPRMEMGRP memgroup = _exprFactory.CreateMemGroup(// Tree
+            ExprMemberGroup memgroup = _exprFactory.CreateMemGroup(// Tree
                 flags, name, typeArgumentsAsTypeArray, kind, callingType, null, null, new CMemberLookupResults(
                     _semanticChecker.getBSymmgr().AllocParams(callingTypes.Count, callingTypes.ToArray()),
                     name));
             if (callingObject.isCLASS())
             {
-                memgroup.SetOptionalLHS(callingObject);
+                memgroup.OptionalLHS = callingObject;
             }
             else
             {
-                memgroup.SetOptionalObject(callingObject);
+                memgroup.OptionalObject = callingObject;
             }
             return memgroup;
         }
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private EXPR CreateProperty(
+        private Expr CreateProperty(
             SymWithType swt,
-            EXPR callingObject,
+            Expr callingObject,
             BindingFlag flags)
         {
             // For a property, we simply create the EXPRPROP for the thing, call the
@@ -789,7 +789,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             PropertySymbol property = swt.Prop();
             AggregateType propertyType = swt.GetType();
             PropWithType pwt = new PropWithType(property, propertyType);
-            EXPRMEMGRP pMemGroup = CreateMemberGroupEXPR(property.name.Text, null, callingObject, SYMKIND.SK_PropertySymbol);
+            ExprMemberGroup pMemGroup = CreateMemberGroupEXPR(property.name.Text, null, callingObject, SYMKIND.SK_PropertySymbol);
 
             return _binder.BindToProperty(// For a static property instance, don't set the object.
                     callingObject.isCLASS() ? null : callingObject, pwt, flags, null, null, pMemGroup);
@@ -797,28 +797,28 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private EXPR CreateIndexer(SymWithType swt, EXPR callingObject, EXPR arguments, BindingFlag bindFlags)
+        private Expr CreateIndexer(SymWithType swt, Expr callingObject, Expr arguments, BindingFlag bindFlags)
         {
             IndexerSymbol index = swt.Sym as IndexerSymbol;
             AggregateType ctype = swt.GetType();
-            EXPRMEMGRP memgroup = CreateMemberGroupEXPR(index.name.Text, null, callingObject, SYMKIND.SK_PropertySymbol);
+            ExprMemberGroup memgroup = CreateMemberGroupEXPR(index.name.Text, null, callingObject, SYMKIND.SK_PropertySymbol);
 
-            EXPR result = _binder.BindMethodGroupToArguments(bindFlags, memgroup, arguments);
+            Expr result = _binder.BindMethodGroupToArguments(bindFlags, memgroup, arguments);
             return ReorderArgumentsForNamedAndOptional(callingObject, result);
         }
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private EXPR CreateArray(EXPR callingObject, EXPR optionalIndexerArguments)
+        private Expr CreateArray(Expr callingObject, Expr optionalIndexerArguments)
         {
             return _binder.BindArrayIndexCore(0, callingObject, optionalIndexerArguments);
         }
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private EXPR CreateField(
+        private Expr CreateField(
             SymWithType swt,
-            EXPR callingObject)
+            Expr callingObject)
         {
             // For a field, simply create the EXPRFIELD and our caller takes care of the rest.
 
@@ -827,18 +827,18 @@ namespace Microsoft.CSharp.RuntimeBinder
             AggregateType fieldType = swt.GetType();
             FieldWithType fwt = new FieldWithType(fieldSymbol, fieldType);
 
-            EXPR field = _binder.BindToField(callingObject.isCLASS() ? null : callingObject, fwt, 0);
+            Expr field = _binder.BindToField(callingObject.isCLASS() ? null : callingObject, fwt, 0);
             return field;
         }
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private EXPREVENT CreateEvent(
+        private ExprEvent CreateEvent(
             SymWithType swt,
-            EXPR callingObject)
+            Expr callingObject)
         {
             EventSymbol eventSymbol = swt.Event();
-            EXPREVENT e = _exprFactory.CreateEvent(eventSymbol.type, callingObject, new EventWithType(eventSymbol, swt.GetType()));
+            ExprEvent e = _exprFactory.CreateEvent(eventSymbol.type, callingObject, new EventWithType(eventSymbol, swt.GetType()));
             return e;
         }
         #endregion
@@ -848,14 +848,14 @@ namespace Microsoft.CSharp.RuntimeBinder
         #region Calls
         /////////////////////////////////////////////////////////////////////////////////
 
-        private EXPR CreateCallingObjectForCall(
+        private Expr CreateCallingObjectForCall(
             ICSharpInvokeOrInvokeMemberBinder payload,
             ArgumentObject[] arguments,
             LocalVariableSymbol[] locals)
         {
             // Here we have a regular call, so create the calling object off of the first
             // parameter and pass it through.
-            EXPR callingObject;
+            Expr callingObject;
             if (payload.StaticCall)
             {
                 Type t = arguments[0].Value as Type;
@@ -883,7 +883,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 if (arguments[0].Type.IsValueType && callingObject.isCAST())
                 {
                     // If we have a struct type, unbox it.
-                    callingObject.flags |= EXPRFLAG.EXF_UNBOXRUNTIME;
+                    callingObject.Flags |= EXPRFLAG.EXF_UNBOXRUNTIME;
                 }
             }
             return callingObject;
@@ -891,13 +891,13 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private EXPR BindCall(
+        private Expr BindCall(
             ICSharpInvokeOrInvokeMemberBinder payload,
-            EXPR callingObject,
+            Expr callingObject,
             ArgumentObject[] arguments,
             LocalVariableSymbol[] locals)
         {
-            if (payload is InvokeBinder && !callingObject.type.isDelegateType())
+            if (payload is InvokeBinder && !callingObject.Type.isDelegateType())
             {
                 throw Error.BindInvokeFailedNonDelegate();
             }
@@ -940,10 +940,10 @@ namespace Microsoft.CSharp.RuntimeBinder
             // method, then we may be in the situation where the user called the method
             // via a simple name call through the phantom overload. If thats the case,
             // then we want to sub in a type instead of the object.
-            EXPRMEMGRP memGroup = CreateMemberGroupEXPR(payload.Name, payload.TypeArguments, callingObject, swt.Sym.getKind());
+            ExprMemberGroup memGroup = CreateMemberGroupEXPR(payload.Name, payload.TypeArguments, callingObject, swt.Sym.getKind());
             if ((payload.Flags & CSharpCallFlags.SimpleNameCall) != 0)
             {
-                callingObject.flags |= EXPRFLAG.EXF_SIMPLENAME;
+                callingObject.Flags |= EXPRFLAG.EXF_SIMPLENAME;
             }
 
             if ((payload.Flags & CSharpCallFlags.EventHookup) != 0)
@@ -980,7 +980,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                     // If we have an event hookup, first find the event itself.
                     BindImplicitConversion(new ArgumentObject[] { arguments[1] }, eventType, locals, false);
                 }
-                memGroup.flags &= ~EXPRFLAG.EXF_USERCALLABLE;
+                memGroup.Flags &= ~EXPRFLAG.EXF_USERCALLABLE;
 
                 if (swtEvent.Sym.getKind() == SYMKIND.SK_EventSymbol && swtEvent.Event().IsWindowsRuntimeEvent)
                 {
@@ -998,14 +998,14 @@ namespace Microsoft.CSharp.RuntimeBinder
             if ((payload.Name.StartsWith("set_", StringComparison.Ordinal) && swt.Sym.AsMethodSymbol().Params.Count > 1) ||
                 (payload.Name.StartsWith("get_", StringComparison.Ordinal) && swt.Sym.AsMethodSymbol().Params.Count > 0))
             {
-                memGroup.flags &= ~EXPRFLAG.EXF_USERCALLABLE;
+                memGroup.Flags &= ~EXPRFLAG.EXF_USERCALLABLE;
             }
 
-            EXPR pResult = _binder.BindMethodGroupToArguments(// Tree
+            Expr pResult = _binder.BindMethodGroupToArguments(// Tree
                 BindingFlag.BIND_RVALUEREQUIRED | BindingFlag.BIND_STMTEXPRONLY, memGroup, CreateArgumentListEXPR(arguments, locals, 1, arguments.Length));
 
             // If overload resolution failed, throw an error.
-            if (pResult == null || !pResult.isOK())
+            if (pResult == null || !pResult.IsOK)
             {
                 throw Error.BindCallFailedOverloadResolution();
             }
@@ -1014,7 +1014,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             return ReorderArgumentsForNamedAndOptional(callingObject, pResult);
         }
 
-        private EXPR BindWinRTEventAccessor(EventWithType ewt, EXPR callingObject, ArgumentObject[] arguments, LocalVariableSymbol[] locals, bool isAddAccessor)
+        private Expr BindWinRTEventAccessor(EventWithType ewt, Expr callingObject, ArgumentObject[] arguments, LocalVariableSymbol[] locals, bool isAddAccessor)
         {
             // We want to generate either:
             // WindowsRuntimeMarshal.AddEventHandler<delegType>(new Func<delegType, EventRegistrationToken>(x.add_foo), new Action<EventRegistrationToken>(x.remove_foo), value)
@@ -1025,25 +1025,25 @@ namespace Microsoft.CSharp.RuntimeBinder
 
             // Get new Action<EventRegistrationToken>(x.remove_foo)
             MethPropWithInst removemwi = new MethPropWithInst(ewt.Event().methRemove, ewt.Ats);
-            EXPRMEMGRP removeMethGrp = _exprFactory.CreateMemGroup(callingObject, removemwi);
-            removeMethGrp.flags &= ~EXPRFLAG.EXF_USERCALLABLE;
+            ExprMemberGroup removeMethGrp = _exprFactory.CreateMemGroup(callingObject, removemwi);
+            removeMethGrp.Flags &= ~EXPRFLAG.EXF_USERCALLABLE;
             Type eventRegistrationTokenType = SymbolTable.EventRegistrationTokenType;
             Type actionType = Expression.GetActionType(eventRegistrationTokenType);
-            EXPR removeMethArg = _binder.mustConvert(removeMethGrp, _symbolTable.GetCTypeFromType(actionType));
+            Expr removeMethArg = _binder.mustConvert(removeMethGrp, _symbolTable.GetCTypeFromType(actionType));
 
             // The value
-            EXPR delegateVal = CreateArgumentEXPR(arguments[1], locals[1]);
-            EXPRLIST args;
+            Expr delegateVal = CreateArgumentEXPR(arguments[1], locals[1]);
+            ExprList args;
             string methodName;
 
             if (isAddAccessor)
             {
                 // Get new Func<delegType, EventRegistrationToken>(x.add_foo)
                 MethPropWithInst addmwi = new MethPropWithInst(ewt.Event().methAdd, ewt.Ats);
-                EXPRMEMGRP addMethGrp = _exprFactory.CreateMemGroup(callingObject, addmwi);
-                addMethGrp.flags &= ~EXPRFLAG.EXF_USERCALLABLE;
+                ExprMemberGroup addMethGrp = _exprFactory.CreateMemGroup(callingObject, addmwi);
+                addMethGrp.Flags &= ~EXPRFLAG.EXF_USERCALLABLE;
                 Type funcType = Expression.GetFuncType(evtType, eventRegistrationTokenType);
-                EXPR addMethArg = _binder.mustConvert(addMethGrp, _symbolTable.GetCTypeFromType(funcType));
+                Expr addMethArg = _binder.mustConvert(addMethGrp, _symbolTable.GetCTypeFromType(funcType));
 
                 args = _exprFactory.CreateList(addMethArg, removeMethArg, delegateVal);
                 methodName = SymbolLoader.GetNameManager().GetPredefName(PredefinedName.PN_ADDEVENTHANDLER).Text;
@@ -1057,9 +1057,9 @@ namespace Microsoft.CSharp.RuntimeBinder
             // WindowsRuntimeMarshal.Add\RemoveEventHandler(...)
             Type windowsRuntimeMarshalType = SymbolTable.WindowsRuntimeMarshalType;
             _symbolTable.PopulateSymbolTableWithName(methodName, new List<Type> { evtType }, windowsRuntimeMarshalType);
-            EXPRCLASS marshalClass = _exprFactory.CreateClass(_symbolTable.GetCTypeFromType(windowsRuntimeMarshalType), null, null);
-            EXPRMEMGRP addEventGrp = CreateMemberGroupEXPR(methodName, new List<Type> { evtType }, marshalClass, SYMKIND.SK_MethodSymbol);
-            EXPR expr = _binder.BindMethodGroupToArguments(
+            ExprClass marshalClass = _exprFactory.CreateClass(_symbolTable.GetCTypeFromType(windowsRuntimeMarshalType), null, null);
+            ExprMemberGroup addEventGrp = CreateMemberGroupEXPR(methodName, new List<Type> { evtType }, marshalClass, SYMKIND.SK_MethodSymbol);
+            Expr expr = _binder.BindMethodGroupToArguments(
                 BindingFlag.BIND_RVALUEREQUIRED | BindingFlag.BIND_STMTEXPRONLY,
                 addEventGrp,
                 args);
@@ -1067,7 +1067,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             return expr;
         }
 
-        private static void CheckForConditionalMethodError(EXPR pExpr)
+        private static void CheckForConditionalMethodError(Expr pExpr)
         {
             Debug.Assert(pExpr.isCALL());
             if (pExpr.isCALL())
@@ -1075,9 +1075,9 @@ namespace Microsoft.CSharp.RuntimeBinder
                 // This mimics the behavior of the native CompilerSymbolLoader in GetConditionalSymbols. Override
                 // methods cannot have the conditional attribute, but implicitly acquire it from their slot.
 
-                EXPRCALL call = pExpr.asCALL();
+                ExprCall call = pExpr.asCALL();
 
-                MethodSymbol method = call.mwi.Meth();
+                MethodSymbol method = call.MethWithInst.Meth();
                 if (method.isOverride)
                 {
                     method = method.swtSlot.Meth();
@@ -1091,31 +1091,31 @@ namespace Microsoft.CSharp.RuntimeBinder
             }
         }
 
-        private EXPR ReorderArgumentsForNamedAndOptional(EXPR callingObject, EXPR pResult)
+        private Expr ReorderArgumentsForNamedAndOptional(Expr callingObject, Expr pResult)
         {
-            EXPR arguments;
+            Expr arguments;
             AggregateType type;
             MethodOrPropertySymbol methprop;
-            EXPRMEMGRP memgroup;
+            ExprMemberGroup memgroup;
             TypeArray typeArgs;
 
             if (pResult.isCALL())
             {
-                EXPRCALL call = pResult.asCALL();
-                arguments = call.GetOptionalArguments();
-                type = call.mwi.Ats;
-                methprop = call.mwi.Meth();
-                memgroup = call.GetMemberGroup();
-                typeArgs = call.mwi.TypeArgs;
+                ExprCall call = pResult.asCALL();
+                arguments = call.OptionalArguments;
+                type = call.MethWithInst.Ats;
+                methprop = call.MethWithInst.Meth();
+                memgroup = call.MemberGroup;
+                typeArgs = call.MethWithInst.TypeArgs;
             }
             else
             {
                 Debug.Assert(pResult.isPROP());
-                EXPRPROP prop = pResult.asPROP();
-                arguments = prop.GetOptionalArguments();
-                type = prop.pwtSlot.Ats;
-                methprop = prop.pwtSlot.Prop();
-                memgroup = prop.GetMemberGroup();
+                ExprProperty prop = pResult.asPROP();
+                arguments = prop.OptionalArguments;
+                type = prop.PropWithTypeSlot.Ats;
+                methprop = prop.PropWithTypeSlot.Prop();
+                memgroup = prop.MemberGroup;
                 typeArgs = null;
             }
 
@@ -1128,7 +1128,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             // we're binding against the base method, and the derived method may change the 
             // generic arguments. 
             TypeArray parameters = SymbolLoader.GetTypeManager().SubstTypeArray(methprop.Params, type, typeArgs);
-            methprop = ExpressionBinder.GroupToArgsBinder.FindMostDerivedMethod(SymbolLoader, methprop, callingObject.type);
+            methprop = ExpressionBinder.GroupToArgsBinder.FindMostDerivedMethod(SymbolLoader, methprop, callingObject.Type);
             ExpressionBinder.GroupToArgsBinder.ReOrderArgsForNamedArguments(
                 methprop,
                 parameters,
@@ -1139,14 +1139,14 @@ namespace Microsoft.CSharp.RuntimeBinder
                 _exprFactory,
                 SymbolLoader);
             {
-                EXPR pList = null;
+                Expr pList = null;
 
                 // We reordered, so make a new list of them and set them on the constructor.
                 // Go backwards cause lists are right-flushed.
                 // Also perform the conversions to the right types.
                 for (int i = argInfo.carg - 1; i >= 0; i--)
                 {
-                    EXPR pArg = argInfo.prgexpr[i];
+                    Expr pArg = argInfo.prgexpr[i];
 
                     // Strip the name-ness away, since we don't need it.
                     pArg = StripNamedArgument(pArg);
@@ -1164,17 +1164,17 @@ namespace Microsoft.CSharp.RuntimeBinder
                 }
                 if (pResult.isCALL())
                 {
-                    pResult.asCALL().SetOptionalArguments(pList);
+                    pResult.asCALL().OptionalArguments = pList;
                 }
                 else
                 {
-                    pResult.asPROP().SetOptionalArguments(pList);
+                    pResult.asPROP().OptionalArguments = pList;
                 }
             }
             return pResult;
         }
 
-        private EXPR StripNamedArgument(EXPR pArg)
+        private Expr StripNamedArgument(Expr pArg)
         {
             if (pArg.isNamedArgumentSpecification())
             {
@@ -1182,28 +1182,28 @@ namespace Microsoft.CSharp.RuntimeBinder
             }
             else if (pArg.isARRINIT())
             {
-                pArg.asARRINIT().SetOptionalArguments(StripNamedArguments(pArg.asARRINIT().GetOptionalArguments()));
+                pArg.asARRINIT().OptionalArguments = StripNamedArguments(pArg.asARRINIT().OptionalArguments);
             }
 
             return pArg;
         }
 
-        private EXPR StripNamedArguments(EXPR pArg)
+        private Expr StripNamedArguments(Expr pArg)
         {
             if (pArg.isLIST())
             {
-                EXPRLIST list = pArg.asLIST();
+                ExprList list = pArg.asLIST();
                 while (list != null)
                 {
-                    list.SetOptionalElement(StripNamedArgument(list.GetOptionalElement()));
+                    list.OptionalElement = StripNamedArgument(list.OptionalElement);
 
-                    if (list.GetOptionalNextListNode().isLIST())
+                    if (list.OptionalNextListNode.isLIST())
                     {
-                        list = list.GetOptionalNextListNode().asLIST();
+                        list = list.OptionalNextListNode.asLIST();
                     }
                     else
                     {
-                        list.SetOptionalNextListNode(StripNamedArgument(list.GetOptionalNextListNode()));
+                        list.OptionalNextListNode = StripNamedArgument(list.OptionalNextListNode);
                         break;
                     }
                 }
@@ -1216,7 +1216,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         #region UnaryOperators
         /////////////////////////////////////////////////////////////////////////////////
 
-        internal EXPR BindUnaryOperation(
+        internal Expr BindUnaryOperation(
             CSharpUnaryOperationBinder payload,
             ArgumentObject[] arguments,
             LocalVariableSymbol[] locals)
@@ -1227,14 +1227,14 @@ namespace Microsoft.CSharp.RuntimeBinder
             }
 
             OperatorKind op = GetOperatorKind(payload.Operation);
-            EXPR arg1 = CreateArgumentEXPR(arguments[0], locals[0]);
-            arg1.errorString = Operators.GetDisplayName(GetOperatorKind(payload.Operation));
+            Expr arg1 = CreateArgumentEXPR(arguments[0], locals[0]);
+            arg1.ErrorString = Operators.GetDisplayName(GetOperatorKind(payload.Operation));
 
             if (op == OperatorKind.OP_TRUE || op == OperatorKind.OP_FALSE)
             {
                 // For true and false, we try to convert to bool first. If that
                 // doesn't work, then we look for user defined operators.
-                EXPR result = _binder.tryConvert(arg1, SymbolLoader.GetReqPredefType(PredefinedType.PT_BOOL));
+                Expr result = _binder.tryConvert(arg1, SymbolLoader.GetReqPredefType(PredefinedType.PT_BOOL));
                 if (result != null && op == OperatorKind.OP_FALSE)
                 {
                     // If we can convert to bool, we need to negate the thing if we're looking for false.
@@ -1263,7 +1263,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        internal EXPR BindBinaryOperation(
+        internal Expr BindBinaryOperation(
                 CSharpBinaryOperationBinder payload,
                 ArgumentObject[] arguments,
                 LocalVariableSymbol[] locals)
@@ -1274,11 +1274,11 @@ namespace Microsoft.CSharp.RuntimeBinder
             }
 
             ExpressionKind ek = Operators.GetExpressionKind(GetOperatorKind(payload.Operation, payload.IsLogicalOperation));
-            EXPR arg1 = CreateArgumentEXPR(arguments[0], locals[0]);
-            EXPR arg2 = CreateArgumentEXPR(arguments[1], locals[1]);
+            Expr arg1 = CreateArgumentEXPR(arguments[0], locals[0]);
+            Expr arg2 = CreateArgumentEXPR(arguments[1], locals[1]);
 
-            arg1.errorString = Operators.GetDisplayName(GetOperatorKind(payload.Operation, payload.IsLogicalOperation));
-            arg2.errorString = Operators.GetDisplayName(GetOperatorKind(payload.Operation, payload.IsLogicalOperation));
+            arg1.ErrorString = Operators.GetDisplayName(GetOperatorKind(payload.Operation, payload.IsLogicalOperation));
+            arg2.ErrorString = Operators.GetDisplayName(GetOperatorKind(payload.Operation, payload.IsLogicalOperation));
 
             if (ek > ExpressionKind.EK_MULTIOFFSET)
             {
@@ -1388,15 +1388,15 @@ namespace Microsoft.CSharp.RuntimeBinder
         #region Properties
         /////////////////////////////////////////////////////////////////////////////////
 
-        internal EXPR BindProperty(
+        internal Expr BindProperty(
             ICSharpBinder payload,
             ArgumentObject argument,
             LocalVariableSymbol local,
-            EXPR optionalIndexerArguments,
+            Expr optionalIndexerArguments,
             bool fEventsPermitted)
         {
             // If our argument is a static type, then we're calling a static property.
-            EXPR callingObject = argument.Info.IsStaticType ?
+            Expr callingObject = argument.Info.IsStaticType ?
                 _exprFactory.CreateClass(_symbolTable.GetCTypeFromType(argument.Value as Type), null, null) :
                 CreateLocal(argument.Type, argument.Info.IsOut, local);
 
@@ -1409,7 +1409,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             if (argument.Type.IsValueType && callingObject.isCAST())
             {
                 // If we have a struct type, unbox it.
-                callingObject.flags |= EXPRFLAG.EXF_UNBOXRUNTIME;
+                callingObject.Flags |= EXPRFLAG.EXF_UNBOXRUNTIME;
             }
             string name = payload.Name;
             BindingFlag bindFlags = payload.BindingFlags;
@@ -1445,7 +1445,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                     else
                     {
                         // Properties can be LValues.
-                        callingObject.flags |= EXPRFLAG.EXF_LVALUE;
+                        callingObject.Flags |= EXPRFLAG.EXF_LVALUE;
                         return CreateProperty(swt, callingObject, payload.BindingFlags);
                     }
 
@@ -1473,7 +1473,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         #region Casts
         /////////////////////////////////////////////////////////////////////////////////
 
-        internal EXPR BindImplicitConversion(
+        internal Expr BindImplicitConversion(
             ArgumentObject[] arguments,
             Type returnType,
             LocalVariableSymbol[] locals,
@@ -1487,7 +1487,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             // Load the conversions on the target.
             _symbolTable.AddConversionsForType(returnType);
 
-            EXPR argument = CreateArgumentEXPR(arguments[0], locals[0]);
+            Expr argument = CreateArgumentEXPR(arguments[0], locals[0]);
             CType destinationType = _symbolTable.GetCTypeFromType(returnType);
 
             if (bIsArrayCreationConversion)
@@ -1519,7 +1519,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        internal EXPR BindExplicitConversion(ArgumentObject[] arguments, Type returnType, LocalVariableSymbol[] locals)
+        internal Expr BindExplicitConversion(ArgumentObject[] arguments, Type returnType, LocalVariableSymbol[] locals)
         {
             if (arguments.Length != 1)
             {
@@ -1529,7 +1529,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             // Load the conversions on the target.
             _symbolTable.AddConversionsForType(returnType);
 
-            EXPR argument = CreateArgumentEXPR(arguments[0], locals[0]);
+            Expr argument = CreateArgumentEXPR(arguments[0], locals[0]);
             CType destinationType = _symbolTable.GetCTypeFromType(returnType);
 
             return _binder.mustCast(argument, destinationType);
@@ -1541,7 +1541,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        internal EXPR BindAssignment(
+        internal Expr BindAssignment(
             ICSharpBinder payload,
             ArgumentObject[] arguments,
             LocalVariableSymbol[] locals)
@@ -1554,7 +1554,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             string name = payload.Name;
 
             // Find the lhs and rhs.
-            EXPR indexerArguments;
+            Expr indexerArguments;
             bool bIsCompound;
 
             CSharpSetIndexBinder setIndexBinder = payload as CSharpSetIndexBinder;
@@ -1570,10 +1570,10 @@ namespace Microsoft.CSharp.RuntimeBinder
                 bIsCompound = (payload as CSharpSetMemberBinder).IsCompoundAssignment;
             }
             _symbolTable.PopulateSymbolTableWithName(name, null, arguments[0].Type);
-            EXPR lhs = BindProperty(payload, arguments[0], locals[0], indexerArguments, false);
+            Expr lhs = BindProperty(payload, arguments[0], locals[0], indexerArguments, false);
 
             int indexOfLast = arguments.Length - 1;
-            EXPR rhs = CreateArgumentEXPR(arguments[indexOfLast], locals[indexOfLast]);
+            Expr rhs = CreateArgumentEXPR(arguments[indexOfLast], locals[indexOfLast]);
 
             if (arguments[0] == null)
             {
@@ -1587,7 +1587,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         #region Events
         /////////////////////////////////////////////////////////////////////////////////
 
-        internal EXPR BindIsEvent(
+        internal Expr BindIsEvent(
             CSharpIsEventBinder binder,
             ArgumentObject[] arguments,
             LocalVariableSymbol[] locals)
@@ -1595,7 +1595,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             // The IsEvent binder will never be called without an instance object. This 
             // is because the compiler only gen's this code for dynamic dots.
 
-            EXPR callingObject = CreateLocal(arguments[0].Type, false, locals[0]);
+            Expr callingObject = CreateLocal(arguments[0].Type, false, locals[0]);
             MemberLookup mem = new MemberLookup();
             CType boolType = SymbolLoader.GetReqPredefType(PredefinedType.PT_BOOL);
             bool result = false;

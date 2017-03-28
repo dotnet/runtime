@@ -41,11 +41,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
     internal sealed class ExpressionIterator
     {
-        public ExpressionIterator(EXPR pExpr) { Init(pExpr); }
+        public ExpressionIterator(Expr pExpr) { Init(pExpr); }
 
         public bool AtEnd() { return _pCurrent == null && _pList == null; }
 
-        public EXPR Current() { return _pCurrent; }
+        public Expr Current() { return _pCurrent; }
 
         public void MoveNext()
         {
@@ -59,11 +59,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
             else
             {
-                Init(_pList.GetOptionalNextListNode());
+                Init(_pList.OptionalNextListNode);
             }
         }
 
-        public static int Count(EXPR pExpr)
+        public static int Count(Expr pExpr)
         {
             int c = 0;
             for (ExpressionIterator it = new ExpressionIterator(pExpr); !it.AtEnd(); it.MoveNext())
@@ -73,10 +73,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return c;
         }
 
-        private EXPRLIST _pList;
-        private EXPR _pCurrent;
+        private ExprList _pList;
+        private Expr _pCurrent;
 
-        private void Init(EXPR pExpr)
+        private void Init(Expr pExpr)
         {
             if (pExpr == null)
             {
@@ -86,7 +86,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             else if (pExpr.isLIST())
             {
                 _pList = pExpr.asLIST();
-                _pCurrent = _pList.GetOptionalElement();
+                _pCurrent = _pList.OptionalElement;
             }
             else
             {

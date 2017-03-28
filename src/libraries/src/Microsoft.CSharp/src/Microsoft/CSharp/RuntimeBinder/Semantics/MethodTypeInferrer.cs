@@ -360,7 +360,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // SPEC ISSUE: We should put language in the spec saying that we skip 
                 // SPEC ISSUE: inference on any argument that was created via the 
                 // SPEC ISSUE: optional parameter mechanism.
-                EXPR pExpr = _pMethodArguments.prgexpr[iArg];
+                Expr pExpr = _pMethodArguments.prgexpr[iArg];
 
                 if (pExpr.IsOptionalArgument)
                 {
@@ -378,9 +378,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // types that are not visible on more public types. (for ex.,
                 // private sealed classes that implement IEnumerable, as in iterators).
 
-                CType pSource = pExpr.RuntimeObjectActualType != null
-                    ? pExpr.RuntimeObjectActualType
-                    : _pMethodArguments.types[iArg];
+                CType pSource = pExpr.RuntimeObjectActualType ?? _pMethodArguments.types[iArg];
 
                 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 // END RUNTIME BINDER ONLY CHANGE
@@ -566,7 +564,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 {
                     pDest = pDest.AsParameterModifierType().GetParameterType();
                 }
-                EXPR pExpr = _pMethodArguments.prgexpr[iArg];
+                Expr pExpr = _pMethodArguments.prgexpr[iArg];
                 if (HasUnfixedParamInOutputType(pExpr, pDest) &&
                     !HasUnfixedParamInInputType(pExpr, pDest))
                 {
@@ -662,7 +660,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         //
         // Input types
         //
-        private bool DoesInputTypeContain(EXPR pSource, CType pDest,
+        private bool DoesInputTypeContain(Expr pSource, CType pDest,
             TypeParameterType pParam)
         {
             // SPEC: If E is a method group or an anonymous function and T is a delegate
@@ -691,7 +689,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         ////////////////////////////////////////////////////////////////////////////////
 
-        private bool HasUnfixedParamInInputType(EXPR pSource, CType pDest)
+        private bool HasUnfixedParamInInputType(Expr pSource, CType pDest)
         {
             for (int iParam = 0; iParam < _pMethodTypeParameters.Count; iParam++)
             {
@@ -711,7 +709,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         //
         // Output types
         //
-        private bool DoesOutputTypeContain(EXPR pSource, CType pDest,
+        private bool DoesOutputTypeContain(Expr pSource, CType pDest,
             TypeParameterType pParam)
         {
             // SPEC: If E is a method group or an anonymous function and T is a delegate
@@ -739,7 +737,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         ////////////////////////////////////////////////////////////////////////////////
 
-        private bool HasUnfixedParamInOutputType(EXPR pSource, CType pDest)
+        private bool HasUnfixedParamInOutputType(Expr pSource, CType pDest)
         {
             for (int iParam = 0; iParam < _pMethodTypeParameters.Count; iParam++)
             {
@@ -786,7 +784,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     pDest = pDest.AsParameterModifierType().GetParameterType();
                 }
 
-                EXPR pExpr = _pMethodArguments.prgexpr[iArg];
+                Expr pExpr = _pMethodArguments.prgexpr[iArg];
 
                 if (DoesInputTypeContain(pExpr, pDest,
                         _pMethodTypeParameters.ItemAsTypeParameterType(jParam)) &&
@@ -1029,7 +1027,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         ////////////////////////////////////////////////////////////////////////////////
 
-        private void OutputTypeInference(EXPR pExpr, CType pSource, CType pDest)
+        private void OutputTypeInference(Expr pExpr, CType pSource, CType pDest)
         {
             // SPEC: An output CType inference is made from an expression E to a CType T
             // SPEC: in the following way:
@@ -1058,7 +1056,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         ////////////////////////////////////////////////////////////////////////////////
 
-        private bool MethodGroupReturnTypeInference(EXPR pSource, CType pType)
+        private bool MethodGroupReturnTypeInference(Expr pSource, CType pType)
         {
             // SPEC:  Otherwise, if E is a method group and T is a delegate CType or
             // SPEC:   expression tree CType with parameter types T1...Tk and return
