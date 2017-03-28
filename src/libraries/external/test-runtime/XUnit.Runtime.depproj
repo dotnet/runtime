@@ -43,8 +43,16 @@
           AfterTargets="RestorePackages"
           Condition="'$(TargetGroup)'=='uap'" >
 
+    <PropertyGroup>
+      <UAPToolsPackageVersion>1.0.1</UAPToolsPackageVersion>
+      <UAPToolsPackageName>Microsoft.DotNet.UAP.TestTools</UAPToolsPackageName>
+
+      <UAPToolsFolder Condition="'$(UAPToolsFolder)'==''">$(PackagesDir)$(UAPToolsPackageName)\$(UAPToolsPackageVersion)\Tools</UAPToolsFolder>
+      <UAPToolsFolder>$(UAPToolsFolder.Replace('/', '\'))</UAPToolsFolder>
+    </PropertyGroup>
+
     <!-- Give a warning that the UAPToolsFolder is not set and that tests won't run -->
-    <Warning Text="The UAPToolsFolder parameter was not specified. This means that tests won't be able to run." Condition="'$(UAPToolsFolder)'==''" />
+    <Warning Text="Could not find the UAP Tools at '$(UAPToolsFolder)'. Please run sync." Condition="'$(UAPToolsFolder)'=='' or !Exists('$(UAPToolsFolder)')" />
 
     <ItemGroup Condition="'$(UAPToolsFolder)'!=''">
       <RunnerFolderContents Include="$(UAPToolsFolder)\Runner\**\*" />
