@@ -6,6 +6,7 @@
     <ApiCompatResponseFile>$(IntermediateOutputPath)/apicompat.rsp</ApiCompatResponseFile>
     <ApiCompatBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(TargetGroup).netfx461.txt</ApiCompatBaselineFile>
     <ApiCompatNSBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(TargetGroup).netstandard20.txt</ApiCompatNSBaselineFile>
+    <ApiCompatNSOnlyBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(TargetGroup).netstandard20Only.txt</ApiCompatNSOnlyBaselineFile>
     <ApiCompatImplementationDirs>$(RefPath),$(GenFacadesOutputPath)</ApiCompatImplementationDirs>
     <!-- If we are targeting uap or uapaot run ApiCompat against the implementation assemblies instead since they don't match the reference assemblies -->
     <ApiCompatImplementationDirs Condition="$(TargetGroup.StartsWith('uap'))">$(RuntimePath),$(GenFacadesOutputPath)</ApiCompatImplementationDirs>
@@ -40,6 +41,14 @@
     </Exec>
 
     <Exec Command="$(ApiCompatCmd) &quot;$(NetStandardRefPath)&quot; @&quot;$(ApiCompatResponseFile)&quot; &gt; $(ApiCompatNSBaselineFile)"
+          CustomErrorRegularExpression="^[a-zA-Z]+ :"
+          StandardOutputImportance="Low"
+          IgnoreExitCode="true"
+    >
+      <Output TaskParameter="ExitCode" PropertyName="ApiCompatExitCode" />
+    </Exec>
+
+    <Exec Command="$(ApiCompatCmd) &quot;$(NetStandardRefPath)/netstandard.dll&quot; @&quot;$(ApiCompatResponseFile)&quot; &gt; $(ApiCompatNSOnlyBaselineFile)"
           CustomErrorRegularExpression="^[a-zA-Z]+ :"
           StandardOutputImportance="Low"
           IgnoreExitCode="true"
