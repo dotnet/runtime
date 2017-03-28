@@ -1035,7 +1035,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(origArgs != null);
             Expr target = origArgs.OptionalElement;
             Debug.Assert(origArgs.OptionalNextListNode.Kind == ExpressionKind.EK_FUNCPTR);
-            ExprFuncPtr funcptr = origArgs.OptionalNextListNode.asFUNCPTR();
+            ExprFuncPtr funcptr = origArgs.OptionalNextListNode as ExprFuncPtr;
+            Debug.Assert(funcptr != null);
             MethodSymbol createDelegateMethod = GetPreDefMethod(PREDEFMETH.PM_METHODINFO_CREATEDELEGATE_TYPE_OBJECT);
             AggregateType delegateType = GetSymbolLoader().GetOptPredefTypeErr(PredefinedType.PT_DELEGATE, true);
             MethWithInst mwi = new MethWithInst(createDelegateMethod, delegateType);
