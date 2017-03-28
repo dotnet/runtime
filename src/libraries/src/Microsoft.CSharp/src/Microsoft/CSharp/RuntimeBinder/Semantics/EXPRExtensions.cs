@@ -169,7 +169,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 Debug.Assert(false, "Panic!");
         }
 
-        public static ExprReturn asRETURN(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_RETURN); return (ExprReturn)expr; }
         public static ExprBinOp asBINOP(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_BINOP); return (ExprBinOp)expr; }
         public static ExprList asLIST(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_LIST); return (ExprList)expr; }
         public static ExprArrayIndex asARRAYINDEX(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_ARRAYINDEX); return (ExprArrayIndex)expr; }
@@ -193,7 +192,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public static ExprNamedArgumentSpecification asNamedArgumentSpecification(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_NamedArgumentSpecification); return (ExprNamedArgumentSpecification)expr; }
 
         public static bool isCONSTANT_OK(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_CONSTANT && expr.IsOK); }
-        public static bool isRETURN(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_RETURN); }
         public static bool isLIST(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_LIST); }
         public static bool isARRAYINDEX(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_ARRAYINDEX); }
         public static bool isCALL(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_CALL); }
