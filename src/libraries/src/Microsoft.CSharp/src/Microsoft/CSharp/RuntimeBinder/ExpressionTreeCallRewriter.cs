@@ -859,11 +859,12 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private object GetObject(Expr pExpr)
         {
-            if (pExpr.isCAST())
+            while (pExpr is ExprCast cast)
             {
-                return GetObject(pExpr.asCAST().Argument);
+                pExpr = cast.Argument;
             }
-            else if (pExpr is ExprTypeOf typeOf)
+
+            if (pExpr is ExprTypeOf typeOf)
             {
                 return typeOf.SourceType.Type.AssociatedSystemType;
             }

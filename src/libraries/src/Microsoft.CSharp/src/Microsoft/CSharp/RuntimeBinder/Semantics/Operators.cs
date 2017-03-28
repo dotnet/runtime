@@ -2250,11 +2250,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private Expr BindEnumUnaOp(ExpressionKind ek, EXPRFLAG flags, Expr arg)
         {
             Debug.Assert(ek == ExpressionKind.EK_BITNOT);
-            Debug.Assert(arg.isCAST());
-            Debug.Assert(arg.asCAST().Argument.Type.isEnumType());
+            ExprCast cast = arg as ExprCast;
+            Debug.Assert(cast != null);
+            Debug.Assert(cast.Argument.Type.isEnumType());
 
             PredefinedType ptOp;
-            CType typeEnum = arg.asCAST().Argument.Type;
+            CType typeEnum = cast.Argument.Type;
 
             switch (typeEnum.fundType())
             {
