@@ -15,14 +15,18 @@
     <NetFxReference Include="System" />
     <NetFxReference Include="System.Core" />
     <NetFxReference Include="System.ComponentModel.Composition" />
+    <NetFxReference Include="System.ComponentModel.DataAnnotations" />
     <NetFxReference Include="System.Data" />
     <NetFxReference Include="System.Drawing" />
     <NetFxReference Include="System.IO.Compression.FileSystem" />
+    <NetFxReference Include="System.Net" />
     <NetFxReference Include="System.Numerics" />
     <NetFxReference Include="System.Runtime.Serialization" />
     <NetFxReference Include="System.Transactions" />
+    <NetFxReference Include="System.Windows" />
     <NetFxReference Include="System.Web" />
     <NetFxReference Include="System.Xml" />
+    <NetFxReference Include="System.Xml.Serialization" />
     <NetFxReference Include="System.Xml.Linq" />
   </ItemGroup>
 

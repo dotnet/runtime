@@ -34,7 +34,7 @@
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.IO.FileSystem" />
-    <Reference Include="System.IO.FileSystem.AccessControl" />
+    <Reference Include="System.IO.FileSystem.AccessControl" Condition="'$(TargetGroup)' != 'uap'" />
     <Reference Include="System.Linq" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
