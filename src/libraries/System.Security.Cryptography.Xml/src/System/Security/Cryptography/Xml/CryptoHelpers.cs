@@ -49,14 +49,10 @@ namespace System.Security.Cryptography.Xml
                     return new KeyInfoRetrievalMethod();
                 case "http://www.w3.org/2001/04/xmlenc# EncryptedKey":
                     return new KeyInfoEncryptedKey();
-                case "http://www.w3.org/2001/04/xmldsig-more#hmac-ripemd160":
-                    throw new NotImplementedException(name);
-                    //return new System.Security.Cryptography.HMACRIPEMD160();
                 case "http://www.w3.org/2000/09/xmldsig#dsa-sha1":
                     return new DSASignatureDescription();
                 case "System.Security.Cryptography.DSASignatureDescription":
-                    throw new NotImplementedException(name);
-                    //return new DSASignatureDescription();
+                    return new DSASignatureDescription();
                 case "http://www.w3.org/2000/09/xmldsig#rsa-sha1":
                     return new RSAPKCS1SHA1SignatureDescription();
                 case "System.Security.Cryptography.RSASignatureDescription":
