@@ -112,9 +112,30 @@ namespace Microsoft.DotNet.PlatformAbstractions.Native
                         result.VersionId = line.Substring(11).Trim('"', '\'');
                     }
                 }
-                return result;
+
+                return NormalizeDistroInfo(result);
             }
             return null;
+        }
+
+        // For some distros, we don't want to use the full version from VERSION_ID. One example is
+        // Red Hat Enterprise Linux, which includes a minor version in their VERSION_ID but minor
+        // versions are backwards compatable.
+        //
+        // In this case, we'll normalized RIDs like 'rhel.7.2' and 'rhel.7.3' to a generic
+        // 'rhel.7'. This brings RHEL in line with other distros like CentOS or Debian which
+        // don't put minor version numbers in their VERSION_ID fields because all minor versions
+        // are backwards compatible.
+        private static DistroInfo NormalizeDistroInfo(DistroInfo distroInfo)
+        {
+            int minorVersionNumberSeparatorIndex = distroInfo.VersionId.IndexOf('.');
+
+            if (distroInfo.Id == "rhel" && minorVersionNumberSeparatorIndex != -1)
+            {
+                distroInfo.VersionId = distroInfo.VersionId.Substring(0, minorVersionNumberSeparatorIndex);
+            }
+
+            return distroInfo;
         }
 
         // I could probably have just done one method signature and put the #if inside the body but the implementations
