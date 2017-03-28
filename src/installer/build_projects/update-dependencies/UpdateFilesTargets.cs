@@ -34,17 +34,7 @@ namespace Microsoft.DotNet.Scripts
 
             dependencyInfos.Add(CreateDependencyInfo("CoreFx", Config.Instance.CoreFxVersionUrl).Result);
             dependencyInfos.Add(CreateDependencyInfo("CoreClr", Config.Instance.CoreClrVersionUrl).Result);
-            dependencyInfos.Add(CreateDependencyInfo("Roslyn", Config.Instance.RoslynVersionUrl).Result);
-
-            if (Config.Instance.StandardVersionUrl != string.Empty)
-            {
-                dependencyInfos.Add(CreateDependencyInfo("Standard", Config.Instance.StandardVersionUrl).Result);
-            }
-
-            if (Config.Instance.LibuvVersionUrl != string.Empty)
-            {
-                dependencyInfos.Add(CreateDependencyInfo("Libuv", Config.Instance.LibuvVersionUrl).Result);
-            }
+            dependencyInfos.Add(CreateDependencyInfo("Standard", Config.Instance.StandardVersionUrl).Result);
 
             return c.Success();
         }
