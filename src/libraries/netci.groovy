@@ -453,12 +453,8 @@ def buildArchConfiguration = ['Debug': 'x86',
 }
 
 // **************************
-// Define Linux ARM Emulator testing. This creates a per PR job which
-// cross builds native binaries for the Emulator rootfs.
-// NOTE: To add Ubuntu-ARM cross build jobs to this code, add the Ubuntu OS to the
-// OS array, branch the steps to be performed by Ubuntu and the Linux ARM emulator
-// based on the OS being handled, and handle the triggers accordingly
-// (the machine affinity of the new job remains the same)
+// Define Linux ARM builds. These jobs run on every merge.
+// Some jobs run on every PR. The ones that don't run per PR can be requested via a phrase.
 // **************************
 [true, false].each { isPR ->
     ['netcoreapp'].each { targetGroup ->
@@ -504,7 +500,13 @@ def buildArchConfiguration = ['Debug': 'x86',
 
                 // Set up triggers
                 if (isPR) {
-                    Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop ${osName} ${abi} ${configurationGroup} Cross Build", "(?i).*test\\W+innerloop\\W+${osName}\\W+${abi}\\W+${configurationGroup}.*")
+                    // We run Tizen release/debug, Ubuntu 14.04 release and Ubuntu 16.04 debug for ARM on every PR.
+                    if (osName == "Tizen" || (osName == "Ubuntu14.04" && configurationGroup == "Release") || (osName == "Ubuntu16.04" && configurationGroup == "Debug")) {
+                        Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop ${osName} ${abi} ${configurationGroup} Cross Build")
+                    }
+                    else {
+                        Utilities.addGithubPRTriggerForBranch(newJob, branch, "Innerloop ${osName} ${abi} ${configurationGroup} Cross Build", "(?i).*test\\W+innerloop\\W+${osName}\\W+${abi}\\W+${configurationGroup}.*")
+                    }
                 }
                 else {
                     // Set a push trigger
