@@ -39,6 +39,7 @@
          the GenerateReferenceAssemblyPaths task (not target) and to prevent it from outputting a warning (MSB3644). -->
     <_TargetFrameworkDirectories>$(MSBuildThisFileDirectory)/Documentation</_TargetFrameworkDirectories>
     <_FullFrameworkReferenceAssemblyPaths>$(MSBuildThisFileDirectory)/Documentation</_FullFrameworkReferenceAssemblyPaths>
+    <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
   </PropertyGroup>
   <!-- Add Serviceable attribute to the project's metadata -->
   <ItemGroup>
@@ -927,6 +928,7 @@
     <!-- These files are shared with other framework components and don't live the same folder as the rest of them-->
     <Compile Include="$(CommonPath)\NotImplemented.cs" />
     <Compile Include="$(CommonPath)\PinnableBufferCache.cs" />
+    <Compile Include="$(CommonPath)\System\SR.cs" />
     <!-- Include Internals visible to file in the compilation -->
     <Compile Include="$(BclSourcesRoot)\mscorlib.Friends.cs" />
     <!-- TODO list of types to be cleaned up from CoreLib -->
