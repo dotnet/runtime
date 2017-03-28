@@ -533,7 +533,7 @@ def buildArchConfiguration = ['Debug': 'x86',
             shell(script)
 
             // Tar up the appropriate bits
-            shell("tar -czf bin/bin.tar.gz --directory=\"bin/Linux.${archGroup}.${configurationGroup}/native\" .")
+            shell("tar -czf bin/build.tar.gz --directory=\"bin/Linux.${archGroup}.${configurationGroup}/native\" .")
         }
     }
     
