@@ -81,7 +81,6 @@ namespace Microsoft.CSharp.RuntimeBinder
             Debug.Assert(pExpr.OptionalRightChild.isWRAP());
 
             ExprCall call = pExpr.OptionalLeftChild.asCALL();
-            ExprTypeOf TypeOf = call.OptionalArguments.asLIST().OptionalElement.asTYPEOF();
             Expression parameter = _ListOfParameters[_currentParameterIndex++];
             _DictionaryOfParameters.Add(call, parameter);
 
@@ -323,7 +322,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 ExprList list = pExpr.asCALL().OptionalArguments.asLIST();
                 ExprList list2 = list.OptionalNextListNode.asLIST();
                 e = GetExpression(list.OptionalElement);
-                t = list2.OptionalElement.asTYPEOF().SourceType.Type.AssociatedSystemType;
+                t = ((ExprTypeOf)list2.OptionalElement).SourceType.Type.AssociatedSystemType;
 
                 if (e.Type.MakeByRefType() == t)
                 {
@@ -351,7 +350,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 ExprList list = pExpr.asCALL().OptionalArguments.asLIST();
 
                 e = GetExpression(list.OptionalElement);
-                t = list.OptionalNextListNode.asTYPEOF().SourceType.Type.AssociatedSystemType;
+                t = ((ExprTypeOf)list.OptionalNextListNode).SourceType.Type.AssociatedSystemType;
 
                 if (e.Type.MakeByRefType() == t)
                 {
@@ -457,7 +456,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
             return Expression.Constant(
                 GetObject(list.OptionalElement),
-                list.OptionalNextListNode.asTYPEOF().SourceType.Type.AssociatedSystemType);
+                (list.OptionalNextListNode as ExprTypeOf).SourceType.Type.AssociatedSystemType);
         }
 
         /////////////////////////////////////////////////////////////////////////////////
@@ -767,7 +766,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                         {
                             ExprList list = call.OptionalArguments.asLIST();
                             return Expression.NewArrayInit(
-                                list.OptionalElement.asTYPEOF().SourceType.Type.AssociatedSystemType,
+                                ((ExprTypeOf)list.OptionalElement).SourceType.Type.AssociatedSystemType,
                                 GetArgumentsFromArrayInit(list.OptionalNextListNode.asARRINIT()));
                         }
 
@@ -864,9 +863,9 @@ namespace Microsoft.CSharp.RuntimeBinder
             {
                 return GetObject(pExpr.asCAST().Argument);
             }
-            else if (pExpr.isTYPEOF())
+            else if (pExpr is ExprTypeOf typeOf)
             {
-                return pExpr.asTYPEOF().SourceType.Type.AssociatedSystemType;
+                return typeOf.SourceType.Type.AssociatedSystemType;
             }
             else if (pExpr.isMETHODINFO())
             {
