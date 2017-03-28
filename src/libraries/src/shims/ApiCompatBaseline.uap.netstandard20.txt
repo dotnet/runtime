@@ -9,8 +9,6 @@ MembersMustExist : Member 'System.Net.CookieCollection.Item.get(System.String)' 
 MembersMustExist : Member 'System.Net.CookieContainer.Add(System.Net.Cookie)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Net.CookieContainer.Add(System.Uri, System.Net.Cookie)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Net.CookieException' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.ECDsa.Create(System.Security.Cryptography.ECCurve)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.ECDsaCng..ctor(System.Security.Cryptography.ECCurve)' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System:
 TypesMustExist : Type 'System.Net.Cookie' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Net.CookieCollection.Add(System.Net.Cookie)' does not exist in the implementation but it does exist in the contract.
@@ -20,9 +18,6 @@ MembersMustExist : Member 'System.Net.CookieCollection.Item.get(System.String)' 
 MembersMustExist : Member 'System.Net.CookieContainer.Add(System.Net.Cookie)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Net.CookieContainer.Add(System.Uri, System.Net.Cookie)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Net.CookieException' does not exist in the implementation but it does exist in the contract.
-Compat issues with assembly System.Core:
-MembersMustExist : Member 'System.Security.Cryptography.ECDsa.Create(System.Security.Cryptography.ECCurve)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.ECDsaCng..ctor(System.Security.Cryptography.ECCurve)' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.IO.FileSystem.AccessControl:
 TypesMustExist : Type 'System.IO.FileSystemAclExtensions' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.AccessControl.DirectoryObjectSecurity' does not exist in the implementation but it does exist in the contract.
@@ -41,8 +36,4 @@ MembersMustExist : Member 'System.Net.CookieCollection.Item.get(System.String)' 
 MembersMustExist : Member 'System.Net.CookieContainer.Add(System.Net.Cookie)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Net.CookieContainer.Add(System.Uri, System.Net.Cookie)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Net.CookieException' does not exist in the implementation but it does exist in the contract.
-Compat issues with assembly System.Security.Cryptography.Algorithms:
-MembersMustExist : Member 'System.Security.Cryptography.ECDsa.Create(System.Security.Cryptography.ECCurve)' does not exist in the implementation but it does exist in the contract.
-Compat issues with assembly System.Security.Cryptography.Cng:
-MembersMustExist : Member 'System.Security.Cryptography.ECDsaCng..ctor(System.Security.Cryptography.ECCurve)' does not exist in the implementation but it does exist in the contract.
-Total Issues: 38
+Total Issues: 32
