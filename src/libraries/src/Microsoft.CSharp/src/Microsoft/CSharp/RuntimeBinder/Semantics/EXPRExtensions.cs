@@ -184,7 +184,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public static ExprUserDefinedConversion asUSERDEFINEDCONVERSION(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_USERDEFINEDCONVERSION); return (ExprUserDefinedConversion)expr; }
         public static ExprTypeOf asTYPEOF(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_TYPEOF); return (ExprTypeOf)expr; }
         public static ExprZeroInit asZEROINIT(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_ZEROINIT); return (ExprZeroInit)expr; }
-        public static ExprUserLogicalOp asUSERLOGOP(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_USERLOGOP); return (ExprUserLogicalOp)expr; }
         public static ExprMemberGroup asMEMGRP(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_MEMGRP); return (ExprMemberGroup)expr; }
         public static ExprFieldInfo asFIELDINFO(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_FIELDINFO); return (ExprFieldInfo)expr; }
         public static ExprMethodInfo asMETHODINFO(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_METHODINFO); return (ExprMethodInfo)expr; }
