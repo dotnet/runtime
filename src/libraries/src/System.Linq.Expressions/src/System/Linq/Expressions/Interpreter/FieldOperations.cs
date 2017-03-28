@@ -69,7 +69,6 @@ namespace System.Linq.Expressions.Interpreter
 
         public override string InstructionName => "StoreField";
         public override int ConsumedStack => 2;
-        public override int ProducedStack => 0;
 
         public override int Run(InterpretedFrame frame)
         {
@@ -91,8 +90,8 @@ namespace System.Linq.Expressions.Interpreter
         }
 
         public override string InstructionName => "StoreStaticField";
+
         public override int ConsumedStack => 1;
-        public override int ProducedStack => 0;
 
         public override int Run(InterpretedFrame frame)
         {
