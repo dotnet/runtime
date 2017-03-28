@@ -944,11 +944,11 @@ namespace Microsoft.CSharp.RuntimeBinder
 
                 return objval;
             }
-            else if (pExpr.isZEROINIT())
+            else if (pExpr is ExprZeroInit zeroInit)
             {
-                if (pExpr.asZEROINIT().OptionalArgument != null)
+                if (zeroInit.OptionalArgument != null)
                 {
-                    return GetObject(pExpr.asZEROINIT().OptionalArgument);
+                    return GetObject(zeroInit.OptionalArgument);
                 }
                 return Activator.CreateInstance(pExpr.Type.AssociatedSystemType);
             }

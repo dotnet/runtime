@@ -180,7 +180,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public static ExprCast asCAST(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_CAST); return (ExprCast)expr; }
         public static ExprUserDefinedConversion asUSERDEFINEDCONVERSION(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_USERDEFINEDCONVERSION); return (ExprUserDefinedConversion)expr; }
         public static ExprTypeOf asTYPEOF(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_TYPEOF); return (ExprTypeOf)expr; }
-        public static ExprZeroInit asZEROINIT(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_ZEROINIT); return (ExprZeroInit)expr; }
         public static ExprMemberGroup asMEMGRP(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_MEMGRP); return (ExprMemberGroup)expr; }
         public static ExprFieldInfo asFIELDINFO(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_FIELDINFO); return (ExprFieldInfo)expr; }
         public static ExprMethodInfo asMETHODINFO(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_METHODINFO); return (ExprMethodInfo)expr; }
@@ -199,7 +198,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public static bool isCAST(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_CAST); }
         public static bool isUSERDEFINEDCONVERSION(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_USERDEFINEDCONVERSION); }
         public static bool isTYPEOF(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_TYPEOF); }
-        public static bool isZEROINIT(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_ZEROINIT); }
         public static bool isMEMGRP(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_MEMGRP); }
         public static bool isBOUNDLAMBDA(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_BOUNDLAMBDA); }
         public static bool isUNBOUNDLAMBDA(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_UNBOUNDLAMBDA); }
