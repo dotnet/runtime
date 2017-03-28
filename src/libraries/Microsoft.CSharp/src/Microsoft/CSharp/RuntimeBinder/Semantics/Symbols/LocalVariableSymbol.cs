@@ -12,7 +12,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // rewriter, but in the interests of expediency I've just put the mapping here
         // for now.
 
-        public EXPRWRAP wrap;
+        public ExprWrap wrap;
 
         public bool isThis;           // Is this the one and only <this> pointer?
         // movedToField should have iIteratorLocal set appropriately

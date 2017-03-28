@@ -11,14 +11,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     {
         private sealed class BinOpArgInfo
         {
-            public BinOpArgInfo(EXPR op1, EXPR op2)
+            public BinOpArgInfo(Expr op1, Expr op2)
             {
                 Debug.Assert(op1 != null);
                 Debug.Assert(op2 != null);
                 arg1 = op1;
                 arg2 = op2;
-                type1 = arg1.type;
-                type2 = arg2.type;
+                type1 = arg1.Type;
+                type2 = arg2.Type;
                 typeRaw1 = type1.StripNubs();
                 typeRaw2 = type2.StripNubs();
                 pt1 = type1.isPredefined() ? type1.getPredefType() : PredefinedType.PT_COUNT;
@@ -27,8 +27,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 ptRaw2 = typeRaw2.isPredefined() ? typeRaw2.getPredefType() : PredefinedType.PT_COUNT;
             }
 
-            public EXPR arg1;
-            public EXPR arg2;
+            public Expr arg1;
+            public Expr arg2;
             public PredefinedType pt1;
             public PredefinedType pt2;
             public PredefinedType ptRaw1;

@@ -16,10 +16,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private sealed class ExplicitConversion
         {
             private readonly ExpressionBinder _binder;
-            private EXPR _exprSrc;
+            private Expr _exprSrc;
             private readonly CType _typeSrc;
             private readonly CType _typeDest;
-            private readonly EXPRTYPEORNAMESPACE _exprTypeDest;
+            private readonly ExprTypeOrNamespace _exprTypeDest;
 
             // This is for lambda error reporting. The reason we have this is because we 
             // store errors for lambda conversions, and then we don't bind the conversion
@@ -37,7 +37,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // errors on the correct type.
 
             private readonly CType _pDestinationTypeForLambdaErrorReporting;
-            private EXPR _exprDest;
+            private Expr _exprDest;
             private readonly bool _needsExprDest;
             private readonly CONVERTTYPE _flags;
 
@@ -45,7 +45,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // BindExplicitConversion
             // ----------------------------------------------------------------------------
 
-            public ExplicitConversion(ExpressionBinder binder, EXPR exprSrc, CType typeSrc, EXPRTYPEORNAMESPACE typeDest, CType pDestinationTypeForLambdaErrorReporting, bool needsExprDest, CONVERTTYPE flags)
+            public ExplicitConversion(ExpressionBinder binder, Expr exprSrc, CType typeSrc, ExprTypeOrNamespace typeDest, CType pDestinationTypeForLambdaErrorReporting, bool needsExprDest, CONVERTTYPE flags)
             {
                 _binder = binder;
                 _exprSrc = exprSrc;
@@ -57,7 +57,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 _flags = flags;
                 _exprDest = null;
             }
-            public EXPR ExprDest { get { return _exprDest; } }
+            public Expr ExprDest { get { return _exprDest; } }
             /*
              * BindExplicitConversion
              *
@@ -194,20 +194,20 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 {
                     if (_needsExprDest)
                     {
-                        EXPR valueSrc = _exprSrc;
+                        Expr valueSrc = _exprSrc;
                         // This is a holdover from the days when you could have nullable of nullable.
                         // Can we remove this loop?
-                        while (valueSrc.type.IsNullableType())
+                        while (valueSrc.Type.IsNullableType())
                         {
                             valueSrc = _binder.BindNubValue(valueSrc);
                         }
-                        Debug.Assert(valueSrc.type == _typeSrc.StripNubs());
-                        if (!_binder.BindExplicitConversion(valueSrc, valueSrc.type, _exprTypeDest, _pDestinationTypeForLambdaErrorReporting, _needsExprDest, out _exprDest, _flags | CONVERTTYPE.NOUDC))
+                        Debug.Assert(valueSrc.Type == _typeSrc.StripNubs());
+                        if (!_binder.BindExplicitConversion(valueSrc, valueSrc.Type, _exprTypeDest, _pDestinationTypeForLambdaErrorReporting, _needsExprDest, out _exprDest, _flags | CONVERTTYPE.NOUDC))
                         {
                             VSFAIL("BindExplicitConversion failed unexpectedly");
                             return false;
                         }
-                        if (_exprDest.kind == ExpressionKind.EK_USERDEFINEDCONVERSION)
+                        if (_exprDest.Kind == ExpressionKind.EK_USERDEFINEDCONVERSION)
                         {
                             _exprDest.asUSERDEFINEDCONVERSION().Argument = _exprSrc;
                         }
@@ -296,8 +296,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     if (_typeSrc.IsTypeParameterType())
                     {
                         // Need to box first before unboxing.
-                        EXPR exprT;
-                        EXPRCLASS exprObj = GetExprFactory().MakeClass(_binder.GetReqPDT(PredefinedType.PT_OBJECT));
+                        Expr exprT;
+                        ExprClass exprObj = GetExprFactory().MakeClass(_binder.GetReqPDT(PredefinedType.PT_OBJECT));
                         _binder.bindSimpleCast(_exprSrc, exprObj, out exprT, EXPRFLAG.EXF_FORCE_BOX);
                         _exprSrc = exprT;
                     }
@@ -535,7 +535,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 // Need to first cast the source expr to its underlying type.
 
-                EXPR exprCast;
+                Expr exprCast;
 
                 if (_exprSrc == null)
                 {
@@ -543,7 +543,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
                 else
                 {
-                    EXPRCLASS underlyingExpr = GetExprFactory().MakeClass(underlyingType);
+                    ExprClass underlyingExpr = GetExprFactory().MakeClass(underlyingType);
                     _binder.bindSimpleCast(_exprSrc, underlyingExpr, out exprCast);
                 }
 
@@ -726,7 +726,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         }
                         else
                         {
-                            _binder.bindSimpleCast(_exprSrc, _exprTypeDest, out _exprDest, EXPRFLAG.EXF_REFCHECK | (_exprSrc?.flags & EXPRFLAG.EXF_CANTBENULL ?? 0));
+                            _binder.bindSimpleCast(_exprSrc, _exprTypeDest, out _exprDest, EXPRFLAG.EXF_REFCHECK | (_exprSrc?.Flags & EXPRFLAG.EXF_CANTBENULL ?? 0));
                         }
                     }
                     return AggCastResult.Success;
@@ -738,7 +738,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     CConversions.HasGenericDelegateExplicitReferenceConversion(GetSymbolLoader(), _typeSrc, aggTypeDest))
                 {
                     if (_needsExprDest)
-                        _binder.bindSimpleCast(_exprSrc, _exprTypeDest, out _exprDest, EXPRFLAG.EXF_REFCHECK | (_exprSrc?.flags & EXPRFLAG.EXF_CANTBENULL ?? 0));
+                        _binder.bindSimpleCast(_exprSrc, _exprTypeDest, out _exprDest, EXPRFLAG.EXF_REFCHECK | (_exprSrc?.Flags & EXPRFLAG.EXF_CANTBENULL ?? 0));
                     return AggCastResult.Success;
                 }
                 return AggCastResult.Failure;

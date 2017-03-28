@@ -4,13 +4,10 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal sealed class EXPRCONCAT : EXPR
+    internal sealed class ExprConcat : Expr
     {
-        private EXPR FirstArgument;
-        public EXPR GetFirstArgument() { return FirstArgument; }
-        public void SetFirstArgument(EXPR value) { FirstArgument = value; }
-        private EXPR SecondArgument;
-        public EXPR GetSecondArgument() { return SecondArgument; }
-        public void SetSecondArgument(EXPR value) { SecondArgument = value; }
+        public Expr FirstArgument { get; set; }
+
+        public Expr SecondArgument { get; set; }
     }
 }

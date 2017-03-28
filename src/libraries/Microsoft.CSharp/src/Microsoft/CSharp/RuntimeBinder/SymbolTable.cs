@@ -170,14 +170,14 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         internal SymWithType LookupMember(
             string name,
-            EXPR callingObject,
+            Expr callingObject,
             ParentSymbol context,
             int arity,
             MemberLookup mem,
             bool allowSpecialNames,
             bool requireInvocable)
         {
-            CType type = callingObject.type;
+            CType type = callingObject.Type;
 
             if (type.IsArrayType())
             {

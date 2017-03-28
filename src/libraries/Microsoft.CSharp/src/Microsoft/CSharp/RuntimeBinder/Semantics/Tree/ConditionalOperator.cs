@@ -4,13 +4,10 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal sealed class EXPRQUESTIONMARK : EXPR
+    internal sealed class ExprQuestionMark : Expr
     {
-        private EXPR TestExpression;
-        public EXPR GetTestExpression() { return TestExpression; }
-        public void SetTestExpression(EXPR value) { TestExpression = value; }
-        private EXPRBINOP Consequence;
-        public EXPRBINOP GetConsequence() { return Consequence; }
-        public void SetConsequence(EXPRBINOP value) { Consequence = value; }
+        public Expr TestExpression { get; set; }
+
+        public ExprBinOp Consequence { get; set; }
     }
 }

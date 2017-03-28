@@ -25,7 +25,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             return _pErrorContext;
         }
-        private static bool IsNullableConstructor(EXPR expr)
+        private static bool IsNullableConstructor(Expr expr)
         {
             Debug.Assert(expr != null);
 
@@ -34,47 +34,47 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return false;
             }
 
-            EXPRCALL pCall = expr.asCALL();
-            if (pCall.GetMemberGroup().GetOptionalObject() != null)
+            ExprCall pCall = expr.asCALL();
+            if (pCall.MemberGroup.OptionalObject != null)
             {
                 return false;
             }
 
-            MethodSymbol meth = pCall.mwi.Meth();
+            MethodSymbol meth = pCall.MethWithInst.Meth();
             if (meth == null)
             {
                 return false;
             }
             return meth.IsNullableConstructor();
         }
-        public static EXPR StripNullableConstructor(EXPR pExpr)
+        public static Expr StripNullableConstructor(Expr pExpr)
         {
             while (IsNullableConstructor(pExpr))
             {
                 Debug.Assert(pExpr.isCALL());
-                pExpr = pExpr.asCALL().GetOptionalArguments();
+                pExpr = pExpr.asCALL().OptionalArguments;
                 Debug.Assert(pExpr != null && !pExpr.isLIST());
             }
             return pExpr;
         }
 
         // Value
-        public EXPR BindValue(EXPR exprSrc)
+        public Expr BindValue(Expr exprSrc)
         {
-            Debug.Assert(exprSrc != null && exprSrc.type.IsNullableType());
+            Debug.Assert(exprSrc != null && exprSrc.Type.IsNullableType());
 
             // For new T?(x), the answer is x.
             if (IsNullableConstructor(exprSrc))
             {
-                Debug.Assert(exprSrc.asCALL().GetOptionalArguments() != null && !exprSrc.asCALL().GetOptionalArguments().isLIST());
-                return exprSrc.asCALL().GetOptionalArguments();
+                Debug.Assert(exprSrc.asCALL().OptionalArguments != null && !exprSrc.asCALL().OptionalArguments.isLIST());
+                return exprSrc.asCALL().OptionalArguments;
             }
 
-            CType typeBase = exprSrc.type.AsNullableType().GetUnderlyingType();
-            AggregateType ats = exprSrc.type.AsNullableType().GetAts(GetErrorContext());
+            CType typeBase = exprSrc.Type.AsNullableType().GetUnderlyingType();
+            AggregateType ats = exprSrc.Type.AsNullableType().GetAts(GetErrorContext());
             if (ats == null)
             {
-                EXPRPROP rval = GetExprFactory().CreateProperty(typeBase, exprSrc);
+                ExprProperty rval = GetExprFactory().CreateProperty(typeBase, exprSrc);
                 rval.SetError();
                 return rval;
             }
@@ -89,8 +89,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             PropWithType pwt = new PropWithType(prop, ats);
             MethWithType mwt = new MethWithType(prop?.methGet, ats);
             MethPropWithInst mpwi = new MethPropWithInst(prop, ats);
-            EXPRMEMGRP pMemGroup = GetExprFactory().CreateMemGroup(exprSrc, mpwi);
-            EXPRPROP exprRes = GetExprFactory().CreateProperty(typeBase, null, null, pMemGroup, pwt, mwt, null);
+            ExprMemberGroup pMemGroup = GetExprFactory().CreateMemGroup(exprSrc, mpwi);
+            ExprProperty exprRes = GetExprFactory().CreateProperty(typeBase, null, null, pMemGroup, pwt, mwt, null);
 
             if (prop == null)
             {
@@ -100,18 +100,18 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return exprRes;
         }
 
-        public EXPRCALL BindNew(EXPR pExprSrc)
+        public ExprCall BindNew(Expr pExprSrc)
         {
             Debug.Assert(pExprSrc != null);
 
-            NullableType pNubSourceType = GetSymbolLoader().GetTypeManager().GetNullable(pExprSrc.type);
+            NullableType pNubSourceType = GetSymbolLoader().GetTypeManager().GetNullable(pExprSrc.Type);
 
             AggregateType pSourceType = pNubSourceType.GetAts(GetErrorContext());
             if (pSourceType == null)
             {
                 MethWithInst mwi = new MethWithInst(null, null);
-                EXPRMEMGRP pMemGroup = GetExprFactory().CreateMemGroup(pExprSrc, mwi);
-                EXPRCALL rval = GetExprFactory().CreateCall(0, pNubSourceType, null, pMemGroup, null);
+                ExprMemberGroup pMemGroup = GetExprFactory().CreateMemGroup(pExprSrc, mwi);
+                ExprCall rval = GetExprFactory().CreateCall(0, pNubSourceType, null, pMemGroup, null);
                 rval.SetError();
                 return rval;
             }
@@ -124,8 +124,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             MethWithInst methwithinst = new MethWithInst(meth, pSourceType, BSYMMGR.EmptyTypeArray());
-            EXPRMEMGRP memgroup = GetExprFactory().CreateMemGroup(null, methwithinst);
-            EXPRCALL pExprRes = GetExprFactory().CreateCall(EXPRFLAG.EXF_NEWOBJCALL | EXPRFLAG.EXF_CANTBENULL, pNubSourceType, pExprSrc, memgroup, methwithinst);
+            ExprMemberGroup memgroup = GetExprFactory().CreateMemGroup(null, methwithinst);
+            ExprCall pExprRes = GetExprFactory().CreateCall(EXPRFLAG.EXF_NEWOBJCALL | EXPRFLAG.EXF_CANTBENULL, pNubSourceType, pExprSrc, memgroup, methwithinst);
 
             if (meth == null)
             {
@@ -145,13 +145,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal sealed partial class ExpressionBinder
     {
         // Create an expr for exprSrc.Value where exprSrc.type is a NullableType.
-        private EXPR BindNubValue(EXPR exprSrc)
+        private Expr BindNubValue(Expr exprSrc)
         {
             return m_nullable.BindValue(exprSrc);
         }
 
         // Create an expr for new T?(exprSrc) where T is exprSrc.type.
-        private EXPRCALL BindNubNew(EXPR exprSrc)
+        private ExprCall BindNubNew(Expr exprSrc)
         {
             return m_nullable.BindNew(exprSrc);
         }

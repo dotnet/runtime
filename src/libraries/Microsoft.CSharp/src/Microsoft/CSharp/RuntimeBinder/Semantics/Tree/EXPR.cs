@@ -6,186 +6,186 @@ using System.Diagnostics;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal abstract class EXPR
+    internal abstract class Expr
     {
-        private static void RETAILVERIFY(bool f)
-        {
-            //if (!f)
-            //Debug.Assert(false, "panic!");
-        }
+        internal object RuntimeObject { get; set; }
 
-        internal object RuntimeObject;
-        internal CType RuntimeObjectActualType;
+        internal CType RuntimeObjectActualType { get; set; }
 
-        public ExpressionKind kind;
-        public EXPRFLAG flags;
-        private bool IsError;
-        public bool IsOptionalArgument;
+        public ExpressionKind Kind { get; set; }
+
+        public EXPRFLAG Flags { get; set; }
+
+        public bool IsOptionalArgument { get; set; }
+
         public void SetInaccessibleBit()
         {
-            IsError = true;
+            HasError = true;
         }
 
         public void SetMismatchedStaticBit()
         {
-            switch (kind)
-            {
-                case ExpressionKind.EK_CALL:
-                    if (this.asCALL().GetMemberGroup() != null)
-                        this.asCALL().GetMemberGroup().SetMismatchedStaticBit();
-                    break;
-            }
-            IsError = true;
+            if (Kind == ExpressionKind.EK_CALL && this.asCALL().MemberGroup != null)
+                this.asCALL().MemberGroup.SetMismatchedStaticBit();
+            HasError = true;
         }
 
-        public string errorString;
-        public CType type;
-        public void setType(CType t)
-        {
-            type = t;
-        }
+        public string ErrorString { get; set; }
 
-        public void setAssignment()
+        public CType Type { get; set; }
+
+        public void SetAssignment()
         {
             Debug.Assert(!this.isSTMT());
-            flags |= EXPRFLAG.EXF_ASSGOP;
+            Flags |= EXPRFLAG.EXF_ASSGOP;
         }
 
-        public bool isOK()
-        {
-            return !HasError();
-        }
+        public bool IsOK => !HasError;
 
-        public bool HasError()
-        {
-            return IsError;
-        }
+        public bool HasError { get; private set; }
+
         public void SetError()
         {
-            IsError = true;
+            HasError = true;
         }
 
-        public bool HasObject()
+        public bool HasObject
         {
-            switch (kind)
+            get
             {
-                case ExpressionKind.EK_FIELD:
-                case ExpressionKind.EK_PROP:
-                case ExpressionKind.EK_CALL:
-                case ExpressionKind.EK_EVENT:
-                case ExpressionKind.EK_MEMGRP:
-                case ExpressionKind.EK_FUNCPTR:
-                    return true;
+                switch (Kind)
+                {
+                    case ExpressionKind.EK_FIELD:
+                    case ExpressionKind.EK_PROP:
+                    case ExpressionKind.EK_CALL:
+                    case ExpressionKind.EK_EVENT:
+                    case ExpressionKind.EK_MEMGRP:
+                    case ExpressionKind.EK_FUNCPTR:
+                        return true;
+                }
+
+                return false;
             }
-            return false;
         }
 
-        public EXPR getArgs()
+        public Expr Args
         {
-            RETAILVERIFY(this.isCALL() || this.isPROP() || this.isFIELD() || this.isARRAYINDEX());
-            if (this.isFIELD())
+            get
+            {
+                Debug.Assert(this.isCALL() || this.isPROP() || this.isFIELD() || this.isARRAYINDEX());
+                if (this.isFIELD())
+                    return null;
+
+                switch (Kind)
+                {
+                    case ExpressionKind.EK_CALL:
+                        return this.asCALL().OptionalArguments;
+
+                    case ExpressionKind.EK_PROP:
+                        return this.asPROP().OptionalArguments;
+
+                    case ExpressionKind.EK_ARRAYINDEX:
+                        return this.asARRAYINDEX().Index;
+                }
+
+                Debug.Assert(false, "Shouldn't get here without a CALL, PROP, FIELD or ARRINDEX");
                 return null;
-            switch (kind)
-            {
-                case ExpressionKind.EK_CALL:
-                    return this.asCALL().GetOptionalArguments();
-
-                case ExpressionKind.EK_PROP:
-                    return this.asPROP().GetOptionalArguments();
-
-                case ExpressionKind.EK_ARRAYINDEX:
-                    return this.asARRAYINDEX().GetIndex();
             }
-            Debug.Assert(false, "Shouldn't get here without a CALL, PROP, FIELD or ARRINDEX");
-            return null;
+
+            set
+            {
+                Debug.Assert(this.isCALL() || this.isPROP() || this.isFIELD() || this.isARRAYINDEX());
+                if (this.isFIELD())
+                {
+                    Debug.Assert(false, "Setting arguments on a field.");
+                    return;
+                }
+
+                switch (Kind)
+                {
+                    case ExpressionKind.EK_CALL:
+                        this.asCALL().OptionalArguments = value;
+                        return;
+
+                    case ExpressionKind.EK_PROP:
+                        this.asPROP().OptionalArguments = value;
+                        return;
+
+                    case ExpressionKind.EK_ARRAYINDEX:
+                        this.asARRAYINDEX().Index = value;
+                        return;
+                }
+
+                Debug.Assert(false, "Shouldn't get here without a CALL, PROP, FIELD or ARRINDEX");
+            }
         }
 
-        public void setArgs(EXPR args)
+        public Expr Object
         {
-            RETAILVERIFY(this.isCALL() || this.isPROP() || this.isFIELD() || this.isARRAYINDEX());
-            if (this.isFIELD())
+            get
             {
-                Debug.Assert(false, "Setting arguments on a field.");
-                return;
-            }
-            switch (kind)
-            {
-                case ExpressionKind.EK_CALL:
-                    this.asCALL().SetOptionalArguments(args);
-                    return;
+                Debug.Assert(HasObject);
+                switch (Kind)
+                {
+                    case ExpressionKind.EK_FIELD:
+                        return this.asFIELD().OptionalObject;
+                    case ExpressionKind.EK_PROP:
+                        return this.asPROP().MemberGroup.OptionalObject;
+                    case ExpressionKind.EK_CALL:
+                        return this.asCALL().MemberGroup.OptionalObject;
+                    case ExpressionKind.EK_MEMGRP:
+                        return this.asMEMGRP().OptionalObject;
+                    case ExpressionKind.EK_EVENT:
+                        return this.asEVENT().OptionalObject;
+                    case ExpressionKind.EK_FUNCPTR:
+                        return this.asFUNCPTR().OptionalObject;
+                }
 
-                case ExpressionKind.EK_PROP:
-                    this.asPROP().SetOptionalArguments(args);
-                    return;
-
-                case ExpressionKind.EK_ARRAYINDEX:
-                    this.asARRAYINDEX().SetIndex(args);
-                    return;
+                return null;
             }
-            Debug.Assert(false, "Shouldn't get here without a CALL, PROP, FIELD or ARRINDEX");
-        }
 
-        public EXPR getObject()
-        {
-            RETAILVERIFY(HasObject());
-            switch (kind)
+            set
             {
-                case ExpressionKind.EK_FIELD:
-                    return this.asFIELD().OptionalObject;
-                case ExpressionKind.EK_PROP:
-                    return this.asPROP().GetMemberGroup().OptionalObject;
-                case ExpressionKind.EK_CALL:
-                    return this.asCALL().GetMemberGroup().OptionalObject;
-                case ExpressionKind.EK_MEMGRP:
-                    return this.asMEMGRP().OptionalObject;
-                case ExpressionKind.EK_EVENT:
-                    return this.asEVENT().OptionalObject;
-                case ExpressionKind.EK_FUNCPTR:
-                    return this.asFUNCPTR().OptionalObject;
-            }
-            return null;
-        }
-        public void SetObject(EXPR pExpr)
-        {
-            RETAILVERIFY(HasObject());
-            switch (kind)
-            {
-                case ExpressionKind.EK_FIELD:
-                    this.asFIELD().OptionalObject = pExpr;
-                    break;
-                case ExpressionKind.EK_PROP:
-                    this.asPROP().GetMemberGroup().OptionalObject = pExpr;
-                    break;
-                case ExpressionKind.EK_CALL:
-                    this.asCALL().GetMemberGroup().OptionalObject = pExpr;
-                    break;
-                case ExpressionKind.EK_MEMGRP:
-                    this.asMEMGRP().OptionalObject = pExpr;
-                    break;
-                case ExpressionKind.EK_EVENT:
-                    this.asEVENT().OptionalObject = pExpr;
-                    break;
-                case ExpressionKind.EK_FUNCPTR:
-                    this.asFUNCPTR().OptionalObject = pExpr;
-                    break;
+                Debug.Assert(HasObject);
+                switch (Kind)
+                {
+                    case ExpressionKind.EK_FIELD:
+                        this.asFIELD().OptionalObject = value;
+                        break;
+                    case ExpressionKind.EK_PROP:
+                        this.asPROP().MemberGroup.OptionalObject = value;
+                        break;
+                    case ExpressionKind.EK_CALL:
+                        this.asCALL().MemberGroup.OptionalObject = value;
+                        break;
+                    case ExpressionKind.EK_MEMGRP:
+                        this.asMEMGRP().OptionalObject = value;
+                        break;
+                    case ExpressionKind.EK_EVENT:
+                        this.asEVENT().OptionalObject = value;
+                        break;
+                    case ExpressionKind.EK_FUNCPTR:
+                        this.asFUNCPTR().OptionalObject = value;
+                        break;
+                }
             }
         }
 
         public SymWithType GetSymWithType()
         {
-            switch (kind)
+            switch (Kind)
             {
                 default:
                     Debug.Assert(false, "Bad expr kind in GetSymWithType");
-                    return ((EXPRCALL)this).mwi;
+                    return ((ExprCall)this).MethWithInst;
                 case ExpressionKind.EK_CALL:
-                    return ((EXPRCALL)this).mwi;
+                    return ((ExprCall)this).MethWithInst;
                 case ExpressionKind.EK_PROP:
-                    return ((EXPRPROP)this).pwtSlot;
+                    return ((ExprProperty)this).PropWithTypeSlot;
                 case ExpressionKind.EK_FIELD:
-                    return ((EXPRFIELD)this).fwt;
+                    return ((ExprField)this).FieldWithType;
                 case ExpressionKind.EK_EVENT:
-                    return ((EXPREVENT)this).ewt;
+                    return ((ExprEvent)this).EventWithType;
             }
         }
     }

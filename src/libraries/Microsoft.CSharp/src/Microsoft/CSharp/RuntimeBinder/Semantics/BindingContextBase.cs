@@ -201,9 +201,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             return m_bInFieldInitializer;
         }
-        public bool IsThisPointer(EXPR expr)
+        public bool IsThisPointer(Expr expr)
         {
-            bool localThis = expr.isANYLOCAL() && expr.asANYLOCAL().local == m_outputContext.m_pThisPointer;
+            bool localThis = expr.isANYLOCAL() && expr.asANYLOCAL().Local == m_outputContext.m_pThisPointer;
             bool baseThis = false;
             return localThis || baseThis;
         }
@@ -275,7 +275,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private Scope m_pCurrentScope; // current scope
         private Scope m_pSwitchScope;  // innermost switch, or null if none
 
-        private EXPRBLOCK m_pCurrentBlock;
+        private ExprBlock m_pCurrentBlock;
 
         // m_ppamis points to the list of child anonymous methods of the current context.
         // That is, m_ppamis is where we will add an anonymous method should we find a
@@ -284,11 +284,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // anonymous method then it points to m_pamiCurrent.pamis.  If we are presently
         // in a context in which anonymous methods cannot occur (eg, binding an attribute)
         // then it is null.
-        private List<EXPRBOUNDLAMBDA> m_ppamis;
+        private List<ExprBoundLambda> m_ppamis;
         // If we are presently binding an anonymous method body then m_pamiCurrent points
         // to the anon meth info.  If we are binding either a method body or some other
         // statement context (eg, binding an attribute, etc) then m_pamiCurrent is null.
-        private EXPRBOUNDLAMBDA m_pamiCurrent;
+        private ExprBoundLambda m_pamiCurrent;
 
         // Unsafe states.
 
