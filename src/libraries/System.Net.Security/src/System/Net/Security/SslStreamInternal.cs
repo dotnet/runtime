@@ -203,7 +203,7 @@ namespace System.Net.Security
             {
                 if (e is IOException)
                 {
-                    ExceptionDispatchInfo.Capture(e).Throw();
+                    ExceptionDispatchInfo.Throw(e);
                 }
 
                 throw new IOException(SR.net_io_write, e);

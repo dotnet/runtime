@@ -417,7 +417,7 @@ namespace System.Net
             Exception exception = castedResult.Result as Exception;
             if (exception != null)
             {
-                ExceptionDispatchInfo.Capture(exception).Throw();
+                ExceptionDispatchInfo.Throw(exception);
             }
 
             return (IPHostEntry)castedResult.Result;

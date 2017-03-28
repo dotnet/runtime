@@ -49,7 +49,7 @@ namespace System.Net.Mail
             object commandResult = MultiAsyncResult.End(result);
             if (commandResult is Exception e)
             {
-                ExceptionDispatchInfo.Capture(e).Throw();
+                ExceptionDispatchInfo.Throw(e);
             }
 
             LineInfo info = (LineInfo)commandResult;
@@ -140,7 +140,7 @@ namespace System.Net.Mail
             object commandResult = MultiAsyncResult.End(result);
             if (commandResult is Exception e)
             {
-                ExceptionDispatchInfo.Capture(e).Throw();
+                ExceptionDispatchInfo.Throw(e);
             }
             return (LineInfo[])commandResult;
         }

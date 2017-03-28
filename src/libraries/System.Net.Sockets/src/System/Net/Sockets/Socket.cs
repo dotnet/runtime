@@ -2437,7 +2437,7 @@ namespace System.Net.Sockets
                 }
 
                 if (NetEventSource.IsEnabled) NetEventSource.Error(this, ex);
-                ExceptionDispatchInfo.Capture(ex).Throw();
+                ExceptionDispatchInfo.Throw(ex);
             }
 
             if (NetEventSource.IsEnabled)
@@ -5181,7 +5181,7 @@ namespace System.Net.Sockets
                 {
                     if (++context._index >= context._addresses.Length)
                     {
-                        ExceptionDispatchInfo.Capture(ex).Throw();
+                        ExceptionDispatchInfo.Throw(ex);
                     }
 
                     context._lastException = ex;

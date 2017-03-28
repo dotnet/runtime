@@ -1233,7 +1233,7 @@ namespace System.Net
         {
             if (_exception != null)
             {
-                ExceptionDispatchInfo.Capture(_exception).Throw();
+                ExceptionDispatchInfo.Throw(_exception);
             }
         }
 

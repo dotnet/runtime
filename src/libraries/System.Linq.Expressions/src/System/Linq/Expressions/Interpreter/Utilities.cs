@@ -171,7 +171,7 @@ namespace System.Linq.Expressions.Interpreter
         /// </summary>
         public static void UnwrapAndRethrow(TargetInvocationException exception)
         {
-            ExceptionDispatchInfo.Capture(exception.InnerException).Throw();
+            ExceptionDispatchInfo.Throw(exception.InnerException);
         }
     }
 

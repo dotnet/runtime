@@ -323,7 +323,7 @@ namespace System.Net.Sockets
             }
             else
             {
-                ExceptionDispatchInfo.Capture(e).Throw();
+                ExceptionDispatchInfo.Throw(e);
             }
         }
 

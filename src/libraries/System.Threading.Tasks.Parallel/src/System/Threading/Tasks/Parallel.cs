@@ -1191,7 +1191,7 @@ namespace System.Threading.Tasks
                         {
                             // if we catch an exception in a worker, we signal the other workers to exit the loop, and we rethrow
                             sharedPStateFlags.SetExceptional();
-                            ExceptionDispatchInfo.Capture(ex).Throw();
+                            ExceptionDispatchInfo.Throw(ex);
                         }
                         finally
                         {
@@ -1450,7 +1450,7 @@ namespace System.Threading.Tasks
                         {
                             // if we catch an exception in a worker, we signal the other workers to exit the loop, and we rethrow
                             sharedPStateFlags.SetExceptional();
-                            ExceptionDispatchInfo.Capture(ex).Throw();
+                            ExceptionDispatchInfo.Throw(ex);
                         }
                         finally
                         {
@@ -3280,7 +3280,7 @@ namespace System.Threading.Tasks
                         {
                             // Inform other tasks of the exception, then rethrow
                             sharedPStateFlags.SetExceptional();
-                            ExceptionDispatchInfo.Capture(ex).Throw();
+                            ExceptionDispatchInfo.Throw(ex);
                         }
                         finally
                         {
@@ -3400,11 +3400,7 @@ namespace System.Threading.Tasks
                                                                              Exception otherException)
         {
             OperationCanceledException reducedCancelEx = ReduceToSingleCancellationException(exceptions, cancelToken);
-
-            if (reducedCancelEx != null)
-                ExceptionDispatchInfo.Capture(reducedCancelEx).Throw();
-            else
-                ExceptionDispatchInfo.Capture(otherException).Throw();
+            ExceptionDispatchInfo.Throw(reducedCancelEx ?? otherException);
         }
     }  // class Parallel
 }  // namespace

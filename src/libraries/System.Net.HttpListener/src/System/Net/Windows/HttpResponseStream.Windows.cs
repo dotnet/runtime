@@ -367,7 +367,7 @@ namespace System.Net
                 if (NetEventSource.IsEnabled) NetEventSource.Error(this, "Rethrowing exception:" + exception);
                 _closed = true;
                 _httpContext.Abort();
-                ExceptionDispatchInfo.Capture(exception).Throw();
+                ExceptionDispatchInfo.Throw(exception);
             }
 
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);

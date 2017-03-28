@@ -113,7 +113,7 @@ namespace System.Net.Security
         {
             if (_exception != null && !_canRetryAuthentication)
             {
-                ExceptionDispatchInfo.Capture(_exception).Throw();
+                ExceptionDispatchInfo.Throw(_exception);
             }
 
             if (_context != null && _context.IsValidContext)
@@ -314,7 +314,7 @@ namespace System.Net.Security
         {
             if (_exception != null)
             {
-                ExceptionDispatchInfo.Capture(_exception).Throw();
+                ExceptionDispatchInfo.Throw(_exception);
             }
 
             if (authSucessCheck && !IsAuthenticated)
@@ -399,7 +399,7 @@ namespace System.Net.Security
             {
                 // Round-trip it through the SetException().
                 e = SetException(e);
-                ExceptionDispatchInfo.Capture(e).Throw();
+                ExceptionDispatchInfo.Throw(e);
             }
         }
 
@@ -690,7 +690,7 @@ namespace System.Net.Security
             }
 
             _canRetryAuthentication = true;
-            ExceptionDispatchInfo.Capture(exception).Throw();
+            ExceptionDispatchInfo.Throw(exception);
         }
 
         private static void WriteCallback(IAsyncResult transportResult)
@@ -717,7 +717,7 @@ namespace System.Net.Security
                 if (lazyResult.Result is Exception e)
                 {
                     authState._canRetryAuthentication = true;
-                    ExceptionDispatchInfo.Capture(e).Throw();
+                    ExceptionDispatchInfo.Throw(e);
                 }
 
                 authState.CheckCompletionBeforeNextReceive(lazyResult);

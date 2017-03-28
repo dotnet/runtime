@@ -375,7 +375,7 @@ namespace System.Net.Mail
                 castedAsyncResult.EndCalled = true;
                 if (castedAsyncResult.Result is Exception e)
                 {
-                    ExceptionDispatchInfo.Capture(e).Throw();
+                    ExceptionDispatchInfo.Throw(e);
                 }
             }
         }
