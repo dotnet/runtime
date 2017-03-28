@@ -8,10 +8,11 @@
     <NoWarn Condition="'$(TargetGroup)' == 'netfx'">$(NoWarn);0436</NoWarn>
     <DefineConstants Condition="'$(TargetGroup)' == 'netfx'">$(DefineConstants);NET46</DefineConstants>
   </PropertyGroup>
-  <!-- Help VS understand available configurations -->
-  <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Release|AnyCPU'" />
+  <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
   <ItemGroup>
     <TargetingPackExclusions Include="System.Net.Http" />
     <TargetingPackExclusions Include="System.Net.Mail" />
