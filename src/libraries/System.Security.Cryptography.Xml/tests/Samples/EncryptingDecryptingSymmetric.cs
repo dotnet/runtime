@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
 using Xunit;
+using Xunit.Extensions;
 
 namespace System.Security.Cryptography.Xml.Tests
 {
@@ -80,8 +81,24 @@ namespace System.Security.Cryptography.Xml.Tests
             encryptedXml.ReplaceData(encryptedElement, rgbOutput);
         }
 
-        [Fact]
-        public void SymmetricEncryptionRoundtrip()
+
+        public static IEnumerable<object[]> GetSymmetricAlgorithms()
+        {
+            yield return new object[] { (Func<SymmetricAlgorithm>)(() => DES.Create()) };
+            yield return new object[] { (Func<SymmetricAlgorithm>)(() => TripleDES.Create()) };
+
+            foreach (var keySize in new[] { 128, 192, 256 })
+            {
+                yield return new object[] { (Func<SymmetricAlgorithm>)(() => {
+                        Aes aes = Aes.Create();
+                        aes.KeySize = keySize;
+                        return aes;
+                })};
+            }
+        }
+
+        [Theory, MemberData(nameof(GetSymmetricAlgorithms))]
+        public void SymmetricEncryptionRoundtrip(Func<SymmetricAlgorithm> algorithmConstructor)
         {
             const string testString = "some text node";
             const string ExampleXmlRootElement = "example";
@@ -90,7 +107,7 @@ namespace System.Security.Cryptography.Xml.Tests
 <test>some text node</test>
 </example>";
 
-            using (var key = Aes.Create())
+            using (var key = algorithmConstructor())
             {
                 XmlDocument xmlDocToEncrypt = LoadXmlFromString(ExampleXml);
                 Assert.Contains(testString, xmlDocToEncrypt.OuterXml);
