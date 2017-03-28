@@ -4,11 +4,14 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal sealed class EXPRUNARYOP : EXPR
+    internal sealed class ExprUnaryOp : Expr
     {
-        public EXPR Child;
-        public EXPR OptionalUserDefinedCall;
-        public MethWithInst predefinedMethodToCall;
-        public MethPropWithInst UserDefinedCallMethod;
+        public Expr Child { get; set; }
+
+        public Expr OptionalUserDefinedCall { get; set; }
+
+        public MethWithInst PredefinedMethodToCall { get; set; }
+
+        public MethPropWithInst UserDefinedCallMethod { get; set; }
     }
 }

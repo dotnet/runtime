@@ -4,10 +4,12 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal sealed class EXPRUSERDEFINEDCONVERSION : EXPR
+    internal sealed class ExprUserDefinedConversion : Expr
     {
-        public EXPR Argument;
-        public EXPR UserDefinedCall;
-        public MethWithInst UserDefinedCallMethod;
+        public Expr Argument { get; set; }
+
+        public Expr UserDefinedCall { get; set; }
+
+        public MethWithInst UserDefinedCallMethod { get; set; }
     }
 }

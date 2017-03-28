@@ -4,7 +4,7 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal sealed class EXPRUNBOUNDLAMBDA : EXPR
+    internal sealed class ExprUnboundLambda : Expr
     {
     }
 }

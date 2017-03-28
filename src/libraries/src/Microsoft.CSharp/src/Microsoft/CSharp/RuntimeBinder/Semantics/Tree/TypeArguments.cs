@@ -9,10 +9,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         associated with the AggregateType for the instantiation of the class. 
     *************************************************************************************************/
 
-    internal sealed class EXPRTYPEARGUMENTS : EXPR
+    internal sealed class ExprTypeArguments : Expr
     {
-        private EXPR OptionalElements;
-        public EXPR GetOptionalElements() { return OptionalElements; }
-        public void SetOptionalElements(EXPR value) { OptionalElements = value; }
+        public Expr OptionalElements { get; set; }
     }
 }

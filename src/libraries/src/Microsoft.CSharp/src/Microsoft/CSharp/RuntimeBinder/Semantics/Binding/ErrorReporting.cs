@@ -43,18 +43,18 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             ErrorCode.ERR_AssgReadonlyStatic2
         };
 
-        private void ReportReadOnlyError(EXPRFIELD field, CheckLvalueKind kind, bool isNested)
+        private void ReportReadOnlyError(ExprField field, CheckLvalueKind kind, bool isNested)
         {
             Debug.Assert(field != null);
 
-            bool isStatic = field.fwt.Field().isStatic;
+            bool isStatic = field.FieldWithType.Field().isStatic;
 
             int index = (isNested ? 4 : 0) + (isStatic ? 2 : 0) + (kind == CheckLvalueKind.OutParameter ? 0 : 1);
             ErrorCode err = s_ReadOnlyErrors[index];
 
             if (isNested)
             {
-                ErrorContext.Error(err, field.fwt);
+                ErrorContext.Error(err, field.FieldWithType);
             }
             else
             {
@@ -63,7 +63,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         // Return true if we actually report a failure.
-        private bool TryReportLvalueFailure(EXPR expr, CheckLvalueKind kind)
+        private bool TryReportLvalueFailure(Expr expr, CheckLvalueKind kind)
         {
             Debug.Assert(expr != null);
 
@@ -72,40 +72,40 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             bool isNested = false; // Did we recurse on a field or property to give a better error?
 
-            EXPR walk = expr;
+            Expr walk = expr;
             while (true)
             {
                 Debug.Assert(walk != null);
 
                 if (walk.isANYLOCAL_OK())
                 {
-                    ReportLocalError(walk.asANYLOCAL().local, kind, isNested);
+                    ReportLocalError(walk.asANYLOCAL().Local, kind, isNested);
                     return true;
                 }
 
-                EXPR pObject = null;
+                Expr pObject = null;
 
                 if (walk.isPROP())
                 {
                     // We've already reported read-only-property errors.
-                    Debug.Assert(walk.asPROP().mwtSet != null);
-                    pObject = walk.asPROP().GetMemberGroup().GetOptionalObject();
+                    Debug.Assert(walk.asPROP().MethWithTypeSet != null);
+                    pObject = walk.asPROP().MemberGroup.OptionalObject;
                 }
                 else if (walk.isFIELD())
                 {
-                    EXPRFIELD field = walk.asFIELD();
-                    if (field.fwt.Field().isReadOnly)
+                    ExprField field = walk.asFIELD();
+                    if (field.FieldWithType.Field().isReadOnly)
                     {
                         ReportReadOnlyError(field, kind, isNested);
                         return true;
                     }
-                    if (!field.fwt.Field().isStatic)
+                    if (!field.FieldWithType.Field().isStatic)
                     {
-                        pObject = field.GetOptionalObject();
+                        pObject = field.OptionalObject;
                     }
                 }
 
-                if (pObject != null && pObject.type.isStructOrEnum())
+                if (pObject != null && pObject.Type.isStructOrEnum())
                 {
                     if (pObject.isCALL() || pObject.isPROP())
                     {
@@ -123,7 +123,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         //
                         // But in the runtime, we allow this - mark that we're doing an
                         // unbox here, so that we gen the correct expression tree for it.
-                        pObject.flags |= EXPRFLAG.EXF_UNBOXRUNTIME;
+                        pObject.Flags |= EXPRFLAG.EXF_UNBOXRUNTIME;
                         return false;
                     }
                 }
@@ -131,7 +131,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // everything else
                 if (pObject != null && !pObject.isLvalue() && (walk.isFIELD() || (!isNested && walk.isPROP())))
                 {
-                    Debug.Assert(pObject.type.isStructOrEnum());
+                    Debug.Assert(pObject.Type.isStructOrEnum());
                     walk = pObject;
                 }
                 else

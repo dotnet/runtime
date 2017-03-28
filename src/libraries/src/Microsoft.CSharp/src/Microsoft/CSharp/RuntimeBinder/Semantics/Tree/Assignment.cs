@@ -4,14 +4,10 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal sealed class EXPRASSIGNMENT : EXPR
+    internal sealed class ExprAssignment : Expr
     {
-        private EXPR _LHS;
-        public EXPR GetLHS() { return _LHS; }
-        public void SetLHS(EXPR value) { _LHS = value; }
+        public Expr LHS { get; set; }
 
-        private EXPR _RHS;
-        public EXPR GetRHS() { return _RHS; }
-        public void SetRHS(EXPR value) { _RHS = value; }
+        public Expr RHS { get; set; }
     }
 }
