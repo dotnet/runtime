@@ -6697,12 +6697,8 @@ void emitter::emitIns_Call(EmitCallType          callType,
     {
         assert(emitNoGChelper(Compiler::eeGetHelperNum(methHnd)));
 
-        // This call will preserve the liveness of most registers
-        //
-        // - On the ARM64 the NOGC helpers will preserve all registers,
-        //   except for those listed in the RBM_CALLEE_TRASH_NOGC mask
-
-        savedSet = RBM_ALLINT & ~RBM_CALLEE_TRASH_NOGC;
+        // Get the set of registers that this call kills and remove it from the saved set.
+        savedSet = RBM_ALLINT & ~emitComp->compNoGCHelperCallKillSet(Compiler::eeGetHelperNum(methHnd));
 
         // In case of Leave profiler callback, we need to preserve liveness of REG_PROFILER_RET_SCRATCH
         if (isProfLeaveCB)
