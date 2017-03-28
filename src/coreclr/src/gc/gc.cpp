@@ -5589,7 +5589,7 @@ public:
 
     // We should think about whether it's really necessary to have to copy back the pre plug
     // info since it was already copied during compacting plugs. But if a plug doesn't move
-    // by < 3 ptr size, it means we'd have to recover pre plug info.
+    // by >= 3 ptr size (the size of gap_reloc_pair), it means we'd have to recover pre plug info.
     void recover_plug_info() 
     {
         if (saved_pre_p)
