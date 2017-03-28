@@ -189,7 +189,7 @@ time to runt tests.  See [Running .NET Core Tests](Documentation/workflow/Runnin
 ## Contributing to Repository 
 
 Looking for something to work on? The list 
-of [up-for-grabs issues](https://github.com/dotnet/coreclr/issues?q=is%3Aopen+is%3Aissue+label%3Aup-for-grabs) is a great place to start.
+of [up-for-grabs issues](https://github.com/dotnet/coreclr/labels/up-for-grabs) is a great place to start.
 
 Please read the following documents to get started.
 
