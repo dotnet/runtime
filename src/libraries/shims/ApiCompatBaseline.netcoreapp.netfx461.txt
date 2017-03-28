@@ -1,3 +1,4 @@
+DEFAULT_APPNAME Error: 0 : Unable to resolve assembly 'Assembly(Name=System.Private.CoreLib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e)' referenced by the implementation assembly 'Microsoft.Cci.DummyModule'.
 DEFAULT_APPNAME Error: 0 : Unable to resolve assembly 'Assembly(Name=System.Configuration, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)' referenced by the contract assembly 'Assembly(Name=System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)'.
 DEFAULT_APPNAME Error: 0 : Unable to resolve assembly 'Assembly(Name=System.Configuration, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)' referenced by the contract assembly 'Assembly(Name=System.Runtime.Serialization, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089)'.
 DEFAULT_APPNAME Error: 0 : Unable to resolve assembly 'Assembly(Name=System.Configuration, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)' referenced by the contract assembly 'Assembly(Name=System.Web, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a)'.
@@ -1421,30 +1422,11 @@ TypesMustExist : Type 'System.Data.Common.DbProviderFactories' does not exist in
 TypesMustExist : Type 'System.Data.Common.DbProviderFactoriesConfigurationHandler' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.Common.DbProviderFactory.CreatePermission(System.Security.Permissions.PermissionState)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Data.Common.DbProviderSpecificTypePropertyAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
-TypesMustExist : Type 'System.Data.Odbc.OdbcCommand' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.Odbc.OdbcCommandBuilder' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.Odbc.OdbcConnection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.Odbc.OdbcConnectionStringBuilder' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.Odbc.OdbcDataAdapter' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.Odbc.OdbcDataReader' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.Odbc.OdbcError' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.Odbc.OdbcErrorCollection' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.Odbc.OdbcException' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.Odbc.OdbcFactory' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.Odbc.OdbcInfoMessageEventArgs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.Odbc.OdbcInfoMessageEventHandler' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.Odbc.OdbcMetaDataCollectionNames' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.Odbc.OdbcMetaDataColumnNames' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.Odbc.OdbcParameter' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.Odbc.OdbcParameterCollection' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Data.Odbc.OdbcConnection.EnlistDistributedTransaction(System.EnterpriseServices.ITransaction)' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Data.Odbc.OdbcException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
+MembersMustExist : Member 'System.Data.Odbc.OdbcFactory.CreatePermission(System.Security.Permissions.PermissionState)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Data.Odbc.OdbcPermission' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Data.Odbc.OdbcPermissionAttribute' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.Odbc.OdbcRowUpdatedEventArgs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.Odbc.OdbcRowUpdatedEventHandler' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.Odbc.OdbcRowUpdatingEventArgs' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.Odbc.OdbcRowUpdatingEventHandler' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.Odbc.OdbcTransaction' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Data.Odbc.OdbcType' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Data.OleDb.OleDbCommand' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Data.OleDb.OleDbCommandBuilder' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Data.OleDb.OleDbConnection' does not exist in the implementation but it does exist in the contract.
@@ -3252,4 +3234,4 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Xml.Xsl.XsltException' does not i
 MembersMustExist : Member 'System.Xml.Xsl.XslTransform.Load(System.Xml.XmlReader, System.Xml.XmlResolver, System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Xml.Xsl.XslTransform.Load(System.Xml.XPath.IXPathNavigable, System.Xml.XmlResolver, System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Xml.Xsl.XslTransform.Load(System.Xml.XPath.XPathNavigator, System.Xml.XmlResolver, System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
-Total Issues: 3272
+Total Issues: 3221
