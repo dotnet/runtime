@@ -140,7 +140,7 @@ enum TypeProfilingDataFlags
     ReadMethodTable               = 0,  // 0x00001
     ReadEEClass                   = 1,  // 0x00002
     WriteEEClass                  = 2,  // 0x00004
-//  ReadStoredEnumData            = 3,  // 0x00008
+//  ReadStoredEnumData            = 3,  // 0x00008  // obsolete
     ReadFieldDescs                = 4,  // 0x00010
     ReadCCtorInfo                 = 5,  // 0x00020
     ReadClassHashTable            = 6,  // 0x00040
@@ -148,34 +148,36 @@ enum TypeProfilingDataFlags
     ReadDispatchTable             = 8,  // 0x00100
     ReadMethodTableWriteableData  = 9,  // 0x00200
     ReadFieldMarshalers           = 10, // 0x00400
-//  Unused                        = 11, // 0x00800 ... Was WriteDispatchTable in the past
-//  WriteMethodTable              = 12, // 0x01000
+//  WriteDispatchTable            = 11, // 0x00800  // obsolete
+//  WriteMethodTable              = 12, // 0x01000  // obsolete
     WriteMethodTableWriteableData = 13, // 0x02000
     ReadTypeDesc                  = 14, // 0x04000
     WriteTypeDesc                 = 15, // 0x08000
     ReadTypeHashTable             = 16, // 0x10000
-//  WriteTypeHashTable            = 17, // 0x20000
-//  ReadDictionary                = 18, // 0x40000
-//  WriteDictionary               = 19, // 0x80000
+//  WriteTypeHashTable            = 17, // 0x20000  // obsolete
+//  ReadDictionary                = 18, // 0x40000  // obsolete
+//  WriteDictionary               = 19, // 0x80000  // obsolete
     ReadNonVirtualSlots           = 20, // 0x100000
 };
 
 enum MethodProfilingDataFlags
 {
     // Important: update toolbox\ibcmerge\ibcmerge.cs if you change these
-    ReadMethodCode                = 0,  // 0x00001
+    ReadMethodCode                = 0,  // 0x00001  // Also means the method was executed
     ReadMethodDesc                = 1,  // 0x00002
-    RunOnceMethod                 = 2,  // 0x00004  // was CommonMethod
-    RunNeverMethod                = 3,  // 0x00008  // was MethodMetadataAccess
-//  MethodStoredDataAccess        = 4,  // 0x00010
+    RunOnceMethod                 = 2,  // 0x00004
+    RunNeverMethod                = 3,  // 0x00008
+//  MethodStoredDataAccess        = 4,  // 0x00010  // obsolete
     WriteMethodDesc               = 5,  // 0x00020
-//  ReadFCallHash                 = 6,  // 0x00040
+//  ReadFCallHash                 = 6,  // 0x00040  // obsolete
     ReadGCInfo                    = 7,  // 0x00080
     CommonReadGCInfo              = 8,  // 0x00100
-//  ReadMethodDefRidMap           = 9,  // 0x00200
+//  ReadMethodDefRidMap           = 9,  // 0x00200  // obsolete
     ReadCerMethodList             = 10, // 0x00400
     ReadMethodPrecode             = 11, // 0x00800
     WriteMethodPrecode            = 12, // 0x01000
+    ExcludeHotMethodCode          = 13, // 0x02000  // Hot method should be excluded from the ReadyToRun image
+    ExcludeColdMethodCode         = 14, // 0x04000  // Cold method should be excluded from the ReadyToRun image
 };
 
 enum GeneralProfilingDataFlags
