@@ -7,16 +7,5 @@
         <Type Name="XmlQualifiedName" DataContractSerializer="Excluded" DataContractJsonSerializer="Excluded"/>
       </Namespace>
     </Assembly>
-    <Namespace Name="System.Collections">
-      <Type  Name="IEnumerable" Dynamic="Required All" />
-      <Type  Name="IEnumerator" Dynamic="Required All" />
-    </Namespace>
-    <Namespace Name="System.Collections.Generic">
-      <Type  Name="IEnumerable`1" Dynamic="Required All" />
-      <Type  Name="IEnumerator`1" Dynamic="Required All" />
-    </Namespace>
-    <Namespace Name="System">
-      <Type  Name="DBNull" Dynamic="Required All" />
-    </Namespace>
   </Library>
 </Directives>
