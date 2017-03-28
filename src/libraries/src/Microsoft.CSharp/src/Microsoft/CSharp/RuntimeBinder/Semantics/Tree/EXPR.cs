@@ -23,10 +23,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             HasError = true;
         }
 
-        public void SetMismatchedStaticBit()
+        public virtual void SetMismatchedStaticBit()
         {
-            if (Kind == ExpressionKind.EK_CALL && this.asCALL().MemberGroup != null)
-                this.asCALL().MemberGroup.SetMismatchedStaticBit();
             HasError = true;
         }
 
