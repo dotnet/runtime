@@ -3960,55 +3960,12 @@ static void InvokeUnhandledSwallowing(OBJECTREF *pDelegate,
 }
 
 
-// cannot combine SEH & C++ exceptions in one method.  Split out from InvokeNotify.
-static void InvokeNotifyInner(OBJECTREF *pDelegate, OBJECTREF *pDomain)
-{
-    // static contract, since we use SEH.
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_MODE_COOPERATIVE;
-
-    _ASSERTE(pDelegate  != NULL && IsProtectedByGCFrame(pDelegate));
-    _ASSERTE(pDomain    != NULL && IsProtectedByGCFrame(pDomain));
-
-    struct Param : ThreadBaseExceptionFilterParam
-    {
-        OBJECTREF *pDelegate;
-        OBJECTREF *pDomain;
-    } param;
-    param.location = SystemNotification;
-    param.pDelegate = pDelegate;
-    param.pDomain = pDomain;
-
-    PAL_TRY(Param *, pParam, &param)
-    {
-        PREPARE_NONVIRTUAL_CALLSITE_USING_CODE(DELEGATEREF(*pParam->pDelegate)->GetMethodPtr());
-
-        DECLARE_ARGHOLDER_ARRAY(args, 3);
-
-        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(DELEGATEREF(*pParam->pDelegate)->GetTarget());
-        args[ARGNUM_1] = OBJECTREF_TO_ARGHOLDER(*pParam->pDomain);
-        args[ARGNUM_2] = NULL;
-
-        CALL_MANAGED_METHOD_NORET(args);
-    }
-    PAL_EXCEPT_FILTER(ThreadBaseExceptionFilter)
-    {
-        _ASSERTE(!"ThreadBaseExceptionFilter returned EXECUTE_HANDLER.");
-    }
-    PAL_ENDTRY;
-}
-
-
-
-// Helper to dispatch a single event notification.  If anything goes wrong, we cause
-// an unhandled exception notification to occur out of our first pass, and then we
-// swallow and continue.
+// Helper to dispatch a single event notification.
 static void InvokeNotify(OBJECTREF *pDelegate, OBJECTREF *pDomain)
 {
     CONTRACTL
     {
-        NOTHROW;
+        THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
     }
@@ -4030,19 +3987,15 @@ static void InvokeNotify(OBJECTREF *pDelegate, OBJECTREF *pDomain)
     _ASSERTE(!pThread->HasCriticalRegion());
     _ASSERTE(!pThread->HasThreadAffinity());
 
-    EX_TRY
-    {
-        InvokeNotifyInner(pDelegate, pDomain);
-    }
-    EX_CATCH
-    {
-        // It's not even worth asserting, because these aren't our bugs.  At
-        // some point, a MDA may be warranted.
-        // This is an early check for condition that we assert in Thread::InternalReset called from DoOneFinalization later.
-        _ASSERTE(!pThread->HasCriticalRegion());
-        _ASSERTE(!pThread->HasThreadAffinity());
-    }
-    EX_END_CATCH(SwallowAllExceptions)
+    PREPARE_NONVIRTUAL_CALLSITE_USING_CODE(DELEGATEREF(*pDelegate)->GetMethodPtr());
+
+    DECLARE_ARGHOLDER_ARRAY(args, 3);
+
+    args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(DELEGATEREF(*pDelegate)->GetTarget());
+    args[ARGNUM_1] = OBJECTREF_TO_ARGHOLDER(*pDomain);
+    args[ARGNUM_2] = NULL;
+
+    CALL_MANAGED_METHOD_NORET(args);
 
     // This is an early check for condition that we assert in Thread::InternalReset called from DoOneFinalization later.
     _ASSERTE(!pThread->HasCriticalRegion());
@@ -4050,16 +4003,11 @@ static void InvokeNotify(OBJECTREF *pDelegate, OBJECTREF *pDomain)
 }
 
 
-// For critical system events, ensure that each handler gets a notification --
-// even if prior handlers in the chain have thrown an exception.  Also, try
-// to deliver an unhandled exception event if we ever swallow an exception
-// out of a reliable notification.  Note that the add_ event handers are
-// responsible for any reliable preparation of the target, like eager JITting.
-void DistributeEventReliably(OBJECTREF *pDelegate, OBJECTREF *pDomain)
+void DistributeEvent(OBJECTREF *pDelegate, OBJECTREF *pDomain)
 {
     CONTRACTL
     {
-        NOTHROW;  
+        THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
     }
@@ -4070,51 +4018,42 @@ void DistributeEventReliably(OBJECTREF *pDelegate, OBJECTREF *pDomain)
 
     Thread *pThread = GetThread();
 
-    EX_TRY
+    struct _gc
     {
-        struct _gc
-        {
-            PTRARRAYREF Array;
-            OBJECTREF   InnerDelegate;
-        } gc;
-        ZeroMemory(&gc, sizeof(gc));
+        PTRARRAYREF Array;
+        OBJECTREF   InnerDelegate;
+    } gc;
+    ZeroMemory(&gc, sizeof(gc));
 
-        GCPROTECT_BEGIN(gc);
+    GCPROTECT_BEGIN(gc);
 
-        gc.Array = (PTRARRAYREF) ((DELEGATEREF)(*pDelegate))->GetInvocationList();
-        if (gc.Array == NULL || !gc.Array->GetMethodTable()->IsArray())
-        {
-            InvokeNotify(pDelegate, pDomain);
-        }
-        else
-        {
-            // The _invocationCount could be less than the array size, if we are sharing
-            // immutable arrays cleverly.
-            INT_PTR invocationCount = ((DELEGATEREF)(*pDelegate))->GetInvocationCount();
+    gc.Array = (PTRARRAYREF) ((DELEGATEREF)(*pDelegate))->GetInvocationList();
+    if (gc.Array == NULL || !gc.Array->GetMethodTable()->IsArray())
+    {
+        InvokeNotify(pDelegate, pDomain);
+    }
+    else
+    {
+        // The _invocationCount could be less than the array size, if we are sharing
+        // immutable arrays cleverly.
+        INT_PTR invocationCount = ((DELEGATEREF)(*pDelegate))->GetInvocationCount();
             
-            _ASSERTE(FitsInU4(invocationCount));
-            DWORD cnt = static_cast<DWORD>(invocationCount);
+        _ASSERTE(FitsInU4(invocationCount));
+        DWORD cnt = static_cast<DWORD>(invocationCount);
 
-            _ASSERTE(cnt <= gc.Array->GetNumComponents());
+        _ASSERTE(cnt <= gc.Array->GetNumComponents());
 
-            for (DWORD i=0; i<cnt; i++)
+        for (DWORD i=0; i<cnt; i++)
+        {
+            gc.InnerDelegate = gc.Array->m_Array[i];
+            InvokeNotify(&gc.InnerDelegate, pDomain);
+            if (pThread->IsAbortRequested())
             {
-                gc.InnerDelegate = gc.Array->m_Array[i];
-                InvokeNotify(&gc.InnerDelegate, pDomain);
-                if (pThread->IsAbortRequested())
-                {
-                    pThread->UnmarkThreadForAbort(Thread::TAR_Thread);
-                }
+                pThread->UnmarkThreadForAbort(Thread::TAR_Thread);
             }
         }
-        GCPROTECT_END();
     }
-    EX_CATCH
-    {
-        // It's not even worth asserting, because these aren't our bugs.  At
-        // some point, a MDA may be warranted.
-    }
-    EX_END_CATCH(SwallowAllExceptions)
+    GCPROTECT_END();
 }
 
 // The unhandled exception event is a little easier to distribute, because

@@ -180,8 +180,8 @@ enum DelegateBindingFlags
     DBF_RelaxedSignature    =   0x00000080, // Allow relaxed signature matching (co/contra variance)
 };
 
-void DistributeEventReliably(OBJECTREF *pDelegate,
-                             OBJECTREF *pDomain);
+void DistributeEvent(OBJECTREF *pDelegate,
+                     OBJECTREF *pDomain);
 
 void DistributeUnhandledExceptionReliably(OBJECTREF *pDelegate,
                                           OBJECTREF *pDomain,

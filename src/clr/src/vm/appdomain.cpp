@@ -7475,7 +7475,7 @@ void AppDomain::ProcessUnloadDomainEventOnFinalizeThread()
 {
     CONTRACTL
     {
-        NOTHROW;
+        THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
     }
@@ -7512,45 +7512,37 @@ void AppDomain::RaiseUnloadDomainEvent()
 {
     CONTRACTL
     {
-        NOTHROW;
+        THROWS;
         MODE_COOPERATIVE;
         GC_TRIGGERS;
         SO_INTOLERANT;
     }
     CONTRACTL_END;
 
-    EX_TRY
+    Thread *pThread = GetThread();
+    if (this != pThread->GetDomain())
     {
-        Thread *pThread = GetThread();
-        if (this != pThread->GetDomain())
+        pThread->DoADCallBack(this, AppDomain::RaiseUnloadDomainEvent_Wrapper, this,ADV_FINALIZER|ADV_COMPILATION);
+    }
+    else
+    {
+        struct _gc
         {
-            pThread->DoADCallBack(this, AppDomain::RaiseUnloadDomainEvent_Wrapper, this,ADV_FINALIZER|ADV_COMPILATION);
-        }
-        else
-        {
-            struct _gc
-            {
-                APPDOMAINREF Domain;
-                OBJECTREF    Delegate;
-            } gc;
-            ZeroMemory(&gc, sizeof(gc));
+            APPDOMAINREF Domain;
+            OBJECTREF    Delegate;
+        } gc;
+        ZeroMemory(&gc, sizeof(gc));
 
-            GCPROTECT_BEGIN(gc);
-            gc.Domain = (APPDOMAINREF) GetRawExposedObject();
-            if (gc.Domain != NULL)
-            {
-                gc.Delegate = gc.Domain->m_pDomainUnloadEventHandler;
-                if (gc.Delegate != NULL)
-                    DistributeEventReliably(&gc.Delegate, (OBJECTREF *) &gc.Domain);
-            }
-            GCPROTECT_END();
+        GCPROTECT_BEGIN(gc);
+        gc.Domain = (APPDOMAINREF) GetRawExposedObject();
+        if (gc.Domain != NULL)
+        {
+            gc.Delegate = gc.Domain->m_pDomainUnloadEventHandler;
+            if (gc.Delegate != NULL)
+                DistributeEvent(&gc.Delegate, (OBJECTREF *) &gc.Domain);
         }
+        GCPROTECT_END();
     }
-    EX_CATCH
-    {
-        //@TODO call a MDA here
-    }
-    EX_END_CATCH(SwallowAllExceptions);
 }
 
 void AppDomain::RaiseLoadingAssemblyEvent(DomainAssembly *pAssembly)
@@ -7669,20 +7661,15 @@ void AppDomain::RaiseOneExitProcessEvent()
     } gc;
     ZeroMemory(&gc, sizeof(gc));
 
-    EX_TRY {
-
-        GCPROTECT_BEGIN(gc);
-        gc.Domain = (APPDOMAINREF) SystemDomain::GetCurrentDomain()->GetRawExposedObject();
-        if (gc.Domain != NULL)
-        {
-            gc.Delegate = gc.Domain->m_pProcessExitEventHandler;
-            if (gc.Delegate != NULL)
-                DistributeEventReliably(&gc.Delegate, (OBJECTREF *) &gc.Domain);
-        }
-        GCPROTECT_END();
-
-    } EX_CATCH {
-    } EX_END_CATCH(SwallowAllExceptions);
+    GCPROTECT_BEGIN(gc);
+    gc.Domain = (APPDOMAINREF) SystemDomain::GetCurrentDomain()->GetRawExposedObject();
+    if (gc.Domain != NULL)
+    {
+        gc.Delegate = gc.Domain->m_pProcessExitEventHandler;
+        if (gc.Delegate != NULL)
+            DistributeEvent(&gc.Delegate, (OBJECTREF *) &gc.Domain);
+    }
+    GCPROTECT_END();
 }
 
 // Local wrapper used in AppDomain::RaiseExitProcessEvent,
@@ -7691,17 +7678,13 @@ void AppDomain::RaiseOneExitProcessEvent()
 // because it calls private RaiseOneExitProcessEvent
 /*static*/ void AppDomain::RaiseOneExitProcessEvent_Wrapper(AppDomainIterator* pi)
 {
-
     STATIC_CONTRACT_MODE_COOPERATIVE;
-    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
 
-    EX_TRY {
-        ENTER_DOMAIN_PTR(pi->GetDomain(),ADV_ITERATOR)
-        AppDomain::RaiseOneExitProcessEvent();
-        END_DOMAIN_TRANSITION;
-    } EX_CATCH {
-    } EX_END_CATCH(SwallowAllExceptions);
+    ENTER_DOMAIN_PTR(pi->GetDomain(), ADV_ITERATOR)
+    AppDomain::RaiseOneExitProcessEvent();
+    END_DOMAIN_TRANSITION;
 }
 
 static LONG s_ProcessedExitProcessEventCount = 0;
@@ -7718,7 +7701,7 @@ void AppDomain::RaiseExitProcessEvent()
         return;
 
     STATIC_CONTRACT_MODE_COOPERATIVE;
-    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
 
     // Only finalizer thread during shutdown can call this function.
