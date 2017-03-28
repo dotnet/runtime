@@ -642,12 +642,24 @@ void JIT_TrialAlloc::EmitSetAppDomain(CPUSTUBLINKER *psl)
     // Save ECX over function call
     psl->X86EmitPushReg(kECX);
 
+#ifdef UNIX_X86_ABI
+#define STACK_ALIGN_PADDING 8
+    // sub esp, STACK_ALIGN_PADDING; to align the stack
+    psl->X86EmitSubEsp(STACK_ALIGN_PADDING);
+#endif // UNIX_X86_ABI
+
     // mov object to ECX
     // mov ecx, eax
     psl->Emit16(0xc88b);
 
     // SetObjectAppDomain pops its arg & returns object in EAX
     psl->X86EmitCall(psl->NewExternalCodeLabel((LPVOID)SetObjectAppDomain), 4);
+
+#ifdef UNIX_X86_ABI
+    // add esp, STACK_ALIGN_PADDING
+    psl->X86EmitAddEsp(STACK_ALIGN_PADDING);
+#undef STACK_ALIGN_PADDING
+#endif // UNIX_X86_ABI
 
     psl->X86EmitPopReg(kECX);
 }
