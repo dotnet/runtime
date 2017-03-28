@@ -9629,6 +9629,7 @@ GenTreePtr Compiler::fgMorphCopyBlock(GenTreePtr tree)
                 assert(dest->gtOper == GT_LCL_FLD);
                 blockWidth = genTypeSize(dest->TypeGet());
                 destAddr   = gtNewOperNode(GT_ADDR, TYP_BYREF, dest);
+                destFldSeq = dest->AsLclFld()->gtFieldSeq;
             }
         }
         else
@@ -9754,9 +9755,9 @@ GenTreePtr Compiler::fgMorphCopyBlock(GenTreePtr tree)
         bool srcSingleLclVarAsg  = false;
         bool destSingleLclVarAsg = false;
 
-        if ((destLclVar != nullptr) && (srcLclVar == destLclVar))
+        if ((destLclVar != nullptr) && (srcLclVar == destLclVar) && (destFldSeq == srcFldSeq))
         {
-            // Beyond perf reasons, it is not prudent to have a copy of a struct to itself.
+            // Self-assign; no effect.
             GenTree* nop = gtNewNothingNode();
             INDEBUG(nop->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
             return nop;
