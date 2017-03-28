@@ -81,7 +81,7 @@ public:
 
     // Returns true if a the heap is initialized and a garbage collection
     // is in progress, false otherwise.
-    inline static BOOL IsGCInProgress(BOOL bConsiderGCStart = FALSE)
+    inline static bool IsGCInProgress(bool bConsiderGCStart = false)
     {
         WRAPPER_NO_CONTRACT;
 
@@ -90,7 +90,7 @@ public:
 
     // Returns true if we should be competing marking for statics. This
     // influences the behavior of `GCToEEInterface::GcScanRoots`.
-    inline static BOOL MarkShouldCompeteForStatics()
+    inline static bool MarkShouldCompeteForStatics()
     {
         WRAPPER_NO_CONTRACT;
 
@@ -98,7 +98,7 @@ public:
     }
 
     // Waits until a GC is complete, if the heap has been initialized.
-    inline static void WaitForGCCompletion(BOOL bConsiderGCStart = FALSE)
+    inline static void WaitForGCCompletion(bool bConsiderGCStart = false)
     {
         WRAPPER_NO_CONTRACT;
 

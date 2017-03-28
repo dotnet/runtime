@@ -441,13 +441,13 @@ void CALLBACK ScanPointerForProfilerAndETW(_UNCHECKED_OBJECTREF *pObjRef, uintpt
     ScanContext *pSC = (ScanContext *)lp1;
 
     uint32_t rootFlags = 0;
-    BOOL isDependent = FALSE;
+    bool isDependent = false;
 
     OBJECTHANDLE handle = (OBJECTHANDLE)(pRef);
     switch (HandleFetchType(handle))
     {
     case    HNDTYPE_DEPENDENT:
-        isDependent = TRUE;
+        isDependent = true;
         break;
     case    HNDTYPE_WEAK_SHORT:
     case    HNDTYPE_WEAK_LONG:
