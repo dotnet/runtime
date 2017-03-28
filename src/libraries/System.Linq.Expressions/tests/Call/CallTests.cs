@@ -342,19 +342,19 @@ namespace System.Linq.Expressions.Tests
         public static void InstanceMethod_NullInstance_ThrowsArgumentException()
         {
             MethodInfo method = typeof(NonGenericClass).GetMethod(nameof(NonGenericClass.InstanceMethod));
-            Assert.Throws<ArgumentException>("method", () => Expression.Call(method, s_valid));
-            Assert.Throws<ArgumentException>("method", () => Expression.Call(method, s_valid, s_valid));
-            Assert.Throws<ArgumentException>("method", () => Expression.Call(method, s_valid, s_valid, s_valid));
-            Assert.Throws<ArgumentException>("method", () => Expression.Call(method, s_valid, s_valid, s_valid, s_valid));
-            Assert.Throws<ArgumentException>("method", () => Expression.Call(method, s_valid, s_valid, s_valid, s_valid, s_valid));
-            Assert.Throws<ArgumentException>("method", () => Expression.Call(method, new Expression[0]));
-            Assert.Throws<ArgumentException>("method", () => Expression.Call(method, (IEnumerable<Expression>)new Expression[0]));
+            Assert.Throws<ArgumentException>(null, () => Expression.Call(method, s_valid));
+            Assert.Throws<ArgumentException>(null, () => Expression.Call(method, s_valid, s_valid));
+            Assert.Throws<ArgumentException>(null, () => Expression.Call(method, s_valid, s_valid, s_valid));
+            Assert.Throws<ArgumentException>(null, () => Expression.Call(method, s_valid, s_valid, s_valid, s_valid));
+            Assert.Throws<ArgumentException>(null, () => Expression.Call(method, s_valid, s_valid, s_valid, s_valid, s_valid));
+            Assert.Throws<ArgumentException>(null, () => Expression.Call(method, new Expression[0]));
+            Assert.Throws<ArgumentException>(null, () => Expression.Call(method, (IEnumerable<Expression>)new Expression[0]));
 
-            Assert.Throws<ArgumentException>("method", () => Expression.Call(null, method, s_valid));
-            Assert.Throws<ArgumentException>("method", () => Expression.Call(null, method, s_valid, s_valid));
-            Assert.Throws<ArgumentException>("method", () => Expression.Call(null, method, s_valid, s_valid, s_valid));
-            Assert.Throws<ArgumentException>("method", () => Expression.Call(null, method, new Expression[0]));
-            Assert.Throws<ArgumentException>("method", () => Expression.Call(null, method, (IEnumerable<Expression>)new Expression[0]));
+            Assert.Throws<ArgumentException>(null, () => Expression.Call(null, method, s_valid));
+            Assert.Throws<ArgumentException>(null, () => Expression.Call(null, method, s_valid, s_valid));
+            Assert.Throws<ArgumentException>(null, () => Expression.Call(null, method, s_valid, s_valid, s_valid));
+            Assert.Throws<ArgumentException>(null, () => Expression.Call(null, method, new Expression[0]));
+            Assert.Throws<ArgumentException>(null, () => Expression.Call(null, method, (IEnumerable<Expression>)new Expression[0]));
         }
 
         [Fact]
@@ -362,11 +362,11 @@ namespace System.Linq.Expressions.Tests
         {
             Expression instance = Expression.Constant(new NonGenericClass());
             MethodInfo method = typeof(NonGenericClass).GetMethod(nameof(NonGenericClass.StaticMethod));
-            Assert.Throws<ArgumentException>("instance", () => Expression.Call(instance, method, s_valid));
-            Assert.Throws<ArgumentException>("instance", () => Expression.Call(instance, method, s_valid, s_valid));
-            Assert.Throws<ArgumentException>("instance", () => Expression.Call(instance, method, s_valid, s_valid, s_valid));
-            Assert.Throws<ArgumentException>("instance", () => Expression.Call(instance, method, new Expression[0]));
-            Assert.Throws<ArgumentException>("instance", () => Expression.Call(instance, method, (IEnumerable<Expression>)new Expression[0]));
+            Assert.Throws<ArgumentException>(null, () => Expression.Call(instance, method, s_valid));
+            Assert.Throws<ArgumentException>(null, () => Expression.Call(instance, method, s_valid, s_valid));
+            Assert.Throws<ArgumentException>(null, () => Expression.Call(instance, method, s_valid, s_valid, s_valid));
+            Assert.Throws<ArgumentException>(null, () => Expression.Call(instance, method, new Expression[0]));
+            Assert.Throws<ArgumentException>(null, () => Expression.Call(instance, method, (IEnumerable<Expression>)new Expression[0]));
         }
 
         public static IEnumerable<object[]> InvalidArg_TestData()
