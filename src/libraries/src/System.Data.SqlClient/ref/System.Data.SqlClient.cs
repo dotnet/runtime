@@ -239,7 +239,7 @@ namespace System.Data.SqlClient
         public string SourceColumn { get { throw null; } set { } }
         public int SourceOrdinal { get { throw null; } set { } }
     }
-    public sealed partial class SqlBulkCopyColumnMappingCollection
+    public sealed partial class SqlBulkCopyColumnMappingCollection : System.Collections.CollectionBase
     {
         internal SqlBulkCopyColumnMappingCollection() { }
         public System.Data.SqlClient.SqlBulkCopyColumnMapping this[int index] { get { throw null; } }

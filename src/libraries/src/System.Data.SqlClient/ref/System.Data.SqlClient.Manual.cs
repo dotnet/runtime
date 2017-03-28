@@ -7,25 +7,6 @@
 
 namespace System.Data.SqlClient
 {
-    // Declaring members from stripped base class CollectionBase
-    public sealed partial class SqlBulkCopyColumnMappingCollection : System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList
-    {
-        public int Count { get { throw null; } }
-        bool System.Collections.ICollection.IsSynchronized { get { throw null; } }
-        object System.Collections.ICollection.SyncRoot { get { throw null; } }
-        bool System.Collections.IList.IsFixedSize { get { throw null; } }
-        bool System.Collections.IList.IsReadOnly { get { throw null; } }
-        object System.Collections.IList.this[int index] { get { throw null; } set { } }
-        public void Clear() { }
-        public System.Collections.IEnumerator GetEnumerator() { throw null; }
-        public void RemoveAt(int index) { }
-        void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
-        int System.Collections.IList.Add(object value) { throw null; }
-        bool System.Collections.IList.Contains(object value) { throw null; }
-        int System.Collections.IList.IndexOf(object value) { throw null; }
-        void System.Collections.IList.Insert(int index, object value) { }
-        void System.Collections.IList.Remove(object value) { }
-    }
     public sealed partial class SqlCommand : System.Data.Common.DbCommand
     {
         // SqlCommand expects IDisposable methods to be implemented via System.ComponentModel.Component, which it no longer inherits from
