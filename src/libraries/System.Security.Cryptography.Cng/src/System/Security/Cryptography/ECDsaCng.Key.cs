@@ -39,7 +39,6 @@ namespace System.Security.Cryptography
             }
         }
 
-#if !uap
         public override void GenerateKey(ECCurve curve)
         {
             curve.Validate();
@@ -82,7 +81,6 @@ namespace System.Security.Cryptography
                 throw new PlatformNotSupportedException(string.Format(SR.Cryptography_CurveNotSupported, curve.CurveType.ToString()));
             }
         }
-#endif // !uap
 
         private CngKey GetKey()
         {
@@ -90,10 +88,8 @@ namespace System.Security.Cryptography
 
             if (_core.IsKeyGeneratedNamedCurve())
             {
-#if !uap
                 // Curve was previously created, so use that
                 key = _core.GetOrGenerateKey(null);
-#endif // !uap
             }
             else
             {
