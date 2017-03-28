@@ -99,7 +99,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
             return null;
         }
 
-        private int ComputeHashCode(string key)
+        private static int ComputeHashCode(string key)
         {
             unchecked
             {
@@ -119,7 +119,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
             }
         }
 
-        private int ComputeHashCode(string key, int length)
+        private static int ComputeHashCode(string key, int length)
         {
             Debug.Assert(key != null);
             Debug.Assert(length <= key.Length);
@@ -140,7 +140,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
             }
         }
 
-        private bool Equals(string candidate, string key, int length)
+        private static bool Equals(string candidate, string key, int length)
         {
             Debug.Assert(candidate != null);
             Debug.Assert(key != null);
