@@ -119,7 +119,6 @@ namespace System.Linq.Expressions.Interpreter
         private SetArrayItemInstruction() { }
 
         public override int ConsumedStack => 3;
-        public override int ProducedStack => 0;
         public override string InstructionName => "SetArrayItem";
 
         public override int Run(InterpretedFrame frame)
