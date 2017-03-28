@@ -18,15 +18,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // AssemblyQualifiedNamespaceSymbol
         // ----------------------------------------------------------------------------
 
-        public bool IsType()
-        {
-            return false;
-        }
+        public bool IsType => false;
 
-        public bool IsNamespace()
-        {
-            return true;
-        }
+        public bool IsNamespace => true;
 
         public AssemblyQualifiedNamespaceSymbol AsNamespace()
         {

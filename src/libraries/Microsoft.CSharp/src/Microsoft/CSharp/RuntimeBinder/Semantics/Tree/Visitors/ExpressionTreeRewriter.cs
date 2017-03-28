@@ -9,7 +9,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal sealed class ExpressionTreeRewriter : ExprVisitorBase
     {
-        public static EXPR Rewrite(EXPR expr, ExprFactory expressionFactory, SymbolLoader symbolLoader)
+        public static Expr Rewrite(Expr expr, ExprFactory expressionFactory, SymbolLoader symbolLoader)
         {
             ExpressionTreeRewriter rewriter = new ExpressionTreeRewriter(expressionFactory, symbolLoader);
             rewriter.alwaysRewrite = true;
@@ -18,7 +18,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private ExprFactory expressionFactory;
         private SymbolLoader symbolLoader;
-        private EXPRBOUNDLAMBDA currentAnonMeth;
+        private ExprBoundLambda currentAnonMeth;
         private bool alwaysRewrite;
 
         private ExprFactory GetExprFactory() { return expressionFactory; }
@@ -32,11 +32,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             this.alwaysRewrite = false;
         }
 
-        protected override EXPR Dispatch(EXPR expr)
+        protected override Expr Dispatch(Expr expr)
         {
             Debug.Assert(expr != null);
 
-            EXPR result = base.Dispatch(expr);
+            Expr result = base.Dispatch(expr);
             if (result == expr)
             {
                 throw Error.InternalCompilerError();
@@ -46,19 +46,19 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         /////////////////////////////////////////////////////////////////////////////////
         // Statement types.
-        protected override EXPR VisitASSIGNMENT(EXPRASSIGNMENT assignment)
+        protected override Expr VisitASSIGNMENT(ExprAssignment assignment)
         {
             Debug.Assert(assignment != null);
             Debug.Assert(alwaysRewrite || currentAnonMeth != null);
 
             // For assignments, we either have a member assignment or an indexed assignment.
             //Debug.Assert(assignment.GetLHS().isPROP() || assignment.GetLHS().isFIELD() || assignment.GetLHS().isARRAYINDEX() || assignment.GetLHS().isLOCAL());
-            EXPR lhs;
-            if (assignment.GetLHS().isPROP())
+            Expr lhs;
+            if (assignment.LHS.isPROP())
             {
-                EXPRPROP prop = assignment.GetLHS().asPROP();
+                ExprProperty prop = assignment.LHS.asPROP();
 
-                if (prop.GetOptionalArguments() == null)
+                if (prop.OptionalArguments== null)
                 {
                     // Regular property.
                     lhs = Visit(prop);
@@ -69,10 +69,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     // PropInfo for the thing, and get the array of expressions that make up the index arguments.
                     //
                     // The LHS becomes Expression.Property(instance, indexerInfo, arguments).
-                    EXPR instance = Visit(prop.GetMemberGroup().GetOptionalObject());
-                    EXPR propInfo = GetExprFactory().CreatePropertyInfo(prop.pwtSlot.Prop(), prop.pwtSlot.Ats);
-                    EXPR arguments = GenerateParamsArray(
-                        GenerateArgsList(prop.GetOptionalArguments()),
+                    Expr instance = Visit(prop.MemberGroup.OptionalObject);
+                    Expr propInfo = GetExprFactory().CreatePropertyInfo(prop.PropWithTypeSlot.Prop(), prop.PropWithTypeSlot.Ats);
+                    Expr arguments = GenerateParamsArray(
+                        GenerateArgsList(prop.OptionalArguments),
                         PredefinedType.PT_EXPRESSION);
 
                     lhs = GenerateCall(PREDEFMETH.PM_EXPRESSION_PROPERTY, instance, propInfo, arguments);
@@ -80,45 +80,45 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
             else
             {
-                lhs = Visit(assignment.GetLHS());
+                lhs = Visit(assignment.LHS);
             }
 
-            EXPR rhs = Visit(assignment.GetRHS());
+            Expr rhs = Visit(assignment.RHS);
             return GenerateCall(PREDEFMETH.PM_EXPRESSION_ASSIGN, lhs, rhs);
         }
-        protected override EXPR VisitMULTIGET(EXPRMULTIGET pExpr)
+        protected override Expr VisitMULTIGET(ExprMultiGet pExpr)
         {
-            return Visit(pExpr.GetOptionalMulti().Left);
+            return Visit(pExpr.OptionalMulti.Left);
         }
-        protected override EXPR VisitMULTI(EXPRMULTI pExpr)
+        protected override Expr VisitMULTI(ExprMulti pExpr)
         {
-            EXPR rhs = Visit(pExpr.Operator);
-            EXPR lhs = Visit(pExpr.Left);
+            Expr rhs = Visit(pExpr.Operator);
+            Expr lhs = Visit(pExpr.Left);
             return GenerateCall(PREDEFMETH.PM_EXPRESSION_ASSIGN, lhs, rhs);
         }
 
         /////////////////////////////////////////////////////////////////////////////////
         // Expression types.
 
-        protected override EXPR VisitBOUNDLAMBDA(EXPRBOUNDLAMBDA anonmeth)
+        protected override Expr VisitBOUNDLAMBDA(ExprBoundLambda anonmeth)
         {
             Debug.Assert(anonmeth != null);
 
-            EXPRBOUNDLAMBDA prevAnonMeth = currentAnonMeth;
+            ExprBoundLambda prevAnonMeth = currentAnonMeth;
             currentAnonMeth = anonmeth;
             MethodSymbol lambdaMethod = GetPreDefMethod(PREDEFMETH.PM_EXPRESSION_LAMBDA);
 
-            CType delegateType = anonmeth.DelegateType();
+            CType delegateType = anonmeth.DelegateType;
             TypeArray lambdaTypeParams = GetSymbolLoader().getBSymmgr().AllocParams(1, new CType[] { delegateType });
             AggregateType expressionType = GetSymbolLoader().GetOptPredefTypeErr(PredefinedType.PT_EXPRESSION, true);
             MethWithInst mwi = new MethWithInst(lambdaMethod, expressionType, lambdaTypeParams);
-            EXPR createParameters = CreateWraps(anonmeth);
-            EXPR body = RewriteLambdaBody(anonmeth);
-            EXPR parameters = RewriteLambdaParameters(anonmeth);
-            EXPR args = GetExprFactory().CreateList(body, parameters);
+            Expr createParameters = CreateWraps(anonmeth);
+            Expr body = RewriteLambdaBody(anonmeth);
+            Expr parameters = RewriteLambdaParameters(anonmeth);
+            Expr args = GetExprFactory().CreateList(body, parameters);
             CType typeRet = GetSymbolLoader().GetTypeManager().SubstType(mwi.Meth().RetType, mwi.GetType(), mwi.TypeArgs);
-            EXPRMEMGRP pMemGroup = GetExprFactory().CreateMemGroup(null, mwi);
-            EXPR callLambda = GetExprFactory().CreateCall(0, typeRet, args, pMemGroup, mwi);
+            ExprMemberGroup pMemGroup = GetExprFactory().CreateMemGroup(null, mwi);
+            Expr callLambda = GetExprFactory().CreateCall(0, typeRet, args, pMemGroup, mwi);
 
             callLambda.asCALL().PredefinedMethod = PREDEFMETH.PM_EXPRESSION_LAMBDA;
 
@@ -127,7 +127,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 callLambda = GetExprFactory().CreateSequence(createParameters, callLambda);
             }
-            EXPR expr = DestroyWraps(anonmeth, callLambda);
+            Expr expr = DestroyWraps(anonmeth, callLambda);
             // If we are already inside an expression tree rewrite and this is an expression tree lambda
             // then it needs to be quoted.
             if (currentAnonMeth != null)
@@ -136,92 +136,92 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
             return expr;
         }
-        protected override EXPR VisitCONSTANT(ExprConstant expr)
+        protected override Expr VisitCONSTANT(ExprConstant expr)
         {
             Debug.Assert(expr != null);
             Debug.Assert(alwaysRewrite || currentAnonMeth != null);
             return GenerateConstant(expr);
         }
-        protected override EXPR VisitLOCAL(EXPRLOCAL local)
+        protected override Expr VisitLOCAL(ExprLocal local)
         {
             Debug.Assert(local != null);
             Debug.Assert(alwaysRewrite || currentAnonMeth != null);
-            Debug.Assert(!local.local.isThis);
+            Debug.Assert(!local.Local.isThis);
             // this is true for all parameters of an expression lambda
-            if (local.local.wrap != null)
+            if (local.Local.wrap != null)
             {
-                return local.local.wrap;
+                return local.Local.wrap;
             }
-            Debug.Assert(local.local.fUsedInAnonMeth);
+            Debug.Assert(local.Local.fUsedInAnonMeth);
             return GetExprFactory().CreateHoistedLocalInExpression(local);
         }
-        protected override EXPR VisitTHISPOINTER(EXPRTHISPOINTER expr)
+        protected override Expr VisitTHISPOINTER(ExprThisPointer expr)
         {
             Debug.Assert(expr != null);
             Debug.Assert(alwaysRewrite || currentAnonMeth != null);
-            Debug.Assert(expr.local.isThis);
+            Debug.Assert(expr.Local.isThis);
             return GenerateConstant(expr);
         }
-        protected override EXPR VisitFIELD(EXPRFIELD expr)
+        protected override Expr VisitFIELD(ExprField expr)
         {
             Debug.Assert(expr != null);
-            EXPR pObject;
-            if (expr.GetOptionalObject() == null)
+            Expr pObject;
+            if (expr.OptionalObject== null)
             {
                 pObject = GetExprFactory().CreateNull();
             }
             else
             {
-                pObject = Visit(expr.GetOptionalObject());
+                pObject = Visit(expr.OptionalObject);
             }
-            EXPRFIELDINFO pFieldInfo = GetExprFactory().CreateFieldInfo(expr.fwt.Field(), expr.fwt.GetType());
+            ExprFieldInfo pFieldInfo = GetExprFactory().CreateFieldInfo(expr.FieldWithType.Field(), expr.FieldWithType.GetType());
             return GenerateCall(PREDEFMETH.PM_EXPRESSION_FIELD, pObject, pFieldInfo);
         }
-        protected override EXPR VisitUSERDEFINEDCONVERSION(EXPRUSERDEFINEDCONVERSION expr)
+        protected override Expr VisitUSERDEFINEDCONVERSION(ExprUserDefinedConversion expr)
         {
             Debug.Assert(expr != null);
             Debug.Assert(alwaysRewrite || currentAnonMeth != null);
             return GenerateUserDefinedConversion(expr, expr.Argument);
         }
-        protected override EXPR VisitCAST(EXPRCAST pExpr)
+        protected override Expr VisitCAST(ExprCast pExpr)
         {
             Debug.Assert(pExpr != null);
             Debug.Assert(alwaysRewrite || currentAnonMeth != null);
 
-            EXPR pArgument = pExpr.GetArgument();
+            Expr pArgument = pExpr.Argument;
 
             // If we have generated an identity cast or reference cast to a base class
             // we can omit the cast.
-            if (pArgument.type == pExpr.type ||
-                    GetSymbolLoader().IsBaseClassOfClass(pArgument.type, pExpr.type) ||
-                    CConversions.FImpRefConv(GetSymbolLoader(), pArgument.type, pExpr.type))
+            if (pArgument.Type == pExpr.Type ||
+                    GetSymbolLoader().IsBaseClassOfClass(pArgument.Type, pExpr.Type) ||
+                    CConversions.FImpRefConv(GetSymbolLoader(), pArgument.Type, pExpr.Type))
             {
                 return Visit(pArgument);
             }
 
             // If we have a cast to PredefinedType.PT_G_EXPRESSION and the thing that we're casting is 
             // a EXPRBOUNDLAMBDA that is an expression tree, then just visit the expression tree.
-            if (pExpr.type != null &&
-                    pExpr.type.isPredefType(PredefinedType.PT_G_EXPRESSION) &&
+            if (pExpr.Type != null &&
+                    pExpr.Type.isPredefType(PredefinedType.PT_G_EXPRESSION) &&
                     pArgument.isBOUNDLAMBDA())
             {
                 return Visit(pArgument);
             }
 
-            EXPR result = GenerateConversion(pArgument, pExpr.type, pExpr.isChecked());
-            if ((pExpr.flags & EXPRFLAG.EXF_UNBOXRUNTIME) != 0)
+            Expr result = GenerateConversion(pArgument, pExpr.Type, pExpr.isChecked());
+            if ((pExpr.Flags & EXPRFLAG.EXF_UNBOXRUNTIME) != 0)
             {
                 // Propagate the unbox flag to the call for the ExpressionTreeCallRewriter.
-                result.flags |= EXPRFLAG.EXF_UNBOXRUNTIME;
+                result.Flags |= EXPRFLAG.EXF_UNBOXRUNTIME;
             }
             return result;
         }
-        protected override EXPR VisitCONCAT(EXPRCONCAT expr)
+        protected override Expr VisitCONCAT(ExprConcat expr)
         {
             Debug.Assert(expr != null);
             Debug.Assert(alwaysRewrite || currentAnonMeth != null);
             PREDEFMETH pdm;
-            if (expr.GetFirstArgument().type.isPredefType(PredefinedType.PT_STRING) && expr.GetSecondArgument().type.isPredefType(PredefinedType.PT_STRING))
+            if (expr.FirstArgument.Type.isPredefType(PredefinedType.PT_STRING) && expr.SecondArgument.Type.isPredefType(PredefinedType.PT_STRING))
             {
                 pdm = PREDEFMETH.PM_STRING_CONCAT_STRING_2;
             }
@@ -229,17 +229,17 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 pdm = PREDEFMETH.PM_STRING_CONCAT_OBJECT_2;
             }
-            EXPR p1 = Visit(expr.GetFirstArgument());
-            EXPR p2 = Visit(expr.GetSecondArgument());
+            Expr p1 = Visit(expr.FirstArgument);
+            Expr p2 = Visit(expr.SecondArgument);
             MethodSymbol method = GetPreDefMethod(pdm);
-            EXPR methodInfo = GetExprFactory().CreateMethodInfo(method, GetSymbolLoader().GetReqPredefType(PredefinedType.PT_STRING), null);
+            Expr methodInfo = GetExprFactory().CreateMethodInfo(method, GetSymbolLoader().GetReqPredefType(PredefinedType.PT_STRING), null);
             return GenerateCall(PREDEFMETH.PM_EXPRESSION_ADD_USER_DEFINED, p1, p2, methodInfo);
         }
-        protected override EXPR VisitBINOP(EXPRBINOP expr)
+        protected override Expr VisitBINOP(ExprBinOp expr)
         {
             Debug.Assert(expr != null);
             Debug.Assert(alwaysRewrite || currentAnonMeth != null);
-            if (expr.GetUserDefinedCallMethod() != null)
+            if (expr.UserDefinedCallMethod != null)
             {
                 return GenerateUserDefinedBinaryOperator(expr);
             }
@@ -248,7 +248,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return GenerateBuiltInBinaryOperator(expr);
             }
         }
-        protected override EXPR VisitUNARYOP(EXPRUNARYOP pExpr)
+        protected override Expr VisitUNARYOP(ExprUnaryOp pExpr)
         {
             Debug.Assert(pExpr != null);
             Debug.Assert(alwaysRewrite || currentAnonMeth != null);
@@ -261,69 +261,69 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return GenerateBuiltInUnaryOperator(pExpr);
             }
         }
-        protected override EXPR VisitARRAYINDEX(EXPRARRAYINDEX pExpr)
+        protected override Expr VisitARRAYINDEX(ExprArrayIndex pExpr)
         {
             Debug.Assert(pExpr != null);
             Debug.Assert(alwaysRewrite || currentAnonMeth != null);
-            EXPR arr = Visit(pExpr.GetArray());
-            EXPR args = GenerateIndexList(pExpr.GetIndex());
+            Expr arr = Visit(pExpr.Array);
+            Expr args = GenerateIndexList(pExpr.Index);
             if (args.isLIST())
             {
-                EXPR Params = GenerateParamsArray(args, PredefinedType.PT_EXPRESSION);
+                Expr Params = GenerateParamsArray(args, PredefinedType.PT_EXPRESSION);
                 return GenerateCall(PREDEFMETH.PM_EXPRESSION_ARRAYINDEX2, arr, Params);
             }
             return GenerateCall(PREDEFMETH.PM_EXPRESSION_ARRAYINDEX, arr, args);
         }
-        protected override EXPR VisitARRAYLENGTH(EXPRARRAYLENGTH pExpr)
+        protected override Expr VisitARRAYLENGTH(ExprArrayLength pExpr)
         {
-            return GenerateBuiltInUnaryOperator(PREDEFMETH.PM_EXPRESSION_ARRAYLENGTH, pExpr.GetArray(), pExpr);
+            return GenerateBuiltInUnaryOperator(PREDEFMETH.PM_EXPRESSION_ARRAYLENGTH, pExpr.Array, pExpr);
         }
-        protected override EXPR VisitQUESTIONMARK(EXPRQUESTIONMARK pExpr)
+        protected override Expr VisitQUESTIONMARK(ExprQuestionMark pExpr)
         {
             Debug.Assert(pExpr != null);
             Debug.Assert(alwaysRewrite || currentAnonMeth != null);
-            EXPR p1 = Visit(pExpr.GetTestExpression());
-            EXPR p2 = GenerateQuestionMarkOperand(pExpr.GetConsequence().asBINOP().GetOptionalLeftChild());
-            EXPR p3 = GenerateQuestionMarkOperand(pExpr.GetConsequence().asBINOP().GetOptionalRightChild());
+            Expr p1 = Visit(pExpr.TestExpression);
+            Expr p2 = GenerateQuestionMarkOperand(pExpr.Consequence.asBINOP().OptionalLeftChild);
+            Expr p3 = GenerateQuestionMarkOperand(pExpr.Consequence.asBINOP().OptionalRightChild);
             return GenerateCall(PREDEFMETH.PM_EXPRESSION_CONDITION, p1, p2, p3);
         }
-        protected override EXPR VisitCALL(EXPRCALL expr)
+        protected override Expr VisitCALL(ExprCall expr)
         {
             Debug.Assert(expr != null);
             Debug.Assert(alwaysRewrite || currentAnonMeth != null);
 
-            switch (expr.nubLiftKind)
+            switch (expr.NullableCallLiftKind)
             {
                 default:
                     break;
                 case NullableCallLiftKind.NullableIntermediateConversion:
                 case NullableCallLiftKind.NullableConversion:
                 case NullableCallLiftKind.NullableConversionConstructor:
-                    return GenerateConversion(expr.GetOptionalArguments(), expr.type, expr.isChecked());
+                    return GenerateConversion(expr.OptionalArguments, expr.Type, expr.isChecked());
                 case NullableCallLiftKind.NotLiftedIntermediateConversion:
                 case NullableCallLiftKind.UserDefinedConversion:
-                    return GenerateUserDefinedConversion(expr.GetOptionalArguments(), expr.type, expr.mwi);
+                    return GenerateUserDefinedConversion(expr.OptionalArguments, expr.Type, expr.MethWithInst);
             }
 
-            if (expr.mwi.Meth().IsConstructor())
+            if (expr.MethWithInst.Meth().IsConstructor())
             {
                 return GenerateConstructor(expr);
             }
 
-            EXPRMEMGRP memberGroup = expr.GetMemberGroup();
-            if (memberGroup.isDelegate())
+            ExprMemberGroup memberGroup = expr.MemberGroup;
+            if (memberGroup.IsDelegate)
             {
                 return GenerateDelegateInvoke(expr);
             }
 
-            EXPR pObject;
-            if (expr.mwi.Meth().isStatic || expr.GetMemberGroup().GetOptionalObject() == null)
+            Expr pObject;
+            if (expr.MethWithInst.Meth().isStatic || expr.MemberGroup.OptionalObject== null)
             {
                 pObject = GetExprFactory().CreateNull();
             }
             else
             {
-                pObject = expr.GetMemberGroup().GetOptionalObject();
+                pObject = expr.MemberGroup.OptionalObject;
 
                 // If we have, say, an int? which is the object of a call to ToString
                 // then we do NOT want to generate ((object)i).ToString() because that
@@ -338,54 +338,54 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // can handle in the general case all implicit boxing conversions. Right now it 
                 // requires that all arguments to a call that need to be boxed be explicitly boxed.
 
-                if (pObject != null && pObject.isCAST() && pObject.asCAST().IsBoxingCast())
+                if (pObject != null && pObject.isCAST() && pObject.asCAST().IsBoxingCast)
                 {
-                    pObject = pObject.asCAST().GetArgument();
+                    pObject = pObject.asCAST().Argument;
                 }
                 pObject = Visit(pObject);
             }
-            EXPR methodInfo = GetExprFactory().CreateMethodInfo(expr.mwi);
-            EXPR args = GenerateArgsList(expr.GetOptionalArguments());
-            EXPR Params = GenerateParamsArray(args, PredefinedType.PT_EXPRESSION);
+            Expr methodInfo = GetExprFactory().CreateMethodInfo(expr.MethWithInst);
+            Expr args = GenerateArgsList(expr.OptionalArguments);
+            Expr Params = GenerateParamsArray(args, PredefinedType.PT_EXPRESSION);
             PREDEFMETH pdm = PREDEFMETH.PM_EXPRESSION_CALL;
-            Debug.Assert(!expr.mwi.Meth().isVirtual || expr.GetMemberGroup().GetOptionalObject() != null);
+            Debug.Assert(!expr.MethWithInst.Meth().isVirtual || expr.MemberGroup.OptionalObject != null);
 
             return GenerateCall(pdm, pObject, methodInfo, Params);
         }
-        protected override EXPR VisitPROP(EXPRPROP expr)
+        protected override Expr VisitPROP(ExprProperty expr)
         {
             Debug.Assert(expr != null);
             Debug.Assert(alwaysRewrite || currentAnonMeth != null);
-            EXPR pObject;
-            if (expr.pwtSlot.Prop().isStatic || expr.GetMemberGroup().GetOptionalObject() == null)
+            Expr pObject;
+            if (expr.PropWithTypeSlot.Prop().isStatic || expr.MemberGroup.OptionalObject== null)
             {
                 pObject = GetExprFactory().CreateNull();
             }
             else
             {
-                pObject = Visit(expr.GetMemberGroup().GetOptionalObject());
+                pObject = Visit(expr.MemberGroup.OptionalObject);
             }
-            EXPR propInfo = GetExprFactory().CreatePropertyInfo(expr.pwtSlot.Prop(), expr.pwtSlot.GetType());
-            if (expr.GetOptionalArguments() != null)
+            Expr propInfo = GetExprFactory().CreatePropertyInfo(expr.PropWithTypeSlot.Prop(), expr.PropWithTypeSlot.GetType());
+            if (expr.OptionalArguments != null)
             {
                 // It is an indexer property.  Turn it into a virtual method call.
-                EXPR args = GenerateArgsList(expr.GetOptionalArguments());
-                EXPR Params = GenerateParamsArray(args, PredefinedType.PT_EXPRESSION);
+                Expr args = GenerateArgsList(expr.OptionalArguments);
+                Expr Params = GenerateParamsArray(args, PredefinedType.PT_EXPRESSION);
                 return GenerateCall(PREDEFMETH.PM_EXPRESSION_PROPERTY, pObject, propInfo, Params);
             }
             return GenerateCall(PREDEFMETH.PM_EXPRESSION_PROPERTY, pObject, propInfo);
         }
-        protected override EXPR VisitARRINIT(EXPRARRINIT expr)
+        protected override Expr VisitARRINIT(ExprArrayInit expr)
         {
             Debug.Assert(expr != null);
             Debug.Assert(alwaysRewrite || currentAnonMeth != null);
             // POSSIBLE ERROR: Multi-d should be an error?
-            EXPR pTypeOf = CreateTypeOf(expr.type.AsArrayType().GetElementType());
-            EXPR args = GenerateArgsList(expr.GetOptionalArguments());
-            EXPR Params = GenerateParamsArray(args, PredefinedType.PT_EXPRESSION);
+            Expr pTypeOf = CreateTypeOf(expr.Type.AsArrayType().GetElementType());
+            Expr args = GenerateArgsList(expr.OptionalArguments);
+            Expr Params = GenerateParamsArray(args, PredefinedType.PT_EXPRESSION);
             return GenerateCall(PREDEFMETH.PM_EXPRESSION_NEWARRAYINIT, pTypeOf, Params);
         }
-        protected override EXPR VisitZEROINIT(EXPRZEROINIT expr)
+        protected override Expr VisitZEROINIT(ExprZeroInit expr)
         {
             Debug.Assert(expr != null);
             Debug.Assert(alwaysRewrite || currentAnonMeth != null);
@@ -394,50 +394,50 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             if (expr.IsConstructor)
             {
                 // We have a parameterless "new MyStruct()" which has been realized as a zero init.
-                EXPRTYPEOF pTypeOf = CreateTypeOf(expr.type);
+                ExprTypeOf pTypeOf = CreateTypeOf(expr.Type);
                 return GenerateCall(PREDEFMETH.PM_EXPRESSION_NEW_TYPE, pTypeOf);
             }
             return GenerateConstant(expr);
         }
-        protected override EXPR VisitTYPEOF(EXPRTYPEOF expr)
+        protected override Expr VisitTYPEOF(ExprTypeOf expr)
         {
             Debug.Assert(expr != null);
             Debug.Assert(alwaysRewrite || currentAnonMeth != null);
             return GenerateConstant(expr);
         }
 
-        private EXPR GenerateQuestionMarkOperand(EXPR pExpr)
+        private Expr GenerateQuestionMarkOperand(Expr pExpr)
         {
             Debug.Assert(pExpr != null);
             // We must not optimize away compiler-generated reference casts because
             // the expression tree API insists that the CType of both sides be identical.
             if (pExpr.isCAST())
             {
-                return GenerateConversion(pExpr.asCAST().GetArgument(), pExpr.type, pExpr.isChecked());
+                return GenerateConversion(pExpr.asCAST().Argument, pExpr.Type, pExpr.isChecked());
             }
             return Visit(pExpr);
         }
 
-        private EXPR GenerateDelegateInvoke(EXPRCALL expr)
+        private Expr GenerateDelegateInvoke(ExprCall expr)
         {
             Debug.Assert(expr != null);
-            EXPRMEMGRP memberGroup = expr.GetMemberGroup();
-            Debug.Assert(memberGroup.isDelegate());
-            EXPR oldObject = memberGroup.GetOptionalObject();
+            ExprMemberGroup memberGroup = expr.MemberGroup;
+            Debug.Assert(memberGroup.IsDelegate);
+            Expr oldObject = memberGroup.OptionalObject;
             Debug.Assert(oldObject != null);
-            EXPR pObject = Visit(oldObject);
-            EXPR args = GenerateArgsList(expr.GetOptionalArguments());
-            EXPR Params = GenerateParamsArray(args, PredefinedType.PT_EXPRESSION);
+            Expr pObject = Visit(oldObject);
+            Expr args = GenerateArgsList(expr.OptionalArguments);
+            Expr Params = GenerateParamsArray(args, PredefinedType.PT_EXPRESSION);
             return GenerateCall(PREDEFMETH.PM_EXPRESSION_INVOKE, pObject, Params);
         }
 
-        private EXPR GenerateBuiltInBinaryOperator(EXPRBINOP expr)
+        private Expr GenerateBuiltInBinaryOperator(ExprBinOp expr)
         {
             Debug.Assert(expr != null);
             Debug.Assert(alwaysRewrite || currentAnonMeth != null);
             PREDEFMETH pdm;
 
-            switch (expr.kind)
+            switch (expr.Kind)
             {
                 case ExpressionKind.EK_LSHIFT: pdm = PREDEFMETH.PM_EXPRESSION_LEFTSHIFT; break;
                 case ExpressionKind.EK_RSHIFT: pdm = PREDEFMETH.PM_EXPRESSION_RIGHTSHIFT; break;
@@ -469,15 +469,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 default:
                     throw Error.InternalCompilerError();
             }
-            EXPR origL = expr.GetOptionalLeftChild();
-            EXPR origR = expr.GetOptionalRightChild();
+            Expr origL = expr.OptionalLeftChild;
+            Expr origR = expr.OptionalRightChild;
             Debug.Assert(origL != null);
             Debug.Assert(origR != null);
-            CType typeL = origL.type;
-            CType typeR = origR.type;
+            CType typeL = origL.Type;
+            CType typeR = origR.Type;
 
-            EXPR newL = Visit(origL);
-            EXPR newR = Visit(origR);
+            Expr newL = Visit(origL);
+            Expr newR = Visit(origR);
 
             bool didEnumConversion = false;
             CType convertL = null;
@@ -486,28 +486,28 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             if (typeL.isEnumType())
             {
                 // We have already inserted casts if not lifted, so we should never see an enum.
-                Debug.Assert(expr.isLifted);
+                Debug.Assert(expr.IsLifted);
                 convertL = GetSymbolLoader().GetTypeManager().GetNullable(typeL.underlyingEnumType());
                 typeL = convertL;
                 didEnumConversion = true;
             }
             else if (typeL.IsNullableType() && typeL.StripNubs().isEnumType())
             {
-                Debug.Assert(expr.isLifted);
+                Debug.Assert(expr.IsLifted);
                 convertL = GetSymbolLoader().GetTypeManager().GetNullable(typeL.StripNubs().underlyingEnumType());
                 typeL = convertL;
                 didEnumConversion = true;
             }
             if (typeR.isEnumType())
             {
-                Debug.Assert(expr.isLifted);
+                Debug.Assert(expr.IsLifted);
                 convertR = GetSymbolLoader().GetTypeManager().GetNullable(typeR.underlyingEnumType());
                 typeR = convertR;
                 didEnumConversion = true;
             }
             else if (typeR.IsNullableType() && typeR.StripNubs().isEnumType())
             {
-                Debug.Assert(expr.isLifted);
+                Debug.Assert(expr.IsLifted);
                 convertR = GetSymbolLoader().GetTypeManager().GetNullable(typeR.StripNubs().underlyingEnumType());
                 typeR = convertR;
                 didEnumConversion = true;
@@ -530,22 +530,22 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 newR = GenerateCall(PREDEFMETH.PM_EXPRESSION_CONVERT, newR, CreateTypeOf(convertR));
             }
 
-            EXPR call = GenerateCall(pdm, newL, newR);
+            Expr call = GenerateCall(pdm, newL, newR);
 
-            if (didEnumConversion && expr.type.StripNubs().isEnumType())
+            if (didEnumConversion && expr.Type.StripNubs().isEnumType())
             {
-                call = GenerateCall(PREDEFMETH.PM_EXPRESSION_CONVERT, call, CreateTypeOf(expr.type));
+                call = GenerateCall(PREDEFMETH.PM_EXPRESSION_CONVERT, call, CreateTypeOf(expr.Type));
             }
 
             return call;
         }
 
-        private EXPR GenerateBuiltInUnaryOperator(EXPRUNARYOP expr)
+        private Expr GenerateBuiltInUnaryOperator(ExprUnaryOp expr)
         {
             Debug.Assert(expr != null);
             Debug.Assert(alwaysRewrite || currentAnonMeth != null);
             PREDEFMETH pdm;
-            switch (expr.kind)
+            switch (expr.Kind)
             {
                 case ExpressionKind.EK_UPLUS:
                     return Visit(expr.Child);
@@ -557,37 +557,37 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 default:
                     throw Error.InternalCompilerError();
             }
-            EXPR origOp = expr.Child;
+            Expr origOp = expr.Child;
 
             return GenerateBuiltInUnaryOperator(pdm, origOp, expr);
         }
 
-        private EXPR GenerateBuiltInUnaryOperator(PREDEFMETH pdm, EXPR pOriginalOperator, EXPR pOperator)
+        private Expr GenerateBuiltInUnaryOperator(PREDEFMETH pdm, Expr pOriginalOperator, Expr pOperator)
         {
-            EXPR op = Visit(pOriginalOperator);
-            if (pOriginalOperator.type.IsNullableType() && pOriginalOperator.type.StripNubs().isEnumType())
+            Expr op = Visit(pOriginalOperator);
+            if (pOriginalOperator.Type.IsNullableType() && pOriginalOperator.Type.StripNubs().isEnumType())
             {
-                Debug.Assert(pOperator.kind == ExpressionKind.EK_BITNOT); // The only built-in unary operator defined on nullable enum.
-                CType underlyingType = pOriginalOperator.type.StripNubs().underlyingEnumType();
+                Debug.Assert(pOperator.Kind == ExpressionKind.EK_BITNOT); // The only built-in unary operator defined on nullable enum.
+                CType underlyingType = pOriginalOperator.Type.StripNubs().underlyingEnumType();
                 CType nullableType = GetSymbolLoader().GetTypeManager().GetNullable(underlyingType);
                 op = GenerateCall(PREDEFMETH.PM_EXPRESSION_CONVERT, op, CreateTypeOf(nullableType));
             }
-            EXPR call = GenerateCall(pdm, op);
-            if (pOriginalOperator.type.IsNullableType() && pOriginalOperator.type.StripNubs().isEnumType())
+            Expr call = GenerateCall(pdm, op);
+            if (pOriginalOperator.Type.IsNullableType() && pOriginalOperator.Type.StripNubs().isEnumType())
             {
-                call = GenerateCall(PREDEFMETH.PM_EXPRESSION_CONVERT, call, CreateTypeOf(pOperator.type));
+                call = GenerateCall(PREDEFMETH.PM_EXPRESSION_CONVERT, call, CreateTypeOf(pOperator.Type));
             }
 
             return call;
         }
 
-        private EXPR GenerateUserDefinedBinaryOperator(EXPRBINOP expr)
+        private Expr GenerateUserDefinedBinaryOperator(ExprBinOp expr)
         {
             Debug.Assert(expr != null);
             Debug.Assert(alwaysRewrite || currentAnonMeth != null);
             PREDEFMETH pdm;
 
-            switch (expr.kind)
+            switch (expr.Kind)
             {
                 case ExpressionKind.EK_LOGOR: pdm = PREDEFMETH.PM_EXPRESSION_ORELSE_USER_DEFINED; break;
                 case ExpressionKind.EK_LOGAND: pdm = PREDEFMETH.PM_EXPRESSION_ANDALSO_USER_DEFINED; break;
@@ -623,58 +623,58 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 default:
                     throw Error.InternalCompilerError();
             }
-            EXPR p1 = expr.GetOptionalLeftChild();
-            EXPR p2 = expr.GetOptionalRightChild();
-            EXPR udcall = expr.GetOptionalUserDefinedCall();
+            Expr p1 = expr.OptionalLeftChild;
+            Expr p2 = expr.OptionalRightChild;
+            Expr udcall = expr.OptionalUserDefinedCall;
             if (udcall != null)
             {
-                Debug.Assert(udcall.kind == ExpressionKind.EK_CALL || udcall.kind == ExpressionKind.EK_USERLOGOP);
-                if (udcall.kind == ExpressionKind.EK_CALL)
+                Debug.Assert(udcall.Kind == ExpressionKind.EK_CALL || udcall.Kind == ExpressionKind.EK_USERLOGOP);
+                if (udcall.Kind == ExpressionKind.EK_CALL)
                 {
-                    EXPRLIST args = udcall.asCALL().GetOptionalArguments().asLIST();
-                    Debug.Assert(args.GetOptionalNextListNode().kind != ExpressionKind.EK_LIST);
-                    p1 = args.GetOptionalElement();
-                    p2 = args.GetOptionalNextListNode();
+                    ExprList args = udcall.asCALL().OptionalArguments.asLIST();
+                    Debug.Assert(args.OptionalNextListNode.Kind != ExpressionKind.EK_LIST);
+                    p1 = args.OptionalElement;
+                    p2 = args.OptionalNextListNode;
                 }
                 else
                 {
-                    EXPRLIST args = udcall.asUSERLOGOP().OperatorCall.GetOptionalArguments().asLIST();
-                    Debug.Assert(args.GetOptionalNextListNode().kind != ExpressionKind.EK_LIST);
-                    p1 = args.GetOptionalElement().asWRAP().GetOptionalExpression();
-                    p2 = args.GetOptionalNextListNode();
+                    ExprList args = udcall.asUSERLOGOP().OperatorCall.OptionalArguments.asLIST();
+                    Debug.Assert(args.OptionalNextListNode.Kind != ExpressionKind.EK_LIST);
+                    p1 = args.OptionalElement.asWRAP().OptionalExpression;
+                    p2 = args.OptionalNextListNode;
                 }
             }
             p1 = Visit(p1);
             p2 = Visit(p2);
             FixLiftedUserDefinedBinaryOperators(expr, ref p1, ref p2);
-            EXPR methodInfo = GetExprFactory().CreateMethodInfo(expr.GetUserDefinedCallMethod());
-            EXPR call = GenerateCall(pdm, p1, p2, methodInfo);
+            Expr methodInfo = GetExprFactory().CreateMethodInfo(expr.UserDefinedCallMethod);
+            Expr call = GenerateCall(pdm, p1, p2, methodInfo);
             // Delegate add/subtract generates a call to Combine/Remove, which returns System.Delegate,
             // not the operand delegate CType.  We must cast to the delegate CType.
-            if (expr.kind == ExpressionKind.EK_DELEGATESUB || expr.kind == ExpressionKind.EK_DELEGATEADD)
+            if (expr.Kind == ExpressionKind.EK_DELEGATESUB || expr.Kind == ExpressionKind.EK_DELEGATEADD)
             {
-                EXPR pTypeOf = CreateTypeOf(expr.type);
+                Expr pTypeOf = CreateTypeOf(expr.Type);
                 return GenerateCall(PREDEFMETH.PM_EXPRESSION_CONVERT, call, pTypeOf);
             }
             return call;
         }
 
-        private EXPR GenerateUserDefinedUnaryOperator(EXPRUNARYOP expr)
+        private Expr GenerateUserDefinedUnaryOperator(ExprUnaryOp expr)
         {
             Debug.Assert(expr != null);
             Debug.Assert(alwaysRewrite || currentAnonMeth != null);
             PREDEFMETH pdm;
-            EXPR arg = expr.Child;
-            EXPRCALL call = expr.OptionalUserDefinedCall.asCALL();
+            Expr arg = expr.Child;
+            ExprCall call = expr.OptionalUserDefinedCall.asCALL();
             if (call != null)
             {
                 // Use the actual argument of the call; it may contain user-defined
                 // conversions or be a bound lambda, and that will not be in the original
                 // argument stashed away in the left child of the operator.
-                arg = call.GetOptionalArguments();
+                arg = call.OptionalArguments;
             }
-            Debug.Assert(arg != null && arg.kind != ExpressionKind.EK_LIST);
-            switch (expr.kind)
+            Debug.Assert(arg != null && arg.Kind != ExpressionKind.EK_LIST);
+            switch (expr.Kind)
             {
                 case ExpressionKind.EK_TRUE:
                 case ExpressionKind.EK_FALSE:
@@ -699,24 +699,24 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 default:
                     throw Error.InternalCompilerError();
             }
-            EXPR op = Visit(arg);
-            EXPR methodInfo = GetExprFactory().CreateMethodInfo(expr.UserDefinedCallMethod);
+            Expr op = Visit(arg);
+            Expr methodInfo = GetExprFactory().CreateMethodInfo(expr.UserDefinedCallMethod);
 
-            if (expr.kind == ExpressionKind.EK_INC || expr.kind == ExpressionKind.EK_DEC ||
-                expr.kind == ExpressionKind.EK_DECIMALINC || expr.kind == ExpressionKind.EK_DECIMALDEC)
+            if (expr.Kind == ExpressionKind.EK_INC || expr.Kind == ExpressionKind.EK_DEC ||
+                expr.Kind == ExpressionKind.EK_DECIMALINC || expr.Kind == ExpressionKind.EK_DECIMALDEC)
             {
                 return GenerateCall(pdm, null, methodInfo, GenerateParamsArray(op, PredefinedType.PT_EXPRESSION));
             }
             return GenerateCall(pdm, op, methodInfo);
         }
 
-        private EXPR GenerateUserDefinedComparisonOperator(EXPRBINOP expr)
+        private Expr GenerateUserDefinedComparisonOperator(ExprBinOp expr)
         {
             Debug.Assert(expr != null);
             Debug.Assert(alwaysRewrite || currentAnonMeth != null);
             PREDEFMETH pdm;
 
-            switch (expr.kind)
+            switch (expr.Kind)
             {
                 case ExpressionKind.EK_STRINGEQ: pdm = PREDEFMETH.PM_EXPRESSION_EQUAL_USER_DEFINED; break;
                 case ExpressionKind.EK_STRINGNE: pdm = PREDEFMETH.PM_EXPRESSION_NOTEQUAL_USER_DEFINED; break;
@@ -731,40 +731,40 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 default:
                     throw Error.InternalCompilerError();
             }
-            EXPR p1 = expr.GetOptionalLeftChild();
-            EXPR p2 = expr.GetOptionalRightChild();
-            if (expr.GetOptionalUserDefinedCall() != null)
+            Expr p1 = expr.OptionalLeftChild;
+            Expr p2 = expr.OptionalRightChild;
+            if (expr.OptionalUserDefinedCall != null)
             {
-                EXPRCALL udcall = expr.GetOptionalUserDefinedCall().asCALL();
-                EXPRLIST args = udcall.GetOptionalArguments().asLIST();
-                Debug.Assert(args.GetOptionalNextListNode().kind != ExpressionKind.EK_LIST);
+                ExprCall udcall = expr.OptionalUserDefinedCall.asCALL();
+                ExprList args = udcall.OptionalArguments.asLIST();
+                Debug.Assert(args.OptionalNextListNode.Kind != ExpressionKind.EK_LIST);
 
-                p1 = args.GetOptionalElement();
-                p2 = args.GetOptionalNextListNode();
+                p1 = args.OptionalElement;
+                p2 = args.OptionalNextListNode;
             }
             p1 = Visit(p1);
             p2 = Visit(p2);
             FixLiftedUserDefinedBinaryOperators(expr, ref p1, ref p2);
-            EXPR lift = GetExprFactory().CreateBoolConstant(false); // We never lift to null in C#.
-            EXPR methodInfo = GetExprFactory().CreateMethodInfo(expr.GetUserDefinedCallMethod());
+            Expr lift = GetExprFactory().CreateBoolConstant(false); // We never lift to null in C#.
+            Expr methodInfo = GetExprFactory().CreateMethodInfo(expr.UserDefinedCallMethod);
             return GenerateCall(pdm, p1, p2, lift, methodInfo);
         }
 
-        private EXPR RewriteLambdaBody(EXPRBOUNDLAMBDA anonmeth)
+        private Expr RewriteLambdaBody(ExprBoundLambda anonmeth)
         {
             Debug.Assert(anonmeth != null);
             Debug.Assert(anonmeth.OptionalBody != null);
-            Debug.Assert(anonmeth.OptionalBody.GetOptionalStatements() != null);
+            Debug.Assert(anonmeth.OptionalBody.OptionalStatements != null);
             // There ought to be no way to get an empty statement block successfully converted into an expression tree.
-            Debug.Assert(anonmeth.OptionalBody.GetOptionalStatements().GetOptionalNextStatement() == null);
+            Debug.Assert(anonmeth.OptionalBody.OptionalStatements.OptionalNextStatement== null);
 
-            EXPRBLOCK body = anonmeth.OptionalBody;
+            ExprBlock body = anonmeth.OptionalBody;
 
             // The most likely case:
-            if (body.GetOptionalStatements().isRETURN())
+            if (body.OptionalStatements.isRETURN())
             {
-                Debug.Assert(body.GetOptionalStatements().asRETURN().GetOptionalObject() != null);
-                return Visit(body.GetOptionalStatements().asRETURN().GetOptionalObject());
+                Debug.Assert(body.OptionalStatements.asRETURN().OptionalObject != null);
+                return Visit(body.OptionalStatements.asRETURN().OptionalObject);
             }
             // This can only if it is a void delegate and this is a void expression, such as a call to a void method
             // or something like Expression<Action<Foo>> e = (Foo f) => f.MyEvent += MyDelegate;
@@ -772,16 +772,16 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             throw Error.InternalCompilerError();
         }
 
-        private EXPR RewriteLambdaParameters(EXPRBOUNDLAMBDA anonmeth)
+        private Expr RewriteLambdaParameters(ExprBoundLambda anonmeth)
         {
             Debug.Assert(anonmeth != null);
 
             // new ParameterExpression[2] {Parameter(typeof(type1), name1), Parameter(typeof(type2), name2)}
 
-            EXPR paramArrayInitializerArgs = null;
-            EXPR paramArrayInitializerArgsTail = paramArrayInitializerArgs;
+            Expr paramArrayInitializerArgs = null;
+            Expr paramArrayInitializerArgsTail = paramArrayInitializerArgs;
 
-            for (Symbol sym = anonmeth.ArgumentScope(); sym != null; sym = sym.nextChild)
+            for (Symbol sym = anonmeth.ArgumentScope; sym != null; sym = sym.nextChild)
             {
                 if (!sym.IsLocalVariableSymbol())
                 {
@@ -798,47 +798,47 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return GenerateParamsArray(paramArrayInitializerArgs, PredefinedType.PT_PARAMETEREXPRESSION);
         }
 
-        private EXPR GenerateConversion(EXPR arg, CType CType, bool bChecked)
+        private Expr GenerateConversion(Expr arg, CType CType, bool bChecked)
         {
             return GenerateConversionWithSource(Visit(arg), CType, bChecked || arg.isChecked());
         }
 
-        private EXPR GenerateConversionWithSource(EXPR pTarget, CType pType, bool bChecked)
+        private Expr GenerateConversionWithSource(Expr pTarget, CType pType, bool bChecked)
         {
             PREDEFMETH pdm = bChecked ? PREDEFMETH.PM_EXPRESSION_CONVERTCHECKED : PREDEFMETH.PM_EXPRESSION_CONVERT;
-            EXPR pTypeOf = CreateTypeOf(pType);
+            Expr pTypeOf = CreateTypeOf(pType);
             return GenerateCall(pdm, pTarget, pTypeOf);
         }
 
-        private EXPR GenerateValueAccessConversion(EXPR pArgument)
+        private Expr GenerateValueAccessConversion(Expr pArgument)
         {
             Debug.Assert(pArgument != null);
-            CType pStrippedTypeOfArgument = pArgument.type.StripNubs();
-            EXPR pStrippedTypeExpr = CreateTypeOf(pStrippedTypeOfArgument);
+            CType pStrippedTypeOfArgument = pArgument.Type.StripNubs();
+            Expr pStrippedTypeExpr = CreateTypeOf(pStrippedTypeOfArgument);
             return GenerateCall(PREDEFMETH.PM_EXPRESSION_CONVERT, Visit(pArgument), pStrippedTypeExpr);
         }
 
-        private EXPR GenerateUserDefinedConversion(EXPR arg, CType type, MethWithInst method)
+        private Expr GenerateUserDefinedConversion(Expr arg, CType type, MethWithInst method)
         {
-            EXPR target = Visit(arg);
+            Expr target = Visit(arg);
             return GenerateUserDefinedConversion(arg, type, target, method);
         }
 
-        private EXPR GenerateUserDefinedConversion(EXPR arg, CType CType, EXPR target, MethWithInst method)
+        private Expr GenerateUserDefinedConversion(Expr arg, CType CType, Expr target, MethWithInst method)
         {
             // The user-defined explicit conversion from enum? to decimal or decimal? requires
             // that we convert the enum? to its nullable underlying CType.
-            if (isEnumToDecimalConversion(arg.type, CType))
+            if (isEnumToDecimalConversion(arg.Type, CType))
             {
                 // Special case: If we have enum? to decimal? then we need to emit 
                 // a conversion from enum? to its nullable underlying CType first.
                 // This is unfortunate; we ought to reorganize how conversions are 
-                // represented in the EXPR tree so that this is more transparent.
+                // represented in the Expr tree so that this is more transparent.
 
                 // converting an enum to its underlying CType never fails, so no need to check it.
-                CType underlyingType = arg.type.StripNubs().underlyingEnumType();
+                CType underlyingType = arg.Type.StripNubs().underlyingEnumType();
                 CType nullableType = GetSymbolLoader().GetTypeManager().GetNullable(underlyingType);
-                EXPR typeofNubEnum = CreateTypeOf(nullableType);
+                Expr typeofNubEnum = CreateTypeOf(nullableType);
                 target = GenerateCall(PREDEFMETH.PM_EXPRESSION_CONVERT, target, typeofNubEnum);
             }
 
@@ -849,12 +849,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             CType pMethodReturnType = GetSymbolLoader().GetTypeManager().SubstType(method.Meth().RetType,
                 method.GetType(), method.TypeArgs);
-            bool fDontLiftReturnType = (pMethodReturnType == CType || (IsNullableValueType(arg.type) && IsNullableValueType(CType)));
+            bool fDontLiftReturnType = (pMethodReturnType == CType || (IsNullableValueType(arg.Type) && IsNullableValueType(CType)));
 
-            EXPR typeofInner = CreateTypeOf(fDontLiftReturnType ? CType : pMethodReturnType);
-            EXPR methodInfo = GetExprFactory().CreateMethodInfo(method);
+            Expr typeofInner = CreateTypeOf(fDontLiftReturnType ? CType : pMethodReturnType);
+            Expr methodInfo = GetExprFactory().CreateMethodInfo(method);
             PREDEFMETH pdmInner = arg.isChecked() ? PREDEFMETH.PM_EXPRESSION_CONVERTCHECKED_USER_DEFINED : PREDEFMETH.PM_EXPRESSION_CONVERT_USER_DEFINED;
-            EXPR callUserDefinedConversion = GenerateCall(pdmInner, target, typeofInner, methodInfo);
+            Expr callUserDefinedConversion = GenerateCall(pdmInner, target, typeofInner, methodInfo);
 
             if (fDontLiftReturnType)
             {
@@ -862,27 +862,27 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             PREDEFMETH pdmOuter = arg.isChecked() ? PREDEFMETH.PM_EXPRESSION_CONVERTCHECKED : PREDEFMETH.PM_EXPRESSION_CONVERT;
-            EXPR typeofOuter = CreateTypeOf(CType);
+            Expr typeofOuter = CreateTypeOf(CType);
             return GenerateCall(pdmOuter, callUserDefinedConversion, typeofOuter);
         }
 
-        private EXPR GenerateUserDefinedConversion(EXPRUSERDEFINEDCONVERSION pExpr, EXPR pArgument)
+        private Expr GenerateUserDefinedConversion(ExprUserDefinedConversion pExpr, Expr pArgument)
         {
-            EXPR pCastCall = pExpr.UserDefinedCall;
-            EXPR pCastArgument = pExpr.Argument;
-            EXPR pConversionSource = null;
+            Expr pCastCall = pExpr.UserDefinedCall;
+            Expr pCastArgument = pExpr.Argument;
+            Expr pConversionSource = null;
 
-            if (!isEnumToDecimalConversion(pArgument.type, pExpr.type) && IsNullableValueAccess(pCastArgument, pArgument))
+            if (!isEnumToDecimalConversion(pArgument.Type, pExpr.Type) && IsNullableValueAccess(pCastArgument, pArgument))
             {
                 // We have an implicit conversion of nullable CType to the value CType, generate a convert node for it.
                 pConversionSource = GenerateValueAccessConversion(pArgument);
             }
-            else if (pCastCall.isCALL() && pCastCall.asCALL().pConversions != null)
+            else if (pCastCall.isCALL() && pCastCall.asCALL().PConversions != null)
             {
-                EXPR pUDConversion = pCastCall.asCALL().pConversions;
+                Expr pUDConversion = pCastCall.asCALL().PConversions;
                 if (pUDConversion.isCALL())
                 {
-                    EXPR pUDConversionArgument = pUDConversion.asCALL().GetOptionalArguments();
+                    Expr pUDConversionArgument = pUDConversion.asCALL().OptionalArguments;
                     if (IsNullableValueAccess(pUDConversionArgument, pArgument))
                     {
                         pConversionSource = GenerateValueAccessConversion(pArgument);
@@ -891,7 +891,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     {
                         pConversionSource = Visit(pUDConversionArgument);
                     }
-                    return GenerateConversionWithSource(pConversionSource, pCastCall.type, pCastCall.asCALL().isChecked());
+                    return GenerateConversionWithSource(pConversionSource, pCastCall.Type, pCastCall.asCALL().isChecked());
                 }
                 else
                 {
@@ -907,14 +907,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 pConversionSource = Visit(pCastArgument);
             }
-            return GenerateUserDefinedConversion(pCastArgument, pExpr.type, pConversionSource, pExpr.UserDefinedCallMethod);
+            return GenerateUserDefinedConversion(pCastArgument, pExpr.Type, pConversionSource, pExpr.UserDefinedCallMethod);
         }
 
-        private EXPR GenerateParameter(string name, CType CType)
+        private Expr GenerateParameter(string name, CType CType)
         {
             GetSymbolLoader().GetReqPredefType(PredefinedType.PT_STRING);  // force an ensure state
             ExprConstant nameString = GetExprFactory().CreateStringConstant(name);
-            EXPRTYPEOF pTypeOf = CreateTypeOf(CType);
+            ExprTypeOf pTypeOf = CreateTypeOf(CType);
             return GenerateCall(PREDEFMETH.PM_EXPRESSION_PARAMETER, pTypeOf, nameString);
         }
 
@@ -923,15 +923,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return GetSymbolLoader().getPredefinedMembers().GetMethod(pdm);
         }
 
-        private EXPRTYPEOF CreateTypeOf(CType CType)
+        private ExprTypeOf CreateTypeOf(CType CType)
         {
             return GetExprFactory().CreateTypeOf(CType);
         }
 
-        private EXPR CreateWraps(EXPRBOUNDLAMBDA anonmeth)
+        private Expr CreateWraps(ExprBoundLambda anonmeth)
         {
-            EXPR sequence = null;
-            for (Symbol sym = anonmeth.ArgumentScope().firstChild; sym != null; sym = sym.nextChild)
+            Expr sequence = null;
+            for (Symbol sym = anonmeth.ArgumentScope.firstChild; sym != null; sym = sym.nextChild)
             {
                 if (!sym.IsLocalVariableSymbol())
                 {
@@ -943,9 +943,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     continue;
                 }
                 Debug.Assert(anonmeth.OptionalBody != null);
-                EXPR create = GenerateParameter(local.name.Text, local.GetType());
+                Expr create = GenerateParameter(local.name.Text, local.GetType());
                 local.wrap = GetExprFactory().CreateWrapNoAutoFree(anonmeth.OptionalBody.OptionalScopeSymbol, create);
-                EXPR save = GetExprFactory().CreateSave(local.wrap);
+                Expr save = GetExprFactory().CreateSave(local.wrap);
                 if (sequence == null)
                 {
                     sequence = save;
@@ -959,9 +959,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return sequence;
         }
 
-        private EXPR DestroyWraps(EXPRBOUNDLAMBDA anonmeth, EXPR sequence)
+        private Expr DestroyWraps(ExprBoundLambda anonmeth, Expr sequence)
         {
-            for (Symbol sym = anonmeth.ArgumentScope(); sym != null; sym = sym.nextChild)
+            for (Symbol sym = anonmeth.ArgumentScope; sym != null; sym = sym.nextChild)
             {
                 if (!sym.IsLocalVariableSymbol())
                 {
@@ -974,16 +974,16 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
                 Debug.Assert(local.wrap != null);
                 Debug.Assert(anonmeth.OptionalBody != null);
-                EXPR freeWrap = GetExprFactory().CreateWrap(anonmeth.OptionalBody.OptionalScopeSymbol, local.wrap);
+                Expr freeWrap = GetExprFactory().CreateWrap(anonmeth.OptionalBody.OptionalScopeSymbol, local.wrap);
                 sequence = GetExprFactory().CreateReverseSequence(sequence, freeWrap);
             }
             return sequence;
         }
 
-        private EXPR GenerateConstructor(EXPRCALL expr)
+        private Expr GenerateConstructor(ExprCall expr)
         {
             Debug.Assert(expr != null);
-            Debug.Assert(expr.mwi.Meth().IsConstructor());
+            Debug.Assert(expr.MethWithInst.Meth().IsConstructor());
 
             // Realize a call to new DELEGATE(obj, FUNCPTR) as though it actually was
             // (DELEGATE)CreateDelegate(typeof(DELEGATE), obj, GetMethInfoFromHandle(FUNCPTR))
@@ -992,12 +992,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 return GenerateDelegateConstructor(expr);
             }
-            EXPR constructorInfo = GetExprFactory().CreateMethodInfo(expr.mwi);
-            EXPR args = GenerateArgsList(expr.GetOptionalArguments());
-            EXPR Params = GenerateParamsArray(args, PredefinedType.PT_EXPRESSION);
-            if (expr.type.IsAggregateType() && expr.type.AsAggregateType().getAggregate().IsAnonymousType())
+            Expr constructorInfo = GetExprFactory().CreateMethodInfo(expr.MethWithInst);
+            Expr args = GenerateArgsList(expr.OptionalArguments);
+            Expr Params = GenerateParamsArray(args, PredefinedType.PT_EXPRESSION);
+            if (expr.Type.IsAggregateType() && expr.Type.AsAggregateType().getAggregate().IsAnonymousType())
             {
-                EXPR members = GenerateMembersArray(expr.type.AsAggregateType(), PredefinedType.PT_METHODINFO);
+                Expr members = GenerateMembersArray(expr.Type.AsAggregateType(), PredefinedType.PT_METHODINFO);
                 return GenerateCall(PREDEFMETH.PM_EXPRESSION_NEW_MEMBERS, constructorInfo, Params, members);
             }
             else
@@ -1006,7 +1006,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
         }
 
-        private EXPR GenerateDelegateConstructor(EXPRCALL expr)
+        private Expr GenerateDelegateConstructor(ExprCall expr)
         {
             // In:
             //
@@ -1026,88 +1026,88 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             //
 
             Debug.Assert(expr != null);
-            Debug.Assert(expr.mwi.Meth().IsConstructor());
-            Debug.Assert(expr.type.isDelegateType());
-            Debug.Assert(expr.GetOptionalArguments() != null);
-            Debug.Assert(expr.GetOptionalArguments().isLIST());
-            EXPRLIST origArgs = expr.GetOptionalArguments().asLIST();
-            EXPR target = origArgs.GetOptionalElement();
-            Debug.Assert(origArgs.GetOptionalNextListNode().kind == ExpressionKind.EK_FUNCPTR);
-            EXPRFUNCPTR funcptr = origArgs.GetOptionalNextListNode().asFUNCPTR();
+            Debug.Assert(expr.MethWithInst.Meth().IsConstructor());
+            Debug.Assert(expr.Type.isDelegateType());
+            Debug.Assert(expr.OptionalArguments != null);
+            Debug.Assert(expr.OptionalArguments.isLIST());
+            ExprList origArgs = expr.OptionalArguments.asLIST();
+            Expr target = origArgs.OptionalElement;
+            Debug.Assert(origArgs.OptionalNextListNode.Kind == ExpressionKind.EK_FUNCPTR);
+            ExprFuncPtr funcptr = origArgs.OptionalNextListNode.asFUNCPTR();
             MethodSymbol createDelegateMethod = GetPreDefMethod(PREDEFMETH.PM_METHODINFO_CREATEDELEGATE_TYPE_OBJECT);
             AggregateType delegateType = GetSymbolLoader().GetOptPredefTypeErr(PredefinedType.PT_DELEGATE, true);
             MethWithInst mwi = new MethWithInst(createDelegateMethod, delegateType);
 
-            EXPR instance = GenerateConstant(GetExprFactory().CreateMethodInfo(funcptr.mwi));
-            EXPR methinfo = GetExprFactory().CreateMethodInfo(mwi);
-            EXPR param1 = GenerateConstant(CreateTypeOf(expr.type));
-            EXPR param2 = Visit(target);
-            EXPR paramsList = GetExprFactory().CreateList(param1, param2);
-            EXPR Params = GenerateParamsArray(paramsList, PredefinedType.PT_EXPRESSION);
-            EXPR call = GenerateCall(PREDEFMETH.PM_EXPRESSION_CALL, instance, methinfo, Params);
-            EXPR pTypeOf = CreateTypeOf(expr.type);
+            Expr instance = GenerateConstant(GetExprFactory().CreateMethodInfo(funcptr.MethWithInst));
+            Expr methinfo = GetExprFactory().CreateMethodInfo(mwi);
+            Expr param1 = GenerateConstant(CreateTypeOf(expr.Type));
+            Expr param2 = Visit(target);
+            Expr paramsList = GetExprFactory().CreateList(param1, param2);
+            Expr Params = GenerateParamsArray(paramsList, PredefinedType.PT_EXPRESSION);
+            Expr call = GenerateCall(PREDEFMETH.PM_EXPRESSION_CALL, instance, methinfo, Params);
+            Expr pTypeOf = CreateTypeOf(expr.Type);
             return GenerateCall(PREDEFMETH.PM_EXPRESSION_CONVERT, call, pTypeOf);
         }
 
-        private EXPR GenerateArgsList(EXPR oldArgs)
+        private Expr GenerateArgsList(Expr oldArgs)
         {
-            EXPR newArgs = null;
-            EXPR newArgsTail = newArgs;
+            Expr newArgs = null;
+            Expr newArgsTail = newArgs;
             for (ExpressionIterator it = new ExpressionIterator(oldArgs); !it.AtEnd(); it.MoveNext())
             {
-                EXPR oldArg = it.Current();
+                Expr oldArg = it.Current();
                 GetExprFactory().AppendItemToList(Visit(oldArg), ref newArgs, ref newArgsTail);
             }
             return newArgs;
         }
 
-        private EXPR GenerateIndexList(EXPR oldIndices)
+        private Expr GenerateIndexList(Expr oldIndices)
         {
             CType intType = symbolLoader.GetReqPredefType(PredefinedType.PT_INT, true);
 
-            EXPR newIndices = null;
-            EXPR newIndicesTail = newIndices;
+            Expr newIndices = null;
+            Expr newIndicesTail = newIndices;
             for (ExpressionIterator it = new ExpressionIterator(oldIndices); !it.AtEnd(); it.MoveNext())
             {
-                EXPR newIndex = it.Current();
-                if (newIndex.type != intType)
+                Expr newIndex = it.Current();
+                if (newIndex.Type != intType)
                 {
-                    EXPRCLASS exprType = expressionFactory.CreateClass(intType, null, null);
+                    ExprClass exprType = expressionFactory.CreateClass(intType, null, null);
                     newIndex = expressionFactory.CreateCast(EXPRFLAG.EXF_INDEXEXPR, exprType, newIndex);
-                    newIndex.flags |= EXPRFLAG.EXF_CHECKOVERFLOW;
+                    newIndex.Flags |= EXPRFLAG.EXF_CHECKOVERFLOW;
                 }
-                EXPR rewrittenIndex = Visit(newIndex);
+                Expr rewrittenIndex = Visit(newIndex);
                 expressionFactory.AppendItemToList(rewrittenIndex, ref newIndices, ref newIndicesTail);
             }
             return newIndices;
         }
 
-        private EXPR GenerateConstant(EXPR expr)
+        private Expr GenerateConstant(Expr expr)
         {
             EXPRFLAG flags = 0;
 
             AggregateType pObject = GetSymbolLoader().GetReqPredefType(PredefinedType.PT_OBJECT, true);
 
-            if (expr.type.IsNullType())
+            if (expr.Type.IsNullType())
             {
-                EXPRTYPEOF pTypeOf = CreateTypeOf(pObject);
+                ExprTypeOf pTypeOf = CreateTypeOf(pObject);
                 return GenerateCall(PREDEFMETH.PM_EXPRESSION_CONSTANT_OBJECT_TYPE, expr, pTypeOf);
             }
 
             AggregateType stringType = GetSymbolLoader().GetReqPredefType(PredefinedType.PT_STRING, true);
-            if (expr.type != stringType)
+            if (expr.Type != stringType)
             {
                 flags = EXPRFLAG.EXF_BOX;
             }
 
-            EXPRCLASS objectType = GetExprFactory().MakeClass(pObject);
-            EXPRCAST cast = GetExprFactory().CreateCast(flags, objectType, expr);
-            EXPRTYPEOF pTypeOf2 = CreateTypeOf(expr.type);
+            ExprClass objectType = GetExprFactory().MakeClass(pObject);
+            ExprCast cast = GetExprFactory().CreateCast(flags, objectType, expr);
+            ExprTypeOf pTypeOf2 = CreateTypeOf(expr.Type);
 
             return GenerateCall(PREDEFMETH.PM_EXPRESSION_CONSTANT_OBJECT_TYPE, cast, pTypeOf2);
         }
 
-        private EXPRCALL GenerateCall(PREDEFMETH pdm, EXPR arg1)
+        private ExprCall GenerateCall(PREDEFMETH pdm, Expr arg1)
         {
             MethodSymbol method = GetPreDefMethod(pdm);
             // this should be enforced in an earlier pass and the transform pass should not 
@@ -1116,70 +1116,70 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return null;
             AggregateType expressionType = GetSymbolLoader().GetOptPredefTypeErr(PredefinedType.PT_EXPRESSION, true);
             MethWithInst mwi = new MethWithInst(method, expressionType);
-            EXPRMEMGRP pMemGroup = GetExprFactory().CreateMemGroup(null, mwi);
-            EXPRCALL call = GetExprFactory().CreateCall(0, mwi.Meth().RetType, arg1, pMemGroup, mwi);
+            ExprMemberGroup pMemGroup = GetExprFactory().CreateMemGroup(null, mwi);
+            ExprCall call = GetExprFactory().CreateCall(0, mwi.Meth().RetType, arg1, pMemGroup, mwi);
             call.PredefinedMethod = pdm;
             return call;
         }
 
-        private EXPRCALL GenerateCall(PREDEFMETH pdm, EXPR arg1, EXPR arg2)
+        private ExprCall GenerateCall(PREDEFMETH pdm, Expr arg1, Expr arg2)
         {
             MethodSymbol method = GetPreDefMethod(pdm);
             if (method == null)
                 return null;
             AggregateType expressionType = GetSymbolLoader().GetOptPredefTypeErr(PredefinedType.PT_EXPRESSION, true);
-            EXPR args = GetExprFactory().CreateList(arg1, arg2);
+            Expr args = GetExprFactory().CreateList(arg1, arg2);
             MethWithInst mwi = new MethWithInst(method, expressionType);
-            EXPRMEMGRP pMemGroup = GetExprFactory().CreateMemGroup(null, mwi);
-            EXPRCALL call = GetExprFactory().CreateCall(0, mwi.Meth().RetType, args, pMemGroup, mwi);
+            ExprMemberGroup pMemGroup = GetExprFactory().CreateMemGroup(null, mwi);
+            ExprCall call = GetExprFactory().CreateCall(0, mwi.Meth().RetType, args, pMemGroup, mwi);
             call.PredefinedMethod = pdm;
             return call;
         }
 
-        private EXPRCALL GenerateCall(PREDEFMETH pdm, EXPR arg1, EXPR arg2, EXPR arg3)
+        private ExprCall GenerateCall(PREDEFMETH pdm, Expr arg1, Expr arg2, Expr arg3)
         {
             MethodSymbol method = GetPreDefMethod(pdm);
             if (method == null)
                 return null;
             AggregateType expressionType = GetSymbolLoader().GetOptPredefTypeErr(PredefinedType.PT_EXPRESSION, true);
-            EXPR args = GetExprFactory().CreateList(arg1, arg2, arg3);
+            Expr args = GetExprFactory().CreateList(arg1, arg2, arg3);
             MethWithInst mwi = new MethWithInst(method, expressionType);
-            EXPRMEMGRP pMemGroup = GetExprFactory().CreateMemGroup(null, mwi);
-            EXPRCALL call = GetExprFactory().CreateCall(0, mwi.Meth().RetType, args, pMemGroup, mwi);
+            ExprMemberGroup pMemGroup = GetExprFactory().CreateMemGroup(null, mwi);
+            ExprCall call = GetExprFactory().CreateCall(0, mwi.Meth().RetType, args, pMemGroup, mwi);
             call.PredefinedMethod = pdm;
             return call;
         }
 
-        private EXPRCALL GenerateCall(PREDEFMETH pdm, EXPR arg1, EXPR arg2, EXPR arg3, EXPR arg4)
+        private ExprCall GenerateCall(PREDEFMETH pdm, Expr arg1, Expr arg2, Expr arg3, Expr arg4)
         {
             MethodSymbol method = GetPreDefMethod(pdm);
             if (method == null)
                 return null;
             AggregateType expressionType = GetSymbolLoader().GetOptPredefTypeErr(PredefinedType.PT_EXPRESSION, true);
-            EXPR args = GetExprFactory().CreateList(arg1, arg2, arg3, arg4);
+            Expr args = GetExprFactory().CreateList(arg1, arg2, arg3, arg4);
             MethWithInst mwi = new MethWithInst(method, expressionType);
-            EXPRMEMGRP pMemGroup = GetExprFactory().CreateMemGroup(null, mwi);
-            EXPRCALL call = GetExprFactory().CreateCall(0, mwi.Meth().RetType, args, pMemGroup, mwi);
+            ExprMemberGroup pMemGroup = GetExprFactory().CreateMemGroup(null, mwi);
+            ExprCall call = GetExprFactory().CreateCall(0, mwi.Meth().RetType, args, pMemGroup, mwi);
             call.PredefinedMethod = pdm;
             return call;
         }
 
-        private EXPRARRINIT GenerateParamsArray(EXPR args, PredefinedType pt)
+        private ExprArrayInit GenerateParamsArray(Expr args, PredefinedType pt)
         {
             int parameterCount = ExpressionIterator.Count(args);
             AggregateType paramsArrayElementType = GetSymbolLoader().GetOptPredefTypeErr(pt, true);
             ArrayType paramsArrayType = GetSymbolLoader().GetTypeManager().GetArray(paramsArrayElementType, 1);
             ExprConstant paramsArrayArg = GetExprFactory().CreateIntegerConstant(parameterCount);
-            EXPRARRINIT arrayInit = GetExprFactory().CreateArrayInit(EXPRFLAG.EXF_CANTBENULL, paramsArrayType, args, paramsArrayArg, null);
-            arrayInit.dimSize = parameterCount;
-            arrayInit.dimSizes = new int[] { arrayInit.dimSize }; // CLEANUP: Why isn't this done by the factory?
+            ExprArrayInit arrayInit = GetExprFactory().CreateArrayInit(EXPRFLAG.EXF_CANTBENULL, paramsArrayType, args, paramsArrayArg, null);
+            arrayInit.DimensionSize = parameterCount;
+            arrayInit.DimensionSizes = new int[] { arrayInit.DimensionSize }; // CLEANUP: Why isn't this done by the factory?
             return arrayInit;
         }
 
-        private EXPRARRINIT GenerateMembersArray(AggregateType anonymousType, PredefinedType pt)
+        private ExprArrayInit GenerateMembersArray(AggregateType anonymousType, PredefinedType pt)
         {
-            EXPR newArgs = null;
-            EXPR newArgsTail = newArgs;
+            Expr newArgs = null;
+            Expr newArgsTail = newArgs;
             int methodCount = 0;
             AggregateSymbol aggSym = anonymousType.getAggregate();
 
@@ -1190,7 +1190,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     MethodSymbol method = member.AsMethodSymbol();
                     if (method.MethKind() == MethodKindEnum.PropAccessor)
                     {
-                        EXPRMETHODINFO methodInfo = GetExprFactory().CreateMethodInfo(method, anonymousType, method.Params);
+                        ExprMethodInfo methodInfo = GetExprFactory().CreateMethodInfo(method, anonymousType, method.Params);
                         GetExprFactory().AppendItemToList(methodInfo, ref newArgs, ref newArgsTail);
                         methodCount++;
                     }
@@ -1200,13 +1200,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             AggregateType paramsArrayElementType = GetSymbolLoader().GetOptPredefTypeErr(pt, true);
             ArrayType paramsArrayType = GetSymbolLoader().GetTypeManager().GetArray(paramsArrayElementType, 1);
             ExprConstant paramsArrayArg = GetExprFactory().CreateIntegerConstant(methodCount);
-            EXPRARRINIT arrayInit = GetExprFactory().CreateArrayInit(EXPRFLAG.EXF_CANTBENULL, paramsArrayType, newArgs, paramsArrayArg, null);
-            arrayInit.dimSize = methodCount;
-            arrayInit.dimSizes = new int[] { arrayInit.dimSize }; // CLEANUP: Why isn't this done by the factory?
+            ExprArrayInit arrayInit = GetExprFactory().CreateArrayInit(EXPRFLAG.EXF_CANTBENULL, paramsArrayType, newArgs, paramsArrayArg, null);
+            arrayInit.DimensionSize = methodCount;
+            arrayInit.DimensionSizes = new int[] { arrayInit.DimensionSize }; // CLEANUP: Why isn't this done by the factory?
             return arrayInit;
         }
 
-        private void FixLiftedUserDefinedBinaryOperators(EXPRBINOP expr, ref EXPR pp1, ref EXPR pp2)
+        private void FixLiftedUserDefinedBinaryOperators(ExprBinOp expr, ref Expr pp1, ref Expr pp2)
         {
             // If we have lifted T1 op T2 to T1? op T2?, and we have an expression T1 op T2? or T1? op T2 then
             // we need to ensure that the unlifted actual arguments are promoted to their nullable CType.
@@ -1215,16 +1215,16 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(pp1 != null);
             Debug.Assert(pp2 != null);
             Debug.Assert(pp2 != null);
-            MethodSymbol method = expr.GetUserDefinedCallMethod().Meth();
-            EXPR orig1 = expr.GetOptionalLeftChild();
-            EXPR orig2 = expr.GetOptionalRightChild();
+            MethodSymbol method = expr.UserDefinedCallMethod.Meth();
+            Expr orig1 = expr.OptionalLeftChild;
+            Expr orig2 = expr.OptionalRightChild;
             Debug.Assert(orig1 != null && orig2 != null);
-            EXPR new1 = pp1;
-            EXPR new2 = pp2;
+            Expr new1 = pp1;
+            Expr new2 = pp2;
             CType fptype1 = method.Params[0];
             CType fptype2 = method.Params[1];
-            CType aatype1 = orig1.type;
-            CType aatype2 = orig2.type;
+            CType aatype1 = orig1.Type;
+            CType aatype2 = orig2.Type;
             // Is the operator even a candidate for lifting?
             if (fptype1.IsNullableType() || fptype2.IsNullableType() ||
                 !fptype1.IsAggregateType() || !fptype2.IsAggregateType() ||
@@ -1260,26 +1260,26 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return false;
         }
 
-        private bool IsNullableValueAccess(EXPR pExpr, EXPR pObject)
+        private bool IsNullableValueAccess(Expr pExpr, Expr pObject)
         {
             Debug.Assert(pExpr != null);
-            return pExpr.isPROP() && (pExpr.asPROP().GetMemberGroup().GetOptionalObject() == pObject) && pObject.type.IsNullableType();
+            return pExpr.isPROP() && (pExpr.asPROP().MemberGroup.OptionalObject== pObject) && pObject.Type.IsNullableType();
         }
 
-        private bool IsDelegateConstructorCall(EXPR pExpr)
+        private bool IsDelegateConstructorCall(Expr pExpr)
         {
             Debug.Assert(pExpr != null);
             if (!pExpr.isCALL())
             {
                 return false;
             }
-            EXPRCALL pCall = pExpr.asCALL();
-            return pCall.mwi.Meth() != null &&
-                pCall.mwi.Meth().IsConstructor() &&
-                pCall.type.isDelegateType() &&
-                pCall.GetOptionalArguments() != null &&
-                pCall.GetOptionalArguments().isLIST() &&
-                pCall.GetOptionalArguments().asLIST().GetOptionalNextListNode().kind == ExpressionKind.EK_FUNCPTR;
+            ExprCall pCall = pExpr.asCALL();
+            return pCall.MethWithInst.Meth() != null &&
+                pCall.MethWithInst.Meth().IsConstructor() &&
+                pCall.Type.isDelegateType() &&
+                pCall.OptionalArguments != null &&
+                pCall.OptionalArguments.isLIST() &&
+                pCall.OptionalArguments.asLIST().OptionalNextListNode.Kind == ExpressionKind.EK_FUNCPTR;
         }
         private static bool isEnumToDecimalConversion(CType argtype, CType desttype)
         {

@@ -4,22 +4,20 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal sealed class EXPRCALL : EXPR
+    internal sealed class ExprCall : Expr
     {
-        private EXPR _OptionalArguments;
-        public EXPR GetOptionalArguments() { return _OptionalArguments; }
-        public void SetOptionalArguments(EXPR value) { _OptionalArguments = value; }
+        public Expr OptionalArguments { get; set; }
 
-        private EXPRMEMGRP _MemberGroup;
-        public EXPRMEMGRP GetMemberGroup() { return _MemberGroup; }
-        public void SetMemberGroup(EXPRMEMGRP value) { _MemberGroup = value; }
+        public ExprMemberGroup MemberGroup { get; set; }
 
-        public MethWithInst mwi;
+        public MethWithInst MethWithInst { get; set; }
 
-        public PREDEFMETH PredefinedMethod;
+        public PREDEFMETH PredefinedMethod { get; set; }
 
-        public NullableCallLiftKind nubLiftKind;
-        public EXPR pConversions;
-        public EXPR castOfNonLiftedResultToLiftedType;
+        public NullableCallLiftKind NullableCallLiftKind { get; set; }
+
+        public Expr PConversions { get; set; }
+
+        public Expr CastOfNonLiftedResultToLiftedType { get; set; }
     }
 }

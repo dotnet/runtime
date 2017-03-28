@@ -198,8 +198,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         // ITypeOrNamespace
-        public bool IsType() { return true; }
-        public bool IsNamespace() { return false; }
+        public bool IsType => true;
+
+        public bool IsNamespace => false;
+
         public AssemblyQualifiedNamespaceSymbol AsNamespace() { throw Error.InternalCompilerError(); }
         public CType AsType() { return this; }
 

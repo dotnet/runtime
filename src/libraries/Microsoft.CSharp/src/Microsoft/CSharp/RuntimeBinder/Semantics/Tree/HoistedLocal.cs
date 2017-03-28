@@ -4,7 +4,7 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal sealed class EXPRHOISTEDLOCALEXPR : EXPR
+    internal sealed class ExprHoistedLocalExpr : Expr
     {
     }
 }

@@ -4,10 +4,12 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal sealed class EXPRUSERLOGOP : EXPR
+    internal sealed class ExprUserLogicalOp : Expr
     {
-        public EXPR TrueFalseCall;
-        public EXPRCALL OperatorCall;
-        public EXPR FirstOperandToExamine;
+        public Expr TrueFalseCall { get; set; }
+
+        public ExprCall OperatorCall { get; set; }
+
+        public Expr FirstOperandToExamine { get; set; }
     }
 }

@@ -42,7 +42,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private CSemanticChecker _pSemanticChecker;
         private SymbolLoader _pSymbolLoader;
         private CType _typeSrc;
-        private EXPR _obj;
+        private Expr _obj;
         private CType _typeQual;
         private ParentSymbol _symWhere;
         private Name _name;
@@ -623,10 +623,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             flags - See MemLookFlags.
                 TypeVarsAllowed only applies to the most derived type (not base types).
         ***************************************************************************************************/
-        public bool Lookup(CSemanticChecker checker, CType typeSrc, EXPR obj, ParentSymbol symWhere, Name name, int arity, MemLookFlags flags)
+        public bool Lookup(CSemanticChecker checker, CType typeSrc, Expr obj, ParentSymbol symWhere, Name name, int arity, MemLookFlags flags)
         {
             Debug.Assert((flags & ~MemLookFlags.All) == 0);
-            Debug.Assert(obj == null || obj.type != null);
+            Debug.Assert(obj == null || obj.Type != null);
             Debug.Assert(typeSrc.IsAggregateType() || typeSrc.IsTypeParameterType());
             Debug.Assert(checker != null);
 
@@ -647,7 +647,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             else if ((_flags & MemLookFlags.Ctor) != 0)
                 _typeQual = _typeSrc;
             else if (obj != null)
-                _typeQual = (CType)obj.type;
+                _typeQual = (CType)obj.Type;
             else
                 _typeQual = null;
 
@@ -731,7 +731,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return _swtInaccess;
         }
 
-        public EXPR GetObject()
+        public Expr GetObject()
         {
             return _obj;
         }
