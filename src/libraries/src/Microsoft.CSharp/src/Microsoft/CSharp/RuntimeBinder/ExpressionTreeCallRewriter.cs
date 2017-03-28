@@ -379,11 +379,19 @@ namespace Microsoft.CSharp.RuntimeBinder
             ExprList list = pExpr.asCALL().OptionalArguments.asLIST();
 
             Expr instance = list.OptionalElement;
-            ExprPropertyInfo propinfo = list.OptionalNextListNode.isLIST() ?
-                list.OptionalNextListNode.asLIST().OptionalElement.asPropertyInfo() :
-                list.OptionalNextListNode.asPropertyInfo();
-            ExprArrayInit arguments = list.OptionalNextListNode.isLIST() ?
-                list.OptionalNextListNode.asLIST().OptionalNextListNode.asARRINIT() : null;
+            Expr nextNode = list.OptionalNextListNode;
+            ExprPropertyInfo propinfo;
+            ExprArrayInit arguments;
+            if (nextNode is ExprList nextList)
+            {
+                propinfo = nextList.OptionalElement as ExprPropertyInfo;
+                arguments = nextList.OptionalNextListNode.asARRINIT();
+            }
+            else
+            {
+                propinfo = nextNode as ExprPropertyInfo;
+                arguments = null;
+            }
 
             PropertyInfo p = GetPropertyInfoFromExpr(propinfo);
 
