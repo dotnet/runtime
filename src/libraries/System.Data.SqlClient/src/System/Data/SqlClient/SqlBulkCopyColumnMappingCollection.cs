@@ -3,13 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
-using System.Collections.Generic;
-using System.Data.Common;
 using System.Diagnostics;
 
 namespace System.Data.SqlClient
 {
-    public sealed class SqlBulkCopyColumnMappingCollection : ICollection, IEnumerable, IList
+    public sealed class SqlBulkCopyColumnMappingCollection : CollectionBase
     {
         private enum MappingSchema
         {
@@ -20,45 +18,15 @@ namespace System.Data.SqlClient
             OrdinalsOrdinals = 4,
         }
 
-        private readonly List<object> _list = new List<object>();
         private MappingSchema _mappingSchema = MappingSchema.Undefined;
 
         internal SqlBulkCopyColumnMappingCollection()
         {
         }
 
-        public int Count => _list.Count;
-
         internal bool ReadOnly { get; set; }
 
-        bool ICollection.IsSynchronized => false;
-
-        object ICollection.SyncRoot => NonGenericList.SyncRoot;
-
-        bool IList.IsFixedSize => false;
-
-        // This always returns false in the full framework, regardless
-        // of the value of the internal ReadOnly property.
-        bool IList.IsReadOnly => false;
-
-        object IList.this[int index]
-        {
-            get
-            {
-                return NonGenericList[index];
-            }
-            set
-            {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
-
-                NonGenericList[index] = value;
-            }
-        }
-
-        public SqlBulkCopyColumnMapping this[int index] => (SqlBulkCopyColumnMapping)_list[index];
+        public SqlBulkCopyColumnMapping this[int index] => (SqlBulkCopyColumnMapping)this.List[index];
 
         public SqlBulkCopyColumnMapping Add(SqlBulkCopyColumnMapping bulkCopyColumnMapping)
         {
@@ -69,7 +37,7 @@ namespace System.Data.SqlClient
             {
                 throw SQL.BulkLoadNonMatchingColumnMapping();
             }
-            _list.Add(bulkCopyColumnMapping);
+            InnerList.Add(bulkCopyColumnMapping);
             return bulkCopyColumnMapping;
         }
 
@@ -104,50 +72,48 @@ namespace System.Data.SqlClient
             }
         }
 
-        public void Clear()
+        public new void Clear()
         {
             AssertWriteAccess();
-            _list.Clear();
+            base.Clear();
         }
 
-        public bool Contains(SqlBulkCopyColumnMapping value) => _list.Contains(value);
+        public bool Contains(SqlBulkCopyColumnMapping value) => InnerList.Contains(value);
 
-        public void CopyTo(SqlBulkCopyColumnMapping[] array, int index) => _list.CopyTo(array, index);
+        public void CopyTo(SqlBulkCopyColumnMapping[] array, int index) => InnerList.CopyTo(array, index);
 
         internal void CreateDefaultMapping(int columnCount)
         {
             for (int i = 0; i < columnCount; i++)
             {
-                _list.Add(new SqlBulkCopyColumnMapping(i, i));
+                InnerList.Add(new SqlBulkCopyColumnMapping(i, i));
             }
         }
 
-        public IEnumerator GetEnumerator() => _list.GetEnumerator();
-
-        public int IndexOf(SqlBulkCopyColumnMapping value) => _list.IndexOf(value);
+        public int IndexOf(SqlBulkCopyColumnMapping value) => InnerList.IndexOf(value);
 
         public void Insert(int index, SqlBulkCopyColumnMapping value)
         {
             AssertWriteAccess();
-            _list.Insert(index, value);
+            InnerList.Insert(index, value);
         }
 
         public void Remove(SqlBulkCopyColumnMapping value)
         {
             AssertWriteAccess();
-            _list.Remove(value);
+            InnerList.Remove(value);
         }
 
-        public void RemoveAt(int index)
+        public new void RemoveAt(int index)
         {
             AssertWriteAccess();
-            _list.RemoveAt(index);
+            base.RemoveAt(index);
         }
 
         internal void ValidateCollection()
         {
             MappingSchema mappingSchema;
-            foreach (SqlBulkCopyColumnMapping a in _list)
+            foreach (SqlBulkCopyColumnMapping a in InnerList)
             {
                 mappingSchema = a.SourceOrdinal != -1 ?
                     (a.DestinationOrdinal != -1 ? MappingSchema.OrdinalsOrdinals : MappingSchema.OrdinalsNames) :
@@ -166,49 +132,5 @@ namespace System.Data.SqlClient
                 }
             }
         }
-
-        void ICollection.CopyTo(Array array, int index) => NonGenericList.CopyTo(array, index);
-
-        int IList.Add(object value)
-        {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-
-            return NonGenericList.Add(value);
-        }
-
-        bool IList.Contains(object value) => NonGenericList.Contains(value);
-
-        int IList.IndexOf(object value) => NonGenericList.IndexOf(value);
-
-        void IList.Insert(int index, object value)
-        {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-
-            NonGenericList.Insert(index, value);
-        }
-
-        void IList.Remove(object value)
-        {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
-
-            bool removed = _list.Remove(value);
-
-            // This throws on full framework, so it will also throw here.
-            if (!removed)
-            {
-                throw new ArgumentException(SR.Arg_RemoveArgNotFound);
-            }
-        }
-
-        private IList NonGenericList => _list;
     }
 }
