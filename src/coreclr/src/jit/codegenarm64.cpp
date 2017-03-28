@@ -3634,11 +3634,6 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
                     // In the case of a GC-Pointer we'll call the ByRef write barrier helper
                     genEmitHelperCall(CORINFO_HELP_ASSIGN_BYREF, 0, EA_PTRSIZE);
 
-                    // genEmitHelperCall(CORINFO_HELP_ASSIGN_BYREF...) killed these registers.
-                    // However they are still live references to the structures we are copying.
-                    gcInfo.gcMarkRegPtrVal(REG_WRITE_BARRIER_SRC_BYREF, TYP_BYREF);
-                    gcInfo.gcMarkRegPtrVal(REG_WRITE_BARRIER_DST_BYREF, TYP_BYREF);
-
                     gcPtrCount--;
                     break;
             }

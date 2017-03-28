@@ -652,7 +652,7 @@ regMaskTP Compiler::compHelperCallKillSet(CorInfoHelpFunc helper)
 #if defined(_TARGET_AMD64_)
             return RBM_RSI | RBM_RDI | RBM_CALLEE_TRASH;
 #elif defined(_TARGET_ARM64_)
-            return RBM_CALLEE_TRASH_NOGC;
+            return RBM_WRITE_BARRIER_SRC_BYREF | RBM_WRITE_BARRIER_DST_BYREF | RBM_CALLEE_TRASH_NOGC;
 #elif defined(_TARGET_X86_)
             return RBM_ESI | RBM_EDI | RBM_ECX;
 #else
@@ -722,6 +722,8 @@ regMaskTP Compiler::compNoGCHelperCallKillSet(CorInfoHelpFunc helper)
 #elif defined(_TARGET_X86_)
             // This helper only trashes ECX.
             return RBM_ECX;
+#elif defined(_TARGET_ARM64_)
+            return RBM_CALLEE_TRASH_NOGC & ~(RBM_WRITE_BARRIER_SRC_BYREF | RBM_WRITE_BARRIER_DST_BYREF);
 #else
             return RBM_CALLEE_TRASH_NOGC;
 #endif // defined(_TARGET_AMD64_)
