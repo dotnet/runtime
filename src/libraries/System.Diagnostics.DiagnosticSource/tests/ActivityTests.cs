@@ -66,17 +66,28 @@ namespace System.Diagnostics.Tests
         public void SetParentId()
         {
             var parent = new Activity("parent");
-            Assert.Throws<ArgumentException>(() => parent.SetParentId(null));
-            Assert.Throws<ArgumentException>(() => parent.SetParentId(""));
+            parent.SetParentId(null);  // Error does nothing
+            Assert.Null(parent.ParentId);
+
+            parent.SetParentId("");  // Error does nothing
+            Assert.Null(parent.ParentId);
+
             parent.SetParentId("1");
-            Assert.Equal("1", parent.ParentId);
-            Assert.Throws<InvalidOperationException>(() => parent.SetParentId("2"));
+            Assert.Equal(parent.ParentId, "1");
+
+            parent.SetParentId("2"); // Error does nothing
+            Assert.Equal(parent.ParentId, "1");
 
             Assert.Equal(parent.ParentId, parent.RootId);
             parent.Start();
+
+
             var child = new Activity("child");
             child.Start();
-            Assert.Throws<InvalidOperationException>(() => child.SetParentId("3"));
+
+            Assert.Equal(child.ParentId, parent.Id);
+            child.SetParentId("3");  // Error does nothing;
+            Assert.Equal(child.ParentId, parent.Id);
         }
 
         /// <summary>
@@ -243,15 +254,23 @@ namespace System.Diagnostics.Tests
         public void StartStopWithTimestamp()
         {
             var activity = new Activity("activity");
-            Assert.Throws<InvalidOperationException>(() => activity.SetStartTime(DateTime.Now));
+            Assert.Equal(activity.StartTimeUtc, default(DateTime));
 
-            var startTime = DateTime.UtcNow.AddSeconds(-1);
+            activity.SetStartTime(DateTime.Now);    // Error Does nothing because it is not UTC
+            Assert.Equal(activity.StartTimeUtc, default(DateTime));
+
+            var startTime = DateTime.UtcNow.AddSeconds(-1); // A valid time in the past that we want to be our offical start time.  
             activity.SetStartTime(startTime);
 
             activity.Start();
-            Assert.Equal(startTime, activity.StartTimeUtc);
+            Assert.Equal(startTime, activity.StartTimeUtc); // we use our offical start time not the time now.  
+            Assert.Equal(activity.Duration, TimeSpan.Zero);
 
-            Assert.Throws<InvalidOperationException>(() => activity.SetEndTime(DateTime.Now));
+            Thread.Sleep(35);
+
+            activity.SetEndTime(DateTime.Now);      // Error does nothing because it is not UTC    
+            Assert.Equal(activity.Duration, TimeSpan.Zero);
+
             var stopTime = DateTime.UtcNow;
             activity.SetEndTime(stopTime);
             Assert.Equal(stopTime - startTime, activity.Duration);
@@ -335,7 +354,10 @@ namespace System.Diagnostics.Tests
         {
             var activity = new Activity("activity");
             activity.Start();
-            Assert.Throws<InvalidOperationException>(() => activity.Start());
+            var id = activity.Id;
+
+            activity.Start();       // Error already started.  Does nothing.  
+            Assert.Equal(id, activity.Id);
         }
 
         /// <summary>
@@ -344,7 +366,9 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void StopNotStarted()
         {
-            Assert.Throws<InvalidOperationException>(() => new Activity("activity").Stop());
+            var activity = new Activity("activity");
+            activity.Stop();        // Error Does Nothing
+            Assert.Equal(activity.Duration, TimeSpan.Zero);
         }
 
         /// <summary>

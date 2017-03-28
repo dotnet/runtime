@@ -19,6 +19,11 @@ namespace System.Diagnostics
     /// relationships for the activities and sets Activity.Current.
     /// 
     /// When activity is finished, it should be stopped with static Activity.Stop method.
+    /// 
+    /// No methods on Activity allow exceptions to escape as a response to bad inputs.
+    /// They are thrown and caught (that allows Debuggers and Monitors to see the error)
+    /// but the exception is supressed, and the operation does something reasonable (typically
+    /// doing nothing).  
     /// </summary>
     public partial class Activity
     {
@@ -71,7 +76,6 @@ namespace System.Diagnostics
         /// See <see href="https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.DiagnosticSource/src/ActivityUserGuide.md#id-format"/> for more details
         /// </summary>
         public string ParentId { get; private set; }
-
 
         /// <summary>
         /// Root Id is substring from Activity.Id (or ParentId) between '|' (or beginning) and first '.'.
@@ -156,7 +160,11 @@ namespace System.Diagnostics
         public Activity(string operationName)
         {
             if (string.IsNullOrEmpty(operationName))
-                throw new ArgumentException($"{nameof(operationName)} must not be null or empty");
+            {
+                NotifyError(new ArgumentException($"{nameof(operationName)} must not be null or empty"));
+                return;
+            }
+
             OperationName = operationName;
         }
 
@@ -199,17 +207,15 @@ namespace System.Diagnostics
         public Activity SetParentId(string parentId)
         {
             if (Parent != null)
-                throw new InvalidOperationException(
-                    $"Trying to set {nameof(ParentId)} on activity which has {nameof(Parent)}");
-
-            if (ParentId != null)
-                throw new InvalidOperationException(
-                    $"{nameof(ParentId)} is already set");
-
-            if (string.IsNullOrEmpty(parentId))
-                throw new ArgumentException($"{nameof(parentId)} must not be null or empty");
-
-            ParentId = parentId;
+                NotifyError(new InvalidOperationException($"Trying to set {nameof(ParentId)} on activity which has {nameof(Parent)}"));
+            else if (ParentId != null)
+                NotifyError(new InvalidOperationException($"{nameof(ParentId)} is already set"));
+            else if (string.IsNullOrEmpty(parentId))
+                NotifyError(new ArgumentException($"{nameof(parentId)} must not be null or empty"));
+            else
+            {
+                ParentId = parentId;
+            }
             return this;
         }
 
@@ -221,8 +227,11 @@ namespace System.Diagnostics
         public Activity SetStartTime(DateTime startTimeUtc)
         {
             if (startTimeUtc.Kind != DateTimeKind.Utc)
-                throw new InvalidOperationException($"{nameof(startTimeUtc)} is not UTC");
-            StartTimeUtc = startTimeUtc;
+                NotifyError(new InvalidOperationException($"{nameof(startTimeUtc)} is not UTC"));
+            else
+            {
+                StartTimeUtc = startTimeUtc;
+            }
             return this;
         }
         /// <summary>
@@ -235,11 +244,13 @@ namespace System.Diagnostics
         public Activity SetEndTime(DateTime endTimeUtc)
         {
             if (endTimeUtc.Kind != DateTimeKind.Utc)
-                throw new InvalidOperationException($"{nameof(endTimeUtc)} is not UTC");
-
-            Duration = endTimeUtc - StartTimeUtc;
-            if (Duration.Ticks <= 0)
-                Duration = new TimeSpan(1); // We want Duration of 0 to mean  'EndTime not set)
+                NotifyError(new InvalidOperationException($"{nameof(endTimeUtc)} is not UTC"));
+            else
+            {
+                Duration = endTimeUtc - StartTimeUtc;
+                if (Duration.Ticks <= 0)
+                    Duration = new TimeSpan(1); // We want Duration of 0 to mean  'EndTime not set)
+            }
             return this;
         }
 
@@ -251,7 +262,7 @@ namespace System.Diagnostics
         public TimeSpan Duration { get; private set; }
 
         /// <summary>
-        /// Starts activity:
+        /// Starts activity
         /// <list type="bullet">
         /// <item>Sets <see cref="Parent"/> to hold <see cref="Current"/>.</item>
         /// <item>Sets <see cref="Current"/> to this activity.</item>
@@ -265,24 +276,25 @@ namespace System.Diagnostics
         public Activity Start()
         {
             if (Id != null)
-                throw new InvalidOperationException("Trying to start an Activity that was already started");
-
-            if (ParentId == null)
+                NotifyError(new InvalidOperationException("Trying to start an Activity that was already started"));
+            else
             {
-                var parent = Current;
-                if (parent != null)
+                if (ParentId == null)
                 {
-                    ParentId = parent.Id;
-                    Parent = parent;
+                    var parent = Current;
+                    if (parent != null)
+                    {
+                        ParentId = parent.Id;
+                        Parent = parent;
+                    }
                 }
+
+                if (StartTimeUtc == default(DateTime))
+                    StartTimeUtc = DateTime.UtcNow;
+
+                Id = GenerateId();
+                Current = this;
             }
-
-            if (StartTimeUtc == default(DateTime))
-                StartTimeUtc = DateTime.UtcNow;
-
-            Id = GenerateId();
-
-            Current = this;
             return this;
         }
 
@@ -296,7 +308,10 @@ namespace System.Diagnostics
         public void Stop()
         {
             if (Id == null)
-                throw new InvalidOperationException("Trying to stop an Activity that was not started");
+            {
+                NotifyError(new InvalidOperationException("Trying to stop an Activity that was not started"));
+                return;
+            }
 
             if (!isFinished)
             {
@@ -310,6 +325,18 @@ namespace System.Diagnostics
         }
 
         #region private 
+        private void NotifyError(Exception exception)
+        {
+            // Throw and catch the exception.  This lets it be seen by the debugger
+            // ETW, and other monitoring tools.   However we immediately swallow the
+            // exception.   We may wish in the future to allow users to hook this 
+            // in other useful ways but for now we simply swallow the exceptions.  
+            try
+            {
+                throw exception;
+            }
+            catch (Exception) { }
+        }
 
         private string GenerateId()
         {
@@ -332,7 +359,7 @@ namespace System.Diagnostics
                 {
                     parentId += '.';
                 }
-                
+
                 ret = AppendSuffix(parentId, Interlocked.Increment(ref s_currentRootId).ToString("x"), '_');
             }
             else
@@ -379,7 +406,7 @@ namespace System.Diagnostics
                 return GenerateRootId();
 
             //generate overflow suffix
-            string overflowSuffix = ((int) GetRandomNumber()).ToString("x8");
+            string overflowSuffix = ((int)GetRandomNumber()).ToString("x8");
             return parentId.Substring(0, trimPosition) + overflowSuffix + '#';
         }
 
@@ -416,7 +443,7 @@ namespace System.Diagnostics
 
         //A unique number inside the appdomain, randomized between appdomains. 
         //Int gives enough randomization and keeps hex-encoded s_currentRootId 8 chars long for most applications
-        private static long s_currentRootId = (uint)GetRandomNumber();  
+        private static long s_currentRootId = (uint)GetRandomNumber();
 
         private const int RequestIdMaxLength = 1024;
         private const char RootIdPrefix = '|';
