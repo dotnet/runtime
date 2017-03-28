@@ -769,7 +769,7 @@ bool MyICJI::getReadyToRunHelper(
 void MyICJI::getReadyToRunDelegateCtorHelper(
     CORINFO_RESOLVED_TOKEN * pTargetMethod,
     CORINFO_CLASS_HANDLE     delegateType,
-    CORINFO_CONST_LOOKUP *   pLookup
+    CORINFO_LOOKUP *   pLookup
     )
 {
     jitInstance->mc->cr->AddCall("getReadyToRunDelegateCtorHelper");

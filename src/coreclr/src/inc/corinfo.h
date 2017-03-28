@@ -214,12 +214,12 @@ TODO: Talk about initializing strutures before use
 #endif
 
 // Update this one
-SELECTANY const GUID JITEEVersionIdentifier = { /* 3d43decb-a611-4413-a0af-a24278a00e2d */
-    0x3d43decb,
-    0xa611,
-    0x4413,
-    {0xa0, 0xaf, 0xa2, 0x42, 0x78, 0xa0, 0x0e, 0x2d}
-  };
+SELECTANY const GUID JITEEVersionIdentifier = { /* 61783541-8fc0-44ce-80f7-7789b93a3309 */
+    0x61783541,
+    0x8fc0,
+    0x44ce,
+    { 0x80, 0xf7, 0x77, 0x89, 0xb9, 0x3a, 0x33, 0x09 }
+};
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -2394,7 +2394,7 @@ public:
     virtual void getReadyToRunDelegateCtorHelper(
             CORINFO_RESOLVED_TOKEN * pTargetMethod,
             CORINFO_CLASS_HANDLE     delegateType,
-            CORINFO_CONST_LOOKUP *   pLookup
+            CORINFO_LOOKUP *   pLookup
             ) = 0;
 
     virtual const char* getHelperName(
