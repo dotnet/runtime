@@ -4,6 +4,7 @@
 
 using Xunit;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace System.IO
 {
@@ -18,15 +19,26 @@ namespace System.IO
             // so that it can be easily correlated if necessary, and the random string to helps avoid conflicts if
             // the same test should be run concurrently with itself (e.g. if a [Fact] method lives on a base class)
             // or if some stray files were left over from a previous run.
-            TestDirectory = Path.Combine(Path.GetTempPath(), GetType().Name + "_" + Path.GetRandomFileName());
-            try
+
+            // Make 3 attempts since we have seen this on rare occasions fail with access denied, perhaps due to machine
+            // configuration, and it doesn't make sense to fail arbitrary tests for this reason.
+            string failure = string.Empty;
+            for (int i = 0; i <= 2; i++)
             {
-                Directory.CreateDirectory(TestDirectory);
+                TestDirectory = Path.Combine(Path.GetTempPath(), GetType().Name + "_" + Path.GetRandomFileName());
+                try
+                {
+                    Directory.CreateDirectory(TestDirectory);
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    failure += ex.ToString() + Environment.NewLine;
+                    Thread.Sleep(10); // Give a transient condition like antivirus/indexing a chance to go away
+                }
             }
-            catch (Exception ex)
-            {
-                Assert.True(false, $"FileCleanupTestBase failed to create {TestDirectory} due to {ex.ToString()}");
-            }
+
+            Assert.True(Directory.Exists(TestDirectory), $"FileCleanupTestBase failed to create {TestDirectory}. {failure}");
         }
 
         /// <summary>Delete the associated test directory.</summary>
