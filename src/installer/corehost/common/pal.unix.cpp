@@ -304,6 +304,31 @@ pal::string_t pal::get_current_os_rid_platform()
     return ridOS;
 }
 #else
+// For some distros, we don't want to use the full version from VERSION_ID. One example is
+// Red Hat Enterprise Linux, which includes a minor version in their VERSION_ID but minor
+// versions are backwards compatable.
+//
+// In this case, we'll normalized RIDs like 'rhel.7.2' and 'rhel.7.3' to a generic
+// 'rhel.7'. This brings RHEL in line with other distros like CentOS or Debian which
+// don't put minor version numbers in their VERSION_ID fields because all minor versions
+// are backwards compatible.
+static
+pal::string_t normalize_linux_rid(pal::string_t rid)
+{
+    pal::string_t rhelPrefix(_X("rhel."));
+
+    if (rid.compare(0, rhelPrefix.length(), rhelPrefix) == 0)
+    {
+        size_t minorVersionSeparatorIndex = rid.find(_X("."), rhelPrefix.length());
+        if (minorVersionSeparatorIndex != std::string::npos)
+        {
+            rid.erase(minorVersionSeparatorIndex, rid.length() - minorVersionSeparatorIndex);
+        }
+    }
+
+    return rid;
+}
+
 pal::string_t pal::get_current_os_rid_platform()
 {
     pal::string_t ridOS;
@@ -363,7 +388,7 @@ pal::string_t pal::get_current_os_rid_platform()
         }
     }
 
-    return ridOS;
+    return normalize_linux_rid(ridOS);
 }
 #endif
 
