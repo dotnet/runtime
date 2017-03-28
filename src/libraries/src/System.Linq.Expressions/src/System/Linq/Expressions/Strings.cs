@@ -510,11 +510,6 @@ namespace System.Linq.Expressions
         internal static string NotAMemberOfAnyType(object p0) => SR.Format(SR.NotAMemberOfAnyType, p0);
 
         /// <summary>
-        /// A string like "The expression '{0}' is not supported for type '{1}'"
-        /// </summary>
-        internal static string ExpressionNotSupportedForType(object p0, object p1) => SR.Format(SR.ExpressionNotSupportedForType, p0, p1);
-
-        /// <summary>
         /// A string like "ParameterExpression of type '{0}' cannot be used for delegate parameter of type '{1}'"
         /// </summary>
         internal static string ParameterExpressionNotValidAsDelegate(object p0, object p1) => SR.Format(SR.ParameterExpressionNotValidAsDelegate, p0, p1);

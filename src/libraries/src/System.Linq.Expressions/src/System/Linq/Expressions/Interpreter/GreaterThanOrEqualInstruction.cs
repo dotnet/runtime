@@ -295,7 +295,7 @@ namespace System.Linq.Expressions.Interpreter
                     case TypeCode.Single: return s_liftedToNullSingle ?? (s_liftedToNullSingle = new GreaterThanOrEqualSingle(null));
                     case TypeCode.Double: return s_liftedToNullDouble ?? (s_liftedToNullDouble = new GreaterThanOrEqualDouble(null));
                     default:
-                        throw Error.ExpressionNotSupportedForType("GreaterThanOrEqual", type);
+                        throw ContractUtils.Unreachable;
                 }
             }
             else
@@ -314,7 +314,7 @@ namespace System.Linq.Expressions.Interpreter
                     case TypeCode.Single: return s_Single ?? (s_Single = new GreaterThanOrEqualSingle(Utils.BoxedFalse));
                     case TypeCode.Double: return s_Double ?? (s_Double = new GreaterThanOrEqualDouble(Utils.BoxedFalse));
                     default:
-                        throw Error.ExpressionNotSupportedForType("GreaterThanOrEqual", type);
+                        throw ContractUtils.Unreachable;
                 }
             }
         }
