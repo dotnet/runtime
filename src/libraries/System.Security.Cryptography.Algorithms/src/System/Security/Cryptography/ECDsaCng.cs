@@ -19,7 +19,6 @@ namespace System.Security.Cryptography
             return new ECDsaImplementation.ECDsaCng();
         }
 
-#if !uap
         /// <summary>
         /// Creates an instance of the platform specific implementation of the cref="ECDsa" algorithm.
         /// </summary>
@@ -30,7 +29,6 @@ namespace System.Security.Cryptography
         {
             return new ECDsaImplementation.ECDsaCng(curve);
         }
-#endif // uap
 
         /// <summary>
         /// Creates an instance of the platform specific implementation of the cref="ECDsa" algorithm.
