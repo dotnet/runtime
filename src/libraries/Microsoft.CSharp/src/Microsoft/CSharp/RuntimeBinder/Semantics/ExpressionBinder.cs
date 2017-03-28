@@ -861,8 +861,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             // If this field is the backing field of a WindowsRuntime event then we need to bind to its
             // invocationlist property which is a delegate containing all the handlers.
-            if (pResult.isFIELD() &&
-                fwt.Field().isEvent &&
+            if (fwt.Field().isEvent &&
                 fwt.Field().getEvent(GetSymbolLoader()) != null &&
                 fwt.Field().getEvent(GetSymbolLoader()).IsWindowsRuntimeEvent)
             {
@@ -1742,10 +1741,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 // If we're invoking code on a struct-valued field, mark the struct as assigned (to
                 // avoid warning CS0649).
-                if (pObject.isFIELD() && !pObject.asFIELD().FieldWithType.Field().isAssigned && !swt.Sym.IsFieldSymbol() &&
+                if (pObject is ExprField field && !field.FieldWithType.Field().isAssigned && !swt.Sym.IsFieldSymbol() &&
                     typeObj.isStructType() && !typeObj.isPredefined())
                 {
-                    pObject.asFIELD().FieldWithType.Field().isAssigned = true;
+                    field.FieldWithType.Field().isAssigned = true;
                 }
 
                 if (pfConstrained &&
@@ -2135,17 +2134,16 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private void markFieldAssigned(Expr expr)
         {
-            if (expr.isFIELD() && 0 != (expr.Flags & EXPRFLAG.EXF_LVALUE))
+            if (0 != (expr.Flags & EXPRFLAG.EXF_LVALUE) && expr is ExprField field)
             {
-                ExprField field;
-
+                FieldSymbol symbol;
                 do
                 {
-                    field = expr.asFIELD();
-                    field.FieldWithType.Field().isAssigned = true;
+                    symbol = field.FieldWithType.Field();
+                    symbol.isAssigned = true;
                     expr = field.OptionalObject;
                 }
-                while (field.FieldWithType.Field().getClass().IsStruct() && !field.FieldWithType.Field().isStatic && expr != null && expr.isFIELD());
+                while (symbol.getClass().IsStruct() && !symbol.isStatic && expr != null && (field = expr as ExprField) != null);
             }
         }
 

@@ -91,9 +91,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     Debug.Assert(walk.asPROP().MethWithTypeSet != null);
                     pObject = walk.asPROP().MemberGroup.OptionalObject;
                 }
-                else if (walk.isFIELD())
+                else if (walk is ExprField field)
                 {
-                    ExprField field = walk.asFIELD();
                     if (field.FieldWithType.Field().isReadOnly)
                     {
                         ReportReadOnlyError(field, kind, isNested);
@@ -129,7 +128,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
 
                 // everything else
-                if (pObject != null && !pObject.isLvalue() && (walk.isFIELD() || (!isNested && walk.isPROP())))
+                if (pObject != null && !pObject.isLvalue() && (walk is ExprField || (!isNested && walk.isPROP())))
                 {
                     Debug.Assert(pObject.Type.isStructOrEnum());
                     walk = pObject;

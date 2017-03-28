@@ -171,7 +171,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public static ExprList asLIST(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_LIST); return (ExprList)expr; }
         public static ExprCall asCALL(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_CALL); return (ExprCall)expr; }
-        public static ExprField asFIELD(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_FIELD); return (ExprField)expr; }
         public static ExprConstant asCONSTANT(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_CONSTANT); return (ExprConstant)expr; }
         public static ExprFuncPtr asFUNCPTR(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_FUNCPTR); return (ExprFuncPtr)expr; }
         public static ExprProperty asPROP(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_PROP); return (ExprProperty)expr; }
