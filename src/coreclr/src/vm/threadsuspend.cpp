@@ -7164,7 +7164,7 @@ void ThreadSuspend::RestartEE(BOOL bFinishedGC, BOOL SuspendSucceded)
     // Revert to being a normal thread
     // 
     ClrFlsClearThreadType (ThreadType_DynamicSuspendEE);
-    GCHeapUtilities::GetGCHeap()->SetGCInProgress(FALSE);
+    GCHeapUtilities::GetGCHeap()->SetGCInProgress(false);
 
     //
     // Allow threads to enter COOP mode (though we still need to wake the ones
@@ -7332,7 +7332,7 @@ retry_for_debugger:
             // It seems like much of the above is redundant.  We should investigate reducing the number
             // of mechanisms we use to indicate that a suspension is in progress.
             //
-            GCHeapUtilities::GetGCHeap()->SetGCInProgress(TRUE);
+            GCHeapUtilities::GetGCHeap()->SetGCInProgress(true);
 
             //
             // Gratuitous memory barrier.  (may be needed - but I'm not sure why.)

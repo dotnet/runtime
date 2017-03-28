@@ -439,8 +439,8 @@ VOID ETW::GCLog::GCSettingsEvent()
             ETW::GCLog::ETW_GC_INFO Info;
 
             Info.GCSettings.ServerGC = GCHeapUtilities::IsServerHeap ();
-            Info.GCSettings.SegmentSize = GCHeapUtilities::GetGCHeap()->GetValidSegmentSize (FALSE);
-            Info.GCSettings.LargeObjectSegmentSize = GCHeapUtilities::GetGCHeap()->GetValidSegmentSize (TRUE);
+            Info.GCSettings.SegmentSize = GCHeapUtilities::GetGCHeap()->GetValidSegmentSize (false);
+            Info.GCSettings.LargeObjectSegmentSize = GCHeapUtilities::GetGCHeap()->GetValidSegmentSize (true);
             FireEtwGCSettings_V1(Info.GCSettings.SegmentSize, Info.GCSettings.LargeObjectSegmentSize, Info.GCSettings.ServerGC, GetClrInstanceId());
         }  
         GCHeapUtilities::GetGCHeap()->DiagTraceGCSegments();
@@ -1035,7 +1035,7 @@ HRESULT ETW::GCLog::ForceGCForDiagnostics()
         
         hr = GCHeapUtilities::GetGCHeap()->GarbageCollect(
             -1,     // all generations should be collected
-            FALSE,  // low_memory_p
+            false,  // low_memory_p
             collection_blocking);
 
 #ifndef FEATURE_REDHAWK

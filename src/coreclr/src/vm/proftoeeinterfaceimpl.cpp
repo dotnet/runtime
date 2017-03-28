@@ -1022,7 +1022,7 @@ ClassID SafeGetClassIDFromObject(Object * pObj)
 
 //---------------------------------------------------------------------------------------
 //
-// Callback of type walk_fn used by GCHeapUtilities::DiagWalkObject.  Keeps a count of each
+// Callback of type walk_fn used by IGCHeap::DiagWalkObject.  Keeps a count of each
 // object reference found.
 //
 // Arguments:
@@ -1033,7 +1033,7 @@ ClassID SafeGetClassIDFromObject(Object * pObj)
 //      Always returns TRUE to object walker so it walks the entire object
 //
 
-BOOL CountContainedObjectRef(Object * pBO, void * context)
+bool CountContainedObjectRef(Object * pBO, void * context)
 {
     LIMITED_METHOD_CONTRACT;
     // Increase the count
@@ -1044,7 +1044,7 @@ BOOL CountContainedObjectRef(Object * pBO, void * context)
 
 //---------------------------------------------------------------------------------------
 //
-// Callback of type walk_fn used by GCHeapUtilities::DiagWalkObject.  Stores each object reference
+// Callback of type walk_fn used by IGCHeap::DiagWalkObject.  Stores each object reference
 // encountered into an array.
 //
 // Arguments:
@@ -1058,7 +1058,7 @@ BOOL CountContainedObjectRef(Object * pBO, void * context)
 //      Always returns TRUE to object walker so it walks the entire object
 //
 
-BOOL SaveContainedObjectRef(Object * pBO, void * context)
+bool SaveContainedObjectRef(Object * pBO, void * context)
 {
     LIMITED_METHOD_CONTRACT;
     // Assign the value
@@ -1096,7 +1096,7 @@ BOOL SaveContainedObjectRef(Object * pBO, void * context)
 //
 extern bool s_forcedGCInProgress;
 
-BOOL HeapWalkHelper(Object * pBO, void * pvContext)
+bool HeapWalkHelper(Object * pBO, void * pvContext)
 {
     CONTRACTL
     {
@@ -1221,7 +1221,7 @@ BOOL HeapWalkHelper(Object * pBO, void * pvContext)
 //      Currently always returns TRUE
 //
 
-BOOL AllocByClassHelper(Object * pBO, void * pv)
+bool AllocByClassHelper(Object * pBO, void * pv)
 {
     CONTRACTL
     {

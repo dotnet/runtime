@@ -381,12 +381,12 @@ size_t GCHeap::GetNow()
     return GetHighPrecisionTimeStamp();
 }
 
-BOOL GCHeap::IsGCInProgressHelper (BOOL bConsiderGCStart)
+bool GCHeap::IsGCInProgressHelper (bool bConsiderGCStart)
 {
     return GcInProgress || (bConsiderGCStart? VolatileLoad(&gc_heap::gc_started) : FALSE);
 }
 
-uint32_t GCHeap::WaitUntilGCComplete(BOOL bConsiderGCStart)
+uint32_t GCHeap::WaitUntilGCComplete(bool bConsiderGCStart)
 {
     if (bConsiderGCStart)
     {
@@ -427,7 +427,7 @@ BlockAgain:
     return dwWaitResult;
 }
 
-void GCHeap::SetGCInProgress(BOOL fInProgress)
+void GCHeap::SetGCInProgress(bool fInProgress)
 {
     GcInProgress = fInProgress;
 }
@@ -445,12 +445,12 @@ void GCHeap::WaitUntilConcurrentGCComplete()
 #endif //BACKGROUND_GC
 }
 
-BOOL GCHeap::IsConcurrentGCInProgress()
+bool GCHeap::IsConcurrentGCInProgress()
 {
 #ifdef BACKGROUND_GC
-    return pGenGCHeap->settings.concurrent;
+    return !!pGenGCHeap->settings.concurrent;
 #else
-    return FALSE;
+    return false;
 #endif //BACKGROUND_GC
 }
 
