@@ -258,7 +258,7 @@ namespace System.Net
 
                 if (result is Exception e)
                 {
-                    ExceptionDispatchInfo.Capture(e).Throw();
+                    ExceptionDispatchInfo.Throw(e);
                 }
 
                 return (int)result;

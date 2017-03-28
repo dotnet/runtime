@@ -63,7 +63,7 @@ namespace System.Net.Mime
 
             if (context._completed)
             {
-                ExceptionDispatchInfo.Capture(e).Throw();
+                ExceptionDispatchInfo.Throw(e);
             }
 
             try

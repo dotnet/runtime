@@ -135,7 +135,7 @@ namespace System
                 
                 // We are catching the TIE here and throws the inner exception only,
                 // this is needed to have a consistent exception story with desktop clr
-                ExceptionDispatchInfo.Capture(targetInvocationException.InnerException).Throw();
+                ExceptionDispatchInfo.Throw(targetInvocationException.InnerException);
             }
 
             return result != null ? (int)result : 0;

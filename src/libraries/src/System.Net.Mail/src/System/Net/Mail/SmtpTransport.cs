@@ -323,7 +323,7 @@ namespace System.Net.Mail
                 && (!(sendMailResult is SmtpFailedRecipientException)
                     || ((SmtpFailedRecipientException)sendMailResult).fatal))
             {
-                ExceptionDispatchInfo.Capture(e).Throw();
+                ExceptionDispatchInfo.Throw(e);
             }
 
             return new MailWriter(thisPtr._stream);

@@ -358,7 +358,7 @@ namespace System.Net
                     NetEventSource.Info(this, "Rethrowing exception:" + exception);
                     NetEventSource.Error(this, exception.ToString());
                 }
-                ExceptionDispatchInfo.Capture(exception).Throw();
+                ExceptionDispatchInfo.Throw(exception);
             }
 
             uint dataRead = (uint)returnValue;

@@ -162,7 +162,7 @@ namespace System.Net.Mime
             MimePartContext context = (MimePartContext)result.AsyncState;
             if (context._completed)
             {
-                ExceptionDispatchInfo.Capture(e).Throw();
+                ExceptionDispatchInfo.Throw(e);
             }
 
             try

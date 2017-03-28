@@ -305,7 +305,7 @@ namespace System.Net
 
             if (workerResult.Result is Exception e)
             {
-                ExceptionDispatchInfo.Capture(e).Throw();
+                ExceptionDispatchInfo.Throw(e);
             }
 
             int size = (int)workerResult.Result;
@@ -451,7 +451,7 @@ namespace System.Net
 
                 if (workerResult.Result is Exception e)
                 {
-                    ExceptionDispatchInfo.Capture(e).Throw();
+                    ExceptionDispatchInfo.Throw(e);
                 }
             }
             else

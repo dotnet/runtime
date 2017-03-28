@@ -454,7 +454,7 @@ namespace System.Net.Mail
                 object connectResult = thisPtr.InternalWaitForCompletion();
                 if (connectResult is Exception e)
                 {
-                    ExceptionDispatchInfo.Capture(e).Throw();
+                    ExceptionDispatchInfo.Throw(e);
                 }
             }
 

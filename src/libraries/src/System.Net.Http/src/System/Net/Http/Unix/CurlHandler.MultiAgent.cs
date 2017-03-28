@@ -602,7 +602,7 @@ namespace System.Net.Http
                     // Now propagate any failure that may have occurred while cleaning up
                     if (lastError != null)
                     {
-                        ExceptionDispatchInfo.Capture(lastError).Throw();
+                        ExceptionDispatchInfo.Throw(lastError);
                     }
                 }
                 finally

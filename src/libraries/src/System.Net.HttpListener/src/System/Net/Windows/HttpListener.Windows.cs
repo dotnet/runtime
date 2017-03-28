@@ -934,7 +934,7 @@ namespace System.Net
                 if (httpContext == null)
                 {
                     Debug.Assert(castedAsyncResult.Result is Exception, "EndGetContext|The result is neither a HttpListenerContext nor an Exception.");
-                    ExceptionDispatchInfo.Capture(castedAsyncResult.Result as Exception).Throw();
+                    ExceptionDispatchInfo.Throw(castedAsyncResult.Result as Exception);
                 }
             }
             catch (Exception exception)

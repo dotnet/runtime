@@ -149,7 +149,7 @@ namespace System.Net.Mime
             object o = MultiAsyncResult.End(result);
             if (o is Exception e)
             {
-                ExceptionDispatchInfo.Capture(e).Throw();
+                ExceptionDispatchInfo.Throw(e);
             }
             return (Stream)o;
         }

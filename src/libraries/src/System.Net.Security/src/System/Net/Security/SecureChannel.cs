@@ -1101,7 +1101,7 @@ namespace System.Net.Security
 
                 if (status.Exception != null)
                 {
-                    ExceptionDispatchInfo.Capture(status.Exception).Throw();
+                    ExceptionDispatchInfo.Throw(status.Exception);
                 }
 
                 return null;
@@ -1125,7 +1125,7 @@ namespace System.Net.Security
 
                 if (status.Exception != null)
                 {
-                    ExceptionDispatchInfo.Capture(status.Exception).Throw();
+                    ExceptionDispatchInfo.Throw(status.Exception);
                 }
 
                 return null;
