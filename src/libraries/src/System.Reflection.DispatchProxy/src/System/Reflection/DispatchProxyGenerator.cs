@@ -159,7 +159,7 @@ namespace System.Reflection
             }
             catch (TargetInvocationException tie)
             {
-                ExceptionDispatchInfo.Throw(tie.InnerException);
+                ExceptionDispatchInfo.Capture(tie.InnerException).Throw();
             }
         }
 
