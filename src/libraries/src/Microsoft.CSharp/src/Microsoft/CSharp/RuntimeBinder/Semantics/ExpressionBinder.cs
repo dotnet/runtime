@@ -659,14 +659,19 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 pName, BSYMMGR.EmptyTypeArray(), mem.SymFirst().getKind(), mem.GetSourceType(), null/*pMPS*/, mem.GetObject(), mem.GetResults());
 
             Expr pResult = BindMethodGroupToArguments(bindFlags, grp, args);
-            Debug.Assert(pResult.HasObject);
-            if (pResult.Object== null)
+            var exprWithObject = pResult as IExprWithObject;
+            Debug.Assert(exprWithObject != null);
+            if (exprWithObject?.OptionalObject== null)
             {
                 // We must be in an error scenario where the object was not allowed. 
                 // This can happen if the user tries to access the indexer off the
                 // type and not an instance or if the incorrect type/number of arguments 
                 // were passed for binding.
-                pResult.Object = pObject;
+                if (exprWithObject != null)
+                {
+                    exprWithObject.OptionalObject = pObject;
+                }
+
                 pResult.SetError();
             }
             return pResult;
@@ -1898,13 +1903,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             Debug.Assert(call.isCALL() || call.isPROP());
 
-            Expr argsPtr = call.Args;
-            SymWithType swt = call.GetSymWithType();
+            IExprWithArgs withArgs = call as IExprWithArgs;
+            Expr argsPtr = withArgs.OptionalArguments;
+            SymWithType swt = withArgs.GetSymWithType();
             MethodOrPropertySymbol mp = swt.Sym.AsMethodOrPropertySymbol();
             TypeArray pTypeArgs = call.isCALL() ? call.asCALL().MethWithInst.TypeArgs : null;
             Expr newArgs;
             AdjustCallArgumentsForParams(callingObjectType, swt.GetType(), mp, pTypeArgs, argsPtr, out newArgs);
-            call.Args = newArgs;
+            withArgs.OptionalArguments = newArgs;
         }
 
         private void AdjustCallArgumentsForParams(CType callingObjectType, CType type, MethodOrPropertySymbol mp, TypeArray pTypeArgs, Expr argsPtr, out Expr newArgs)

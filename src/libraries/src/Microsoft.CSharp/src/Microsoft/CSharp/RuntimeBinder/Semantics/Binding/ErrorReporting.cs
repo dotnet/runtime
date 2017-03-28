@@ -107,11 +107,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 if (pObject != null && pObject.Type.isStructOrEnum())
                 {
-                    if (pObject.isCALL() || pObject.isPROP())
+                    if (pObject is IExprWithArgs withArgs)
                     {
                         // assigning to RHS of method or property getter returning a value-type on the stack or
                         // passing RHS of method or property getter returning a value-type on the stack, as ref or out
-                        ErrorContext.Error(ErrorCode.ERR_ReturnNotLValue, pObject.GetSymWithType());
+                        ErrorContext.Error(ErrorCode.ERR_ReturnNotLValue, withArgs.GetSymWithType());
                         return true;
                     }
                     if (pObject.isCAST())

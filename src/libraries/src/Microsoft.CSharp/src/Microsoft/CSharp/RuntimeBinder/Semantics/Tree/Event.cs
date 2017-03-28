@@ -4,7 +4,7 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal sealed class ExprEvent : Expr
+    internal sealed class ExprEvent : Expr, IExprWithObject
     {
         public Expr OptionalObject { get; set; }
 
