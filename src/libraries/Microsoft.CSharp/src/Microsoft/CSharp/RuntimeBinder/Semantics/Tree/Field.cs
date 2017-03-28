@@ -4,7 +4,7 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal sealed class ExprField : Expr
+    internal sealed class ExprField : Expr, IExprWithObject
     {
         public Expr OptionalObject { get; set; }
 

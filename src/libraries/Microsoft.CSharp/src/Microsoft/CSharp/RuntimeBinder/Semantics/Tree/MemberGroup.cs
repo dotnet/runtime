@@ -6,7 +6,7 @@ using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal sealed class ExprMemberGroup : Expr
+    internal sealed class ExprMemberGroup : Expr, IExprWithObject
     {
         public Name name;
         public TypeArray typeArgs;

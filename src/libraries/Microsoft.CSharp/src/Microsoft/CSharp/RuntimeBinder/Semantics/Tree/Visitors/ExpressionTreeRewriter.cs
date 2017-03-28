@@ -283,8 +283,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(pExpr != null);
             Debug.Assert(alwaysRewrite || currentAnonMeth != null);
             Expr p1 = Visit(pExpr.TestExpression);
-            Expr p2 = GenerateQuestionMarkOperand(pExpr.Consequence.asBINOP().OptionalLeftChild);
-            Expr p3 = GenerateQuestionMarkOperand(pExpr.Consequence.asBINOP().OptionalRightChild);
+            Expr p2 = GenerateQuestionMarkOperand(pExpr.Consequence.OptionalLeftChild);
+            Expr p3 = GenerateQuestionMarkOperand(pExpr.Consequence.OptionalRightChild);
             return GenerateCall(PREDEFMETH.PM_EXPRESSION_CONDITION, p1, p2, p3);
         }
         protected override Expr VisitCALL(ExprCall expr)
