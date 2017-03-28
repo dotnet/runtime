@@ -53,7 +53,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 Debug.Assert(pExpr.isCALL());
                 pExpr = pExpr.asCALL().OptionalArguments;
-                Debug.Assert(pExpr != null && !pExpr.isLIST());
+                Debug.Assert(pExpr != null && !(pExpr is ExprList));
             }
             return pExpr;
         }
@@ -66,7 +66,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // For new T?(x), the answer is x.
             if (IsNullableConstructor(exprSrc))
             {
-                Debug.Assert(exprSrc.asCALL().OptionalArguments != null && !exprSrc.asCALL().OptionalArguments.isLIST());
+                Debug.Assert(exprSrc.asCALL().OptionalArguments != null && !(exprSrc.asCALL().OptionalArguments is ExprList));
                 return exprSrc.asCALL().OptionalArguments;
             }
 

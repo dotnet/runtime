@@ -393,12 +393,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public ExprUserLogicalOp CreateUserLogOp(CType pType, Expr pCallTF, ExprCall pCallOp)
         {
             Debug.Assert(pCallTF != null);
-            Debug.Assert(pCallOp != null);
-            Debug.Assert(pCallOp.OptionalArguments != null);
-            Debug.Assert(pCallOp.OptionalArguments.isLIST());
-            Debug.Assert(pCallOp.OptionalArguments.asLIST().OptionalElement != null);
+            Debug.Assert((pCallOp?.OptionalArguments as ExprList)?.OptionalElement != null);
             ExprUserLogicalOp rval = new ExprUserLogicalOp();
-            Expr leftChild = pCallOp.OptionalArguments.asLIST().OptionalElement;
+            Expr leftChild = (pCallOp.OptionalArguments as ExprList).OptionalElement;
             Debug.Assert(leftChild != null);
             if (leftChild.isWRAP())
             {
@@ -889,11 +886,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 last = first;
                 return;
             }
-            Debug.Assert(last.Kind == ExpressionKind.EK_LIST);
-            Debug.Assert(last.asLIST().OptionalNextListNode != null);
-            Debug.Assert(last.asLIST().OptionalNextListNode.Kind != ExpressionKind.EK_LIST);
-            last.asLIST().OptionalNextListNode = CreateList(last.asLIST().OptionalNextListNode, newItem);
-            last = last.asLIST().OptionalNextListNode;
+            Debug.Assert((last as ExprList)?.OptionalNextListNode != null);
+            Debug.Assert((last as ExprList).OptionalNextListNode.Kind != ExpressionKind.EK_LIST);
+            ExprList list = last as ExprList;
+            list.OptionalNextListNode = CreateList(list.OptionalNextListNode, newItem);
+            last = list.OptionalNextListNode;
         }
 
         public ExprList CreateList(Expr op1, Expr op2)
