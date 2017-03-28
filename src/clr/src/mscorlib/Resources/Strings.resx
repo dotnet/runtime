@@ -88,6 +88,9 @@
   <data name="Acc_ReadOnly" xml:space="preserve">
     <value>Cannot set a constant field.</value>
   </data>
+  <data name="Acc_RvaStatic" xml:space="preserve">
+    <value>SkipVerification permission is needed to modify an image-based (RVA) static field.</value>
+  </data>
   <data name="Access_Void" xml:space="preserve">
     <value>Cannot create an instance of void.</value>
   </data>
@@ -2948,9 +2951,6 @@
   <data name="NotSupported_KeyCollectionSet" xml:space="preserve">
     <value>Mutating a key collection derived from a dictionary is not allowed.</value>
   </data>
-  <data name="NotSupported_VoidArray" xml:space="preserve">
-    <value>Arrays of System.Void are not supported.</value>
-  </data>
   <data name="NotSupported_ManagedActivation" xml:space="preserve">
     <value>Cannot create uninitialized instances of types requiring managed activation.</value>
   </data>
@@ -3058,6 +3058,9 @@
   </data>
   <data name="NotSupported_ValueCollectionSet" xml:space="preserve">
     <value>Mutating a value collection derived from a dictionary is not allowed.</value>
+  </data>
+  <data name="NotSupported_VoidArray" xml:space="preserve">
+    <value>Arrays of System.Void are not supported.</value>
   </data>
   <data name="NotSupported_WinRT_PartialTrust" xml:space="preserve">
     <value>Windows Runtime is not supported in partial trust.</value>
@@ -3211,6 +3214,9 @@
   </data>
   <data name="Rank_MustMatch" xml:space="preserve">
     <value>The specified arrays must have the same number of dimensions.</value>
+  </data>
+  <data name="ReflectionTypeLoad_LoadFailed" xml:space="preserve">
+    <value>Unable to load one or more of the requested types. Retrieve the LoaderExceptions property for more information.</value>
   </data>
   <data name="Remoting_AppDomainUnloaded_ThreadUnwound" xml:space="preserve">
     <value>The application domain in which the thread was running has been unloaded.</value>
