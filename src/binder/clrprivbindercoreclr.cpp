@@ -159,8 +159,8 @@ HRESULT CLRPrivBinderCoreCLR::BindUsingPEImage( /* in */ PEImage *pPEImage,
                 {
                     if (pCoreCLRFoundAssembly->GetIsInGAC())
                     {
-                        // If we were able to bind to a TPA assembly, then fail the load
-                        IF_FAIL_GO(HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND));
+                        *ppAssembly = pCoreCLRFoundAssembly.Extract();
+                        goto Exit;                        
                     }
                 }
             }
