@@ -179,13 +179,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public static ExprUserDefinedConversion asUSERDEFINEDCONVERSION(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_USERDEFINEDCONVERSION); return (ExprUserDefinedConversion)expr; }
         public static ExprMemberGroup asMEMGRP(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_MEMGRP); return (ExprMemberGroup)expr; }
         public static ExprFieldInfo asFIELDINFO(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_FIELDINFO); return (ExprFieldInfo)expr; }
-        public static ExprPropertyInfo asPropertyInfo(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_PROPERTYINFO); return (ExprPropertyInfo)expr; }
         public static ExprNamedArgumentSpecification asNamedArgumentSpecification(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_NamedArgumentSpecification); return (ExprNamedArgumentSpecification)expr; }
 
         public static bool isCONSTANT_OK(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_CONSTANT && expr.IsOK); }
         public static bool isLIST(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_LIST); }
         public static bool isCALL(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_CALL); }
-        public static bool isFIELD(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_FIELD); }
         public static bool isCONSTANT(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_CONSTANT); }
         public static bool isCLASS(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_CLASS); }
         public static bool isPROP(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_PROP); }
