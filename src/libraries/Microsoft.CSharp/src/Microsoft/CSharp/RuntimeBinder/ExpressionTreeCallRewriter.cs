@@ -249,12 +249,12 @@ namespace Microsoft.CSharp.RuntimeBinder
             ExprList list = pExpr.OptionalArguments.asLIST();
             if (list.OptionalNextListNode.isLIST())
             {
-                methinfo = list.OptionalNextListNode.asLIST().OptionalElement.asMETHODINFO();
+                methinfo = (ExprMethodInfo)list.OptionalNextListNode.asLIST().OptionalElement;
                 arrinit = list.OptionalNextListNode.asLIST().OptionalNextListNode.asARRINIT();
             }
             else
             {
-                methinfo = list.OptionalNextListNode.asMETHODINFO();
+                methinfo = (ExprMethodInfo)list.OptionalNextListNode;
                 arrinit = null;
             }
 
@@ -331,7 +331,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 }
                 Debug.Assert((pExpr.Flags & EXPRFLAG.EXF_UNBOXRUNTIME) == 0);
 
-                MethodInfo m = GetMethodInfoFromExpr(list2.OptionalNextListNode.asMETHODINFO());
+                MethodInfo m = GetMethodInfoFromExpr((ExprMethodInfo)list2.OptionalNextListNode);
 
                 if (pm == PREDEFMETH.PM_EXPRESSION_CONVERT_USER_DEFINED)
                 {
@@ -443,7 +443,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         {
             ExprList list = pExpr.asCALL().OptionalArguments.asLIST();
 
-            var constructor = GetConstructorInfoFromExpr(list.OptionalElement.asMETHODINFO());
+            var constructor = GetConstructorInfoFromExpr((ExprMethodInfo)list.OptionalElement);
             var arguments = GetArgumentsFromArrayInit(list.OptionalNextListNode.asARRINIT());
             return Expression.New(constructor, arguments);
         }
@@ -545,11 +545,11 @@ namespace Microsoft.CSharp.RuntimeBinder
             {
                 ExprConstant isLifted = list.OptionalNextListNode.asLIST().OptionalElement.asCONSTANT();
                 bIsLifted = isLifted.Val.Int32Val == 1;
-                methodInfo = GetMethodInfoFromExpr(list.OptionalNextListNode.asLIST().OptionalNextListNode.asMETHODINFO());
+                methodInfo = GetMethodInfoFromExpr((ExprMethodInfo)list.OptionalNextListNode.asLIST().OptionalNextListNode);
             }
             else
             {
-                methodInfo = GetMethodInfoFromExpr(list.OptionalNextListNode.asMETHODINFO());
+                methodInfo = GetMethodInfoFromExpr((ExprMethodInfo)list.OptionalNextListNode);
             }
 
             switch (pExpr.PredefinedMethod)
@@ -636,7 +636,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             PREDEFMETH pm = pExpr.PredefinedMethod;
             ExprList list = pExpr.OptionalArguments.asLIST();
             Expression arg = GetExpression(list.OptionalElement);
-            MethodInfo methodInfo = GetMethodInfoFromExpr(list.OptionalNextListNode.asMETHODINFO());
+            MethodInfo methodInfo = GetMethodInfoFromExpr((ExprMethodInfo)list.OptionalNextListNode);
 
             switch (pm)
             {
@@ -868,11 +868,13 @@ namespace Microsoft.CSharp.RuntimeBinder
             {
                 return typeOf.SourceType.Type.AssociatedSystemType;
             }
-            else if (pExpr.isMETHODINFO())
+
+            if (pExpr is ExprMethodInfo methodInfo)
             {
-                return GetMethodInfoFromExpr(pExpr.asMETHODINFO());
+                return GetMethodInfoFromExpr(methodInfo);
             }
-            else if (pExpr.isCONSTANT())
+
+            if (pExpr.isCONSTANT())
             {
                 ConstVal val = pExpr.asCONSTANT().Val;
                 CType underlyingType = pExpr.Type;
