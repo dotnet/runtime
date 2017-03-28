@@ -638,7 +638,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
                 else
                 {
-                    ExprList args = udcall.asUSERLOGOP().OperatorCall.OptionalArguments.asLIST();
+                    ExprUserLogicalOp userLogOp = udcall as ExprUserLogicalOp;
+                    Debug.Assert(userLogOp != null);
+                    ExprList args = userLogOp.OperatorCall.OptionalArguments.asLIST();
                     Debug.Assert(args.OptionalNextListNode.Kind != ExpressionKind.EK_LIST);
                     p1 = args.OptionalElement.asWRAP().OptionalExpression;
                     p2 = args.OptionalNextListNode;
