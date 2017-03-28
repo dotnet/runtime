@@ -884,7 +884,7 @@ bool interceptor_ICJI::getReadyToRunHelper(
 void interceptor_ICJI::getReadyToRunDelegateCtorHelper(
     CORINFO_RESOLVED_TOKEN * pTargetMethod,
     CORINFO_CLASS_HANDLE     delegateType,
-    CORINFO_CONST_LOOKUP *   pLookup
+    CORINFO_LOOKUP *   pLookup
     )
 {
     mc->cr->AddCall("getReadyToRunDelegateCtorHelper");

@@ -2283,7 +2283,7 @@ bool MethodContext::repGetReadyToRunHelper(
 void MethodContext::recGetReadyToRunDelegateCtorHelper(
     CORINFO_RESOLVED_TOKEN * pTargetMethod,
     CORINFO_CLASS_HANDLE     delegateType,
-    CORINFO_CONST_LOOKUP *   pLookup
+    CORINFO_LOOKUP *   pLookup
     )
 {
     LogError("GetReadyToRunDelegateCtorHelper NYI");
@@ -2302,7 +2302,7 @@ void MethodContext::dmpGetReadyToRunDelegateCtorHelper(DWORDLONG key, DWORD valu
 void MethodContext::repGetReadyToRunDelegateCtorHelper(
     CORINFO_RESOLVED_TOKEN * pTargetMethod,
     CORINFO_CLASS_HANDLE     delegateType,
-    CORINFO_CONST_LOOKUP *   pLookup
+    CORINFO_LOOKUP *   pLookup
     )
 {
     LogError("getReadyToRunDelegateCtorHelper NYI");
