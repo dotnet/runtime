@@ -114,7 +114,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         ErrorContext.Error(ErrorCode.ERR_ReturnNotLValue, withArgs.GetSymWithType());
                         return true;
                     }
-                    if (pObject.isCAST())
+                    if (pObject is ExprCast)
                     {
                         // An unboxing conversion.
                         //

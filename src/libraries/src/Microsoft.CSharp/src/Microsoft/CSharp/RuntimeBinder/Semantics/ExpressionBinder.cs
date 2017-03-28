@@ -437,7 +437,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 else if (op2.IsOK)
                 {
                     fOp2NotAddrOp = true;
-                    fOp2WasCast = (op2.isCAST());
+                    fOp2WasCast = op2 is ExprCast;
                 }
             }
 
