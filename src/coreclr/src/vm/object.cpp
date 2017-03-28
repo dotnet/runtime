@@ -1726,7 +1726,7 @@ VOID Object::ValidateInner(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncB
         BOOL bSmallObjectHeapPtr = FALSE, bLargeObjectHeapPtr = FALSE;
         if (!noRangeChecks)
         {
-            bSmallObjectHeapPtr = GCHeapUtilities::GetGCHeap()->IsHeapPointer(this, TRUE);
+            bSmallObjectHeapPtr = GCHeapUtilities::GetGCHeap()->IsHeapPointer(this, true);
             if (!bSmallObjectHeapPtr)
                 bLargeObjectHeapPtr = GCHeapUtilities::GetGCHeap()->IsHeapPointer(this);
                 

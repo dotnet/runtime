@@ -378,12 +378,12 @@ typedef enum
     HNDTYPE_WEAK_WINRT   = 9
 } HandleType;
 
-typedef BOOL (* walk_fn)(Object*, void*);
+typedef bool (* walk_fn)(Object*, void*);
 typedef void (* gen_walk_fn)(void* context, int generation, uint8_t* range_start, uint8_t* range_end, uint8_t* range_reserved);
-typedef void (* record_surv_fn)(uint8_t* begin, uint8_t* end, ptrdiff_t reloc, size_t context, BOOL compacting_p, BOOL bgc_p);
-typedef void (* fq_walk_fn)(BOOL, void*);
+typedef void (* record_surv_fn)(uint8_t* begin, uint8_t* end, ptrdiff_t reloc, void* context, bool compacting_p, bool bgc_p);
+typedef void (* fq_walk_fn)(bool, void*);
 typedef void (* fq_scan_fn)(Object** ppObject, ScanContext *pSC, uint32_t dwFlags);
-typedef void (* handle_scan_fn)(Object** pRef, Object* pSec, uint32_t flags, ScanContext* context, BOOL isDependent);
+typedef void (* handle_scan_fn)(Object** pRef, Object* pSec, uint32_t flags, ScanContext* context, bool isDependent);
 
 // IGCHeap is the interface that the VM will use when interacting with the GC.
 class IGCHeap {
@@ -398,13 +398,13 @@ public:
     */
 
     // Returns whether or not the given size is a valid segment size.
-    virtual BOOL IsValidSegmentSize(size_t size) = 0;
+    virtual bool IsValidSegmentSize(size_t size) = 0;
 
     // Returns whether or not the given size is a valid gen 0 max size.
-    virtual BOOL IsValidGen0MaxSize(size_t size) = 0;
+    virtual bool IsValidGen0MaxSize(size_t size) = 0;
 
     // Gets a valid segment size.
-    virtual size_t GetValidSegmentSize(BOOL large_seg = FALSE) = 0;
+    virtual size_t GetValidSegmentSize(bool large_seg = false) = 0;
 
     // Sets the limit for reserved virtual memory.
     virtual void SetReservedVMLimit(size_t vmlimit) = 0;
@@ -424,7 +424,7 @@ public:
     virtual void WaitUntilConcurrentGCComplete() = 0;
 
     // Returns true if a concurrent GC is in progress, false otherwise.
-    virtual BOOL IsConcurrentGCInProgress() = 0;
+    virtual bool IsConcurrentGCInProgress() = 0;
 
     // Temporarily enables concurrent GC, used during profiling.
     virtual void TemporaryEnableConcurrentGC() = 0;
@@ -433,7 +433,7 @@ public:
     virtual void TemporaryDisableConcurrentGC() = 0;
 
     // Returns whether or not Concurrent GC is enabled.
-    virtual BOOL IsConcurrentGCEnabled() = 0;
+    virtual bool IsConcurrentGCEnabled() = 0;
 
     // Wait for a concurrent GC to complete if one is in progress, with the given timeout.
     virtual HRESULT WaitUntilConcurrentGCCompleteAsync(int millisecondsTimeout) = 0;    // Use in native threads. TRUE if succeed. FALSE if failed or timeout
@@ -447,17 +447,17 @@ public:
     */
 
     // Finalizes an app domain by finalizing objects within that app domain.
-    virtual BOOL FinalizeAppDomain(AppDomain* pDomain, BOOL fRunFinalizers) = 0;
+    virtual bool FinalizeAppDomain(AppDomain* pDomain, bool fRunFinalizers) = 0;
 
     // Finalizes all registered objects for shutdown, even if they are still reachable.
-    virtual void SetFinalizeQueueForShutdown(BOOL fHasLock) = 0;
+    virtual void SetFinalizeQueueForShutdown(bool fHasLock) = 0;
 
     // Gets the number of finalizable objects.
     virtual size_t GetNumberOfFinalizable() = 0;
 
     // Traditionally used by the finalizer thread on shutdown to determine
     // whether or not to time out. Returns true if the GC lock has not been taken.
-    virtual BOOL ShouldRestartFinalizerWatchDog() = 0;
+    virtual bool ShouldRestartFinalizerWatchDog() = 0;
 
     // Gets the next finalizable object.
     virtual Object* GetNextFinalizable() = 0;
@@ -490,10 +490,10 @@ public:
 
     // Registers for a full GC notification, raising a notification if the gen 2 or
     // LOH object heap thresholds are exceeded.
-    virtual BOOL RegisterForFullGCNotification(uint32_t gen2Percentage, uint32_t lohPercentage) = 0;
+    virtual bool RegisterForFullGCNotification(uint32_t gen2Percentage, uint32_t lohPercentage) = 0;
 
     // Cancels a full GC notification that was requested by `RegisterForFullGCNotification`.
-    virtual BOOL CancelFullGCNotification() = 0;
+    virtual bool CancelFullGCNotification() = 0;
 
     // Returns the status of a registered notification for determining whether a blocking
     // Gen 2 collection is about to be initiated, with the given timeout.
@@ -514,7 +514,7 @@ public:
 
     // Begins a no-GC region, returning a code indicating whether entering the no-GC
     // region was successful.
-    virtual int StartNoGCRegion(uint64_t totalSize, BOOL lohSizeKnown, uint64_t lohSize, BOOL disallowFullBlockingGC) = 0;
+    virtual int StartNoGCRegion(uint64_t totalSize, bool lohSizeKnown, uint64_t lohSize, bool disallowFullBlockingGC) = 0;
 
     // Exits a no-GC region.
     virtual int EndNoGCRegion() = 0;
@@ -524,7 +524,7 @@ public:
 
     // Forces a garbage collection of the given generation. Also used extensively
     // throughout the VM.
-    virtual HRESULT GarbageCollect(int generation = -1, BOOL low_memory_p = FALSE, int mode = collection_blocking) = 0;
+    virtual HRESULT GarbageCollect(int generation = -1, bool low_memory_p = false, int mode = collection_blocking) = 0;
 
     // Gets the largest GC generation. Also used extensively throughout the VM.
     virtual unsigned GetMaxGeneration() = 0;
@@ -546,16 +546,16 @@ public:
     virtual HRESULT Initialize() = 0;
 
     // Returns whether nor this GC was promoted by the last GC.
-    virtual BOOL IsPromoted(Object* object) = 0;
+    virtual bool IsPromoted(Object* object) = 0;
 
     // Returns true if this pointer points into a GC heap, false otherwise.
-    virtual BOOL IsHeapPointer(void* object, BOOL small_heap_only = FALSE) = 0;
+    virtual bool IsHeapPointer(void* object, bool small_heap_only = false) = 0;
 
     // Return the generation that has been condemned by the current GC.
     virtual unsigned GetCondemnedGeneration() = 0;
 
     // Returns whether or not a GC is in progress.
-    virtual BOOL IsGCInProgressHelper(BOOL bConsiderGCStart = FALSE) = 0;
+    virtual bool IsGCInProgressHelper(bool bConsiderGCStart = false) = 0;
 
     // Returns the number of GCs that have occured. Mainly used for
     // sanity checks asserting that a GC has not occured.
@@ -566,20 +566,20 @@ public:
     virtual bool IsThreadUsingAllocationContextHeap(gc_alloc_context* acontext, int thread_number) = 0;
     
     // Returns whether or not this object resides in an ephemeral generation.
-    virtual BOOL IsEphemeral(Object* object) = 0;
+    virtual bool IsEphemeral(Object* object) = 0;
 
     // Blocks until a GC is complete, returning a code indicating the wait was successful.
-    virtual uint32_t WaitUntilGCComplete(BOOL bConsiderGCStart = FALSE) = 0;
+    virtual uint32_t WaitUntilGCComplete(bool bConsiderGCStart = false) = 0;
 
     // "Fixes" an allocation context by binding its allocation pointer to a
     // location on the heap.
-    virtual void FixAllocContext(gc_alloc_context* acontext, BOOL lockp, void* arg, void* heap) = 0;
+    virtual void FixAllocContext(gc_alloc_context* acontext, bool lockp, void* arg, void* heap) = 0;
 
     // Gets the total survived size plus the total allocated bytes on the heap.
     virtual size_t GetCurrentObjSize() = 0;
 
     // Sets whether or not a GC is in progress.
-    virtual void SetGCInProgress(BOOL fInProgress) = 0;
+    virtual void SetGCInProgress(bool fInProgress) = 0;
 
     // Gets whether or not the GC runtime structures are in a valid state for heap traversal.
     virtual bool RuntimeStructuresValid() = 0;
@@ -642,7 +642,7 @@ public:
     ===========================================================================
     */
     // Returns whether or not this object is in the fixed heap.
-    virtual BOOL IsObjectInFixedHeap(Object* pObj) = 0;
+    virtual bool IsObjectInFixedHeap(Object* pObj) = 0;
 
     // Walks an object and validates its members.
     virtual void ValidateObjectMember(Object* obj) = 0;
@@ -669,10 +669,10 @@ public:
     virtual void DiagWalkObject(Object* obj, walk_fn fn, void* context) = 0;
 
     // Walk the heap object by object.
-    virtual void DiagWalkHeap(walk_fn fn, void* context, int gen_number, BOOL walk_large_object_heap_p) = 0;
+    virtual void DiagWalkHeap(walk_fn fn, void* context, int gen_number, bool walk_large_object_heap_p) = 0;
     
     // Walks the survivors and get the relocation information if objects have moved.
-    virtual void DiagWalkSurvivorsWithType(void* gc_context, record_surv_fn fn, size_t diag_context, walk_surv_type type) = 0;
+    virtual void DiagWalkSurvivorsWithType(void* gc_context, record_surv_fn fn, void* diag_context, walk_surv_type type) = 0;
 
     // Walks the finalization queue.
     virtual void DiagWalkFinalizeQueue(void* gc_context, fq_walk_fn fn) = 0;
@@ -700,7 +700,7 @@ public:
 
     // Returns TRUE if GC actually happens, otherwise FALSE. The passed alloc context
     // must not be null.
-    virtual BOOL StressHeap(gc_alloc_context* acontext) = 0;
+    virtual bool StressHeap(gc_alloc_context* acontext) = 0;
 
     /*
     ===========================================================================
@@ -753,8 +753,8 @@ struct ScanContext
     Thread* thread_under_crawl;
     int thread_number;
     uintptr_t stack_limit; // Lowest point on the thread stack that the scanning logic is permitted to read
-    BOOL promotion; //TRUE: Promotion, FALSE: Relocation.
-    BOOL concurrent; //TRUE: concurrent scanning 
+    bool promotion; //TRUE: Promotion, FALSE: Relocation.
+    bool concurrent; //TRUE: concurrent scanning 
 #if CHECK_APP_DOMAIN_LEAKS || defined (FEATURE_APPDOMAIN_RESOURCE_MONITORING) || defined (DACCESS_COMPILE)
     AppDomain *pCurrentDomain;
 #endif //CHECK_APP_DOMAIN_LEAKS || FEATURE_APPDOMAIN_RESOURCE_MONITORING || DACCESS_COMPILE
@@ -775,8 +775,8 @@ struct ScanContext
         thread_under_crawl = 0;
         thread_number = -1;
         stack_limit = 0;
-        promotion = FALSE;
-        concurrent = FALSE;
+        promotion = false;
+        concurrent = false;
 #ifdef GC_PROFILING
         pMD = NULL;
 #endif //GC_PROFILING

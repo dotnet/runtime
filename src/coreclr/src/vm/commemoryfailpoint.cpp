@@ -27,8 +27,8 @@ FCIMPL2(void, COMMemoryFailPoint::GetMemorySettings, UINT64* pMaxGCSegmentSize, 
     FCALL_CONTRACT;
 
     IGCHeap * pGC = GCHeapUtilities::GetGCHeap();
-    size_t segment_size = pGC->GetValidSegmentSize(FALSE);
-    size_t large_segment_size = pGC->GetValidSegmentSize(TRUE);
+    size_t segment_size = pGC->GetValidSegmentSize(false);
+    size_t large_segment_size = pGC->GetValidSegmentSize(true);
     _ASSERTE(segment_size < SIZE_T_MAX && large_segment_size < SIZE_T_MAX);
     if (segment_size > large_segment_size)
         *pMaxGCSegmentSize = (UINT64) segment_size;
