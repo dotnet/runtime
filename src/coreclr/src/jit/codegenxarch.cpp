@@ -1314,7 +1314,7 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
 
         case GT_CNS_INT:
 #ifdef _TARGET_X86_
-            NYI_IF(treeNode->IsIconHandle(GTF_ICON_TLS_HDL), "TLS constants");
+            assert(!treeNode->IsIconHandle(GTF_ICON_TLS_HDL));
 #endif // _TARGET_X86_
             __fallthrough;
 
@@ -1625,6 +1625,7 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
         break;
 
         case GT_IND:
+        {
 #ifdef FEATURE_SIMD
             // Handling of Vector3 type values loaded through indirection.
             if (treeNode->TypeGet() == TYP_SIMD12)
@@ -1634,10 +1635,21 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             }
 #endif // FEATURE_SIMD
 
-            genConsumeAddress(treeNode->AsIndir()->Addr());
-            emit->emitInsMov(ins_Load(treeNode->TypeGet()), emitTypeSize(treeNode), treeNode);
+            GenTree* addr = treeNode->AsIndir()->Addr();
+            if (addr->IsCnsIntOrI() && addr->IsIconHandle(GTF_ICON_TLS_HDL))
+            {
+                noway_assert(EA_ATTR(genTypeSize(treeNode->gtType)) == EA_PTRSIZE);
+                emit->emitIns_R_C(ins_Load(TYP_I_IMPL), EA_PTRSIZE, treeNode->gtRegNum, FLD_GLOBAL_FS,
+                                  (int)addr->gtIntCon.gtIconVal);
+            }
+            else
+            {
+                genConsumeAddress(addr);
+                emit->emitInsMov(ins_Load(treeNode->TypeGet()), emitTypeSize(treeNode), treeNode);
+            }
             genProduceReg(treeNode);
-            break;
+        }
+        break;
 
         case GT_MULHI:
 #ifdef _TARGET_X86_
