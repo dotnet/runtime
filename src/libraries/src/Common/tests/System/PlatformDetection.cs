@@ -21,7 +21,7 @@ namespace System
         public static bool IsNetBSD { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD"));
         public static bool IsOpenSUSE { get; } = IsDistroAndVersion("opensuse");
         public static bool IsUbuntu { get; } = IsDistroAndVersion("ubuntu");
-        public static bool IsNotWindowsNanoServer { get; } = (IsWindows &&
+        public static bool IsNotWindowsNanoServer { get; } = (!IsWindows ||
             File.Exists(Path.Combine(Environment.GetEnvironmentVariable("windir"), "regedit.exe")));
         public static bool IsWindows10Version1607OrGreater { get; } = IsWindows &&
             GetWindowsVersion() == 10 && GetWindowsMinorVersion() == 0 && GetWindowsBuildNumber() >= 14393;
