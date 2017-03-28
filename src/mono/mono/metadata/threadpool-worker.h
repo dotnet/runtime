@@ -7,16 +7,16 @@
 
 #include <glib.h>
 
-typedef void (*MonoThreadPoolWorkerCallback)(gpointer);
+typedef void (*MonoThreadPoolWorkerCallback)(void);
 
 void
-mono_threadpool_worker_init (void);
+mono_threadpool_worker_init (MonoThreadPoolWorkerCallback callback);
 
 void
 mono_threadpool_worker_cleanup (void);
 
 void
-mono_threadpool_worker_enqueue (MonoThreadPoolWorkerCallback callback, gpointer data);
+mono_threadpool_worker_request (void);
 
 gboolean
 mono_threadpool_worker_notify_completed (void);

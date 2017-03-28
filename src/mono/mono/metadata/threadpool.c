@@ -123,6 +123,9 @@ destroy (gpointer unused)
 }
 
 static void
+worker_callback (void);
+
+static void
 initialize (void)
 {
 	g_assert (sizeof (ThreadPoolCounter) == sizeof (gint32));
@@ -135,7 +138,7 @@ initialize (void)
 	threadpool.limit_io_min = mono_cpu_count ();
 	threadpool.limit_io_max = CLAMP (threadpool.limit_io_min * 100, MIN (threadpool.limit_io_min, 200), MAX (threadpool.limit_io_min, 200));
 
-	mono_threadpool_worker_init ();
+	mono_threadpool_worker_init (worker_callback);
 }
 
 static void
@@ -277,7 +280,7 @@ try_invoke_perform_wait_callback (MonoObject** exc, MonoError *error)
 }
 
 static void
-worker_callback (gpointer unused)
+worker_callback (void)
 {
 	MonoError error;
 	ThreadPoolDomain *tpdomain, *previous_tpdomain;
@@ -779,7 +782,7 @@ ves_icall_System_Threading_ThreadPool_RequestWorkerThread (void)
 		counter._.starting ++;
 	});
 
-	mono_threadpool_worker_enqueue (worker_callback, NULL);
+	mono_threadpool_worker_request ();
 
 	mono_refcount_dec (&threadpool);
 	return TRUE;
