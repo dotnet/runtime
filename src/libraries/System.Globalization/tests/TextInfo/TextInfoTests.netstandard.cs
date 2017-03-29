@@ -74,6 +74,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(DutchTitleCaseInfo_TestData))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Desktop Framework hasn't received the fix for dotnet/corefx#16770 yet.")]
         public void ToTitleCaseDutchTest(string cultureName, string expected, string actual)
         {
             TextInfo ti = CultureInfo.GetCultureInfo(cultureName).TextInfo;
