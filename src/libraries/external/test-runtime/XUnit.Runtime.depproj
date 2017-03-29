@@ -44,7 +44,7 @@
           Condition="'$(TargetGroup)'=='uap'" >
 
     <PropertyGroup>
-      <UAPToolsPackageVersion>1.0.1</UAPToolsPackageVersion>
+      <UAPToolsPackageVersion>1.0.2</UAPToolsPackageVersion>
       <UAPToolsPackageName>Microsoft.DotNet.UAP.TestTools</UAPToolsPackageName>
 
       <UAPToolsFolder Condition="'$(UAPToolsFolder)'==''">$(PackagesDir)$(UAPToolsPackageName)\$(UAPToolsPackageVersion)\Tools</UAPToolsFolder>
