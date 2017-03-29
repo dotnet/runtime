@@ -347,7 +347,7 @@ namespace System.Diagnostics
             {
                 throw exception;
             }
-            catch (Exception) { }
+            catch { }
         }
 
         private string GenerateId()
