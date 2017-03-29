@@ -62,5 +62,5 @@ if(CLR_CMAKE_PLATFORM_UNIX)
     DEPENDS ${GENERATED_INCLUDE_DIR}/dactablerva.h
   )
 
-  add_dependencies(daccess coreclr dactablerva_header)
+  add_dependencies(daccess dactablerva_header)
 endif(CLR_CMAKE_PLATFORM_UNIX)

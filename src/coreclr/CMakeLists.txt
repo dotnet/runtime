@@ -542,7 +542,7 @@ include(pgosupport.cmake)
 #     - do not depend on clr's compile definitions
 #-----------------------------------------
 if(CLR_CMAKE_PLATFORM_UNIX AND NOT DEFINED CLR_CROSS_COMPONENTS_BUILD)
-  add_subdirectory(src/corefx)
+    add_subdirectory(src/corefx)
 endif()
 
 if(CLR_CMAKE_PLATFORM_UNIX)
