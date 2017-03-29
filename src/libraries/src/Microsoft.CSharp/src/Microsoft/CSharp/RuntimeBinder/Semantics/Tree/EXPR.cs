@@ -34,7 +34,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public void SetAssignment()
         {
-            Debug.Assert(!this.isSTMT());
+            Debug.Assert(!(this is ExprStatement));
             Flags |= EXPRFLAG.EXF_ASSGOP;
         }
 

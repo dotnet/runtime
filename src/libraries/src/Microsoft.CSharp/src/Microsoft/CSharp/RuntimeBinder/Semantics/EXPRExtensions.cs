@@ -46,15 +46,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
         }
 
-        public static bool isSTMT(this Expr expr)
-        {
-            return (expr == null) ? false : expr.Kind < ExpressionKind.EK_StmtLim;
-        }
-        public static ExprStatement asSTMT(this Expr expr)
-        {
-            Debug.Assert(expr == null || expr.Kind < ExpressionKind.EK_StmtLim);
-            return (ExprStatement)expr;
-        }
         [Conditional("DEBUG")]
         public static void AssertIsBin(this Expr expr)
         {
