@@ -141,7 +141,7 @@
       },
       "inputs": {
         "filename": "$(Build.SourcesDirectory)\\corefx\\build.cmd",
-        "arguments": "$(PB_BuildArguments) $(PB_PipelineBuildMSBuildArguments) /p:\"UAPToolsFolder=$(PB_UAPToolsFolder)\"",
+        "arguments": "$(PB_BuildArguments) $(PB_PipelineBuildMSBuildArguments)",
         "workingFolder": "corefx",
         "failOnStandardError": "false"
       }
@@ -497,10 +497,6 @@
     "PB_PipelineBuildMSBuildArguments": {
       "value": "",
       "allowOverride": true
-    },
-    "PB_UAPToolsFolder": {
-      "value": null,
-      "isSecret": true
     }
   },
   "demands": [
