@@ -8,6 +8,7 @@ using System.Threading;
 
 namespace System.Diagnostics
 {
+    [Serializable]
     public partial class Activity
     {
         /// <summary>
