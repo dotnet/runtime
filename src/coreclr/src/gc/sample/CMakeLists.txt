@@ -10,6 +10,7 @@ set(SOURCES
     gcenv.ee.cpp
     ../gccommon.cpp
     ../gceewks.cpp
+    ../gchandletable.cpp
     ../gcscan.cpp
     ../gcwks.cpp
     ../handletable.cpp

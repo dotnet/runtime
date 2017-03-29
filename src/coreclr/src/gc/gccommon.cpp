@@ -21,6 +21,7 @@ SVAL_IMPL_INIT(uint32_t,IGCHeap,gcHeapType,IGCHeap::GC_HEAP_INVALID);
 SVAL_IMPL_INIT(uint32_t,IGCHeap,maxGeneration,2);
 
 IGCHeapInternal* g_theGCHeap;
+IGCHandleTable* g_theGCHandleTable;
 
 #ifdef FEATURE_STANDALONE_GC
 IGCToCLR* g_theGCToCLR;
@@ -145,7 +146,7 @@ namespace SVR
     extern void PopulateDacVars(GcDacVars* dacVars);
 }
 
-bool InitializeGarbageCollector(IGCToCLR* clrToGC, IGCHeap** gcHeap, GcDacVars* gcDacVars)
+bool InitializeGarbageCollector(IGCToCLR* clrToGC, IGCHeap** gcHeap, IGCHandleTable** gcHandleTable, GcDacVars* gcDacVars)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -153,6 +154,14 @@ bool InitializeGarbageCollector(IGCToCLR* clrToGC, IGCHeap** gcHeap, GcDacVars* 
 
     assert(gcDacVars != nullptr);
     assert(gcHeap != nullptr);
+    assert(gcHandleTable != nullptr);
+
+    IGCHandleTable* handleTable = CreateGCHandleTable();
+    if (handleTable == nullptr)
+    {
+        return false;
+    }
+
 #ifdef FEATURE_SVR_GC
     assert(IGCHeap::gcHeapType != IGCHeap::GC_HEAP_INVALID);
 
@@ -169,7 +178,6 @@ bool InitializeGarbageCollector(IGCToCLR* clrToGC, IGCHeap** gcHeap, GcDacVars* 
 #else
     heap = WKS::CreateGCHeap();
     WKS::PopulateDacVars(gcDacVars);
-
 #endif
 
     if (heap == nullptr)
@@ -187,6 +195,7 @@ bool InitializeGarbageCollector(IGCToCLR* clrToGC, IGCHeap** gcHeap, GcDacVars* 
     assert(clrToGC == nullptr);
 #endif
 
+    *gcHandleTable = handleTable;
     *gcHeap = heap;
     return true;
 }
