@@ -106,7 +106,7 @@ namespace System.Net.Sockets
             // AcceptSocket is not supported on Unix.
             if (acceptSocket != null)
             {
-                throw new PlatformNotSupportedException();
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_AcceptSocket);
             }
 
             handle = null;

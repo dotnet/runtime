@@ -223,4 +223,13 @@
   <data name="net_io_readwritefailure" xml:space="preserve">
     <value>Unable to transfer data on the transport connection: {0}.</value>
   </data>
+  <data name="PlatformNotSupported_AcceptSocket" xml:space="preserve">
+    <value>Accepting into an existing Socket is not supported on this platform.</value>
+  </data>
+  <data name="PlatformNotSupported_IOControl" xml:space="preserve">
+    <value>Socket.IOControl handles Windows-specific control codes and is not supported on this platform.</value>
+  </data>
+  <data name="PlatformNotSupported_IPProtectionLevel" xml:space="preserve">
+    <value>IP protection level cannot be controlled on this platform.</value>
+  </data>
 </root>
