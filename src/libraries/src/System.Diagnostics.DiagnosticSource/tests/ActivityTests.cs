@@ -73,21 +73,20 @@ namespace System.Diagnostics.Tests
             Assert.Null(parent.ParentId);
 
             parent.SetParentId("1");
-            Assert.Equal(parent.ParentId, "1");
+            Assert.Equal("1", parent.ParentId);
 
             parent.SetParentId("2"); // Error does nothing
-            Assert.Equal(parent.ParentId, "1");
+            Assert.Equal("1", parent.ParentId);
 
             Assert.Equal(parent.ParentId, parent.RootId);
             parent.Start();
 
-
             var child = new Activity("child");
             child.Start();
 
-            Assert.Equal(child.ParentId, parent.Id);
+            Assert.Equal(parent.Id, child.ParentId);
             child.SetParentId("3");  // Error does nothing;
-            Assert.Equal(child.ParentId, parent.Id);
+            Assert.Equal(parent.Id, child.ParentId);
         }
 
         /// <summary>
@@ -254,22 +253,22 @@ namespace System.Diagnostics.Tests
         public void StartStopWithTimestamp()
         {
             var activity = new Activity("activity");
-            Assert.Equal(activity.StartTimeUtc, default(DateTime));
+            Assert.Equal(default(DateTime), activity.StartTimeUtc);
 
             activity.SetStartTime(DateTime.Now);    // Error Does nothing because it is not UTC
-            Assert.Equal(activity.StartTimeUtc, default(DateTime));
+            Assert.Equal(default(DateTime), activity.StartTimeUtc);
 
             var startTime = DateTime.UtcNow.AddSeconds(-1); // A valid time in the past that we want to be our offical start time.  
             activity.SetStartTime(startTime);
 
             activity.Start();
             Assert.Equal(startTime, activity.StartTimeUtc); // we use our offical start time not the time now.  
-            Assert.Equal(activity.Duration, TimeSpan.Zero);
+            Assert.Equal(TimeSpan.Zero, activity.Duration);
 
             Thread.Sleep(35);
 
             activity.SetEndTime(DateTime.Now);      // Error does nothing because it is not UTC    
-            Assert.Equal(activity.Duration, TimeSpan.Zero);
+            Assert.Equal(TimeSpan.Zero, activity.Duration);
 
             var stopTime = DateTime.UtcNow;
             activity.SetEndTime(stopTime);
@@ -368,7 +367,7 @@ namespace System.Diagnostics.Tests
         {
             var activity = new Activity("activity");
             activity.Stop();        // Error Does Nothing
-            Assert.Equal(activity.Duration, TimeSpan.Zero);
+            Assert.Equal(TimeSpan.Zero, activity.Duration);
         }
 
         /// <summary>
