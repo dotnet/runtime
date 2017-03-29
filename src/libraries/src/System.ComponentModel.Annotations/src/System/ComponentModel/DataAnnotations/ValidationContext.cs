@@ -174,15 +174,8 @@ namespace System.ComponentModel.DataAnnotations
         /// </value>
         public string MemberName
         {
-            get
-            {
-                return _memberName;
-            }
-            set
-            {
-                _memberName = value;
-                _displayName = null;
-            }
+            get { return _memberName; }
+            set { _memberName = value; }
         }
 
         /// <summary>
