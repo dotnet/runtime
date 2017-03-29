@@ -32,8 +32,4 @@ if(NOT CLR_CMAKE_PLATFORM_ANDROID)
   )
 endif()
 
-add_dependencies(corerun
-    coreclr
-)
-
 install_clr(corerun)
