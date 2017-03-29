@@ -33,38 +33,12 @@ namespace System.Security.Cryptography.Xml.Tests
             var encryptedData = new EncryptedData()
             {
                 Type = EncryptedXml.XmlEncElementUrl,
-                EncryptionMethod = new EncryptionMethod(GetEncryptionMethodName(key))
+                EncryptionMethod = new EncryptionMethod(TestHelpers.GetEncryptionMethodName(key))
             };
 
             encryptedData.CipherData.CipherValue = encryptedXml.EncryptData(elementToEncrypt, key, false);
 
             EncryptedXml.ReplaceElement(elementToEncrypt, encryptedData, false);
-        }
-
-        private static string GetEncryptionMethodName(SymmetricAlgorithm key)
-        {
-            if (key is TripleDES)
-            {
-                return EncryptedXml.XmlEncTripleDESUrl;
-            }
-            else if (key is DES)
-            {
-                return EncryptedXml.XmlEncDESUrl;
-            }
-            else if (key is Rijndael || key is Aes)
-            {
-                switch (key.KeySize)
-                {
-                    case 128:
-                        return EncryptedXml.XmlEncAES128Url;
-                    case 192:
-                        return EncryptedXml.XmlEncAES192Url;
-                    case 256:
-                        return EncryptedXml.XmlEncAES256Url;
-                }
-            }
-
-            throw new CryptographicException("The specified algorithm is not supported for XML Encryption.");
         }
 
         private static void Decrypt(XmlDocument doc, SymmetricAlgorithm key)
@@ -84,16 +58,9 @@ namespace System.Security.Cryptography.Xml.Tests
 
         public static IEnumerable<object[]> GetSymmetricAlgorithms()
         {
-            yield return new object[] { (Func<SymmetricAlgorithm>)(() => DES.Create()) };
-            yield return new object[] { (Func<SymmetricAlgorithm>)(() => TripleDES.Create()) };
-
-            foreach (var keySize in new[] { 128, 192, 256 })
+            foreach (var ctor in TestHelpers.GetSymmetricAlgorithms())
             {
-                yield return new object[] { (Func<SymmetricAlgorithm>)(() => {
-                        Aes aes = Aes.Create();
-                        aes.KeySize = keySize;
-                        return aes;
-                })};
+                yield return new object[] { ctor };
             }
         }
 
