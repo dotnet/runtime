@@ -708,11 +708,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // Check if we have a compile time constant. If we do, create a constant for it and set the
             // original tree to the cast.
 
-            if (exprConst != null && exprFlags == 0 &&
+            if (exprConst is ExprConstant constant && exprFlags == 0 &&
                 exprSrc.Type.fundType() == typeDest.fundType() &&
-                (!exprSrc.Type.isPredefType(PredefinedType.PT_STRING) || exprConst.asCONSTANT().Val.IsNullRef))
+                (!exprSrc.Type.isPredefType(PredefinedType.PT_STRING) || constant.Val.IsNullRef))
             {
-                ExprConstant expr = GetExprFactory().CreateConstant(typeDest, exprConst.asCONSTANT().Val);
+                ExprConstant expr = GetExprFactory().CreateConstant(typeDest, constant.Val);
                 pexprDest = expr;
                 return;
             }
@@ -2326,7 +2326,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // if converting from float to an integral type, we need to check whether it fits
             if (ftSrc > FUNDTYPE.FT_LASTINTEGRAL)
             {
-                double dvalue = (exprSrc.asCONSTANT().Val.DoubleVal);
+                double dvalue = exprSrc.Val.DoubleVal;
 
                 switch (ftDest)
                 {
@@ -2379,7 +2379,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // U8 src is unsigned, so deal with values > MAX_LONG here.
             if (ftSrc == FUNDTYPE.FT_U8)
             {
-                ulong value = exprSrc.asCONSTANT().UInt64Value;
+                ulong value = exprSrc.UInt64Value;
 
                 switch (ftDest)
                 {
@@ -2419,7 +2419,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
             else
             {
-                long value = exprSrc.asCONSTANT().Int64Value;
+                long value = exprSrc.Int64Value;
 
                 switch (ftDest)
                 {

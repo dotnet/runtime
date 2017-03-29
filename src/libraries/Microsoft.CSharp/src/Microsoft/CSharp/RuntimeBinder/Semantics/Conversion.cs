@@ -391,14 +391,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 FUNDTYPE ftSrc = expr.Type.fundType();
                 FUNDTYPE ftDest = dest.fundType();
 
-                if (expr.isCONSTANT_OK() &&
+                if (expr is ExprConstant constant && constant.IsOK &&
                     expr.Type.isSimpleType() && dest.isSimpleType())
                 {
                     if ((ftSrc == FUNDTYPE.FT_I4 && (ftDest <= FUNDTYPE.FT_LASTNONLONG || ftDest == FUNDTYPE.FT_U8)) ||
                         (ftSrc == FUNDTYPE.FT_I8 && ftDest == FUNDTYPE.FT_U8))
                     {
                         // Failed because value was out of range. Report nifty error message.
-                        string value = expr.asCONSTANT().Int64Value.ToString(CultureInfo.InvariantCulture);
+                        string value = constant.Int64Value.ToString(CultureInfo.InvariantCulture);
                         ErrorContext.Error(ErrorCode.ERR_ConstOutOfRange, value, dest);
                         exprResult = ExprFactory.CreateCast(0, destExpr, expr);
                         exprResult.SetError();
@@ -517,7 +517,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         // We have a constant decimal that is out of range of the destination type.
                         // In both checked and unchecked contexts we issue an error. No need to recheck conversion in unchecked context.
                         // Decimal is a SimpleType represented in a FT_STRUCT
-                        ErrorContext.Error(ErrorCode.ERR_ConstOutOfRange, exprConst.asCONSTANT().Val.DecimalVal.ToString(CultureInfo.InvariantCulture), dest);
+                        ErrorContext.Error(ErrorCode.ERR_ConstOutOfRange, (exprConst as ExprConstant).Val.DecimalVal.ToString(CultureInfo.InvariantCulture), dest);
                     }
                     else if (simpleConstToSimpleDestination && Context.CheckedConstant)
                     {
@@ -534,13 +534,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         if (expr_type <= FUNDTYPE.FT_LASTINTEGRAL)
                         {
                             if (expr.Type.isUnsigned())
-                                value = ((ulong)(exprConst.asCONSTANT()).Int64Value).ToString(CultureInfo.InvariantCulture);
+                                value = ((ulong)(exprConst as ExprConstant).Int64Value).ToString(CultureInfo.InvariantCulture);
                             else
-                                value = ((long)(exprConst.asCONSTANT()).Int64Value).ToString(CultureInfo.InvariantCulture);
+                                value = ((long)(exprConst as ExprConstant).Int64Value).ToString(CultureInfo.InvariantCulture);
                         }
                         else if (expr_type <= FUNDTYPE.FT_LASTNUMERIC)
                         {
-                            value = (exprConst.asCONSTANT()).Val.DoubleVal.ToString(CultureInfo.InvariantCulture);
+                            value = (exprConst as ExprConstant).Val.DoubleVal.ToString(CultureInfo.InvariantCulture);
                         }
                         else
                         {
@@ -1451,7 +1451,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             bool srcIntegral = (ftSrc <= FUNDTYPE.FT_LASTINTEGRAL);
             bool srcNumeric = (ftSrc <= FUNDTYPE.FT_LASTNUMERIC);
 
-            ExprConstant constSrc = exprSrc.GetConst().asCONSTANT();
+            ExprConstant constSrc = exprSrc.GetConst() as ExprConstant;
             Debug.Assert(constSrc != null);
             if (ftSrc == FUNDTYPE.FT_STRUCT || ftDest == FUNDTYPE.FT_STRUCT)
             {
