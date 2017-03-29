@@ -421,9 +421,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     ErrorContext.Error(dest is TypeParameterType ? ErrorCode.ERR_TypeVarCantBeNull : ErrorCode.ERR_ValueCantBeNull, dest);
                 }
 
-                else if (expr.isMEMGRP())
+                else if (expr is ExprMemberGroup memGrp)
                 {
-                    BindGrpConversion(expr.asMEMGRP(), dest, true);
+                    BindGrpConversion(memGrp, dest, true);
                 }
                 else if (!TypeManager.TypeContainsAnonymousTypes(dest) && canCast(expr.Type, dest, flags))
                 {
@@ -555,9 +555,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     {
                         ErrorContext.Error(ErrorCode.ERR_ValueCantBeNull, dest);
                     }
-                    else if (expr.isMEMGRP())
+                    else if (expr is ExprMemberGroup memGrp)
                     {
-                        BindGrpConversion(expr.asMEMGRP(), dest, true);
+                        BindGrpConversion(memGrp, dest, true);
                     }
                     else
                     {

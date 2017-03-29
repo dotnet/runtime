@@ -1557,7 +1557,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 case ExpressionKind.EK_MEMGRP:
                     {
                         ErrorCode err = (kind == CheckLvalueKind.OutParameter) ? ErrorCode.ERR_RefReadonlyLocalCause : ErrorCode.ERR_AssgReadonlyLocalCause;
-                        ErrorContext.Error(err, expr.asMEMGRP().name, new ErrArgIds(MessageID.MethodGroup));
+                        ErrorContext.Error(err, (expr as ExprMemberGroup).name, new ErrArgIds(MessageID.MethodGroup));
                         return false;
                     }
                 default:

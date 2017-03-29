@@ -170,12 +170,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 Debug.Assert(false, "Panic!");
         }
 
-        public static ExprMemberGroup asMEMGRP(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_MEMGRP); return (ExprMemberGroup)expr; }
         public static ExprNamedArgumentSpecification asNamedArgumentSpecification(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_NamedArgumentSpecification); return (ExprNamedArgumentSpecification)expr; }
 
         public static bool isCONSTANT_OK(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_CONSTANT && expr.IsOK); }
         public static bool isCLASS(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_CLASS); }
-        public static bool isMEMGRP(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_MEMGRP); }
         public static bool isBOUNDLAMBDA(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_BOUNDLAMBDA); }
         public static bool isUNBOUNDLAMBDA(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_UNBOUNDLAMBDA); }
         public static bool isNamedArgumentSpecification(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_NamedArgumentSpecification); }

@@ -172,10 +172,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         VSFAIL("Bad type symbol kind");
                         break;
                     case TypeKind.TK_MethodGroupType:
-                        if (_exprSrc.isMEMGRP())
+                        if (_exprSrc is ExprMemberGroup memGrp)
                         {
                             ExprCall outExpr;
-                            bool retVal = _binder.BindGrpConversion(_exprSrc.asMEMGRP(), _typeDest, _needsExprDest, out outExpr, false);
+                            bool retVal = _binder.BindGrpConversion(memGrp, _typeDest, _needsExprDest, out outExpr, false);
                             _exprDest = outExpr;
                             return retVal;
                         }
