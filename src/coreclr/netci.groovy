@@ -364,7 +364,10 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
                 case 'x64':
                 case 'x86':
                 case 'x86compatjit':
-                    if (isFlowJob || os == 'Windows_NT' || !(os in Constants.crossList)) {
+                    if (architecture == 'x86' && os == 'Ubuntu') {
+                        Utilities.addPeriodicTrigger(job, '@daily')
+                    }
+                    else if (isFlowJob || os == 'Windows_NT' || !(os in Constants.crossList)) {
                         Utilities.addGithubPushTrigger(job)
                     }
                     break
