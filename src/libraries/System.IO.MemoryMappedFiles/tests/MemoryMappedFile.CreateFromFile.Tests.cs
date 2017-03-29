@@ -688,20 +688,15 @@ namespace System.IO.MemoryMappedFiles.Tests
         [InlineData(MemoryMappedFileAccess.ReadWrite)]
         public void WriteToReadOnlyFile_ReadWrite(MemoryMappedFileAccess access)
         {
-            if (access == MemoryMappedFileAccess.Read || (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && geteuid() == 0))
-                WriteToReadOnlyFile(access, succeeds: true);
-            else
-                WriteToReadOnlyFile(access, succeeds: false);
+            WriteToReadOnlyFile(access, access == MemoryMappedFileAccess.Read ||
+                            (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && geteuid() == 0));
         }
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "CreateFromFile in desktop uses FileStream's ctor that takes a FileSystemRights in order to specify execute privileges.")]
         public void WriteToReadOnlyFile_CopyOnWrite()
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && geteuid() == 0)
-                WriteToReadOnlyFile(MemoryMappedFileAccess.CopyOnWrite, succeeds: true);
-            else
-                WriteToReadOnlyFile(MemoryMappedFileAccess.CopyOnWrite, succeeds: false);
+            WriteToReadOnlyFile(MemoryMappedFileAccess.CopyOnWrite, (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && geteuid() == 0));
         }
 
         [Fact]
