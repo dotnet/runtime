@@ -703,7 +703,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 if (
                     aggTypeSrc.getAggregate().GetPredefType() != PredefinedType.PT_BOOL &&
                     _exprSrc != null &&
-                    _exprSrc.IsZero &&
+                    _exprSrc.IsZero() &&
                     _exprSrc.Type.isNumericType() &&
                     /*(exprSrc.flags & EXF_LITERALCONST) &&*/
                     0 == (_flags & CONVERTTYPE.STANDARD))
