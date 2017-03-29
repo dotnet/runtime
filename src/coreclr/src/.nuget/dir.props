@@ -119,6 +119,9 @@
     <OfficialBuildRID Include="fedora.23-x64" />
     <OfficialBuildRID Include="fedora.24-x64" />
     <OfficialBuildRID Include="linux-x64" />
+    <OfficialBuildRID Include="linux-arm">
+      <Platform>arm</Platform>
+    </OfficialBuildRID>
     <OfficialBuildRID Include="opensuse.42.1-x64" />
     <OfficialBuildRID Include="rhel.7-x64" />
     <OfficialBuildRID Include="tizen.4.0.0-armel">
@@ -136,16 +139,27 @@
   </ItemGroup>
   <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';OSX;'))">
     <OfficialBuildRID Include="osx.10.12-x64" />
+    <OfficialBuildRID Include="osx-x64" />
   </ItemGroup>
   <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';Windows_NT;'))">
     <OfficialBuildRID Include="win7-x86">
       <Platform>x86</Platform>
     </OfficialBuildRID>
+    <OfficialBuildRID Include="win-x86">
+      <Platform>x86</Platform>
+    </OfficialBuildRID>
     <OfficialBuildRID Include="win7-x64" />
+    <OfficialBuildRID Include="win-x64" />
     <OfficialBuildRID Include="win8-arm">
       <Platform>arm</Platform>
     </OfficialBuildRID>
     <OfficialBuildRID Include="win10-arm64">
+      <Platform>arm64</Platform>
+    </OfficialBuildRID>
+    <OfficialBuildRID Include="win-arm">
+      <Platform>arm</Platform>
+    </OfficialBuildRID>
+    <OfficialBuildRID Include="win-arm64">
       <Platform>arm64</Platform>
     </OfficialBuildRID>
   </ItemGroup>
