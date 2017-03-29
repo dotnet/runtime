@@ -40,12 +40,9 @@ void ClrGetCurrentDirectory(SString & value)
 
     // An actual API failure in GetCurrentDirectory failure should be very rare, so we'll throw on those.
     if (len == 0)
-    {   
-        value.CloseBuffer(0);    
+    {
         ThrowLastError();
     }
-    
-    value.CloseBuffer();
 }
 
 // Nothrowing wrapper.
