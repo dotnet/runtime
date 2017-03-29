@@ -55,14 +55,13 @@ namespace Microsoft.CSharp.RuntimeBinder
             Debug.Assert(pExpr != null);
             Debug.Assert(pExpr.isBIN());
             Debug.Assert(pExpr.Kind == ExpressionKind.EK_SEQUENCE);
-            Debug.Assert(pExpr.asBIN().OptionalRightChild != null);
-            Debug.Assert(pExpr.asBIN().OptionalRightChild.isCALL());
-            Debug.Assert(pExpr.asBIN().OptionalRightChild.asCALL().PredefinedMethod == PREDEFMETH.PM_EXPRESSION_LAMBDA);
+            Debug.Assert(pExpr.asBIN().OptionalRightChild is ExprCall);
+            Debug.Assert((pExpr.asBIN().OptionalRightChild as ExprCall).PredefinedMethod == PREDEFMETH.PM_EXPRESSION_LAMBDA);
             Debug.Assert(pExpr.asBIN().OptionalLeftChild != null);
 
             // Visit the left to generate the parameter construction.
             rewriter.Visit(pExpr.asBIN().OptionalLeftChild);
-            ExprCall call = pExpr.asBIN().OptionalRightChild.asCALL();
+            ExprCall call = pExpr.asBIN().OptionalRightChild as ExprCall;
 
             ExpressionExpr e = rewriter.Visit(call) as ExpressionExpr;
             return e.Expression;
@@ -74,13 +73,11 @@ namespace Microsoft.CSharp.RuntimeBinder
         {
             // Saves should have a LHS that is a CALL to PM_EXPRESSION_PARAMETER
             // and a RHS that is a WRAP of that call.
-            Debug.Assert(pExpr.OptionalLeftChild != null);
-            Debug.Assert(pExpr.OptionalLeftChild.isCALL());
-            Debug.Assert(pExpr.OptionalLeftChild.asCALL().PredefinedMethod == PREDEFMETH.PM_EXPRESSION_PARAMETER);
+            ExprCall call = pExpr.OptionalLeftChild as ExprCall;
+            Debug.Assert(call?.PredefinedMethod == PREDEFMETH.PM_EXPRESSION_PARAMETER);
             Debug.Assert(pExpr.OptionalRightChild != null);
             Debug.Assert(pExpr.OptionalRightChild.isWRAP());
 
-            ExprCall call = pExpr.OptionalLeftChild.asCALL();
             Expression parameter = _ListOfParameters[_currentParameterIndex++];
             _DictionaryOfParameters.Add(call, parameter);
 
@@ -320,7 +317,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 // contains a TYPEOF as the first element, and the METHODINFO for the call
                 // as the second.
 
-                ExprList list = pExpr.asCALL().OptionalArguments as ExprList;
+                ExprList list = pExpr.OptionalArguments as ExprList;
                 ExprList list2 = list.OptionalNextListNode as ExprList;
                 e = GetExpression(list.OptionalElement);
                 t = ((ExprTypeOf)list2.OptionalElement).SourceType.Type.AssociatedSystemType;
@@ -348,7 +345,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 // If we have a standard conversion, then we'll have some object as
                 // the first list element (ie a WRAP or a CALL), and then a TYPEOF
                 // as the second list element.
-                ExprList list = pExpr.asCALL().OptionalArguments as ExprList;
+                ExprList list = pExpr.OptionalArguments as ExprList;
 
                 e = GetExpression(list.OptionalElement);
                 t = ((ExprTypeOf)list.OptionalNextListNode).SourceType.Type.AssociatedSystemType;
@@ -377,7 +374,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private Expression GenerateProperty(ExprCall pExpr)
         {
-            ExprList list = pExpr.asCALL().OptionalArguments as ExprList;
+            ExprList list = pExpr.OptionalArguments as ExprList;
 
             Expr instance = list.OptionalElement;
             Expr nextNode = list.OptionalNextListNode;
@@ -414,7 +411,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private Expression GenerateField(ExprCall pExpr)
         {
-            ExprList list = pExpr.asCALL().OptionalArguments as ExprList;
+            ExprList list = pExpr.OptionalArguments as ExprList;
             ExprFieldInfo fieldInfo = list.OptionalNextListNode as ExprFieldInfo;
             Debug.Assert(fieldInfo != null);
             Type t = fieldInfo.FieldType.AssociatedSystemType;
@@ -441,7 +438,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private Expression GenerateInvoke(ExprCall pExpr)
         {
-            ExprList list = pExpr.asCALL().OptionalArguments as ExprList;
+            ExprList list = pExpr.OptionalArguments as ExprList;
 
             return Expression.Invoke(
                 GetExpression(list.OptionalElement),
@@ -452,7 +449,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private Expression GenerateNew(ExprCall pExpr)
         {
-            ExprList list = pExpr.asCALL().OptionalArguments as ExprList;
+            ExprList list = pExpr.OptionalArguments as ExprList;
 
             var constructor = GetConstructorInfoFromExpr((ExprMethodInfo)list.OptionalElement);
             var arguments = GetArgumentsFromArrayInit(list.OptionalNextListNode.asARRINIT());
@@ -679,7 +676,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         {
             if (pExpr.isWRAP())
             {
-                return _DictionaryOfParameters[pExpr.asWRAP().OptionalExpression.asCALL()];
+                return _DictionaryOfParameters[pExpr.asWRAP().OptionalExpression as ExprCall];
             }
             else if (pExpr.isCONSTANT())
             {
@@ -689,8 +686,8 @@ namespace Microsoft.CSharp.RuntimeBinder
             else
             {
                 // We can have a convert node or a call of a user defined conversion.
-                Debug.Assert(pExpr.isCALL());
-                ExprCall call = pExpr.asCALL();
+                ExprCall call = pExpr as ExprCall;
+                Debug.Assert(call != null);
                 PREDEFMETH pm = call.PredefinedMethod;
                 Debug.Assert(pm == PREDEFMETH.PM_EXPRESSION_CONVERT ||
                     pm == PREDEFMETH.PM_EXPRESSION_CONVERT_USER_DEFINED ||

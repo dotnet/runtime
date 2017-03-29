@@ -1064,13 +1064,10 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private static void CheckForConditionalMethodError(Expr pExpr)
         {
-            Debug.Assert(pExpr.isCALL());
-            if (pExpr.isCALL())
+            if (pExpr is ExprCall call)
             {
                 // This mimics the behavior of the native CompilerSymbolLoader in GetConditionalSymbols. Override
                 // methods cannot have the conditional attribute, but implicitly acquire it from their slot.
-
-                ExprCall call = pExpr.asCALL();
 
                 MethodSymbol method = call.MethWithInst.Meth();
                 if (method.isOverride)
@@ -1084,6 +1081,10 @@ namespace Microsoft.CSharp.RuntimeBinder
                     throw Error.BindCallToConditionalMethod(method.name);
                 }
             }
+            else
+            {
+                Debug.Fail("Should be unreachable");
+            }
         }
 
         private Expr ReorderArgumentsForNamedAndOptional(Expr callingObject, Expr pResult)
@@ -1094,9 +1095,8 @@ namespace Microsoft.CSharp.RuntimeBinder
             ExprMemberGroup memgroup;
             TypeArray typeArgs;
 
-            if (pResult.isCALL())
+            if (pResult is ExprCall call)
             {
-                ExprCall call = pResult.asCALL();
                 arguments = call.OptionalArguments;
                 type = call.MethWithInst.Ats;
                 methprop = call.MethWithInst.Meth();
@@ -1157,14 +1157,8 @@ namespace Microsoft.CSharp.RuntimeBinder
                         pList = _exprFactory.CreateList(pArg, pList);
                     }
                 }
-                if (pResult.isCALL())
-                {
-                    pResult.asCALL().OptionalArguments = pList;
-                }
-                else
-                {
-                    pResult.asPROP().OptionalArguments = pList;
-                }
+
+                (pResult as IExprWithArgs).OptionalArguments = pList;
             }
             return pResult;
         }

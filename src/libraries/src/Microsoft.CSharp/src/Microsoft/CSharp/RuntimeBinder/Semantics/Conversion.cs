@@ -1323,14 +1323,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 // Need to lift over the null.
                 Debug.Assert(fLiftSrc || fLiftDst);
-                exprDst = ExprFactory.CreateCall(0, typeDst, exprSrc, pMemGroup, mwiBest);
-                Debug.Assert(exprDst.isCALL());
+                ExprCall call = ExprFactory.CreateCall(0, typeDst, exprSrc, pMemGroup, mwiBest);
+                exprDst = call;
 
                 // We want to bind the unlifted conversion first.
                 Expr nonLiftedArg = mustCast(exprSrc, typeFrom);
                 MarkAsIntermediateConversion(nonLiftedArg);
                 Expr nonLiftedResult = BindUDConversionCore(nonLiftedArg, typeFrom, typeTo, typeDst, mwiBest);
-                ExprCall call = exprDst.asCALL();
 
                 call.CastOfNonLiftedResultToLiftedType = mustCast(nonLiftedResult, typeDst);
                 call.NullableCallLiftKind = NullableCallLiftKind.UserDefinedConversion;
@@ -1361,9 +1360,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         }
                     }
                     Debug.Assert(pConversionArgument != null);
-                    Expr pConversionCall = ExprFactory.CreateCall(0, typeDst, pConversionArgument, pMemGroup, mwiBest);
-                    Debug.Assert(pConversionCall.isCALL());
-                    pConversionCall.asCALL().NullableCallLiftKind = NullableCallLiftKind.NotLiftedIntermediateConversion;
+                    ExprCall pConversionCall = ExprFactory.CreateCall(0, typeDst, pConversionArgument, pMemGroup, mwiBest);
+                    pConversionCall.NullableCallLiftKind = NullableCallLiftKind.NotLiftedIntermediateConversion;
                     call.PConversions = pConversionCall;
                 }
                 else
@@ -1396,20 +1394,20 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private void MarkAsIntermediateConversion(Expr pExpr)
         {
             Debug.Assert(pExpr != null);
-            if (pExpr.isCALL())
+            if (pExpr is ExprCall call)
             {
-                switch (pExpr.asCALL().NullableCallLiftKind)
+                switch (call.NullableCallLiftKind)
                 {
                     default:
                         break;
                     case NullableCallLiftKind.NotLifted:
-                        pExpr.asCALL().NullableCallLiftKind = NullableCallLiftKind.NotLiftedIntermediateConversion;
+                        call.NullableCallLiftKind = NullableCallLiftKind.NotLiftedIntermediateConversion;
                         break;
                     case NullableCallLiftKind.NullableConversion:
-                        pExpr.asCALL().NullableCallLiftKind = NullableCallLiftKind.NullableIntermediateConversion;
+                        call.NullableCallLiftKind = NullableCallLiftKind.NullableIntermediateConversion;
                         break;
                     case NullableCallLiftKind.NullableConversionConstructor:
-                        MarkAsIntermediateConversion(pExpr.asCALL().OptionalArguments);
+                        MarkAsIntermediateConversion(call.OptionalArguments);
                         break;
                 }
             }
