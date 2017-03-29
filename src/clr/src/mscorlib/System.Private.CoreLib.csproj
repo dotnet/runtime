@@ -351,7 +351,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Boolean.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Buffer.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Byte.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Char.cs" />
     <Compile Include="$(BclSourcesRoot)\System\TypeUnloadedException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\CompatibilitySwitches.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Currency.cs" />
