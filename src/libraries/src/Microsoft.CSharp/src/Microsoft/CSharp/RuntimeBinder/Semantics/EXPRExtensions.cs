@@ -60,33 +60,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return (expr == null) ? false : (expr.Kind >= ExpressionKind.EK_TypeLim) &&
                 (0 != (expr.Flags & EXPRFLAG.EXF_BINOP));
         }
-        public static bool isUnaryOperator(this Expr expr)
-        {
-            if (expr != null)
-            {
-                switch (expr.Kind)
-                {
-                    case ExpressionKind.EK_UNARYOP:
-                    case ExpressionKind.EK_TRUE:
-                    case ExpressionKind.EK_FALSE:
-                    case ExpressionKind.EK_INC:
-                    case ExpressionKind.EK_DEC:
-                    case ExpressionKind.EK_LOGNOT:
-                    case ExpressionKind.EK_NEG:
-                    case ExpressionKind.EK_UPLUS:
-                    case ExpressionKind.EK_BITNOT:
-                    case ExpressionKind.EK_ADDR:
-                    case ExpressionKind.EK_DECIMALNEG:
-                    case ExpressionKind.EK_DECIMALINC:
-                    case ExpressionKind.EK_DECIMALDEC:
-                        return true;
-                    default:
-                        break;
-                }
-            }
-            return false;
-        }
-
         public static bool isLvalue(this Expr expr)
         {
             return (expr == null) ? false : 0 != (expr.Flags & EXPRFLAG.EXF_LVALUE);
@@ -99,11 +72,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             Debug.Assert(expr == null || 0 != (expr.Flags & EXPRFLAG.EXF_BINOP));
             return (ExprBinOp)expr;
-        }
-        public static ExprUnaryOp asUnaryOperator(this Expr expr)
-        {
-            Debug.Assert(expr == null || expr.isUnaryOperator());
-            return (ExprUnaryOp)expr;
         }
         public static bool isNull(this Expr expr)
         {

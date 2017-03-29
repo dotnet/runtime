@@ -238,29 +238,29 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 // Unary operators
                 case ExpressionKind.EK_TRUE:
-                    return VisitTRUE(pExpr.asUnaryOperator());
+                    return VisitTRUE(pExpr as ExprUnaryOp);
                 case ExpressionKind.EK_FALSE:
-                    return VisitFALSE(pExpr.asUnaryOperator());
+                    return VisitFALSE(pExpr as ExprUnaryOp);
                 case ExpressionKind.EK_INC:
-                    return VisitINC(pExpr.asUnaryOperator());
+                    return VisitINC(pExpr as ExprUnaryOp);
                 case ExpressionKind.EK_DEC:
-                    return VisitDEC(pExpr.asUnaryOperator());
+                    return VisitDEC(pExpr as ExprUnaryOp);
                 case ExpressionKind.EK_LOGNOT:
-                    return VisitLOGNOT(pExpr.asUnaryOperator());
+                    return VisitLOGNOT(pExpr as ExprUnaryOp);
                 case ExpressionKind.EK_NEG:
-                    return VisitNEG(pExpr.asUnaryOperator());
+                    return VisitNEG(pExpr as ExprUnaryOp);
                 case ExpressionKind.EK_UPLUS:
-                    return VisitUPLUS(pExpr.asUnaryOperator());
+                    return VisitUPLUS(pExpr as ExprUnaryOp);
                 case ExpressionKind.EK_BITNOT:
-                    return VisitBITNOT(pExpr.asUnaryOperator());
+                    return VisitBITNOT(pExpr as ExprUnaryOp);
                 case ExpressionKind.EK_ADDR:
-                    return VisitADDR(pExpr.asUnaryOperator());
+                    return VisitADDR(pExpr as ExprUnaryOp);
                 case ExpressionKind.EK_DECIMALNEG:
-                    return VisitDECIMALNEG(pExpr.asUnaryOperator());
+                    return VisitDECIMALNEG(pExpr as ExprUnaryOp);
                 case ExpressionKind.EK_DECIMALINC:
-                    return VisitDECIMALINC(pExpr.asUnaryOperator());
+                    return VisitDECIMALINC(pExpr as ExprUnaryOp);
                 case ExpressionKind.EK_DECIMALDEC:
-                    return VisitDECIMALDEC(pExpr.asUnaryOperator());
+                    return VisitDECIMALDEC(pExpr as ExprUnaryOp);
                 default:
                     throw Error.InternalCompilerError();
             }
@@ -297,10 +297,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             switch (pExpr.Kind)
             {
                 default:
-                    if (pExpr.isUnaryOperator())
-                    {
-                        goto VISIT_EXPRUNARYOP;
-                    }
                     Debug.Assert(pExpr.isBIN());
                     goto VISIT_EXPRBINOP;
 
@@ -383,6 +379,18 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     goto VISIT_BASE_EXPRARRAYLENGTH;
 
                 case ExpressionKind.EK_UNARYOP:
+                case ExpressionKind.EK_TRUE:
+                case ExpressionKind.EK_FALSE:
+                case ExpressionKind.EK_INC:
+                case ExpressionKind.EK_DEC:
+                case ExpressionKind.EK_LOGNOT:
+                case ExpressionKind.EK_NEG:
+                case ExpressionKind.EK_UPLUS:
+                case ExpressionKind.EK_BITNOT:
+                case ExpressionKind.EK_ADDR:
+                case ExpressionKind.EK_DECIMALNEG:
+                case ExpressionKind.EK_DECIMALINC:
+                case ExpressionKind.EK_DECIMALDEC:
                     goto VISIT_EXPRUNARYOP;
                 VISIT_BASE_EXPRUNARYOP:
                     goto VISIT_EXPR;
