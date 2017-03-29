@@ -1482,9 +1482,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return false;
             if (expr.isLvalue())
             {
-                if (expr.isPROP())
+                if (expr is ExprProperty prop)
                 {
-                    CheckLvalueProp(expr.asPROP());
+                    CheckLvalueProp(prop);
                 }
                 markFieldAssigned(expr);
                 return true;
@@ -1499,7 +1499,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         ErrorContext.Error(ErrorCode.ERR_RefProperty);
                         return true;
                     }
-                    if (!expr.asPROP().MethWithTypeSet)
+
+                    ExprProperty prop = expr as ExprProperty;
+                    if (!prop.MethWithTypeSet)
                     {
                         // Assigning to a property without a setter.
                         // If we have
@@ -1524,7 +1526,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         // SPEC VIOLATION: would be a breaking change.  We currently discard "no op" casts
                         // SPEC VIOLATION: very aggressively rather than generating an ExpressionKind.EK_CAST node.
 
-                        ErrorContext.Error(ErrorCode.ERR_AssgReadonlyProp, expr.asPROP().PropWithTypeSlot);
+                        ErrorContext.Error(ErrorCode.ERR_AssgReadonlyProp, prop.PropWithTypeSlot);
                         return true;
                     }
                     break;

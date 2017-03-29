@@ -1089,7 +1089,10 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private Expr ReorderArgumentsForNamedAndOptional(Expr callingObject, Expr pResult)
         {
-            Expr arguments;
+            IExprWithArgs result = pResult as IExprWithArgs;
+            Debug.Assert(result != null);
+
+            Expr arguments = result.OptionalArguments;
             AggregateType type;
             MethodOrPropertySymbol methprop;
             ExprMemberGroup memgroup;
@@ -1097,7 +1100,6 @@ namespace Microsoft.CSharp.RuntimeBinder
 
             if (pResult is ExprCall call)
             {
-                arguments = call.OptionalArguments;
                 type = call.MethWithInst.Ats;
                 methprop = call.MethWithInst.Meth();
                 memgroup = call.MemberGroup;
@@ -1105,9 +1107,8 @@ namespace Microsoft.CSharp.RuntimeBinder
             }
             else
             {
-                Debug.Assert(pResult.isPROP());
-                ExprProperty prop = pResult.asPROP();
-                arguments = prop.OptionalArguments;
+                ExprProperty prop = pResult as ExprProperty;
+                Debug.Assert(prop != null);
                 type = prop.PropWithTypeSlot.Ats;
                 methprop = prop.PropWithTypeSlot.Prop();
                 memgroup = prop.MemberGroup;
@@ -1158,7 +1159,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                     }
                 }
 
-                (pResult as IExprWithArgs).OptionalArguments = pList;
+                result.OptionalArguments = pList;
             }
             return pResult;
         }

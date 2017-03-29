@@ -54,10 +54,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // For assignments, we either have a member assignment or an indexed assignment.
             //Debug.Assert(assignment.GetLHS().isPROP() || assignment.GetLHS().isFIELD() || assignment.GetLHS().isARRAYINDEX() || assignment.GetLHS().isLOCAL());
             Expr lhs;
-            if (assignment.LHS.isPROP())
+            if (assignment.LHS is ExprProperty prop)
             {
-                ExprProperty prop = assignment.LHS.asPROP();
-
                 if (prop.OptionalArguments== null)
                 {
                     // Regular property.
@@ -1271,7 +1269,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private bool IsNullableValueAccess(Expr pExpr, Expr pObject)
         {
             Debug.Assert(pExpr != null);
-            return pExpr.isPROP() && (pExpr.asPROP().MemberGroup.OptionalObject== pObject) && pObject.Type.IsNullableType();
+            return pExpr is ExprProperty prop && prop.MemberGroup.OptionalObject == pObject && pObject.Type.IsNullableType();
         }
 
         private bool IsDelegateConstructorCall(Expr pExpr)
