@@ -131,7 +131,7 @@ namespace System.Security.AccessControl
         public bool IsInherited { get { throw null; } }
         public System.Security.AccessControl.PropagationFlags PropagationFlags { get { throw null; } }
     }
-    public sealed partial class AuthorizationRuleCollection
+    public sealed partial class AuthorizationRuleCollection : System.Collections.ReadOnlyCollectionBase
     {
         public AuthorizationRuleCollection() { }
         public System.Security.AccessControl.AuthorizationRule this[int index] { get { throw null; } }

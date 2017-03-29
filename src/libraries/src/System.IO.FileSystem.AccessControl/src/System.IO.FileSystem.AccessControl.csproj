@@ -34,6 +34,7 @@
     <Compile Include="System\IO\FileSystemAclExtensions.net46.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'!='netfx'">
+    <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Diagnostics.Contracts" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.IO.FileSystem" />
