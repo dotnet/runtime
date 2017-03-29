@@ -4310,27 +4310,6 @@ HRESULT ETW::CEtwTracer::Register()
 {
     WRAPPER_NO_CONTRACT;
 
-#ifndef FEATURE_CORESYSTEM
-    OSVERSIONINFO osVer;
-    osVer.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-
-    if (GetOSVersion(&osVer) == FALSE) {
-        return HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED);
-    }
-    else if (osVer.dwMajorVersion < ETW_SUPPORTED_MAJORVER) {
-        return HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED);
-    }
-
-    // if running on OS < Longhorn, skip registration unless reg key is set
-    // since ETW reg is expensive (in both time and working set) on older OSes
-    if (osVer.dwMajorVersion < ETW_ENABLED_MAJORVER && !g_fEnableETW && !CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PreVistaETWEnabled))
-        return HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED);
-
-    // If running on OS >= Longhorn, skip registration if ETW is not enabled
-    if (osVer.dwMajorVersion >= ETW_ENABLED_MAJORVER && !g_fEnableETW && !CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_VistaAndAboveETWEnabled))
-        return HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED);
-#endif
-
     EventRegisterMicrosoft_Windows_DotNETRuntime();
     EventRegisterMicrosoft_Windows_DotNETRuntimePrivate();
     EventRegisterMicrosoft_Windows_DotNETRuntimeRundown();

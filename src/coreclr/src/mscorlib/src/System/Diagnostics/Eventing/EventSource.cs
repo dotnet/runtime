@@ -1470,8 +1470,7 @@ namespace System.Diagnostics.Tracing
 #if (!ES_BUILD_STANDALONE && !PROJECTN)
                 // API available on OS >= Win 8 and patched Win 7.
                 // Disable only for FrameworkEventSource to avoid recursion inside exception handling.
-                var osVer = Environment.OSVersion.Version.Major * 10 + Environment.OSVersion.Version.Minor;
-                if (this.Name != "System.Diagnostics.Eventing.FrameworkEventSource" || osVer >= 62)
+                if (this.Name != "System.Diagnostics.Eventing.FrameworkEventSource" || Environment.IsWindows8OrAbove)
 #endif
                 {
                     int setInformationResult;

@@ -609,8 +609,6 @@ FCIMPL2(VOID, SystemNative::FailFastWithException, StringObject* refMessageUNSAF
 }
 FCIMPLEND
 
-
-
 FCIMPL0(FC_BOOL_RET, SystemNative::IsServerGC)
 {
     FCALL_CONTRACT;
@@ -636,95 +634,6 @@ BOOL QCALLTYPE SystemNative::WinRTSupported()
 
 #endif // FEATURE_COMINTEROP
 
-// Helper method to retrieve OS Version based on the environment.
-BOOL GetOSVersionForEnvironment(LPOSVERSIONINFO lpVersionInformation)
-{
-#ifdef FEATURE_WINDOWSPHONE
-    // Return phone version information if it is available
-    if (!g_fGetPhoneVersionInitialized)
-    {
-        HMODULE hPhoneInfo = WszLoadLibrary(W("phoneinfo.dll"));
-        if(hPhoneInfo != NULL)
-            g_pfnGetPhoneVersion = (pfnGetPhoneVersion)GetProcAddress(hPhoneInfo, "GetPhoneVersion");
-
-        g_fGetPhoneVersionInitialized = true;
-    }
-
-    if (g_pfnGetPhoneVersion!= NULL)
-        return g_pfnGetPhoneVersion(lpVersionInformation);
-#endif // FEATURE_WINDOWSPHONE
-
-    return ::GetOSVersion(lpVersionInformation);
-}
-
-
-/*
- * SystemNative::GetOSVersion - Fcall corresponding to System.Environment.GetVersion
- * It calls clr!GetOSVersion to get the real OS version even when running in 
- * app compat. Calling kernel32!GetVersionEx() directly will be shimmed and will return the
- * fake OS version. In order to avoid this the call to getVersionEx is made via mscoree.dll.
- * Mscoree.dll resides in system32 dir and is never lied about OS version.
- */
-
-FCIMPL1(FC_BOOL_RET, SystemNative::GetOSVersion, OSVERSIONINFOObject *osVer)
-{
-    FCALL_CONTRACT;
-
-    OSVERSIONINFO ver;    
-    ver.dwOSVersionInfoSize = osVer->dwOSVersionInfoSize;
-
-    BOOL ret = GetOSVersionForEnvironment(&ver);
-
-    if(ret)
-    {
-        osVer->dwMajorVersion  = ver.dwMajorVersion;
-        osVer->dwMinorVersion = ver.dwMinorVersion;
-        osVer->dwBuildNumber  = ver.dwBuildNumber;
-        osVer->dwPlatformId = ver.dwPlatformId;
-
-        HELPER_METHOD_FRAME_BEGIN_RET_1(osVer);
-        SetObjectReference((OBJECTREF*)&(osVer->szCSDVersion), StringObject::NewString(ver.szCSDVersion), GetAppDomain());
-        HELPER_METHOD_FRAME_END();
-    }
-
-    FC_RETURN_BOOL(ret);
-}
-FCIMPLEND
-
-/*
- * SystemNative::GetOSVersionEx - Fcall implementation for System.Environment.GetVersionEx
- * Similar as above except this takes OSVERSIONINFOEX structure as input
- */
-
-FCIMPL1(FC_BOOL_RET, SystemNative::GetOSVersionEx, OSVERSIONINFOEXObject *osVer)
-{
-    FCALL_CONTRACT;
-
-    OSVERSIONINFOEX ver;
-    ver.dwOSVersionInfoSize = osVer->dwOSVersionInfoSize;
-
-    BOOL ret = GetOSVersionForEnvironment((OSVERSIONINFO *)&ver);
-
-    if(ret)
-    {
-        osVer->dwMajorVersion  = ver.dwMajorVersion;
-        osVer->dwMinorVersion = ver.dwMinorVersion;
-        osVer->dwBuildNumber  = ver.dwBuildNumber;
-        osVer->dwPlatformId = ver.dwPlatformId;
-        osVer->wServicePackMajor = ver.wServicePackMajor;
-        osVer->wServicePackMinor = ver.wServicePackMinor;
-        osVer->wSuiteMask = ver.wSuiteMask;
-        osVer->wProductType = ver.wProductType;
-        osVer->wReserved = ver.wReserved;
-
-        HELPER_METHOD_FRAME_BEGIN_RET_1(osVer);
-        SetObjectReference((OBJECTREF*)&(osVer->szCSDVersion), StringObject::NewString(ver.szCSDVersion), GetAppDomain());
-        HELPER_METHOD_FRAME_END();
-    }
-
-    FC_RETURN_BOOL(ret);
-}
-FCIMPLEND
 
 
 
