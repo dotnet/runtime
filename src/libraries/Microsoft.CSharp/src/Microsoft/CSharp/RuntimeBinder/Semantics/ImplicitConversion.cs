@@ -388,8 +388,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                             for (int i = 0; i < cnubDst; i++)
                             {
-                                exprTmp = _binder.BindNubNew(exprTmp);
-                                exprTmp.asCALL().NullableCallLiftKind = NullableCallLiftKind.NullableConversionConstructor;
+                                ExprCall call = _binder.BindNubNew(exprTmp);
+                                exprTmp = call;
+                                call.NullableCallLiftKind = NullableCallLiftKind.NullableConversionConstructor;
                             }
                             if (exprUDC != null)
                             {

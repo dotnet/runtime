@@ -170,9 +170,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 Debug.Assert(false, "Panic!");
         }
 
-        public static ExprCall asCALL(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_CALL); return (ExprCall)expr; }
         public static ExprConstant asCONSTANT(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_CONSTANT); return (ExprConstant)expr; }
-        public static ExprFuncPtr asFUNCPTR(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_FUNCPTR); return (ExprFuncPtr)expr; }
         public static ExprProperty asPROP(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_PROP); return (ExprProperty)expr; }
         public static ExprWrap asWRAP(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_WRAP); return (ExprWrap)expr; }
         public static ExprArrayInit asARRINIT(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_ARRINIT); return (ExprArrayInit)expr; }
@@ -181,7 +179,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public static ExprNamedArgumentSpecification asNamedArgumentSpecification(this Expr expr) { RETAILVERIFY(expr == null || expr.Kind == ExpressionKind.EK_NamedArgumentSpecification); return (ExprNamedArgumentSpecification)expr; }
 
         public static bool isCONSTANT_OK(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_CONSTANT && expr.IsOK); }
-        public static bool isCALL(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_CALL); }
         public static bool isCONSTANT(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_CONSTANT); }
         public static bool isCLASS(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_CLASS); }
         public static bool isPROP(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_PROP); }

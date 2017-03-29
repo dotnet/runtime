@@ -1900,13 +1900,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private void verifyMethodArgs(Expr call, CType callingObjectType)
         {
-            Debug.Assert(call.isCALL() || call.isPROP());
-
             IExprWithArgs withArgs = call as IExprWithArgs;
+            Debug.Assert(withArgs != null);
             Expr argsPtr = withArgs.OptionalArguments;
             SymWithType swt = withArgs.GetSymWithType();
             MethodOrPropertySymbol mp = swt.Sym.AsMethodOrPropertySymbol();
-            TypeArray pTypeArgs = call.isCALL() ? call.asCALL().MethWithInst.TypeArgs : null;
+            TypeArray pTypeArgs = (call as ExprCall)?.MethWithInst.TypeArgs;
             Expr newArgs;
             AdjustCallArgumentsForParams(callingObjectType, swt.GetType(), mp, pTypeArgs, argsPtr, out newArgs);
             withArgs.OptionalArguments = newArgs;

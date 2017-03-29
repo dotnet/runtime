@@ -118,9 +118,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Expr args = GetExprFactory().CreateList(body, parameters);
             CType typeRet = GetSymbolLoader().GetTypeManager().SubstType(mwi.Meth().RetType, mwi.GetType(), mwi.TypeArgs);
             ExprMemberGroup pMemGroup = GetExprFactory().CreateMemGroup(null, mwi);
-            Expr callLambda = GetExprFactory().CreateCall(0, typeRet, args, pMemGroup, mwi);
+            ExprCall call = GetExprFactory().CreateCall(0, typeRet, args, pMemGroup, mwi);
+            Expr callLambda = call;
 
-            callLambda.asCALL().PredefinedMethod = PREDEFMETH.PM_EXPRESSION_LAMBDA;
+            call.PredefinedMethod = PREDEFMETH.PM_EXPRESSION_LAMBDA;
 
             currentAnonMeth = prevAnonMeth;
             if (createParameters != null)
@@ -629,9 +630,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             if (udcall != null)
             {
                 Debug.Assert(udcall.Kind == ExpressionKind.EK_CALL || udcall.Kind == ExpressionKind.EK_USERLOGOP);
-                if (udcall.Kind == ExpressionKind.EK_CALL)
+                if (udcall is ExprCall ascall)
                 {
-                    ExprList args = udcall.asCALL().OptionalArguments as ExprList;
+                    ExprList args = ascall.OptionalArguments as ExprList;
                     Debug.Assert(args.OptionalNextListNode.Kind != ExpressionKind.EK_LIST);
                     p1 = args.OptionalElement;
                     p2 = args.OptionalNextListNode;
@@ -667,7 +668,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(alwaysRewrite || currentAnonMeth != null);
             PREDEFMETH pdm;
             Expr arg = expr.Child;
-            ExprCall call = expr.OptionalUserDefinedCall.asCALL();
+            ExprCall call = expr.OptionalUserDefinedCall as ExprCall;
             if (call != null)
             {
                 // Use the actual argument of the call; it may contain user-defined
@@ -737,7 +738,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Expr p2 = expr.OptionalRightChild;
             if (expr.OptionalUserDefinedCall != null)
             {
-                ExprCall udcall = expr.OptionalUserDefinedCall.asCALL();
+                ExprCall udcall = expr.OptionalUserDefinedCall as ExprCall;
                 ExprList args = udcall.OptionalArguments as ExprList;
                 Debug.Assert(args.OptionalNextListNode.Kind != ExpressionKind.EK_LIST);
 
@@ -872,43 +873,47 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             Expr pCastCall = pExpr.UserDefinedCall;
             Expr pCastArgument = pExpr.Argument;
-            Expr pConversionSource = null;
+            Expr pConversionSource;
 
-            if (!isEnumToDecimalConversion(pArgument.Type, pExpr.Type) && IsNullableValueAccess(pCastArgument, pArgument))
+            if (!isEnumToDecimalConversion(pArgument.Type, pExpr.Type)
+                && IsNullableValueAccess(pCastArgument, pArgument))
             {
                 // We have an implicit conversion of nullable CType to the value CType, generate a convert node for it.
                 pConversionSource = GenerateValueAccessConversion(pArgument);
             }
-            else if (pCastCall.isCALL() && pCastCall.asCALL().PConversions != null)
+            else
             {
-                Expr pUDConversion = pCastCall.asCALL().PConversions;
-                if (pUDConversion.isCALL())
+                ExprCall call = pCastCall as ExprCall;
+                Expr pUDConversion = call?.PConversions;
+                if (pUDConversion != null)
                 {
-                    Expr pUDConversionArgument = pUDConversion.asCALL().OptionalArguments;
-                    if (IsNullableValueAccess(pUDConversionArgument, pArgument))
+                    if (pUDConversion is ExprCall convCall)
                     {
-                        pConversionSource = GenerateValueAccessConversion(pArgument);
+                        Expr pUDConversionArgument = convCall.OptionalArguments;
+                        if (IsNullableValueAccess(pUDConversionArgument, pArgument))
+                        {
+                            pConversionSource = GenerateValueAccessConversion(pArgument);
+                        }
+                        else
+                        {
+                            pConversionSource = Visit(pUDConversionArgument);
+                        }
+
+                        return GenerateConversionWithSource(pConversionSource, pCastCall.Type, call.isChecked());
                     }
-                    else
-                    {
-                        pConversionSource = Visit(pUDConversionArgument);
-                    }
-                    return GenerateConversionWithSource(pConversionSource, pCastCall.Type, pCastCall.asCALL().isChecked());
-                }
-                else
-                {
+
                     // This can happen if we have a UD conversion from C to, say, int, 
                     // and we have an explicit cast to decimal?. The conversion should
                     // then be bound as two chained user-defined conversions.
                     Debug.Assert(pUDConversion.isUSERDEFINEDCONVERSION());
+
                     // Just recurse.
                     return GenerateUserDefinedConversion(pUDConversion.asUSERDEFINEDCONVERSION(), pArgument);
                 }
-            }
-            else
-            {
+
                 pConversionSource = Visit(pCastArgument);
             }
+
             return GenerateUserDefinedConversion(pCastArgument, pExpr.Type, pConversionSource, pExpr.UserDefinedCallMethod);
         }
 
@@ -1272,11 +1277,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private bool IsDelegateConstructorCall(Expr pExpr)
         {
             Debug.Assert(pExpr != null);
-            if (!pExpr.isCALL())
+            if (!(pExpr is ExprCall pCall))
             {
                 return false;
             }
-            ExprCall pCall = pExpr.asCALL();
+
             return pCall.MethWithInst.Meth() != null &&
                 pCall.MethWithInst.Meth().IsConstructor() &&
                 pCall.Type.isDelegateType() &&
