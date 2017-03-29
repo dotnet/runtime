@@ -120,7 +120,7 @@ mono_create_static_rgctx_trampoline (MonoMethod *m, gpointer addr)
 	if (mono_aot_only)
 		res = mono_aot_get_static_rgctx_trampoline (ctx, addr);
 	else
-		res = mono_arch_get_static_rgctx_trampoline (m, (MonoMethodRuntimeGenericContext *)ctx, addr);
+		res = mono_arch_get_static_rgctx_trampoline (ctx, addr);
 
 	mono_domain_lock (domain);
 	/* Duplicates inserted while we didn't hold the lock are OK */

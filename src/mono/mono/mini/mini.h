@@ -2799,7 +2799,7 @@ void     mono_arch_create_vars                  (MonoCompile *cfg) MONO_LLVM_INT
 void     mono_arch_save_unwind_info             (MonoCompile *cfg);
 void     mono_arch_register_lowlevel_calls      (void);
 gpointer mono_arch_get_unbox_trampoline         (MonoMethod *m, gpointer addr);
-gpointer mono_arch_get_static_rgctx_trampoline  (MonoMethod *m, MonoMethodRuntimeGenericContext *mrgctx, gpointer addr);
+gpointer mono_arch_get_static_rgctx_trampoline  (gpointer arg, gpointer addr);
 gpointer  mono_arch_get_llvm_imt_trampoline     (MonoDomain *domain, MonoMethod *method, int vt_offset);
 gpointer mono_arch_get_gsharedvt_arg_trampoline (MonoDomain *domain, gpointer arg, gpointer addr);
 void     mono_arch_patch_callsite               (guint8 *method_start, guint8 *code, guint8 *addr);

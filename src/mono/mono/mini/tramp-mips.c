@@ -307,7 +307,7 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 }
 
 gpointer
-mono_arch_get_static_rgctx_trampoline (MonoMethod *m, MonoMethodRuntimeGenericContext *mrgctx, gpointer addr)
+mono_arch_get_static_rgctx_trampoline (gpointer arg, gpointer addr)
 {
 	guint8 *code, *start;
 	int buf_len;
@@ -318,7 +318,7 @@ mono_arch_get_static_rgctx_trampoline (MonoMethod *m, MonoMethodRuntimeGenericCo
 
 	start = code = mono_domain_code_reserve (domain, buf_len);
 
-	mips_load (code, MONO_ARCH_RGCTX_REG, mrgctx);
+	mips_load (code, MONO_ARCH_RGCTX_REG, arg);
 	mips_load (code, mips_at, addr);
 	mips_jr (code, mips_at);
 	mips_nop (code);

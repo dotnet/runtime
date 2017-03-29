@@ -509,7 +509,7 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 }
 
 gpointer
-mono_arch_get_static_rgctx_trampoline (MonoMethod *m, MonoMethodRuntimeGenericContext *mrgctx, gpointer addr)
+mono_arch_get_static_rgctx_trampoline (gpointer arg, gpointer addr)
 {
 	guint8 *code, *start;
 	GSList *unwind_ops;
@@ -522,7 +522,7 @@ mono_arch_get_static_rgctx_trampoline (MonoMethod *m, MonoMethodRuntimeGenericCo
 
 	ARM_LDR_IMM (code, MONO_ARCH_RGCTX_REG, ARMREG_PC, 0);
 	ARM_LDR_IMM (code, ARMREG_PC, ARMREG_PC, 0);
-	*(guint32*)code = (guint32)mrgctx;
+	*(guint32*)code = (guint32)arg;
 	code += 4;
 	*(guint32*)code = (guint32)addr;
 	code += 4;
@@ -852,7 +852,7 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 }
 
 gpointer
-mono_arch_get_static_rgctx_trampoline (MonoMethod *m, MonoMethodRuntimeGenericContext *mrgctx, gpointer addr)
+mono_arch_get_static_rgctx_trampoline (gpointer arg, gpointer addr)
 {
 	g_assert_not_reached ();
 	return NULL;

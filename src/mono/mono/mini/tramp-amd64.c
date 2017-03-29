@@ -77,10 +77,10 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 /*
  * mono_arch_get_static_rgctx_trampoline:
  *
- *   Create a trampoline which sets RGCTX_REG to MRGCTX, then jumps to ADDR.
+ *   Create a trampoline which sets RGCTX_REG to ARG, then jumps to ADDR.
  */
 gpointer
-mono_arch_get_static_rgctx_trampoline (MonoMethod *m, MonoMethodRuntimeGenericContext *mrgctx, gpointer addr)
+mono_arch_get_static_rgctx_trampoline (gpointer arg, gpointer addr)
 {
 	guint8 *code, *start;
 	GSList *unwind_ops;
@@ -102,7 +102,7 @@ mono_arch_get_static_rgctx_trampoline (MonoMethod *m, MonoMethodRuntimeGenericCo
 
 	unwind_ops = mono_arch_get_cie_program ();
 
-	amd64_mov_reg_imm (code, MONO_ARCH_RGCTX_REG, mrgctx);
+	amd64_mov_reg_imm (code, MONO_ARCH_RGCTX_REG, arg);
 	amd64_jump_code (code, addr);
 	g_assert ((code - start) < buf_len);
 	g_assert_checked (mono_arch_unwindinfo_validate_size (unwind_ops, MONO_TRAMPOLINE_UNWINDINFO_SIZE(0)));
@@ -1170,7 +1170,7 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 }
 
 gpointer
-mono_arch_get_static_rgctx_trampoline (MonoMethod *m, MonoMethodRuntimeGenericContext *mrgctx, gpointer addr)
+mono_arch_get_static_rgctx_trampoline (gpointer arg, gpointer addr)
 {
 	g_assert_not_reached ();
 	return NULL;

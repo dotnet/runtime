@@ -113,10 +113,10 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 /*
  * mono_arch_get_static_rgctx_trampoline:
  *
- *   Create a trampoline which sets RGCTX_REG to MRGCTX, then jumps to ADDR.
+ *   Create a trampoline which sets RGCTX_REG to ARG, then jumps to ADDR.
  */
 gpointer
-mono_arch_get_static_rgctx_trampoline (MonoMethod *m, MonoMethodRuntimeGenericContext *mrgctx, gpointer addr)
+mono_arch_get_static_rgctx_trampoline (gpointer arg, gpointer addr)
 {
 	guint8 *code, *start, *p;
 	guint8 imm_buf [128];
@@ -129,7 +129,7 @@ mono_arch_get_static_rgctx_trampoline (MonoMethod *m, MonoMethodRuntimeGenericCo
 
 	/* Compute size of code needed to emit mrgctx */
 	p = imm_buf;
-	ppc_load_ptr (p, MONO_ARCH_RGCTX_REG, mrgctx);
+	ppc_load_ptr (p, MONO_ARCH_RGCTX_REG, arg);
 	imm_size = p - imm_buf;
 
 	mono_domain_lock (domain);

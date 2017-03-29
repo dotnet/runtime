@@ -62,7 +62,7 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 }
 
 gpointer
-mono_arch_get_static_rgctx_trampoline (MonoMethod *m, MonoMethodRuntimeGenericContext *mrgctx, gpointer addr)
+mono_arch_get_static_rgctx_trampoline (gpointer arg, gpointer addr)
 {
 	guint8 *code, *start;
 	int buf_len;
@@ -76,7 +76,7 @@ mono_arch_get_static_rgctx_trampoline (MonoMethod *m, MonoMethodRuntimeGenericCo
 
 	unwind_ops = mono_arch_get_cie_program ();
 
-	x86_mov_reg_imm (code, MONO_ARCH_RGCTX_REG, mrgctx);
+	x86_mov_reg_imm (code, MONO_ARCH_RGCTX_REG, arg);
 	x86_jump_code (code, addr);
 	g_assert ((code - start) <= buf_len);
 

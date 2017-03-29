@@ -364,14 +364,14 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 }
 
 gpointer
-mono_arch_get_static_rgctx_trampoline (MonoMethod *m, MonoMethodRuntimeGenericContext *mrgctx, gpointer addr)
+mono_arch_get_static_rgctx_trampoline (gpointer arg, gpointer addr)
 {
 	guint8 *code, *start;
 	guint32 buf_len = 32;
 	MonoDomain *domain = mono_domain_get ();
 
 	start = code = mono_domain_code_reserve (domain, buf_len);
-	code = mono_arm_emit_imm64 (code, MONO_ARCH_RGCTX_REG, (guint64)mrgctx);
+	code = mono_arm_emit_imm64 (code, MONO_ARCH_RGCTX_REG, (guint64)arg);
 	code = mono_arm_emit_imm64 (code, ARMREG_IP0, (guint64)addr);
 	arm_brx (code, ARMREG_IP0);
 
@@ -690,7 +690,7 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 }
 
 gpointer
-mono_arch_get_static_rgctx_trampoline (MonoMethod *m, MonoMethodRuntimeGenericContext *mrgctx, gpointer addr)
+mono_arch_get_static_rgctx_trampoline (gpointer arg, gpointer addr)
 {
 	g_assert_not_reached ();
 	return NULL;
