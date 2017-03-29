@@ -2422,6 +2422,7 @@ namespace System.Data.SqlClient
             }
 
             TdsParserStateObject stateObj = parser.GetSession(this);
+            stateObj.StartSession(this);
 
             _stateObj = stateObj;
 
