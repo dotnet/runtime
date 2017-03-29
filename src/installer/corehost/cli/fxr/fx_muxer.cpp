@@ -1004,7 +1004,7 @@ int fx_muxer_t::execute(const int argc, const pal::char_t* argv[])
 
     trace::verbose(_X("--- Executing in muxer mode..."));
 
-    if (argc <= 1)
+    if (pal::strcasecmp(_X("--help-host"), argv[1]) == 0)
     {
         return muxer_usage(!is_sdk_dir_present(own_dir));
     }
