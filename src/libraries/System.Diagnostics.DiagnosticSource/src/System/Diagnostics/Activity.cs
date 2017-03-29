@@ -207,11 +207,17 @@ namespace System.Diagnostics
         public Activity SetParentId(string parentId)
         {
             if (Parent != null)
+            {
                 NotifyError(new InvalidOperationException($"Trying to set {nameof(ParentId)} on activity which has {nameof(Parent)}"));
+            }
             else if (ParentId != null)
+            {
                 NotifyError(new InvalidOperationException($"{nameof(ParentId)} is already set"));
+            }
             else if (string.IsNullOrEmpty(parentId))
+            {
                 NotifyError(new ArgumentException($"{nameof(parentId)} must not be null or empty"));
+            }
             else
             {
                 ParentId = parentId;
@@ -227,7 +233,9 @@ namespace System.Diagnostics
         public Activity SetStartTime(DateTime startTimeUtc)
         {
             if (startTimeUtc.Kind != DateTimeKind.Utc)
+            {
                 NotifyError(new InvalidOperationException($"{nameof(startTimeUtc)} is not UTC"));
+            }
             else
             {
                 StartTimeUtc = startTimeUtc;
@@ -244,7 +252,9 @@ namespace System.Diagnostics
         public Activity SetEndTime(DateTime endTimeUtc)
         {
             if (endTimeUtc.Kind != DateTimeKind.Utc)
+            {
                 NotifyError(new InvalidOperationException($"{nameof(endTimeUtc)} is not UTC"));
+            }
             else
             {
                 Duration = endTimeUtc - StartTimeUtc;
@@ -276,7 +286,9 @@ namespace System.Diagnostics
         public Activity Start()
         {
             if (Id != null)
+            {
                 NotifyError(new InvalidOperationException("Trying to start an Activity that was already started"));
+            }
             else
             {
                 if (ParentId == null)
@@ -325,7 +337,7 @@ namespace System.Diagnostics
         }
 
         #region private 
-        private void NotifyError(Exception exception)
+        private static void NotifyError(Exception exception)
         {
             // Throw and catch the exception.  This lets it be seen by the debugger
             // ETW, and other monitoring tools.   However we immediately swallow the
