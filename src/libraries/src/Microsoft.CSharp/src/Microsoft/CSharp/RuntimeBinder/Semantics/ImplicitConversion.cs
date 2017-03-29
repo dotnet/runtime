@@ -703,7 +703,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 if (
                     aggTypeSrc.getAggregate().GetPredefType() != PredefinedType.PT_BOOL &&
                     _exprSrc != null &&
-                    _exprSrc.isZero() &&
+                    _exprSrc.IsZero &&
                     _exprSrc.Type.isNumericType() &&
                     /*(exprSrc.flags & EXF_LITERALCONST) &&*/
                     0 == (_flags & CONVERTTYPE.STANDARD))
@@ -745,10 +745,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // *   A constant-expression of type long can be converted to type ulong, provided the value of
                 //     the constant-expression is not negative.
                 // Note: Don't use GetConst here since the conversion only applies to bona-fide compile time constants.
-                if (_exprSrc != null && _exprSrc.isCONSTANT_OK() &&
+                if (_exprSrc is ExprConstant constant && _exprSrc.IsOK &&
                     ((ptSrc == PredefinedType.PT_INT && ptDest != PredefinedType.PT_BOOL && ptDest != PredefinedType.PT_CHAR) ||
                     (ptSrc == PredefinedType.PT_LONG && ptDest == PredefinedType.PT_ULONG)) &&
-                    isConstantInRange(_exprSrc.asCONSTANT(), _typeDest))
+                    isConstantInRange(constant, _typeDest))
                 {
                     // Special case (CLR 6.1.6): if integral constant is in range, the conversion is a legal implicit conversion.
                     convertKind = ConvKind.Implicit;

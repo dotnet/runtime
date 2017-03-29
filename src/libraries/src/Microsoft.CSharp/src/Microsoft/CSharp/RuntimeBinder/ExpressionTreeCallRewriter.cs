@@ -553,7 +553,8 @@ namespace Microsoft.CSharp.RuntimeBinder
             bool bIsLifted = false;
             if (list.OptionalNextListNode is ExprList next)
             {
-                ExprConstant isLifted = next.OptionalElement.asCONSTANT();
+                ExprConstant isLifted = next.OptionalElement as ExprConstant;
+                Debug.Assert(isLifted != null);
                 bIsLifted = isLifted.Val.Int32Val == 1;
                 methodInfo = GetMethodInfoFromExpr((ExprMethodInfo)next.OptionalNextListNode);
             }
@@ -678,7 +679,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             {
                 return _DictionaryOfParameters[pExpr.asWRAP().OptionalExpression as ExprCall];
             }
-            else if (pExpr.isCONSTANT())
+            else if (pExpr is ExprConstant)
             {
                 Debug.Assert(pExpr.Type.IsNullType());
                 return null;
@@ -885,9 +886,9 @@ namespace Microsoft.CSharp.RuntimeBinder
                 return GetMethodInfoFromExpr(methodInfo);
             }
 
-            if (pExpr.isCONSTANT())
+            if (pExpr is ExprConstant constant)
             {
-                ConstVal val = pExpr.asCONSTANT().Val;
+                ConstVal val = constant.Val;
                 CType underlyingType = pExpr.Type;
                 object objval;
 
