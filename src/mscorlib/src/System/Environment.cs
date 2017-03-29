@@ -361,69 +361,38 @@ namespace System
             }
         }
 
-        /*==================================OSVersion===================================
-        **Action:
-        **Returns:
-        **Arguments:
-        **Exceptions:
-        ==============================================================================*/
-        internal static OperatingSystem OSVersion
+#if !FEATURE_PAL
+        private static Lazy<bool> s_IsWindows8OrAbove = new Lazy<bool>(() => 
         {
-            get
-            {
-                Contract.Ensures(Contract.Result<OperatingSystem>() != null);
+            ulong conditionMask = Win32Native.VerSetConditionMask(0, Win32Native.VER_MAJORVERSION, Win32Native.VER_GREATER_EQUAL);
+            conditionMask = Win32Native.VerSetConditionMask(conditionMask, Win32Native.VER_MINORVERSION, Win32Native.VER_GREATER_EQUAL);
+            conditionMask = Win32Native.VerSetConditionMask(conditionMask, Win32Native.VER_SERVICEPACKMAJOR, Win32Native.VER_GREATER_EQUAL);
+            conditionMask = Win32Native.VerSetConditionMask(conditionMask, Win32Native.VER_SERVICEPACKMINOR, Win32Native.VER_GREATER_EQUAL);
 
-                if (m_os == null)
-                { // We avoid the lock since we don't care if two threads will set this at the same time.
-                    Microsoft.Win32.Win32Native.OSVERSIONINFO osvi = new Microsoft.Win32.Win32Native.OSVERSIONINFO();
-                    if (!GetVersion(osvi))
-                    {
-                        throw new InvalidOperationException(SR.InvalidOperation_GetVersion);
-                    }
-
-                    Microsoft.Win32.Win32Native.OSVERSIONINFOEX osviEx = new Microsoft.Win32.Win32Native.OSVERSIONINFOEX();
-                    if (!GetVersionEx(osviEx))
-                        throw new InvalidOperationException(SR.InvalidOperation_GetVersion);
-
-#if PLATFORM_UNIX
-                    PlatformID id = PlatformID.Unix;
-#else
-                    PlatformID id = PlatformID.Win32NT;
-#endif // PLATFORM_UNIX
-
-                    Version v = new Version(osvi.MajorVersion, osvi.MinorVersion, osvi.BuildNumber, (osviEx.ServicePackMajor << 16) | osviEx.ServicePackMinor);
-                    m_os = new OperatingSystem(id, v, osvi.CSDVersion);
-                }
-                Debug.Assert(m_os != null, "m_os != null");
-                return m_os;
-            }
-        }
-
-
-        internal static bool IsWindows8OrAbove
-        {
-            get
-            {
-                return true;
-            }
-        }
-
+            // Windows 8 version is 6.2
+            var version = new Win32Native.OSVERSIONINFOEX { MajorVersion = 6, MinorVersion = 2, ServicePackMajor = 0, ServicePackMinor = 0 };
+                
+            return Win32Native.VerifyVersionInfoW(version, 
+                       Win32Native.VER_MAJORVERSION | Win32Native.VER_MINORVERSION | Win32Native.VER_SERVICEPACKMAJOR | Win32Native.VER_SERVICEPACKMINOR,
+                       conditionMask);
+        });
+        internal static bool IsWindows8OrAbove => s_IsWindows8OrAbove.Value;
+#endif
+        
 #if FEATURE_COMINTEROP
-        internal static bool IsWinRTSupported
+        // Does the current version of Windows have Windows Runtime suppport?
+        private static Lazy<bool> s_IsWinRTSupported = new Lazy<bool>(() =>
         {
-            get
-            {
-                return true;
-            }
-        }
+            return WinRTSupported();
+        });
+
+        internal static bool IsWinRTSupported => s_IsWinRTSupported.Value;
+
+        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        [SuppressUnmanagedCodeSecurity]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool WinRTSupported();
 #endif // FEATURE_COMINTEROP
-
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern bool GetVersion(Microsoft.Win32.Win32Native.OSVERSIONINFO osVer);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern bool GetVersionEx(Microsoft.Win32.Win32Native.OSVERSIONINFOEX osVer);
 
 
         /*==================================StackTrace==================================

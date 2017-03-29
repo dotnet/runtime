@@ -4742,18 +4742,6 @@ typedef POSVERSIONINFOEXA POSVERSIONINFOEX;
 typedef LPOSVERSIONINFOEXA LPOSVERSIONINFOEX;
 #endif
 
-PALIMPORT
-BOOL
-PALAPI
-GetVersionExW(
-          IN OUT LPOSVERSIONINFOW lpVersionInformation);
-
-#ifdef UNICODE
-#define GetVersionEx GetVersionExW
-#else
-#define GetVersionEx GetVersionExA
-#endif
-
 #define IMAGE_FILE_MACHINE_I386              0x014c
 #define IMAGE_FILE_MACHINE_ARM64             0xAA64  // ARM64 Little-Endian
 

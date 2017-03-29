@@ -484,7 +484,6 @@
 #define WszLogonUser LogonUserW
 #define WszCreateProcessAsUser CreateProcessAsUserW
 #define WszGetCurrentHwProfile GetCurrentHwProfileW
-#define WszGetVersionEx GetVersionExW
 #define WszCreateJobObject CreateJobObjectW
 #define WszOpenJobObject OpenJobObjectW
 
@@ -924,8 +923,6 @@ __forceinline LONGLONG __InterlockedExchangeAdd64(LONGLONG volatile * Addend, LO
 #define CLR_VER_SERVICEPACKMAJOR            0x0000020
 #define CLR_VER_SUITENAME                   0x0000040
 #define CLR_VER_PRODUCT_TYPE                0x0000080
-
-BOOL GetOSVersion(LPOSVERSIONINFOW osVer);
 
 // Output printf-style formatted text to the debugger if it's present or stdout otherwise.
 inline void DbgWPrintf(const LPCWSTR wszFormat, ...)

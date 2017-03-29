@@ -293,12 +293,6 @@ FreeEnvironmentStringsA(
 PALIMPORT
 BOOL
 PALAPI
-GetVersionExA(
-          IN OUT LPOSVERSIONINFOA lpVersionInformation);
-
-PALIMPORT
-BOOL
-PALAPI
 RemoveDirectoryA(
                  IN LPCSTR lpPathName);
 

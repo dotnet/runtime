@@ -1,10 +1,6 @@
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-if(WIN32)
-    add_compile_options(/wd4996)
-endif(WIN32)
-
 set(UTILCODE_COMMON_SOURCES
   clrhost_nodependencies.cpp
   ccomprc.cpp

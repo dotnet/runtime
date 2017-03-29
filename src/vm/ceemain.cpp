@@ -3396,24 +3396,4 @@ void ContractRegressionCheck()
 
 #endif // ENABLE_CONTRACTS_IMPL
 
-
 #endif // CROSSGEN_COMPILE
-
-
-//
-// GetOSVersion - Gets the real OS version bypassing the OS compatibility shim
-// Mscoree.dll resides in System32 dir and is always excluded from compat shim.
-// This function calls mscoree!shim function via mscoreei ICLRRuntimeHostInternal interface
-// to get the OS version. We do not do this PAL or coreclr..we direclty call the OS
-// in that case.
-//
-BOOL GetOSVersion(LPOSVERSIONINFO lposVer)
-{
-// Fix for warnings when building against WinBlue build 9444.0.130614-1739
-// warning C4996: 'GetVersionExW': was declared deprecated
-// externalapis\windows\winblue\sdk\inc\sysinfoapi.h(442)
-// Deprecated. Use VerifyVersionInfo* or IsWindows* macros from VersionHelpers.
-#pragma warning( disable : 4996 )
-    return WszGetVersionEx(lposVer);
-#pragma warning( default : 4996 )
-}
