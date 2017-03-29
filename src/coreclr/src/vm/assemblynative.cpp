@@ -507,9 +507,12 @@ Assembly* AssemblyNative::LoadFromPEImage(ICLRPrivBinder* pBinderContext, PEImag
         spec.GetFileOrDisplayName(0, name);
         COMPlusThrowHR(COR_E_FILELOAD, dwMessageID, name);
     }
+
+    BINDER_SPACE::Assembly* assem;
+    assem = BINDER_SPACE::GetAssemblyFromPrivAssemblyFast(pAssembly);
     
-    PEAssemblyHolder pPEAssembly(PEAssembly::Open(pParentAssembly, pILImage, pNIImage, pAssembly, FALSE));
-    
+    PEAssemblyHolder pPEAssembly(PEAssembly::Open(pParentAssembly, assem->GetPEImage(), assem->GetNativePEImage(), pAssembly, FALSE));
+
     GCX_COOP();
     
     IApplicationSecurityDescriptor *pDomainSecDesc = pCurDomain->GetSecurityDescriptor();
