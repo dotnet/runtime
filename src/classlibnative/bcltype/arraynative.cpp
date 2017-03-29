@@ -175,7 +175,7 @@ void ArrayInitializeWorker(ARRAYBASEREF * arrayRef,
 
     PCODE ctorFtn = pCanonMT->GetSlot(slot);
 
-#ifdef _X86_
+#if defined(_TARGET_X86_) && !defined(FEATURE_PAL)
     BEGIN_CALL_TO_MANAGED();
 
 
@@ -206,7 +206,7 @@ void ArrayInitializeWorker(ARRAYBASEREF * arrayRef,
     }
 
     END_CALL_TO_MANAGED();
-#else // _X86_
+#else // _TARGET_X86_ && !FEATURE_PAL
     //
     // This is quite a bit slower, but it is portable.
     //
@@ -230,7 +230,7 @@ void ArrayInitializeWorker(ARRAYBASEREF * arrayRef,
 
         offset += size;
     }
-#endif // _X86_
+#endif // !_TARGET_X86_ || FEATURE_PAL
 }
 
 
