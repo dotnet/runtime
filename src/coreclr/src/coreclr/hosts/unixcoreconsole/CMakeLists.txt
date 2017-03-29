@@ -31,8 +31,4 @@ if(NOT CLR_CMAKE_PLATFORM_ANDROID)
   )
 endif()
 
-add_dependencies(coreconsole
-    coreclr
-)
-
 install_clr(coreconsole)
