@@ -80,6 +80,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\ConfigurableArrayPool.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\TlsOverPerCoreLockedStacksArrayPool.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Buffers\Utilities.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\Char.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\CharEnumerator.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\CLSCompliantAttribute.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Collections\DictionaryEntry.cs"/>
