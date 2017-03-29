@@ -560,7 +560,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // pointer and null is a UIntPtr - which confuses the JIT. We can't just convert
             // temp[0] to UIntPtr with a conv.u instruction because then if a GC occurs between
             // the time of the cast and the assignment to the local, we're toast.
-            ExprWrap wrapArray = WrapShortLivedExpression(array).asWRAP();
+            ExprWrap wrapArray = WrapShortLivedExpression(array) as ExprWrap;
             Expr save = GetExprFactory().CreateSave(wrapArray);
             Expr nullTest = GetExprFactory().CreateBinop(ExpressionKind.EK_NE, GetReqPDT(PredefinedType.PT_BOOL), save, GetExprFactory().CreateConstant(wrapArray.Type, ConstVal.Get(0)));
             Expr lenTest;
@@ -1408,13 +1408,18 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private Expr UnwrapExpression(Expr pExpression)
         {
-            Expr pExpr = pExpression;
-            while (pExpr != null && pExpr.isWRAP() && pExpr.asWRAP().OptionalExpression != null)
+            while (pExpression is ExprWrap wrap)
             {
-                pExpr = pExpr.asWRAP().OptionalExpression;
+                Expr wrapped = wrap.OptionalExpression;
+                if (wrapped == null)
+                {
+                    break;
+                }
+
+                pExpression = wrapped;
             }
 
-            return pExpr;
+            return pExpression;
         }
 
         private static ErrorCode GetStandardLvalueError(CheckLvalueKind kind)

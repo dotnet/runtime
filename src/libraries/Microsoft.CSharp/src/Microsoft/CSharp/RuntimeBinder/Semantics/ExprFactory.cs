@@ -397,10 +397,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             ExprUserLogicalOp rval = new ExprUserLogicalOp();
             Expr leftChild = (pCallOp.OptionalArguments as ExprList).OptionalElement;
             Debug.Assert(leftChild != null);
-            if (leftChild.isWRAP())
+            if (leftChild is ExprWrap wrap)
             {
                 // In the EE case, we don't create WRAPEXPRs.
-                leftChild = leftChild.asWRAP().OptionalExpression;
+                leftChild = wrap.OptionalExpression;
                 Debug.Assert(leftChild != null);
             }
             rval.Kind = ExpressionKind.EK_USERLOGOP;
@@ -409,8 +409,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             rval.TrueFalseCall = pCallTF;
             rval.OperatorCall = pCallOp;
             rval.FirstOperandToExamine = leftChild;
-            Debug.Assert(rval != null);
-            return (rval);
+            return rval;
         }
 
         public ExprUserLogicalOp CreateUserLogOpError(CType pType, Expr pCallTF, ExprCall pCallOp)
