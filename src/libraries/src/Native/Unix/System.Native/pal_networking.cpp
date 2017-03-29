@@ -556,27 +556,27 @@ static int GetHostByNameHelper(const uint8_t* hostname, hostent** entry)
 
         int getHostErrno;
         int err = gethostbyname_r(reinterpret_cast<const char*>(hostname), result, scratch, scratchLen, entry, &getHostErrno);
-        switch (err)
+        if (!err && *entry != nullptr)
         {
-            case 0:
-                *entry = result;
-                return 0;
-
-            case ERANGE:
-                free(buffer);
-                size_t tmpScratchLen;
-                if (!multiply_s(scratchLen, static_cast<size_t>(2), &tmpScratchLen))
-                {
-                    *entry = nullptr;
-                    return PAL_NO_MEM;
-                }
-                scratchLen = tmpScratchLen;
-                break;
-
-            default:
-                free(buffer);
+            assert(*entry == result);
+            return 0;
+        }
+        else if (err == ERANGE)
+        {
+            free(buffer);
+            size_t tmpScratchLen;
+            if (!multiply_s(scratchLen, static_cast<size_t>(2), &tmpScratchLen))
+            {
                 *entry = nullptr;
-                return getHostErrno;
+                return PAL_NO_MEM;
+            }
+            scratchLen = tmpScratchLen;
+        }
+        else
+        {
+            free(buffer);
+            *entry = nullptr;
+            return err ? err : HOST_NOT_FOUND;
         }
     }
 }
@@ -635,27 +635,27 @@ static int GetHostByAddrHelper(const uint8_t* addr, const socklen_t addrLen, int
 
         int getHostErrno;
         int err = gethostbyaddr_r(addr, addrLen, type, result, scratch, scratchLen, entry, &getHostErrno);
-        switch (err)
+        if (!err && *entry != nullptr)
         {
-            case 0:
-                *entry = result;
-                return 0;
-
-            case ERANGE:
-                free(buffer);
-                size_t tmpScratchLen;
-                if (!multiply_s(scratchLen, static_cast<size_t>(2), &tmpScratchLen))
-                {
-                    *entry = nullptr;
-                    return PAL_NO_MEM;
-                }
-                scratchLen = tmpScratchLen;
-                break;
-
-            default:
-                free(buffer);
+            assert(*entry == result);
+            return 0;
+        }
+        else if (err == ERANGE)
+        {
+            free(buffer);
+            size_t tmpScratchLen;
+            if (!multiply_s(scratchLen, static_cast<size_t>(2), &tmpScratchLen))
+            {
                 *entry = nullptr;
-                return getHostErrno;
+                return PAL_NO_MEM;
+            }
+            scratchLen = tmpScratchLen;
+        }
+        else
+        {
+            free(buffer);
+            *entry = nullptr;
+            return err ? err : HOST_NOT_FOUND;
         }
     }
 }
