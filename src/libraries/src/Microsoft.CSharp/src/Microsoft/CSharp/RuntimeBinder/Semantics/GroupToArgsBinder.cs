@@ -517,7 +517,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                     // Positional.
                     if (index < pArguments.carg &&
-                        !pArguments.prgexpr[index].isNamedArgumentSpecification() &&
+                        !(pArguments.prgexpr[index] is ExprNamedArgumentSpecification) &&
                         !(pArguments.prgexpr[index] is ExprArrayInit arrayInitPos && arrayInitPos.GeneratedForParamArray))
                     {
                         pExprArguments[index] = pArguments.prgexpr[index++];
@@ -835,14 +835,16 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             private static Expr FindArgumentWithName(ArgInfos pArguments, Name pName)
             {
+                List<Expr> prgexpr = pArguments.prgexpr;
                 for (int i = 0; i < pArguments.carg; i++)
                 {
-                    if (pArguments.prgexpr[i].isNamedArgumentSpecification() &&
-                            pArguments.prgexpr[i].asNamedArgumentSpecification().Name == pName)
+                    Expr expr = prgexpr[i];
+                    if (expr is ExprNamedArgumentSpecification named && named.Name == pName)
                     {
-                        return pArguments.prgexpr[i];
+                        return expr;
                     }
                 }
+
                 return null;
             }
 
@@ -859,7 +861,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 HashSet<Name> names = new HashSet<Name>();
                 for (int i = 0; i < _pArguments.carg; i++)
                 {
-                    if (!_pArguments.prgexpr[i].isNamedArgumentSpecification())
+                    if (!(_pArguments.prgexpr[i] is ExprNamedArgumentSpecification named))
                     {
                         if (!currentPosition.IsEmpty())
                         {
@@ -868,7 +870,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         continue;
                     }
 
-                    Name name = _pArguments.prgexpr[i].asNamedArgumentSpecification().Name;
+                    Name name = named.Name;
                     if (!methprop.ParameterNames.Contains(name))
                     {
                         if (_pInvalidSpecifiedName == null)
@@ -1078,9 +1080,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             Expr pArgument = _pArguments.prgexpr[ivar];
 
                             // If we have a named argument, strip it to do the conversion.
-                            if (pArgument.isNamedArgumentSpecification())
+                            if (pArgument is ExprNamedArgumentSpecification named)
                             {
-                                pArgument = pArgument.asNamedArgumentSpecification().Value;
+                                pArgument = named.Value;
                             }
 
                             fresult = _pExprBinder.canConvert(pArgument, var);

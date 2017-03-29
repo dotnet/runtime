@@ -139,7 +139,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // list past the end of what would be the formal parameter list.
             for (int i = pta.Count; i < args.carg; i++)
             {
-                Debug.Assert(!args.prgexpr[i].isNamedArgumentSpecification());
+                Debug.Assert(!(args.prgexpr[i] is ExprNamedArgumentSpecification));
             }
 #endif
 
@@ -153,14 +153,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 typeList[iParam] = pta[iParam];
             }
 
+            var prgexpr = args.prgexpr;
             // We then go over the specified arguments and put the type for any named argument in the right position in the array.
             for (int iParam = 0; iParam < args.carg; iParam++)
             {
-                Expr arg = args.prgexpr[iParam];
-                if (arg.isNamedArgumentSpecification())
+                if (prgexpr[iParam] is ExprNamedArgumentSpecification named)
                 {
                     // We find the index of the type of the argument in the method parameter list and store that in a temp
-                    int index = FindName(methProp.ParameterNames, arg.asNamedArgumentSpecification().Name);
+                    int index = FindName(methProp.ParameterNames, named.Name);
                     CType tempType = pta[index];
 
                     // Starting from the current position in the type list up until the location of the type of the optional argument
