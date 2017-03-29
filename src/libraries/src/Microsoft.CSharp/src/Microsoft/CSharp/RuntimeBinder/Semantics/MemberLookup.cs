@@ -636,7 +636,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             _pSemanticChecker = checker;
             _pSymbolLoader = checker.GetSymbolLoader();
             _typeSrc = typeSrc;
-            _obj = (obj != null && !obj.isCLASS()) ? obj : null;
+            _obj = obj is ExprClass ? null : obj;
             _symWhere = symWhere;
             _name = name;
             _arity = arity;
