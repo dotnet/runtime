@@ -106,6 +106,5 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         public static bool isCONSTANT_OK(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_CONSTANT && expr.IsOK); }
-        public static bool isBOUNDLAMBDA(this Expr expr) { return (expr == null) ? false : (expr.Kind == ExpressionKind.EK_BOUNDLAMBDA); }
     }
 }
