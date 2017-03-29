@@ -105,19 +105,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(expr == null || expr.isUnaryOperator());
             return (ExprUnaryOp)expr;
         }
-        public static bool isANYLOCAL(this Expr expr)
-        {
-            return (expr == null) ? false : expr.Kind == ExpressionKind.EK_LOCAL || expr.Kind == ExpressionKind.EK_THISPOINTER;
-        }
-        public static ExprLocal asANYLOCAL(this Expr expr)
-        {
-            Debug.Assert(expr == null || expr.isANYLOCAL());
-            return (ExprLocal)expr;
-        }
-        public static bool isANYLOCAL_OK(this Expr expr)
-        {
-            return expr.isANYLOCAL() && expr.IsOK;
-        }
         public static bool isNull(this Expr expr)
         {
             return expr is ExprConstant constant && constant.IsOK && (expr.Type.fundType() == FUNDTYPE.FT_REF) && constant.Val.IsNullRef;

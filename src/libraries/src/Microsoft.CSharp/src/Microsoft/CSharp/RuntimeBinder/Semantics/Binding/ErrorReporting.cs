@@ -72,26 +72,25 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             bool isNested = false; // Did we recurse on a field or property to give a better error?
 
-            Expr walk = expr;
             while (true)
             {
-                Debug.Assert(walk != null);
+                Debug.Assert(expr != null);
 
-                if (walk.isANYLOCAL_OK())
+                if (expr is ExprLocal local && local.IsOK)
                 {
-                    ReportLocalError(walk.asANYLOCAL().Local, kind, isNested);
+                    ReportLocalError(local.Local, kind, isNested);
                     return true;
                 }
 
                 Expr pObject = null;
 
-                if (walk is ExprProperty prop)
+                if (expr is ExprProperty prop)
                 {
                     // We've already reported read-only-property errors.
                     Debug.Assert(prop.MethWithTypeSet != null);
                     pObject = prop.MemberGroup.OptionalObject;
                 }
-                else if (walk is ExprField field)
+                else if (expr is ExprField field)
                 {
                     if (field.FieldWithType.Field().isReadOnly)
                     {
@@ -128,10 +127,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
 
                 // everything else
-                if (pObject != null && !pObject.isLvalue() && (walk is ExprField || (!isNested && walk is ExprProperty)))
+                if (pObject != null && !pObject.isLvalue() && (expr is ExprField || (!isNested && expr is ExprProperty)))
                 {
                     Debug.Assert(pObject.Type.isStructOrEnum());
-                    walk = pObject;
+                    expr = pObject;
                 }
                 else
                 {
