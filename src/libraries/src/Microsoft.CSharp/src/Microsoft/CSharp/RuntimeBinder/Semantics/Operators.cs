@@ -431,8 +431,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
             }
             Expr pExpr = BadOperatorTypesError(ek, info.arg1, info.arg2, GetTypes().GetErrorSym());
-            Debug.Assert(pExpr.isBIN());
-            return pExpr.asBIN();
+            pExpr.AssertIsBin();
+            return pExpr as ExprBinOp;
         }
 
         /*
