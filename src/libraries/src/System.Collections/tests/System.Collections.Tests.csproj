@@ -26,8 +26,14 @@
     <Compile Include="$(CommonTestPath)\System\Collections\IDictionary.NonGeneric.Tests.cs">
       <Link>Common\System\Collections\IDictionary.NonGeneric.Tests.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\IDictionary.NonGeneric.Tests.netcoreapp.cs" Condition="'$(TargetGroup)' == 'netcoreapp'">
+      <Link>Common\System\Collections\IDictionary.NonGeneric.Tests.netcoreapp.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\Collections\IDictionary.Generic.Tests.cs">
       <Link>Common\System\Collections\IDictionary.Generic.Tests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Collections\IDictionary.Generic.Tests.netcoreapp.cs" Condition="'$(TargetGroup)' == 'netcoreapp'">
+      <Link>Common\System\Collections\IDictionary.Generic.Tests.netcoreapp.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.NonGeneric.Tests.cs">
       <Link>Common\System\Collections\IEnumerable.NonGeneric.Tests.cs</Link>

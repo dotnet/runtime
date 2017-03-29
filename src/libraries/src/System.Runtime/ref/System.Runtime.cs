@@ -3648,6 +3648,8 @@ namespace System.Collections
     public partial struct DictionaryEntry
     {
         public DictionaryEntry(object key, object value) { throw null; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public void Deconstruct(out object key, out object value) { throw null; }
         public object Key { get { throw null; } set { } }
         public object Value { get { throw null; } set { } }
     }
@@ -3810,6 +3812,8 @@ namespace System.Collections.Generic
     public partial struct KeyValuePair<TKey, TValue>
     {
         public KeyValuePair(TKey key, TValue value) { throw null; }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        public void Deconstruct(out TKey key, out TValue value) { throw null; }
         public TKey Key { get { throw null; } }
         public TValue Value { get { throw null; } }
         public override string ToString() { throw null; }
