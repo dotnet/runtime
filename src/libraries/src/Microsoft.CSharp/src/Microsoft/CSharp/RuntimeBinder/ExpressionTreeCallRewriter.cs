@@ -75,8 +75,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             // and a RHS that is a WRAP of that call.
             ExprCall call = pExpr.OptionalLeftChild as ExprCall;
             Debug.Assert(call?.PredefinedMethod == PREDEFMETH.PM_EXPRESSION_PARAMETER);
-            Debug.Assert(pExpr.OptionalRightChild != null);
-            Debug.Assert(pExpr.OptionalRightChild.isWRAP());
+            Debug.Assert(pExpr.OptionalRightChild is ExprWrap);
 
             Expression parameter = _ListOfParameters[_currentParameterIndex++];
             _DictionaryOfParameters.Add(call, parameter);
@@ -675,9 +674,9 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private Expression GetExpression(Expr pExpr)
         {
-            if (pExpr.isWRAP())
+            if (pExpr is ExprWrap wrap)
             {
-                return _DictionaryOfParameters[pExpr.asWRAP().OptionalExpression as ExprCall];
+                return _DictionaryOfParameters[wrap.OptionalExpression as ExprCall];
             }
             else if (pExpr is ExprConstant)
             {

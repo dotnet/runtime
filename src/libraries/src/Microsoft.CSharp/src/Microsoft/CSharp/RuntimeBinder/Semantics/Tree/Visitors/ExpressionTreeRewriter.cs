@@ -641,7 +641,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     Debug.Assert(userLogOp != null);
                     ExprList args = userLogOp.OperatorCall.OptionalArguments as ExprList;
                     Debug.Assert(args.OptionalNextListNode.Kind != ExpressionKind.EK_LIST);
-                    p1 = args.OptionalElement.asWRAP().OptionalExpression;
+                    p1 = (args.OptionalElement as ExprWrap).OptionalExpression;
                     p2 = args.OptionalNextListNode;
                 }
             }
