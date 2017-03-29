@@ -85,11 +85,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 Expr pObject = null;
 
-                if (walk.isPROP())
+                if (walk is ExprProperty prop)
                 {
                     // We've already reported read-only-property errors.
-                    Debug.Assert(walk.asPROP().MethWithTypeSet != null);
-                    pObject = walk.asPROP().MemberGroup.OptionalObject;
+                    Debug.Assert(prop.MethWithTypeSet != null);
+                    pObject = prop.MemberGroup.OptionalObject;
                 }
                 else if (walk is ExprField field)
                 {
@@ -128,7 +128,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
 
                 // everything else
-                if (pObject != null && !pObject.isLvalue() && (walk is ExprField || (!isNested && walk.isPROP())))
+                if (pObject != null && !pObject.isLvalue() && (walk is ExprField || (!isNested && walk is ExprProperty)))
                 {
                     Debug.Assert(pObject.Type.isStructOrEnum());
                     walk = pObject;
