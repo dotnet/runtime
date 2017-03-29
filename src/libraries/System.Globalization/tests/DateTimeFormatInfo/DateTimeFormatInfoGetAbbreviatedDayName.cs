@@ -17,7 +17,7 @@ namespace System.Globalization.Tests
             yield return new object[] { new DateTimeFormatInfo(), englishAbbreviatedDayNames };
 
             // ActiveIssue(2103)
-            if (!PlatformDetection.IsUbuntu1510 && !PlatformDetection.IsUbuntu1604 && !PlatformDetection.IsUbuntu1610 && !PlatformDetection.IsFedora23)
+            if (!PlatformDetection.IsUbuntu1510 && !PlatformDetection.IsUbuntu1604 && !PlatformDetection.IsUbuntu1610)
             {
                 yield return new object[] { new CultureInfo("fr-FR").DateTimeFormat, DateTimeFormatInfoData.FrFRAbbreviatedDayNames() };
             }

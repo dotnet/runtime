@@ -17,7 +17,6 @@ def osGroupMap = ['Ubuntu14.04':'Linux',
                   'Ubuntu16.04':'Linux',
                   'Ubuntu16.10':'Linux',
                   'Debian8.4':'Linux',
-                  'Fedora23':'Linux',
                   'Fedora24':'Linux',
                   'OSX10.12':'OSX',
                   'Windows_NT':'Windows_NT',
@@ -41,7 +40,6 @@ def osShortName = ['Windows 10': 'win10',
                    'Debian8.4' : 'debian8.4',
                    'OpenSUSE13.2' : 'opensuse13.2',
                    'OpenSUSE42.1' : 'opensuse42.1',
-                   'Fedora23' : 'fedora23',
                    'Fedora24' : 'fedora24',
                    'RHEL7.2' : 'rhel7.2',
                    'PortableLinux' : 'portablelinux']
@@ -209,7 +207,7 @@ def buildArchConfiguration = ['Debug': 'x86',
 // Define outerloop testing for OSes that can build and run.  Run locally on each machine.
 // **************************
 [true, false].each { isPR ->
-    ['Windows 10', 'Windows 7', 'Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Ubuntu16.10', 'CentOS7.1', 'OpenSUSE13.2', 'OpenSUSE42.1', 'RHEL7.2', 'Fedora23', 'Fedora24', 'Debian8.4', 'OSX10.12', 'PortableLinux'].each { osName ->
+    ['Windows 10', 'Windows 7', 'Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Ubuntu16.10', 'CentOS7.1', 'OpenSUSE13.2', 'OpenSUSE42.1', 'RHEL7.2', 'Fedora24', 'Debian8.4', 'OSX10.12', 'PortableLinux'].each { osName ->
         ['Debug', 'Release'].each { configurationGroup ->
 
             def osForMachineAffinity = osName
@@ -382,7 +380,7 @@ def buildArchConfiguration = ['Debug': 'x86',
 [true, false].each { isPR ->
     ['netcoreapp'].each { targetGroup ->
         ['Debug', 'Release'].each { configurationGroup ->
-            ['Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Ubuntu16.10', 'Debian8.4', 'CentOS7.1', 'OpenSUSE13.2', 'OpenSUSE42.1', 'Fedora23', 'Fedora24', 'RHEL7.2', 'OSX10.12', 'PortableLinux'].each { osName ->
+            ['Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Ubuntu16.10', 'Debian8.4', 'CentOS7.1', 'OpenSUSE13.2', 'OpenSUSE42.1', 'Fedora24', 'RHEL7.2', 'OSX10.12', 'PortableLinux'].each { osName ->
                 def osGroup = osGroupMap[osName]
                 def osForMachineAffinity = osName
                 
