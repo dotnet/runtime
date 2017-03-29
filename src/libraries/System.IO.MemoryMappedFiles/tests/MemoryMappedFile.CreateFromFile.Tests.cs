@@ -640,6 +640,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         [Theory]
         [InlineData(MemoryMappedFileAccess.ReadExecute)]
         [InlineData(MemoryMappedFileAccess.ReadWriteExecute)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "CreateFromFile in desktop uses FileStream's ctor that takes a FileSystemRights in order to specify execute privileges.")]
         public void FileNotOpenedForExecute(MemoryMappedFileAccess access)
         {
             using (TempFile file = new TempFile(GetTestFilePath(), 4096))
@@ -660,11 +661,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// If the test is being run under the superuser, however, modification of a ReadOnly
         /// file is allowed.
         /// </summary>
-        [Theory]
-        [InlineData(MemoryMappedFileAccess.Read)]
-        [InlineData(MemoryMappedFileAccess.ReadWrite)]
-        [InlineData(MemoryMappedFileAccess.CopyOnWrite)]
-        public void WriteToReadOnlyFile(MemoryMappedFileAccess access)
+        public void WriteToReadOnlyFile(MemoryMappedFileAccess access, bool succeeds)
         {
             const int Capacity = 4096;
             using (TempFile file = new TempFile(GetTestFilePath(), Capacity))
@@ -673,7 +670,7 @@ namespace System.IO.MemoryMappedFiles.Tests
                 File.SetAttributes(file.Path, FileAttributes.ReadOnly);
                 try
                 {
-                    if (access == MemoryMappedFileAccess.Read || (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && geteuid() == 0))
+                    if (succeeds)
                         using (MemoryMappedFile mmf = MemoryMappedFile.CreateFromFile(file.Path, FileMode.Open, null, Capacity, access))
                             ValidateMemoryMappedFile(mmf, Capacity, MemoryMappedFileAccess.Read);
                     else
@@ -684,7 +681,29 @@ namespace System.IO.MemoryMappedFiles.Tests
                     File.SetAttributes(file.Path, original);
                 }
             }
+        }
 
+        [Theory]
+        [InlineData(MemoryMappedFileAccess.Read)]
+        [InlineData(MemoryMappedFileAccess.ReadWrite)]
+        public void WriteToReadOnlyFile_ReadWrite(MemoryMappedFileAccess access)
+        {
+            WriteToReadOnlyFile(access, access == MemoryMappedFileAccess.Read ||
+                            (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && geteuid() == 0));
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "CreateFromFile in desktop uses FileStream's ctor that takes a FileSystemRights in order to specify execute privileges.")]
+        public void WriteToReadOnlyFile_CopyOnWrite()
+        {
+            WriteToReadOnlyFile(MemoryMappedFileAccess.CopyOnWrite, (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && geteuid() == 0));
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "CreateFromFile in desktop uses FileStream's ctor that takes a FileSystemRights in order to specify execute privileges.")]
+        public void WriteToReadOnlyFile_CopyOnWrite_netfx()
+        {
+            WriteToReadOnlyFile(MemoryMappedFileAccess.CopyOnWrite, succeeds: true);
         }
 
         [DllImport("libc", SetLastError = true)]
