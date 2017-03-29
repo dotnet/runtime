@@ -377,7 +377,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     {
                         if (_needsExprDest)
                         {
-                            ExprUserDefinedConversion exprUDC = exprTmp.Kind == ExpressionKind.EK_USERDEFINEDCONVERSION ? exprTmp.asUSERDEFINEDCONVERSION() : null;
+                            ExprUserDefinedConversion exprUDC = exprTmp as ExprUserDefinedConversion;
                             if (exprUDC != null)
                             {
                                 exprTmp = exprUDC.UserDefinedCall;

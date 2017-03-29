@@ -1411,9 +1411,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         break;
                 }
             }
-            else if (pExpr.isUSERDEFINEDCONVERSION())
+            else if (pExpr is ExprUserDefinedConversion udc)
             {
-                MarkAsIntermediateConversion(pExpr.asUSERDEFINEDCONVERSION().UserDefinedCall);
+                MarkAsIntermediateConversion(udc.UserDefinedCall);
             }
         }
 

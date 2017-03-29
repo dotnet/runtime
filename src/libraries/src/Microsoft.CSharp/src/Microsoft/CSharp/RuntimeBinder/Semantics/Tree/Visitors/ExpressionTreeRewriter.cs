@@ -903,10 +903,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     // This can happen if we have a UD conversion from C to, say, int, 
                     // and we have an explicit cast to decimal?. The conversion should
                     // then be bound as two chained user-defined conversions.
-                    Debug.Assert(pUDConversion.isUSERDEFINEDCONVERSION());
+                    Debug.Assert(pUDConversion is ExprUserDefinedConversion);
 
                     // Just recurse.
-                    return GenerateUserDefinedConversion(pUDConversion.asUSERDEFINEDCONVERSION(), pArgument);
+                    return GenerateUserDefinedConversion(pUDConversion as ExprUserDefinedConversion, pArgument);
                 }
 
                 pConversionSource = Visit(pCastArgument);
