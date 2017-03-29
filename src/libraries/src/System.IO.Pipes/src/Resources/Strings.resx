@@ -208,4 +208,7 @@
   <data name="ObjectDisposed_StreamClosed" xml:space="preserve">
     <value>Cannot access a closed Stream.</value>
   </data>
+  <data name="PlatformNotSupported_OperatingSystemError" xml:space="preserve">
+    <value>The operating system returned error '{0}' indicating that the operation is not supported.</value>
+  </data>
 </root>

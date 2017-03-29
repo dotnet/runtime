@@ -174,10 +174,7 @@ namespace System.IO.Pipes
                 return name;
             }
 
-            Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
-            throw error.Error == Interop.Error.ENOTSUP ?
-                new PlatformNotSupportedException() :
-                Interop.GetExceptionForIoErrno(error, _path);
+            throw CreateExceptionForLastError();
         }
 
         public override int InBufferSize
@@ -220,19 +217,13 @@ namespace System.IO.Pipes
             uint peerID;
             if (Interop.Sys.GetPeerID(handle, out peerID) == -1)
             {
-                Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
-                throw error.Error == Interop.Error.ENOTSUP ?
-                    new PlatformNotSupportedException() :
-                    Interop.GetExceptionForIoErrno(error, _path);
+                throw CreateExceptionForLastError();
             }
 
             // set the effective userid of the current (server) process to the clientid
             if (Interop.Sys.SetEUid(peerID) == -1)
             {
-                Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
-                throw error.Error == Interop.Error.ENOTSUP ?
-                    new PlatformNotSupportedException() :
-                    Interop.GetExceptionForIoErrno(error, _path);
+                throw CreateExceptionForLastError();
             }
 
             try
@@ -244,6 +235,14 @@ namespace System.IO.Pipes
                 // set the userid of the current (server) process back to its original value
                 Interop.Sys.SetEUid(currentEUID);
             }
+        }
+
+        private Exception CreateExceptionForLastError()
+        {
+            Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+            return error.Error == Interop.Error.ENOTSUP ?
+                new PlatformNotSupportedException(SR.Format(SR.PlatformNotSupported_OperatingSystemError, nameof(Interop.Error.ENOTSUP))) :
+                Interop.GetExceptionForIoErrno(error, _path);
         }
     }
 }
