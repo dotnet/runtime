@@ -251,22 +251,20 @@ namespace System.IO.Tests
             Assert.Throws<ArgumentException>(() => GetEntries(TestDirectory, @".." + Path.DirectorySeparatorChar));
         }
 
-        [ActiveIssue(11584)]
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Windows-invalid search patterns throw
         public void WindowsSearchPatternInvalid()
         {
             Assert.Throws<ArgumentException>(() => GetEntries(TestDirectory, "\0"));
-            Assert.Throws<ArgumentException>(() => GetEntries(TestDirectory, ">"));
+            Assert.Throws<ArgumentException>(() => GetEntries(TestDirectory, "|"));
 
-            Char[] invalidFileNames = Path.GetInvalidFileNameChars();
-            for (int i = 0; i < invalidFileNames.Length; i++)
+            Assert.All(Path.GetInvalidFileNameChars(), invalidChar =>
             {
-                switch (invalidFileNames[i])
+                switch (invalidChar)
                 {
                     case '\\':
                     case '/':
-                        Assert.Throws<DirectoryNotFoundException>(() => GetEntries(Directory.GetCurrentDirectory(), string.Format("te{0}st", invalidFileNames[i].ToString())));
+                        Assert.Throws<DirectoryNotFoundException>(() => GetEntries(Directory.GetCurrentDirectory(), string.Format("te{0}st", invalidChar.ToString())));
                         break;
                     //We don't throw in V1 too
                     case ':':
@@ -277,22 +275,26 @@ namespace System.IO.Tests
                         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) &&
                             FileSystemDebugInfo.IsCurrentDriveNTFS()) // testing NTFS
                         {
-                            Assert.Throws<IOException>(() => GetEntries(Directory.GetCurrentDirectory(), string.Format("te{0}st", invalidFileNames[i].ToString())));
+                            Assert.Throws<IOException>(() => GetEntries(Directory.GetCurrentDirectory(), string.Format("te{0}st", invalidChar.ToString())));
                         }
                         else
                         {
-                            GetEntries(Directory.GetCurrentDirectory(), string.Format("te{0}st", invalidFileNames[i].ToString()));
+                            GetEntries(Directory.GetCurrentDirectory(), string.Format("te{0}st", invalidChar.ToString()));
                         }
                         break;
+                    // Wildcard chars
                     case '*':
                     case '?':
-                        GetEntries(Directory.GetCurrentDirectory(), string.Format("te{0}st", invalidFileNames[i].ToString()));
+                    case '<':
+                    case '>':
+                    case '\"':
+                        GetEntries(Directory.GetCurrentDirectory(), string.Format("te{0}st", invalidChar.ToString()));
                         break;
                     default:
-                        Assert.Throws<ArgumentException>(() => GetEntries(Directory.GetCurrentDirectory(), string.Format("te{0}st", invalidFileNames[i].ToString())));
+                        Assert.Throws<ArgumentException>(() => GetEntries(Directory.GetCurrentDirectory(), string.Format("te{0}st", invalidChar.ToString())));
                         break;
                 }
-            }
+            });
         }
 
         [Fact]
