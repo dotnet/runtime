@@ -202,7 +202,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // a EXPRBOUNDLAMBDA that is an expression tree, then just visit the expression tree.
             if (pExpr.Type != null &&
                     pExpr.Type.isPredefType(PredefinedType.PT_G_EXPRESSION) &&
-                    pArgument.isBOUNDLAMBDA())
+                    pArgument is ExprBoundLambda)
             {
                 return Visit(pArgument);
             }
