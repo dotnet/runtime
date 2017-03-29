@@ -330,6 +330,123 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Throws<ArgumentNullException>(() => ex.DecryptEncryptedKey(null));
         }
 
+        [Fact]
+        public void EncryptKey_TripleDES()
+        {
+            using (TripleDES tripleDES = TripleDES.Create())
+            {
+                byte[] key = Encoding.ASCII.GetBytes("123456781234567812345678");
+
+                byte[] encryptedKey = EncryptedXml.EncryptKey(key, tripleDES);
+
+                Assert.NotNull(encryptedKey);
+                Assert.Equal(key, EncryptedXml.DecryptKey(encryptedKey, tripleDES));
+            }
+        }
+
+        [Fact]
+        public void EncryptKey_AES()
+        {
+            using (Aes aes = Aes.Create())
+            {
+                byte[] key = Encoding.ASCII.GetBytes("123456781234567812345678");
+
+                byte[] encryptedKey = EncryptedXml.EncryptKey(key, aes);
+
+                Assert.NotNull(encryptedKey);
+                Assert.Equal(key, EncryptedXml.DecryptKey(encryptedKey, aes));
+            }
+        }
+
+        [Fact]
+        public void EncryptKey_AES8Bytes()
+        {
+            using (Aes aes = Aes.Create())
+            {
+                byte[] key = Encoding.ASCII.GetBytes("12345678");
+
+                byte[] encryptedKey = EncryptedXml.EncryptKey(key, aes);
+                
+                Assert.NotNull(encryptedKey);
+                Assert.Equal(key, EncryptedXml.DecryptKey(encryptedKey, aes));
+            }
+        }
+
+        [Fact]
+        public void EncryptKey_AESNotDivisibleBy8()
+        {
+            using (Aes aes = Aes.Create())
+            {
+                byte[] key = Encoding.ASCII.GetBytes("1234567");
+
+                Assert.Throws<CryptographicException>(() => EncryptedXml.EncryptKey(key, aes));
+            }
+        }
+
+        [Fact]
+        public void DecryptKey_TripleDESWrongKeySize()
+        {
+            using (TripleDES tripleDES = TripleDES.Create())
+            {
+                byte[] key = Encoding.ASCII.GetBytes("123");
+
+                Assert.Throws<CryptographicException>(() => EncryptedXml.DecryptKey(key, tripleDES));
+            }
+        }
+
+        [Fact]
+        public void DecryptKey_TripleDESCorruptedKey()
+        {
+            using (TripleDES tripleDES = TripleDES.Create())
+            {
+                byte[] key = Encoding.ASCII.GetBytes("123456781234567812345678");
+
+                byte[] encryptedKey = EncryptedXml.EncryptKey(key, tripleDES);
+                encryptedKey[0] ^= 0xFF;
+
+                Assert.Throws<CryptographicException>(() => EncryptedXml.DecryptKey(encryptedKey, tripleDES));
+            }
+        }
+
+        [Fact]
+        public void DecryptKey_AESWrongKeySize()
+        {
+            using (Aes aes = Aes.Create())
+            {
+                byte[] key = Encoding.ASCII.GetBytes("123");
+
+                Assert.Throws<CryptographicException>(() => EncryptedXml.DecryptKey(key, aes));
+            }
+        }
+
+        [Fact]
+        public void DecryptKey_AESCorruptedKey()
+        {
+            using (Aes aes = Aes.Create())
+            {
+                byte[] key = Encoding.ASCII.GetBytes("123456781234567812345678");
+
+                byte[] encryptedKey = EncryptedXml.EncryptKey(key, aes);
+                encryptedKey[0] ^= 0xFF;
+
+                Assert.Throws<CryptographicException>(() => EncryptedXml.DecryptKey(encryptedKey, aes));
+            }
+        }
+
+        [Fact]
+        public void DecryptKey_AESCorruptedKey8Bytes()
+        {
+            using (Aes aes = Aes.Create())
+            {
+                byte[] key = Encoding.ASCII.GetBytes("12345678");
+
+                byte[] encryptedKey = EncryptedXml.EncryptKey(key, aes);
+                encryptedKey[0] ^= 0xFF;
+
+                Assert.Throws<CryptographicException>(() => EncryptedXml.DecryptKey(encryptedKey, aes));
+            }
+        }
+
         private Stream LoadResourceStream(string resourceName)
         {
             return Assembly.GetCallingAssembly().GetManifestResourceStream(resourceName);
