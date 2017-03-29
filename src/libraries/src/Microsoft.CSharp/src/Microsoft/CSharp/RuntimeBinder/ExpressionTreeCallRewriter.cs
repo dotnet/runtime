@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft.CSharp.RuntimeBinder.Semantics;
@@ -17,10 +16,10 @@ namespace Microsoft.CSharp.RuntimeBinder
         /////////////////////////////////////////////////////////////////////////////////
         // Members
 
-        private sealed class ExpressionEXPR : Expr
+        private sealed class ExpressionExpr : Expr
         {
             public readonly Expression Expression;
-            public ExpressionEXPR(Expression e)
+            public ExpressionExpr(Expression e)
             {
                 Expression = e;
             }
@@ -65,7 +64,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             rewriter.Visit(pExpr.asBIN().OptionalLeftChild);
             ExprCall call = pExpr.asBIN().OptionalRightChild.asCALL();
 
-            ExpressionEXPR e = rewriter.Visit(call) as ExpressionEXPR;
+            ExpressionExpr e = rewriter.Visit(call) as ExpressionExpr;
             return e.Expression;
         }
 
@@ -91,133 +90,142 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        protected override Expr VisitCAST(ExprCast pExpr)
-        {
-            return base.VisitCAST(pExpr);
-        }
-
-        /////////////////////////////////////////////////////////////////////////////////
-
         protected override Expr VisitCALL(ExprCall pExpr)
         {
-            if (pExpr.PredefinedMethod != PREDEFMETH.PM_FIRST)
+            if (pExpr.PredefinedMethod == PREDEFMETH.PM_FIRST)
             {
-                switch (pExpr.PredefinedMethod)
-                {
-                    case PREDEFMETH.PM_EXPRESSION_LAMBDA:
-                        return GenerateLambda(pExpr);
-
-                    case PREDEFMETH.PM_EXPRESSION_CALL:
-                        return GenerateCall(pExpr);
-
-                    case PREDEFMETH.PM_EXPRESSION_ARRAYINDEX:
-                    case PREDEFMETH.PM_EXPRESSION_ARRAYINDEX2:
-                        return GenerateArrayIndex(pExpr);
-
-                    case PREDEFMETH.PM_EXPRESSION_CONVERT:
-                    case PREDEFMETH.PM_EXPRESSION_CONVERT_USER_DEFINED:
-                    case PREDEFMETH.PM_EXPRESSION_CONVERTCHECKED:
-                    case PREDEFMETH.PM_EXPRESSION_CONVERTCHECKED_USER_DEFINED:
-                        return GenerateConvert(pExpr);
-
-                    case PREDEFMETH.PM_EXPRESSION_PROPERTY:
-                        return GenerateProperty(pExpr);
-
-                    case PREDEFMETH.PM_EXPRESSION_FIELD:
-                        return GenerateField(pExpr);
-
-                    case PREDEFMETH.PM_EXPRESSION_INVOKE:
-                        return GenerateInvoke(pExpr);
-
-                    case PREDEFMETH.PM_EXPRESSION_NEW:
-                        return GenerateNew(pExpr);
-
-                    case PREDEFMETH.PM_EXPRESSION_ADD:
-                    case PREDEFMETH.PM_EXPRESSION_AND:
-                    case PREDEFMETH.PM_EXPRESSION_DIVIDE:
-                    case PREDEFMETH.PM_EXPRESSION_EQUAL:
-                    case PREDEFMETH.PM_EXPRESSION_EXCLUSIVEOR:
-                    case PREDEFMETH.PM_EXPRESSION_GREATERTHAN:
-                    case PREDEFMETH.PM_EXPRESSION_GREATERTHANOREQUAL:
-                    case PREDEFMETH.PM_EXPRESSION_LEFTSHIFT:
-                    case PREDEFMETH.PM_EXPRESSION_LESSTHAN:
-                    case PREDEFMETH.PM_EXPRESSION_LESSTHANOREQUAL:
-                    case PREDEFMETH.PM_EXPRESSION_MODULO:
-                    case PREDEFMETH.PM_EXPRESSION_MULTIPLY:
-                    case PREDEFMETH.PM_EXPRESSION_NOTEQUAL:
-                    case PREDEFMETH.PM_EXPRESSION_OR:
-                    case PREDEFMETH.PM_EXPRESSION_RIGHTSHIFT:
-                    case PREDEFMETH.PM_EXPRESSION_SUBTRACT:
-                    case PREDEFMETH.PM_EXPRESSION_ORELSE:
-                    case PREDEFMETH.PM_EXPRESSION_ANDALSO:
-                    // Checked
-                    case PREDEFMETH.PM_EXPRESSION_ADDCHECKED:
-                    case PREDEFMETH.PM_EXPRESSION_MULTIPLYCHECKED:
-                    case PREDEFMETH.PM_EXPRESSION_SUBTRACTCHECKED:
-                        return GenerateBinaryOperator(pExpr);
-
-                    case PREDEFMETH.PM_EXPRESSION_ADD_USER_DEFINED:
-                    case PREDEFMETH.PM_EXPRESSION_AND_USER_DEFINED:
-                    case PREDEFMETH.PM_EXPRESSION_DIVIDE_USER_DEFINED:
-                    case PREDEFMETH.PM_EXPRESSION_EQUAL_USER_DEFINED:
-                    case PREDEFMETH.PM_EXPRESSION_EXCLUSIVEOR_USER_DEFINED:
-                    case PREDEFMETH.PM_EXPRESSION_GREATERTHAN_USER_DEFINED:
-                    case PREDEFMETH.PM_EXPRESSION_GREATERTHANOREQUAL_USER_DEFINED:
-                    case PREDEFMETH.PM_EXPRESSION_LEFTSHIFT_USER_DEFINED:
-                    case PREDEFMETH.PM_EXPRESSION_LESSTHAN_USER_DEFINED:
-                    case PREDEFMETH.PM_EXPRESSION_LESSTHANOREQUAL_USER_DEFINED:
-                    case PREDEFMETH.PM_EXPRESSION_MODULO_USER_DEFINED:
-                    case PREDEFMETH.PM_EXPRESSION_MULTIPLY_USER_DEFINED:
-                    case PREDEFMETH.PM_EXPRESSION_NOTEQUAL_USER_DEFINED:
-                    case PREDEFMETH.PM_EXPRESSION_OR_USER_DEFINED:
-                    case PREDEFMETH.PM_EXPRESSION_RIGHTSHIFT_USER_DEFINED:
-                    case PREDEFMETH.PM_EXPRESSION_SUBTRACT_USER_DEFINED:
-                    case PREDEFMETH.PM_EXPRESSION_ORELSE_USER_DEFINED:
-                    case PREDEFMETH.PM_EXPRESSION_ANDALSO_USER_DEFINED:
-                    // Checked
-                    case PREDEFMETH.PM_EXPRESSION_ADDCHECKED_USER_DEFINED:
-                    case PREDEFMETH.PM_EXPRESSION_MULTIPLYCHECKED_USER_DEFINED:
-                    case PREDEFMETH.PM_EXPRESSION_SUBTRACTCHECKED_USER_DEFINED:
-                        return GenerateUserDefinedBinaryOperator(pExpr);
-
-                    case PREDEFMETH.PM_EXPRESSION_NEGATE:
-                    case PREDEFMETH.PM_EXPRESSION_NOT:
-                    case PREDEFMETH.PM_EXPRESSION_NEGATECHECKED:
-                        return GenerateUnaryOperator(pExpr);
-
-                    case PREDEFMETH.PM_EXPRESSION_UNARYPLUS_USER_DEFINED:
-                    case PREDEFMETH.PM_EXPRESSION_NEGATE_USER_DEFINED:
-                    case PREDEFMETH.PM_EXPRESSION_NOT_USER_DEFINED:
-                    case PREDEFMETH.PM_EXPRESSION_NEGATECHECKED_USER_DEFINED:
-                        return GenerateUserDefinedUnaryOperator(pExpr);
-
-                    case PREDEFMETH.PM_EXPRESSION_CONSTANT_OBJECT_TYPE:
-                        return GenerateConstantType(pExpr);
-
-                    case PREDEFMETH.PM_EXPRESSION_ASSIGN:
-                        return GenerateAssignment(pExpr);
-
-                    default:
-                        Debug.Assert(false, "Invalid Predefined Method in VisitCALL");
-                        throw Error.InternalCompilerError();
-                }
+                return pExpr;
             }
-            return pExpr;
+
+            Expression exp;
+            switch (pExpr.PredefinedMethod)
+            {
+                case PREDEFMETH.PM_EXPRESSION_LAMBDA:
+                    return GenerateLambda(pExpr);
+
+                case PREDEFMETH.PM_EXPRESSION_CALL:
+                    exp = GenerateCall(pExpr);
+                    break;
+
+                case PREDEFMETH.PM_EXPRESSION_ARRAYINDEX:
+                case PREDEFMETH.PM_EXPRESSION_ARRAYINDEX2:
+                    exp = GenerateArrayIndex(pExpr);
+                    break;
+
+                case PREDEFMETH.PM_EXPRESSION_CONVERT:
+                case PREDEFMETH.PM_EXPRESSION_CONVERT_USER_DEFINED:
+                case PREDEFMETH.PM_EXPRESSION_CONVERTCHECKED:
+                case PREDEFMETH.PM_EXPRESSION_CONVERTCHECKED_USER_DEFINED:
+                    exp = GenerateConvert(pExpr);
+                    break;
+
+                case PREDEFMETH.PM_EXPRESSION_PROPERTY:
+                    exp = GenerateProperty(pExpr);
+                    break;
+
+                case PREDEFMETH.PM_EXPRESSION_FIELD:
+                    exp = GenerateField(pExpr);
+                    break;
+
+                case PREDEFMETH.PM_EXPRESSION_INVOKE:
+                    exp = GenerateInvoke(pExpr);
+                    break;
+
+                case PREDEFMETH.PM_EXPRESSION_NEW:
+                    exp = GenerateNew(pExpr);
+                    break;
+
+                case PREDEFMETH.PM_EXPRESSION_ADD:
+                case PREDEFMETH.PM_EXPRESSION_AND:
+                case PREDEFMETH.PM_EXPRESSION_DIVIDE:
+                case PREDEFMETH.PM_EXPRESSION_EQUAL:
+                case PREDEFMETH.PM_EXPRESSION_EXCLUSIVEOR:
+                case PREDEFMETH.PM_EXPRESSION_GREATERTHAN:
+                case PREDEFMETH.PM_EXPRESSION_GREATERTHANOREQUAL:
+                case PREDEFMETH.PM_EXPRESSION_LEFTSHIFT:
+                case PREDEFMETH.PM_EXPRESSION_LESSTHAN:
+                case PREDEFMETH.PM_EXPRESSION_LESSTHANOREQUAL:
+                case PREDEFMETH.PM_EXPRESSION_MODULO:
+                case PREDEFMETH.PM_EXPRESSION_MULTIPLY:
+                case PREDEFMETH.PM_EXPRESSION_NOTEQUAL:
+                case PREDEFMETH.PM_EXPRESSION_OR:
+                case PREDEFMETH.PM_EXPRESSION_RIGHTSHIFT:
+                case PREDEFMETH.PM_EXPRESSION_SUBTRACT:
+                case PREDEFMETH.PM_EXPRESSION_ORELSE:
+                case PREDEFMETH.PM_EXPRESSION_ANDALSO:
+                // Checked
+                case PREDEFMETH.PM_EXPRESSION_ADDCHECKED:
+                case PREDEFMETH.PM_EXPRESSION_MULTIPLYCHECKED:
+                case PREDEFMETH.PM_EXPRESSION_SUBTRACTCHECKED:
+                    exp = GenerateBinaryOperator(pExpr);
+                    break;
+
+                case PREDEFMETH.PM_EXPRESSION_ADD_USER_DEFINED:
+                case PREDEFMETH.PM_EXPRESSION_AND_USER_DEFINED:
+                case PREDEFMETH.PM_EXPRESSION_DIVIDE_USER_DEFINED:
+                case PREDEFMETH.PM_EXPRESSION_EQUAL_USER_DEFINED:
+                case PREDEFMETH.PM_EXPRESSION_EXCLUSIVEOR_USER_DEFINED:
+                case PREDEFMETH.PM_EXPRESSION_GREATERTHAN_USER_DEFINED:
+                case PREDEFMETH.PM_EXPRESSION_GREATERTHANOREQUAL_USER_DEFINED:
+                case PREDEFMETH.PM_EXPRESSION_LEFTSHIFT_USER_DEFINED:
+                case PREDEFMETH.PM_EXPRESSION_LESSTHAN_USER_DEFINED:
+                case PREDEFMETH.PM_EXPRESSION_LESSTHANOREQUAL_USER_DEFINED:
+                case PREDEFMETH.PM_EXPRESSION_MODULO_USER_DEFINED:
+                case PREDEFMETH.PM_EXPRESSION_MULTIPLY_USER_DEFINED:
+                case PREDEFMETH.PM_EXPRESSION_NOTEQUAL_USER_DEFINED:
+                case PREDEFMETH.PM_EXPRESSION_OR_USER_DEFINED:
+                case PREDEFMETH.PM_EXPRESSION_RIGHTSHIFT_USER_DEFINED:
+                case PREDEFMETH.PM_EXPRESSION_SUBTRACT_USER_DEFINED:
+                case PREDEFMETH.PM_EXPRESSION_ORELSE_USER_DEFINED:
+                case PREDEFMETH.PM_EXPRESSION_ANDALSO_USER_DEFINED:
+                // Checked
+                case PREDEFMETH.PM_EXPRESSION_ADDCHECKED_USER_DEFINED:
+                case PREDEFMETH.PM_EXPRESSION_MULTIPLYCHECKED_USER_DEFINED:
+                case PREDEFMETH.PM_EXPRESSION_SUBTRACTCHECKED_USER_DEFINED:
+                    exp = GenerateUserDefinedBinaryOperator(pExpr);
+                    break;
+
+                case PREDEFMETH.PM_EXPRESSION_NEGATE:
+                case PREDEFMETH.PM_EXPRESSION_NOT:
+                case PREDEFMETH.PM_EXPRESSION_NEGATECHECKED:
+                    exp = GenerateUnaryOperator(pExpr);
+                    break;
+
+                case PREDEFMETH.PM_EXPRESSION_UNARYPLUS_USER_DEFINED:
+                case PREDEFMETH.PM_EXPRESSION_NEGATE_USER_DEFINED:
+                case PREDEFMETH.PM_EXPRESSION_NOT_USER_DEFINED:
+                case PREDEFMETH.PM_EXPRESSION_NEGATECHECKED_USER_DEFINED:
+                    exp = GenerateUserDefinedUnaryOperator(pExpr);
+                    break;
+
+                case PREDEFMETH.PM_EXPRESSION_CONSTANT_OBJECT_TYPE:
+                    exp = GenerateConstantType(pExpr);
+                    break;
+
+                case PREDEFMETH.PM_EXPRESSION_ASSIGN:
+                    exp = GenerateAssignment(pExpr);
+                    break;
+
+                default:
+                    Debug.Assert(false, "Invalid Predefined Method in VisitCALL");
+                    throw Error.InternalCompilerError();
+            }
+
+            return new ExpressionExpr(exp);
         }
 
         #region Generators
         /////////////////////////////////////////////////////////////////////////////////
 
-        private ExpressionEXPR GenerateLambda(ExprCall pExpr)
+        private Expr GenerateLambda(ExprCall pExpr)
         {
             // We always call Lambda(body, arrayinit) where the arrayinit 
             // is the initialization of the parameters.
-            ExpressionEXPR body = Visit(pExpr.OptionalArguments.asLIST().OptionalElement) as ExpressionEXPR;
-
-            Expression e = body.Expression;
+            return Visit(pExpr.OptionalArguments.asLIST().OptionalElement);
 
             /*
              * // Do we need to do this?
+            Expression e = (body as ExpressionExpr).Expression;
             if (e.Type.IsValueType)
             {
                 // If we have a value type, convert it to object so that boxing
@@ -226,12 +234,11 @@ namespace Microsoft.CSharp.RuntimeBinder
                 e = Expression.Convert(body.Expression, typeof(object));
             }
              * */
-            return new ExpressionEXPR(e);
         }
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private ExpressionEXPR GenerateCall(ExprCall pExpr)
+        private Expression GenerateCall(ExprCall pExpr)
         {
             // Our arguments are: object, methodinfo, parameters.
             // The object is either an EXPRWRAP of a CALL, or a CALL that is a PM_CONVERT, whose
@@ -269,12 +276,12 @@ namespace Microsoft.CSharp.RuntimeBinder
                 obj = GetExpression(pExpr.OptionalArguments.asLIST().OptionalElement);
             }
 
-            return new ExpressionEXPR(Expression.Call(obj, m, arguments));
+            return Expression.Call(obj, m, arguments);
         }
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private ExpressionEXPR GenerateArrayIndex(ExprCall pExpr)
+        private Expression GenerateArrayIndex(ExprCall pExpr)
         {
             // We have two possibilities here - we're either a single index array, in which 
             // case we'll be PM_EXPRESSION_ARRAYINDEX, or we have multiple dimensions,
@@ -294,12 +301,12 @@ namespace Microsoft.CSharp.RuntimeBinder
                 Debug.Assert(pExpr.PredefinedMethod == PREDEFMETH.PM_EXPRESSION_ARRAYINDEX2);
                 indices = GetArgumentsFromArrayInit(list.OptionalNextListNode.asARRINIT());
             }
-            return new ExpressionEXPR(Expression.ArrayAccess(obj, indices));
+            return Expression.ArrayAccess(obj, indices);
         }
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private ExpressionEXPR GenerateConvert(ExprCall pExpr)
+        private Expression GenerateConvert(ExprCall pExpr)
         {
             PREDEFMETH pm = pExpr.PredefinedMethod;
             Expression e;
@@ -321,7 +328,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 if (e.Type.MakeByRefType() == t)
                 {
                     // We're trying to convert from a type to its by ref type. Don't do that.
-                    return new ExpressionEXPR(e);
+                    return e;
                 }
                 Debug.Assert((pExpr.Flags & EXPRFLAG.EXF_UNBOXRUNTIME) == 0);
 
@@ -329,9 +336,9 @@ namespace Microsoft.CSharp.RuntimeBinder
 
                 if (pm == PREDEFMETH.PM_EXPRESSION_CONVERT_USER_DEFINED)
                 {
-                    return new ExpressionEXPR(Expression.Convert(e, t, m));
+                    return Expression.Convert(e, t, m);
                 }
-                return new ExpressionEXPR(Expression.ConvertChecked(e, t, m));
+                return Expression.ConvertChecked(e, t, m);
             }
             else
             {
@@ -349,26 +356,26 @@ namespace Microsoft.CSharp.RuntimeBinder
                 if (e.Type.MakeByRefType() == t)
                 {
                     // We're trying to convert from a type to its by ref type. Don't do that.
-                    return new ExpressionEXPR(e);
+                    return e;
                 }
 
                 if ((pExpr.Flags & EXPRFLAG.EXF_UNBOXRUNTIME) != 0)
                 {
                     // If we want to unbox this thing, return that instead of the convert.
-                    return new ExpressionEXPR(Expression.Unbox(e, t));
+                    return Expression.Unbox(e, t);
                 }
 
                 if (pm == PREDEFMETH.PM_EXPRESSION_CONVERT)
                 {
-                    return new ExpressionEXPR(Expression.Convert(e, t));
+                    return Expression.Convert(e, t);
                 }
-                return new ExpressionEXPR(Expression.ConvertChecked(e, t));
+                return Expression.ConvertChecked(e, t);
             }
         }
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private ExpressionEXPR GenerateProperty(ExprCall pExpr)
+        private Expression GenerateProperty(ExprCall pExpr)
         {
             ExprList list = pExpr.asCALL().OptionalArguments.asLIST();
 
@@ -389,14 +396,15 @@ namespace Microsoft.CSharp.RuntimeBinder
 
             if (arguments == null)
             {
-                return new ExpressionEXPR(Expression.Property(GetExpression(instance), p));
+                return Expression.Property(GetExpression(instance), p);
             }
-            return new ExpressionEXPR(Expression.Property(GetExpression(instance), p, GetArgumentsFromArrayInit(arguments)));
+
+            return Expression.Property(GetExpression(instance), p, GetArgumentsFromArrayInit(arguments));
         }
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private ExpressionEXPR GenerateField(ExprCall pExpr)
+        private Expression GenerateField(ExprCall pExpr)
         {
             ExprList list = pExpr.asCALL().OptionalArguments.asLIST();
             Type t = list.OptionalNextListNode.asFIELDINFO().FieldType.AssociatedSystemType;
@@ -416,57 +424,56 @@ namespace Microsoft.CSharp.RuntimeBinder
                 f = t.GetField(f.Name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
             }
 
-            return new ExpressionEXPR(Expression.Field(GetExpression(list.OptionalElement), f));
+            return Expression.Field(GetExpression(list.OptionalElement), f);
         }
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private ExpressionEXPR GenerateInvoke(ExprCall pExpr)
+        private Expression GenerateInvoke(ExprCall pExpr)
         {
             ExprList list = pExpr.asCALL().OptionalArguments.asLIST();
 
-            return new ExpressionEXPR(Expression.Invoke(
+            return Expression.Invoke(
                 GetExpression(list.OptionalElement),
-                GetArgumentsFromArrayInit(list.OptionalNextListNode.asARRINIT())));
+                GetArgumentsFromArrayInit(list.OptionalNextListNode.asARRINIT()));
         }
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private ExpressionEXPR GenerateNew(ExprCall pExpr)
+        private Expression GenerateNew(ExprCall pExpr)
         {
             ExprList list = pExpr.asCALL().OptionalArguments.asLIST();
 
             var constructor = GetConstructorInfoFromExpr(list.OptionalElement.asMETHODINFO());
             var arguments = GetArgumentsFromArrayInit(list.OptionalNextListNode.asARRINIT());
-            return new ExpressionEXPR(Expression.New(constructor, arguments));
+            return Expression.New(constructor, arguments);
         }
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private ExpressionEXPR GenerateConstantType(ExprCall pExpr)
+        private Expression GenerateConstantType(ExprCall pExpr)
         {
             ExprList list = pExpr.OptionalArguments.asLIST();
 
-            return new ExpressionEXPR(
-                Expression.Constant(
-                    GetObject(list.OptionalElement),
-                    list.OptionalNextListNode.asTYPEOF().SourceType.Type.AssociatedSystemType));
+            return Expression.Constant(
+                GetObject(list.OptionalElement),
+                list.OptionalNextListNode.asTYPEOF().SourceType.Type.AssociatedSystemType);
         }
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private ExpressionEXPR GenerateAssignment(ExprCall pExpr)
+        private Expression GenerateAssignment(ExprCall pExpr)
         {
             ExprList list = pExpr.OptionalArguments.asLIST();
 
-            return new ExpressionEXPR(Expression.Assign(
+            return Expression.Assign(
                 GetExpression(list.OptionalElement),
-                GetExpression(list.OptionalNextListNode)));
+                GetExpression(list.OptionalNextListNode));
         }
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private ExpressionEXPR GenerateBinaryOperator(ExprCall pExpr)
+        private Expression GenerateBinaryOperator(ExprCall pExpr)
         {
             Expression arg1 = GetExpression(pExpr.OptionalArguments.asLIST().OptionalElement);
             Expression arg2 = GetExpression(pExpr.OptionalArguments.asLIST().OptionalNextListNode);
@@ -474,49 +481,49 @@ namespace Microsoft.CSharp.RuntimeBinder
             switch (pExpr.PredefinedMethod)
             {
                 case PREDEFMETH.PM_EXPRESSION_ADD:
-                    return new ExpressionEXPR(Expression.Add(arg1, arg2));
+                    return Expression.Add(arg1, arg2);
                 case PREDEFMETH.PM_EXPRESSION_AND:
-                    return new ExpressionEXPR(Expression.And(arg1, arg2));
+                    return Expression.And(arg1, arg2);
                 case PREDEFMETH.PM_EXPRESSION_DIVIDE:
-                    return new ExpressionEXPR(Expression.Divide(arg1, arg2));
+                    return Expression.Divide(arg1, arg2);
                 case PREDEFMETH.PM_EXPRESSION_EQUAL:
-                    return new ExpressionEXPR(Expression.Equal(arg1, arg2));
+                    return Expression.Equal(arg1, arg2);
                 case PREDEFMETH.PM_EXPRESSION_EXCLUSIVEOR:
-                    return new ExpressionEXPR(Expression.ExclusiveOr(arg1, arg2));
+                    return Expression.ExclusiveOr(arg1, arg2);
                 case PREDEFMETH.PM_EXPRESSION_GREATERTHAN:
-                    return new ExpressionEXPR(Expression.GreaterThan(arg1, arg2));
+                    return Expression.GreaterThan(arg1, arg2);
                 case PREDEFMETH.PM_EXPRESSION_GREATERTHANOREQUAL:
-                    return new ExpressionEXPR(Expression.GreaterThanOrEqual(arg1, arg2));
+                    return Expression.GreaterThanOrEqual(arg1, arg2);
                 case PREDEFMETH.PM_EXPRESSION_LEFTSHIFT:
-                    return new ExpressionEXPR(Expression.LeftShift(arg1, arg2));
+                    return Expression.LeftShift(arg1, arg2);
                 case PREDEFMETH.PM_EXPRESSION_LESSTHAN:
-                    return new ExpressionEXPR(Expression.LessThan(arg1, arg2));
+                    return Expression.LessThan(arg1, arg2);
                 case PREDEFMETH.PM_EXPRESSION_LESSTHANOREQUAL:
-                    return new ExpressionEXPR(Expression.LessThanOrEqual(arg1, arg2));
+                    return Expression.LessThanOrEqual(arg1, arg2);
                 case PREDEFMETH.PM_EXPRESSION_MODULO:
-                    return new ExpressionEXPR(Expression.Modulo(arg1, arg2));
+                    return Expression.Modulo(arg1, arg2);
                 case PREDEFMETH.PM_EXPRESSION_MULTIPLY:
-                    return new ExpressionEXPR(Expression.Multiply(arg1, arg2));
+                    return Expression.Multiply(arg1, arg2);
                 case PREDEFMETH.PM_EXPRESSION_NOTEQUAL:
-                    return new ExpressionEXPR(Expression.NotEqual(arg1, arg2));
+                    return Expression.NotEqual(arg1, arg2);
                 case PREDEFMETH.PM_EXPRESSION_OR:
-                    return new ExpressionEXPR(Expression.Or(arg1, arg2));
+                    return Expression.Or(arg1, arg2);
                 case PREDEFMETH.PM_EXPRESSION_RIGHTSHIFT:
-                    return new ExpressionEXPR(Expression.RightShift(arg1, arg2));
+                    return Expression.RightShift(arg1, arg2);
                 case PREDEFMETH.PM_EXPRESSION_SUBTRACT:
-                    return new ExpressionEXPR(Expression.Subtract(arg1, arg2));
+                    return Expression.Subtract(arg1, arg2);
                 case PREDEFMETH.PM_EXPRESSION_ORELSE:
-                    return new ExpressionEXPR(Expression.OrElse(arg1, arg2));
+                    return Expression.OrElse(arg1, arg2);
                 case PREDEFMETH.PM_EXPRESSION_ANDALSO:
-                    return new ExpressionEXPR(Expression.AndAlso(arg1, arg2));
+                    return Expression.AndAlso(arg1, arg2);
 
                 // Checked
                 case PREDEFMETH.PM_EXPRESSION_ADDCHECKED:
-                    return new ExpressionEXPR(Expression.AddChecked(arg1, arg2));
+                    return Expression.AddChecked(arg1, arg2);
                 case PREDEFMETH.PM_EXPRESSION_MULTIPLYCHECKED:
-                    return new ExpressionEXPR(Expression.MultiplyChecked(arg1, arg2));
+                    return Expression.MultiplyChecked(arg1, arg2);
                 case PREDEFMETH.PM_EXPRESSION_SUBTRACTCHECKED:
-                    return new ExpressionEXPR(Expression.SubtractChecked(arg1, arg2));
+                    return Expression.SubtractChecked(arg1, arg2);
 
                 default:
                     Debug.Assert(false, "Invalid Predefined Method in GenerateBinaryOperator");
@@ -526,7 +533,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private ExpressionEXPR GenerateUserDefinedBinaryOperator(ExprCall pExpr)
+        private Expression GenerateUserDefinedBinaryOperator(ExprCall pExpr)
         {
             ExprList list = pExpr.OptionalArguments.asLIST();
             Expression arg1 = GetExpression(list.OptionalElement);
@@ -549,49 +556,49 @@ namespace Microsoft.CSharp.RuntimeBinder
             switch (pExpr.PredefinedMethod)
             {
                 case PREDEFMETH.PM_EXPRESSION_ADD_USER_DEFINED:
-                    return new ExpressionEXPR(Expression.Add(arg1, arg2, methodInfo));
+                    return Expression.Add(arg1, arg2, methodInfo);
                 case PREDEFMETH.PM_EXPRESSION_AND_USER_DEFINED:
-                    return new ExpressionEXPR(Expression.And(arg1, arg2, methodInfo));
+                    return Expression.And(arg1, arg2, methodInfo);
                 case PREDEFMETH.PM_EXPRESSION_DIVIDE_USER_DEFINED:
-                    return new ExpressionEXPR(Expression.Divide(arg1, arg2, methodInfo));
+                    return Expression.Divide(arg1, arg2, methodInfo);
                 case PREDEFMETH.PM_EXPRESSION_EQUAL_USER_DEFINED:
-                    return new ExpressionEXPR(Expression.Equal(arg1, arg2, bIsLifted, methodInfo));
+                    return Expression.Equal(arg1, arg2, bIsLifted, methodInfo);
                 case PREDEFMETH.PM_EXPRESSION_EXCLUSIVEOR_USER_DEFINED:
-                    return new ExpressionEXPR(Expression.ExclusiveOr(arg1, arg2, methodInfo));
+                    return Expression.ExclusiveOr(arg1, arg2, methodInfo);
                 case PREDEFMETH.PM_EXPRESSION_GREATERTHAN_USER_DEFINED:
-                    return new ExpressionEXPR(Expression.GreaterThan(arg1, arg2, bIsLifted, methodInfo));
+                    return Expression.GreaterThan(arg1, arg2, bIsLifted, methodInfo);
                 case PREDEFMETH.PM_EXPRESSION_GREATERTHANOREQUAL_USER_DEFINED:
-                    return new ExpressionEXPR(Expression.GreaterThanOrEqual(arg1, arg2, bIsLifted, methodInfo));
+                    return Expression.GreaterThanOrEqual(arg1, arg2, bIsLifted, methodInfo);
                 case PREDEFMETH.PM_EXPRESSION_LEFTSHIFT_USER_DEFINED:
-                    return new ExpressionEXPR(Expression.LeftShift(arg1, arg2, methodInfo));
+                    return Expression.LeftShift(arg1, arg2, methodInfo);
                 case PREDEFMETH.PM_EXPRESSION_LESSTHAN_USER_DEFINED:
-                    return new ExpressionEXPR(Expression.LessThan(arg1, arg2, bIsLifted, methodInfo));
+                    return Expression.LessThan(arg1, arg2, bIsLifted, methodInfo);
                 case PREDEFMETH.PM_EXPRESSION_LESSTHANOREQUAL_USER_DEFINED:
-                    return new ExpressionEXPR(Expression.LessThanOrEqual(arg1, arg2, bIsLifted, methodInfo));
+                    return Expression.LessThanOrEqual(arg1, arg2, bIsLifted, methodInfo);
                 case PREDEFMETH.PM_EXPRESSION_MODULO_USER_DEFINED:
-                    return new ExpressionEXPR(Expression.Modulo(arg1, arg2, methodInfo));
+                    return Expression.Modulo(arg1, arg2, methodInfo);
                 case PREDEFMETH.PM_EXPRESSION_MULTIPLY_USER_DEFINED:
-                    return new ExpressionEXPR(Expression.Multiply(arg1, arg2, methodInfo));
+                    return Expression.Multiply(arg1, arg2, methodInfo);
                 case PREDEFMETH.PM_EXPRESSION_NOTEQUAL_USER_DEFINED:
-                    return new ExpressionEXPR(Expression.NotEqual(arg1, arg2, bIsLifted, methodInfo));
+                    return Expression.NotEqual(arg1, arg2, bIsLifted, methodInfo);
                 case PREDEFMETH.PM_EXPRESSION_OR_USER_DEFINED:
-                    return new ExpressionEXPR(Expression.Or(arg1, arg2, methodInfo));
+                    return Expression.Or(arg1, arg2, methodInfo);
                 case PREDEFMETH.PM_EXPRESSION_RIGHTSHIFT_USER_DEFINED:
-                    return new ExpressionEXPR(Expression.RightShift(arg1, arg2, methodInfo));
+                    return Expression.RightShift(arg1, arg2, methodInfo);
                 case PREDEFMETH.PM_EXPRESSION_SUBTRACT_USER_DEFINED:
-                    return new ExpressionEXPR(Expression.Subtract(arg1, arg2, methodInfo));
+                    return Expression.Subtract(arg1, arg2, methodInfo);
                 case PREDEFMETH.PM_EXPRESSION_ORELSE_USER_DEFINED:
-                    return new ExpressionEXPR(Expression.OrElse(arg1, arg2, methodInfo));
+                    return Expression.OrElse(arg1, arg2, methodInfo);
                 case PREDEFMETH.PM_EXPRESSION_ANDALSO_USER_DEFINED:
-                    return new ExpressionEXPR(Expression.AndAlso(arg1, arg2, methodInfo));
+                    return Expression.AndAlso(arg1, arg2, methodInfo);
 
                 // Checked
                 case PREDEFMETH.PM_EXPRESSION_ADDCHECKED_USER_DEFINED:
-                    return new ExpressionEXPR(Expression.AddChecked(arg1, arg2, methodInfo));
+                    return Expression.AddChecked(arg1, arg2, methodInfo);
                 case PREDEFMETH.PM_EXPRESSION_MULTIPLYCHECKED_USER_DEFINED:
-                    return new ExpressionEXPR(Expression.MultiplyChecked(arg1, arg2, methodInfo));
+                    return Expression.MultiplyChecked(arg1, arg2, methodInfo);
                 case PREDEFMETH.PM_EXPRESSION_SUBTRACTCHECKED_USER_DEFINED:
-                    return new ExpressionEXPR(Expression.SubtractChecked(arg1, arg2, methodInfo));
+                    return Expression.SubtractChecked(arg1, arg2, methodInfo);
 
                 default:
                     Debug.Assert(false, "Invalid Predefined Method in GenerateUserDefinedBinaryOperator");
@@ -601,7 +608,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private ExpressionEXPR GenerateUnaryOperator(ExprCall pExpr)
+        private Expression GenerateUnaryOperator(ExprCall pExpr)
         {
             PREDEFMETH pm = pExpr.PredefinedMethod;
             Expression arg = GetExpression(pExpr.OptionalArguments);
@@ -609,13 +616,13 @@ namespace Microsoft.CSharp.RuntimeBinder
             switch (pm)
             {
                 case PREDEFMETH.PM_EXPRESSION_NOT:
-                    return new ExpressionEXPR(Expression.Not(arg));
+                    return Expression.Not(arg);
 
                 case PREDEFMETH.PM_EXPRESSION_NEGATE:
-                    return new ExpressionEXPR(Expression.Negate(arg));
+                    return Expression.Negate(arg);
 
                 case PREDEFMETH.PM_EXPRESSION_NEGATECHECKED:
-                    return new ExpressionEXPR(Expression.NegateChecked(arg));
+                    return Expression.NegateChecked(arg);
 
                 default:
                     Debug.Assert(false, "Invalid Predefined Method in GenerateUnaryOperator");
@@ -625,7 +632,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private ExpressionEXPR GenerateUserDefinedUnaryOperator(ExprCall pExpr)
+        private Expression GenerateUserDefinedUnaryOperator(ExprCall pExpr)
         {
             PREDEFMETH pm = pExpr.PredefinedMethod;
             ExprList list = pExpr.OptionalArguments.asLIST();
@@ -635,16 +642,16 @@ namespace Microsoft.CSharp.RuntimeBinder
             switch (pm)
             {
                 case PREDEFMETH.PM_EXPRESSION_NOT_USER_DEFINED:
-                    return new ExpressionEXPR(Expression.Not(arg, methodInfo));
+                    return Expression.Not(arg, methodInfo);
 
                 case PREDEFMETH.PM_EXPRESSION_NEGATE_USER_DEFINED:
-                    return new ExpressionEXPR(Expression.Negate(arg, methodInfo));
+                    return Expression.Negate(arg, methodInfo);
 
                 case PREDEFMETH.PM_EXPRESSION_UNARYPLUS_USER_DEFINED:
-                    return new ExpressionEXPR(Expression.UnaryPlus(arg, methodInfo));
+                    return Expression.UnaryPlus(arg, methodInfo);
 
                 case PREDEFMETH.PM_EXPRESSION_NEGATECHECKED_USER_DEFINED:
-                    return new ExpressionEXPR(Expression.NegateChecked(arg, methodInfo));
+                    return Expression.NegateChecked(arg, methodInfo);
 
                 default:
                     Debug.Assert(false, "Invalid Predefined Method in GenerateUserDefinedUnaryOperator");
@@ -748,13 +755,13 @@ namespace Microsoft.CSharp.RuntimeBinder
                 switch (pm)
                 {
                     case PREDEFMETH.PM_EXPRESSION_CALL:
-                        return GenerateCall(call).Expression;
+                        return GenerateCall(call);
 
                     case PREDEFMETH.PM_EXPRESSION_CONVERT:
                     case PREDEFMETH.PM_EXPRESSION_CONVERT_USER_DEFINED:
                     case PREDEFMETH.PM_EXPRESSION_CONVERTCHECKED:
                     case PREDEFMETH.PM_EXPRESSION_CONVERTCHECKED_USER_DEFINED:
-                        return GenerateConvert(call).Expression;
+                        return GenerateConvert(call);
 
                     case PREDEFMETH.PM_EXPRESSION_NEWARRAYINIT:
                         {
@@ -766,22 +773,22 @@ namespace Microsoft.CSharp.RuntimeBinder
 
                     case PREDEFMETH.PM_EXPRESSION_ARRAYINDEX:
                     case PREDEFMETH.PM_EXPRESSION_ARRAYINDEX2:
-                        return GenerateArrayIndex(call).Expression;
+                        return GenerateArrayIndex(call);
 
                     case PREDEFMETH.PM_EXPRESSION_NEW:
-                        return GenerateNew(call).Expression;
+                        return GenerateNew(call);
 
                     case PREDEFMETH.PM_EXPRESSION_PROPERTY:
-                        return GenerateProperty(call).Expression;
+                        return GenerateProperty(call);
 
                     case PREDEFMETH.PM_EXPRESSION_FIELD:
-                        return GenerateField(call).Expression;
+                        return GenerateField(call);
 
                     case PREDEFMETH.PM_EXPRESSION_CONSTANT_OBJECT_TYPE:
-                        return GenerateConstantType(call).Expression;
+                        return GenerateConstantType(call);
 
                     case PREDEFMETH.PM_EXPRESSION_ASSIGN:
-                        return GenerateAssignment(call).Expression;
+                        return GenerateAssignment(call);
 
                     case PREDEFMETH.PM_EXPRESSION_ADD:
                     case PREDEFMETH.PM_EXPRESSION_AND:
@@ -805,7 +812,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                     case PREDEFMETH.PM_EXPRESSION_ADDCHECKED:
                     case PREDEFMETH.PM_EXPRESSION_MULTIPLYCHECKED:
                     case PREDEFMETH.PM_EXPRESSION_SUBTRACTCHECKED:
-                        return GenerateBinaryOperator(call).Expression;
+                        return GenerateBinaryOperator(call);
 
                     case PREDEFMETH.PM_EXPRESSION_ADD_USER_DEFINED:
                     case PREDEFMETH.PM_EXPRESSION_AND_USER_DEFINED:
@@ -829,18 +836,18 @@ namespace Microsoft.CSharp.RuntimeBinder
                     case PREDEFMETH.PM_EXPRESSION_ADDCHECKED_USER_DEFINED:
                     case PREDEFMETH.PM_EXPRESSION_MULTIPLYCHECKED_USER_DEFINED:
                     case PREDEFMETH.PM_EXPRESSION_SUBTRACTCHECKED_USER_DEFINED:
-                        return GenerateUserDefinedBinaryOperator(call).Expression;
+                        return GenerateUserDefinedBinaryOperator(call);
 
                     case PREDEFMETH.PM_EXPRESSION_NOT:
                     case PREDEFMETH.PM_EXPRESSION_NEGATE:
                     case PREDEFMETH.PM_EXPRESSION_NEGATECHECKED:
-                        return GenerateUnaryOperator(call).Expression;
+                        return GenerateUnaryOperator(call);
 
                     case PREDEFMETH.PM_EXPRESSION_NOT_USER_DEFINED:
                     case PREDEFMETH.PM_EXPRESSION_NEGATE_USER_DEFINED:
                     case PREDEFMETH.PM_EXPRESSION_UNARYPLUS_USER_DEFINED:
                     case PREDEFMETH.PM_EXPRESSION_NEGATECHECKED_USER_DEFINED:
-                        return GenerateUserDefinedUnaryOperator(call).Expression;
+                        return GenerateUserDefinedUnaryOperator(call);
 
                     default:
                         Debug.Assert(false, "Invalid Predefined Method in GetExpression");
