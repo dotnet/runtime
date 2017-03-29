@@ -1,9 +1,9 @@
 {
   "dependencies": {
-    "Microsoft.NETCore.Platforms": "2.0.0-beta-25124-07",
-    "Microsoft.Private.CoreFx.NETCoreApp": "4.4.0-beta-25124-07",
-    "System.Memory": "4.4.0-beta-25124-07",
-    "System.Runtime.CompilerServices.Unsafe": "4.4.0-beta-25124-07"
+    "Microsoft.NETCore.Platforms": "2.0.0-beta-25129-02",
+    "Microsoft.Private.CoreFx.NETCoreApp": "4.4.0-beta-25129-02",
+    "System.Memory": "4.4.0-beta-25129-02",
+    "System.Runtime.CompilerServices.Unsafe": "4.4.0-beta-25129-02"
   },
   "frameworks": {
     "netcoreapp2.0": {
