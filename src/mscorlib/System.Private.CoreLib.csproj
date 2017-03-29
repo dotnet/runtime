@@ -322,13 +322,10 @@
     <Compile Include="$(BclSourcesRoot)\System\String.Comparison.cs" />
     <Compile Include="$(BclSourcesRoot)\System\String.Manipulation.cs" />
     <Compile Include="$(BclSourcesRoot)\System\String.Searching.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\StringComparer.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\StringComparison.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Text\StringBuilder.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Text\StringBuilderCache.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Exception.cs" />
     <Compile Include="$(BclSourcesRoot)\System\DateTime.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\DateTimeOffset.cs" />
     <Compile Include="$(BclSourcesRoot)\System\OutOfMemoryException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Delegate.cs" />
     <Compile Include="$(BclSourcesRoot)\System\MulticastDelegate.cs" />
