@@ -510,7 +510,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     // then let us through.
                     if (methprop.isParamArray &&
                         index < pArguments.carg &&
-                        pArguments.prgexpr[index].isARRINIT() && pArguments.prgexpr[index].asARRINIT().GeneratedForParamArray)
+                        pArguments.prgexpr[index] is ExprArrayInit arrayInit && arrayInit.GeneratedForParamArray)
                     {
                         paramArrayArgument = pArguments.prgexpr[index];
                     }
@@ -518,7 +518,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     // Positional.
                     if (index < pArguments.carg &&
                         !pArguments.prgexpr[index].isNamedArgumentSpecification() &&
-                        !(pArguments.prgexpr[index].isARRINIT() && pArguments.prgexpr[index].asARRINIT().GeneratedForParamArray))
+                        !(pArguments.prgexpr[index] is ExprArrayInit arrayInitPos && arrayInitPos.GeneratedForParamArray))
                     {
                         pExprArguments[index] = pArguments.prgexpr[index++];
                         continue;

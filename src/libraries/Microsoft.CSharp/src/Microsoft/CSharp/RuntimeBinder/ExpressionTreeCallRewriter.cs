@@ -246,7 +246,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             if (list.OptionalNextListNode is ExprList next)
             {
                 methinfo = (ExprMethodInfo)next.OptionalElement;
-                arrinit = next.OptionalNextListNode.asARRINIT();
+                arrinit = next.OptionalNextListNode as ExprArrayInit;
             }
             else
             {
@@ -295,7 +295,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             else
             {
                 Debug.Assert(pExpr.PredefinedMethod == PREDEFMETH.PM_EXPRESSION_ARRAYINDEX2);
-                indices = GetArgumentsFromArrayInit(list.OptionalNextListNode.asARRINIT());
+                indices = GetArgumentsFromArrayInit(list.OptionalNextListNode as ExprArrayInit);
             }
             return Expression.ArrayAccess(obj, indices);
         }
@@ -382,7 +382,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             if (nextNode is ExprList nextList)
             {
                 propinfo = nextList.OptionalElement as ExprPropertyInfo;
-                arguments = nextList.OptionalNextListNode.asARRINIT();
+                arguments = nextList.OptionalNextListNode as ExprArrayInit;
             }
             else
             {
@@ -441,7 +441,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
             return Expression.Invoke(
                 GetExpression(list.OptionalElement),
-                GetArgumentsFromArrayInit(list.OptionalNextListNode.asARRINIT()));
+                GetArgumentsFromArrayInit(list.OptionalNextListNode as ExprArrayInit));
         }
 
         /////////////////////////////////////////////////////////////////////////////////
@@ -450,8 +450,8 @@ namespace Microsoft.CSharp.RuntimeBinder
         {
             ExprList list = pExpr.OptionalArguments as ExprList;
 
-            var constructor = GetConstructorInfoFromExpr((ExprMethodInfo)list.OptionalElement);
-            var arguments = GetArgumentsFromArrayInit(list.OptionalNextListNode.asARRINIT());
+            var constructor = GetConstructorInfoFromExpr(list.OptionalElement as ExprMethodInfo);
+            var arguments = GetArgumentsFromArrayInit(list.OptionalNextListNode as ExprArrayInit);
             return Expression.New(constructor, arguments);
         }
 
@@ -778,7 +778,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                         return
                             Expression.NewArrayInit(
                                 ((ExprTypeOf)list.OptionalElement).SourceType.Type.AssociatedSystemType,
-                                GetArgumentsFromArrayInit(list.OptionalNextListNode.asARRINIT()));
+                                GetArgumentsFromArrayInit(list.OptionalNextListNode as ExprArrayInit));
                     }
 
                     case PREDEFMETH.PM_EXPRESSION_ARRAYINDEX:

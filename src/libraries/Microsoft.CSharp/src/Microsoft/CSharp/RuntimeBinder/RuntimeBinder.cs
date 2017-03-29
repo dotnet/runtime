@@ -1170,9 +1170,9 @@ namespace Microsoft.CSharp.RuntimeBinder
             {
                 pArg = pArg.asNamedArgumentSpecification().Value;
             }
-            else if (pArg.isARRINIT())
+            else if (pArg is ExprArrayInit init)
             {
-                pArg.asARRINIT().OptionalArguments = StripNamedArguments(pArg.asARRINIT().OptionalArguments);
+                init.OptionalArguments = StripNamedArguments(init.OptionalArguments);
             }
 
             return pArg;
