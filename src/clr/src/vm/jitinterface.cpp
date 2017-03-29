@@ -9917,15 +9917,12 @@ void CEEInfo::getEEInfo(CORINFO_EE_INFO *pEEInfoOut)
     pEEInfoOut->maxUncheckedOffsetForNullObject = MAX_UNCHECKED_OFFSET_FOR_NULL_OBJECT;
     pEEInfoOut->targetAbi = CORINFO_CORECLR_ABI;
 
-    OSVERSIONINFO   sVerInfo;
-    sVerInfo.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-    GetOSVersion(&sVerInfo);
-
     pEEInfoOut->osType = CORINFO_WINNT;
 
-    pEEInfoOut->osMajor = sVerInfo.dwMajorVersion;
-    pEEInfoOut->osMinor = sVerInfo.dwMinorVersion;
-    pEEInfoOut->osBuild = sVerInfo.dwBuildNumber;
+    // hardcode OS version to 0.0.0. These fields can be removed from JITEE interface
+    pEEInfoOut->osMajor = 0;
+    pEEInfoOut->osMinor = 0;
+    pEEInfoOut->osBuild = 0;
 
     EE_TO_JIT_TRANSITION();
 }
