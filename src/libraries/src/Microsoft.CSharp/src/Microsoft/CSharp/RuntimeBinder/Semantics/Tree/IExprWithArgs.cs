@@ -4,8 +4,10 @@
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    internal interface IExprWithObject
+    internal interface IExprWithArgs : IExprWithObject
     {
-        Expr OptionalObject { get; set; }
+        Expr OptionalArguments { get; set; }
+
+        SymWithType GetSymWithType();
     }
 }
