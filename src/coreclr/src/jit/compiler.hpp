@@ -2530,10 +2530,10 @@ inline BOOL Compiler::lvaIsOriginalThisArg(unsigned varNum)
         // copy to a new local, and mark the original as DoNotEnregister, to
         // ensure that it is stack-allocated.  It should not be the case that the original one can be modified -- it
         // should not be written to, or address-exposed.
-        assert(!varDsc->lvArgWrite &&
+        assert(!varDsc->lvHasILStoreOp &&
                (!varDsc->lvAddrExposed || ((info.compMethodInfo->options & CORINFO_GENERICS_CTXT_FROM_THIS) != 0)));
 #else
-        assert(!varDsc->lvArgWrite && !varDsc->lvAddrExposed);
+        assert(!varDsc->lvHasILStoreOp && !varDsc->lvAddrExposed);
 #endif
     }
 #endif
