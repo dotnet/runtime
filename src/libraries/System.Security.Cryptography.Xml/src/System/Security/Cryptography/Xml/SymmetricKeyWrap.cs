@@ -31,27 +31,43 @@ namespace System.Security.Cryptography.Xml
             }
 
             // generate a random IV
-            RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider();
             byte[] rgbIV = new byte[8];
-            rng.GetBytes(rgbIV);
+            using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
+            {
+                rng.GetBytes(rgbIV);
+            }
 
             // rgbWKCS = rgbWrappedKeyData | (first 8 bytes of the hash)
             byte[] rgbWKCKS = new byte[rgbWrappedKeyData.Length + 8];
-            TripleDESCryptoServiceProvider tripleDES = new TripleDESCryptoServiceProvider();
-            // Don't add padding, use CBC mode: for example, a 192 bits key will yield 40 bytes of encrypted data
-            tripleDES.Padding = PaddingMode.None;
-            ICryptoTransform enc1 = tripleDES.CreateEncryptor(rgbKey, rgbIV);
-            Buffer.BlockCopy(rgbWrappedKeyData, 0, rgbWKCKS, 0, rgbWrappedKeyData.Length);
-            Buffer.BlockCopy(rgbCKS, 0, rgbWKCKS, rgbWrappedKeyData.Length, 8);
-            byte[] temp1 = enc1.TransformFinalBlock(rgbWKCKS, 0, rgbWKCKS.Length);
-            byte[] temp2 = new byte[rgbIV.Length + temp1.Length];
-            Buffer.BlockCopy(rgbIV, 0, temp2, 0, rgbIV.Length);
-            Buffer.BlockCopy(temp1, 0, temp2, rgbIV.Length, temp1.Length);
-            // temp2 = REV (rgbIV | E_k(rgbWrappedKeyData | rgbCKS))
-            Array.Reverse(temp2);
+            TripleDES tripleDES = null;
+            ICryptoTransform enc1 = null;
+            ICryptoTransform enc2 = null;
 
-            ICryptoTransform enc2 = tripleDES.CreateEncryptor(rgbKey, s_rgbTripleDES_KW_IV);
-            return enc2.TransformFinalBlock(temp2, 0, temp2.Length);
+            try
+            {
+                tripleDES = TripleDES.Create();
+                // Don't add padding, use CBC mode: for example, a 192 bits key will yield 40 bytes of encrypted data
+                tripleDES.Padding = PaddingMode.None;
+                enc1 = tripleDES.CreateEncryptor(rgbKey, rgbIV);
+                enc2 = tripleDES.CreateEncryptor(rgbKey, s_rgbTripleDES_KW_IV);
+
+                Buffer.BlockCopy(rgbWrappedKeyData, 0, rgbWKCKS, 0, rgbWrappedKeyData.Length);
+                Buffer.BlockCopy(rgbCKS, 0, rgbWKCKS, rgbWrappedKeyData.Length, 8);
+                byte[] temp1 = enc1.TransformFinalBlock(rgbWKCKS, 0, rgbWKCKS.Length);
+                byte[] temp2 = new byte[rgbIV.Length + temp1.Length];
+                Buffer.BlockCopy(rgbIV, 0, temp2, 0, rgbIV.Length);
+                Buffer.BlockCopy(temp1, 0, temp2, rgbIV.Length, temp1.Length);
+                // temp2 = REV (rgbIV | E_k(rgbWrappedKeyData | rgbCKS))
+                Array.Reverse(temp2);
+
+                return enc2.TransformFinalBlock(temp2, 0, temp2.Length);
+            }
+            finally
+            {
+                enc2?.Dispose();
+                enc1?.Dispose();
+                tripleDES?.Dispose();
+            }
         }
 
         [SuppressMessage("Microsoft.Cryptography", "CA5350", Justification = "Explicitly requested by the message contents")]
@@ -62,31 +78,45 @@ namespace System.Security.Cryptography.Xml
                 && rgbEncryptedWrappedKeyData.Length != 48)
                 throw new CryptographicException(SR.Cryptography_Xml_KW_BadKeySize);
 
-            TripleDESCryptoServiceProvider tripleDES = new TripleDESCryptoServiceProvider();
-            // Assume no padding, use CBC mode
-            tripleDES.Padding = PaddingMode.None;
-            ICryptoTransform dec1 = tripleDES.CreateDecryptor(rgbKey, s_rgbTripleDES_KW_IV);
-            byte[] temp2 = dec1.TransformFinalBlock(rgbEncryptedWrappedKeyData, 0, rgbEncryptedWrappedKeyData.Length);
-            Array.Reverse(temp2);
-            // Get the IV and temp1
-            byte[] rgbIV = new byte[8];
-            Buffer.BlockCopy(temp2, 0, rgbIV, 0, 8);
-            byte[] temp1 = new byte[temp2.Length - rgbIV.Length];
-            Buffer.BlockCopy(temp2, 8, temp1, 0, temp1.Length);
+            TripleDES tripleDES = null;
+            ICryptoTransform dec1 = null;
+            ICryptoTransform dec2 = null;
 
-            ICryptoTransform dec2 = tripleDES.CreateDecryptor(rgbKey, rgbIV);
-            byte[] rgbWKCKS = dec2.TransformFinalBlock(temp1, 0, temp1.Length);
-
-            // checksum the key
-            byte[] rgbWrappedKeyData = new byte[rgbWKCKS.Length - 8];
-            Buffer.BlockCopy(rgbWKCKS, 0, rgbWrappedKeyData, 0, rgbWrappedKeyData.Length);
-            using (var sha = SHA1.Create())
+            try
             {
-                byte[] rgbCKS = sha.ComputeHash(rgbWrappedKeyData);
-                for (int index = rgbWrappedKeyData.Length, index1 = 0; index < rgbWKCKS.Length; index++, index1++)
-                    if (rgbWKCKS[index] != rgbCKS[index1])
-                        throw new CryptographicException(SR.Cryptography_Xml_BadWrappedKeySize);
-                return rgbWrappedKeyData;
+                tripleDES = TripleDES.Create();
+                // Assume no padding, use CBC mode
+                tripleDES.Padding = PaddingMode.None;
+                dec1 = tripleDES.CreateDecryptor(rgbKey, s_rgbTripleDES_KW_IV);
+
+                byte[] temp2 = dec1.TransformFinalBlock(rgbEncryptedWrappedKeyData, 0, rgbEncryptedWrappedKeyData.Length);
+                Array.Reverse(temp2);
+                // Get the IV and temp1
+                byte[] rgbIV = new byte[8];
+                Buffer.BlockCopy(temp2, 0, rgbIV, 0, 8);
+                byte[] temp1 = new byte[temp2.Length - rgbIV.Length];
+                Buffer.BlockCopy(temp2, 8, temp1, 0, temp1.Length);
+
+                dec2 = tripleDES.CreateDecryptor(rgbKey, rgbIV);
+                byte[] rgbWKCKS = dec2.TransformFinalBlock(temp1, 0, temp1.Length);
+
+                // checksum the key
+                byte[] rgbWrappedKeyData = new byte[rgbWKCKS.Length - 8];
+                Buffer.BlockCopy(rgbWKCKS, 0, rgbWrappedKeyData, 0, rgbWrappedKeyData.Length);
+                using (var sha = SHA1.Create())
+                {
+                    byte[] rgbCKS = sha.ComputeHash(rgbWrappedKeyData);
+                    for (int index = rgbWrappedKeyData.Length, index1 = 0; index < rgbWKCKS.Length; index++, index1++)
+                        if (rgbWKCKS[index] != rgbCKS[index1])
+                            throw new CryptographicException(SR.Cryptography_Xml_BadWrappedKeySize);
+                    return rgbWrappedKeyData;
+                }
+            }
+            finally
+            {
+                dec2?.Dispose();
+                dec1?.Dispose();
+                tripleDES?.Dispose();
             }
         }
 
@@ -98,48 +128,59 @@ namespace System.Security.Cryptography.Xml
             if ((rgbWrappedKeyData.Length % 8 != 0) || N <= 0)
                 throw new CryptographicException(SR.Cryptography_Xml_KW_BadKeySize);
 
-            RijndaelManaged rijn = new RijndaelManaged();
-            rijn.Key = rgbKey;
-            // Use ECB mode, no padding
-            rijn.Mode = CipherMode.ECB;
-            rijn.Padding = PaddingMode.None;
-            ICryptoTransform enc = rijn.CreateEncryptor();
-            // special case: only 1 block -- 8 bytes
-            if (N == 1)
+            Aes aes = null;
+            ICryptoTransform enc = null;
+
+            try
             {
-                // temp = 0xa6a6a6a6a6a6a6a6 | P(1)
-                byte[] temp = new byte[s_rgbAES_KW_IV.Length + rgbWrappedKeyData.Length];
-                Buffer.BlockCopy(s_rgbAES_KW_IV, 0, temp, 0, s_rgbAES_KW_IV.Length);
-                Buffer.BlockCopy(rgbWrappedKeyData, 0, temp, s_rgbAES_KW_IV.Length, rgbWrappedKeyData.Length);
-                return enc.TransformFinalBlock(temp, 0, temp.Length);
-            }
-            // second case: more than 1 block
-            long t = 0;
-            byte[] rgbOutput = new byte[(N + 1) << 3];
-            // initialize the R_i's
-            Buffer.BlockCopy(rgbWrappedKeyData, 0, rgbOutput, 8, rgbWrappedKeyData.Length);
-            byte[] rgbA = new byte[8];
-            byte[] rgbBlock = new byte[16];
-            Buffer.BlockCopy(s_rgbAES_KW_IV, 0, rgbA, 0, 8);
-            for (int j = 0; j <= 5; j++)
-            {
-                for (int i = 1; i <= N; i++)
+                aes = Aes.Create();
+                aes.Key = rgbKey;
+                // Use ECB mode, no padding
+                aes.Mode = CipherMode.ECB;
+                aes.Padding = PaddingMode.None;
+                enc = aes.CreateEncryptor();
+                // special case: only 1 block -- 8 bytes
+                if (N == 1)
                 {
-                    t = i + j * N;
-                    Buffer.BlockCopy(rgbA, 0, rgbBlock, 0, 8);
-                    Buffer.BlockCopy(rgbOutput, 8 * i, rgbBlock, 8, 8);
-                    byte[] rgbB = enc.TransformFinalBlock(rgbBlock, 0, 16);
-                    for (int k = 0; k < 8; k++)
-                    {
-                        byte tmp = (byte)((t >> (8 * (7 - k))) & 0xFF);
-                        rgbA[k] = (byte)(tmp ^ rgbB[k]);
-                    }
-                    Buffer.BlockCopy(rgbB, 8, rgbOutput, 8 * i, 8);
+                    // temp = 0xa6a6a6a6a6a6a6a6 | P(1)
+                    byte[] temp = new byte[s_rgbAES_KW_IV.Length + rgbWrappedKeyData.Length];
+                    Buffer.BlockCopy(s_rgbAES_KW_IV, 0, temp, 0, s_rgbAES_KW_IV.Length);
+                    Buffer.BlockCopy(rgbWrappedKeyData, 0, temp, s_rgbAES_KW_IV.Length, rgbWrappedKeyData.Length);
+                    return enc.TransformFinalBlock(temp, 0, temp.Length);
                 }
+                // second case: more than 1 block
+                long t = 0;
+                byte[] rgbOutput = new byte[(N + 1) << 3];
+                // initialize the R_i's
+                Buffer.BlockCopy(rgbWrappedKeyData, 0, rgbOutput, 8, rgbWrappedKeyData.Length);
+                byte[] rgbA = new byte[8];
+                byte[] rgbBlock = new byte[16];
+                Buffer.BlockCopy(s_rgbAES_KW_IV, 0, rgbA, 0, 8);
+                for (int j = 0; j <= 5; j++)
+                {
+                    for (int i = 1; i <= N; i++)
+                    {
+                        t = i + j * N;
+                        Buffer.BlockCopy(rgbA, 0, rgbBlock, 0, 8);
+                        Buffer.BlockCopy(rgbOutput, 8 * i, rgbBlock, 8, 8);
+                        byte[] rgbB = enc.TransformFinalBlock(rgbBlock, 0, 16);
+                        for (int k = 0; k < 8; k++)
+                        {
+                            byte tmp = (byte)((t >> (8 * (7 - k))) & 0xFF);
+                            rgbA[k] = (byte)(tmp ^ rgbB[k]);
+                        }
+                        Buffer.BlockCopy(rgbB, 8, rgbOutput, 8 * i, 8);
+                    }
+                }
+                // Set the first block of rgbOutput to rgbA
+                Buffer.BlockCopy(rgbA, 0, rgbOutput, 0, 8);
+                return rgbOutput;
             }
-            // Set the first block of rgbOutput to rgbA
-            Buffer.BlockCopy(rgbA, 0, rgbOutput, 0, 8);
-            return rgbOutput;
+            finally
+            {
+                enc?.Dispose();
+                aes?.Dispose();
+            }
         }
 
         internal static byte[] AESKeyWrapDecrypt(byte[] rgbKey, byte[] rgbEncryptedWrappedKeyData)
@@ -150,53 +191,65 @@ namespace System.Security.Cryptography.Xml
                 throw new CryptographicException(SR.Cryptography_Xml_KW_BadKeySize);
 
             byte[] rgbOutput = new byte[N << 3];
-            RijndaelManaged rijn = new RijndaelManaged();
-            rijn.Key = rgbKey;
-            // Use ECB mode, no padding
-            rijn.Mode = CipherMode.ECB;
-            rijn.Padding = PaddingMode.None;
-            ICryptoTransform dec = rijn.CreateDecryptor();
-            // special case: only 1 block -- 8 bytes
-            if (N == 1)
+            Aes aes = null;
+            ICryptoTransform dec = null;
+
+            try
             {
-                byte[] temp = dec.TransformFinalBlock(rgbEncryptedWrappedKeyData, 0, rgbEncryptedWrappedKeyData.Length);
+                aes = Aes.Create();
+                aes.Key = rgbKey;
+                // Use ECB mode, no padding
+                aes.Mode = CipherMode.ECB;
+                aes.Padding = PaddingMode.None;
+                dec = aes.CreateDecryptor();
+
+                // special case: only 1 block -- 8 bytes
+                if (N == 1)
+                {
+                    byte[] temp = dec.TransformFinalBlock(rgbEncryptedWrappedKeyData, 0, rgbEncryptedWrappedKeyData.Length);
+                    // checksum the key
+                    for (int index = 0; index < 8; index++)
+                        if (temp[index] != s_rgbAES_KW_IV[index])
+                            throw new CryptographicException(SR.Cryptography_Xml_BadWrappedKeySize);
+                    // rgbOutput is LSB(temp)
+                    Buffer.BlockCopy(temp, 8, rgbOutput, 0, 8);
+                    return rgbOutput;
+                }
+                // second case: more than 1 block
+                long t = 0;
+                // initialize the C_i's
+                Buffer.BlockCopy(rgbEncryptedWrappedKeyData, 8, rgbOutput, 0, rgbOutput.Length);
+                byte[] rgbA = new byte[8];
+                byte[] rgbBlock = new byte[16];
+                Buffer.BlockCopy(rgbEncryptedWrappedKeyData, 0, rgbA, 0, 8);
+                for (int j = 5; j >= 0; j--)
+                {
+                    for (int i = N; i >= 1; i--)
+                    {
+                        t = i + j * N;
+                        for (int k = 0; k < 8; k++)
+                        {
+                            byte tmp = (byte)((t >> (8 * (7 - k))) & 0xFF);
+                            rgbA[k] ^= tmp;
+                        }
+                        Buffer.BlockCopy(rgbA, 0, rgbBlock, 0, 8);
+                        Buffer.BlockCopy(rgbOutput, 8 * (i - 1), rgbBlock, 8, 8);
+                        byte[] rgbB = dec.TransformFinalBlock(rgbBlock, 0, 16);
+                        Buffer.BlockCopy(rgbB, 8, rgbOutput, 8 * (i - 1), 8);
+                        Buffer.BlockCopy(rgbB, 0, rgbA, 0, 8);
+                    }
+                }
                 // checksum the key
                 for (int index = 0; index < 8; index++)
-                    if (temp[index] != s_rgbAES_KW_IV[index])
+                    if (rgbA[index] != s_rgbAES_KW_IV[index])
                         throw new CryptographicException(SR.Cryptography_Xml_BadWrappedKeySize);
-                // rgbOutput is LSB(temp)
-                Buffer.BlockCopy(temp, 8, rgbOutput, 0, 8);
                 return rgbOutput;
             }
-            // second case: more than 1 block
-            long t = 0;
-            // initialize the C_i's
-            Buffer.BlockCopy(rgbEncryptedWrappedKeyData, 8, rgbOutput, 0, rgbOutput.Length);
-            byte[] rgbA = new byte[8];
-            byte[] rgbBlock = new byte[16];
-            Buffer.BlockCopy(rgbEncryptedWrappedKeyData, 0, rgbA, 0, 8);
-            for (int j = 5; j >= 0; j--)
+            finally
             {
-                for (int i = N; i >= 1; i--)
-                {
-                    t = i + j * N;
-                    for (int k = 0; k < 8; k++)
-                    {
-                        byte tmp = (byte)((t >> (8 * (7 - k))) & 0xFF);
-                        rgbA[k] ^= tmp;
-                    }
-                    Buffer.BlockCopy(rgbA, 0, rgbBlock, 0, 8);
-                    Buffer.BlockCopy(rgbOutput, 8 * (i - 1), rgbBlock, 8, 8);
-                    byte[] rgbB = dec.TransformFinalBlock(rgbBlock, 0, 16);
-                    Buffer.BlockCopy(rgbB, 8, rgbOutput, 8 * (i - 1), 8);
-                    Buffer.BlockCopy(rgbB, 0, rgbA, 0, 8);
-                }
+                dec?.Dispose();
+                aes?.Dispose();
             }
-            // checksum the key
-            for (int index = 0; index < 8; index++)
-                if (rgbA[index] != s_rgbAES_KW_IV[index])
-                    throw new CryptographicException(SR.Cryptography_Xml_BadWrappedKeySize);
-            return rgbOutput;
         }
     }
 }
