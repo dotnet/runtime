@@ -348,19 +348,19 @@ mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethodSignature *normal_si
 			if (!gsharedvt_in || sig->ret->byref) {
 				info->ret_marshal = GSHAREDVT_RET_I8;
 			} else {
-				switch (sig->ret->type) {
+				MonoType *rtype = mini_get_underlying_type (sig->ret);
+
+				switch (rtype->type) {
 				case MONO_TYPE_I1:
 					info->ret_marshal = GSHAREDVT_RET_I1;
 					break;
 				case MONO_TYPE_U1:
-				case MONO_TYPE_BOOLEAN:
 					info->ret_marshal = GSHAREDVT_RET_U1;
 					break;
 				case MONO_TYPE_I2:
 					info->ret_marshal = GSHAREDVT_RET_I2;
 					break;
 				case MONO_TYPE_U2:
-				case MONO_TYPE_CHAR:
 					info->ret_marshal = GSHAREDVT_RET_U2;
 					break;
 				case MONO_TYPE_I4:

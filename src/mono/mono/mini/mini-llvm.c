@@ -484,13 +484,9 @@ type_to_llvm_type (EmitContext *ctx, MonoType *t)
 		return LLVMInt16Type ();
 	case MONO_TYPE_U4:
 		return LLVMInt32Type ();
-	case MONO_TYPE_BOOLEAN:
-		return LLVMInt8Type ();
 	case MONO_TYPE_I8:
 	case MONO_TYPE_U8:
 		return LLVMInt64Type ();
-	case MONO_TYPE_CHAR:
-		return LLVMInt16Type ();
 	case MONO_TYPE_R4:
 		return LLVMFloatType ();
 	case MONO_TYPE_R8:
@@ -499,10 +495,6 @@ type_to_llvm_type (EmitContext *ctx, MonoType *t)
 	case MONO_TYPE_U:
 		return IntPtrType ();
 	case MONO_TYPE_OBJECT:
-	case MONO_TYPE_CLASS:
-	case MONO_TYPE_ARRAY:
-	case MONO_TYPE_SZARRAY:
-	case MONO_TYPE_STRING:
 	case MONO_TYPE_PTR:
 		return ObjRefType ();
 	case MONO_TYPE_VAR:

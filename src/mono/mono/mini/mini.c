@@ -4368,7 +4368,7 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
  * mini_get_underlying_type:
  *
  *   Return the type the JIT will use during compilation.
- * Handles: byref, enums, native types, generic sharing.
+ * Handles: byref, enums, native types, bool/char, ref types, generic sharing.
  * For gsharedvt types, it will return the original VAR/MVAR.
  */
 MonoType*

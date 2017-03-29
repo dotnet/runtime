@@ -6890,14 +6890,12 @@ initialize_array_data (MonoMethod *method, gboolean aot, unsigned char *ip, Mono
 			return NULL;
 		if (strcmp (cmethod->name, "InitializeArray") || strcmp (cmethod->klass->name, "RuntimeHelpers") || cmethod->klass->image != mono_defaults.corlib)
 			return NULL;
-		switch (mono_type_get_underlying_type (&klass->byval_arg)->type) {
-		case MONO_TYPE_BOOLEAN:
+		switch (mini_get_underlying_type (&klass->byval_arg)->type) {
 		case MONO_TYPE_I1:
 		case MONO_TYPE_U1:
 			size = 1; break;
 		/* we need to swap on big endian, so punt. Should we handle R4 and R8 as well? */
 #if TARGET_BYTE_ORDER == G_LITTLE_ENDIAN
-		case MONO_TYPE_CHAR:
 		case MONO_TYPE_I2:
 		case MONO_TYPE_U2:
 			size = 2; break;

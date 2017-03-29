@@ -3055,7 +3055,7 @@ mini_get_basic_type_from_generic (MonoType *type)
 		return type;
 	else if (!type->byref && (type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR)) {
 		MonoType *constraint = type->data.generic_param->gshared_constraint;
-		/* The gparam serial encodes the type this gparam can represent */
+		/* The gparam constraint encodes the type this gparam can represent */
 		if (!constraint) {
 			return &mono_defaults.object_class->byval_arg;
 		} else {
@@ -3073,7 +3073,7 @@ mini_get_basic_type_from_generic (MonoType *type)
 /*
  * mini_type_get_underlying_type:
  *
- *   Return the underlying type of TYPE, taking into account enums, byref, bool, char and generic
+ *   Return the underlying type of TYPE, taking into account enums, byref, bool, char, ref types and generic
  * sharing.
  */
 MonoType*
@@ -3092,6 +3092,9 @@ mini_type_get_underlying_type (MonoType *type)
 	case MONO_TYPE_CHAR:
 		return &mono_defaults.uint16_class->byval_arg;
 	case MONO_TYPE_STRING:
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_ARRAY:
+	case MONO_TYPE_SZARRAY:
 		return &mono_defaults.object_class->byval_arg;
 	default:
 		return type;

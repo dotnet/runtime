@@ -1114,7 +1114,6 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 		DEBUG(printf("param %d: ", i));
 		simpletype = mini_get_underlying_type (sig->params [i]);
 		switch (simpletype->type) {
-		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
 		case MONO_TYPE_U1:
 			DEBUG(printf("1 byte\n"));
@@ -1122,7 +1121,6 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 			add_int32_arg (cinfo, &cinfo->args[n]);
 			n++;
 			break;
-		case MONO_TYPE_CHAR:
 		case MONO_TYPE_I2:
 		case MONO_TYPE_U2:
 			DEBUG(printf("2 bytes\n"));
@@ -1141,11 +1139,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 		case MONO_TYPE_U:
 		case MONO_TYPE_PTR:
 		case MONO_TYPE_FNPTR:
-		case MONO_TYPE_CLASS:
 		case MONO_TYPE_OBJECT:
-		case MONO_TYPE_STRING:
-		case MONO_TYPE_SZARRAY:
-		case MONO_TYPE_ARRAY:
 			cinfo->args [n].size = sizeof (gpointer);
 			add_int32_arg (cinfo, &cinfo->args[n]);
 			n++;
@@ -1261,23 +1255,17 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 	{
 		simpletype = mini_get_underlying_type (sig->ret);
 		switch (simpletype->type) {
-		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_I1:
 		case MONO_TYPE_U1:
 		case MONO_TYPE_I2:
 		case MONO_TYPE_U2:
-		case MONO_TYPE_CHAR:
 		case MONO_TYPE_I4:
 		case MONO_TYPE_U4:
 		case MONO_TYPE_I:
 		case MONO_TYPE_U:
 		case MONO_TYPE_PTR:
 		case MONO_TYPE_FNPTR:
-		case MONO_TYPE_CLASS:
 		case MONO_TYPE_OBJECT:
-		case MONO_TYPE_SZARRAY:
-		case MONO_TYPE_ARRAY:
-		case MONO_TYPE_STRING:
 			cinfo->ret.reg = mips_v0;
 			break;
 		case MONO_TYPE_U8:

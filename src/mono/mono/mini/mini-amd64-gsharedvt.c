@@ -442,22 +442,17 @@ mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethodSignature *normal_si
 			} else {
 				MonoType *ret = sig->ret;
 
-				// Unwrap enums
-				if (ret->type == MONO_TYPE_VALUETYPE)
-					ret = mini_type_get_underlying_type (ret);
-
+				ret = mini_type_get_underlying_type (ret);
 				switch (ret->type) {
 				case MONO_TYPE_I1:
 					info->ret_marshal = GSHAREDVT_RET_I1;
 					break;
-				case MONO_TYPE_BOOLEAN:
 				case MONO_TYPE_U1:
 					info->ret_marshal = GSHAREDVT_RET_U1;
 					break;
 				case MONO_TYPE_I2:
 					info->ret_marshal = GSHAREDVT_RET_I2;
 					break;
-				case MONO_TYPE_CHAR:
 				case MONO_TYPE_U2:
 					info->ret_marshal = GSHAREDVT_RET_U2;
 					break;
@@ -471,11 +466,7 @@ mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethodSignature *normal_si
 				case MONO_TYPE_U:
 				case MONO_TYPE_PTR:
 				case MONO_TYPE_FNPTR:
-				case MONO_TYPE_CLASS:
 				case MONO_TYPE_OBJECT:
-				case MONO_TYPE_SZARRAY:
-				case MONO_TYPE_ARRAY:
-				case MONO_TYPE_STRING:
 				case MONO_TYPE_U8:
 				case MONO_TYPE_I8:
 					info->ret_marshal = GSHAREDVT_RET_I8;
