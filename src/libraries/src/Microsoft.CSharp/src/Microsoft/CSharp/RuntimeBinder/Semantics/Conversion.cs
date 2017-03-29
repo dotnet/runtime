@@ -665,7 +665,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             if (!typeDst.isDelegateType())
             {
                 if (fReportErrors)
-                    ErrorContext.Error(ErrorCode.ERR_MethGrpToNonDel, grp.name, typeDst);
+                    ErrorContext.Error(ErrorCode.ERR_MethGrpToNonDel, grp.Name, typeDst);
                 return false;
             }
             AggregateType type = typeDst.AsAggregateType();
