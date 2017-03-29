@@ -109,16 +109,6 @@ if %__IntermediatesDir% == "" (
 )
 set "__CMakeBinDir=%__CMakeBinDir:\=/%"
 set "__IntermediatesDir=%__IntermediatesDir:\=/%"
-set "__RuntimePath=%__binDir%\runtime\%__TargetGroup%-Windows_NT-%CMAKE_BUILD_TYPE%-%__BuildArch%\"
-if "%__TargetGroup%" == "uapaot" (
-    set "__TestSharedFrameworkPath=%__binDir%\testhost\ILCInputFolder\"
-) else (
-    if "%__TargetGroup%" == "uap" (
-        set "__TestSharedFrameworkPath=%__binDir%\testhost\UAPLayout\"
-    ) else (
-        set "__TestSharedFrameworkPath=%__binDir%\testhost\%__TargetGroup%-Windows_NT-%CMAKE_BUILD_TYPE%-%__BuildArch%\shared\Microsoft.NETCore.App\9.9.9\"
-    )
-)
 
 :: Check that the intermediate directory exists so we can place our cmake build tree there
 if exist "%__IntermediatesDir%" rd /s /q "%__IntermediatesDir%"
@@ -165,10 +155,6 @@ call %__rootDir%/run.cmd build-managed -project="%__IntermediatesDir%\install.vc
 IF ERRORLEVEL 1 (
     goto :Failure
 )
-
-:: Copy to vertical runtime directory
-xcopy /yqs "%__binDir%\Windows_NT.%__BuildArch%.%CMAKE_BUILD_TYPE%\native\*" "%__RuntimePath%"
-xcopy /yqs "%__binDir%\Windows_NT.%__BuildArch%.%CMAKE_BUILD_TYPE%\native\*" "%__TestSharedFrameworkPath%"
 
 echo Done building Native components
 

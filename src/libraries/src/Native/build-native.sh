@@ -57,8 +57,6 @@ setup_dirs()
 
     mkdir -p "$__BinDir"
     mkdir -p "$__IntermediatesDir"
-    mkdir -p "$__RuntimePath"
-    mkdir -p "$__TestSharedFrameworkPath"
 }
 
 # Check the system to ensure the right pre-reqs are in place
@@ -124,13 +122,6 @@ build_native()
         echo "Failed to build corefx native components."
         exit 1
     fi
-}
-
-copy_to_vertical_runtime()
-{
-    echo "Copying native shims to vertical runtime folder."
-    cp $__BinDir/* "$__RuntimePath"
-    cp $__BinDir/* "$__TestSharedFrameworkPath"
 }
 
 __scriptpath=$(cd "$(dirname "$0")"; pwd -P)
@@ -362,8 +353,6 @@ fi
 # Set the remaining variables based upon the determined build configuration
 __IntermediatesDir="$__rootbinpath/obj/$__BuildOS.$__BuildArch.$__BuildType/native"
 __BinDir="$__rootbinpath/$__BuildOS.$__BuildArch.$__BuildType/native"
-__RuntimePath="$__rootbinpath/runtime/$__TargetGroup-$__BuildOS-$__BuildType-$__BuildArch"
-__TestSharedFrameworkPath="$__rootbinpath/testhost/$__TargetGroup-$__BuildOS-$__BuildType-$__BuildArch/shared/Microsoft.NETCore.App/9.9.9"
 
 # Make the directories necessary for build if they don't exist
 setup_dirs
@@ -393,7 +382,3 @@ initTargetDistroRid
     # Build the corefx native components.
 
     build_native
-
-    # Copy files to vertical runtime folder
-
-    copy_to_vertical_runtime
