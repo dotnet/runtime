@@ -348,11 +348,6 @@ namespace System.Runtime.Loader
             }
         }
 
-        // This call opens and closes the file, but does not add the
-        // assembly to the domain.
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        static internal extern AssemblyName nGetFileInformation(String s);
-
         // Helper to return AssemblyName corresponding to the path of an IL assembly
         public static AssemblyName GetAssemblyName(string assemblyPath)
         {
@@ -361,10 +356,9 @@ namespace System.Runtime.Loader
                 throw new ArgumentNullException(nameof(assemblyPath));
             }
 
-            string fullPath = Path.GetFullPath(assemblyPath);
-            return nGetFileInformation(fullPath);
+            return AssemblyName.GetAssemblyName(assemblyPath);
         }
-
+        
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         private static extern IntPtr GetLoadContextForAssembly(RuntimeAssembly assembly);
