@@ -17,7 +17,7 @@
 #include "sgen/sgen-client.h"
 #include "sgen/sgen-cardtable.h"
 #include "sgen/sgen-pinning.h"
-#include "sgen/sgen-thread-pool.h"
+#include "sgen/sgen-workers.h"
 #include "metadata/marshal.h"
 #include "metadata/method-builder.h"
 #include "metadata/abi-details.h"
@@ -2069,7 +2069,7 @@ mono_sgen_register_moved_object (void *obj, void *destination)
 	 * lock-free data structure for the queue as multiple threads will be
 	 * adding to it at the same time.
 	 */
-	if (sgen_thread_pool_is_thread_pool_thread (mono_native_thread_id_get ())) {
+	if (sgen_workers_is_worker_thread (mono_native_thread_id_get ())) {
 		sgen_pointer_queue_add (&moved_objects_queue, obj);
 		sgen_pointer_queue_add (&moved_objects_queue, destination);
 	} else {
@@ -3023,7 +3023,9 @@ mono_gc_base_init (void)
 void
 mono_gc_base_cleanup (void)
 {
-	sgen_thread_pool_shutdown ();
+	sgen_thread_pool_shutdown (major_collector.get_sweep_pool ());
+
+	sgen_workers_shutdown ();
 
 	// We should have consumed any outstanding moves.
 	g_assert (sgen_pointer_queue_is_empty (&moved_objects_queue));

@@ -16,7 +16,7 @@
 #include "sgen-gc.h"
 #include "sgen-protocol.h"
 #include "sgen-memory-governor.h"
-#include "sgen-thread-pool.h"
+#include "sgen-workers.h"
 #include "sgen-client.h"
 #include "mono/utils/mono-membar.h"
 #include "mono/utils/mono-proclib.h"
@@ -365,11 +365,17 @@ protocol_entry (unsigned char type, gpointer data, int size)
 	buffer->buffer [index++] = type;
 	/* We should never change the header format */
 	if (include_worker_index) {
+		int worker_index;
+		MonoNativeThreadId tid = mono_native_thread_id_get ();
 		/*
 		 * If the thread is not a worker thread we insert 0, which is interpreted
 		 * as gc thread. Worker indexes are 1 based.
 		 */
-		buffer->buffer [index++] = (unsigned char) sgen_thread_pool_is_thread_pool_thread (mono_native_thread_id_get ());
+		worker_index = sgen_workers_is_worker_thread (tid);
+		if (!worker_index)
+			worker_index = sgen_thread_pool_is_thread_pool_thread (major_collector.get_sweep_pool (), tid);
+		/* FIXME Consider using different index bases for different thread pools */
+		buffer->buffer [index++] = (unsigned char) worker_index;
 	}
 	memcpy (buffer->buffer + index, data, size);
 	index += size;

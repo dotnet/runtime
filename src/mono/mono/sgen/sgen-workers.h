@@ -15,6 +15,11 @@
 
 typedef struct _WorkerData WorkerData;
 struct _WorkerData {
+	/*
+	 * Threadpool threads receive as their starting argument a WorkerData.
+	 * tp_data is meant for use inside the sgen thread pool and must be first.
+	 */
+	SgenThreadPoolData tp_data;
 	gint32 state;
 	SgenGrayQueue private_gray_queue; /* only read/written by worker thread */
 	/*
@@ -30,6 +35,7 @@ typedef void (*SgenWorkersFinishCallback) (void);
 typedef void (*SgenWorkerCallback) (WorkerData *data);
 
 void sgen_workers_init (int num_workers, SgenWorkerCallback callback);
+void sgen_workers_shutdown (void);
 void sgen_workers_stop_all_workers (void);
 void sgen_workers_set_num_active_workers (int num_workers);
 void sgen_workers_start_all_workers (SgenObjectOperations *object_ops_nopar, SgenObjectOperations *object_ops_par, SgenWorkersFinishCallback finish_job);
@@ -46,5 +52,6 @@ void sgen_workers_take_from_queue (SgenGrayQueue *queue);
 SgenObjectOperations* sgen_workers_get_idle_func_object_ops (void);
 int sgen_workers_get_job_split_count (void);
 void sgen_workers_foreach (SgenWorkerCallback callback);
+gboolean sgen_workers_is_worker_thread (MonoNativeThreadId id);
 
 #endif

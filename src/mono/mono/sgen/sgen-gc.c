@@ -3408,7 +3408,7 @@ sgen_gc_init (void)
 	if (major_collector.post_param_init)
 		major_collector.post_param_init (&major_collector);
 
-	if (major_collector.needs_thread_pool || sgen_minor_collector.is_parallel) {
+	if (major_collector.is_concurrent || sgen_minor_collector.is_parallel) {
 		int num_workers = 1;
 		if (major_collector.is_parallel || sgen_minor_collector.is_parallel) {
 			/* FIXME Detect the number of physical cores, instead of logical */

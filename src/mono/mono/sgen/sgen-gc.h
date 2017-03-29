@@ -35,6 +35,7 @@ typedef struct _SgenThreadInfo SgenThreadInfo;
 #include "mono/sgen/sgen-hash-table.h"
 #include "mono/sgen/sgen-protocol.h"
 #include "mono/sgen/gc-internal-agnostic.h"
+#include "mono/sgen/sgen-thread-pool.h"
 
 /* The method used to clear the nursery */
 /* Clearing at nursery collections is the safest, but has bad interactions with caches.
@@ -593,7 +594,7 @@ sgen_update_reference (GCObject **p, GCObject *o, gboolean allow_null)
 {
 	if (!allow_null)
 		SGEN_ASSERT (0, o, "Cannot update a reference with a NULL pointer");
-	SGEN_ASSERT (0, !sgen_thread_pool_is_thread_pool_thread (mono_native_thread_id_get ()), "Can't update a reference in the worker thread");
+	SGEN_ASSERT (0, !sgen_workers_is_worker_thread (mono_native_thread_id_get ()), "Can't update a reference in the worker thread");
 	*p = o;
 }
 
@@ -636,7 +637,6 @@ struct _SgenMajorCollector {
 	size_t section_size;
 	gboolean is_concurrent;
 	gboolean is_parallel;
-	gboolean needs_thread_pool;
 	gboolean supports_cardtable;
 	gboolean sweeps_lazily;
 
@@ -693,6 +693,7 @@ struct _SgenMajorCollector {
 	guint8* (*get_cardtable_mod_union_for_reference) (char *object);
 	long long (*get_and_reset_num_major_objects_marked) (void);
 	void (*count_cards) (long long *num_total_cards, long long *num_marked_cards);
+	SgenThreadPool* (*get_sweep_pool) (void);
 
 	void (*worker_init_cb) (gpointer worker);
 };
