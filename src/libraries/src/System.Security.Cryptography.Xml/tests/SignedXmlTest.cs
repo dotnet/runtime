@@ -1201,7 +1201,7 @@ namespace System.Security.Cryptography.Xml.Tests
 
             sig.ComputeSignature(mac);
             doc.DocumentElement.AppendChild(doc.ImportNode(sig.GetXml(), true));
-            // doc.Save (System.Console.Out);
+            // doc.Save(System.Console.Out);
 
             sig.LoadXml(doc.DocumentElement["Signature"]);
             Assert.Equal(expectedToVerify, sig.CheckSignature(mac));
