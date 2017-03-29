@@ -111,6 +111,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\DataMisalignedException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\DateTime.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\DateTimeKind.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\DateTimeOffset.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\DayOfWeek.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\DBNull.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\DefaultBinder.cs"/>
@@ -277,6 +278,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\SuppressUnmanagedCodeSecurityAttribute.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\UnverifiableCodeAttribute.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\StackOverflowException.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\StringComparer.cs"/>
+    <Compile Include="$(MSBuildThisFileDirectory)System\StringComparison.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\StringSplitOptions.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\SystemException.cs"/>
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Normalization.cs"/>
