@@ -760,7 +760,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 flags, name, typeArgumentsAsTypeArray, kind, callingType, null, null, new CMemberLookupResults(
                     _semanticChecker.getBSymmgr().AllocParams(callingTypes.Count, callingTypes.ToArray()),
                     name));
-            if (callingObject.isCLASS())
+            if (callingObject is ExprClass)
             {
                 memgroup.OptionalLHS = callingObject;
             }
@@ -787,7 +787,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             ExprMemberGroup pMemGroup = CreateMemberGroupEXPR(property.name.Text, null, callingObject, SYMKIND.SK_PropertySymbol);
 
             return _binder.BindToProperty(// For a static property instance, don't set the object.
-                    callingObject.isCLASS() ? null : callingObject, pwt, flags, null, null, pMemGroup);
+                    callingObject is ExprClass ? null : callingObject, pwt, flags, null, null, pMemGroup);
         }
 
         /////////////////////////////////////////////////////////////////////////////////
@@ -822,7 +822,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             AggregateType fieldType = swt.GetType();
             FieldWithType fwt = new FieldWithType(fieldSymbol, fieldType);
 
-            Expr field = _binder.BindToField(callingObject.isCLASS() ? null : callingObject, fwt, 0);
+            Expr field = _binder.BindToField(callingObject is ExprClass ? null : callingObject, fwt, 0);
             return field;
         }
 
