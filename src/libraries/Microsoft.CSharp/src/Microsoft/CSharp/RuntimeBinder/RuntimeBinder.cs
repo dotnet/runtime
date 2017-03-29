@@ -1166,9 +1166,9 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private Expr StripNamedArgument(Expr pArg)
         {
-            if (pArg.isNamedArgumentSpecification())
+            if (pArg is ExprNamedArgumentSpecification named)
             {
-                pArg = pArg.asNamedArgumentSpecification().Value;
+                pArg = named.Value;
             }
             else if (pArg is ExprArrayInit init)
             {

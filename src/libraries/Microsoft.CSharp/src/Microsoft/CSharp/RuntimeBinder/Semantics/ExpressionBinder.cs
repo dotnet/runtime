@@ -1317,7 +1317,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
 
                 Debug.Assert(arg != null);
-                if (arg.isNamedArgumentSpecification())
+                if (arg is ExprNamedArgumentSpecification)
                 {
                     seenNamed = true;
                 }
@@ -1972,13 +1972,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                     Expr argument = indir;
                     Expr rval;
-                    if (argument.isNamedArgumentSpecification())
+                    if (argument is ExprNamedArgumentSpecification named)
                     {
                         int index = 0;
                         // If we're named, look for the type of the matching name.
                         foreach (Name i in mostDerivedMethod.ParameterNames)
                         {
-                            if (i == argument.asNamedArgumentSpecification().Name)
+                            if (i == named.Name)
                             {
                                 break;
                             }
@@ -1988,7 +1988,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         CType substDestType = GetTypes().SubstType(@params[index], type, pTypeArgs);
 
                         // If we cant convert the argument and we're the param array argument, then deal with it.
-                        if (!canConvert(argument.asNamedArgumentSpecification().Value, substDestType) &&
+                        if (!canConvert(named.Value, substDestType) &&
                             mp.isParamArray && index == mp.Params.Count - 1)
                         {
                             // We have a param array, but we're not at the end yet. This will happen
@@ -2005,19 +2005,17 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             // Use an EK_ARRINIT even in the empty case so empty param arrays in attributes work.
                             ExprArrayInit arrayInit = GetExprFactory().CreateArrayInit(0, arrayType, null, null, null);
                             arrayInit.GeneratedForParamArray = true;
-                            arrayInit.DimensionSizes = new int[] { arrayInit.DimensionSize };
+                            arrayInit.DimensionSizes = new[] {arrayInit.DimensionSize};
                             arrayInit.DimensionSize = 1;
-                            arrayInit.OptionalArguments = argument.asNamedArgumentSpecification().Value;
+                            arrayInit.OptionalArguments = named.Value;
 
-                            argument.asNamedArgumentSpecification().Value = arrayInit;
+                            named.Value = arrayInit;
                             bDontFixParamArray = true;
                         }
                         else
                         {
                             // Otherwise, force the conversion and get errors if needed.
-                            argument.asNamedArgumentSpecification().Value = tryConvert(
-                                argument.asNamedArgumentSpecification().Value,
-                                substDestType);
+                            named.Value = tryConvert(named.Value, substDestType);
                         }
                         rval = argument;
                     }
@@ -2116,10 +2114,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     Expr expr = it.Current();
                     count++;
 
-                    if (expr.isNamedArgumentSpecification())
+                    if (expr is ExprNamedArgumentSpecification named)
                     {
-                        expr.asNamedArgumentSpecification().Value = tryConvert(
-                            expr.asNamedArgumentSpecification().Value, elementType);
+                        named.Value = tryConvert(named.Value, elementType);
                     }
                     else
                     {
