@@ -347,56 +347,8 @@ nameof(auditFlags),
     }
 
 
-    public sealed class AuthorizationRuleCollection : ICollection, IEnumerable // TODO: Is this right? Was previously ReadOnlyCollectionBase
+    public sealed class AuthorizationRuleCollection : ReadOnlyCollectionBase
     {
-        #region ReadOnlyCollectionBase APIs
-        // Goo to translate this from ReadOnlyCollectionBase to ICollection
-        Object _syncRoot;
-        List<AuthorizationRule> list;
-
-        List<AuthorizationRule> InnerList
-        {
-            get
-            {
-                if (list == null)
-                    list = new List<AuthorizationRule>();
-                return list;
-            }
-        }
-
-        public int Count
-        {
-            get { return InnerList.Count; }
-        }
-
-        bool ICollection.IsSynchronized
-        {
-            get { return false; }
-        }
-
-        object ICollection.SyncRoot
-        {
-            get
-            {
-                if (_syncRoot == null)
-                {
-                    System.Threading.Interlocked.CompareExchange<Object>(ref _syncRoot, new Object(), null);
-                }
-                return _syncRoot;
-            }
-        }
-
-        void ICollection.CopyTo(Array array, int index)
-        {
-            InnerList.CopyTo((AuthorizationRule[])array, index);
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return InnerList.GetEnumerator();
-        }
-        #endregion
-
         #region Constructors
 
         public AuthorizationRuleCollection()

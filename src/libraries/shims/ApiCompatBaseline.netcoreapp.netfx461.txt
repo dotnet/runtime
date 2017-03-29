@@ -318,8 +318,9 @@ TypesMustExist : Type 'System.Reflection.Emit.DynamicILInfo' does not exist in t
 CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.Emit.DynamicMethod' does not implement interface 'System.Runtime.InteropServices._MethodInfo' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.DynamicMethod.DefineParameter(System.Int32, System.Reflection.ParameterAttributes, System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.DynamicMethod.GetDynamicILInfo()' does not exist in the implementation but it does exist in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.Emit.EnumBuilder' does not implement interface 'System.Runtime.InteropServices._EnumBuilder' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.Emit.EnumBuilder' does not inherit from base type 'System.Reflection.TypeInfo' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.EnumBuilder.CreateType()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.EnumBuilder.IsAssignableFrom(System.Reflection.TypeInfo)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.EnumBuilder.TypeToken.get()' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.Emit.EventBuilder' does not implement interface 'System.Runtime.InteropServices._EventBuilder' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.EventBuilder.GetEventToken()' does not exist in the implementation but it does exist in the contract.
@@ -329,7 +330,8 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.Emit.FieldBuilder' doe
 MembersMustExist : Member 'System.Reflection.Emit.FieldBuilder.GetToken()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.FieldBuilder.SetMarshal(System.Reflection.Emit.UnmanagedMarshal)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Reflection.Emit.FieldToken' does not exist in the implementation but it does exist in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.Emit.GenericTypeParameterBuilder' does not implement interface 'System.Runtime.InteropServices._Type' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.Emit.GenericTypeParameterBuilder' does not inherit from base type 'System.Reflection.TypeInfo' in the implementation but it does in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.GenericTypeParameterBuilder.IsAssignableFrom(System.Reflection.TypeInfo)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.Emit.ILGenerator' does not implement interface 'System.Runtime.InteropServices._ILGenerator' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.ILGenerator.EmitCalli(System.Reflection.Emit.OpCode, System.Runtime.InteropServices.CallingConvention, System.Type, System.Type[])' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.ILGenerator.MarkSequencePoint(System.Diagnostics.SymbolStore.ISymbolDocumentWriter, System.Int32, System.Int32, System.Int32, System.Int32)' does not exist in the implementation but it does exist in the contract.
@@ -385,11 +387,12 @@ MembersMustExist : Member 'System.Reflection.Emit.SignatureHelper.GetMethodSigHe
 MembersMustExist : Member 'System.Reflection.Emit.SignatureHelper.GetMethodSigHelper(System.Runtime.InteropServices.CallingConvention, System.Type)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Reflection.Emit.SignatureToken' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Reflection.Emit.StringToken' does not exist in the implementation but it does exist in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.Emit.TypeBuilder' does not implement interface 'System.Runtime.InteropServices._TypeBuilder' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.Emit.TypeBuilder' does not inherit from base type 'System.Reflection.TypeInfo' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.TypeBuilder.AddDeclarativeSecurity(System.Security.Permissions.SecurityAction, System.Security.PermissionSet)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.TypeBuilder.DefinePInvokeMethod(System.String, System.String, System.Reflection.MethodAttributes, System.Reflection.CallingConventions, System.Type, System.Type[], System.Runtime.InteropServices.CallingConvention, System.Runtime.InteropServices.CharSet)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.TypeBuilder.DefinePInvokeMethod(System.String, System.String, System.String, System.Reflection.MethodAttributes, System.Reflection.CallingConventions, System.Type, System.Type[], System.Runtime.InteropServices.CallingConvention, System.Runtime.InteropServices.CharSet)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.TypeBuilder.DefinePInvokeMethod(System.String, System.String, System.String, System.Reflection.MethodAttributes, System.Reflection.CallingConventions, System.Type, System.Type[], System.Type[], System.Type[], System.Type[][], System.Type[][], System.Runtime.InteropServices.CallingConvention, System.Runtime.InteropServices.CharSet)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Reflection.Emit.TypeBuilder.IsAssignableFrom(System.Reflection.TypeInfo)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.TypeBuilder.TypeToken.get()' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Reflection.Emit.TypeToken' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Reflection.Emit.UnmanagedMarshal' does not exist in the implementation but it does exist in the contract.
@@ -816,7 +819,6 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Security.SuppressUnmanagedCodeSec
 CannotRemoveBaseTypeOrInterface : Type 'System.Security.UnverifiableCodeAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Security.VerificationException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Security.XmlSyntaxException' does not implement interface 'System.Runtime.InteropServices._Exception' in the implementation but it does in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.Security.AccessControl.AuthorizationRuleCollection' does not inherit from base type 'System.Collections.ReadOnlyCollectionBase' in the implementation but it does in the contract.
 TypesMustExist : Type 'System.Security.AccessControl.CryptoKeyAccessRule' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.AccessControl.CryptoKeyAuditRule' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.AccessControl.CryptoKeyRights' does not exist in the implementation but it does exist in the contract.
@@ -3230,4 +3232,4 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Xml.Xsl.XsltException' does not i
 MembersMustExist : Member 'System.Xml.Xsl.XslTransform.Load(System.Xml.XmlReader, System.Xml.XmlResolver, System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Xml.Xsl.XslTransform.Load(System.Xml.XPath.IXPathNavigable, System.Xml.XmlResolver, System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Xml.Xsl.XslTransform.Load(System.Xml.XPath.XPathNavigator, System.Xml.XmlResolver, System.Security.Policy.Evidence)' does not exist in the implementation but it does exist in the contract.
-Total Issues: 3217
+Total Issues: 3219
