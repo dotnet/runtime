@@ -26,6 +26,7 @@ GPTR_DECL(uint32_t,g_card_table);
 // GC will update it when it needs to.
 extern "C" gc_alloc_context g_global_alloc_context;
 
+extern "C" IGCHandleTable* g_pGCHandleTable;
 extern "C" uint32_t* g_card_bundle_table;
 extern "C" uint8_t* g_ephemeral_low;
 extern "C" uint8_t* g_ephemeral_high;
@@ -69,6 +70,15 @@ public:
 
         assert(g_pGCHeap != nullptr);
         return g_pGCHeap;
+    }
+
+    // Retrieves the GC handle table.
+    static IGCHandleTable* GetGCHandleTable() 
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        assert(g_pGCHandleTable != nullptr);
+        return g_pGCHandleTable;
     }
 
     // Returns true if the heap has been initialized, false otherwise.
