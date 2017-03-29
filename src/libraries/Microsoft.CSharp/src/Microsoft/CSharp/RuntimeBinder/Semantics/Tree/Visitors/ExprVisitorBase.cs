@@ -21,9 +21,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return pResult;
             }
 
-            if (pExpr.isSTMT())
+            if (pExpr is ExprStatement statement)
             {
-                return CacheExprMapping(pExpr, DispatchStatementList(pExpr.asSTMT()));
+                return CacheExprMapping(pExpr, DispatchStatementList(statement));
             }
 
             return CacheExprMapping(pExpr, Dispatch(pExpr));
@@ -50,16 +50,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // Unhook the next one.
                 pexpr.OptionalNextStatement = null;
 
-                Expr result = Dispatch(pexpr);
-                Debug.Assert(result == null || result.isSTMT());
+                ExprStatement result = Dispatch(pexpr) as ExprStatement;
 
                 if (pexpr == first)
                 {
-                    first = result?.asSTMT();
+                    first = result;
                 }
                 else
                 {
-                    pexpr.OptionalNextStatement = result?.asSTMT();
+                    pexpr.OptionalNextStatement = result;
                 }
 
                 // A transformation may return back a list of statements (or
