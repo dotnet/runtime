@@ -544,10 +544,10 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
                 _serWriter.WriteJaggedArray(memberNameInfo, arrayNameInfo, arrayElemObjectInfo, arrayElemTypeNameInfo, lengthA[0], lowerBoundA[0]);
 
-                var objectA = (object[])array;
+                var objectA = (Array)array;
                 for (int i = lowerBoundA[0]; i < upperBoundA[0] + 1; i++)
                 {
-                    WriteArrayMember(objectInfo, arrayElemTypeNameInfo, objectA[i]);
+                    WriteArrayMember(objectInfo, arrayElemTypeNameInfo, objectA.GetValue(i));
                 }
                 _serWriter.WriteItemEnd();
             }
