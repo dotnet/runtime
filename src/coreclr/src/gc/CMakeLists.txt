@@ -31,6 +31,7 @@ set( GC_SOURCES_DAC_AND_WKS_COMMON
 
 set( GC_SOURCES_WKS
   ${GC_SOURCES_DAC_AND_WKS_COMMON}
+  gchandletable.cpp
   gceesvr.cpp
   gceewks.cpp
   handletablecache.cpp)

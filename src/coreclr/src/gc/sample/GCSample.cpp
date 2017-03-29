@@ -126,22 +126,23 @@ int __cdecl main(int argc, char* argv[])
     g_pFreeObjectMethodTable = &freeObjectMT;
 
     //
-    // Initialize handle table
-    //
-    if (!Ref_Initialize())
-        return -1;
-
-    //
     // Initialize GC heap
     //
     GcDacVars dacVars;
     IGCHeap *pGCHeap;
-    if (!InitializeGarbageCollector(nullptr, &pGCHeap, &dacVars))
+    IGCHandleTable *pGCHandleTable;
+    if (!InitializeGarbageCollector(nullptr, &pGCHeap, &pGCHandleTable, &dacVars))
     {
         return -1;
     }
 
     if (FAILED(pGCHeap->Initialize()))
+        return -1;
+
+    //
+    // Initialize handle table
+    //
+    if (!pGCHandleTable->Initialize())
         return -1;
 
     //

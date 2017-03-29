@@ -12,8 +12,10 @@
 
 #include "gc.h"
 #include "gcscan.h"
+#include "gchandletableimpl.h"
 
 #define SERVER_GC 1
+
 
 namespace SVR { 
 #include "gcimpl.h"
