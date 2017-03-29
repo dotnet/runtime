@@ -14184,13 +14184,13 @@ GenTreePtr Compiler::fgRecognizeAndMorphBitwiseRotation(GenTreePtr tree)
     //
     //                         OR                      ROL
     //                      /      \                   / \
-        //                    LSH      RSZ      ->        x   y
+    //                    LSH      RSZ      ->        x   y
     //                    / \      / \
-        //                   x  AND   x  AND
+    //                   x  AND   x  AND
     //                      / \      / \
-        //                     y  31   ADD  31
+    //                     y  31   ADD  31
     //                             / \
-        //                            NEG 32
+    //                            NEG 32
     //                             |
     //                             y
     // The patterns recognized:
