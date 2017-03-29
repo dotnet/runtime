@@ -411,7 +411,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             bool fOp2NotAddrOp = false;
             bool fOp2WasCast = false;
 
-            if (!op1.isANYLOCAL_OK())
+            if (!(op1 is ExprLocal local && local.IsOK))
             {
                 if (!checkLvalue(op1, CheckLvalueKind.Assignment))
                 {
@@ -424,7 +424,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 if (op2.Type.IsArrayType())
                 {
-                    return BindPtrToArray(op1.asANYLOCAL(), op2);
+                    return BindPtrToArray(local, op2);
                 }
                 if (op2.Type == GetReqPDT(PredefinedType.PT_STRING))
                 {

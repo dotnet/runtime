@@ -201,12 +201,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             return m_bInFieldInitializer;
         }
+
         public bool IsThisPointer(Expr expr)
         {
-            bool localThis = expr.isANYLOCAL() && expr.asANYLOCAL().Local == m_outputContext.m_pThisPointer;
-            bool baseThis = false;
-            return localThis || baseThis;
+            return expr is ExprLocal local && local.Local == m_outputContext.m_pThisPointer;
         }
+
         public bool RespectReadonly()
         {
             return m_bRespectSemanticsAndReportErrors;
