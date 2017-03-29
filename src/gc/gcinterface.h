@@ -171,11 +171,12 @@ struct segment_info
 
 class Object;
 class IGCHeap;
+class IGCHandleTable;
 
 // Initializes the garbage collector. Should only be called
 // once, during EE startup. Returns true if the initialization
 // was successful, false otherwise.
-bool InitializeGarbageCollector(IGCToCLR* clrToGC, IGCHeap **gcHeap, GcDacVars* gcDacVars);
+bool InitializeGarbageCollector(IGCToCLR* clrToGC, IGCHeap** gcHeap, IGCHandleTable** gcHandleTable, GcDacVars* gcDacVars);
 
 // The runtime needs to know whether we're using workstation or server GC 
 // long before the GCHeap is created. This function sets the type of
@@ -384,6 +385,13 @@ typedef void (* record_surv_fn)(uint8_t* begin, uint8_t* end, ptrdiff_t reloc, v
 typedef void (* fq_walk_fn)(bool, void*);
 typedef void (* fq_scan_fn)(Object** ppObject, ScanContext *pSC, uint32_t dwFlags);
 typedef void (* handle_scan_fn)(Object** pRef, Object* pSec, uint32_t flags, ScanContext* context, bool isDependent);
+class IGCHandleTable {
+public:
+
+    virtual bool Initialize() = 0;
+
+    virtual void Shutdown() = 0;
+};
 
 // IGCHeap is the interface that the VM will use when interacting with the GC.
 class IGCHeap {
