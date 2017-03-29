@@ -12,7 +12,7 @@ namespace System.Runtime.Loader.Tests
     {
         protected override Assembly Load(AssemblyName assemblyName)
         {
-            string assemblyPath = Path.Combine(Directory.GetCurrentDirectory(), assemblyName.Name + ".dll");
+            string assemblyPath = Path.Combine(Path.GetDirectoryName(typeof(string).Assembly.Location), assemblyName.Name + ".dll");
             return LoadFromAssemblyPath(assemblyPath);
         }
     }
