@@ -514,31 +514,32 @@ struct InlineCandidateInfo
 
 struct InlArgInfo
 {
-    unsigned argIsUsed : 1;               // is this arg used at all?
-    unsigned argIsInvariant : 1;          // the argument is a constant or a local variable address
-    unsigned argIsLclVar : 1;             // the argument is a local variable
-    unsigned argIsThis : 1;               // the argument is the 'this' pointer
-    unsigned argHasSideEff : 1;           // the argument has side effects
-    unsigned argHasGlobRef : 1;           // the argument has a global ref
-    unsigned argHasTmp : 1;               // the argument will be evaluated to a temp
-    unsigned argIsByRefToStructLocal : 1; // Is this arg an address of a struct local or a normed struct local or a
-                                          // field in them?
-    unsigned argHasLdargaOp : 1;          // Is there LDARGA(s) operation on this argument?
-    unsigned argHasStargOp : 1;           // Is there STARG(s) operation on this argument?
-
-    unsigned   argTmpNum; // the argument tmp number
-    GenTreePtr argNode;
-    GenTreePtr argBashTmpNode; // tmp node created, if it may be replaced with actual arg
+    GenTreePtr argNode;                     // caller node for this argument
+    GenTreePtr argBashTmpNode;              // tmp node created, if it may be replaced with actual arg
+    unsigned   argTmpNum;                   // the argument tmp number
+    unsigned   argIsUsed : 1;               // is this arg used at all?
+    unsigned   argIsInvariant : 1;          // the argument is a constant or a local variable address
+    unsigned   argIsLclVar : 1;             // the argument is a local variable
+    unsigned   argIsThis : 1;               // the argument is the 'this' pointer
+    unsigned   argHasSideEff : 1;           // the argument has side effects
+    unsigned   argHasGlobRef : 1;           // the argument has a global ref
+    unsigned   argHasTmp : 1;               // the argument will be evaluated to a temp
+    unsigned   argHasLdargaOp : 1;          // Is there LDARGA(s) operation on this argument?
+    unsigned   argHasStargOp : 1;           // Is there STARG(s) operation on this argument?
+    unsigned   argIsByRefToStructLocal : 1; // Is this arg an address of a struct local or a normed struct local or a
+                                            // field in them?
 };
 
-// InlArgInfo describes inline candidate local variable properties.
+// InlLclVarInfo describes inline candidate argument and local variable properties.
 
 struct InlLclVarInfo
 {
-    var_types lclTypeInfo;
     typeInfo  lclVerTypeInfo;
-    bool      lclHasLdlocaOp; // Is there LDLOCA(s) operation on this argument?
-    bool      lclIsPinned;
+    var_types lclTypeInfo;
+    unsigned  lclHasLdlocaOp : 1;        // Is there LDLOCA(s) operation on this local?
+    unsigned  lclHasStlocOp : 1;         // Is there a STLOC on this local?
+    unsigned  lclHasMultipleStlocOp : 1; // Is there more than one STLOC on this local
+    unsigned  lclIsPinned : 1;
 };
 
 // InlineInfo provides detailed information about a particular inline candidate.
