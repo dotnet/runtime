@@ -149,16 +149,16 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             rval.Kind = ExpressionKind.EK_MEMGRP;
             rval.Type = GetTypes().GetMethGrpType();
             rval.Flags = nFlags;
-            rval.name = pName;
-            rval.typeArgs = pTypeArgs;
-            rval.sk = symKind;
+            rval.Name = pName;
+            rval.TypeArgs = pTypeArgs;
+            rval.SymKind = symKind;
             rval.ParentType = pTypePar;
             rval.OptionalObject = pObject;
             rval.MemberLookupResults = memberLookupResults;
             rval.OptionalLHS = null;
-            if (rval.typeArgs == null)
+            if (rval.TypeArgs == null)
             {
-                rval.typeArgs = BSYMMGR.EmptyTypeArray();
+                rval.TypeArgs = BSYMMGR.EmptyTypeArray();
             }
             Debug.Assert(rval != null);
             return (rval);

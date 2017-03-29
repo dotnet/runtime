@@ -1242,7 +1242,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // invocation.
         internal Expr BindMethodGroupToArguments(BindingFlag bindFlags, ExprMemberGroup grp, Expr args)
         {
-            Debug.Assert(grp.sk == SYMKIND.SK_MethodSymbol || grp.sk == SYMKIND.SK_PropertySymbol && ((grp.Flags & EXPRFLAG.EXF_INDEXER) != 0));
+            Debug.Assert(grp.SymKind == SYMKIND.SK_MethodSymbol || grp.SymKind == SYMKIND.SK_PropertySymbol && ((grp.Flags & EXPRFLAG.EXF_INDEXER) != 0));
 
             // Count the args.
             bool argTypeErrors;
@@ -1255,7 +1255,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // If we weren't given a pName, then we couldn't bind the method pName, so we should
             // just bail out of here.
 
-            if (grp.name == null)
+            if (grp.Name == null)
             {
                 ExprCall rval = GetExprFactory().CreateCall(0, GetTypes().GetErrorSym(), args, grp, null);
                 rval.SetError();
@@ -1282,7 +1282,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Expr exprRes;
             MethPropWithInst mpwiBest = result.GetBestResult();
 
-            if (grp.sk == SYMKIND.SK_PropertySymbol)
+            if (grp.SymKind == SYMKIND.SK_PropertySymbol)
             {
                 Debug.Assert((grp.Flags & EXPRFLAG.EXF_INDEXER) != 0);
                 //PropWithType pwt = new PropWithType(mpwiBest.Prop(), mpwiBest.GetType());
@@ -1557,7 +1557,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 case ExpressionKind.EK_MEMGRP:
                     {
                         ErrorCode err = (kind == CheckLvalueKind.OutParameter) ? ErrorCode.ERR_RefReadonlyLocalCause : ErrorCode.ERR_AssgReadonlyLocalCause;
-                        ErrorContext.Error(err, (expr as ExprMemberGroup).name, new ErrArgIds(MessageID.MethodGroup));
+                        ErrorContext.Error(err, (expr as ExprMemberGroup).Name, new ErrArgIds(MessageID.MethodGroup));
                         return false;
                     }
                 default:

@@ -8,9 +8,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal sealed class ExprMemberGroup : Expr, IExprWithObject
     {
-        public Name name;
-        public TypeArray typeArgs;
-        public SYMKIND sk;
+        public Name Name { get; set; }
+
+        public TypeArray TypeArgs { get; set; }
+
+        public SYMKIND SymKind { get; set; }
         // The type containing the members. This may be a TypeParameterType or an AggregateType.
         // This may be NULL (if types is not NULL).
 
