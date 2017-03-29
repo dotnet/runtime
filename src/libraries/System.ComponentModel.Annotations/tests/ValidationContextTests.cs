@@ -139,17 +139,6 @@ namespace System.ComponentModel.DataAnnotations.Tests
             validationContext.DisplayName = "OverriddenDisplayName";
             Assert.Equal("OverriddenDisplayName", validationContext.DisplayName);
         }
-
-        [Fact]
-        public static void Setting_MemberName_resets_DisplayName()
-        {
-            var testDataAnnotationsDerived = new TestClass();
-            var validationContext = new ValidationContext(testDataAnnotationsDerived);
-            validationContext.MemberName = "DisplayNameMember";
-            Assert.Equal("DisplayNameMemberDisplayName", validationContext.DisplayName);
-            validationContext.MemberName = "ExistingMember";
-            Assert.Equal("ExistingMember", validationContext.DisplayName);
-        }
     }
 
     public class TestClass
