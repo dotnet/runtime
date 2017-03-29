@@ -681,8 +681,10 @@ void CreateInstantiatingILStubTargetSig(MethodDesc *pBaseMD,
     SigPointer pReturn = msig.GetReturnProps();
     pReturn.ConvertToInternalExactlyOne(msig.GetModule(), &typeContext, stubSigBuilder, FALSE);
 
+#ifndef _TARGET_X86_
     // The hidden context parameter
     stubSigBuilder->AppendElementType(ELEMENT_TYPE_I);            
+#endif // !_TARGET_X86_
 
     // Copy rest of the arguments
     msig.NextArg();
@@ -692,6 +694,10 @@ void CreateInstantiatingILStubTargetSig(MethodDesc *pBaseMD,
         pArgs.ConvertToInternalExactlyOne(msig.GetModule(), &typeContext, stubSigBuilder);
     }
 
+#ifdef _TARGET_X86_
+    // The hidden context parameter
+    stubSigBuilder->AppendElementType(ELEMENT_TYPE_I);
+#endif // _TARGET_X86_
 }
 
 Stub * CreateUnboxingILStubForSharedGenericValueTypeMethods(MethodDesc* pTargetMD)
