@@ -12,7 +12,7 @@ namespace System.Collections.Tests
     /// Contains tests that ensure the correctness of any class that implements the nongeneric
     /// IDictionary interface
     /// </summary>
-    public abstract class IDictionary_NonGeneric_Tests : ICollection_NonGeneric_Tests
+    public abstract partial class IDictionary_NonGeneric_Tests : ICollection_NonGeneric_Tests
     {
         #region IDictionary Helper Methods
 
