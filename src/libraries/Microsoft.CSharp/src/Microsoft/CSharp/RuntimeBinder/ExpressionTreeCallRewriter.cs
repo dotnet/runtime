@@ -53,15 +53,16 @@ namespace Microsoft.CSharp.RuntimeBinder
             // Assert all of these first, and then unwrap them.
 
             Debug.Assert(pExpr != null);
-            Debug.Assert(pExpr.isBIN());
             Debug.Assert(pExpr.Kind == ExpressionKind.EK_SEQUENCE);
-            Debug.Assert(pExpr.asBIN().OptionalRightChild is ExprCall);
-            Debug.Assert((pExpr.asBIN().OptionalRightChild as ExprCall).PredefinedMethod == PREDEFMETH.PM_EXPRESSION_LAMBDA);
-            Debug.Assert(pExpr.asBIN().OptionalLeftChild != null);
+            ExprBinOp binOp = pExpr as ExprBinOp;
+            Debug.Assert(binOp != null);
+            Debug.Assert(binOp.OptionalRightChild is ExprCall);
+            Debug.Assert((binOp.OptionalRightChild as ExprCall).PredefinedMethod == PREDEFMETH.PM_EXPRESSION_LAMBDA);
+            Debug.Assert(binOp.OptionalLeftChild != null);
 
             // Visit the left to generate the parameter construction.
-            rewriter.Visit(pExpr.asBIN().OptionalLeftChild);
-            ExprCall call = pExpr.asBIN().OptionalRightChild as ExprCall;
+            rewriter.Visit(binOp.OptionalLeftChild);
+            ExprCall call = binOp.OptionalRightChild as ExprCall;
 
             ExpressionExpr e = rewriter.Visit(call) as ExpressionExpr;
             return e.Expression;

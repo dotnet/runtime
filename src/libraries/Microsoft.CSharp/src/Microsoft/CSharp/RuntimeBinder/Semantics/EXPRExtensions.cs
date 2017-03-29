@@ -55,10 +55,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(expr == null || expr.Kind < ExpressionKind.EK_StmtLim);
             return (ExprStatement)expr;
         }
-        public static bool isBIN(this Expr expr)
+        [Conditional("DEBUG")]
+        public static void AssertIsBin(this Expr expr)
         {
-            return (expr == null) ? false : (expr.Kind >= ExpressionKind.EK_TypeLim) &&
-                (0 != (expr.Flags & EXPRFLAG.EXF_BINOP));
+            Debug.Assert(expr?.Kind >= ExpressionKind.EK_TypeLim && 0 != (expr.Flags & EXPRFLAG.EXF_BINOP));
         }
         public static bool isLvalue(this Expr expr)
         {
@@ -67,11 +67,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public static bool isChecked(this Expr expr)
         {
             return (expr == null) ? false : 0 != (expr.Flags & EXPRFLAG.EXF_CHECKOVERFLOW);
-        }
-        public static ExprBinOp asBIN(this Expr expr)
-        {
-            Debug.Assert(expr == null || 0 != (expr.Flags & EXPRFLAG.EXF_BINOP));
-            return (ExprBinOp)expr;
         }
         public static bool isNull(this Expr expr)
         {
@@ -90,17 +85,17 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return null;
 
             Expr exprVal = expr;
-            for (; ;)
+            for (;;)
             {
                 switch (exprVal.Kind)
                 {
                     default:
                         return exprVal;
                     case ExpressionKind.EK_SEQUENCE:
-                        exprVal = exprVal.asBIN().OptionalRightChild;
+                        exprVal = (exprVal as ExprBinOp).OptionalRightChild;
                         break;
                     case ExpressionKind.EK_SEQREV:
-                        exprVal = exprVal.asBIN().OptionalLeftChild;
+                        exprVal = (exprVal as ExprBinOp).OptionalLeftChild;
                         break;
                 }
             }
