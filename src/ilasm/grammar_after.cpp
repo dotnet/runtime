@@ -854,7 +854,6 @@ Its_An_Id:
                                                 TRUE, wzFullName,&pwz);
                                     if(dw != 0)
                                     {
-                                        wzFullName.CloseBuffer((COUNT_T)(dw));
                                         delete [] wzFile;
 
                                         wzFile = wzFullName.GetCopyOfUnicodeString();
