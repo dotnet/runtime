@@ -247,6 +247,7 @@ namespace System.Security.Cryptography.Xml.Tests
                 nm.AddNamespace("enc", EncryptedXml.XmlEncNamespaceUrl);
 
                 Assert.NotNull(doc.SelectSingleNode("//enc:EncryptedKey", nm));
+                Assert.DoesNotContain("sample", doc.OuterXml);
             }
         }
 
