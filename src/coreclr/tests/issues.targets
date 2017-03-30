@@ -58,6 +58,9 @@
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\coverage\importer\Desktop\nonrefsdarr_il_r\nonrefsdarr_il_r.cmd">
             <Issue>4851</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Regression\CLR-x86-JIT\V1.2-M01\b08046\b08046\b08046.cmd">
+            <Issue>4849</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\intrinsic\interlocked\rva_rvastatic1\rva_rvastatic1.cmd">
             <Issue>2451</Issue>
         </ExcludeList>
