@@ -6511,7 +6511,9 @@ MethodDesc *Module::FindMethod(mdToken pMethod)
         CONTRACT_VIOLATION(ThrowsViolation);
         char szMethodName [MAX_CLASSNAME_LENGTH];
         CEEInfo::findNameOfToken(this, pMethod, szMethodName, COUNTOF (szMethodName));
-        LOG((LF_IJW, LL_INFO10, "Failed to find Method: %s for Vtable Fixup\n", szMethodName));
+        // This used to be LF_IJW, but changed to LW_INTEROP to reclaim a bit in our log facilities
+        // IJW itself is not supported in coreclr so this code should never be run.
+        LOG((LF_INTEROP, LL_INFO10, "Failed to find Method: %s for Vtable Fixup\n", szMethodName));
 #endif // _DEBUG
     }
     EX_END_CATCH(SwallowAllExceptions)

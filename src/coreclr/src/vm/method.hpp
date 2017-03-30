@@ -1290,6 +1290,58 @@ public:
 
 public:
 
+#ifdef FEATURE_TIERED_COMPILATION
+    // Is this method allowed to be recompiled and the entrypoint redirected so that we
+    // can optimize its performance? Eligibility is invariant for the lifetime of a method.
+    BOOL IsEligibleForTieredCompilation()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+
+        // This policy will need to change some more before tiered compilation feature
+        // can be properly supported across a broad range of scenarios. For instance it 
+        // wouldn't interact correctly debugging or profiling at the moment because we 
+        // enable it too aggresively and it conflicts with the operations of those features.
+
+        //Keep in-sync with MethodTableBuilder::NeedsNativeCodeSlot(bmtMDMethod * pMDMethod)
+        //In the future we might want mutable vtable slots too, but that would require
+        //more work around the runtime to prevent those mutable pointers from leaking
+        return g_pConfig->TieredCompilation() &&
+            !GetModule()->HasNativeOrReadyToRunImage() &&
+            !IsEnCMethod() &&
+            HasNativeCodeSlot();
+
+    }
+#endif
+
+    // Does this method force the NativeCodeSlot to stay fixed after it
+    // is first initialized to native code? Consumers of the native code
+    // pointer need to be very careful about if and when they cache it
+    // if it is not stable.
+    //
+    // The stability of the native code pointer is separate from the
+    // stability of the entrypoint. A stable entrypoint can be a precode
+    // which dispatches to an unstable native code pointer.
+    BOOL IsNativeCodeStableAfterInit()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return 
+#ifdef FEATURE_TIERED_COMPILATION
+            !IsEligibleForTieredCompilation() &&
+#endif
+            !IsEnCMethod();
+    }
+
+    //Is this method currently pointing to native code that will never change?
+    BOOL IsPointingToStableNativeCode()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+
+        if (!IsNativeCodeStableAfterInit())
+            return FALSE;
+
+        return IsPointingToNativeCode();
+    }
+
     // Note: We are skipping the prestub based on addition information from the JIT.
     // (e.g. that the call is on same this ptr or that the this ptr is not null).
     // Thus we can end up with a running NGENed method for which IsPointingToNativeCode is false!
