@@ -597,8 +597,8 @@ bool GCToOSInterface::CreateThread(GCThreadFunction function, void* param, GCThr
         ::SetThreadAffinityMask(gc_thread, (DWORD_PTR)1 << affinity->Processor);
     }
 
-	ResumeThread(gc_thread);
-	CloseHandle(gc_thread);
+    ResumeThread(gc_thread);
+    CloseHandle(gc_thread);
 
     return true;
 }
