@@ -157,7 +157,7 @@ namespace System.Security.Cryptography.Xml.Tests
                 }
             }
 
-            throw new ArgumentException("The specified algorithm is not supported for XML Encryption.");
+            throw new ArgumentException($"The specified algorithm `{key.GetType().FullName}` is not supported for XML Encryption.");
         }
 
         /// <summary>
